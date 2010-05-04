@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/test_helper'
+require File.dirname(__FILE__) + '/../test_helper'
 
 class RouteTest < Test::Unit::TestCase
   def test_matches_method_and_path

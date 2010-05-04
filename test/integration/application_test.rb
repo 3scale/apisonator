@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/test_helper'
+require File.dirname(__FILE__) + '/../test_helper'
 
 class ApplicationTest < Test::Unit::TestCase
   def test_on_invalid_path_responds_with_404
