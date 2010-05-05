@@ -1,0 +1,20 @@
+production:
+
+development:
+  sql:
+    adapter:  mysql
+    database: demo_development_master
+    username: root
+
+  redis:
+    db: 0
+
+test:
+  sql:
+    adapter:  mysql
+    database: demo_test
+    username: root
+
+  redis:
+    db: 1
+

@@ -1,16 +1,18 @@
+ENV['RACK_ENV'] ||= 'test'
+$:.unshift(File.dirname(__FILE__) + '/../lib')
+
 require 'rubygems'
 require 'test/unit'
 require 'rack/test'
+require 'fakefs/safe'
 
-$:.unshift(File.dirname(__FILE__) + '/../lib')
+require '3scale/backend'
 
-require '3scale/backend/application'
+require 'factory_girl'
+require File.dirname(__FILE__) + '/factories.rb'
+
+Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
 
 class Test::Unit::TestCase
   include ThreeScale::Backend
-  include Rack::Test::Methods
-  
-  def app
-    Application
-  end
 end
