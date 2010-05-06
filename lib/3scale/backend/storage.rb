@@ -12,22 +12,49 @@ module ThreeScale
         @db = config['db']
       end
 
-      def connection
-        @connection ||= begin
-                          connection = EventMachine::Protocols::Redis.connect(@host, @port)
-                          connection.select(@db) if @db
-                          connection
-                        end
-      end
+      def method_missing(name, *args)
+        fiber = Fiber.current
 
-      def incrby_and_expire(key, value, expires_in, &block)
-        incrby(key, value) do
-          expire(key, expires_in, &block)
+        connection.send(name, *args) do |*response|
+          fiber.resume(*response)
         end
+
+        Fiber.yield
       end
 
-      def method_missing(name, *args, &block)
-        connection.send(name, *args, &block)
+      def disconnect
+        @connection = nil
+      end
+
+      private
+
+      def connect
+        connection = Connection.connect(@host, @port, self)
+        connection.select(@db) if @db
+        connection
+      end
+      
+      def connection
+        @connection ||= connect
+      end
+
+      # Connection remembers the storage object that contains it, and resets itself
+      # when unbound. This is to prevent sending commands to dead connection when
+      # the reactor loop was stopped (and possibly stated again).
+      module Connection
+        include EventMachine::Protocols::Redis
+
+        def self.connect(host, port, storage)
+          ::EventMachine.connect(host, port, self, storage)
+        end
+
+        def unbind
+          @storage && @storage.disconnect
+        end
+
+        def initialize(storage)
+          @storage = storage
+        end
       end
     end
 

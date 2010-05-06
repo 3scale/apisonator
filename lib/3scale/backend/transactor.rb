@@ -1,9 +1,47 @@
+require '3scale/backend/aggregation'
+
 module ThreeScale
   module Backend
     # This guy is for reporting and authorizing the transactions.
     class Transactor
       def self.report(params)
-        yield
+        new.report(params)
+      end
+
+      def report(params)
+        errors = {}
+
+        provider_account_id = find_provider_account_id!(params['provider_key'])
+
+        group_by_user_key(params['transactions']) do |user_key, grouped_transactions|
+          begin
+            contract_data = ContractData.new(provider_account_id, user_key)
+            usages = contract_data.process_usages(grouped_transactions)
+
+            contract_data.validate_state!           
+            # contract_data.usage_accumulator.pay(usages.values.sum)
+
+            grouped_transactions.each do |transaction|
+              service_id  = contract_data.service_id
+              contract_id = contract_data.contract_id
+              timestamp   = parse_timestamp(transaction['timestamp'])
+              usage       = usages[transaction[:index]]
+
+              Aggregation.aggregate(:service    => service_id,
+                                    :cinstance  => contract_id,
+                                    :created_at => timestamp,
+                                    :usage      => usage)
+
+              # TODO: archive                                    
+            end
+          rescue MultipleErrors => exception
+            errors.merge!(exception.codes)
+          rescue Error => exception
+            grouped_transactions.each do |transaction|
+              errors[transaction[:index]] = exception.code
+            end
+          end
+        end
       end
 
       private
@@ -19,37 +57,6 @@ module ThreeScale
       # end
 
       # def report!(raw_transactions)
-      #   errors = {}
-      #   transactions = []
-
-      #   group_by_user_key(raw_transactions) do |user_key, raw_grouped_transactions|
-      #     begin
-      #       cinstance_data = CinstanceData.new(@provider_account_id, user_key)
-      #       usages = cinstance_data.process_usages(raw_grouped_transactions)
-
-      #       if cinstance_data.anonymous_clients_allowed?
-      #         ensure_cinstance_exists(user_key)
-      #       else
-      #         cinstance_data.validate_state!           
-      #         cinstance_data.usage_accumulator.pay(usages.values.sum)
-      #       end
-
-      #       raw_grouped_transactions.each do |raw_transaction|
-      #         timestamp = parse_timestamp(raw_transaction[:timestamp])
-      #         
-      #         transactions << Transaction.new(:client_ip => raw_transaction[:client_ip],
-      #                                         :created_at => timestamp,
-      #                                         :provider_account_id => @provider_account_id,
-      #                                         :usage => usages[raw_transaction[:index]],
-      #                                         :user_key => user_key)
-      #       end
-      #     rescue MultipleErrors => exception
-      #       errors.merge!(exception.codes)
-      #     rescue Error => exception
-      #       raw_grouped_transactions.each do |raw_transaction|
-      #         errors[raw_transaction[:index]] = exception.code
-      #       end
-      #     end
       #   end
 
       #   if errors.empty?

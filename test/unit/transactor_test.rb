@@ -23,38 +23,30 @@ class TransactorTest < Test::Unit::TestCase
   end
   
   def test_report_increments_stats_counters
-    @storage.get(storage_key(@contract_one)) do |response|
-      old_value_one = response.to_i
-
-      @storage.get(storage_key(@contract_two)) do |response|
-        old_value_two = response.to_i
-
+    assert_change_in_stats :for => @contract_one, :by => 1 do
+      assert_change_in_stats :for => @contract_two, :by => 1 do
         Transactor.report(
           :provider_key => @provider_account.api_key,
           :transactions => {
             '0' => {:user_key => @user_key_one, :usage => {'hits' => 1}},
-            '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}}}) do
-
-          @storage.get(storage_key(@contract_one)) do |response|
-            new_value_one = response.to_i
-
-            @storage.get(storage_key(@contract_two)) do |response|
-              new_value_two = response.to_i
-
-              assert_equal 1, new_value_one - old_value_one
-              assert_equal 1, new_value_two - old_value_two
-              done!
-            end
-          end
-        end
+            '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}}})
       end
     end
   end
 
   private
 
-  def storage_key(contract)
-    "stats/{service:#{@service.id}}/cinstance:#{contract.id}/metric:#{@metric.id}/eternity"
+  def storage_key(options)
+  end
+
+  def assert_change_in_stats(options, &block)
+    contract = options.delete(:for)
+    key = "stats/{service:#{@service.id}}/cinstance:#{contract.id}/metric:#{@metric.id}/eternity"
+
+    options = options.dup
+    options[:of] = lambda { @storage.get(key).to_i }
+
+    assert_change options, &block
   end
 
   # def test_raises_an_exception_if_provider_key_is_invalid

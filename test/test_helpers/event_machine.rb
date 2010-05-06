@@ -8,16 +8,17 @@ module TestHelpers
       end
     end
 
-    def run_with_event_machine(result, &block)
+    def run_with_event_machine(runner, &block)
+      result = nil
+     
       ::EventMachine.run do
-        run_without_event_machine(result, &block)
-        done! if passed? == false
+        Fiber.new do
+          result = run_without_event_machine(runner, &block)
+          ::EventMachine.stop
+        end.resume
       end
-    end
 
-    # Call this in each test method after the last assertion to stop the reactor loop.
-    def done!
-      ::EventMachine.stop
+      result
     end
   end
 end

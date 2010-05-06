@@ -18,7 +18,6 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {0 => {:user_key => @contract.api_key, :usage => {'hits' => 1}}}
 
     assert_equal 200, last_response.status
-    done!
   end
   
   def test_successful_report_increments_the_stats_counters
@@ -26,19 +25,10 @@ class ReportTest < Test::Unit::TestCase
 
     key = "stats/{service:#{@service.id}}/cinstance:#{@contract.id}/metric:#{@metric.id}/month:20100501"
 
-    storage.get(key) do |response|
-      old_value = response.to_i
-
+    assert_change :of => lambda { storage.get(key).to_i }, :by => 1 do
       post '/transactions.xml',
         :provider_key => @provider_account.api_key,
         :transactions => {0 => {:user_key => @contract.api_key, :usage => {'hits' => 1}}}
-
-      storage.get(key) do |response|
-        new_value = response.to_i
-
-        assert_equal 1, new_value - old_value
-        done!
-      end
     end
   end
 end
