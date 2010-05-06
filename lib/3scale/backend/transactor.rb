@@ -8,12 +8,10 @@ module ThreeScale
         new.report(params)
       end
 
-      def report(params)
+      def report(provider_account_id, raw_transactions)
         errors = {}
 
-        provider_account_id = find_provider_account_id!(params['provider_key'])
-
-        group_by_user_key(params['transactions']) do |user_key, grouped_transactions|
+        group_by_user_key(raw_transactions) do |user_key, grouped_transactions|
           begin
             contract_data = ContractData.new(provider_account_id, user_key)
             usages = contract_data.process_usages(grouped_transactions)
@@ -45,6 +43,7 @@ module ThreeScale
       end
 
       private
+
   
       # def self.id_from_api_key(api_key)
       #   Rails.cache.fetch("account_ids/#{api_key}") do

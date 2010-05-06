@@ -6,8 +6,8 @@ module ThreeScale
     module Actions
       class Report < Action
         def perform(request)
-          Transactor.report(:provider_key => request.params['provider_key'],
-                            :transactions => request.params['transactions'])
+          Transactor.report(Account.id_by_api_key(request.params['provider_key']),
+                            request.params['transactions'])
 
           [200, {}, []]
         end

@@ -25,6 +25,9 @@ module ThreeScale
       #   xml.target!
       # end
     end
+    
+    class ApiKeyInvalid < Error
+    end
 
     # class UserKeyInvalid < Error
     #   def initialize
@@ -50,7 +53,7 @@ module ThreeScale
     #   end
     # end
 
-    class ProviderKeyInvalid < Error
+    class ProviderKeyInvalid < ApiKeyInvalid
       # def initialize
       #   super('provider.invalid_key')
       # end

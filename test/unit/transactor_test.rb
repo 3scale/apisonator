@@ -36,9 +36,6 @@ class TransactorTest < Test::Unit::TestCase
 
   private
 
-  def storage_key(options)
-  end
-
   def assert_change_in_stats(options, &block)
     contract = options.delete(:for)
     key = "stats/{service:#{@service.id}}/cinstance:#{contract.id}/metric:#{@metric.id}/eternity"

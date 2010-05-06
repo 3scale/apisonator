@@ -11,10 +11,10 @@ module TestHelpers
     def run_with_event_machine(runner, &block)
       result = nil
      
-      ::EventMachine.run do
+      EM.run do
         Fiber.new do
           result = run_without_event_machine(runner, &block)
-          ::EventMachine.stop
+          EM.stop
         end.resume
       end
 

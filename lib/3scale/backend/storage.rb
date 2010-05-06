@@ -42,10 +42,10 @@ module ThreeScale
       # when unbound. This is to prevent sending commands to dead connection when
       # the reactor loop was stopped (and possibly stated again).
       module Connection
-        include EventMachine::Protocols::Redis
+        include EM::Protocols::Redis
 
         def self.connect(host, port, storage)
-          ::EventMachine.connect(host, port, self, storage)
+          EM.connect(host, port, self, storage)
         end
 
         def unbind
