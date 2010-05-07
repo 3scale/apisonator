@@ -1,6 +1,10 @@
 module ThreeScale
   module Backend
     module TimeHacks
+      ONE_MINUTE = 60
+      ONE_HOUR   = 60 * ONE_MINUTE
+      ONE_DAY    = 24 * ONE_HOUR
+        
       def beginning_of_cycle(cycle)
         case cycle
         when :year   then ::Time.local(year, 1, 1)
@@ -18,7 +22,7 @@ module ThreeScale
       def beginning_of_week
         # This is stolen from active_support and slightly modified. 
         days_to_monday = wday != 0 ? wday - 1 : 6
-        (self - days_to_monday * 24 * 60 * 60).beginning_of_day
+        (self - days_to_monday * ONE_DAY).beginning_of_day
       end
 
       def beginning_of_day
@@ -49,9 +53,9 @@ module ThreeScale
       
       def cycle_base(cycle)
         case cycle
-        when 0..1.minute      then change(:sec => 0)
-        when 1.minute..1.hour then change(:min => 0)
-        when 1.hour..1.day    then change(:hour => 0)
+        when 0..ONE_MINUTE        then ::Time.local(year, month, day, hour, min)
+        when ONE_MINUTE..ONE_HOUR then ::Time.local(year, month, day, hour)
+        when ONE_HOUR..ONE_DAY    then ::Time.local(year, month, day)
         else raise ArgumentError, "Argument must be duration from 0 seconds to 1 day."
         end
       end

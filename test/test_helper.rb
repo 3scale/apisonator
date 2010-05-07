@@ -3,8 +3,10 @@ $:.unshift(File.dirname(__FILE__) + '/../lib')
 
 require 'rubygems'
 require 'test/unit'
-require 'rack/test'
 require 'fakefs/safe'
+require 'mocha'
+require 'rack/test'
+require 'timecop'
 
 require '3scale/backend'
 

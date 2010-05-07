@@ -10,7 +10,7 @@ module ThreeScale
         new({}, service_id)
       end
 
-      def initialize(metrics, service_id = nil)
+      def initialize(metrics = {}, service_id = nil)
         @service_id = service_id
         @metric_ids = {}
         @parent_ids = {}

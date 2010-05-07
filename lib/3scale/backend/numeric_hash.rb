@@ -22,7 +22,7 @@ class NumericHash < Hash
   end
 
   def nonzero?
-    values.sum.nonzero?
+    values.any? { |value| value != 0 }
   end
 
   def reset!

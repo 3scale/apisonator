@@ -5,11 +5,11 @@ class TransactorTest < Test::Unit::TestCase
 
   def setup
     @provider_key = 'key0001'
-    @service_id = 1
-    @metric_id  = 2001
+    @service_id = '1'
+    @metric_id  = '2001'
 
-    @contract_one_id = 1001
-    @contract_two_id = 1002
+    @contract_id_one = '1001'
+    @contract_id_two = '1002'
 
     @user_key_one = 'key1001'
     @user_key_two = 'key1002'
@@ -17,70 +17,193 @@ class TransactorTest < Test::Unit::TestCase
     @storage = ThreeScale::Backend.storage
     @storage.flushdb
 
-    @storage.set("service_id/provider_key:#{@provider_key}", @service_id)
+    @storage.set("service/id/provider_key:#{@provider_key}", @service_id)
+
+    @storage.set(
+      "contract/id/service_id:#{@service_id}/user_key:#{@user_key_one}", @contract_id_one)
+    @storage.set(
+      "contract/id/service_id:#{@service_id}/user_key:#{@user_key_two}", @contract_id_two)
+
+    Metrics.new(@metric_id => {:name => 'hits'}).save(@service_id)
   end
   
-  def test_report_increments_stats_counters
-    assert_change_in_stats :for => @contract_one_id, :by => 1 do
-      assert_change_in_stats :for => @contract_two_id, :by => 1 do
-        Transactor.report(
-          @provider_key,
-          {'0' => {:user_key => @user_key_one, :usage => {'hits' => 1}},
-           '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}}})
-      end
+  def test_report_aggregates
+    time = Time.now
+
+    Aggregation.expects(:aggregate).with(:service    => @service_id,
+                                         :cinstance  => @contract_id_one,
+                                         :created_at => time,
+                                         :usage      => {@metric_id => 1})
+
+    Aggregation.expects(:aggregate).with(:service    => @service_id,
+                                         :cinstance  => @contract_id_two,
+                                         :created_at => time,
+                                         :usage      => {@metric_id => 1})
+
+    Timecop.freeze(time) do
+      Transactor.report(
+        @provider_key,
+        {'0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
+         '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}}})
+    end
+  end
+  
+  def test_report_reports_transactions_with_utc_timestamps
+    time_utc   = Time.utc(2010, 5, 7, 18, 11, 25)
+    time_local = time_utc.in_time_zone(Time.zone)
+
+    assert_change_in_usage :cinstance => @cinstance_one,
+                           :period => :minute,
+                           :since => time_local,
+                           :by => 1 do
+      Transaction.report_multiple!(
+        @provider_account.id,
+        0 => {:user_key => @user_key_one, :usage => {'hits' => 1},
+              :timestamp => '2009-07-18 11:25'})
     end
   end
 
-  private
+  def test_report_archives
+    skip
+  end
+  
+  def test_report_raises_an_exception_when_provider_key_is_invalid
+    assert_raise ProviderKeyInvalid do
+      Transactor.report(
+        'booo',
+        {'0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}}})
+    end
+  end
+  
+  def test_report_raises_an_exception_when_one_user_key_is_invalid
+    begin
+      Transactor.report(
+        @provider_key,
+        '0' => {'user_key' => 'invalid',     'usage' => {'hits' => 1}},
+        '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
 
-  def assert_change_in_stats(options, &block)
-    contract_id = options.delete(:for)
-    key = "stats/{service:#{@service_id}}/cinstance:#{contract_id}/metric:#{@metric_id}/eternity"
+      flunk 'Expected MultipleErrors exception, but none raised'
 
-    options = options.dup
-    options[:of] = lambda { @storage.get(key).to_i }
+    rescue MultipleErrors => exception
+      assert_equal 1, exception.codes.size
+      assert_equal 'user.invalid_key', exception.codes[0]
+    end
+  end
+  
+  def test_raises_an_exception_when_many_user_keys_are_invalid
+    begin
+      Transactor.report(
+        @provider_key,
+        '0' => {'user_key' => 'invalid', 'usage' => {'hits' => 1}},
+        '1' => {'user_key' => 'invalid', 'usage' => {'hits' => 1}})
 
-    assert_change options, &block
+      flunk 'Expected MultipleErrors exception, but none raised'
+
+    rescue MultipleErrors => exception
+      assert_equal 2, exception.codes.size
+      assert_equal 'user.invalid_key', exception.codes[0]
+      assert_equal 'user.invalid_key', exception.codes[1]
+    end
+  end
+  
+  def test_raises_an_exception_when_the_contract_is_not_active
+    @storage.set("contract/state/service_id:#{@service_id}/id:#{@contract_id_one}", 'suspended')
+
+    begin
+      Transactor.report(
+        @provider_key,
+        '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
+        '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
+
+      flunk 'Expected MultipleErrors exception, but none raised'
+
+    rescue MultipleErrors => exception
+      assert_equal 1, exception.codes.size
+      assert_equal 'user.inactive_contract', exception.codes[0]
+    end
+  end
+  
+  def test_raises_an_exception_when_metric_names_in_one_transaction_are_invalid
+    begin
+      Transactor.report(
+        @provider_key,
+        '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
+        '1' => {'user_key' => @user_key_two, 'usage' => {'monkeys' => 1}})
+
+      flunk 'Expected MultipleErrors exception, but none raised'
+
+    rescue MultipleErrors => exception
+      assert_equal 1, exception.codes.size
+      assert_equal 'provider.invalid_metric', exception.codes[1]
+    end
+  end
+  
+  def test_raises_an_exception_when_metric_names_in_many_transactions_of_different_contract_are_invalid
+    begin
+      Transactor.report(
+        @provider_key,
+        '0' => {'user_key' => @user_key_one, 'usage' => {'penguins' => 1}},
+        '1' => {'user_key' => @user_key_two, 'usage' => {'monkeys' => 1}})
+
+      flunk 'Expected MultipleErrors exception, but none raised'
+
+    rescue MultipleErrors => exception
+      assert_equal 2, exception.codes.size
+      assert_equal 'provider.invalid_metric', exception.codes[0]
+      assert_equal 'provider.invalid_metric', exception.codes[1]
+    end
+  end
+  
+  def test_raises_an_exception_when_metric_names_in_many_transactions_of_the_same_contract_are_invalid
+    begin
+      Transactor.report(
+        @provider_key,
+        '0' => {'user_key' => @user_key_one, 'usage' => {'penguins' => 1}},
+        '1' => {'user_key' => @user_key_one, 'usage' => {'monkeys' => 1}})
+
+      flunk 'Expected MultipleErrors exception, but none raised'
+
+    rescue MultipleErrors => exception
+      assert_equal 2, exception.codes.size
+      assert_equal 'provider.invalid_metric', exception.codes[0]
+      assert_equal 'provider.invalid_metric', exception.codes[1]
+    end
+  end
+  
+  def test_raises_an_exception_with_entries_for_invalid_transactions_only
+    begin
+      Transactor.report(
+        @provider_key,
+        '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
+        '1' => {'user_key' => @user_key_one, 'usage' => {'monkeys' => 1}})
+
+      flunk 'Expected MultipleErrors exception, but none raised'
+
+    rescue MultipleErrors => exception
+      assert_equal 1, exception.codes.size
+      assert_equal 'provider.invalid_metric', exception.codes[1]
+    end
+  end
+  
+  def test_does_not_aggregate_anything_when_at_least_one_transaction_is_invalid
+    Aggregation.expects(:aggregate).never
+
+    begin
+      Transactor.report(
+        @provider_key,
+        '0' => {'user_key' => 'invalid',     'usage' => {'hits' => 1}},
+        '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
+    rescue MultipleErrors
+    end
   end
 
-  # def test_raises_an_exception_if_provider_key_is_invalid
-  #   assert_raise ProviderKeyInvalid do
-  #     Transactor.report(:provider_key => 'booo',
-  #                       :transactions => {'0' => {'user_key' => @user_key_one,
-  #                                                 'usage' => {'hits' => 1}}})
-  #   end
-  # end
 
 
-  # test 'asynchronously aggregates the transactions' do
-  #   Worker.expects(:asynch_aggregate).
-  #     with(has_entries(:cinstance => @cinstance_one.id,
-  #                      :usage => NumericHash.new(@metric.id => 1)))
 
-  #   Worker.expects(:asynch_aggregate).
-  #     with(has_entries(:cinstance => @cinstance_two.id,
-  #                      :usage => NumericHash.new(@metric.id => 1)))
 
-  #   Transaction.report_multiple!(
-  #     @provider_account.id,
-  #     '0' => {:user_key => @user_key_one, :usage => {'hits' => 1}},
-  #     '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}})
-  # end
 
-  # test 'reports transactions with timestamps in UTC' do
-  #   time_utc   = Time.use_zone('UTC') { time(2009, 7, 18, 11, 25) }
-  #   time_local = time_utc.in_time_zone(Time.zone)
 
-  #   assert_change_in_usage :cinstance => @cinstance_one,
-  #                          :period => :minute,
-  #                          :since => time_local,
-  #                          :by => 1 do
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       0 => {:user_key => @user_key_one, :usage => {'hits' => 1},
-  #             :timestamp => '2009-07-18 11:25'})
-  #   end
-  # end
+
 
   # test 'reports transactions with timestamps in local time' do
   #   time_zone  = ActiveSupport::TimeZone[8.hours]
@@ -154,126 +277,6 @@ class TransactorTest < Test::Unit::TestCase
   #   end
   # end
 
-  # test 'raises MultipleErrors exception when one user key is invalid' do
-  #   begin
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       '0' => {:user_key => 'invalid', :usage => {'hits' => 1}},
-  #       '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}})
 
-  #     flunk 'Expected MultipleErrors exception, but none raised'
-
-  #   rescue MultipleErrors => exception
-  #     assert_equal 1, exception.codes.size
-  #     assert_equal 'user.invalid_key', exception.codes[0]
-  #   end
-  # end
-
-  # test 'raises MultipleErrors exception when many user keys are invalid' do
-  #   begin
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       '0' => {:user_key => 'invalid', :usage => {'hits' => 1}},
-  #       '1' => {:user_key => 'invalid', :usage => {'hits' => 1}})
-
-  #     flunk 'Expected MultipleErrors exception, but none raised'
-
-  #   rescue MultipleErrors => exception
-  #     assert_equal 2, exception.codes.size
-  #     assert_equal 'user.invalid_key', exception.codes[0]
-  #     assert_equal 'user.invalid_key', exception.codes[1]
-  #   end
-  # end
-
-  # test 'raises MultipleErrors exception when the cinstance is not live' do
-  #   @cinstance_one.suspend!
-
-  #   begin
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       '0' => {:user_key => @user_key_one, :usage => {'hits' => 1}},
-  #       '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}})
-
-  #     flunk 'Expected MultipleErrors exception, but none raised'
-
-  #   rescue MultipleErrors => exception
-  #     assert_equal 1, exception.codes.size
-  #     assert_equal 'user.inactive_contract', exception.codes[0]
-  #   end
-  # end
-
-  # test 'raises MultipleErrors exception when metric names of one transaction are invalid' do
-  #   begin
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       '0' => {:user_key => @user_key_one, :usage => {'hits' => 1}},
-  #       '1' => {:user_key => @user_key_two, :usage => {'monkeys' => 1}})
-
-  #     flunk 'Expected MultipleErrors exception, but none raised'
-
-  #   rescue MultipleErrors => exception
-  #     assert_equal 1, exception.codes.size
-  #     assert_equal 'provider.invalid_metric', exception.codes[1]
-  #   end
-  # end
-
-  # test 'raises MultipleErrors exception when metric names of many transaction of different cinstances are invalid' do
-  #   begin
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       '0' => {:user_key => @user_key_one, :usage => {'penguins' => 1}},
-  #       '1' => {:user_key => @user_key_two, :usage => {'monkeys' => 1}})
-
-  #     flunk 'Expected MultipleErrors exception, but none raised'
-
-  #   rescue MultipleErrors => exception
-  #     assert_equal 2, exception.codes.size
-  #     assert_equal 'provider.invalid_metric', exception.codes[0]
-  #     assert_equal 'provider.invalid_metric', exception.codes[1]
-  #   end
-  # end
-
-  # test 'raises MultipleErrors exception when metric names of many transaction of the same cinstance are invalid' do
-  #   begin
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       '0' => {:user_key => @user_key_one, :usage => {'penguins' => 1}},
-  #       '1' => {:user_key => @user_key_one, :usage => {'monkeys' => 1}})
-
-  #     flunk 'Expected MultipleErrors exception, but none raised'
-
-  #   rescue MultipleErrors => exception
-  #     assert_equal 2, exception.codes.size
-  #     assert_equal 'provider.invalid_metric', exception.codes[0]
-  #     assert_equal 'provider.invalid_metric', exception.codes[1]
-  #   end
-  # end
-
-  # test 'raises MultipleErrors exception with only indices of invalid transactions when metric names are invalid' do
-  #   begin
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       '0' => {:user_key => @user_key_one, :usage => {'hits' => 1}},
-  #       '1' => {:user_key => @user_key_one, :usage => {'monkeys' => 1}})
-
-  #     flunk 'Expected MultipleErrors exception, but none raised'
-
-  #   rescue MultipleErrors => exception
-  #     assert_equal 1, exception.codes.size
-  #     assert_equal 'provider.invalid_metric', exception.codes[1]
-  #   end
-  # end
-
-  # test 'does not process valid transaction if at least one transaction is invalid' do
-  #   assert_no_change_in_usage :cinstance => @cinstance_two do
-  #     begin
-  #       Transaction.report_multiple!(
-  #         @provider_account.id,
-  #         '0' => {:user_key => 'invalid', :usage => {'hits' => 1}},
-  #         '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}})
-  #     rescue MultipleErrors
-  #     end
-  #   end
-  # end
 
 end

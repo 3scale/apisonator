@@ -53,16 +53,16 @@ class NumericHashTest < Test::Unit::TestCase
     assert_nil usage[44]
   end
 
-  def test_blank?
-    assert  NumericHash.new.blank?
-    assert !NumericHash.new(42 => 1).blank?
+  def test_empty?
+    assert  NumericHash.new.empty?
+    assert !NumericHash.new(42 => 1).empty?
   end
 
   def test_reset!
     usage = NumericHash.new(42 => 1)
     usage.reset!
 
-    assert usage.blank?
+    assert usage.empty?
   end
 
   def test_nonzero?
