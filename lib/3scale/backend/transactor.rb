@@ -26,10 +26,10 @@ module ThreeScale
 
             grouped_transactions.each do |transaction|
               transactions << {
-                :service    => service_id,
-                :cinstance  => contract_data[:id],
-                :created_at => parse_timestamp(transaction['timestamp']),
-                :usage      => usages[transaction['index']]}
+                :service   => service_id,
+                :cinstance => contract_data[:id],
+                :timestamp => parse_timestamp(transaction['timestamp']),
+                :usage     => usages[transaction['index']]}
             end
           rescue MultipleErrors => exception
             errors.merge!(exception.codes)
@@ -100,10 +100,9 @@ module ThreeScale
       
       def parse_timestamp(raw_timestamp)
         if raw_timestamp
-          # Time.use_zone('UTC') { Time.zone.parse(raw_timestamp) }.in_time_zone(Time.zone)
-          Time.parse(raw_timestamp)
+          Time.parse_to_utc(raw_timestamp)
         else
-          Time.now
+          Time.now.getutc
         end
       end
 

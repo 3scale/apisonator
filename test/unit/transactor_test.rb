@@ -30,15 +30,15 @@ class TransactorTest < Test::Unit::TestCase
   def test_report_aggregates
     time = Time.now
 
-    Aggregation.expects(:aggregate).with(:service    => @service_id,
-                                         :cinstance  => @contract_id_one,
-                                         :created_at => time,
-                                         :usage      => {@metric_id => 1})
+    Aggregation.expects(:aggregate).with(:service   => @service_id,
+                                         :cinstance => @contract_id_one,
+                                         :timestamp => time,
+                                         :usage     => {@metric_id => 1})
 
-    Aggregation.expects(:aggregate).with(:service    => @service_id,
-                                         :cinstance  => @contract_id_two,
-                                         :created_at => time,
-                                         :usage      => {@metric_id => 1})
+    Aggregation.expects(:aggregate).with(:service   => @service_id,
+                                         :cinstance => @contract_id_two,
+                                         :timestamp => time,
+                                         :usage     => {@metric_id => 1})
 
     Timecop.freeze(time) do
       Transactor.report(
@@ -48,19 +48,13 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
   
-  def test_report_reports_transactions_with_utc_timestamps
-    time_utc   = Time.utc(2010, 5, 7, 18, 11, 25)
-    time_local = time_utc.in_time_zone(Time.zone)
+  def test_report_handles_transactions_with_utc_timestamps
+    Aggregation.expects(:aggregate).with(
+      has_entry(:timestamp => Time.utc(2010, 5, 7, 18, 11, 25)))
 
-    assert_change_in_usage :cinstance => @cinstance_one,
-                           :period => :minute,
-                           :since => time_local,
-                           :by => 1 do
-      Transaction.report_multiple!(
-        @provider_account.id,
-        0 => {:user_key => @user_key_one, :usage => {'hits' => 1},
-              :timestamp => '2009-07-18 11:25'})
-    end
+    Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
+                                           'usage' => {'hits' => 1},
+                                           'timestamp' => '2010-05-07 18:11:25'})
   end
 
   def test_report_archives

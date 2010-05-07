@@ -7,12 +7,12 @@ module ThreeScale
         
       def beginning_of_cycle(cycle)
         case cycle
-        when :year   then ::Time.local(year, 1, 1)
-        when :month  then ::Time.local(year, month, 1)
+        when :year   then ::Time.utc(year, 1, 1)
+        when :month  then ::Time.utc(year, month, 1)
         when :week   then beginning_of_week
         when :day    then beginning_of_day
-        when :hour   then ::Time.local(year, month, day, hour)
-        when :minute then ::Time.local(year, month, day, hour, min)
+        when :hour   then ::Time.utc(year, month, day, hour)
+        when :minute then ::Time.utc(year, month, day, hour, min)
         when Numeric then beginning_of_numeric_cycle(cycle)
         else
           raise_invalid_period(cycle)
@@ -26,7 +26,7 @@ module ThreeScale
       end
 
       def beginning_of_day
-        self.class.local(year, month, day)
+        self.class.utc(year, month, day)
       end
 
       # Formats the time using as little characters as possible, but still keeping
@@ -34,10 +34,10 @@ module ThreeScale
       #
       # == Examples
       #
-      # Time.local(2010, 5, 6, 17, 24, 22).to_compact_s # "20100506172422"
-      # Time.local(2010, 5, 6, 17, 24, 00).to_compact_s # "201005061724"
-      # Time.local(2010, 5, 6, 17, 00, 00).to_compact_s # "2010050617"
-      # Time.local(2010, 5, 6, 00, 00, 00).to_compact_s # "20100506"
+      # Time.utc(2010, 5, 6, 17, 24, 22).to_compact_s # "20100506172422"
+      # Time.utc(2010, 5, 6, 17, 24, 00).to_compact_s # "201005061724"
+      # Time.utc(2010, 5, 6, 17, 00, 00).to_compact_s # "2010050617"
+      # Time.utc(2010, 5, 6, 00, 00, 00).to_compact_s # "20100506"
       def to_compact_s
         strftime('%Y%m%d%H%M%S').sub(/0{0,6}$/, '')
       end
@@ -53,9 +53,9 @@ module ThreeScale
       
       def cycle_base(cycle)
         case cycle
-        when 0..ONE_MINUTE        then ::Time.local(year, month, day, hour, min)
-        when ONE_MINUTE..ONE_HOUR then ::Time.local(year, month, day, hour)
-        when ONE_HOUR..ONE_DAY    then ::Time.local(year, month, day)
+        when 0..ONE_MINUTE        then ::Time.utc(year, month, day, hour, min)
+        when ONE_MINUTE..ONE_HOUR then ::Time.utc(year, month, day, hour)
+        when ONE_HOUR..ONE_DAY    then ::Time.utc(year, month, day)
         else raise ArgumentError, "Argument must be duration from 0 seconds to 1 day."
         end
       end
@@ -63,8 +63,27 @@ module ThreeScale
       def raise_invalid_period(period)
         raise ArgumentError, "Argument must be a number or one of :minute, :hour, :day, :week, :month, or :year, not #{period.inspect}" 
       end
+      
+      module ClassMethods
+        def parse_to_utc(input)
+          parts = Date._parse(input)
+          return if parts.nil? || parts.empty?
+
+          time = Time.utc(parts[:year],
+                          parts[:mon],
+                          parts[:mday],
+                          parts[:hour],
+                          parts[:min],
+                          parts[:sec],
+                          parts[:sec_fraction])
+
+          time -= parts[:offset] if parts[:offset]
+          time
+        end
+      end
     end
   end
 end
 
 Time.send(:include, ThreeScale::Backend::TimeHacks)
+Time.extend(ThreeScale::Backend::TimeHacks::ClassMethods)

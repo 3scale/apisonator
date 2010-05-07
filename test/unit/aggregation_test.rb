@@ -9,10 +9,10 @@ class AggregationTest < Test::Unit::TestCase
   end
 
   def test_aggregate_increments_all_stats_values_and_updates_all_source_sets
-    Aggregation.aggregate(:service    => 1001,
-                          :cinstance  => 2001,
-                          :created_at => Time.local(2010, 5, 7, 13, 23, 33),
-                          :usage      => {'3001' => 1})
+    Aggregation.aggregate(:service   => 1001,
+                          :cinstance => 2001,
+                          :timestamp => Time.utc(2010, 5, 7, 13, 23, 33),
+                          :usage     => {'3001' => 1})
 
     assert_equal '1', @storage.get("stats/{service:1001}/metric:3001/eternity")
     assert_equal '1', @storage.get("stats/{service:1001}/metric:3001/month:20100501")

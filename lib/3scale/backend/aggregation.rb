@@ -28,11 +28,9 @@ module ThreeScale
       
       # Run all defined aggregations with the given transactions.
       def self.aggregate(transaction)
-        Fiber.new do
-          @@rules.each do |rule|
-            rule.aggregate(transaction)
-          end
-        end.resume
+        @@rules.each do |rule|
+          rule.aggregate(transaction)
+        end
       end
       
       # Makes sure that 1 day is the same as :day and so on.

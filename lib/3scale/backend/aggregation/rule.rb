@@ -69,7 +69,7 @@ module ThreeScale
           if granularity == :eternity
             "eternity"
           else
-            cycle = data[:created_at].beginning_of_cycle(granularity)
+            cycle = data[:timestamp].beginning_of_cycle(granularity)
             key_for(granularity => cycle.to_compact_s)
           end
         end

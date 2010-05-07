@@ -15,7 +15,7 @@ module Aggregation
     
     def test_increments_the_corresponding_stats_value
       rule = Aggregation::Rule.new(:service, :granularity => :day)
-      time = Time.local(2010, 5, 6, 12, 30)
+      time = Time.utc(2010, 5, 6, 12, 30)
       transaction = build_transaction_at(time)
       key = storage_key(:day, time)
 
@@ -68,10 +68,10 @@ module Aggregation
     end
 
     def build_transaction_at(time)
-      {:service    => @service_id,
-       :cinstance  => @contract_id,
-       :usage      => NumericHash.new(@metric_id => 1),
-       :created_at => time}
+      {:service   => @service_id,
+       :cinstance => @contract_id,
+       :usage     => NumericHash.new(@metric_id => 1),
+       :timestamp => time}
     end
   end
 end

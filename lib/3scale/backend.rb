@@ -3,6 +3,7 @@ ENV['RACK_ENV'] ||= 'development'
 require 'eventmachine'
 require 'em-redis'
 require 'fiber'
+require 'time'
 require 'yaml'
 
 module ThreeScale
