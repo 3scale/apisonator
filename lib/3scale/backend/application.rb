@@ -1,8 +1,3 @@
-require '3scale/backend/actions/authorize'
-require '3scale/backend/actions/report'
-
-require '3scale/backend/route'
-
 module ThreeScale
   module Backend
     class Application

@@ -4,32 +4,29 @@ class TransactorTest < Test::Unit::TestCase
   include TestHelpers::EventMachine
 
   def setup
-    @provider_account = Factory(:provider_account)
-    @service = Factory(:service, :account => @provider_account)
-    @plan = Factory(:plan, :service => @service)
-    @metric = @service.metrics.hits
+    @provider_key = 'key0001'
+    @service_id = 1
+    @metric_id  = 2001
 
-    @buyer_account_one = Factory(:buyer_account, :provider_account => @provider_account)
-    @buyer_account_two = Factory(:buyer_account, :provider_account => @provider_account)
+    @contract_one_id = 1001
+    @contract_two_id = 1002
 
-    @contract_one = Factory(:contract, :plan => @plan, :buyer_account => @buyer_account_one)
-    @contract_two = Factory(:contract, :plan => @plan, :buyer_account => @buyer_account_two)
-
-    @user_key_one = @contract_one.user_key
-    @user_key_two = @contract_two.user_key
-
+    @user_key_one = 'key1001'
+    @user_key_two = 'key1002'
+    
     @storage = ThreeScale::Backend.storage
     @storage.flushdb
+
+    @storage.set("service_id/provider_key:#{@provider_key}", @service_id)
   end
   
   def test_report_increments_stats_counters
-    assert_change_in_stats :for => @contract_one, :by => 1 do
-      assert_change_in_stats :for => @contract_two, :by => 1 do
+    assert_change_in_stats :for => @contract_one_id, :by => 1 do
+      assert_change_in_stats :for => @contract_two_id, :by => 1 do
         Transactor.report(
-          :provider_key => @provider_account.api_key,
-          :transactions => {
-            '0' => {:user_key => @user_key_one, :usage => {'hits' => 1}},
-            '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}}})
+          @provider_key,
+          {'0' => {:user_key => @user_key_one, :usage => {'hits' => 1}},
+           '1' => {:user_key => @user_key_two, :usage => {'hits' => 1}}})
       end
     end
   end
@@ -37,8 +34,8 @@ class TransactorTest < Test::Unit::TestCase
   private
 
   def assert_change_in_stats(options, &block)
-    contract = options.delete(:for)
-    key = "stats/{service:#{@service.id}}/cinstance:#{contract.id}/metric:#{@metric.id}/eternity"
+    contract_id = options.delete(:for)
+    key = "stats/{service:#{@service_id}}/cinstance:#{contract_id}/metric:#{@metric_id}/eternity"
 
     options = options.dup
     options[:of] = lambda { @storage.get(key).to_i }

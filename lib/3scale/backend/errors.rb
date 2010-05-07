@@ -59,17 +59,17 @@ module ThreeScale
       # end
     end
 
-    # class MetricNotFound < Error
-    #   def initialize
-    #     super('provider.invalid_metric')
-    #   end
-    # end
+    class MetricNotFound < Error
+      # def initialize
+      #   super('provider.invalid_metric')
+      # end
+    end
 
-    # class UsageValueInvalid < Error
-    #   def initialize
-    #     super('provider.invalid_usage_value')
-    #   end
-    # end
+    class UsageValueInvalid < Error
+      # def initialize
+      #   super('provider.invalid_usage_value')
+      # end
+    end
 
     # class TransactionNotFound < Error
     #   def initialize
@@ -77,29 +77,29 @@ module ThreeScale
     #   end
     # end
 
-    # # This error can be raised in batch-processed transaction, where multiple transaction can
-    # # be invalid, but all have to be reported at the same time.
-    # class MultipleErrors < StandardError
-    #   attr_reader :codes
+    # This error can be raised in batch-processed transaction, where multiple transaction can
+    # be invalid, but all have to be reported at the same time.
+    class MultipleErrors < StandardError
+      attr_reader :codes
 
-    #   def initialize(codes)
-    #     @codes = codes
-    #   end
+      def initialize(codes)
+        @codes = codes
+      end
 
-    #   def message
-    #     codes.map { |index, code| "#{index}: #{ERRORS[code]}" }.join("\n")
-    #   end
+      # def message
+      #   codes.map { |index, code| "#{index}: #{ERRORS[code]}" }.join("\n")
+      # end
 
-    #   def to_xml(options = {})
-    #     xml = Builder::XmlMarkup.new
-    #     xml.instruct! unless options[:skip_instruct]
-    #     xml.errors do
-    #       codes.each do |index, code|
-    #         xml.error ERRORS[code], :id => code, :index => index
-    #       end
-    #     end
-    #     xml.target!
-    #   end
-    # end
+      # def to_xml(options = {})
+      #   xml = Builder::XmlMarkup.new
+      #   xml.instruct! unless options[:skip_instruct]
+      #   xml.errors do
+      #     codes.each do |index, code|
+      #       xml.error ERRORS[code], :id => code, :index => index
+      #     end
+      #   end
+      #   xml.target!
+      # end
+    end
   end
 end

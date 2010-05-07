@@ -11,7 +11,7 @@ module TestHelpers
     def assert_change(options)
       raise ArgumentError, 'The :of options has to be set to a proc that returns a value whose change is begin asserted' unless options[:of] && options[:of].respond_to?(:call)
 
-      old_value = options[:of].bind(self).call
+      old_value = options[:of].call
 
       if options.has_key?(:from)
         assert_equal options[:from], old_value,
@@ -20,7 +20,7 @@ module TestHelpers
 
       yield
 
-      new_value = options[:of].bind(self).call
+      new_value = options[:of].call
 
       if options.has_key?(:to)
         assert_equal options[:to], new_value,

@@ -1,3 +1,5 @@
+require '3scale/backend/aggregation'
+
 ThreeScale::Backend::Aggregation.define do |rules|
   rules.add :service, :granularity => :eternity
   rules.add :service, :granularity => :month

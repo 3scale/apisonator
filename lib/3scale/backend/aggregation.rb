@@ -47,5 +47,3 @@ module ThreeScale
     end
   end
 end
-
-require '3scale/backend/aggregation/configuration'

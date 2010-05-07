@@ -13,9 +13,5 @@ module ThreeScale
   end
 end
 
-require '3scale/backend/configuration'
-require '3scale/backend/errors'
-require '3scale/backend/application'
-require '3scale/backend/numeric_hash'
-require '3scale/backend/storage'
-require '3scale/backend/time_hacks'
+# Load all source files.
+Dir[File.dirname(__FILE__) + '/**/*.rb'].each { |file| require file }

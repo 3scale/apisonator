@@ -29,7 +29,7 @@ module ThreeScale
       end
       
       def encode_key(key)
-        key.to_param.to_s.gsub(/\s/, '+')
+        key.to_s.gsub(/\s/, '+')
       end
 
       def decode_key(key)
