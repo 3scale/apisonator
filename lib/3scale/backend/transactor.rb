@@ -109,8 +109,7 @@ module ThreeScale
       def process_transactions(transactions)
         transactions.each do |transaction|
           Aggregation.aggregate(transaction)
-
-          # TODO: archive                                    
+          Archiver.append(transaction)
         end
       end
 

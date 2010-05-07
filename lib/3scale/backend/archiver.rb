@@ -1,0 +1,140 @@
+module ThreeScale
+  module Backend
+    class Archiver
+      def self.append(transaction)
+        new.append(transaction)
+      end
+
+      def self.store(options = {})
+        new.store(options)
+      end
+
+      def self.cleanup
+        new.cleanup
+      end
+
+      def append(transaction)
+        # TODO: async this.
+
+        path = path_for(transaction)
+        ensure_directory_exists(File.dirname(path))
+
+        File.open(path, 'a') do |io|
+          serialize(io, transaction)
+        end
+      end
+
+      # Collects all completed temporary files and sends them to a remote storage.
+      #
+      # == Options
+      #
+      # +storage+:: what storage to use. Default is S3Storage which stores the data on Amazon's S3
+      # +tag+::     some string that will be appended to the name of the file on the remote
+      #             storage. This is useful if there are multiple machines using the same storage,
+      #             so each machine can use an unique tag (it's hostname for example).
+      #  
+      def store(options = {})
+        options.assert_required_keys(:tag)
+
+        storage = options[:storage] || S3Storage.new(configuration[:s3_bucket])
+        tag     = options[:tag]
+
+        each_file_to_store do |file|
+          provider_id, date = extract_provider_id_and_date(file)
+
+          File.open(file, 'r') do |source_io|
+            content = complete_and_compress(source_io, provider_id)
+            storage.store(name_for_storage(provider_id, date, tag), content)
+          end
+        end
+      end
+
+      def cleanup
+        each_file_to_cleanup do |file|
+          File.delete(file)
+        end
+      end
+
+      private
+      
+      def configuration
+        ThreeScale::Backend.configuration.archiver || {}
+      end
+
+      def path_for(transaction)
+        date = transaction[:timestamp].strftime('%Y%m%d')
+
+        "#{root}/service-#{transaction[:service]}/#{date}.xml.part"
+      end
+
+      def root
+        configuration['path']
+      end
+
+      def ensure_directory_exists(dir)
+        FileUtils.mkdir_p(dir)
+      end
+
+      def serialize(io, transaction)
+        builder = Builder::XmlMarkup.new(:target => io)
+        builder.transaction do
+
+          builder.contract_id transaction[:cinstance]
+          builder.timestamp   transaction[:timestamp].strftime('%Y-%m-%d %H:%M:%S')
+          builder.ip          transaction[:client_ip] if transaction[:client_ip]
+
+          builder.values do
+            transaction[:usage].each do |metric_id, value|
+              builder.value value, 'metric_id' => metric_id
+            end
+          end
+        end
+      end
+
+      def each_file_to_store(&block)
+        each_partial_file_older_than(Time.zone.now.beginning_of_day, &block)
+      end
+      
+      def each_file_to_cleanup(&block)
+        each_partial_file_older_than((Time.zone.now - 1.day).beginning_of_day, &block)
+      end
+
+      def each_partial_file_older_than(time)
+        Dir["#{root}/**/*.xml.part"].each do |file|
+          file_time = Time.zone.parse(file[/([^\/\.]+)\.xml\.part$/, 1])
+
+          yield(file) if file_time < time
+        end
+      end
+
+      def extract_provider_id_and_date(file)
+        file =~ /([^\/\.]+)\/([^\/\.]+)\.xml\.part$/
+        [$1, $2]
+      end
+
+      def name_for_storage(provider_id, date, tag)
+        "#{provider_id}/#{date}/#{tag}.xml.gz"
+      end
+      
+      CHUNK_SIZE = 1024
+
+      def complete_and_compress(source_io, provider_id)
+        buffer  = ''
+        gzip_io = Zlib::GzipWriter.new(StringIO.new(buffer))
+
+        builder = Builder::XmlMarkup.new(:target => gzip_io)
+        builder.instruct!
+
+        builder.transactions(:provider_id => provider_id) do
+          while chunk = source_io.read(CHUNK_SIZE)
+            gzip_io.write(chunk)
+          end
+        end
+
+        buffer
+      ensure
+        gzip_io.close rescue nil
+      end
+    end
+  end
+end

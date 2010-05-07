@@ -1,5 +1,6 @@
 ENV['RACK_ENV'] ||= 'development'
 
+require 'builder'
 require 'eventmachine'
 require 'em-redis'
 require 'fiber'

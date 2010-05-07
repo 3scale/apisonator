@@ -5,14 +5,14 @@ class TransactorTest < Test::Unit::TestCase
 
   def setup
     @provider_key = 'key0001'
-    @service_id = '1'
+    @service_id = '1001'
     @metric_id  = '2001'
 
-    @contract_id_one = '1001'
-    @contract_id_two = '1002'
+    @contract_id_one = '4001'
+    @contract_id_two = '4002'
 
-    @user_key_one = 'key1001'
-    @user_key_two = 'key1002'
+    @user_key_one = 'key4001'
+    @user_key_two = 'key4002'
     
     @storage = ThreeScale::Backend.storage
     @storage.flushdb
@@ -56,9 +56,35 @@ class TransactorTest < Test::Unit::TestCase
                                            'usage' => {'hits' => 1},
                                            'timestamp' => '2010-05-07 18:11:25'})
   end
+  
+  def test_report_handles_transactions_with_local_timestamps
+    Aggregation.expects(:aggregate).with(
+      has_entry(:timestamp => Time.utc(2010, 5, 7, 11, 11, 25)))
+
+    Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
+                                           'usage' => {'hits' => 1},
+                                           'timestamp' => '2010-05-07 18:11:25 +07:00'})
+  end
 
   def test_report_archives
-    skip
+    time = Time.now
+
+    Archiver.expects(:append).with(:service   => @service_id,
+                                   :cinstance => @contract_id_one,
+                                   :timestamp => time,
+                                   :usage     => {@metric_id => 1})
+
+    Archiver.expects(:append).with(:service   => @service_id,
+                                   :cinstance => @contract_id_two,
+                                   :timestamp => time,
+                                   :usage     => {@metric_id => 1})
+
+    Timecop.freeze(time) do
+      Transactor.report(
+        @provider_key,
+        {'0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
+         '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}}})
+    end
   end
   
   def test_report_raises_an_exception_when_provider_key_is_invalid
@@ -198,22 +224,6 @@ class TransactorTest < Test::Unit::TestCase
 
 
 
-
-  # test 'reports transactions with timestamps in local time' do
-  #   time_zone  = ActiveSupport::TimeZone[8.hours]
-  #   time_there = Time.use_zone(time_zone) { time(2009, 7, 18, 11, 25) }
-  #   time_here  = time_there.in_time_zone(Time.zone)
-
-  #   assert_change_in_usage :cinstance => @cinstance_one,
-  #                          :period => :minute,
-  #                          :since => time_here,
-  #                          :by => 1 do
-  #     Transaction.report_multiple!(
-  #       @provider_account.id,
-  #       0 => {:user_key => @user_key_one, :usage => {'hits' => 1},
-  #             :timestamp => time_there.to_s})
-  #   end
-  # end
 
   # test 'reports transactions even when they exceed limits' do
   #   4.times do

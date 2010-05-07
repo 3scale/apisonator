@@ -1,10 +1,16 @@
 production:
 
 development:
+  archiver:
+    path: "/tmp/transactions"
+
   redis:
     db: 0
 
 test:
+  archiver:
+    path: "/tmp/transactions"
+
   redis:
     db: 1
 
