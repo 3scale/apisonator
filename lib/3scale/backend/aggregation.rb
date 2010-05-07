@@ -28,19 +28,21 @@ module ThreeScale
       
       # Run all defined aggregations with the given transactions.
       def self.aggregate(transaction)
-        rules.aggregate(transaction)
+        @@rules.each do |rule|
+          rule.aggregate(transaction)
+        end
       end
       
-      # Makes sure that 1.day is the same as :day and so on.
+      # Makes sure that 1 day is the same as :day and so on.
       def self.normalize_granularity(granularity)
         case granularity
-        when 1.week                                   then :week
-        when 1.day                                    then :day
-        when 1.hour                                   then :hour
-        when 1.minute                                 then :minute
-        when 1.second                                 then :second
-        when Symbol, Integer, ActiveSupport::Duration then granularity
-        when /\d+/                                    then granularity.to_i
+        when 7 * 24 * 60 * 60    then :week
+        when     24 * 60 * 60    then :day
+        when          60 * 60    then :hour
+        when               60    then :minute
+        when                1    then :second
+        when Symbol, Integer     then granularity
+        when /\d+/               then granularity.to_i
         else granularity.to_sym
         end
       end

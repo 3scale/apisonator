@@ -40,9 +40,9 @@ module ThreeScale
           source_value = data[source_name]
 
           key = source_set_key_prefix(data) + '/' +
-                source_name.to_s.pluralize.underscore
+                source_name.to_s + '_set'
 
-          storage.sadd(key, encode_key(source_value.to_param))
+          storage.sadd(key, encode_key(source_value.to_s))
         end
 
         def accumulator_key(data, metric_id)
