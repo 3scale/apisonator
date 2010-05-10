@@ -6,12 +6,12 @@ module ThreeScale
       include Storable
 
       def self.save(attributes = {})
-        storage.set(key_for(:service, :id, :provider_key => attributes[:provider_key]),
+        storage.set(encode_key("service/id/provider_key:#{attributes[:provider_key]}"),
                     attributes[:id])
       end
 
       def self.load_id(provider_key)
-        storage.get(key_for(:service, :id, :provider_key => provider_key))
+        storage.get(encode_key("service/id/provider_key:#{provider_key}"))
       end
     end
   end

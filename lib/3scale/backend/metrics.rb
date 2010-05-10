@@ -31,11 +31,11 @@ module ThreeScale
       # Save metrics into the storage.
       def save
         @metric_ids.each do |name, id|
-          storage.set(key_for(:metric, :id, {:service_id => @service_id}, {:name => name}), id)
+          storage.set(encode_key("metric/id/service_id:#{@service_id}/name:#{name}"), id)
         end
 
         @parent_ids.each do |id, parent_id|
-          storage.set(key_for(:metric, :parent_id, {:service_id => @service_id}, {:id => id}),
+          storage.set(encode_key("metric/parent_id/service_id:#{@service_id}/id:#{id}"),
                       parent_id)
         end
       end
@@ -99,7 +99,7 @@ module ThreeScale
       end
 
       def load_ancestor_id(id)
-        storage.get(key_for(:metric, :parent_id, {:service_id => @service_id}, {:id => id}))
+        storage.get(encode_key("metric/parent_id/service_id:#{@service_id}/id:#{id}"))
       end
 
       def metric_id(name)
@@ -107,7 +107,7 @@ module ThreeScale
       end
 
       def load_metric_id(name)
-        storage.get(key_for(:metric, :id, {:service_id => @service_id}, {:name => name}))
+        storage.get(encode_key("metric/id/service_id:#{@service_id}/name:#{name}"))
       end
 
       def sanitize_name(name)

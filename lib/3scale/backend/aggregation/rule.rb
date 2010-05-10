@@ -4,6 +4,12 @@ module ThreeScale
       class Rule
         include StorageKeyHelpers
 
+        # The storage key of the stats value consists of several name:value parts. The part
+        # with this name will be used as key tag. 
+        #
+        # Please refer to the redis docs for more info about key tags.
+        TAG = :service
+
         def initialize(*args, &block)
           @options = args.last.is_a?(Hash) ? args.pop : {}
           @keys = args
@@ -46,9 +52,9 @@ module ThreeScale
         end
 
         def accumulator_key(data, metric_id)
-          source_key_component(data, @keys) + '/' +
-            metric_key_component(metric_id) + '/' +
-            granularity_key_component(data)
+          encode_key(source_key_component(data, @keys) + '/' +
+                     metric_key_component(metric_id) + '/' +
+                     granularity_key_component(data))
         end
 
         def source_set_key_prefix(data)
@@ -57,12 +63,18 @@ module ThreeScale
 
         def source_key_component(data, keys)
           keys.inject(:stats) do |memo, name|
-            key_for(memo, name => data[name])
+            "#{memo}/#{tagify(name, data[name])}"
           end
         end
 
+        def tagify(name, value)
+          result = "#{name}:#{value}"
+          result = "{#{result}}" if name == TAG
+          result
+        end
+
         def metric_key_component(id)
-          key_for(:metric => id)
+          "metric:#{id}"
         end
 
         def granularity_key_component(data)
@@ -70,7 +82,7 @@ module ThreeScale
             "eternity"
           else
             cycle = data[:timestamp].beginning_of_cycle(granularity)
-            key_for(granularity => cycle.to_compact_s)
+            "#{granularity}:#{cycle.to_compact_s}"
           end
         end
 
