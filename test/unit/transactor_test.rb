@@ -17,14 +17,19 @@ class TransactorTest < Test::Unit::TestCase
     @storage = ThreeScale::Backend.storage
     @storage.flushdb
 
-    @storage.set("service/id/provider_key:#{@provider_key}", @service_id)
+    Service.save(:provider_key => @provider_key, :id => @service_id)
 
-    @storage.set(
-      "contract/id/service_id:#{@service_id}/user_key:#{@user_key_one}", @contract_id_one)
-    @storage.set(
-      "contract/id/service_id:#{@service_id}/user_key:#{@user_key_two}", @contract_id_two)
+    Contract.save(:service_id => @service_id,
+                  :user_key => @user_key_one,
+                  :id => @contract_id_one,
+                  :state => :live)
+    
+    Contract.save(:service_id => @service_id,
+                  :user_key => @user_key_two,
+                  :id => @contract_id_two,
+                  :state => :live)
 
-    Metrics.new(@metric_id => {:name => 'hits'}).save(@service_id)
+    Metrics.save(:service_id => @service_id, @metric_id => {:name => 'hits'})
   end
   
   def test_report_aggregates
@@ -127,7 +132,9 @@ class TransactorTest < Test::Unit::TestCase
   end
   
   def test_raises_an_exception_when_the_contract_is_not_active
-    @storage.set("contract/state/service_id:#{@service_id}/id:#{@contract_id_one}", 'suspended')
+    contract = Contract.load(@service_id, @user_key_one)
+    contract.state = :suspended
+    contract.save
 
     begin
       Transactor.report(

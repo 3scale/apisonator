@@ -17,8 +17,8 @@ module ThreeScale
 
         group_by_user_key(raw_transactions) do |user_key, grouped_transactions|
           begin
-            contract_data = load_contract_data(service_id, user_key)
-            validate_contract_state(contract_data)
+            contract = load_contract(service_id, user_key)
+            validate_contract_state(contract)
 
             usages = process_usages(service_id, grouped_transactions)
 
@@ -27,7 +27,7 @@ module ThreeScale
             grouped_transactions.each do |transaction|
               transactions << {
                 :service_id  => service_id,
-                :contract_id => contract_data[:id],
+                :contract_id => contract.id,
                 :timestamp   => parse_timestamp(transaction['timestamp']),
                 :usage       => usages[transaction['index']]}
             end
@@ -50,20 +50,11 @@ module ThreeScale
       private
 
       def load_service_id(provider_key)
-        result = storage.get(key_for(:service, :id, :provider_key => provider_key))
-        result || raise(ProviderKeyInvalid)
+        Service.load_id(provider_key) || raise(ProviderKeyInvalid)
       end
 
-      def load_contract_data(service_id, user_key)
-        # TODO: minimize number of redis hits here.
-
-        id = storage.get(
-          key_for(:contract, :id, {:service_id => service_id}, {:user_key => user_key}))
-        id || raise(UserKeyInvalid)
-
-        state = storage.get(key_for(:contract, :state, {:service_id => service_id}, {:id => id}))
-
-        {:id => id, :state => state}
+      def load_contract(service_id, user_key)
+        Contract.load(service_id, user_key) || raise(UserKeyInvalid)
       end
       
       def group_by_user_key(transactions, &block)
@@ -74,8 +65,8 @@ module ThreeScale
         end.each(&block)
       end
 
-      def validate_contract_state(contract_data)
-        if contract_data[:state] && contract_data[:state] != 'live'
+      def validate_contract_state(contract)
+        if contract.state && contract.state != :live
           raise ContractNotActive
         end
       end

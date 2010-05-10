@@ -80,10 +80,9 @@ class MetricsTest < Test::Unit::TestCase
   end
 
   def test_save
-    metrics = Metrics.new(2001 => {:name     => 'hits', 
-                                   :children => {2002 => {:name => 'search_queries'}}},
-                          2003 => {:name     => 'transfer'})
-    metrics.save(@service_id)
+    Metrics.save(:service_id => @service_id,
+                 2001 => {:name => 'hits', :children => {2002 => {:name => 'search_queries'}}},
+                 2003 => {:name => 'transfer'})
 
     assert_equal '2001', @storage.get("metric/id/service_id:#{@service_id}/name:hits")
     assert_equal '2002', @storage.get("metric/id/service_id:#{@service_id}/name:search_queries")

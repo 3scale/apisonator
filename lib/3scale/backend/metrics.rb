@@ -3,33 +3,39 @@ require '3scale/backend/storage_key_helpers'
 module ThreeScale
   module Backend
     class Metrics
-      include StorageKeyHelpers
+      include Storable
 
-      # Load metrics associated to the given service id.
-      def self.load(service_id)
-        new({}, service_id)
-      end
+      def initialize(attributes = {})
+        attributes = attributes.dup
 
-      def initialize(metrics = {}, service_id = nil)
-        @service_id = service_id
+        @service_id = attributes.delete(:service_id)
         @metric_ids = {}
         @parent_ids = {}
 
-        metrics.each do |id, attributes|
-          initialize_metric(id, attributes)
+        attributes.each do |id, metric_attributes|
+          initialize_metric(id, metric_attributes)
         end
+      end
+      
+      # Load metrics associated to the given service id.
+      def self.load(service_id)
+        new(:service_id => service_id)
+      end
+
+      def self.save(attributes)
+        metrics = new(attributes)
+        metrics.save
+        metrics
       end
 
       # Save metrics into the storage.
-      def save(service_id)
-        @service_id = service_id
-
+      def save
         @metric_ids.each do |name, id|
-          storage.set(key_for(:metric, :id, {:service_id => service_id}, {:name => name}), id)
+          storage.set(key_for(:metric, :id, {:service_id => @service_id}, {:name => name}), id)
         end
 
         @parent_ids.each do |id, parent_id|
-          storage.set(key_for(:metric, :parent_id, {:service_id => service_id}, {:id => id}),
+          storage.set(key_for(:metric, :parent_id, {:service_id => @service_id}, {:id => id}),
                       parent_id)
         end
       end
@@ -121,10 +127,6 @@ module ThreeScale
           @parent_ids[child_id.to_s] = id
           initialize_metric(child_id, child_attributes)
         end
-      end
-
-      def storage
-        ThreeScale::Backend.storage
       end
     end
   end
