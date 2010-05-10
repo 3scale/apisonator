@@ -1,5 +1,6 @@
 ENV['RACK_ENV'] ||= 'development'
 
+require 'aws/s3'
 require 'builder'
 require 'eventmachine'
 require 'em-redis'

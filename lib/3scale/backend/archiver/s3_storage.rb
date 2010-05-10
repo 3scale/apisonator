@@ -4,13 +4,15 @@ module ThreeScale
       class S3Storage
         def initialize(bucket_name)
           @bucket_name = bucket_name
-          raise ArgumentError, 'bucket_name is missing' if @bucket_name.blank?
-
           establish_connection
         end
 
         def store(name, content)
           AWS::S3::S3Object.store(name, content, @bucket_name)
+        end
+
+        def create_bucket
+          AWS::S3::Bucket.create(@bucket_name)
         end
 
         private
@@ -20,7 +22,7 @@ module ThreeScale
             options = ThreeScale::Backend.configuration.aws
 
             # symbolize keys
-            options = options.inject({}) do |memo, key, value|
+            options = options.inject({}) do |memo, (key, value)|
               memo.update(key.to_sym => value)
             end
 

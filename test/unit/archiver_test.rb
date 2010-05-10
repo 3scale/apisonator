@@ -1,5 +1,4 @@
 require File.dirname(__FILE__) + '/../test_helper'
-require 'nokogiri'
 
 class ArchiverTest < Test::Unit::TestCase
   def setup
@@ -104,6 +103,9 @@ class ArchiverTest < Test::Unit::TestCase
                  :timestamp   => Time.utc(2010, 4, 12, 23, 19))
 
     Timecop.freeze(2010, 4, 13, 12, 30) do
+      name = nil
+      content = nil
+
       storage = stub('storage')
       storage.expects(:store).with('service-4001/20100412/foo.xml.gz', anything)
 
@@ -132,21 +134,31 @@ class ArchiverTest < Test::Unit::TestCase
                  :timestamp   => Time.utc(2010, 4, 12, 23, 19))
 
     Timecop.freeze(2010, 4, 13, 12, 30) do
-      storage = Archiver::MemoryStorage.new
+      name = nil
+      content = nil
+
+      storage = stub('storage')
+      storage.expects(:store).with do |*args|
+        name, content = *args
+        true
+      end
       
       Archiver.store(:storage => storage, :tag => 'foo')
 
-      raw_content = storage['service-4001/20100412/foo.xml.gz']
-
       begin
-        gzip_io = Zlib::GzipReader.new(StringIO.new(raw_content))
+        gzip_io = Zlib::GzipReader.new(StringIO.new(content))
         content = gzip_io.read
       ensure
         gzip_io.close rescue nil
       end
 
       doc = Nokogiri::XML(content)
-      assert_not_nil doc.at('transactions:root[service_id = "4001"]')
+      node = doc.at('transactions:root[service_id = "4001"] transaction')
+
+      assert_not_nil node
+      assert_equal '5002', node.at('contract_id').content
+      assert_equal '1', node.at('values value[metric_id = "6001"]').content
+      assert_equal '2010-04-12 23:19:00', node.at('timestamp').content
     end
   end
 

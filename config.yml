@@ -1,4 +1,8 @@
 production:
+  archiver:
+    path: "/tmp/transactions"
+    s3_bucket: "s3_bucket"
+
   aws: &AWS
     access_key_id:     "aws_access_key_id2"
     secret_access_key: "secret_access_key"
@@ -6,9 +10,11 @@ production:
   redis:
     db: 0
 
+
 development:
   archiver:
     path: "/tmp/transactions"
+    s3_bucket: "s3_bucket"
 
   redis:
     db: 1
@@ -19,11 +25,12 @@ development:
 test:
   archiver:
     path: "/tmp/transactions"
+    s3_bucket: "s3_bucket"
 
   redis:
     db: 2
 
   aws:
-    access_key_id:     invalid
+    access_key_id: invalid
     secret_access_key: invalid
 

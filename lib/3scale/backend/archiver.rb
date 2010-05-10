@@ -37,7 +37,7 @@ module ThreeScale
       def store(options = {})
         raise ArgumentError ':tag is missing' unless options[:tag]
 
-        storage = options[:storage] || S3Storage.new(configuration[:s3_bucket])
+        storage = options[:storage] || S3Storage.new(configuration['s3_bucket'])
         tag     = options[:tag]
 
         each_file_to_store do |file|

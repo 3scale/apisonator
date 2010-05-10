@@ -4,7 +4,7 @@ module TestHelpers
     include Rack::Test::Methods
   
     def app
-      Application
+      ThreeScale::Backend::Application
     end
   end
 end

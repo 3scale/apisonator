@@ -5,6 +5,7 @@ require 'rubygems'
 require 'test/unit'
 require 'fakefs/safe'
 require 'mocha'
+require 'nokogiri'
 require 'rack/test'
 require 'timecop'
 
