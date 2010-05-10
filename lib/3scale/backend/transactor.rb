@@ -26,10 +26,10 @@ module ThreeScale
 
             grouped_transactions.each do |transaction|
               transactions << {
-                :service   => service_id,
-                :cinstance => contract_data[:id],
-                :timestamp => parse_timestamp(transaction['timestamp']),
-                :usage     => usages[transaction['index']]}
+                :service_id  => service_id,
+                :contract_id => contract_data[:id],
+                :timestamp   => parse_timestamp(transaction['timestamp']),
+                :usage       => usages[transaction['index']]}
             end
           rescue MultipleErrors => exception
             errors.merge!(exception.codes)
@@ -107,10 +107,23 @@ module ThreeScale
       end
 
       def process_transactions(transactions)
+        # OPTIMIZE: Maybe run this in new fiber?
         transactions.each do |transaction|
-          Aggregation.aggregate(transaction)
-          Archiver.append(transaction)
+          aggregate_transaction(transaction)
+          archive_transaction(transaction)
         end
+      end
+
+      def aggregate_transaction(transaction)
+        # Rename some fields, for backward compatibility.
+        Aggregation.aggregate(:service   => transaction[:service_id],
+                              :cinstance => transaction[:contract_id],
+                              :timestamp => transaction[:timestamp],
+                              :usage     => transaction[:usage])
+      end
+
+      def archive_transaction(transaction)
+        Archiver.add(transaction)
       end
 
       def storage

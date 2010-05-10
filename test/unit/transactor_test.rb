@@ -69,15 +69,15 @@ class TransactorTest < Test::Unit::TestCase
   def test_report_archives
     time = Time.now
 
-    Archiver.expects(:append).with(:service   => @service_id,
-                                   :cinstance => @contract_id_one,
-                                   :timestamp => time,
-                                   :usage     => {@metric_id => 1})
+    Archiver.expects(:add).with(:service_id  => @service_id,
+                                :contract_id => @contract_id_one,
+                                :timestamp   => time,
+                                :usage       => {@metric_id => 1})
 
-    Archiver.expects(:append).with(:service   => @service_id,
-                                   :cinstance => @contract_id_two,
-                                   :timestamp => time,
-                                   :usage     => {@metric_id => 1})
+    Archiver.expects(:add).with(:service_id  => @service_id,
+                                :contract_id => @contract_id_two,
+                                :timestamp   => time,
+                                :usage       => {@metric_id => 1})
 
     Timecop.freeze(time) do
       Transactor.report(

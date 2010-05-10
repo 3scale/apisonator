@@ -6,6 +6,7 @@ require 'em-redis'
 require 'fiber'
 require 'time'
 require 'yaml'
+require 'zlib'
 
 module ThreeScale
   module Backend

@@ -1,8 +1,8 @@
 module ThreeScale
   module Backend
     class Archiver
-      def self.append(transaction)
-        new.append(transaction)
+      def self.add(transaction)
+        new.add(transaction)
       end
 
       def self.store(options = {})
@@ -13,7 +13,8 @@ module ThreeScale
         new.cleanup
       end
 
-      def append(transaction)
+      # Add the transaction to the archive.
+      def add(transaction)
         # TODO: async this.
 
         path = path_for(transaction)
@@ -34,17 +35,17 @@ module ThreeScale
       #             so each machine can use an unique tag (it's hostname for example).
       #  
       def store(options = {})
-        options.assert_required_keys(:tag)
+        raise ArgumentError ':tag is missing' unless options[:tag]
 
         storage = options[:storage] || S3Storage.new(configuration[:s3_bucket])
         tag     = options[:tag]
 
         each_file_to_store do |file|
-          provider_id, date = extract_provider_id_and_date(file)
+          service_id, date = extract_service_id_and_date(file)
 
           File.open(file, 'r') do |source_io|
-            content = complete_and_compress(source_io, provider_id)
-            storage.store(name_for_storage(provider_id, date, tag), content)
+            content = complete_and_compress(source_io, service_id)
+            storage.store(name_for_storage(service_id, date, tag), content)
           end
         end
       end
@@ -64,7 +65,7 @@ module ThreeScale
       def path_for(transaction)
         date = transaction[:timestamp].strftime('%Y%m%d')
 
-        "#{root}/service-#{transaction[:service]}/#{date}.xml.part"
+        "#{root}/service-#{transaction[:service_id]}/#{date}.xml.part"
       end
 
       def root
@@ -76,10 +77,11 @@ module ThreeScale
       end
 
       def serialize(io, transaction)
+        # OPTIMIZE: run this 
         builder = Builder::XmlMarkup.new(:target => io)
         builder.transaction do
 
-          builder.contract_id transaction[:cinstance]
+          builder.contract_id transaction[:contract_id]
           builder.timestamp   transaction[:timestamp].strftime('%Y-%m-%d %H:%M:%S')
           builder.ip          transaction[:client_ip] if transaction[:client_ip]
 
@@ -92,40 +94,40 @@ module ThreeScale
       end
 
       def each_file_to_store(&block)
-        each_partial_file_older_than(Time.zone.now.beginning_of_day, &block)
+        each_partial_file_older_than(Time.now.beginning_of_day, &block)
       end
       
       def each_file_to_cleanup(&block)
-        each_partial_file_older_than((Time.zone.now - 1.day).beginning_of_day, &block)
+        each_partial_file_older_than((Time.now - Time::ONE_DAY).beginning_of_day, &block)
       end
 
       def each_partial_file_older_than(time)
         Dir["#{root}/**/*.xml.part"].each do |file|
-          file_time = Time.zone.parse(file[/([^\/\.]+)\.xml\.part$/, 1])
+          file_time = Time.parse_to_utc(file[/([^\/\.]+)\.xml\.part$/, 1])
 
           yield(file) if file_time < time
         end
       end
 
-      def extract_provider_id_and_date(file)
-        file =~ /([^\/\.]+)\/([^\/\.]+)\.xml\.part$/
+      def extract_service_id_and_date(file)
+        file =~ /service\-([^\/\.]+)\/([^\/\.]+)\.xml\.part$/
         [$1, $2]
       end
 
-      def name_for_storage(provider_id, date, tag)
-        "#{provider_id}/#{date}/#{tag}.xml.gz"
+      def name_for_storage(service_id, date, tag)
+        "service-#{service_id}/#{date}/#{tag}.xml.gz"
       end
       
       CHUNK_SIZE = 1024
 
-      def complete_and_compress(source_io, provider_id)
+      def complete_and_compress(source_io, service_id)
         buffer  = ''
         gzip_io = Zlib::GzipWriter.new(StringIO.new(buffer))
 
         builder = Builder::XmlMarkup.new(:target => gzip_io)
         builder.instruct!
 
-        builder.transactions(:provider_id => provider_id) do
+        builder.transactions(:service_id => service_id) do
           while chunk = source_io.read(CHUNK_SIZE)
             gzip_io.write(chunk)
           end
