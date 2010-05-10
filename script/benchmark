@@ -1,0 +1,74 @@
+#! /usr/bin/env ruby
+
+require 'optparse'
+
+postfile    = nil
+requests    = 1
+concurrency = 1
+
+OptionParser.new do |options|
+  options.on('-p PATH', 'File containing data to POST') do |value|
+    postfile = value
+  end
+
+  options.on('-n NUMBER', Integer, 'Number of requests to perform') do |value|
+    requests = value
+  end
+  
+  options.on('-c NUMBER', Integer, 'Number of concurrent requests to make') do |value|
+    concurrency = value
+  end
+
+  options.parse!
+end
+
+require 'rubygems'
+require 'rack/utils'
+
+$:.unshift(File.expand_path(File.dirname(__FILE__) + '/../lib'))
+require '3scale/backend'
+include ThreeScale::Backend
+
+include Rack::Utils
+payload = File.read(postfile)
+params = parse_nested_query(payload)
+
+# Create stuff
+EM.run do
+  Fiber.new do
+    storage = ThreeScale::Backend.storage
+    storage.flushdb
+
+    # Create service
+    provider_key = params['provider_key']
+    service_id   = 1001
+    Service.save(:provider_key => provider_key, :id => service_id)
+
+    # Create metrics
+    Metrics.save(:service_id => service_id, 8001 => {:name => 'hits'})
+
+    # Create contracts
+    user_keys = []   
+    params['transactions'].values.each do |transaction|
+      user_keys << transaction['user_key']
+    end
+    user_keys.uniq!
+
+    user_keys.each_with_index do |key, index|
+      Contract.save(:service_id => service_id, :user_key => key,
+                    :id => index + 2000, :state => :live)
+    end
+
+    EM.stop
+  end.resume
+end
+
+# Run server
+system("thin -R 3scale_backend.ru -e development -d start")
+sleep(1)
+
+# Run ab
+system("ab -n #{requests} -c #{concurrency} -p #{postfile} -T application/x-www-form-urlencoded http://0.0.0.0:3000/transactions.xml")
+
+# Stop server
+system("thin -R 3scale_backend.ru stop")
