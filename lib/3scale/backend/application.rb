@@ -8,6 +8,7 @@ module ThreeScale
       def initialize
         route :post, '/transactions.xml',           Actions::Report
         route :get,  '/transactions/authorize.xml', Actions::Authorize
+        route :get,  '/check.txt',                  Actions::Check
       end
 
       def call(env)

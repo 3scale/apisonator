@@ -4,12 +4,14 @@ class ApplicationTest < Test::Unit::TestCase
   include TestHelpers::Integration
 
   def test_on_invalid_path_responds_with_404
-    post '/foo.html'
-    assert_equal 404, last_response.status
+    async_post '/foo.html' do |response|
+      assert_equal 404, response.status
+    end
   end
 
   def test_on_invalid_http_method_responds_with_404
-    get '/transactions.xml'
-    assert_equal 404, last_response.status
+    async_get '/transactions.xml' do |response|
+      assert_equal 404, response.status
+    end
   end
 end

@@ -11,7 +11,7 @@ module ThreeScale
       def call(env)
         Fiber.new do
           response = perform(Rack::Request.new(env))
-          env['async.callback'].call(response)
+          env['async.callback'].call(*response)
         end.resume
 
         ASYNC_RESPONSE
