@@ -7,6 +7,8 @@ module ThreeScale
                             request.params['transactions'])
 
           [200, {}, []]
+        rescue Error => exception
+          [403, {'Content-Type' => 'application/xml'}, [exception.to_xml]]
         end
       end
     end

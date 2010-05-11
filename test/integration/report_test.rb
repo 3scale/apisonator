@@ -66,5 +66,18 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(key_hour).to_i
   end
 
+  def test_failed_report_responds_with_errors
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:user_key => 'boo', :usage => {'hits' => 1}}}
 
+    assert_equal 'application/xml', last_response.headers['Content-Type']
+    
+    doc = Nokogiri::XML(last_response.body)
+    node = doc.at('errors:root error[index = "0"]')
+
+    assert_not_nil node
+    assert_equal 'user.invalid_key', node['code']
+    assert_equal 'user_key is invalid', node.content
+  end
 end
