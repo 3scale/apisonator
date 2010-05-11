@@ -4,8 +4,7 @@ class CheckTest < Test::Unit::TestCase
   include TestHelpers::Integration
 
   def test_check
-    async_get '/check.txt' do
-      assert_equal 200, last_response.status
-    end
+    get '/check.txt'
+    assert_equal 200, last_response.status
   end
 end

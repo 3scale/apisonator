@@ -21,11 +21,11 @@ class ReportTest < Test::Unit::TestCase
   end
 
   def test_successful_report_responds_with_200
-    async_post '/transactions.xml',
+    post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}} do
-      assert_equal 200, last_response.status
-    end
+      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+
+    assert_equal 200, last_response.status
   end
   
   def test_successful_report_increments_the_stats_counters
@@ -33,12 +33,38 @@ class ReportTest < Test::Unit::TestCase
     key_day   = "stats/{service:#{@service_id}}/cinstance:#{@contract_id}/metric:#{@metric_id}/day:20100510"
 
     Timecop.freeze(2010, 5, 10, 17, 36) do
-      async_post '/transactions.xml',
+      post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}} do
-        assert_equal 1, @storage.get(key_month).to_i
-        assert_equal 1, @storage.get(key_day).to_i
-      end
+        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+
+      assert_equal 1, @storage.get(key_month).to_i
+      assert_equal 1, @storage.get(key_day).to_i
     end
   end
+
+  def test_successful_report_with_utc_timestamped_transactions
+    key_hour = "stats/{service:#{@service_id}}/metric:#{@metric_id}/hour:2010051113"
+
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:user_key  => @user_key,
+                              :usage     => {'hits' => 1},
+                              :timestamp => '2010-05-11 13:34:42'}}
+
+    assert_equal 1, @storage.get(key_hour).to_i
+  end
+  
+  def test_successful_report_with_local_timestamped_transactions
+    key_hour = "stats/{service:#{@service_id}}/metric:#{@metric_id}/hour:2010051113"
+
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:user_key  => @user_key,
+                              :usage     => {'hits' => 1},
+                              :timestamp => '2010-05-11 11:08:25 -02:00'}}
+
+    assert_equal 1, @storage.get(key_hour).to_i
+  end
+
+
 end
