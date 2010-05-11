@@ -98,11 +98,13 @@ module ThreeScale
       end
 
       def process_transactions(transactions)
-        # OPTIMIZE: Maybe run this in new fiber?
-        transactions.each do |transaction|
-          aggregate_transaction(transaction)
-          archive_transaction(transaction)
-        end
+        # TODO: not sure if I should run this in new fiber or not.
+        # Fiber.new do
+          transactions.each do |transaction|
+            aggregate_transaction(transaction)
+            archive_transaction(transaction)
+          end
+        # end.resume
       end
 
       def aggregate_transaction(transaction)

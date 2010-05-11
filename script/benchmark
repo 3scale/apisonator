@@ -64,11 +64,15 @@ EM.run do
 end
 
 # Run server
-system("thin -R 3scale_backend.ru -e development -d start")
+system("thin -da 127.0.0.1 -R 3scale_backend.ru -e development start")
 sleep(1)
 
 # Run ab
-system("ab -n #{requests} -c #{concurrency} -p #{postfile} -T application/x-www-form-urlencoded http://0.0.0.0:3000/transactions.xml")
+system("ab -n #{requests} -c #{concurrency} -p #{postfile} -T application/x-www-form-urlencoded http://127.0.0.1:3000/transactions.xml")
+
+sleep(1)
 
 # Stop server
 system("thin -R 3scale_backend.ru stop")
+
+# TODO: Maybe check if the traffic was registered?
