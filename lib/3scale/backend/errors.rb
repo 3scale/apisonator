@@ -20,12 +20,15 @@ module ThreeScale
         @code = code
       end
 
-      # def to_xml(options = {})
-      #   xml = Builder::XmlMarkup.new
-      #   xml.instruct! unless options[:skip_instruct]
-      #   xml.error(message, :id => code)
-      #   xml.target!
-      # end
+      def to_xml(options = {})
+        xml = Builder::XmlMarkup.new
+        xml.instruct! unless options[:skip_instruct]
+        xml.errors do
+          xml.error(message, :code => code)
+        end
+
+        xml.target!
+      end
     end
     
     class UserKeyInvalid < SingleError

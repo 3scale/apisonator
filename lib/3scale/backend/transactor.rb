@@ -11,13 +11,16 @@ module ThreeScale
       end
 
       def report(provider_key, raw_transactions)
-        service_id = load_service_id(provider_key)
+        report_backend_hit(provider_key, 'transactions/create_multiple' => 1,
+                                         'transactions' => raw_transactions.size)
+
+        service_id = Service.load_id(provider_key) || raise(ProviderKeyInvalid)
         errors = {}
         transactions = []
 
         group_by_user_key(raw_transactions) do |user_key, grouped_transactions|
           begin
-            contract = load_contract(service_id, user_key)
+            contract = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
             validate_contract_state(contract)
 
             usages = process_usages(service_id, grouped_transactions)
@@ -48,14 +51,6 @@ module ThreeScale
       end
 
       private
-
-      def load_service_id(provider_key)
-        Service.load_id(provider_key) || raise(ProviderKeyInvalid)
-      end
-
-      def load_contract(service_id, user_key)
-        Contract.load(service_id, user_key) || raise(UserKeyInvalid)
-      end
       
       def group_by_user_key(transactions, &block)
         transactions.map do |index, transaction|
@@ -99,12 +94,14 @@ module ThreeScale
 
       def process_transactions(transactions)
         # TODO: not sure if I should run this in new fiber or not.
-        # Fiber.new do
-          transactions.each do |transaction|
-            aggregate_transaction(transaction)
-            archive_transaction(transaction)
-          end
-        # end.resume
+        transactions.each do |transaction|
+          process_transaction(transaction)
+        end
+      end
+
+      def process_transaction(transaction)
+        aggregate_transaction(transaction)
+        archive_transaction(transaction)
       end
 
       def aggregate_transaction(transaction)
@@ -117,6 +114,22 @@ module ThreeScale
 
       def archive_transaction(transaction)
         Archiver.add(transaction)
+      end
+
+      def report_backend_hit(provider_key, usage)
+        contract = Contract.load(master_service_id, provider_key) || raise(ProviderKeyInvalid)
+        master_metrics = Metrics.load(master_service_id)
+
+        process_transaction(:service_id  => master_service_id,
+                            :contract_id => contract.id,
+                            :timestamp   => Time.now.getutc,
+                            :usage       => master_metrics.process_usage(usage))
+      end
+
+      def master_service_id
+        @master_service_id ||= 
+          Service.load_id(ThreeScale::Backend.configuration.main['master_provider_key']) ||
+          raise("Can't load master service id. Make sure the \"main.master_provider_key\" configuration value is set correctly")
       end
 
       def storage

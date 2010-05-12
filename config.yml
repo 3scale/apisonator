@@ -1,4 +1,8 @@
 production:
+  main:
+    # TODO: replace with the real one.
+    master_provider_key: "master"
+
   archiver:
     path: "/tmp/transactions"
     s3_bucket: "s3_bucket"
@@ -12,23 +16,29 @@ production:
 
 
 development:
+  main:
+    master_provider_key: "master"
+
   archiver:
     path: "/tmp/transactions"
     s3_bucket: "s3_bucket"
+  
+  aws: *AWS
 
   redis:
     db: 1
 
-  aws: *AWS
-
 
 test:
+  main:
+    master_provider_key: "master"
+
   archiver:
     path: "/tmp/transactions"
-
-  redis:
-    db: 2
 
   aws:
     access_key_id: invalid
     secret_access_key: invalid
+  
+  redis:
+    db: 2
