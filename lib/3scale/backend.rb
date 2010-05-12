@@ -1,4 +1,4 @@
-ENV['RACK_ENV'] ||= 'development'
+ENV['RACK_ENV'] = 'development' if ENV['RACK_ENV'].nil? || ENV['RACK_ENV'].empty?
 
 require 'aws/s3'
 require 'builder'
