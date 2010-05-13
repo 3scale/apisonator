@@ -2,25 +2,50 @@
 
 require 'optparse'
 
-postfile    = nil
-requests    = 1
-concurrency = 1
+postfile     = nil
+requests     = 1
+concurrency  = 1
+host         = nil
+port         = nil
+start_server = false
 
-OptionParser.new do |options|
+options = OptionParser.new do |options|
   options.on('-p PATH', 'File containing data to POST') do |value|
     postfile = value
   end
 
-  options.on('-n NUMBER', Integer, 'Number of requests to perform') do |value|
+  options.on('-n [NUMBER]', Integer, 'Number of requests to perform') do |value|
     requests = value
   end
   
-  options.on('-c NUMBER', Integer, 'Number of concurrent requests to make') do |value|
+  options.on('-c [NUMBER]', Integer, 'Number of concurrent requests to make') do |value|
     concurrency = value
   end
 
-  options.parse!
+  options.on('-H [HOST[:PORT]]',
+             'Host and port of the server to run the benchmarks against') do |value|
+    host, port = value.split(':')
+  end
+
+  options.on('-s', 'Start own server') do
+    start_server = true
+  end
+
+  options.on_tail('-h', '--help', 'Show this help') do
+    puts options
+    exit
+  end
 end
+
+options.parse!
+
+if postfile.nil? || postfile.empty?
+  puts options
+  abort
+end
+    
+host = '0.0.0.0' if host.nil? || host.empty?
+port = 3000      if port.nil? || port.empty?
 
 require 'rubygems'
 require 'rack/utils'
@@ -77,16 +102,17 @@ EM.run do
   end.resume
 end
 
-# Run server
-system("thin -da 127.0.0.1 -R 3scale_backend.ru -e development start")
-sleep(1)
+if start_server
+  system("thin -d -a #{host} -p #{port} -R 3scale_backend.ru start")
+  sleep(1)
+end
 
 # Run ab
-system("ab -n #{requests} -c #{concurrency} -p #{postfile} -T application/x-www-form-urlencoded http://127.0.0.1:3000/transactions.xml")
+system("ab -n #{requests} -c #{concurrency} -p #{postfile} -T application/x-www-form-urlencoded http://#{host}:#{port}/transactions.xml")
 
-sleep(1)
 
-# Stop server
-system("thin -R 3scale_backend.ru stop")
+if start_server
+  # Stop server
+  system("thin -R 3scale_backend.ru stop")
+end
 
-# TODO: Maybe check if the traffic was registered?

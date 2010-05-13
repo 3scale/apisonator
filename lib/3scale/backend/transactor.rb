@@ -94,7 +94,6 @@ module ThreeScale
       end
 
       def process_transactions(transactions)
-        # TODO: not sure if I should run this in new fiber or not.
         transactions.each do |transaction|
           process_transaction(transaction)
         end
