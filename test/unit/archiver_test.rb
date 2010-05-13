@@ -2,13 +2,8 @@ require File.dirname(__FILE__) + '/../test_helper'
 
 class ArchiverTest < Test::Unit::TestCase
   def setup
-    config_path = ThreeScale::Backend.configuration_file
-    config = File.read(config_path)
-
     FakeFS.activate!
-    File.open(config_path, 'w') { |io| io.write(config) }
-
-    FileUtils.rm_rf('/tmp/transactions')
+    FileUtils.rm_rf(configuration.archiver.path)
   end
 
   def teardown

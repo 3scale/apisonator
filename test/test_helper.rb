@@ -15,4 +15,5 @@ Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file
 
 class Test::Unit::TestCase
   include ThreeScale::Backend
+  include ThreeScale::Backend::Configurable
 end

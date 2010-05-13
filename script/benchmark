@@ -40,7 +40,7 @@ EM.run do
     storage.flushdb
 
     # Create master shit
-    master_provider_key = ThreeScale::Backend.configuration.main['master_provider_key']
+    master_provider_key = ThreeScale::Backend.configuration.master_provider_key
     master_service_id = 1
     Service.save(:provider_key => master_provider_key, :id => master_service_id)
 

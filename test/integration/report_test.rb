@@ -2,27 +2,13 @@ require File.dirname(__FILE__) + '/../test_helper'
 
 class ReportTest < Test::Unit::TestCase
   include TestHelpers::Integration
-  include TestHelpers::Sequences
+  include TestHelpers::MasterService
 
   def setup
     @storage = ThreeScale::Backend.storage
     @storage.flushdb
 
-    @master_service_id = next_id
-    Service.save(:provider_key => ThreeScale::Backend.configuration.main['master_provider_key'],
-                 :id => @master_service_id)
-
-    @master_hits_id = next_id
-    @master_reports_id = next_id
-    @master_transactions_id = next_id
-
-    master_reports      = {:name => 'transactions/create_multiple'}
-    master_hits         = {:name => 'hits', :children => {@master_reports_id => master_reports}}
-    master_transactions = {:name => 'transactions'}
-
-    Metrics.save(:service_id => @master_service_id,
-                 @master_hits_id => master_hits,
-                 @master_transactions_id => master_transactions)
+    setup_master_service
 
     @master_contract_id = next_id
     @provider_key = 'provider_key'
@@ -66,7 +52,7 @@ class ReportTest < Test::Unit::TestCase
   end
 
   def test_successful_report_archives_the_transactions
-    path = ThreeScale::Backend.configuration.archiver['path']
+    path = configuration.archiver.path
     FileUtils.rm_rf(path)
 
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do

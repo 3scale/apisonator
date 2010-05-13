@@ -1,15 +1,16 @@
 module ThreeScale
   module Backend
     class Storage
-      def initialize
-        config = ThreeScale::Backend.configuration.redis || {}
+      include Configurable
+      configuration.register_section(:redis, :servers, :db)
 
+      def initialize
         # TODO: Implement proper failover.
-        servers = config['servers'] || []
-        server = servers.first || '127.0.0.1:6379'
+        servers = configuration.redis.servers || []
+        server  = servers.first || '127.0.0.1:6379'
 
         @host, @port = server.split(':')
-        @db = config['db']
+        @db = configuration.redis.db
       end
 
       def method_missing(name, *args)

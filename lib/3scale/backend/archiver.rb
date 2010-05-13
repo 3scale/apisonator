@@ -1,6 +1,9 @@
 module ThreeScale
   module Backend
     class Archiver
+      include Configurable
+      configuration.register_section(:archiver, :path, :s3_bucket)
+
       def self.add(transaction)
         new.add(transaction)
       end
@@ -37,7 +40,7 @@ module ThreeScale
       def store(options = {})
         raise ArgumentError ':tag is missing' unless options[:tag]
 
-        storage = options[:storage] || S3Storage.new(configuration['s3_bucket'])
+        storage = options[:storage] || S3Storage.new(configuration.archiver.s3_bucket)
         tag     = options[:tag]
 
         each_file_to_store do |file|
@@ -57,10 +60,6 @@ module ThreeScale
       end
 
       private
-      
-      def configuration
-        ThreeScale::Backend.configuration.archiver || {}
-      end
 
       def path_for(transaction)
         date = transaction[:timestamp].strftime('%Y%m%d')
@@ -69,7 +68,7 @@ module ThreeScale
       end
 
       def root
-        configuration['path']
+        configuration.archiver.path
       end
 
       def ensure_directory_exists(dir)

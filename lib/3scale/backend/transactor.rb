@@ -5,6 +5,7 @@ module ThreeScale
     # This guy is for reporting and authorizing the transactions.
     class Transactor
       include StorageKeyHelpers
+      include Configurable
 
       def self.report(provider_key, raw_transactions)
         new.report(provider_key, raw_transactions)
@@ -128,7 +129,7 @@ module ThreeScale
 
       def master_service_id
         @master_service_id ||= 
-          Service.load_id(ThreeScale::Backend.configuration.main['master_provider_key']) ||
+          Service.load_id(configuration.master_provider_key) ||
           raise("Can't load master service id. Make sure the \"main.master_provider_key\" configuration value is set correctly")
       end
 

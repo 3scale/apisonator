@@ -2,6 +2,8 @@ module ThreeScale
   module Backend
     class Archiver
       class S3Storage
+        include Configurable
+
         def initialize(bucket_name)
           @bucket_name = bucket_name
           establish_connection
@@ -19,13 +21,9 @@ module ThreeScale
 
         def establish_connection
           unless AWS::S3::Base.connected?
-            options = ThreeScale::Backend.configuration.aws
-
-            # symbolize keys
-            options = options.inject({}) do |memo, (key, value)|
-              memo.update(key.to_sym => value)
-            end
-
+            options = {}
+            options[:access_key_id]     = configuration.aws.access_key_id
+            options[:secret_access_key] = configuration.aws.secret_access_key
             options[:use_ssl] = true
 
             AWS::S3::Base.establish_connection!(options)

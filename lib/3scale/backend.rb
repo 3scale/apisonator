@@ -5,17 +5,15 @@ require 'builder'
 require 'eventmachine'
 require 'em-redis'
 require 'fiber'
+require 'hoptoad_notifier'
 require 'time'
 require 'yaml'
 require 'zlib'
 
-module ThreeScale
-  module Backend
-    def self.environment
-      ENV['RACK_ENV']
-    end
-  end
-end
-
-# Load all source files.
+# Load source files.
+require '3scale/backend/configuration'
 Dir[File.dirname(__FILE__) + '/**/*.rb'].each { |file| require file }
+
+# Load configuration
+# TODO: make the location of the config file configurable too.
+require 'configuration'
