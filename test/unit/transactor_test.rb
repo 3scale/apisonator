@@ -19,8 +19,9 @@ class TransactorTest < Test::Unit::TestCase
     Service.save(:provider_key => @provider_key, :id => @service_id)
 
     @metric_id = next_id
-    Metrics.save(:service_id => @service_id, @metric_id => {:name => 'hits'})
+    Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
 
+    @plan_id = next_id
     @plan_name = 'killer'
     
     @contract_id_one = next_id
@@ -29,6 +30,7 @@ class TransactorTest < Test::Unit::TestCase
                   :user_key => @user_key_one,
                   :id => @contract_id_one,
                   :state => :live,
+                  :plan_id => @plan_id,
                   :plan_name => @plan_name)
     
     @contract_id_two = next_id
@@ -37,6 +39,7 @@ class TransactorTest < Test::Unit::TestCase
                   :user_key => @user_key_two,
                   :id => @contract_id_two,
                   :state => :live,
+                  :plan_id => @plan_id,
                   :plan_name => @plan_name)
   end
   
@@ -282,11 +285,46 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-  def test_authorize_returns_status_object_with_the_plan_name
+  def test_authorize_returns_object_with_the_plan_name
     status = Transactor.authorize(@provider_key, @user_key_one)
 
     assert_not_nil status
     assert_equal @plan_name, status.plan_name
+  end
+
+  def test_authorize_returns_object_with_usage_status_if_the_plan_has_usage_limits
+    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
+                    :month => 10000, :day => 200)
+
+    Timecop.freeze(2010, 5, 13) do
+      Transactor.report(@provider_key,
+                        0 => {'user_key' => @user_key_one, 'usage' => {'hits' => 3}})
+    end
+
+    Timecop.freeze(2010, 5, 14) do
+      Transactor.report(@provider_key,
+                        0 => {'user_key' => @user_key_one, 'usage' => {'hits' => 2}})
+
+      status = Transactor.authorize(@provider_key, @user_key_one)
+      assert_equal 2, status.usages.count
+    
+      usage_month = status.usages.find { |usage| usage.period == :month }
+      assert_not_nil usage_month
+      assert_equal 'hits', usage_month.metric_name
+      assert_equal 5,      usage_month.current_value
+      assert_equal 10000,  usage_month.max_value
+
+      usage_day = status.usages.find { |usage| usage.period == :day }
+      assert_not_nil usage_day
+      assert_equal 'hits', usage_day.metric_name
+      assert_equal 2,      usage_day.current_value
+      assert_equal 200,    usage_day.max_value
+    end
+  end
+  
+  def test_authorize_returns_object_without_usage_status_if_the_plan_has_no_usage_limits
+    status = Transactor.authorize(@provider_key, @user_key_one)
+    assert_equal 0, status.usages.count
   end
   
   def test_authorize_raises_an_exception_when_provider_key_is_invalid

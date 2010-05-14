@@ -77,7 +77,7 @@ module ThreeScale
       end
     
       def process_usages(service_id, transactions)
-        metrics = Metrics.load(service_id)
+        metrics = Metric.load_all(service_id)
         errors = {}
 
         usages = transactions.inject({}) do |usages, transaction|
@@ -127,7 +127,7 @@ module ThreeScale
 
       def report_backend_hit(provider_key, usage)
         contract = Contract.load(master_service_id, provider_key) || raise(ProviderKeyInvalid)
-        master_metrics = Metrics.load(master_service_id)
+        master_metrics = Metric.load_all(master_service_id)
 
         process_transaction(:service_id  => master_service_id,
                             :contract_id => contract.id,

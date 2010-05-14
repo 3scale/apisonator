@@ -21,12 +21,13 @@ class AuthorizeTest < Test::Unit::TestCase
 
     @contract_id = next_id
     @user_key = 'user_key'
+    @plan_id = next_id
     @plan_name = 'kickass'
     Contract.save(:service_id => @service_id, :user_key => @user_key, :id => @contract_id,
-                  :state => :live, :plan_name => @plan_name)
+                  :state => :live, :plan_id => @plan_id, :plan_name => @plan_name)
 
-    # @metric_id = next_id
-    # Metrics.save(:service_id => @service_id, @metric_id => {:name => 'hits'})
+    @metric_id = next_id
+    Metrics.save(:service_id => @service_id, @metric_id => {:name => 'hits'})
   end
 
   def test_successful_report_responds_with_200
@@ -41,6 +42,36 @@ class AuthorizeTest < Test::Unit::TestCase
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal @plan_name, doc.at('status:root plan').content
+  end
+  
+  def test_response_of_successful_report_contains_usage_status_if_the_plan_has_usage_limits
+    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
+                    :day => 100, :month => 10000)
+
+    Timecop.freeze(2010, 5, 14) do
+      Transactor.report(@provider_key, 0 => {'user_key' => @user_key, 'usage' => {'hits' => 3}})
+    end
+
+    Timecop.freeze(2010, 5, 15) do
+      Transactor.report(@provider_key, 0 => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
+
+      get '/transactions/authorize.xml', :provider_key => @provider_key, :user_key => @user_key
+      assert_equal 200, last_response.status
+
+      doc = Nokogiri::XML(last_response.body)
+      
+      node_day = doc.at('status:root usage[metric = "hits"][period = "day"]')
+      assert_equal '2010-05-15 00:00:00', node_day.at('period_start').content
+      assert_equal '2010-05-16 00:00:00', node_day.at('period_end').content
+      assert_equal '2', node.at('current_value').content
+      assert_equal '100', node.at('max_value').content
+      
+      node_day = doc.at('status:root usage[metric = "hits"][period = "month"]')
+      assert_equal '2010-05-01 00:00:00', node_day.at('period_start').content
+      assert_equal '2010-06-01 00:00:00', node_day.at('period_end').content
+      assert_equal '5', node.at('current_value').content
+      assert_equal '10000', node.at('max_value').content
+    end
   end
   
   def test_authorize_fails_on_invalid_provider_key
