@@ -15,6 +15,14 @@ module ThreeScale
         Collection.new(service_id)
       end
 
+      def self.load_all_ids(service_id)
+        storage.smembers(encode_key("metrics/service_id:#{service_id}/ids"))
+      end
+
+      def self.load_name(service_id, id)
+        storage.get(encode_key("metric/service_id:#{service_id}/id:#{id}/name"))
+      end
+
       def self.save(attributes)
         metrics = new(attributes)
         metrics.save
@@ -23,7 +31,10 @@ module ThreeScale
 
       def save
         storage.set(encode_key("metric/service_id:#{service_id}/name:#{name}/id"), id)
+        storage.set(encode_key("metric/service_id:#{service_id}/id:#{id}/name"), name)
         storage.set(encode_key("metric/service_id:#{service_id}/id:#{id}/parent_id"), parent_id) if parent_id
+
+        storage.sadd(encode_key("metrics/service_id:#{service_id}/ids"), id)
 
         save_children
       end

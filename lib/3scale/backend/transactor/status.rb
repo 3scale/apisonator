@@ -9,10 +9,7 @@ module ThreeScale
           end
         
           attr_reader :current_value
-
-          def period
-            @usage_limit.period
-          end
+          delegate :metric_name, :period, :to => :@usage_limit
 
           def period_start
             Time.now.getutc.beginning_of_cycle(period)

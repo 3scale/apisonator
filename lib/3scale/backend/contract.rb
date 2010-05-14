@@ -45,6 +45,10 @@ module ThreeScale
         storage.set(encode_key("#{key_prefix}/plan_id"), plan_id)     if plan_id
         storage.set(encode_key("#{key_prefix}/plan_name"), plan_name) if plan_name
       end
+
+      def usage_limits
+        UsageLimit.load_all(service_id, plan_id)
+      end
     end
   end
 end

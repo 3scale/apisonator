@@ -27,7 +27,7 @@ class AuthorizeTest < Test::Unit::TestCase
                   :state => :live, :plan_id => @plan_id, :plan_name => @plan_name)
 
     @metric_id = next_id
-    Metrics.save(:service_id => @service_id, @metric_id => {:name => 'hits'})
+    Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
   end
 
   def test_successful_report_responds_with_200

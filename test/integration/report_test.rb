@@ -25,7 +25,7 @@ class ReportTest < Test::Unit::TestCase
                   :user_key => @user_key, :state => :live)
 
     @metric_id = next_id
-    Metrics.save(:service_id => @service_id, @metric_id => {:name => 'hits'})
+    Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
   end
 
   def test_successful_report_responds_with_200
