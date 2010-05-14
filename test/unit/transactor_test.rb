@@ -20,20 +20,24 @@ class TransactorTest < Test::Unit::TestCase
 
     @metric_id = next_id
     Metrics.save(:service_id => @service_id, @metric_id => {:name => 'hits'})
+
+    @plan_name = 'killer'
     
     @contract_id_one = next_id
     @user_key_one = 'user_key1'
     Contract.save(:service_id => @service_id,
                   :user_key => @user_key_one,
                   :id => @contract_id_one,
-                  :state => :live)
+                  :state => :live,
+                  :plan_name => @plan_name)
     
     @contract_id_two = next_id
     @user_key_two = 'user_key2'
     Contract.save(:service_id => @service_id,
                   :user_key => @user_key_two,
                   :id => @contract_id_two,
-                  :state => :live)
+                  :state => :live,
+                  :plan_name => @plan_name)
   end
   
   def test_report_aggregates
@@ -277,6 +281,66 @@ class TransactorTest < Test::Unit::TestCase
         '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
     end
   end
+
+  def test_authorize_returns_status_object_with_the_plan_name
+    status = Transactor.authorize(@provider_key, @user_key_one)
+
+    assert_not_nil status
+    assert_equal @plan_name, status.plan_name
+  end
+  
+  def test_authorize_raises_an_exception_when_provider_key_is_invalid
+    assert_raise ProviderKeyInvalid do
+      Transactor.authorize('booo', @user_key_one)
+    end
+  end
+  
+  def test_authorize_raises_an_exception_when_user_key_is_invalid
+    assert_raise UserKeyInvalid do
+      Transactor.authorize(@provider_key, 'baaa')
+    end
+  end
+  
+  def test_authorize_raises_an_exception_when_contract_is_suspended
+    contract = Contract.load(@service_id, @user_key_one)
+    contract.state = :suspended
+    contract.save
+
+    assert_raise ContractNotActive do
+      Transactor.authorize(@provider_key, @user_key_one)
+    end
+  end
+  
+  def test_authorize_aggregates_backend_hit
+    time = Time.now
+
+    Aggregation.expects(:aggregate).with(
+      :service   => @master_service_id,
+      :cinstance => @master_contract_id,
+      :timestamp => time,
+      :usage     => {@master_hits_id => 1,
+                     @master_authorizes_id => 1})
+
+    Timecop.freeze(time) do
+      Transactor.authorize(@provider_key, @user_key_one)
+    end
+  end
+  
+  def test_authorize_archives_backend_hit
+    time = Time.now
+
+    Archiver.expects(:add).with(
+      :service_id  => @master_service_id,
+      :contract_id => @master_contract_id,
+      :timestamp   => time,
+      :usage       => {@master_hits_id => 1,
+                       @master_authorizes_id => 1})
+
+    Timecop.freeze(time) do
+      Transactor.authorize(@provider_key, @user_key_one)
+    end
+  end
+  
 
 
 

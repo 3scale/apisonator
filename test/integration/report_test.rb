@@ -3,6 +3,7 @@ require File.dirname(__FILE__) + '/../test_helper'
 class ReportTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::MasterService
+  include TestHelpers::StorageKeys
 
   def setup
     @storage = ThreeScale::Backend.storage
@@ -127,6 +128,25 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 'user_key is invalid', node.content
   end
   
+  def test_report_fails_on_inactive_contract
+    contract = Contract.load(@service_id, @user_key)
+    contract.state = :suspended
+    contract.save
+
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+
+    assert_equal 'application/xml', last_response.headers['Content-Type']
+    
+    doc = Nokogiri::XML(last_response.body)
+    node = doc.at('errors:root error[index = "0"]')
+
+    assert_not_nil node
+    assert_equal 'user.inactive_contract', node['code']
+    assert_equal 'contract is not active', node.content
+  end
+  
   def test_report_fails_on_invalid_metric_name
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -189,14 +209,44 @@ class ReportTest < Test::Unit::TestCase
                                                 :month, '20100501')).to_i
     end
   end
-    
-  private
+  
+  def test_report_with_invalid_provider_key_does_not_report_backend_hit
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      post '/transactions.xml',
+        :provider_key => 'boo',
+        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
 
-  def contract_key(service_id, contract_id, metric_id, period, time)
-    "stats/{service:#{service_id}}/cinstance:#{contract_id}/metric:#{metric_id}/#{period}:#{time}"
+      assert_equal 0, @storage.get(contract_key(@master_service_id,
+                                                @master_contract_id,
+                                                @master_reports_id,
+                                                :month, '20100501')).to_i
+    end
   end
   
-  def service_key(service_id, metric_id, period, time)
-    "stats/{service:#{service_id}}/metric:#{metric_id}/#{period}:#{time}"
+  def test_report_with_invalid_transaction_reports_backend_hit
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:user_key => 'baa', :usage => {'hits' => 1}}}
+
+      assert_equal 1, @storage.get(contract_key(@master_service_id,
+                                                @master_contract_id,
+                                                @master_reports_id,
+                                                :month, '20100501')).to_i
+    end
+  end
+  
+  def test_report_with_invalid_transaction_reports_number_of_all_transactions
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:user_key => 'baa',     :usage => {'hits' => 1}},
+                          1 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+
+      assert_equal 2, @storage.get(contract_key(@master_service_id,
+                                                @master_contract_id,
+                                                @master_transactions_id,
+                                                :month, '20100501')).to_i
+    end
   end
 end

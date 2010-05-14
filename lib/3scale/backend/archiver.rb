@@ -1,20 +1,10 @@
 module ThreeScale
   module Backend
-    class Archiver
+    module Archiver
+      extend self
+
       include Configurable
       configuration.register_section(:archiver, :path, :s3_bucket)
-
-      def self.add(transaction)
-        new.add(transaction)
-      end
-
-      def self.store(options = {})
-        new.store(options)
-      end
-
-      def self.cleanup
-        new.cleanup
-      end
 
       # Add the transaction to the archive.
       def add(transaction)

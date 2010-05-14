@@ -13,18 +13,21 @@ module TestHelpers
         :provider_key => ThreeScale::Backend.configuration.master_provider_key,
         :id => @master_service_id)
 
-      @master_hits_id = next_id
-      @master_reports_id = next_id
+      @master_hits_id         = next_id
+      @master_reports_id      = next_id
+      @master_authorizes_id   = next_id
       @master_transactions_id = next_id
 
-      master_reports      = {:name => 'transactions/create_multiple'}
-      master_hits         = {:name => 'hits', :children => {@master_reports_id => master_reports}}
-      master_transactions = {:name => 'transactions'}
+      reports      = {:name => 'transactions/create_multiple'}
+      authorizes   = {:name => 'transactions/authorize'}
+      hits         = {:name => 'hits', 
+                      :children => {@master_reports_id => reports,
+                                    @master_authorizes_id => authorizes}}
+      transactions = {:name => 'transactions'}
 
-      ThreeScale::Backend::Metrics.save(
-        :service_id => @master_service_id,
-        @master_hits_id => master_hits,
-        @master_transactions_id => master_transactions)
+      ThreeScale::Backend::Metrics.save(:service_id => @master_service_id,
+                                        @master_hits_id => hits,
+                                        @master_transactions_id => transactions)
     end
   end
 end

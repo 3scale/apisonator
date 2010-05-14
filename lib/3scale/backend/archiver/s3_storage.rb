@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Archiver
+    module Archiver
       class S3Storage
         include Configurable
 

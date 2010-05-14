@@ -2,14 +2,12 @@ require '3scale/backend/storage_key_helpers'
 
 module ThreeScale
   module Backend
-    # This guy is for reporting and authorizing the transactions.
-    class Transactor
+    # Methods for reporting and authorizing transactions.
+    module Transactor
+      extend self
+
       include StorageKeyHelpers
       include Configurable
-
-      def self.report(provider_key, raw_transactions)
-        new.report(provider_key, raw_transactions)
-      end
 
       def report(provider_key, raw_transactions)
         report_backend_hit(provider_key, 'transactions/create_multiple' => 1,
@@ -49,6 +47,17 @@ module ThreeScale
         else
           raise MultipleErrors.new(errors) unless errors.empty?
         end
+      end
+
+      def authorize(provider_key, user_key)
+        report_backend_hit(provider_key, 'transactions/authorize' => 1)
+
+        service_id = Service.load_id(provider_key) || raise(ProviderKeyInvalid)
+        contract   = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
+        
+        validate_contract_state(contract)
+
+        Status.new(contract)
       end
 
       private
@@ -127,9 +136,7 @@ module ThreeScale
       end
 
       def master_service_id
-        @master_service_id ||= 
-          Service.load_id(configuration.master_provider_key) ||
-          raise("Can't load master service id. Make sure the \"main.master_provider_key\" configuration value is set correctly")
+        Service.load_id(configuration.master_provider_key) || raise("Can't load master service id. Make sure the \"main.master_provider_key\" configuration value is set correctly")
       end
 
       def storage

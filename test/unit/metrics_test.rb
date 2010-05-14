@@ -67,11 +67,11 @@ class MetricsTest < Test::Unit::TestCase
   end
 
   def test_load
-    @storage.set("metric/id/service_id:#{@service_id}/name:hits", 2001)
-    @storage.set("metric/id/service_id:#{@service_id}/name:search_queries", 2002)
-    @storage.set("metric/id/service_id:#{@service_id}/name:transfer", 2003)
+    @storage.set("metric/service_id:#{@service_id}/name:hits/id", 2001)
+    @storage.set("metric/service_id:#{@service_id}/name:search_queries/id", 2002)
+    @storage.set("metric/service_id:#{@service_id}/name:transfer/id", 2003)
 
-    @storage.set("metric/parent_id/service_id:#{@service_id}/id:2002", 2001)
+    @storage.set("metric/service_id:#{@service_id}/id:2002/parent_id", 2001)
 
     metrics = Metrics.load(@service_id)
     usage   = {'search_queries' => 18, 'transfer' => 2048}
@@ -84,12 +84,12 @@ class MetricsTest < Test::Unit::TestCase
                  2001 => {:name => 'hits', :children => {2002 => {:name => 'search_queries'}}},
                  2003 => {:name => 'transfer'})
 
-    assert_equal '2001', @storage.get("metric/id/service_id:#{@service_id}/name:hits")
-    assert_equal '2002', @storage.get("metric/id/service_id:#{@service_id}/name:search_queries")
-    assert_equal '2003', @storage.get("metric/id/service_id:#{@service_id}/name:transfer")
+    assert_equal '2001', @storage.get("metric/service_id:#{@service_id}/name:hits/id")
+    assert_equal '2002', @storage.get("metric/service_id:#{@service_id}/name:search_queries/id")
+    assert_equal '2003', @storage.get("metric/service_id:#{@service_id}/name:transfer/id")
 
-    assert_equal '2001', @storage.get("metric/parent_id/service_id:#{@service_id}/id:2002")
-    assert_nil           @storage.get("metric/parent_id/service_id:#{@service_id}/id:2001")
-    assert_nil           @storage.get("metric/parent_id/service_id:#{@service_id}/id:2003")
+    assert_equal '2001', @storage.get("metric/service_id:#{@service_id}/id:2002/parent_id")
+    assert_nil           @storage.get("metric/service_id:#{@service_id}/id:2001/parent_id")
+    assert_nil           @storage.get("metric/service_id:#{@service_id}/id:2003/parent_id")
   end
 end
