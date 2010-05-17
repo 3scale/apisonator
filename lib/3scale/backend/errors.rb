@@ -4,7 +4,6 @@ module ThreeScale
       'user.invalid_key'             => 'user_key is invalid',
       'user.inactive_contract'       => 'contract is not active',
       'user.exceeded_limits'         => 'usage limits are exceeded',
-      'user.exceeded_credit'         => 'credit is exceeded',
       'provider.invalid_key'         => 'provider authentication key is invalid',
       'provider.invalid_metric'      => 'metric does not exist',
       'provider.invalid_usage_value' => 'usage value is invalid'}
@@ -43,17 +42,11 @@ module ThreeScale
       end
     end
 
-    # class LimitsExceeded < SingleError
-    #   def initialize(message = nil)
-    #     super('user.exceeded_limits', message)
-    #   end
-    # end
-
-    # class CreditExceeded < SingleError
-    #   def initialize
-    #     super('user.exceeded_credit')
-    #   end
-    # end
+    class LimitsExceeded < SingleError
+      def initialize(message = nil)
+        super('user.exceeded_limits', message)
+      end
+    end
 
     class ProviderKeyInvalid < SingleError
       def initialize

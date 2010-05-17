@@ -34,12 +34,12 @@ module ThreeScale
           end
         end
 
-        def initialize(contract, timestamp = Time.now.getutc)
+        def initialize(contract, current_values, timestamp = Time.now.getutc)
           @contract  = contract
           @timestamp = timestamp
-          @current_values = contract.current_values
+          @current_values = current_values
         end
-
+      
         attr_reader :timestamp
         delegate :plan_name, :to => :contract
 

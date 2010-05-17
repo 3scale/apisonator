@@ -348,6 +348,32 @@ class TransactorTest < Test::Unit::TestCase
       Transactor.authorize(@provider_key, @user_key_one)
     end
   end
+
+  def test_authorize_raises_an_exception_when_usage_limits_are_exceeded
+    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
+                    :day => 4)
+
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
+      Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
+                                             'usage' => {'hits' => 5}})
+
+      assert_raise LimitsExceeded do
+        Transactor.authorize(@provider_key, @user_key_one)
+      end
+    end
+  end
+
+  def test_authorize_successd_if_there_are_usage_limits_that_are_not_exceeded
+    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
+                    :day => 4)
+
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
+      Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
+                                             'usage' => {'hits' => 3}})
+
+      assert_not_nil Transactor.authorize(@provider_key, @user_key_one)
+    end
+  end
   
   def test_authorize_aggregates_backend_hit
     time = Time.now

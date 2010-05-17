@@ -120,6 +120,26 @@ class AuthorizeTest < Test::Unit::TestCase
     assert_equal 'user.inactive_contract', node['code']
     assert_equal 'contract is not active', node.content
   end
+
+  def test_authorize_fails_on_exceeded_usage_limits
+    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
+                    :day => 4)
+
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
+      Transactor.report(@provider_key, 0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+
+      get '/transactions/authorize.xml', :provider_key => @provider_key, :user_key => @user_key
+
+      assert_equal 'application/xml', last_response.headers['Content-Type']
+
+      doc = Nokogiri::XML(last_response.body)
+      node = doc.at('errors:root error')
+
+      assert_not_nil node
+      assert_equal 'user.exceeded_limits', node['code']
+      assert_equal 'usage limits are exceeded', node.content
+    end
+  end
   
   def test_successful_authorize_reports_backend_hit
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do

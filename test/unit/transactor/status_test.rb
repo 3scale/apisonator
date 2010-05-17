@@ -26,11 +26,10 @@ module Transactor
                       :month      => 2000)
 
       time = Time.utc(2010, 5, 17, 12, 42)
-
-      @storage.set(contract_key(service_id, contract_id, metric_id, :month, '20100501'), 429)
+      usage = {:month => {metric_id.to_s => 429}}
 
       Timecop.freeze(time) do
-        status = Transactor::Status.new(contract)
+        status = Transactor::Status.new(contract, usage)
 
         assert_equal 1, status.usages.count
 
@@ -61,11 +60,10 @@ module Transactor
                       :month      => 2000)
 
       time = Time.utc(2010, 5, 17, 12, 42)
-
-      @storage.set(contract_key(service_id, contract_id, metric_id, :month, '20100501'), 429)
+      usage = {:month => {metric_id.to_s => 429}}
 
       Timecop.freeze(time) do
-        status = Transactor::Status.new(contract)
+        status = Transactor::Status.new(contract, usage)
 
         doc = Nokogiri::XML(status.to_xml)
         

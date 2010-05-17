@@ -4,10 +4,10 @@ module ThreeScale
   module Backend
     # Methods for reporting and authorizing transactions.
     module Transactor
-      extend self
-
       include StorageKeyHelpers
       include Configurable
+      
+      extend self
 
       def report(provider_key, raw_transactions)
         report_backend_hit(provider_key, 'transactions/create_multiple' => 1,
@@ -53,11 +53,14 @@ module ThreeScale
         report_backend_hit(provider_key, 'transactions/authorize' => 1)
 
         service_id = Service.load_id(provider_key) || raise(ProviderKeyInvalid)
-        contract   = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
-        
+        contract = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
+
         validate_contract_state(contract)
 
-        Status.new(contract)
+        usage = load_current_usage(contract)
+        validate_usage_limits(contract, usage)
+
+        Status.new(contract, usage)
       end
 
       private
@@ -69,10 +72,45 @@ module ThreeScale
           transaction['user_key'] || transaction['client_ip']
         end.each(&block)
       end
+      
+      def load_current_usage(contract)
+        pairs = contract.usage_limits.map do |usage_limit|
+          [usage_limit.metric_id, usage_limit.period]
+        end
+
+        return {} if pairs.empty?
+
+        now = Time.now.getutc
+
+        keys = pairs.map do |metric_id, period|
+          usage_value_key(contract, metric_id, period, now)
+        end
+
+        raw_values = storage.mget(*keys)
+        values     = {}
+
+        pairs.each_with_index do |(metric_id, period), index|
+          values[period] ||= NumericHash.new
+          values[period][metric_id] = raw_values[index].to_i
+        end
+
+        values
+      end
+      
+      def usage_value_key(contract, metric_id, period, time)
+        # TODO: extract this key generation out.
+        encode_key("stats/{service:#{contract.service_id}}/" +
+                   "cinstance:#{contract.id}/metric:#{metric_id}/" +
+                   "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
+      end
 
       def validate_contract_state(contract)
-        if contract.state && contract.state != :live
-          raise ContractNotActive
+        raise ContractNotActive if contract.state && contract.state != :live
+      end
+
+      def validate_usage_limits(contract, usage)
+        contract.usage_limits.each do |limit|
+          limit.validate(usage)
         end
       end
     

@@ -46,6 +46,14 @@ module ThreeScale
         Metric.load_name(service_id, metric_id)
       end
 
+      def validate(usage)
+        usage_value = usage[period]
+        usage_value &&= usage_value[metric_id].to_i
+
+        raise LimitsExceeded if usage_value > value
+        true
+      end
+
       private
 
       def self.pairs_of_metric_id_and_period(metric_ids)
