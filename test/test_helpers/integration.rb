@@ -9,7 +9,7 @@ module TestHelpers
     end
   
     def app
-      ThreeScale::Backend::Application
+      ThreeScale::Backend::Router
     end
   end
 end

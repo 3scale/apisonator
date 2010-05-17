@@ -1,0 +1,6 @@
+#! /usr/bin/env ruby
+
+require 'rubygems'
+require '3scale_backend'
+
+ThreeScale::Backend.run

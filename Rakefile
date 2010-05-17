@@ -35,6 +35,9 @@ begin
     gemspec.add_dependency 'eventmachine',     '~> 0.12'
     gemspec.add_dependency 'em-redis',         '~> 0.2'
     gemspec.add_dependency 'hoptoad_notifier', '~> 2.2'
+    gemspec.add_dependency 'thin',             '~> 1.2'
+
+    gemspec.executables << '3scale_backend'
   end
 
   Jeweler::GemcutterTasks.new

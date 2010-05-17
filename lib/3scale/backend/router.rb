@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Application
+    class Router
       def self.call(env)
         new.call(env)
       end

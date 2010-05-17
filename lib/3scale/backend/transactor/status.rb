@@ -8,7 +8,13 @@ module ThreeScale
             @usage_limit = usage_limit
           end
         
-          delegate :metric_name, :period, :to => :@usage_limit
+          def metric_name
+            @usage_limit.metric_name
+          end
+
+          def period
+            @usage_limit.period
+          end
 
           def period_start
             @status.timestamp.beginning_of_cycle(period)
@@ -41,7 +47,10 @@ module ThreeScale
         end
       
         attr_reader :timestamp
-        delegate :plan_name, :to => :contract
+
+        def plan_name
+          @contract.plan_name
+        end
 
         def usages
           @usages ||= load_usages
@@ -76,10 +85,8 @@ module ThreeScale
 
         private
 
-        attr_reader :contract
-
         def load_usages
-          contract.usage_limits.map do |usage_limit|
+          @contract.usage_limits.map do |usage_limit|
             Usage.new(self, usage_limit)
           end
         end
