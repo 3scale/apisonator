@@ -1,6 +1,46 @@
 #! /usr/bin/env ruby
 
-require 'rubygems'
-require '3scale_backend'
+require 'optparse'
 
-ThreeScale::Backend.run
+host = '0.0.0.0'
+port = 3000
+options = {}
+configuration_file = nil
+
+OptionParser.new do |parser|
+  parser.banner = 'Usage: 3scale_backend [options]'
+
+  parser.on '-a', '--address HOST', 'bind to HOST address (default: 0.0.0.0)' do |value|
+    host = value
+  end
+
+  parser.on '-p', '--port PORT', 'use PORT (default: 3000)' do |value|
+    port = value
+  end
+
+  parser.on '-e', '--environment ENV', 'Framework environment (default: development)' do |value|
+    ENV['RACK_ENV'] = value
+  end
+
+  parser.on '-c', '--config FILE', 'Location of configuration file' do |value|
+    configuration_file = value
+  end
+
+  parser.parse!
+end
+
+require '3scale/backend'
+require 'thin'
+require 'rack/fiber_pool'
+
+load configuration_file if configuration_file
+
+puts ">> Starting 3scale backend in #{ENV['RACK_ENV']} environment. Let's roll!"
+puts "\n"
+
+Thin::Server.start(host, port, options) do
+  use HoptoadNotifier::Rack
+  use Rack::FiberPool
+
+  run ThreeScale::Backend::Router
+end

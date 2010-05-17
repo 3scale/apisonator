@@ -17,3 +17,13 @@ class Test::Unit::TestCase
   include ThreeScale::Backend
   include ThreeScale::Backend::Configurable
 end
+
+ThreeScale::Backend.configure do |config|
+  config.master_provider_key   = 'master'
+
+  # so I don't accidentally access s3
+  config.aws.access_key_id     = 'test_access_key_id'
+  config.aws.secret_access_key = 'test_secret_access_key'
+  
+  config.redis.db              = 2
+end

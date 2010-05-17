@@ -5,6 +5,7 @@ module ThreeScale
 
       include Configurable
       configuration.register_section(:archiver, :path, :s3_bucket)
+      configuration.archiver.path ||= '/tmp/transactions'
 
       # Add the transaction to the archive.
       def add(transaction)
