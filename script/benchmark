@@ -14,15 +14,15 @@ options = OptionParser.new do |options|
     postfile = value
   end
 
-  options.on('-n [NUMBER]', Integer, 'Number of requests to perform') do |value|
+  options.on('-n NUMBER', Integer, 'Number of requests to perform') do |value|
     requests = value
   end
   
-  options.on('-c [NUMBER]', Integer, 'Number of concurrent requests to make') do |value|
+  options.on('-c NUMBER', Integer, 'Number of concurrent requests to make') do |value|
     concurrency = value
   end
 
-  options.on('-H [HOST[:PORT]]',
+  options.on('-H HOST[:PORT]',
              'Host and port of the server to run the benchmarks against') do |value|
     host, port = value.split(':')
   end
@@ -52,6 +52,7 @@ require 'rack/utils'
 
 $:.unshift(File.expand_path(File.dirname(__FILE__) + '/../lib'))
 require '3scale/backend'
+require 'configuration'
 include ThreeScale::Backend
 
 include Rack::Utils
@@ -69,10 +70,16 @@ EM.run do
     master_service_id = 1
     Service.save(:provider_key => master_provider_key, :id => master_service_id)
 
-    Metrics.save(:service_id => master_service_id,
-                 100 => {:name => 'hits',
-                         :children => {101 => {:name => 'transactions/create_multiple'}}},
-                 200 => {:name => 'transactions'})
+    Metric.save(
+      :service_id => master_service_id,
+      :id         => 100,
+      :name       => 'hits',
+      :children   => [Metric.new(:id => 101, :name => 'transactions/create_multiple')])
+
+    Metric.save(
+      :service_id => master_service_id,
+      :id         => 200,
+      :name       => 'transactions')
 
     # Create service
     provider_key = params['provider_key']
@@ -84,7 +91,7 @@ EM.run do
                   :id => 1002, :state => :live)
 
     # Create metrics
-    Metrics.save(:service_id => service_id, 8001 => {:name => 'hits'})
+    Metric.save(:service_id => service_id, :id => 8001, :name => 'hits')
 
     # Create contracts
     user_keys = []   

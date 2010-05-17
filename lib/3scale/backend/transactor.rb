@@ -24,8 +24,6 @@ module ThreeScale
 
             usages = process_usages(service_id, grouped_transactions)
 
-            # contract_data.usage_accumulator.pay(usages.values.sum)
-
             grouped_transactions.each do |transaction|
               transactions << {
                 :service_id  => service_id,

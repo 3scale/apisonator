@@ -1,7 +1,5 @@
 ThreeScale::Backend.configure do |config|
   config.master_provider_key   = 'master'
-
-  config.archiver.path         = '/tmp/transactions'
   config.archiver.s3_bucket    = 's3_bucket'
 
   config.aws.access_key_id     = 'aws_access_key_id2'
