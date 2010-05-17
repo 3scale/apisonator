@@ -21,7 +21,8 @@ class ReportTest < Test::Unit::TestCase
 
     @contract_id = next_id
     @user_key = 'user_key'
-    Contract.save(:service_id => @service_id, :id => @contract_id,
+    @plan_id = next_id
+    Contract.save(:service_id => @service_id, :plan_id => @plan_id, :id => @contract_id,
                   :user_key => @user_key, :state => :live)
 
     @metric_id = next_id
@@ -176,6 +177,27 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 'provider.invalid_usage_value', node['code']
     assert_equal 'usage value is invalid', node.content
   end
+
+  def test_report_succeeds_when_usage_limits_are_exceeded
+    UsageLimit.save(:service_id => @service_id,
+                    :plan_id    => @plan_id,
+                    :metric_id  => @metric_id,
+                    :month      => 2)
+
+    Transactor.report(@provider_key,
+                      '0' => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
+
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+
+    assert_equal 200, last_response.status
+
+    assert_equal 3, @storage.get(contract_key(
+      @service_id, @contract_id, @metric_id, :month,
+      Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
+  end
+
 
   def test_successful_report_reports_backend_hit
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
