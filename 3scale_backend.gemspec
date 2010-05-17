@@ -5,21 +5,25 @@
 
 Gem::Specification.new do |s|
   s.name = %q{3scale_backend}
-  s.version = "0.0.1"
+  s.version = "0.1.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Adam Cigánek"]
   s.date = %q{2010-05-17}
+  s.default_executable = %q{3scale_backend}
   s.description = %q{This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.}
   s.email = %q{adam@3scale.net}
+  s.executables = ["3scale_backend"]
   s.extra_rdoc_files = [
     "README.rdoc"
   ]
   s.files = [
-    "3scale_backend.ru",
+    ".gitignore",
+     "3scale_backend.gemspec",
      "README.rdoc",
      "Rakefile",
      "VERSION",
+     "bin/3scale_backend",
      "configuration.rb",
      "data/postfile",
      "data/postfile1",
@@ -33,7 +37,6 @@ Gem::Specification.new do |s|
      "lib/3scale/backend/aggregation.rb",
      "lib/3scale/backend/aggregation/configuration.rb",
      "lib/3scale/backend/aggregation/rule.rb",
-     "lib/3scale/backend/application.rb",
      "lib/3scale/backend/archiver.rb",
      "lib/3scale/backend/archiver/s3_storage.rb",
      "lib/3scale/backend/configuration.rb",
@@ -43,6 +46,7 @@ Gem::Specification.new do |s|
      "lib/3scale/backend/metric/collection.rb",
      "lib/3scale/backend/numeric_hash.rb",
      "lib/3scale/backend/route.rb",
+     "lib/3scale/backend/router.rb",
      "lib/3scale/backend/service.rb",
      "lib/3scale/backend/storable.rb",
      "lib/3scale/backend/storage.rb",
@@ -54,10 +58,10 @@ Gem::Specification.new do |s|
      "lib/rack/fiber_pool.rb",
      "script/benchmark",
      "script/console",
-     "test/integration/application_test.rb",
      "test/integration/authorize_test.rb",
      "test/integration/check_test.rb",
      "test/integration/report_test.rb",
+     "test/integration/router_test.rb",
      "test/test_helper.rb",
      "test/test_helpers/assert_change.rb",
      "test/test_helpers/event_machine.rb",
@@ -92,8 +96,8 @@ Gem::Specification.new do |s|
   s.test_files = [
     "test/integration/report_test.rb",
      "test/integration/check_test.rb",
+     "test/integration/router_test.rb",
      "test/integration/authorize_test.rb",
-     "test/integration/application_test.rb",
      "test/unit/transactor/status_test.rb",
      "test/unit/archiver/s3_storage_test.rb",
      "test/unit/storage_test.rb",
@@ -131,12 +135,14 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<eventmachine>, ["~> 0.12"])
       s.add_runtime_dependency(%q<em-redis>, ["~> 0.2"])
       s.add_runtime_dependency(%q<hoptoad_notifier>, ["~> 2.2"])
+      s.add_runtime_dependency(%q<thin>, ["~> 1.2"])
     else
       s.add_dependency(%q<aws-s3>, ["~> 0.6"])
       s.add_dependency(%q<builder>, ["~> 2.1"])
       s.add_dependency(%q<eventmachine>, ["~> 0.12"])
       s.add_dependency(%q<em-redis>, ["~> 0.2"])
       s.add_dependency(%q<hoptoad_notifier>, ["~> 2.2"])
+      s.add_dependency(%q<thin>, ["~> 1.2"])
     end
   else
     s.add_dependency(%q<aws-s3>, ["~> 0.6"])
@@ -144,6 +150,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<eventmachine>, ["~> 0.12"])
     s.add_dependency(%q<em-redis>, ["~> 0.2"])
     s.add_dependency(%q<hoptoad_notifier>, ["~> 2.2"])
+    s.add_dependency(%q<thin>, ["~> 1.2"])
   end
 end
 
