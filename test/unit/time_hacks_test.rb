@@ -60,6 +60,96 @@ class TimeHacksTest < Test::Unit::TestCase
                  Time.utc(2009, 6, 11, 13, 30).beginning_of_cycle(:year)
   end
 
+  def test_end_of_cycle_with_minute
+    assert_equal Time.utc(2010, 5, 17, 13, 31),
+                 Time.utc(2010, 5, 17, 13, 30, 17).end_of_cycle(:minute)
+  end
+  
+  def test_end_of_cycle_with_minute_in_the_last_minute_of_a_hour
+    assert_equal Time.utc(2010, 5, 17, 14),
+                 Time.utc(2010, 5, 17, 13, 59, 17).end_of_cycle(:minute)
+  end
+  
+  def test_end_of_cycle_with_minute_in_the_last_minute_of_a_day
+    assert_equal Time.utc(2010, 5, 18),
+                 Time.utc(2010, 5, 17, 23, 59, 17).end_of_cycle(:minute)
+  end
+  
+  def test_end_of_cycle_with_minute_in_the_last_minute_of_a_month
+    assert_equal Time.utc(2010, 6, 1),
+                 Time.utc(2010, 5, 31, 23, 59, 17).end_of_cycle(:minute)
+  end
+  
+  def test_end_of_cycle_with_minute_in_the_last_minute_of_a_year
+    assert_equal Time.utc(2011, 1, 1),
+                 Time.utc(2010, 12, 31, 23, 59, 17).end_of_cycle(:minute)
+  end
+
+  def test_end_of_cycle_with_hour
+    assert_equal Time.utc(2010, 5, 17, 14, 0),
+                 Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:hour)
+  end
+  
+  def test_end_of_cycle_with_hour_in_the_last_hour_of_a_year
+    assert_equal Time.utc(2011, 1, 1),
+                 Time.utc(2010, 12, 31, 23, 30).end_of_cycle(:hour)
+  end
+  
+  def test_end_of_cycle_with_hour_in_the_last_hour_of_a_month
+    assert_equal Time.utc(2010, 6, 1),
+                 Time.utc(2010, 5, 31, 23, 30).end_of_cycle(:hour)
+  end
+  
+  def test_end_of_cycle_with_hour_in_the_last_hour_of_a_day
+    assert_equal Time.utc(2010, 5, 18),
+                 Time.utc(2010, 5, 17, 23, 30).end_of_cycle(:hour)
+  end
+
+  def test_end_of_cycle_with_day
+    assert_equal Time.utc(2010, 5, 18),
+                 Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:day)
+  end
+  
+  def test_end_of_cycle_with_day_in_the_last_day_of_a_month
+    assert_equal Time.utc(2010, 6, 1),
+                 Time.utc(2010, 5, 31, 13, 30).end_of_cycle(:day)
+  end
+  
+  def test_end_of_cycle_with_day_in_the_last_day_of_a_year
+    assert_equal Time.utc(2011, 1, 1),
+                 Time.utc(2010, 12, 31, 13, 30).end_of_cycle(:day)
+  end
+  
+  def test_end_of_cycle_with_week
+    assert_equal Time.utc(2010, 5, 24),
+                 Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:week)
+  end
+
+  def test_end_of_cycle_with_week_in_the_last_week_of_a_month
+    assert_equal Time.utc(2010, 5, 3),
+                 Time.utc(2010, 4, 29, 13, 30).end_of_cycle(:week)
+  end
+  
+  def test_end_of_cycle_with_week_in_the_last_week_of_a_year
+    assert_equal Time.utc(2012, 1, 2),
+                 Time.utc(2011, 12, 30, 13, 30).end_of_cycle(:week)
+  end
+  
+  def test_end_of_cycle_with_month
+    assert_equal Time.utc(2010, 6, 1),
+                 Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:month)
+  end
+
+  def test_end_of_cycle_with_month_in_the_last_month_of_a_year
+    assert_equal Time.utc(2011, 1, 1),
+                 Time.utc(2010, 12, 4, 13, 30).end_of_cycle(:month)
+  end
+
+  def test_end_of_cycle_with_year
+    assert_equal Time.utc(2011, 1, 1),
+                 Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:year)
+  end
+
   def test_to_compact_s
     assert_equal '20091103123455', Time.utc(2009, 11,  3, 12, 34, 55).to_compact_s
     assert_equal '200911031234',   Time.utc(2009, 11,  3, 12, 34,  0).to_compact_s

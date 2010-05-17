@@ -15,6 +15,8 @@ module ThreeScale
 
       def self.load_all(service_id, plan_id)
         metric_ids = Metric.load_all_ids(service_id)
+        return [] if metric_ids.nil? || metric_ids.empty?
+
         pairs = pairs_of_metric_id_and_period(metric_ids)
 
         keys   = keys_for_pairs_of_metric_id_and_period(service_id, plan_id, pairs)
@@ -26,7 +28,7 @@ module ThreeScale
                        :plan_id    => plan_id,
                        :metric_id  => metric_id,
                        :period     => period,
-                       :value      => value)
+                       :value      => value.to_i)
         end.compact
       end
 

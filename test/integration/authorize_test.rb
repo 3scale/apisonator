@@ -48,11 +48,11 @@ class AuthorizeTest < Test::Unit::TestCase
     UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
                     :day => 100, :month => 10000)
 
-    Timecop.freeze(2010, 5, 14) do
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
       Transactor.report(@provider_key, 0 => {'user_key' => @user_key, 'usage' => {'hits' => 3}})
     end
 
-    Timecop.freeze(2010, 5, 15) do
+    Timecop.freeze(Time.utc(2010, 5, 15)) do
       Transactor.report(@provider_key, 0 => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
 
       get '/transactions/authorize.xml', :provider_key => @provider_key, :user_key => @user_key
@@ -61,16 +61,18 @@ class AuthorizeTest < Test::Unit::TestCase
       doc = Nokogiri::XML(last_response.body)
       
       node_day = doc.at('status:root usage[metric = "hits"][period = "day"]')
+      assert_not_nil node_day
       assert_equal '2010-05-15 00:00:00', node_day.at('period_start').content
       assert_equal '2010-05-16 00:00:00', node_day.at('period_end').content
-      assert_equal '2', node.at('current_value').content
-      assert_equal '100', node.at('max_value').content
+      assert_equal '2', node_day.at('current_value').content
+      assert_equal '100', node_day.at('max_value').content
       
-      node_day = doc.at('status:root usage[metric = "hits"][period = "month"]')
-      assert_equal '2010-05-01 00:00:00', node_day.at('period_start').content
-      assert_equal '2010-06-01 00:00:00', node_day.at('period_end').content
-      assert_equal '5', node.at('current_value').content
-      assert_equal '10000', node.at('max_value').content
+      node_month = doc.at('status:root usage[metric = "hits"][period = "month"]')
+      assert_not_nil node_month
+      assert_equal '2010-05-01 00:00:00', node_month.at('period_start').content
+      assert_equal '2010-06-01 00:00:00', node_month.at('period_end').content
+      assert_equal '5', node_month.at('current_value').content
+      assert_equal '10000', node_month.at('max_value').content
     end
   end
   

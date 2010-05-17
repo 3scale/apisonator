@@ -42,6 +42,11 @@ class UsageLimitTest < Test::Unit::TestCase
     assert_equal 3, usage_limits.count
   end
 
+  def test_load_all_returns_empty_array_if_there_are_no_metrics
+    usage_limits = UsageLimit.load_all(2001, 3001)
+    assert usage_limits.empty?, 'Expected usage_limits to be empty'
+  end
+
   def test_metric_name
     Metric.save(:service_id => 2001, :id => 4001, :name => 'hits')
     usage_limit = UsageLimit.new(:service_id => '2001',
@@ -49,5 +54,16 @@ class UsageLimitTest < Test::Unit::TestCase
                                  :metric_id  => '4001')
 
     assert_equal 'hits', usage_limit.metric_name
+  end
+
+  def test_value_is_numeric
+    Metric.save(:service_id => 2001, :id => 4001, :name => 'hits')
+    UsageLimit.save(:service_id => '2001',
+                    :plan_id    => '3001',
+                    :metric_id  => '4001',
+                    :month      => 1000000)
+    usage_limit = UsageLimit.load_all(2001, 3001).first
+
+    assert_equal 1000000, usage_limit.value
   end
 end

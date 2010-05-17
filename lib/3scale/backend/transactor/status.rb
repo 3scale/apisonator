@@ -3,36 +3,56 @@ module ThreeScale
     module Transactor
       class Status
         class Usage
-          def initialize(usage_limit, current_value)
-            @usage_limit   = usage_limit
-            @current_value = current_value
+          def initialize(status, usage_limit)
+            @status      = status
+            @usage_limit = usage_limit
           end
         
-          attr_reader :current_value
           delegate :metric_name, :period, :to => :@usage_limit
 
           def period_start
-            Time.now.getutc.beginning_of_cycle(period)
+            @status.timestamp.beginning_of_cycle(period)
           end
 
           def period_end
-            Time.now.getutc.end_of_cycle(period)
+            @status.timestamp.end_of_cycle(period)
           end
 
           def max_value
             @usage_limit.value
           end
+
+          def current_value
+            @status.current_value_for_usage_limit(@usage_limit)
+          end
+
+          def inspect
+            "#<#{self.class.name} period=#{period}" +
+                                " metric_name=#{metric_name}" +
+                                " max_value=#{max_value}" +
+                                " current_value=#{current_value}>"
+          end
         end
 
-        def initialize(contract)
-          @contract = contract
+        def initialize(contract, timestamp = Time.now.getutc)
+          @contract  = contract
+          @timestamp = timestamp
+          @current_values = contract.current_values
         end
 
+        attr_reader :timestamp
         delegate :plan_name, :to => :contract
 
         def usages
           @usages ||= load_usages
         end
+
+        def current_value_for_usage_limit(usage_limit)
+          values = @current_values[usage_limit.period]
+          values && values[usage_limit.metric_id] || 0
+        end
+
+        TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
         def to_xml(options = {})
           xml = Builder::XmlMarkup.new
@@ -40,6 +60,15 @@ module ThreeScale
 
           xml.status do
             xml.plan plan_name
+
+            usages.each do |usage|
+              xml.usage(:metric => usage.metric_name, :period => usage.period) do
+                xml.period_start  usage.period_start.strftime(TIME_FORMAT)
+                xml.period_end    usage.period_end.strftime(TIME_FORMAT)
+                xml.max_value     usage.max_value
+                xml.current_value usage.current_value
+              end
+            end
           end
 
           xml.target!
@@ -51,7 +80,7 @@ module ThreeScale
 
         def load_usages
           contract.usage_limits.map do |usage_limit|
-            Usage.new(usage_limit, 0)
+            Usage.new(self, usage_limit)
           end
         end
       end
