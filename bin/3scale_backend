@@ -43,9 +43,9 @@ puts ">> Starting 3scale backend in #{ENV['RACK_ENV']} environment. Let's roll!"
 puts "\n"
 
 Thin::Server.start(host, port) do
-  use Rack::CommonLogger if log
-  use HoptoadNotifier::Rack
   use Rack::FiberPool
+  use HoptoadNotifier::Rack if HoptoadNotifier.configuration
+  use Rack::CommonLogger    if log
 
   run ThreeScale::Backend::Router
 end
