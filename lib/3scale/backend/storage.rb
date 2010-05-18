@@ -2,7 +2,10 @@ module ThreeScale
   module Backend
     class Storage
       include Configurable
-      configuration.register_section(:redis, :servers, :db)
+
+      def self.instance
+        @instance ||= new
+      end
 
       def initialize
         # TODO: Implement proper failover.
@@ -41,7 +44,7 @@ module ThreeScale
 
       # Connection remembers the storage object that contains it, and resets itself
       # when unbound. This is to prevent sending commands to dead connection when
-      # the reactor loop was stopped (and possibly stated again).
+      # the reactor loop was stopped (and possibly started again).
       module Connection
         include EM::Protocols::Redis
 
@@ -57,10 +60,6 @@ module ThreeScale
           @storage = storage
         end
       end
-    end
-
-    def self.storage
-      @storage ||= Storage.new
     end
   end
 end

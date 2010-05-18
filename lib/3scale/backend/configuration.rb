@@ -6,7 +6,7 @@ module ThreeScale
       # == Example
       #
       #   # Define section like this
-      #   ThreeScale::Backend.configuration.register_section(:bacons, :type, :amount)
+      #   ThreeScale::Backend.configuration.add_section(:bacons, :type, :amount)
       #
       #   # Configure it like this
       #   ThreeScale::Backend.configure do |config|
@@ -21,7 +21,7 @@ module ThreeScale
       #   # Use like this
       #   ThreeScale::Backend.configuration.bacons.type # :chunky
       #
-      def register_section(name, *fields)
+      def add_section(name, *fields)
         send("#{name}=", Struct.new(*fields).new)
       end
     end
@@ -44,8 +44,5 @@ module ThreeScale
     def self.configuration
       @@configuration ||= Configuration.new
     end
-
-    # Register default sections
-    configuration.register_section(:aws, :access_key_id, :secret_access_key)
   end
 end

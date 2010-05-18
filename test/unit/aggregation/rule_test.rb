@@ -5,7 +5,7 @@ module Aggregation
     include TestHelpers::EventMachine
 
     def setup
-      @storage = ThreeScale::Backend.storage
+      @storage = Storage.instance
       @storage.flushdb
 
       @service_id = 1

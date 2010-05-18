@@ -4,7 +4,7 @@ class ServiceTest < Test::Unit::TestCase
   include TestHelpers::EventMachine
 
   def setup
-    @storage = ThreeScale::Backend.storage
+    @storage = Storage.instance
     @storage.flushdb
   end
 

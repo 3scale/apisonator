@@ -22,6 +22,7 @@ module ThreeScale
     autoload :Archiver,           '3scale/backend/archiver'
     autoload :Route,              '3scale/backend/route'
     autoload :Router,             '3scale/backend/router'
+    autoload :Storage,            '3scale/backend/storage'
     autoload :StorageKeyHelpers,  '3scale/backend/storage_key_helpers'
     autoload :Transactor,         '3scale/backend/transactor'
    
@@ -41,4 +42,16 @@ module ThreeScale
     autoload :Storable,           '3scale/backend/storable'
     autoload :UsageLimit,         '3scale/backend/usage_limit'
   end
+end
+
+
+ThreeScale::Backend.configuration.tap do |config|
+  # Add configuration sections
+  config.add_section(:aws, :access_key_id, :secret_access_key)
+  config.add_section(:redis, :servers, :db)
+  config.add_section(:archiver, :path, :s3_bucket)
+
+  # Default config
+  config.master_provider_key = 'master'
+  config.archiver.path       = '/tmp/transactions'
 end

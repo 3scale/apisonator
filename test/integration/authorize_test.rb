@@ -6,7 +6,7 @@ class AuthorizeTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
 
   def setup
-    @storage = ThreeScale::Backend.storage
+    @storage = Storage.instance
     @storage.flushdb
 
     setup_master_service

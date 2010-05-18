@@ -6,7 +6,7 @@ module Transactor
     include TestHelpers::StorageKeys
 
     def setup
-      @storage = ThreeScale::Backend.storage
+      @storage = Storage.instance
       @storage.flushdb
     end
 

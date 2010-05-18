@@ -21,7 +21,7 @@ module ThreeScale
         include StorageKeyHelpers
       
         def storage
-          ThreeScale::Backend.storage
+          Storage.instance
         end
       end
     end

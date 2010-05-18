@@ -33,7 +33,6 @@ require 'thin'
 require 'rack/fiber_pool'
 require '3scale/backend'
 
-load File.dirname(__FILE__) + '/../configuration.rb'
 load configuration_file if configuration_file
 
 puts ">> Starting 3scale backend in #{ENV['RACK_ENV']} environment. Let's roll!"

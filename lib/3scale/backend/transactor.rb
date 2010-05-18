@@ -176,7 +176,7 @@ module ThreeScale
       end
 
       def storage
-        ThreeScale::Backend.storage
+        Storage.instance
       end
     end
   end

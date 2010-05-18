@@ -5,7 +5,7 @@ class TransactorTest < Test::Unit::TestCase
   include TestHelpers::MasterService
 
   def setup
-    @storage = ThreeScale::Backend.storage
+    @storage = Storage.instance
     @storage.flushdb
 
     setup_master_service

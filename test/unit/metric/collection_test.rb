@@ -5,7 +5,7 @@ module Metric
     include TestHelpers::EventMachine
 
     def setup
-      ThreeScale::Backend.storage.flushdb
+      Storage.instance.flushdb
     end
 
     def test_process_usage_maps_metric_names_to_ids
