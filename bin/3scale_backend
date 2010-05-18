@@ -29,9 +29,9 @@ OptionParser.new do |parser|
   parser.parse!
 end
 
-require '3scale/backend'
 require 'thin'
 require 'rack/fiber_pool'
+require '3scale/backend'
 
 load File.dirname(__FILE__) + '/../configuration.rb'
 load configuration_file if configuration_file

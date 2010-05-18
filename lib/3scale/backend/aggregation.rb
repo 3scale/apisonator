@@ -1,8 +1,8 @@
-require '3scale/backend/aggregation/rule'
-
 module ThreeScale
   module Backend
     module Aggregation
+      autoload :Rule, '3scale/backend/aggregation/rule'
+
       @@rules = []
       
       # Define aggregation rules in given block.
@@ -49,3 +49,5 @@ module ThreeScale
     end
   end
 end
+
+require '3scale/backend/aggregation/configuration'

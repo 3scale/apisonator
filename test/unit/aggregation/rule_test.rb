@@ -70,7 +70,7 @@ module Aggregation
     def build_transaction_at(time)
       {:service   => @service_id,
        :cinstance => @contract_id,
-       :usage     => NumericHash.new(@metric_id => 1),
+       :usage     => {@metric_id => 1},
        :timestamp => time}
     end
   end

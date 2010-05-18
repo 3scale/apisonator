@@ -33,7 +33,7 @@ module ThreeScale
         private
 
         def parse_usage(raw_usage)
-          (raw_usage || {}).inject(NumericHash.new) do |usage, (name, value)|
+          (raw_usage || {}).inject({}) do |usage, (name, value)|
             metric_id = metric_id(sanitize_name(name))
 
             raise MetricNotFound unless metric_id

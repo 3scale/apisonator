@@ -1,5 +1,3 @@
-require '3scale/backend/storable'
-
 module ThreeScale
   module Backend
     class UsageLimit

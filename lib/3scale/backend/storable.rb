@@ -1,5 +1,3 @@
-require '3scale/backend/storage_key_helpers'
-
 module ThreeScale
   module Backend
     module Storable

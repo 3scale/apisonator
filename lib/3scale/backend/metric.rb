@@ -1,8 +1,8 @@
-require '3scale/backend/storable'
-
 module ThreeScale
   module Backend
     class Metric
+      autoload :Collection, '3scale/backend/metric/collection'
+
       include Storable
 
       attr_accessor :service_id

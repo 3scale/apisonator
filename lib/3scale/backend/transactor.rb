@@ -1,9 +1,9 @@
-require '3scale/backend/storage_key_helpers'
-
 module ThreeScale
   module Backend
     # Methods for reporting and authorizing transactions.
     module Transactor
+      autoload :Status, '3scale/backend/transactor/status'
+
       include StorageKeyHelpers
       include Configurable
       
@@ -88,7 +88,7 @@ module ThreeScale
         values     = {}
 
         pairs.each_with_index do |(metric_id, period), index|
-          values[period] ||= NumericHash.new
+          values[period] ||= {}
           values[period][metric_id] = raw_values[index].to_i
         end
 
