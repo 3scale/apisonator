@@ -2,10 +2,10 @@
 
 require 'optparse'
 
+configuration_file = nil
+log = false
 host = '0.0.0.0'
 port = 3000
-options = {}
-configuration_file = nil
 
 OptionParser.new do |parser|
   parser.banner = 'Usage: 3scale_backend [options]'
@@ -26,6 +26,10 @@ OptionParser.new do |parser|
     configuration_file = value
   end
 
+  parser.on '-l', '--log', 'Log requests (by default to standard output)' do
+    log = true
+  end
+
   parser.parse!
 end
 
@@ -38,7 +42,8 @@ load configuration_file if configuration_file
 puts ">> Starting 3scale backend in #{ENV['RACK_ENV']} environment. Let's roll!"
 puts "\n"
 
-Thin::Server.start(host, port, options) do
+Thin::Server.start(host, port) do
+  use Rack::CommonLogger if log
   use HoptoadNotifier::Rack
   use Rack::FiberPool
 
