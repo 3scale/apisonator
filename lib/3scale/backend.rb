@@ -54,4 +54,7 @@ ThreeScale::Backend.configuration.tap do |config|
   # Default config
   config.master_provider_key = 'master'
   config.archiver.path       = '/tmp/transactions'
+
+  # Load configuration from a file.
+  config.load!
 end

@@ -24,6 +24,14 @@ module ThreeScale
       def add_section(name, *fields)
         send("#{name}=", Struct.new(*fields).new)
       end
+
+      # Load configuration from a file (in /etc)
+      def load!
+        paths = ['/etc/3scale_backend.config', '~/.3scale_backend.config']
+        paths.each do |path|
+          load path if File.readable?(path)
+        end
+      end
     end
 
     # Include this into any class to provide convenient access to the configuration.

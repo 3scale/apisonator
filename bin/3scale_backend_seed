@@ -1,0 +1,108 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+file = nil
+
+parser = OptionParser.new do |parser|
+  parser.on('-p', '--postfile FILE', 'An ab-style postfile. This script will generate all data necessary to use it for benchmarking.') do |value|
+    file = value
+  end
+
+  parser.on('-e', '--environment ENVIRONMENT', 'Framework environment (default is development)') do |value|
+    ENV['RACK_ENV'] = value
+  end
+
+  parser.parse!
+end
+
+unless file
+  puts parser
+  abort
+end
+
+require '3scale/backend'
+require 'rack/utils'
+
+class Seeder
+  include Rack::Utils
+  include ThreeScale::Backend
+
+  def seed(source_file)
+    run_in_event_machine do
+      params = parse_nested_query(File.read(source_file))
+
+      storage = Storage.instance
+      storage.flushdb
+
+      master_service_id = seed_master_data
+      service_id        = seed_provider_data(master_service_id, params)
+                          seed_buyer_data(service_id, params)
+    end
+  end
+
+  private
+  
+  MASTER_SERVICE_ID = 1
+
+  def seed_master_data
+    master_provider_key = ThreeScale::Backend.configuration.master_provider_key
+    master_service_id   = 1
+    Service.save(:provider_key => master_provider_key, :id => master_service_id)
+
+    Metric.save(
+      :service_id => master_service_id,
+      :id         => 100,
+      :name       => 'hits',
+      :children   => [Metric.new(:id => 101, :name => 'transactions/create_multiple')])
+
+    Metric.save(
+      :service_id => master_service_id,
+      :id         => 200,
+      :name       => 'transactions')
+
+    master_service_id
+  end
+
+  def seed_provider_data(master_service_id, params)
+    # Create service
+    provider_key = params['provider_key']
+    service_id   = 1001
+    Service.save(:provider_key => provider_key, :id => service_id)
+
+    # Create master contract
+    Contract.save(:service_id => master_service_id, :user_key => provider_key,
+              :id => 1002, :state => :live)
+
+    # Create metrics
+    Metric.save(:service_id => service_id, :id => 8001, :name => 'hits')
+
+    service_id
+  end
+
+  def seed_buyer_data(service_id, params)
+    # Create contracts
+    user_keys = []   
+    params['transactions'].values.each do |transaction|
+      user_keys << transaction['user_key']
+    end
+    user_keys.uniq!
+
+    user_keys.each_with_index do |key, index|
+      Contract.save(:service_id => service_id, :user_key => key,
+                    :id => index + 2000, :state => :live)
+    end
+  end
+
+  def run_in_event_machine
+    EM.run do
+      Fiber.new do
+        yield
+        EM.stop
+      end.resume
+    end
+  end
+end
+
+
+Seeder.new.seed(file)
