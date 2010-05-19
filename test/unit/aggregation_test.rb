@@ -2,13 +2,14 @@ require File.dirname(__FILE__) + '/../test_helper'
 
 class AggregationTest < Test::Unit::TestCase
   include TestHelpers::EventMachine
+  include TestHelpers::StorageKeys
 
   def setup
     @storage = Storage.instance
     @storage.flushdb
   end
 
-  def test_aggregate_increments_all_stats_values_and_updates_all_source_sets
+  def test_aggregate_increments_all_stats_counters
     Aggregation.aggregate(:service   => 1001,
                           :cinstance => 2001,
                           :timestamp => Time.utc(2010, 5, 7, 13, 23, 33),
@@ -31,6 +32,37 @@ class AggregationTest < Test::Unit::TestCase
     assert_equal '1', @storage.get("stats/{service:1001}/cinstance:2001/metric:3001/hour:2010050713")
     assert_equal '1', @storage.get("stats/{service:1001}/cinstance:2001/metric:3001/minute:201005071323")
 
+  end
+
+  def test_aggregate_updates_contract_set
+    Aggregation.aggregate(:service   => 1001,
+                          :cinstance => 2001,
+                          :timestamp => Time.utc(2010, 5, 7, 13, 23, 33),
+                          :usage     => {'3001' => 1})
+    
     assert_equal ['2001'], @storage.smembers("stats/{service:1001}/cinstance_set")
+  end
+    
+  def test_aggregate_does_not_update_service_set
+    assert_no_change :of => lambda { @storage.smembers('stats/service_set') } do
+      Aggregation.aggregate(:service   => 1001,
+                            :cinstance => 2001,
+                            :timestamp => Time.utc(2010, 5, 7, 13, 23, 33),
+                            :usage     => {'3001' => 1})
+    end
+  end
+    
+  def test_aggregate_sets_expiration_time_for_volatile_keys
+    Aggregation.aggregate(:service   => 1001,
+                          :cinstance => 2001,
+                          :timestamp => Time.utc(2010, 5, 7, 13, 23, 33),
+                          :usage     => {'3001' => 1})
+
+    key = contract_key(1001, 2001, 3001, :minute, 201005071323)
+    ttl = @storage.ttl(key)
+
+    assert_not_equal -1, ttl
+    assert ttl >  0
+    assert ttl <= 60
   end
 end
