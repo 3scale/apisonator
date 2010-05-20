@@ -1,8 +1,0 @@
-#! /bin/sh
-
-if [ -n $1 ] 
-then
-  export RACK_ENV=$1
-fi
-
-irb -Ilib -r"3scale/backend"
