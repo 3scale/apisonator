@@ -1,44 +1,4 @@
 #! /usr/bin/env ruby
 
-require 'optparse'
-
-log = false
-host = '0.0.0.0'
-port = 3000
-
-OptionParser.new do |parser|
-  parser.banner = 'Usage: 3scale_backend [options]'
-
-  parser.on '-a', '--address HOST', 'bind to HOST address (default: 0.0.0.0)' do |value|
-    host = value
-  end
-
-  parser.on '-p', '--port PORT', 'use PORT (default: 3000)' do |value|
-    port = value
-  end
-
-  parser.on '-e', '--environment ENV', 'Framework environment (default: development)' do |value|
-    ENV['RACK_ENV'] = value
-  end
-
-  parser.on '-l', '--log', 'Log requests (by default to standard output)' do
-    log = true
-  end
-
-  parser.parse!
-end
-
-require 'thin'
-require 'rack/fiber_pool'
-require '3scale/backend'
-
-puts ">> Starting 3scale backend in #{ENV['RACK_ENV']} environment. Let's roll!"
-puts "\n"
-
-Thin::Server.start(host, port) do
-  use Rack::FiberPool
-  use HoptoadNotifier::Rack if HoptoadNotifier.configuration
-  use Rack::CommonLogger    if log
-
-  run ThreeScale::Backend::Router
-end
+require '3scale/backend/runner'
+ThreeScale::Backend::Runner.run
