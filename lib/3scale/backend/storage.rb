@@ -12,8 +12,11 @@ module ThreeScale
         servers = configuration.redis.servers || []
         server  = servers.first || '127.0.0.1:6379'
 
-        @host, @port = server.split(':')
-        @db = configuration.redis.db
+        host, port = server.split(':')
+
+        @host = host
+        @port = port.to_i
+        @db   = configuration.redis.db || 0
       end
 
       def method_missing(name, *args)
@@ -26,38 +29,47 @@ module ThreeScale
         Fiber.yield
       end
 
-      def disconnect
-        @connection = nil
-      end
+      ConnectionError = Class.new(RuntimeError)
 
       private
-
-      def connect
-        connection = Connection.connect(@host, @port, self)
-        connection.select(@db) if @db
-        connection
-      end
       
       def connection
         @connection ||= connect
       end
 
-      # Connection remembers the storage object that contains it, and resets itself
-      # when unbound. This is to prevent sending commands to dead connection when
-      # the reactor loop was stopped (and possibly started again).
+      def connect
+        connection = Connection.connect(@host, @port)
+        connection.select(@db)
+        connection
+      end
+      
       module Connection
         include EM::Protocols::Redis
 
-        def self.connect(host, port, storage)
-          EM.connect(host, port, self, storage)
+        def self.connect(host, port)
+          EM.connect(host, port, self, host, port)
         end
 
         def unbind
-          @storage && @storage.disconnect
+          raise ConnectionError, 'redis connection lost' if @connecting
+          @connected = false
         end
 
-        def initialize(storage)
-          @storage = storage
+        def initialize(host, port)
+          @host = host
+          @port = port
+
+          @connecting = true
+        end
+
+        def connection_completed
+          super
+          @connecting = false
+        end
+
+        def raw_call_command(*args, &block)
+          raise ConnectionError, 'redis connection lost' unless @connected
+          super
         end
       end
     end
