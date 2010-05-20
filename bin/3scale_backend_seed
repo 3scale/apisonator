@@ -3,10 +3,15 @@
 require 'optparse'
 
 file = nil
+usage_limits = false
 
 parser = OptionParser.new do |parser|
   parser.on('-p', '--postfile FILE', 'An ab-style postfile. This script will generate all data necessary to use it for benchmarking.') do |value|
     file = value
+  end
+
+  parser.on('-l', '--limits', 'Generate also some usage limits') do
+    usage_limits = true
   end
 
   parser.on('-e', '--environment ENVIRONMENT', 'Framework environment (default is development)') do |value|
@@ -28,16 +33,16 @@ class Seeder
   include Rack::Utils
   include ThreeScale::Backend
 
-  def seed(source_file)
+  def seed(source_file, usage_limits)
     run_in_event_machine do
       params = parse_nested_query(File.read(source_file))
 
       storage = Storage.instance
       storage.flushdb
 
-      master_service_id = seed_master_data
-      service_id        = seed_provider_data(master_service_id, params)
-                          seed_buyer_data(service_id, params)
+      master_service_id   = seed_master_data
+      service_id, plan_id = seed_provider_data(master_service_id, params, usage_limits)
+                            seed_buyer_data(service_id, plan_id, params)
     end
   end
 
@@ -54,7 +59,8 @@ class Seeder
       :service_id => master_service_id,
       :id         => 100,
       :name       => 'hits',
-      :children   => [Metric.new(:id => 101, :name => 'transactions/create_multiple')])
+      :children   => [Metric.new(:id => 101, :name => 'transactions/create_multiple'),
+                      Metric.new(:id => 102, :name => 'transactions/authorize')])
 
     Metric.save(
       :service_id => master_service_id,
@@ -64,7 +70,7 @@ class Seeder
     master_service_id
   end
 
-  def seed_provider_data(master_service_id, params)
+  def seed_provider_data(master_service_id, params, usage_limits)
     # Create service
     provider_key = params['provider_key']
     service_id   = 1001
@@ -77,10 +83,25 @@ class Seeder
     # Create metrics
     Metric.save(:service_id => service_id, :id => 8001, :name => 'hits')
 
-    service_id
+    # Create plan
+    plan_id = 2001
+
+    if usage_limits
+      # Create limits
+      UsageLimit.save(:service_id => service_id,
+                      :plan_id    => plan_id,
+                      :metric_id  => 8001,
+                      :month      => 1000000,
+                      :week       =>  500000,
+                      :day        =>  100000,
+                      :hour       =>   10000,
+                      :minute     =>    1000)
+    end
+
+    [service_id, plan_id]
   end
 
-  def seed_buyer_data(service_id, params)
+  def seed_buyer_data(service_id, plan_id, params)
     # Create contracts
     user_keys = []   
     params['transactions'].values.each do |transaction|
@@ -89,8 +110,12 @@ class Seeder
     user_keys.uniq!
 
     user_keys.each_with_index do |key, index|
-      Contract.save(:service_id => service_id, :user_key => key,
-                    :id => index + 2000, :state => :live)
+      Contract.save(:service_id => service_id,
+                    :user_key   => key,
+                    :plan_id    => plan_id,
+                    :plan_name  => 'test',
+                    :id         => index + 3000,
+                    :state => :live)
     end
   end
 
@@ -105,4 +130,4 @@ class Seeder
 end
 
 
-Seeder.new.seed(file)
+Seeder.new.seed(file, usage_limits)
