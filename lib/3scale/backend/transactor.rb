@@ -145,19 +145,7 @@ module ThreeScale
       end
 
       def process_transaction(transaction)
-        aggregate_transaction(transaction)
-        archive_transaction(transaction)
-      end
-
-      def aggregate_transaction(transaction)
-        # Rename some fields, for backward compatibility.
-        Aggregation.aggregate(:service   => transaction[:service_id],
-                              :cinstance => transaction[:contract_id],
-                              :timestamp => transaction[:timestamp],
-                              :usage     => transaction[:usage])
-      end
-
-      def archive_transaction(transaction)
+        Aggregator.aggregate(transaction)
         Archiver.add(transaction)
       end
 

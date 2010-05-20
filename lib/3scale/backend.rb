@@ -18,7 +18,7 @@ module ThreeScale
   module Backend
     autoload :Action,             '3scale/backend/action'
     autoload :Actions,            '3scale/backend/actions'
-    autoload :Aggregation,        '3scale/backend/aggregation'
+    autoload :Aggregator,         '3scale/backend/aggregator'
     autoload :Archiver,           '3scale/backend/archiver'
     autoload :Route,              '3scale/backend/route'
     autoload :Router,             '3scale/backend/router'

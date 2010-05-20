@@ -46,17 +46,17 @@ class TransactorTest < Test::Unit::TestCase
   def test_report_aggregates
     time = Time.now
 
-    Aggregation.expects(:aggregate).with(:service   => @service_id,
-                                         :cinstance => @contract_id_one,
-                                         :timestamp => time,
-                                         :usage     => {@metric_id => 1})
+    Aggregator.expects(:aggregate).with(:service_id  => @service_id,
+                                        :contract_id => @contract_id_one,
+                                        :timestamp   => time,
+                                        :usage       => {@metric_id => 1})
 
-    Aggregation.expects(:aggregate).with(:service   => @service_id,
-                                         :cinstance => @contract_id_two,
-                                         :timestamp => time,
-                                         :usage     => {@metric_id => 1})
+    Aggregator.expects(:aggregate).with(:service_id  => @service_id,
+                                        :contract_id => @contract_id_two,
+                                        :timestamp   => time,
+                                        :usage       => {@metric_id => 1})
     
-    Aggregation.stubs(:aggregate).with(has_entry(:service => @master_service_id))
+    Aggregator.stubs(:aggregate).with(has_entry(:service_id => @master_service_id))
 
     Timecop.freeze(time) do
       Transactor.report(
@@ -67,10 +67,10 @@ class TransactorTest < Test::Unit::TestCase
   end
   
   def test_report_handles_transactions_with_utc_timestamps
-    Aggregation.expects(:aggregate).with(
+    Aggregator.expects(:aggregate).with(
       has_entry(:timestamp => Time.utc(2010, 5, 7, 18, 11, 25)))
     
-    Aggregation.stubs(:aggregate).with(has_entry(:service => @master_service_id))
+    Aggregator.stubs(:aggregate).with(has_entry(:service_id => @master_service_id))
 
     Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
                                            'usage' => {'hits' => 1},
@@ -78,10 +78,10 @@ class TransactorTest < Test::Unit::TestCase
   end
   
   def test_report_handles_transactions_with_local_timestamps
-    Aggregation.expects(:aggregate).with(
+    Aggregator.expects(:aggregate).with(
       has_entry(:timestamp => Time.utc(2010, 5, 7, 11, 11, 25)))
     
-    Aggregation.stubs(:aggregate).with(has_entry(:service => @master_service_id))
+    Aggregator.stubs(:aggregate).with(has_entry(:service_id => @master_service_id))
 
     Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
                                            'usage' => {'hits' => 1},
@@ -232,7 +232,8 @@ class TransactorTest < Test::Unit::TestCase
   end
   
   def test_report_does_not_aggregate_anything_when_at_least_one_transaction_is_invalid
-    Aggregation.expects(:aggregate).with(Not(has_entry(:service_id => @master_service_id)))
+    Aggregator.expects(:aggregate).with(has_entry(:service_id => @service_id)).never
+    Aggregator.stubs(:aggregate).with(has_entry(:service_id => @master_service_id))
 
     begin
       Transactor.report(
@@ -246,15 +247,15 @@ class TransactorTest < Test::Unit::TestCase
   def test_report_aggregates_backend_hit
     time = Time.now
 
-    Aggregation.expects(:aggregate).with(
-      :service   => @master_service_id,
-      :cinstance => @master_contract_id,
-      :timestamp => time,
-      :usage     => {@master_hits_id => 1,
-                     @master_reports_id => 1,
-                     @master_transactions_id => 2})
+    Aggregator.expects(:aggregate).with(
+      :service_id  => @master_service_id,
+      :contract_id => @master_contract_id,
+      :timestamp   => time,
+      :usage       => {@master_hits_id => 1,
+                       @master_reports_id => 1,
+                       @master_transactions_id => 2})
 
-    Aggregation.stubs(:aggregate).with(Not(has_entry(:service => @master_service_id)))
+    Aggregator.stubs(:aggregate).with(Not(has_entry(:service_id => @master_service_id)))
 
     Timecop.freeze(time) do
       Transactor.report(
@@ -378,12 +379,12 @@ class TransactorTest < Test::Unit::TestCase
   def test_authorize_aggregates_backend_hit
     time = Time.now
 
-    Aggregation.expects(:aggregate).with(
-      :service   => @master_service_id,
-      :cinstance => @master_contract_id,
-      :timestamp => time,
-      :usage     => {@master_hits_id => 1,
-                     @master_authorizes_id => 1})
+    Aggregator.expects(:aggregate).with(
+      :service_id  => @master_service_id,
+      :contract_id => @master_contract_id,
+      :timestamp   => time,
+      :usage       => {@master_hits_id => 1,
+                       @master_authorizes_id => 1})
 
     Timecop.freeze(time) do
       Transactor.authorize(@provider_key, @user_key_one)
