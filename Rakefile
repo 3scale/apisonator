@@ -3,10 +3,13 @@ require 'rake/testtask'
 
 task :default => :test
 
-desc 'Run all test (unit and integration)'
+desc 'Run unit and integration tests'
 task :test => ['test:unit', 'test:integration']
 
 namespace :test do
+  desc 'Run all tests (unit, integration and special)'
+  task :all => ['test:unit', 'test:integration', 'test:special']
+
   Rake::TestTask.new(:unit) do |task|
     task.test_files = FileList['test/unit/**/*_test.rb']
     task.verbose = true
@@ -14,6 +17,11 @@ namespace :test do
   
   Rake::TestTask.new(:integration) do |task|
     task.test_files = FileList['test/integration/**/*_test.rb']
+    task.verbose = true
+  end
+
+  Rake::TestTask.new(:special) do |task|
+    task.test_files = FileList['test/special/**/*_test.rb']
     task.verbose = true
   end
 end

@@ -5,7 +5,7 @@ module Metric
     include TestHelpers::EventMachine
 
     def setup
-      Storage.instance.flushdb
+      Storage.instance(true).flushdb
     end
 
     def test_process_usage_maps_metric_names_to_ids

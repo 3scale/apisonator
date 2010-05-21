@@ -6,7 +6,7 @@ class AuthorizeTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
 
   def setup
-    @storage = Storage.instance
+    @storage = Storage.instance(true)
     @storage.flushdb
 
     setup_master_service

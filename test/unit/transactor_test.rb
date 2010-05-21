@@ -5,7 +5,7 @@ class TransactorTest < Test::Unit::TestCase
   include TestHelpers::MasterService
 
   def setup
-    @storage = Storage.instance
+    @storage = Storage.instance(true)
     @storage.flushdb
 
     setup_master_service

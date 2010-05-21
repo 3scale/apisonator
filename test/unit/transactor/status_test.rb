@@ -6,7 +6,7 @@ module Transactor
     include TestHelpers::StorageKeys
 
     def setup
-      @storage = Storage.instance
+      @storage = Storage.instance(true)
       @storage.flushdb
     end
 

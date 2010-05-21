@@ -19,7 +19,7 @@ class ArchiverTest < Test::Unit::TestCase
 
     Archiver.add(transaction)
 
-    filename = "/tmp/transactions/service-4001/20100412.xml.part"
+    filename = "/tmp/3scale_backend/archive/service-4001/20100412.xml.part"
     assert File.exists?(filename), "File should exist, but it doesn't."
 
     content = File.read(filename)
@@ -39,7 +39,7 @@ class ArchiverTest < Test::Unit::TestCase
   end
 
   def test_add_appends_to_existing_partial_file
-    filename = "/tmp/transactions/service-4001/20100412.xml.part"
+    filename = "/tmp/3scale_backend/archive/service-4001/20100412.xml.part"
 
     # Data already existing in the file
     xml = Builder::XmlMarkup.new
@@ -163,7 +163,7 @@ class ArchiverTest < Test::Unit::TestCase
                  :usage       => {6001 => 1},
                  :timestamp   => Time.utc(2010, 4, 12, 23, 19))
     
-    path = '/tmp/transactions/service-4001/20100412.xml.part'
+    path = '/tmp/3scale_backend/archive/service-4001/20100412.xml.part'
 
     Timecop.freeze(2010, 4, 14, 12, 30) do
       assert  File.exist?(path), "File should exist, but it doesn't."
@@ -178,7 +178,7 @@ class ArchiverTest < Test::Unit::TestCase
                  :usage       => {6001 => 1},
                  :timestamp   => Time.utc(2010, 4, 12, 23, 19))
     
-    path = '/tmp/transactions/service-4001/20100412.xml.part'
+    path = '/tmp/3scale_backend/archive/service-4001/20100412.xml.part'
 
     Timecop.freeze(2010, 4, 13, 12, 30) do
       Archiver.cleanup
