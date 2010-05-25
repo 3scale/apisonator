@@ -12,7 +12,7 @@ module ThreeScale
         @options = {:host => '0.0.0.0', :port => 3000}
       end
 
-      COMMANDS = [:start, :stop, :restart]
+      COMMANDS = [:start, :stop, :restart, :restore_backup]
 
       def run
         parse!(ARGV)
@@ -62,6 +62,20 @@ module ThreeScale
 
       def restart
         Thin::Server.restart(pid_file)
+      end
+
+      def restore_backup
+        require '3scale/backend'
+
+        EM.run do
+          Fiber.new do
+            puts ">> Replaying write commands from backup."
+            ThreeScale::Backend::Storage.instance(true).restore_backup
+            puts ">> Done."
+
+            EM.stop
+          end.resume
+        end
       end
       
       def pid_file

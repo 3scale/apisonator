@@ -8,7 +8,6 @@ require 'fiber'
 require 'hoptoad_notifier'
 require 'ostruct'
 require 'time'
-require 'yaml'
 require 'zlib'
 
 require '3scale/backend/configuration'

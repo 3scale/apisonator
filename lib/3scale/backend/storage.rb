@@ -60,6 +60,8 @@ module ThreeScale
         :select        
       ].to_set
 
+      DEFAULT_BACKUP_FILE = '/tmp/3scale_backend/backup_storage'
+
       # Returns a shared instance of the storage. If there is no instance yet,
       # creates one first. If you want to always create a fresh instance, set the 
       # +reset+ parameter to true.
@@ -100,7 +102,7 @@ module ThreeScale
         @server_index   = 0
         
         @db             = options[:db] || 0
-        @backup_path    = options[:backup_path] || '/tmp/3scale_backend/backup_storage'
+        @backup_file    = options[:backup_file] || DEFAULT_BACKUP_FILE
 
         @disconnected   = false
         @calling_fibers = []
@@ -121,6 +123,27 @@ module ThreeScale
         host, port = host_and_port(current_server)        
         super(host, port)
         select(@db)
+      end
+
+      def restore_backup
+        if File.readable?(@backup_file)
+          # To restore the backup, I first copy the backup file and delete the original.
+          # This is for the case the server goes down during the backup restore, so the
+          # failed commands are backed up again to a fresh file.
+
+          active_backup_file = @backup_file + '.active'
+
+          FileUtils.cp(@backup_file, active_backup_file)
+          File.delete(@backup_file)
+
+          File.open(active_backup_file, 'r') do |io|
+            io.each_line do |line|
+              call_command(decode_command_for_backup(line))
+            end
+          end
+
+          File.delete(active_backup_file)
+        end
       end
 
       private
@@ -156,50 +179,28 @@ module ThreeScale
       end
 
       def raw_call_command(args, &block)
-        data = compile_command(args)
-
         if write_command?(args.first) && connected_to_backup_server?
-          FileUtils.mkdir_p(File.dirname(@backup_path))
-          File.open(@backup_path, 'a') { |io| io << data }
+          FileUtils.mkdir_p(File.dirname(@backup_file))
+
+          File.open(@backup_file, 'a') do |io|
+            io << encode_command_for_backup(args) << "\n"
+          end
 
           EM.next_tick { block.call(nil) }
         else
-          @redis_callbacks << [REPLY_PROCESSOR[args[0]], block]
-          send_data(data)
+          super
         end
       end
 
-      def compile_command(argv)
-        # This code is copied straight over from em-redis gem.
+      def encode_command_for_backup(command)
+        # TODO: would be good to escape spaces and newlines in each argument,
+        # but the normal (non-backup) processig doesn't do it neither, so let's
+        # not bother now.
+        command.join(' ')
+      end
 
-        argv = argv.dup
-
-        if MULTI_BULK_COMMANDS[argv.flatten[0].to_s]
-          argvp   = argv.flatten
-          values  = argvp.pop.to_a.flatten
-          argvp   = values.unshift(argvp[0])
-          command = ["*#{argvp.size}"]
-          argvp.each do |v|
-            v = v.to_s
-            command << "$#{get_size(v)}"
-            command << v
-          end
-          command = command.map {|cmd| "#{cmd}\r\n"}.join
-        else
-          command = ""
-          bulk = nil
-          argv[0] = argv[0].to_s.downcase
-          argv[0] = ALIASES[argv[0]] if ALIASES[argv[0]]
-          raise "#{argv[0]} command is disabled" if DISABLED_COMMANDS[argv[0]]
-          if BULK_COMMANDS[argv[0]] and argv.length > 1
-            bulk = argv[-1].to_s
-            argv[-1] = get_size(bulk)
-          end
-          command << "#{argv.join(' ')}\r\n"
-          command << "#{bulk}\r\n" if bulk
-        end
-
-        command
+      def decode_command_for_backup(command)
+        command.split(/\s+/)
       end
 
       def push_calling_fiber(fiber)

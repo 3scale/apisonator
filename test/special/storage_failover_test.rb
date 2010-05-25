@@ -11,7 +11,7 @@ class StorageFailoverTest < Test::Unit::TestCase
     stop_all_redis_servers
   end
 
-  def test_with_one_server_succeeds_onuconnect_when_the_server_is_up
+  def test_with_one_server_succeeds_on_connect_when_the_server_is_up
     start_redis_server(6400)
 
     assert Storage.connect(:servers => ['127.0.0.1:6400'])
@@ -141,9 +141,8 @@ class StorageFailoverTest < Test::Unit::TestCase
     storage.set('foo', 'one')
     storage.set('bar', 'two')
 
-    commands = File.read('/tmp/3scale_backend/backup_storage')
-
-    assert_equal "set foo 3\r\none\r\nset bar 3\r\ntwo\r\n", commands
+    assert_equal "set foo one\nset bar two\n",
+                 File.read('/tmp/3scale_backend/backup_storage')
   end
 
   private
