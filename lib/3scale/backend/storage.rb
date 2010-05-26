@@ -80,21 +80,31 @@ module ThreeScale
       end
 
       def call_command(args, &block)
-        reconnect if @disconnected
+        reconnect(args.first.to_sym != :select) if @disconnected
 
         fiber = Fiber.current
         push_calling_fiber(fiber)
           
         callback do
           raw_call_command(args) do |response|
-            fiber.resume(true, response)
+            fiber.resume(:success, response)
           end
         end
 
-        success, payload = Fiber.yield
+        status, response = Fiber.yield
         pop_calling_fiber
 
-        success ? payload : try_to_call_command_on_next_server(args, &block)
+        case status
+        when :success
+          response
+        when :retry_on_next_server
+          next_server!
+          call_command(args, &block)
+        when :retry
+          call_command(args, &block)
+        else
+          raise "Unknown response status: #{status.inspect}"
+        end
       end
 
       def initialize(options)
@@ -110,10 +120,12 @@ module ThreeScale
 
       def unbind
         @disconnected = true
-        resume_calling_fibers
+
+        fail unless @calling_fibers.empty?
+        retry_pending_commands
       end
 
-      def reconnect
+      def reconnect(reselect = true)
         @disconnected = false
 
         # I need to do this so the deferred callbacks are called only after
@@ -122,7 +134,7 @@ module ThreeScale
 
         host, port = host_and_port(current_server)        
         super(host, port)
-        select(@db)
+        select(@db) if reselect
       end
 
       def restore_backup
@@ -147,23 +159,32 @@ module ThreeScale
       end
 
       private
-      
-      def try_to_call_command_on_next_server(args, &block)
-        if has_more_servers?
-          next_server!
-          call_command(args, &block)
-        else
-          raise ConnectionError
+
+      def retry_pending_commands
+        resume_fibers(@calling_fibers[0..0],  :retry_on_next_server)
+        resume_fibers(@calling_fibers[1..-1], :retry)
+      end
+
+      def resume_fibers(fibers, status)
+        if fibers && fibers.size > 0
+          EM.next_tick { fibers[0].resume(status) }
+          resume_fibers(fibers[1..-1], status)
         end
       end
 
-      def next_server!
-        @disconnected = true
-        @server_index += 1
+      def push_calling_fiber(fiber)
+        @calling_fibers.push(fiber)
       end
 
-      def has_more_servers?
-        (@server_index + 1) < @servers.size
+      def pop_calling_fiber
+        @calling_fibers.shift
+      end
+
+      def next_server!
+        raise ConnectionError if @server_index >= @servers.count - 1
+
+        @server_index += 1
+        @disconnected = true
       end
 
       def current_server
@@ -201,23 +222,6 @@ module ThreeScale
 
       def decode_command_for_backup(command)
         command.split(/\s+/)
-      end
-
-      def push_calling_fiber(fiber)
-        @calling_fibers.unshift(fiber)
-      end
-
-      def pop_calling_fiber
-        @calling_fibers.pop
-      end
-
-      def resume_calling_fibers
-        if fiber = pop_calling_fiber
-          fail
-          EM.next_tick { fiber.resume(false) }
-
-          resume_calling_fibers
-        end
       end
 
       module ConfigurationHelpers

@@ -1,6 +1,24 @@
 module TestHelpers
   # Support for testing evented code.
   module EventMachine
+
+    module Methods
+      def in_event_machine_loop
+        result = nil
+
+        EM.run do
+          Fiber.new do
+            result = yield
+            EM.stop
+          end.resume
+        end
+
+        result
+      end
+    end
+
+    include Methods
+
     def self.included(base)
       base.class_eval do
         alias_method :run_without_event_machine, :run
@@ -9,16 +27,7 @@ module TestHelpers
     end
 
     def run_with_event_machine(runner, &block)
-      result = nil
-     
-      EM.run do
-        Fiber.new do
-          result = run_without_event_machine(runner, &block)
-          EM.stop
-        end.resume
-      end
-
-      result
+      in_event_machine_loop { run_without_event_machine(runner, &block) }
     end
   end
 end

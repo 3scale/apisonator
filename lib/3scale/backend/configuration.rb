@@ -29,7 +29,7 @@ module ThreeScale
       def load!
         paths = ['/etc/3scale_backend.config', '~/.3scale_backend.config']
         paths.each do |path|
-          load path if File.readable?(path)
+          load path if File.readable?(File.expand_path(path))
         end
       end
     end
