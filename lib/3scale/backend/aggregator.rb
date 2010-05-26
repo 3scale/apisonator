@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     module Aggregator
-      include StorageKeyHelpers
+      include Core::StorageKeyHelpers
       extend self
 
       # TODO: clean this up a bit

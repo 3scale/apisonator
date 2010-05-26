@@ -4,7 +4,7 @@ module ThreeScale
     module Transactor
       autoload :Status, '3scale/backend/transactor/status'
 
-      include StorageKeyHelpers
+      include Core::StorageKeyHelpers
       include Configurable
       
       extend self
@@ -13,7 +13,7 @@ module ThreeScale
         report_backend_hit(provider_key, 'transactions/create_multiple' => 1,
                                          'transactions' => raw_transactions.size)
 
-        service_id = Service.load_id(provider_key) || raise(ProviderKeyInvalid)
+        service_id = Core::Service.load_id(provider_key) || raise(ProviderKeyInvalid)
         errors = {}
         transactions = []
 
@@ -50,7 +50,7 @@ module ThreeScale
       def authorize(provider_key, user_key)
         report_backend_hit(provider_key, 'transactions/authorize' => 1)
 
-        service_id = Service.load_id(provider_key) || raise(ProviderKeyInvalid)
+        service_id = Core::Service.load_id(provider_key) || raise(ProviderKeyInvalid)
         contract = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
 
         validate_contract_state(contract)
@@ -160,7 +160,8 @@ module ThreeScale
       end
 
       def master_service_id
-        Service.load_id(configuration.master_provider_key) || raise("Can't load master service id. Make sure the \"main.master_provider_key\" configuration value is set correctly")
+        Core::Service.load_id(configuration.master_provider_key) ||
+          raise("Can't load master service id. Make sure the \"main.master_provider_key\" configuration value is set correctly")
       end
 
       def storage

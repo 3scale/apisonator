@@ -1,6 +1,7 @@
 module TestHelpers
   # Helpers for setting up master service objects.
   module MasterService
+    include ThreeScale
     include ThreeScale::Backend
 
     def self.included(base)
@@ -11,8 +12,9 @@ module TestHelpers
 
     def setup_master_service
       @master_service_id = next_id
-      Service.save(:provider_key => ThreeScale::Backend.configuration.master_provider_key,
-                   :id => @master_service_id)
+      Core::Service.save(
+        :provider_key => Backend.configuration.master_provider_key,
+        :id => @master_service_id)
 
       @master_hits_id         = next_id
       @master_reports_id      = next_id

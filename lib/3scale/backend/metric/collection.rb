@@ -2,7 +2,7 @@ module ThreeScale
   module Backend
     class Metric
       class Collection
-        include Storable
+        include Core::Storable
       
         def initialize(service_id)
           @service_id = service_id

@@ -17,7 +17,7 @@ class ReportTest < Test::Unit::TestCase
                   :id => @master_contract_id, :state => :live)
 
     @service_id = next_id
-    Service.save(:provider_key => @provider_key, :id => @service_id)
+    Core::Service.save(:provider_key => @provider_key, :id => @service_id)
 
     @contract_id = next_id
     @user_key = 'user_key'

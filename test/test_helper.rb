@@ -20,6 +20,7 @@ ThreeScale::Backend.configure do |config|
 end
 
 class Test::Unit::TestCase
+  include ThreeScale
   include ThreeScale::Backend
   include ThreeScale::Backend::Configurable
 end

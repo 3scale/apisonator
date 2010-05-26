@@ -12,11 +12,13 @@ class TransactorTest < Test::Unit::TestCase
 
     @provider_key = 'provider_key'
     @master_contract_id = next_id
-    Contract.save(:service_id => @master_service_id, :user_key => @provider_key,
-                  :id => @master_contract_id, :state => :live)
+    Contract.save(:service_id => @master_service_id,
+                  :user_key => @provider_key,
+                  :id => @master_contract_id,
+                  :state => :live)
 
     @service_id = next_id
-    Service.save(:provider_key => @provider_key, :id => @service_id)
+    Core::Service.save(:provider_key => @provider_key, :id => @service_id)
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')

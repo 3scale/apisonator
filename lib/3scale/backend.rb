@@ -10,6 +10,8 @@ require 'ostruct'
 require 'time'
 require 'zlib'
 
+require '3scale/core'
+
 require '3scale/backend/configuration'
 require '3scale/backend/time_hacks'
 
@@ -19,11 +21,13 @@ module ThreeScale
     autoload :Actions,            '3scale/backend/actions'
     autoload :Aggregator,         '3scale/backend/aggregator'
     autoload :Archiver,           '3scale/backend/archiver'
+    autoload :Contract,           '3scale/backend/contract'
+    autoload :Metric,             '3scale/backend/metric'
     autoload :Route,              '3scale/backend/route'
     autoload :Router,             '3scale/backend/router'
     autoload :Storage,            '3scale/backend/storage'
-    autoload :StorageKeyHelpers,  '3scale/backend/storage_key_helpers'
     autoload :Transactor,         '3scale/backend/transactor'
+    autoload :UsageLimit,         '3scale/backend/usage_limit'
    
     autoload :ContractNotActive,  '3scale/backend/errors'
     autoload :Error,              '3scale/backend/errors'
@@ -33,16 +37,14 @@ module ThreeScale
     autoload :ProviderKeyInvalid, '3scale/backend/errors'
     autoload :UserKeyInvalid,     '3scale/backend/errors'
     autoload :UsageValueInvalid,  '3scale/backend/errors'
-    
-    # These will be extracted to a separate gem.
-    autoload :Contract,           '3scale/backend/contract'
-    autoload :Metric,             '3scale/backend/metric'
-    autoload :Service,            '3scale/backend/service'
-    autoload :Storable,           '3scale/backend/storable'
-    autoload :UsageLimit,         '3scale/backend/usage_limit'
+  end
+
+  module Core
+    def self.storage
+      ThreeScale::Backend::Storage.instance
+    end
   end
 end
-
 
 ThreeScale::Backend.configuration.tap do |config|
   # Add configuration sections
