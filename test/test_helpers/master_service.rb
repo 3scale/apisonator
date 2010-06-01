@@ -11,10 +11,7 @@ module TestHelpers
     private
 
     def setup_master_service
-      @master_service_id = next_id
-      Core::Service.save(
-        :provider_key => Backend.configuration.master_provider_key,
-        :id => @master_service_id)
+      @master_service_id = ThreeScale::Backend.configuration.master_service_id
 
       @master_hits_id         = next_id
       @master_reports_id      = next_id

@@ -53,8 +53,8 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:archiver, :path, :s3_bucket)
 
   # Default config
-  config.master_provider_key = 'master'
-  config.archiver.path       = '/tmp/3scale_backend/archive'
+  config.master_service_id = 1
+  config.archiver.path     = '/tmp/3scale_backend/archive'
 
   # Load configuration from a file.
   config.load!

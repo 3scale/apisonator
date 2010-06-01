@@ -51,10 +51,7 @@ class Seeder
   MASTER_SERVICE_ID = 1
 
   def seed_master_data
-    master_provider_key = ThreeScale::Backend.configuration.master_provider_key
-    master_service_id   = 1
-    Service.save(:provider_key => master_provider_key, :id => master_service_id)
-
+    master_service_id = ThreeScale::Backend.configuration.master_service_id
     Metric.save(
       :service_id => master_service_id,
       :id         => 100,

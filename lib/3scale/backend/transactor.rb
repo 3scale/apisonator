@@ -160,8 +160,7 @@ module ThreeScale
       end
 
       def master_service_id
-        Core::Service.load_id(configuration.master_provider_key) ||
-          raise("Can't load master service id. Make sure the \"main.master_provider_key\" configuration value is set correctly")
+        configuration.master_service_id || raise("Can't find master service id. Make sure the \"master_service_id\" configuration value is set correctly")
       end
 
       def storage
