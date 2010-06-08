@@ -32,6 +32,8 @@ class StorageTest < Test::Unit::TestCase
   private
 
   def write_backup_file(*commands)
+    FileUtils.mkdir_p(File.dirname(Storage::DEFAULT_BACKUP_FILE))
+
     File.open(Storage::DEFAULT_BACKUP_FILE, 'w') do |io|
       commands.each do |command|
         io << command << "\n"
