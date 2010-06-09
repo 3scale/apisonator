@@ -5,8 +5,7 @@ module ThreeScale
         usage_value = usage[period]
         usage_value &&= usage_value[metric_id].to_i
 
-        raise LimitsExceeded if usage_value > value
-        true
+        usage_value <= value
       end
     end
   end

@@ -8,12 +8,9 @@ class UsageLimitTest < Test::Unit::TestCase
     @storage.flushdb
   end
 
-  def test_validate_raises_an_exception_if_the_limit_is_exceeded
+  def test_validate_returns_false_if_the_limit_is_exceeded
     usage_limit = UsageLimit.new(:metric_id => 4001, :period => :day, :value => 200)
-
-    assert_raise LimitsExceeded do
-      usage_limit.validate(:day => {4001 => 213})
-    end
+    assert !usage_limit.validate(:day => {4001 => 213})
   end
   
   def test_validate_returns_true_if_the_limit_is_not_exceeded

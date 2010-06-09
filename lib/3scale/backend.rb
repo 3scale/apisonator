@@ -32,6 +32,7 @@ module ThreeScale
    
     autoload :ContractNotActive,     '3scale/backend/errors'
     autoload :Error,                 '3scale/backend/errors'
+    autoload :ERROR_MESSAGES,        '3scale/backend/errors'
     autoload :LimitsExceeded,        '3scale/backend/errors'
     autoload :MetricNotFound,        '3scale/backend/errors'
     autoload :MultipleErrors,        '3scale/backend/errors'

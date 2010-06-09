@@ -32,6 +32,10 @@ module ThreeScale
             @parent.current_value_for_usage_limit(@usage_limit)
           end
 
+          def exceeded?
+            current_value > max_value
+          end
+
           def inspect
             "#<#{self.class.name} period=#{period}" +
                                 " metric_name=#{metric_name}" +
@@ -41,12 +45,27 @@ module ThreeScale
         end
 
         def initialize(contract, current_values, timestamp = Time.now.getutc)
-          @contract  = contract
-          @timestamp = timestamp
+          @contract       = contract
+          @timestamp      = timestamp
           @current_values = current_values
+          @authorized     = true
+        end
+
+        def reject!(code)
+          @authorized = false
+          @rejection_reason_code ||= code
         end
       
         attr_reader :timestamp
+        attr_reader :rejection_reason_code
+
+        def rejection_reason_text
+          ERROR_MESSAGES[rejection_reason_code]
+        end
+
+        def authorized?
+          @authorized
+        end
 
         def plan_name
           @contract.plan_name

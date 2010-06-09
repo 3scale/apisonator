@@ -329,6 +329,45 @@ class TransactorTest < Test::Unit::TestCase
     status = Transactor.authorize(@provider_key, @user_key_one)
     assert_equal 0, status.usage_reports.count
   end
+
+  def test_authorize_returns_unauthorized_status_object_when_contract_is_suspended
+    contract = Contract.load(@service_id, @user_key_one)
+    contract.state = :suspended
+    contract.save
+
+    status = Transactor.authorize(@provider_key, @user_key_one)
+    assert !status.authorized?
+    assert_equal 'user.inactive_contract', status.rejection_reason_code
+    assert_equal 'contract is not active', status.rejection_reason_text
+  end
+  
+  def test_authorize_returns_unauthorized_status_object_when_usage_limits_are_exceeded
+    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
+                    :day => 4)
+
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
+      Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
+                                             'usage' => {'hits' => 5}})
+
+      status = Transactor.authorize(@provider_key, @user_key_one)
+      assert !status.authorized?
+      assert_equal 'user.exceeded_limits',      status.rejection_reason_code
+      assert_equal 'usage limits are exceeded', status.rejection_reason_text
+    end
+  end
+  
+  def test_authorize_succeeds_if_there_are_usage_limits_that_are_not_exceeded
+    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
+                    :day => 4)
+
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
+      Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
+                                             'usage' => {'hits' => 3}})
+
+      status = Transactor.authorize(@provider_key, @user_key_one)
+      assert status.authorized?
+    end
+  end
   
   def test_authorize_raises_an_exception_when_provider_key_is_invalid
     assert_raise ProviderKeyInvalid do
@@ -341,43 +380,7 @@ class TransactorTest < Test::Unit::TestCase
       Transactor.authorize(@provider_key, 'baaa')
     end
   end
-  
-  def test_authorize_raises_an_exception_when_contract_is_suspended
-    contract = Contract.load(@service_id, @user_key_one)
-    contract.state = :suspended
-    contract.save
 
-    assert_raise ContractNotActive do
-      Transactor.authorize(@provider_key, @user_key_one)
-    end
-  end
-
-  def test_authorize_raises_an_exception_when_usage_limits_are_exceeded
-    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
-                    :day => 4)
-
-    Timecop.freeze(Time.utc(2010, 5, 14)) do
-      Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
-                                             'usage' => {'hits' => 5}})
-
-      assert_raise LimitsExceeded do
-        Transactor.authorize(@provider_key, @user_key_one)
-      end
-    end
-  end
-
-  def test_authorize_successd_if_there_are_usage_limits_that_are_not_exceeded
-    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
-                    :day => 4)
-
-    Timecop.freeze(Time.utc(2010, 5, 14)) do
-      Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
-                                             'usage' => {'hits' => 3}})
-
-      assert_not_nil Transactor.authorize(@provider_key, @user_key_one)
-    end
-  end
-  
   def test_authorize_aggregates_backend_hit
     time = Time.now
 

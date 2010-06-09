@@ -54,7 +54,7 @@ module V1_0
       assert_equal @plan_name, doc.at('status:root plan').content
     end
     
-    def test_response_of_successful_authorize_contains_usage_reports_if_the_plan_has_usage_limits
+    def test_response_of_successful_authorize_contains_usages_if_the_plan_has_usage_limits
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
@@ -76,19 +76,34 @@ module V1_0
 
         doc = Nokogiri::XML(last_response.body)
         
-        node_day = doc.at('status:root usage[metric = "hits"][period = "day"]')
-        assert_not_nil node_day
-        assert_equal '2010-05-15 00:00:00', node_day.at('period_start').content
-        assert_equal '2010-05-16 00:00:00', node_day.at('period_end').content
-        assert_equal '2', node_day.at('current_value').content
-        assert_equal '100', node_day.at('max_value').content
+        day = doc.at('status:root usage[metric = "hits"][period = "day"]')
+        assert_not_nil day
+        assert_equal '2010-05-15 00:00:00', day.at('period_start').content
+        assert_equal '2010-05-16 00:00:00', day.at('period_end').content
+        assert_equal '2',                   day.at('current_value').content
+        assert_equal '100',                 day.at('max_value').content
         
-        node_month = doc.at('status:root usage[metric = "hits"][period = "month"]')
-        assert_not_nil node_month
-        assert_equal '2010-05-01 00:00:00', node_month.at('period_start').content
-        assert_equal '2010-06-01 00:00:00', node_month.at('period_end').content
-        assert_equal '5', node_month.at('current_value').content
-        assert_equal '10000', node_month.at('max_value').content
+        month = doc.at('status:root usage[metric = "hits"][period = "month"]')
+        assert_not_nil month
+        assert_equal '2010-05-01 00:00:00', month.at('period_start').content
+        assert_equal '2010-06-01 00:00:00', month.at('period_end').content
+        assert_equal '5',                   month.at('current_value').content
+        assert_equal '10000',               month.at('max_value').content
+      end
+    end
+    
+    def test_response_of_successful_authorize_does_not_contain_usages_if_the_plan_has_no_usage_limits
+      Timecop.freeze(Time.utc(2010, 5, 15)) do
+        Transactor.report(@provider_key,
+                          0 => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
+
+        get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                           :user_key     => @user_key,
+                                           :version      => '1.1'
+
+        doc = Nokogiri::XML(last_response.body)
+        
+        assert_equal 0, doc.search('usage').count
       end
     end
     

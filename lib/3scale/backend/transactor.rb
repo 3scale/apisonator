@@ -20,7 +20,7 @@ module ThreeScale
         group_by_user_key(raw_transactions) do |user_key, grouped_transactions|
           begin
             contract = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
-            validate_contract_state(contract)
+            raise ContractNotActive unless contract.live?
 
             usages = process_usages(service_id, grouped_transactions)
 
@@ -51,14 +51,13 @@ module ThreeScale
         report_backend_hit(provider_key, 'transactions/authorize' => 1)
 
         service_id = Core::Service.load_id(provider_key) || raise(ProviderKeyInvalid)
-        contract = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
-
-        validate_contract_state(contract)
-
-        usage = load_current_usage(contract)
-        validate_usage_limits(contract, usage)
-
-        Status.new(contract, usage)
+        contract   = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
+        usage      = load_current_usage(contract)
+        
+        status = Status.new(contract, usage)
+        status.reject!('user.inactive_contract') unless contract.live?
+        status.reject!('user.exceeded_limits')   unless validate_usage_limits(contract, usage)
+        status
       end
 
       private
@@ -102,14 +101,8 @@ module ThreeScale
                    "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
       end
 
-      def validate_contract_state(contract)
-        raise ContractNotActive if contract.state && contract.state != :live
-      end
-
       def validate_usage_limits(contract, usage)
-        contract.usage_limits.each do |limit|
-          limit.validate(usage)
-        end
+        contract.usage_limits.all? { |limit| limit.validate(usage) }
       end
     
       def process_usages(service_id, transactions)
