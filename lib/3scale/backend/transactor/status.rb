@@ -2,9 +2,9 @@ module ThreeScale
   module Backend
     module Transactor
       class Status
-        class Usage
-          def initialize(status, usage_limit)
-            @status      = status
+        class UsageReport
+          def initialize(parent, usage_limit)
+            @parent      = parent
             @usage_limit = usage_limit
           end
         
@@ -17,11 +17,11 @@ module ThreeScale
           end
 
           def period_start
-            @status.timestamp.beginning_of_cycle(period)
+            @parent.timestamp.beginning_of_cycle(period)
           end
 
           def period_end
-            @status.timestamp.end_of_cycle(period)
+            @parent.timestamp.end_of_cycle(period)
           end
 
           def max_value
@@ -29,7 +29,7 @@ module ThreeScale
           end
 
           def current_value
-            @status.current_value_for_usage_limit(@usage_limit)
+            @parent.current_value_for_usage_limit(@usage_limit)
           end
 
           def inspect
@@ -52,8 +52,8 @@ module ThreeScale
           @contract.plan_name
         end
 
-        def usages
-          @usages ||= load_usages
+        def usage_reports
+          @usage_report ||= load_usage_reports
         end
 
         def current_value_for_usage_limit(usage_limit)
@@ -61,33 +61,15 @@ module ThreeScale
           values && values[usage_limit.metric_id] || 0
         end
 
-        TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-
         def to_xml(options = {})
-          xml = Builder::XmlMarkup.new
-          xml.instruct! unless options[:skip_instruct]
-
-          xml.status do
-            xml.plan plan_name
-
-            usages.each do |usage|
-              xml.usage(:metric => usage.metric_name, :period => usage.period) do
-                xml.period_start  usage.period_start.strftime(TIME_FORMAT)
-                xml.period_end    usage.period_end.strftime(TIME_FORMAT)
-                xml.max_value     usage.max_value
-                xml.current_value usage.current_value
-              end
-            end
-          end
-
-          xml.target!
+          Serializers::Status.serialize(self, options)
         end
 
         private
 
-        def load_usages
+        def load_usage_reports
           @contract.usage_limits.map do |usage_limit|
-            Usage.new(self, usage_limit)
+            UsageReport.new(self, usage_limit)
           end
         end
       end

@@ -1,10 +1,6 @@
 module ThreeScale
   module Backend
     class Router
-      def self.call(env)
-        new.call(env)
-      end
-
       def initialize
         route :post, '/transactions.xml',           Actions::Report
         route :get,  '/transactions/authorize.xml', Actions::Authorize

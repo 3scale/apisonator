@@ -288,14 +288,14 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-  def test_authorize_returns_object_with_the_plan_name
+  def test_authorize_returns_status_object_with_the_plan_name
     status = Transactor.authorize(@provider_key, @user_key_one)
 
     assert_not_nil status
     assert_equal @plan_name, status.plan_name
   end
 
-  def test_authorize_returns_object_with_usage_status_if_the_plan_has_usage_limits
+  def test_authorize_returns_status_object_with_usage_reports_if_the_plan_has_usage_limits
     UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
                     :month => 10000, :day => 200)
 
@@ -309,25 +309,25 @@ class TransactorTest < Test::Unit::TestCase
                         0 => {'user_key' => @user_key_one, 'usage' => {'hits' => 2}})
 
       status = Transactor.authorize(@provider_key, @user_key_one)
-      assert_equal 2, status.usages.count
+      assert_equal 2, status.usage_reports.count
     
-      usage_month = status.usages.find { |usage| usage.period == :month }
-      assert_not_nil usage_month
-      assert_equal 'hits', usage_month.metric_name
-      assert_equal 5,      usage_month.current_value
-      assert_equal 10000,  usage_month.max_value
+      report_month = status.usage_reports.find { |report| report.period == :month }
+      assert_not_nil       report_month
+      assert_equal 'hits', report_month.metric_name
+      assert_equal 5,      report_month.current_value
+      assert_equal 10000,  report_month.max_value
 
-      usage_day = status.usages.find { |usage| usage.period == :day }
-      assert_not_nil usage_day
-      assert_equal 'hits', usage_day.metric_name
-      assert_equal 2,      usage_day.current_value
-      assert_equal 200,    usage_day.max_value
+      report_day = status.usage_reports.find { |report| report.period == :day }
+      assert_not_nil       report_day
+      assert_equal 'hits', report_day.metric_name
+      assert_equal 2,      report_day.current_value
+      assert_equal 200,    report_day.max_value
     end
   end
   
-  def test_authorize_returns_object_without_usage_status_if_the_plan_has_no_usage_limits
+  def test_authorize_returns_status_object_without_usage_reports_if_the_plan_has_no_usage_limits
     status = Transactor.authorize(@provider_key, @user_key_one)
-    assert_equal 0, status.usages.count
+    assert_equal 0, status.usage_reports.count
   end
   
   def test_authorize_raises_an_exception_when_provider_key_is_invalid

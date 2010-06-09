@@ -1,5 +1,6 @@
 ENV['RACK_ENV'] = 'development' if ENV['RACK_ENV'].nil? || ENV['RACK_ENV'].empty?
 
+require '3scale/core'
 require 'aws/s3'
 require 'builder'
 require 'eventmachine'
@@ -7,16 +8,17 @@ require 'em-redis'
 require 'fiber'
 require 'hoptoad_notifier'
 require 'ostruct'
+require 'rack/rest_api_versioning'
 require 'time'
 require 'zlib'
-
-require '3scale/core'
 
 require '3scale/backend/configuration'
 require '3scale/backend/time_hacks'
 
 module ThreeScale
   module Backend
+    API_VERSION = '1.1'
+
     autoload :Action,             '3scale/backend/action'
     autoload :Actions,            '3scale/backend/actions'
     autoload :Aggregator,         '3scale/backend/aggregator'
@@ -25,6 +27,7 @@ module ThreeScale
     autoload :Metric,             '3scale/backend/metric'
     autoload :Route,              '3scale/backend/route'
     autoload :Router,             '3scale/backend/router'
+    autoload :Serializers,        '3scale/backend/serializers'
     autoload :Storage,            '3scale/backend/storage'
     autoload :Transactor,         '3scale/backend/transactor'
     autoload :UsageLimit,         '3scale/backend/usage_limit'

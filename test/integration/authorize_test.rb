@@ -30,12 +30,19 @@ class AuthorizeTest < Test::Unit::TestCase
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
   end
 
-  def test_successful_report_responds_with_200
+  def test_successful_authorize_responds_with_200
     get '/transactions/authorize.xml', :provider_key => @provider_key, :user_key => @user_key
     assert_equal 200, last_response.status
   end
 
-  def test_response_of_successful_report_contains_plan_name
+  def test_response_of_successful_authorize_contains_authorized_flag
+    get '/transactions/authorize.xml', :provider_key => @provider_key, :user_key => @user_key
+  
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status:root authorized').content
+  end
+
+  def test_response_of_successful_authorize_contains_plan_name
     get '/transactions/authorize.xml', :provider_key => @provider_key, :user_key => @user_key
 
     assert_equal 'application/xml', last_response.headers['Content-Type']
@@ -44,7 +51,7 @@ class AuthorizeTest < Test::Unit::TestCase
     assert_equal @plan_name, doc.at('status:root plan').content
   end
   
-  def test_response_of_successful_report_contains_usage_status_if_the_plan_has_usage_limits
+  def test_response_of_successful_authorize_contains_usage_reports_if_the_plan_has_usage_limits
     UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
                     :day => 100, :month => 10000)
 
