@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../../test_helper'
 
-module V1
+module V1_1
   class AuthorizeTest < Test::Unit::TestCase
     include TestHelpers::Integration
     include TestHelpers::MasterService
@@ -29,17 +29,6 @@ module V1
 
       @metric_id = next_id
       Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
-    end
-
-    def test_response_of_successful_authorize_contains_plan_name
-      get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                         :user_key     => @user_key,
-                                         :version      => '1'
-
-      assert_equal 'application/xml', last_response.headers['Content-Type']
-
-      doc = Nokogiri::XML(last_response.body)
-      assert_equal @plan_name, doc.at('status:root plan').content
     end
   end
 end

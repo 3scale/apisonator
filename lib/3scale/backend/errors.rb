@@ -95,5 +95,8 @@ module ThreeScale
         xml.target!
       end
     end
+
+    class UnsupportedApiVersion < Error
+    end
   end
 end

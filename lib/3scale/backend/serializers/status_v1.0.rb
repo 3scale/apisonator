@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     module Serializers
-      module Status
+      module StatusV1_0
         TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
         def self.serialize(status, options = {})

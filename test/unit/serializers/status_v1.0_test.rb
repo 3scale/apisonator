@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/../../test_helper'
 
 module Serializers
-  class StatusTest < Test::Unit::TestCase
+  class StatusV1_0Test < Test::Unit::TestCase
     include TestHelpers::EventMachine
 
     def setup
@@ -29,7 +29,7 @@ module Serializers
 
       Timecop.freeze(time) do
         status = Transactor::Status.new(contract, usage)
-        xml    = Serializers::Status.serialize(status)
+        xml    = Serializers::StatusV1_0.serialize(status)
         doc    = Nokogiri::XML(xml)
         
         root = doc.at('status:root')        
