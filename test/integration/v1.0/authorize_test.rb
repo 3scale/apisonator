@@ -48,7 +48,7 @@ module V1_0
                                          :user_key     => @user_key,
                                          :version      => '1.0'
 
-      assert_equal 'application/xml', last_response.headers['Content-Type']
+      assert_equal 'application/xml', last_response.content_type
 
       doc = Nokogiri::XML(last_response.body)
       assert_equal @plan_name, doc.at('status:root plan').content
@@ -112,7 +112,7 @@ module V1_0
                                          :user_key     => @user_key,
                                          :version      => '1.0'
 
-      assert_equal 'application/xml', last_response.headers['Content-Type']
+      assert_equal 'application/xml', last_response.content_type
       
       doc = Nokogiri::XML(last_response.body)
 
@@ -129,7 +129,7 @@ module V1_0
                                          :user_key     => 'boo',
                                          :version      => '1.0'
 
-      assert_equal 'application/xml', last_response.headers['Content-Type']
+      assert_equal 'application/xml', last_response.content_type
       
       doc = Nokogiri::XML(last_response.body)
       node = doc.at('errors:root error')
@@ -148,7 +148,7 @@ module V1_0
                                          :user_key     => @user_key,
                                          :version      => '1.0'
 
-      assert_equal 'application/xml', last_response.headers['Content-Type']
+      assert_equal 'application/xml', last_response.content_type
       
       doc = Nokogiri::XML(last_response.body)
       node = doc.at('errors:root error')
@@ -172,7 +172,7 @@ module V1_0
                                            :user_key     => @user_key,
                                            :version      => '1.0'
 
-        assert_equal 'application/xml', last_response.headers['Content-Type']
+        assert_equal 'application/xml', last_response.content_type
 
         doc = Nokogiri::XML(last_response.body)
         node = doc.at('errors:root error')
@@ -233,6 +233,27 @@ module V1_0
       contract.save
 
       Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                           :user_key     => @user_key,
+                                           :version      => '1.0'
+
+        assert_equal 1, @storage.get(contract_key(@master_service_id,
+                                                  @master_contract_id,
+                                                  @master_authorizes_id,
+                                                  :month, '20100501')).to_i
+      end
+    end
+    
+    def test_authorize_with_exceeded_usage_limits_reports_backend_hit
+      UsageLimit.save(:service_id => @service_id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :day => 4)
+
+      Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        Transactor.report(@provider_key,
+                          0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+
         get '/transactions/authorize.xml', :provider_key => @provider_key,
                                            :user_key     => @user_key,
                                            :version      => '1.0'

@@ -16,13 +16,6 @@ module ThreeScale
 
         private
 
-        def content_type(request)
-          case request.api_version
-          when '1.0' then 'application/xml'
-          else            'application/vnd.3scale-v1.1+xml'
-          end
-        end
-
         def render_status(status, request)
           case request.api_version
           when '1.0' then Serializers::StatusV1_0.serialize(status)

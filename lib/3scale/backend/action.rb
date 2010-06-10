@@ -13,6 +13,15 @@ module ThreeScale
       def perform(request)
         raise 'Please define a method called "perform"'        
       end
+        
+      private
+
+      def content_type(request)
+        case request.api_version
+        when '1.0' then 'application/xml'
+        else            'application/vnd.3scale-v1.1+xml'
+        end
+      end
     end
   end
 end

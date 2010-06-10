@@ -246,5 +246,87 @@ module V1_1
       assert_equal 'true', day['exceeded']
       assert_nil           month['exceeded']
     end
+    
+    def test_successful_authorize_reports_backend_hit
+      Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                           :user_key     => @user_key,
+                                           :version      => '1.1'
+
+        assert_equal 1, @storage.get(contract_key(@master_service_id,
+                                                  @master_contract_id,
+                                                  @master_hits_id,
+                                                  :month, '20100501')).to_i
+
+        assert_equal 1, @storage.get(contract_key(@master_service_id,
+                                                  @master_contract_id,
+                                                  @master_authorizes_id,
+                                                  :month, '20100501')).to_i
+      end
+    end
+    
+    def test_authorize_with_invalid_provider_key_does_not_report_backend_hit
+      Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        get '/transactions/authorize.xml', :provider_key => 'boo',
+                                           :user_key     => @user_key,
+                                           :version      => '1.1'
+
+        assert_equal 0, @storage.get(contract_key(@master_service_id,
+                                                  @master_contract_id,
+                                                  @master_authorizes_id,
+                                                  :month, '20100501')).to_i
+      end
+    end
+    
+    def test_authorize_with_invalid_user_key_reports_backend_hit
+      Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                           :user_key     => 'baa',
+                                           :version      => '1.1'
+
+        assert_equal 1, @storage.get(contract_key(@master_service_id,
+                                                  @master_contract_id,
+                                                  @master_authorizes_id,
+                                                  :month, '20100501')).to_i
+      end
+    end
+    
+    def test_authorize_with_inactive_contract_reports_backend_hit
+      contract = Contract.load(@service_id, @user_key)
+      contract.state = :suspended
+      contract.save
+
+      Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                           :user_key     => @user_key,
+                                           :version      => '1.1'
+
+        assert_equal 1, @storage.get(contract_key(@master_service_id,
+                                                  @master_contract_id,
+                                                  @master_authorizes_id,
+                                                  :month, '20100501')).to_i
+      end
+    end
+    
+    def test_authorize_with_exceeded_usage_limits_reports_backend_hit
+      UsageLimit.save(:service_id => @service_id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :day => 4)
+
+      Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        Transactor.report(@provider_key,
+                          0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+
+        get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                           :user_key     => @user_key,
+                                           :version      => '1.1'
+
+        assert_equal 1, @storage.get(contract_key(@master_service_id,
+                                                  @master_contract_id,
+                                                  @master_authorizes_id,
+                                                  :month, '20100501')).to_i
+      end
+    end
   end
 end

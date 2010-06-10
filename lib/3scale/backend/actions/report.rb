@@ -8,7 +8,7 @@ module ThreeScale
 
           [200, {}, []]
         rescue Error => exception
-          [403, {'Content-Type' => 'application/xml'}, [exception.to_xml]]
+          [403, {'Content-Type' => content_type(request)}, [exception.to_xml]]
         end
       end
     end
