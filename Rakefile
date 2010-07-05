@@ -38,6 +38,9 @@ begin
     gemspec.homepage = 'http://www.3scale.net'
     gemspec.authors  = ['Adam Cigánek']
 
+    gemspec.files.exclude 'data'
+    gemspec.files.exclude 'deploy'
+
     gemspec.add_dependency '3scale_core'
     gemspec.add_dependency 'aws-s3',                  '~> 0.6'
     gemspec.add_dependency 'builder',                 '~> 2.1'
