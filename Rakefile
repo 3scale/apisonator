@@ -39,7 +39,7 @@ begin
     gemspec.authors  = ['Adam Cigánek']
 
     gemspec.files.exclude 'data'
-    gemspec.files.exclude 'deploy'
+    gemspec.files.exclude 'deploy.rb'
 
     gemspec.add_dependency '3scale_core'
     gemspec.add_dependency 'aws-s3',                  '~> 0.6'
