@@ -49,7 +49,10 @@ begin
     gemspec.add_dependency 'thin',                    '~> 1.2'
   end
 
-  Jeweler::GemcutterTasks.new
+  # HAX: I wan't only git:release, nothing else.
+  Rake::Task['release'].clear_prerequisites
+  task :release => 'git:release'
+
 rescue LoadError
   puts "Jeweler not available. Install it with: gem install jeweler"
 end
