@@ -31,6 +31,7 @@ require 'rack/utils'
 
 class Seeder
   include Rack::Utils
+  include ThreeScale::Core
   include ThreeScale::Backend
 
   def seed(source_file, usage_limits)
