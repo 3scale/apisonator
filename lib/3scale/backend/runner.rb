@@ -40,7 +40,7 @@ module ThreeScale
           use Rack::CommonLogger    if me.log?
           use Rack::RestApiVersioning, :default_version => '1.0'
           
-          run ThreeScale::Backend::Router
+          run ThreeScale::Backend::Router.new
         end
 
         server.pid_file = pid_file
