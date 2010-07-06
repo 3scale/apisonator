@@ -38,6 +38,7 @@ module ThreeScale
           use Rack::FiberPool
           use HoptoadNotifier::Rack if HoptoadNotifier.configuration
           use Rack::CommonLogger    if me.log?
+          use Rack::ContentLength
           use Rack::RestApiVersioning, :default_version => '1.0'
           
           run ThreeScale::Backend::Router.new
