@@ -27,7 +27,7 @@ module ThreeScale
 
       # Load configuration from a file (in /etc)
       def load!
-        paths = ['/etc/3scale_backend.config', '~/.3scale_backend.config']
+        paths = ['/etc/3scale_backend.conf', '~/.3scale_backend.conf']
         paths.each do |path|
           load path if File.readable?(File.expand_path(path))
         end
