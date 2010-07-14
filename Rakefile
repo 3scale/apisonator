@@ -45,7 +45,7 @@ begin
     gemspec.add_dependency 'aws-s3',                  '~> 0.6'
     gemspec.add_dependency 'builder',                 '~> 2.1'
     gemspec.add_dependency 'eventmachine',            '~> 0.12'
-    gemspec.add_dependency 'em-redis',                '~> 0.2'
+    gemspec.add_dependency 'redis',                   '~> 2.0'
     gemspec.add_dependency 'hoptoad_notifier',        '~> 2.2'
     gemspec.add_dependency 'rack',                    '~> 1.1'
     gemspec.add_dependency 'rack-rest_api_versioning'

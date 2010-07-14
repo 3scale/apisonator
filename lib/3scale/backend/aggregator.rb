@@ -12,30 +12,32 @@ module ThreeScale
 
         timestamp = transaction[:timestamp]
 
-        transaction[:usage].each do |metric_id, value|
-          service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
+        storage.pipelined do
+          transaction[:usage].each do |metric_id, value|
+            service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
 
-          increment(service_metric_prefix, :eternity,   nil,       value)
-          increment(service_metric_prefix, :month,      timestamp, value)
-          increment(service_metric_prefix, :week,       timestamp, value)
-          increment(service_metric_prefix, :day,        timestamp, value)
-          increment(service_metric_prefix, 6 * 60 * 60, timestamp, value)
-          increment(service_metric_prefix, :hour,       timestamp, value)
-          increment(service_metric_prefix, 2 * 60,      timestamp, value)
+            increment(service_metric_prefix, :eternity,   nil,       value)
+            increment(service_metric_prefix, :month,      timestamp, value)
+            increment(service_metric_prefix, :week,       timestamp, value)
+            increment(service_metric_prefix, :day,        timestamp, value)
+            increment(service_metric_prefix, 6 * 60 * 60, timestamp, value)
+            increment(service_metric_prefix, :hour,       timestamp, value)
+            increment(service_metric_prefix, 2 * 60,      timestamp, value)
 
-          contract_metric_prefix = metric_key_prefix(contract_prefix, metric_id)
+            contract_metric_prefix = metric_key_prefix(contract_prefix, metric_id)
 
-          increment(contract_metric_prefix, :eternity,   nil,       value)
-          increment(contract_metric_prefix, :year,       timestamp, value)
-          increment(contract_metric_prefix, :month,      timestamp, value)
-          increment(contract_metric_prefix, :week,       timestamp, value)
-          increment(contract_metric_prefix, :day,        timestamp, value)
-          increment(contract_metric_prefix, 6 * 60 * 60, timestamp, value)
-          increment(contract_metric_prefix, :hour,       timestamp, value)
-          increment(contract_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+            increment(contract_metric_prefix, :eternity,   nil,       value)
+            increment(contract_metric_prefix, :year,       timestamp, value)
+            increment(contract_metric_prefix, :month,      timestamp, value)
+            increment(contract_metric_prefix, :week,       timestamp, value)
+            increment(contract_metric_prefix, :day,        timestamp, value)
+            increment(contract_metric_prefix, 6 * 60 * 60, timestamp, value)
+            increment(contract_metric_prefix, :hour,       timestamp, value)
+            increment(contract_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+          end
+
+          update_contract_set(service_prefix, transaction[:contract_id])
         end
-
-        update_contract_set(service_prefix, transaction[:contract_id])
       end
 
       private
