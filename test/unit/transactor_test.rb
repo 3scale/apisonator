@@ -48,15 +48,15 @@ class TransactorTest < Test::Unit::TestCase
   def test_report_aggregates
     time = Time.now
 
-    Aggregator.expects(:aggregate).with(:service_id  => @service_id,
-                                        :contract_id => @contract_id_one,
-                                        :timestamp   => time,
-                                        :usage       => {@metric_id => 1})
-
-    Aggregator.expects(:aggregate).with(:service_id  => @service_id,
-                                        :contract_id => @contract_id_two,
-                                        :timestamp   => time,
-                                        :usage       => {@metric_id => 1})
+    Aggregator.expects(:aggregate).
+      with({:service_id  => @service_id,
+            :contract_id => @contract_id_one,
+            :timestamp   => time,
+            :usage       => {@metric_id => 1}},
+           {:service_id  => @service_id,
+            :contract_id => @contract_id_two,
+            :timestamp   => time,
+            :usage       => {@metric_id => 1}})
     
     Aggregator.stubs(:aggregate).with(has_entry(:service_id => @master_service_id))
 
@@ -93,15 +93,15 @@ class TransactorTest < Test::Unit::TestCase
   def test_report_archives
     time = Time.now
 
-    Archiver.expects(:add).with(:service_id  => @service_id,
-                                :contract_id => @contract_id_one,
-                                :timestamp   => time,
-                                :usage       => {@metric_id => 1})
-
-    Archiver.expects(:add).with(:service_id  => @service_id,
-                                :contract_id => @contract_id_two,
-                                :timestamp   => time,
-                                :usage       => {@metric_id => 1})
+    Archiver.expects(:add).
+      with({:service_id  => @service_id,
+            :contract_id => @contract_id_one,
+            :timestamp   => time,
+            :usage       => {@metric_id => 1}},
+           {:service_id  => @service_id,
+            :contract_id => @contract_id_two,
+            :timestamp   => time,
+            :usage       => {@metric_id => 1}})
 
     Archiver.stubs(:add).with(has_entry(:service_id => @master_service_id))
 
@@ -248,6 +248,8 @@ class TransactorTest < Test::Unit::TestCase
 
   def test_report_aggregates_backend_hit
     time = Time.now
+    
+    Aggregator.stubs(:aggregate)
 
     Aggregator.expects(:aggregate).with(
       :service_id  => @master_service_id,
@@ -256,8 +258,6 @@ class TransactorTest < Test::Unit::TestCase
       :usage       => {@master_hits_id => 1,
                        @master_reports_id => 1,
                        @master_transactions_id => 2})
-
-    Aggregator.stubs(:aggregate).with(Not(has_entry(:service_id => @master_service_id)))
 
     Timecop.freeze(time) do
       Transactor.report(
@@ -270,6 +270,8 @@ class TransactorTest < Test::Unit::TestCase
   def test_report_archives_backend_hit
     time = Time.now
 
+    Archiver.stubs(:add)
+
     Archiver.expects(:add).with(
       :service_id  => @master_service_id,
       :contract_id => @master_contract_id,
@@ -277,8 +279,6 @@ class TransactorTest < Test::Unit::TestCase
       :usage       => {@master_hits_id => 1,
                        @master_reports_id => 1,
                        @master_transactions_id => 2})
-
-    Archiver.stubs(:add).with(Not(has_entry(:service_id => @master_service_id)))
 
     Timecop.freeze(time) do
       Transactor.report(

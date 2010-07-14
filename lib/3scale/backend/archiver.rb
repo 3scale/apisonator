@@ -6,16 +6,9 @@ module ThreeScale
       extend self
       include Configurable
 
-      # Add the transaction to the archive.
-      def add(transaction)
-        # TODO: async this.
-
-        path = path_for(transaction)
-        ensure_directory_exists(File.dirname(path))
-
-        File.open(path, 'a') do |io|
-          serialize(io, transaction)
-        end
+      # Add the transactions to the archive.
+      def add(*transactions)
+        transactions.each { |transaction| add_one(transaction) }
       end
 
       # Collects all completed temporary files and sends them to a remote storage.
@@ -50,6 +43,17 @@ module ThreeScale
       end
 
       private
+      
+      def add_one(transaction)
+        # TODO: async this. Or maybe not.
+
+        path = path_for(transaction)
+        ensure_directory_exists(File.dirname(path))
+
+        File.open(path, 'a') do |io|
+          serialize(io, transaction)
+        end
+      end
 
       def path_for(transaction)
         date = transaction[:timestamp].strftime('%Y%m%d')

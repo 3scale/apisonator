@@ -41,7 +41,7 @@ module ThreeScale
         end
 
         if errors.empty?
-          process_transactions(transactions)
+          process_transactions(*transactions)
         else
           raise MultipleErrors.new(errors) unless errors.empty?
         end
@@ -131,25 +131,19 @@ module ThreeScale
         end
       end
 
-      def process_transactions(transactions)
-        transactions.each do |transaction|
-          process_transaction(transaction)
-        end
-      end
-
-      def process_transaction(transaction)
-        Aggregator.aggregate(transaction)
-        Archiver.add(transaction)
+      def process_transactions(*transactions)
+        Aggregator.aggregate(*transactions)
+        Archiver.add(*transactions)
       end
 
       def report_backend_hit(provider_key, usage)
         contract = Contract.load(master_service_id, provider_key) || raise(ProviderKeyInvalid)
         master_metrics = Metric.load_all(master_service_id)
 
-        process_transaction(:service_id  => master_service_id,
-                            :contract_id => contract.id,
-                            :timestamp   => Time.now.getutc,
-                            :usage       => master_metrics.process_usage(usage))
+        process_transactions(:service_id  => master_service_id,
+                             :contract_id => contract.id,
+                             :timestamp   => Time.now.getutc,
+                             :usage       => master_metrics.process_usage(usage))
       end
 
       def master_service_id

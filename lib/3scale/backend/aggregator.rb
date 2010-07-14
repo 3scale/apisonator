@@ -4,43 +4,47 @@ module ThreeScale
       include Core::StorageKeyHelpers
       extend self
 
-      # TODO: clean this up a bit
+      def aggregate(*transactions)
+        storage.pipelined do
+          transactions.each do |transaction|
+            aggregate_one(transaction)
+          end
+        end
+      end
 
-      def aggregate(transaction)
+      private
+
+      def aggregate_one(transaction)
         service_prefix  = service_key_prefix(transaction[:service_id])
         contract_prefix = contract_key_prefix(service_prefix, transaction[:contract_id])
 
         timestamp = transaction[:timestamp]
 
-        storage.pipelined do
-          transaction[:usage].each do |metric_id, value|
-            service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
+        transaction[:usage].each do |metric_id, value|
+          service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
 
-            increment(service_metric_prefix, :eternity,   nil,       value)
-            increment(service_metric_prefix, :month,      timestamp, value)
-            increment(service_metric_prefix, :week,       timestamp, value)
-            increment(service_metric_prefix, :day,        timestamp, value)
-            increment(service_metric_prefix, 6 * 60 * 60, timestamp, value)
-            increment(service_metric_prefix, :hour,       timestamp, value)
-            increment(service_metric_prefix, 2 * 60,      timestamp, value)
+          increment(service_metric_prefix, :eternity,   nil,       value)
+          increment(service_metric_prefix, :month,      timestamp, value)
+          increment(service_metric_prefix, :week,       timestamp, value)
+          increment(service_metric_prefix, :day,        timestamp, value)
+          increment(service_metric_prefix, 6 * 60 * 60, timestamp, value)
+          increment(service_metric_prefix, :hour,       timestamp, value)
+          increment(service_metric_prefix, 2 * 60,      timestamp, value)
 
-            contract_metric_prefix = metric_key_prefix(contract_prefix, metric_id)
+          contract_metric_prefix = metric_key_prefix(contract_prefix, metric_id)
 
-            increment(contract_metric_prefix, :eternity,   nil,       value)
-            increment(contract_metric_prefix, :year,       timestamp, value)
-            increment(contract_metric_prefix, :month,      timestamp, value)
-            increment(contract_metric_prefix, :week,       timestamp, value)
-            increment(contract_metric_prefix, :day,        timestamp, value)
-            increment(contract_metric_prefix, 6 * 60 * 60, timestamp, value)
-            increment(contract_metric_prefix, :hour,       timestamp, value)
-            increment(contract_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
-          end
-
-          update_contract_set(service_prefix, transaction[:contract_id])
+          increment(contract_metric_prefix, :eternity,   nil,       value)
+          increment(contract_metric_prefix, :year,       timestamp, value)
+          increment(contract_metric_prefix, :month,      timestamp, value)
+          increment(contract_metric_prefix, :week,       timestamp, value)
+          increment(contract_metric_prefix, :day,        timestamp, value)
+          increment(contract_metric_prefix, 6 * 60 * 60, timestamp, value)
+          increment(contract_metric_prefix, :hour,       timestamp, value)
+          increment(contract_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
         end
-      end
 
-      private
+        update_contract_set(service_prefix, transaction[:contract_id])
+      end
 
       def service_key_prefix(service_id)
         # The { ... } is the key tag. See redis docs for more info about key tags.
