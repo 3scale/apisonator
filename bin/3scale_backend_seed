@@ -35,16 +35,14 @@ class Seeder
   include ThreeScale::Backend
 
   def seed(source_file, usage_limits)
-    run_in_event_machine do
-      params = parse_nested_query(File.read(source_file))
+    params = parse_nested_query(File.read(source_file))
 
-      storage = Storage.instance
-      storage.flushdb
+    storage = Storage.instance
+    storage.flushdb
 
-      master_service_id   = seed_master_data
-      service_id, plan_id = seed_provider_data(master_service_id, params, usage_limits)
-                            seed_buyer_data(service_id, plan_id, params)
-    end
+    master_service_id   = seed_master_data
+    service_id, plan_id = seed_provider_data(master_service_id, params, usage_limits)
+                          seed_buyer_data(service_id, plan_id, params)
   end
 
   private
@@ -114,15 +112,6 @@ class Seeder
                     :plan_name  => 'test',
                     :id         => index + 3000,
                     :state => :live)
-    end
-  end
-
-  def run_in_event_machine
-    EM.run do
-      Fiber.new do
-        yield
-        EM.stop
-      end.resume
     end
   end
 end

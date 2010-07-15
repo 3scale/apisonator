@@ -1,0 +1,37 @@
+#! /usr/bin/env ruby
+
+require 'optparse'
+require 'digest/md5'
+
+transactions_count = 0
+
+parser = OptionParser.new do |parser|
+  parser.on('-t', '--transactions NUMBER', 'Number of transactions in the postfile.') do |value|
+    transactions_count = value.to_i
+  end
+
+  parser.parse!
+end
+
+transactions_count = 1 if transactions_count < 1
+
+def generate_key
+  Digest::MD5.hexdigest(rand.to_s)
+end
+
+provider_key = generate_key
+
+user_keys_count = (transactions_count / 10)
+user_keys_count = 1 if user_keys_count < 1
+
+user_keys = Array.new(user_keys_count) { generate_key }
+
+output = ''
+output << "provider_key=#{provider_key}"
+
+transactions_count.times do |index|
+  output << "&transactions[#{index}][user_key]=#{user_keys[index % user_keys.size]}"
+  output << "&transactions[#{index}][usage][hits]=1"
+end
+
+puts output

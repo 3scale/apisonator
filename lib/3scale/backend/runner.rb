@@ -29,7 +29,6 @@ module ThreeScale
       end
 
       def start
-        require 'rack/fiber_pool'
         require '3scale/backend'
 
         me = self
