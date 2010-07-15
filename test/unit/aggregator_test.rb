@@ -1,7 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class AggregatorTest < Test::Unit::TestCase
-  include TestHelpers::EventMachine
   include TestHelpers::StorageKeys
 
   def setup

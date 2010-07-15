@@ -4,7 +4,6 @@ module TestHelpers
     def self.included(base)
       base.class_eval do
         include Rack::Test::Methods
-        include TestHelpers::EventMachine
       end
     end
   

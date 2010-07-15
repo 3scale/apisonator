@@ -35,9 +35,6 @@ module ThreeScale
         me = self
 
         server = Thin::Server.new(@options[:host], @options[:port]) do
-          # Fiber pool not needed - no async stuff inside
-          # use Rack::FiberPool
-          
           use HoptoadNotifier::Rack if HoptoadNotifier.configuration
           use Rack::CommonLogger    if me.log?
           use Rack::ContentLength

@@ -2,8 +2,6 @@ require File.dirname(__FILE__) + '/../../test_helper'
 
 module Serializers
   class StatusV1_1Test < Test::Unit::TestCase
-    include TestHelpers::EventMachine
-
     def setup
       Storage.instance(true).flushdb
       

@@ -1,8 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class UsageLimitTest < Test::Unit::TestCase
-  include TestHelpers::EventMachine
-
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb

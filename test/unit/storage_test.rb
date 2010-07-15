@@ -1,8 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class StorageTest < Test::Unit::TestCase
-  include TestHelpers::EventMachine
-
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -26,15 +24,15 @@ class StorageTest < Test::Unit::TestCase
     write_backup_file('set foo stuff')
     
     @storage.restore_backup
-    assert !File.exists?(Storage::DEFAULT_BACKUP_FILE), 'File should not exist'
+    assert !File.exists?(Storage::Failover::DEFAULT_BACKUP_FILE), 'File should not exist'
   end
 
   private
 
   def write_backup_file(*commands)
-    FileUtils.mkdir_p(File.dirname(Storage::DEFAULT_BACKUP_FILE))
+    FileUtils.mkdir_p(File.dirname(Storage::Failover::DEFAULT_BACKUP_FILE))
 
-    File.open(Storage::DEFAULT_BACKUP_FILE, 'w') do |io|
+    File.open(Storage::Failover::DEFAULT_BACKUP_FILE, 'w') do |io|
       commands.each do |command|
         io << command << "\n"
       end

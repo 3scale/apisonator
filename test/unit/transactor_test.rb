@@ -1,7 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class TransactorTest < Test::Unit::TestCase
-  include TestHelpers::EventMachine
   include TestHelpers::MasterService
 
   def setup

@@ -2,7 +2,6 @@ require File.dirname(__FILE__) + '/../../test_helper'
 
 module Transactor
   class StatusTest < Test::Unit::TestCase
-    include TestHelpers::EventMachine
     include TestHelpers::StorageKeys
 
     def setup

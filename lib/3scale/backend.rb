@@ -3,8 +3,6 @@ ENV['RACK_ENV'] = 'development' if ENV['RACK_ENV'].nil? || ENV['RACK_ENV'].empty
 require '3scale/core'
 require 'aws/s3'
 require 'builder'
-require 'eventmachine'
-# require 'em-redis'
 require 'redis'
 require 'fiber'
 require 'hoptoad_notifier'
