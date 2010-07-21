@@ -12,9 +12,13 @@ class ReportTest < Test::Unit::TestCase
     setup_master_service
 
     @master_contract_id = next_id
+    @master_plan_id = next_id
     @provider_key = 'provider_key'
-    Contract.save(:service_id => @master_service_id, :user_key => @provider_key,
-                  :id => @master_contract_id, :state => :live)
+    Contract.save(:service_id => @master_service_id, 
+                  :plan_id => @master_plan_id,
+                  :id => @master_contract_id, 
+                  :user_key => @provider_key,
+                  :state => :live)
 
     @service_id = next_id
     Core::Service.save(:provider_key => @provider_key, :id => @service_id)
@@ -178,7 +182,7 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 'usage value is invalid', node.content
   end
 
-  def test_report_succeeds_when_usage_limits_are_exceeded
+  def test_report_succeeds_when_client_usage_limits_are_exceeded
     UsageLimit.save(:service_id => @service_id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -194,6 +198,28 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
 
     assert_equal 3, @storage.get(contract_key(
+      @service_id, @contract_id, @metric_id, :month,
+      Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
+  end
+  
+  def test_report_succeeds_when_provider_usage_limits_are_exceeded
+    UsageLimit.save(:service_id => @master_service_id,
+                    :plan_id    => @master_plan_id,
+                    :metric_id  => @master_hits_id,
+                    :month      => 2)
+
+    3.times do
+      Transactor.report(@provider_key,
+                        '0' => {'user_key' => @user_key, 'usage' => {'hits' => 1}})
+    end
+
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+
+    assert_equal 200, last_response.status
+
+    assert_equal 4, @storage.get(contract_key(
       @service_id, @contract_id, @metric_id, :month,
       Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
   end

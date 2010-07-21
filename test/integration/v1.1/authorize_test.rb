@@ -13,9 +13,13 @@ module V1_1
       setup_master_service
 
       @master_contract_id = next_id
+      @master_plan_id = next_id
       @provider_key = 'provider_key'
-      Contract.save(:service_id => @master_service_id, :user_key => @provider_key,
-                    :id => @master_contract_id, :state => :live)
+      Contract.save(:service_id => @master_service_id, 
+                    :plan_id => @master_plan_id,
+                    :id => @master_contract_id, 
+                    :user_key => @provider_key,
+                    :state => :live)
 
       @service_id = next_id
       Core::Service.save(:provider_key => @provider_key, :id => @service_id)
@@ -192,7 +196,7 @@ module V1_1
       assert_equal 'contract is not active', doc.at('status reason').content
     end
     
-    def test_authorize_succeeds_on_exceeded_usage_limits
+    def test_authorize_succeeds_on_exceeded_client_usage_limits
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
@@ -200,6 +204,25 @@ module V1_1
 
       Transactor.report(@provider_key,
                         0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+
+      get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                         :user_key     => @user_key,
+                                         :version      => '1.1'
+
+      assert_equal 200,                               last_response.status
+      assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
+    end
+    
+    def test_authorize_succeeds_on_exceeded_provider_usage_limits
+      UsageLimit.save(:service_id => @master_service_id,
+                      :plan_id    => @master_plan_id,
+                      :metric_id  => @master_hits_id,
+                      :day => 2)
+
+      3.times do
+        Transactor.report(@provider_key,
+                          0 => {'user_key' => @user_key, 'usage' => {'hits' => 1}})
+      end
 
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :user_key     => @user_key,
