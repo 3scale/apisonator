@@ -7,7 +7,7 @@ module ThreeScale
       include Configurable
 
       # Add the transactions to the archive.
-      def add(*transactions)
+      def add(transactions)
         transactions.each { |transaction| add_one(transaction) }
       end
 

@@ -4,10 +4,14 @@ module ThreeScale
       include Core::StorageKeyHelpers
       extend self
 
-      def aggregate(*transactions)
-        storage.pipelined do
-          transactions.each do |transaction|
-            aggregate_one(transaction)
+      PIPELINED_TRANSACTION_SLICE_SIZE = 1000
+
+      def aggregate(transactions)
+        transactions.each_slice(PIPELINED_TRANSACTION_SLICE_SIZE) do |slice|
+          storage.pipelined do
+            slice.each do |transaction|
+              aggregate_one(transaction)
+            end
           end
         end
       end

@@ -17,7 +17,7 @@ class ArchiverTest < Test::Unit::TestCase
                    :timestamp   => Time.utc(2010, 4, 12, 21, 44),
                    :client_ip   => '1.2.3.4'}
 
-    Archiver.add(transaction)
+    Archiver.add([transaction])
 
     filename = "/tmp/3scale_backend/archive/service-4001/20100412.xml.part"
     assert File.exists?(filename), "File should exist, but it doesn't."
@@ -62,7 +62,7 @@ class ArchiverTest < Test::Unit::TestCase
                    :client_ip   => '1.2.3.5'}
     
 
-    Archiver.add(transaction)
+    Archiver.add([transaction])
 
     content = File.read(filename)
     content = "<transactions>#{content}</transactions>"
@@ -92,10 +92,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
 
   def test_store_sends_complete_files_to_the_archive_storage
-    Archiver.add(:service_id  => 4001,
-                 :contract_id => 5002,
-                 :usage       => {6001 => 1},
-                 :timestamp   => Time.utc(2010, 4, 12, 23, 19))
+    Archiver.add([{:service_id  => 4001,
+                   :contract_id => 5002,
+                   :usage       => {6001 => 1},
+                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
 
     Timecop.freeze(2010, 4, 13, 12, 30) do
       name = nil
@@ -109,10 +109,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
   
   def test_store_does_not_send_incomplete_files_to_the_archive_storage
-    Archiver.add(:service_id  => 4001,
-                 :contract_id => 5002,
-                 :usage       => {6001 => 1},
-                 :timestamp   => Time.utc(2010, 4, 12, 23, 19))
+    Archiver.add([{:service_id  => 4001,
+                   :contract_id => 5002,
+                   :usage       => {6001 => 1},
+                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
 
     Timecop.freeze(2010, 4, 12, 23, 44) do
       storage = stub('storage')
@@ -123,10 +123,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
 
   def test_store_makes_the_files_valid_xml_and_compresses_them
-    Archiver.add(:service_id  => 4001,
-                 :contract_id => 5002,
-                 :usage       => {6001 => 1},
-                 :timestamp   => Time.utc(2010, 4, 12, 23, 19))
+    Archiver.add([{:service_id  => 4001,
+                   :contract_id => 5002,
+                   :usage       => {6001 => 1},
+                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
 
     Timecop.freeze(2010, 4, 13, 12, 30) do
       name = nil
@@ -158,10 +158,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
 
   def test_cleanup_deletes_processed_partial_files_older_than_two_days
-    Archiver.add(:service_id  => 4001,
-                 :contract_id => 5002,
-                 :usage       => {6001 => 1},
-                 :timestamp   => Time.utc(2010, 4, 12, 23, 19))
+    Archiver.add([{:service_id  => 4001,
+                   :contract_id => 5002,
+                   :usage       => {6001 => 1},
+                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
     
     path = '/tmp/3scale_backend/archive/service-4001/20100412.xml.part'
 
@@ -173,10 +173,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
   
   def test_cleanup_does_not_delete_processed_partial_files_not_older_than_two_days
-    Archiver.add(:service_id  => 4001,
-                 :contract_id => 5002,
-                 :usage       => {6001 => 1},
-                 :timestamp   => Time.utc(2010, 4, 12, 23, 19))
+    Archiver.add([{:service_id  => 4001,
+                   :contract_id => 5002,
+                   :usage       => {6001 => 1},
+                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
     
     path = '/tmp/3scale_backend/archive/service-4001/20100412.xml.part'
 
