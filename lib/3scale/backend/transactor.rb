@@ -20,15 +20,13 @@ module ThreeScale
         group_by_user_key(raw_transactions) do |user_key, grouped_transactions|
           begin
             contract = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
-            raise ContractNotActive unless contract.live?
-
             usages = process_usages(service_id, grouped_transactions)
 
             grouped_transactions.each do |transaction|
               transactions << {
                 :service_id  => service_id,
                 :contract_id => contract.id,
-                :timestamp   => parse_timestamp(transaction['timestamp']),
+                :timestamp   => transaction['timestamp'] || Time.now.getutc.to_s,
                 :usage       => usages[transaction['index']]}
             end
           rescue MultipleErrors => exception
@@ -123,17 +121,34 @@ module ThreeScale
         usages
       end
       
-      def parse_timestamp(raw_timestamp)
-        if raw_timestamp
-          Time.parse_to_utc(raw_timestamp)
-        else
-          Time.now.getutc
+      class Processor
+        @queue = :transactions
+
+        def self.perform(transactions)
+          transactions = preprocess(transactions)
+
+          Aggregator.aggregate(transactions)
+          Archiver.add(transactions)
+        end
+
+        def self.preprocess(transactions)
+          transactions.map do |transaction|
+            transaction = symbolize_keys(transaction)
+            transaction[:timestamp] = Time.parse_to_utc(transaction[:timestamp])
+            transaction
+          end
+        end
+
+        def self.symbolize_keys(hash)
+          hash.inject({}) do |memo, (key, value)|
+            memo[key.to_sym] = value
+            memo
+          end
         end
       end
 
       def process_transactions(transactions)
-        Aggregator.aggregate(transactions)
-        Archiver.add(transactions)
+        Resque.enqueue(Processor, transactions)
       end
 
       def report_backend_hit(provider_key, usage)
@@ -142,12 +157,13 @@ module ThreeScale
 
         process_transactions([{:service_id  => master_service_id,
                                :contract_id => contract.id,
-                               :timestamp   => Time.now.getutc,
+                               :timestamp   => Time.now.getutc.to_s,
                                :usage       => master_metrics.process_usage(usage)}])
       end
 
       def master_service_id
-        configuration.master_service_id || raise("Can't find master service id. Make sure the \"master_service_id\" configuration value is set correctly")
+        value = configuration.master_service_id
+        value ? value.to_s : raise("Can't find master service id. Make sure the \"master_service_id\" configuration value is set correctly")
       end
 
       def storage

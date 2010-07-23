@@ -1,0 +1,8 @@
+#! /usr/bin/env ruby
+
+require '3scale/backend'
+require 'daemons'
+
+Daemons.run_proc('3scale_backend_worker', :multiple => true) do
+  ThreeScale::Backend::Worker.work
+end

@@ -11,7 +11,7 @@ module TestHelpers
     private
 
     def setup_master_service
-      @master_service_id = ThreeScale::Backend.configuration.master_service_id
+      @master_service_id = ThreeScale::Backend.configuration.master_service_id.to_s
 
       @master_hits_id         = next_id
       @master_reports_id      = next_id

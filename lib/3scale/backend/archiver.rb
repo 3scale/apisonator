@@ -45,8 +45,6 @@ module ThreeScale
       private
       
       def add_one(transaction)
-        # TODO: async this. Or maybe not.
-
         path = path_for(transaction)
         ensure_directory_exists(File.dirname(path))
 
@@ -70,7 +68,6 @@ module ThreeScale
       end
 
       def serialize(io, transaction)
-        # OPTIMIZE: run this 
         builder = Builder::XmlMarkup.new(:target => io)
         builder.transaction do
 

@@ -46,6 +46,8 @@ class ReportTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      
+      Resque.run!
 
       key_month = contract_key(@service_id, @contract_id, @metric_id, :month, '20100501')
       key_day   = contract_key(@service_id, @contract_id, @metric_id, :day,   '20100510')
@@ -65,6 +67,8 @@ class ReportTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      
+      Resque.run!
 
       content = File.read("#{path}/service-#{@service_id}/20100511.xml.part")
       content = "<transactions>#{content}</transactions>"
@@ -83,8 +87,9 @@ class ReportTest < Test::Unit::TestCase
       :provider_key => @provider_key,
       :transactions => {0 => {:user_key  => @user_key,
                               :usage     => {'hits' => 1},
-         
                               :timestamp => '2010-05-11 13:34:42'}}
+
+    Resque.run!
 
     key = service_key(@service_id, @metric_id, :hour, '2010051113')
     assert_equal 1, @storage.get(key).to_i
@@ -96,6 +101,8 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {0 => {:user_key  => @user_key,
                               :usage     => {'hits' => 1},
                               :timestamp => '2010-05-11 11:08:25 -02:00'}}
+    
+    Resque.run!
 
     key = service_key(@service_id, @metric_id, :hour, '2010051113')
     assert_equal 1, @storage.get(key).to_i
@@ -133,25 +140,6 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 'user_key is invalid', node.content
   end
   
-  def test_report_fails_on_inactive_contract
-    contract = Contract.load(@service_id, @user_key)
-    contract.state = :suspended
-    contract.save
-
-    post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
-
-    assert_equal 'application/xml', last_response.headers['Content-Type']
-    
-    doc = Nokogiri::XML(last_response.body)
-    node = doc.at('errors:root error[index = "0"]')
-
-    assert_not_nil node
-    assert_equal 'user.inactive_contract', node['code']
-    assert_equal 'contract is not active', node.content
-  end
-  
   def test_report_fails_on_invalid_metric_name
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -181,6 +169,18 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 'provider.invalid_usage_value', node['code']
     assert_equal 'usage value is invalid', node.content
   end
+  
+  def test_report_succeeds_on_inactive_contract
+    contract = Contract.load(@service_id, @user_key)
+    contract.state = :suspended
+    contract.save
+
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+
+    assert_equal 200, last_response.status
+  end
 
   def test_report_succeeds_when_client_usage_limits_are_exceeded
     UsageLimit.save(:service_id => @service_id,
@@ -196,6 +196,8 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
 
     assert_equal 200, last_response.status
+      
+    Resque.run!
 
     assert_equal 3, @storage.get(contract_key(
       @service_id, @contract_id, @metric_id, :month,
@@ -213,11 +215,15 @@ class ReportTest < Test::Unit::TestCase
                         '0' => {'user_key' => @user_key, 'usage' => {'hits' => 1}})
     end
 
+    Resque.run!
+
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
 
     assert_equal 200, last_response.status
+      
+    Resque.run!
 
     assert_equal 4, @storage.get(contract_key(
       @service_id, @contract_id, @metric_id, :month,
@@ -225,11 +231,13 @@ class ReportTest < Test::Unit::TestCase
   end
 
 
-  def test_successful_report_reports_backend_hit
+  def test_successful_report_aggregates_backend_hit
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      
+      Resque.run!
 
       assert_equal 1, @storage.get(contract_key(@master_service_id,
                                                 @master_contract_id,
@@ -243,7 +251,7 @@ class ReportTest < Test::Unit::TestCase
     end
   end
   
-  def test_successful_report_reports_number_of_transactions
+  def test_successful_report_aggregates_number_of_transactions
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
@@ -251,10 +259,38 @@ class ReportTest < Test::Unit::TestCase
                           1 => {:user_key => @user_key, :usage => {'hits' => 1}},
                           2 => {:user_key => @user_key, :usage => {'hits' => 1}}}
 
+      Resque.run!
+
       assert_equal 3, @storage.get(contract_key(@master_service_id,
                                                 @master_contract_id,
                                                 @master_transactions_id,
                                                 :month, '20100501')).to_i
+    end
+  end
+  
+  def test_successful_report_archives_backend_hit
+    path = configuration.archiver.path
+    FileUtils.rm_rf(path)
+
+    Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}},
+                          1 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      
+      Resque.run!
+
+      content = File.read("#{path}/service-#{@master_service_id}/20100511.xml.part")
+      content = "<transactions>#{content}</transactions>"
+
+      doc = Nokogiri::XML(content)
+      node = doc.at('transaction')
+
+      assert_not_nil node
+      assert_equal '2010-05-11 11:54:00', node.at('timestamp').content
+      assert_equal '1', node.at("values value[metric_id = \"#{@master_hits_id}\"]").content
+      assert_equal '1', node.at("values value[metric_id = \"#{@master_reports_id}\"]").content
+      assert_equal '2', node.at("values value[metric_id = \"#{@master_transactions_id}\"]").content
     end
   end
   
@@ -276,6 +312,8 @@ class ReportTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:user_key => 'baa', :usage => {'hits' => 1}}}
+      
+      Resque.run!
 
       assert_equal 1, @storage.get(contract_key(@master_service_id,
                                                 @master_contract_id,
@@ -290,6 +328,8 @@ class ReportTest < Test::Unit::TestCase
         :provider_key => @provider_key,
         :transactions => {0 => {:user_key => 'baa',     :usage => {'hits' => 1}},
                           1 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      
+      Resque.run!
 
       assert_equal 2, @storage.get(contract_key(@master_service_id,
                                                 @master_contract_id,

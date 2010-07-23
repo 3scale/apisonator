@@ -10,6 +10,8 @@ module V1_0
       @storage = Storage.instance(true)
       @storage.flushdb
 
+      Resque.reset!
+
       setup_master_service
 
       @master_contract_id = next_id
@@ -68,7 +70,11 @@ module V1_0
       Timecop.freeze(Time.utc(2010, 5, 15)) do
         Transactor.report(@provider_key,
                           0 => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
+      end
 
+      Resque.run!
+
+      Timecop.freeze(Time.utc(2010, 5, 15)) do
         get '/transactions/authorize.xml', :provider_key => @provider_key,
                                            :user_key     => @user_key,
                                            :version      => '1.0'
@@ -167,7 +173,11 @@ module V1_0
       Timecop.freeze(Time.utc(2010, 5, 14)) do
         Transactor.report(@provider_key,
                           0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+      end
 
+      Resque.run!
+
+      Timecop.freeze(Time.utc(2010, 5, 14)) do
         get '/transactions/authorize.xml', :provider_key => @provider_key,
                                            :user_key     => @user_key,
                                            :version      => '1.0'
@@ -188,6 +198,8 @@ module V1_0
         get '/transactions/authorize.xml', :provider_key => @provider_key,
                                            :user_key     => @user_key,
                                            :version      => '1.0'
+
+        Resque.run!
 
         assert_equal 1, @storage.get(contract_key(@master_service_id,
                                                   @master_contract_id,
@@ -220,6 +232,8 @@ module V1_0
                                            :user_key     => 'baa',
                                            :version      => '1.0'
 
+        Resque.run!
+
         assert_equal 1, @storage.get(contract_key(@master_service_id,
                                                   @master_contract_id,
                                                   @master_authorizes_id,
@@ -237,6 +251,8 @@ module V1_0
                                            :user_key     => @user_key,
                                            :version      => '1.0'
 
+        Resque.run!
+
         assert_equal 1, @storage.get(contract_key(@master_service_id,
                                                   @master_contract_id,
                                                   @master_authorizes_id,
@@ -253,15 +269,45 @@ module V1_0
       Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
         Transactor.report(@provider_key,
                           0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+      end
 
+      Resque.run!
+
+      Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
         get '/transactions/authorize.xml', :provider_key => @provider_key,
                                            :user_key     => @user_key,
                                            :version      => '1.0'
+
+        Resque.run!
 
         assert_equal 1, @storage.get(contract_key(@master_service_id,
                                                   @master_contract_id,
                                                   @master_authorizes_id,
                                                   :month, '20100501')).to_i
+      end
+    end
+
+    def test_authorize_archives_backend_hit
+      path = configuration.archiver.path
+      FileUtils.rm_rf(path)
+
+      Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
+        get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                           :user_key     => @user_key,
+                                           :version      => '1.0'
+        
+        Resque.run!
+
+        content = File.read("#{path}/service-#{@master_service_id}/20100511.xml.part")
+        content = "<transactions>#{content}</transactions>"
+
+        doc = Nokogiri::XML(content)
+        node = doc.at('transaction')
+
+        assert_not_nil node
+        assert_equal '2010-05-11 11:54:00', node.at('timestamp').content
+        assert_equal '1', node.at("values value[metric_id = \"#{@master_hits_id}\"]").content
+        assert_equal '1', node.at("values value[metric_id = \"#{@master_authorizes_id}\"]").content
       end
     end
   end

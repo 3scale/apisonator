@@ -8,7 +8,9 @@ require 'fiber'
 require 'hoptoad_notifier'
 require 'ostruct'
 require 'rack/rest_api_versioning'
+require 'resque'
 require 'time'
+require 'yajl'
 require 'zlib'
 
 require '3scale/backend/configuration'
@@ -28,6 +30,7 @@ module ThreeScale
     autoload :Storage,               '3scale/backend/storage'
     autoload :Transactor,            '3scale/backend/transactor'
     autoload :UsageLimit,            '3scale/backend/usage_limit'
+    autoload :Worker,                '3scale/backend/worker'
    
     autoload :ContractNotActive,     '3scale/backend/errors'
     autoload :Error,                 '3scale/backend/errors'
@@ -61,3 +64,5 @@ ThreeScale::Backend.configuration.tap do |config|
   # Load configuration from a file.
   config.load!
 end
+
+Resque.redis = ThreeScale::Backend::Storage.instance

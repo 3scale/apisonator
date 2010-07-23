@@ -75,11 +75,11 @@ module ThreeScale
         ].to_set
 
         def initialize(options)
-          @servers      = options[:servers]
+          @servers      = options[:servers] || []
           @server_index = 0
           @backup_file  = options[:backup_file] || DEFAULT_BACKUP_FILE
       
-          host, port = host_and_port((options[:servers] || []).first)
+          host, port = host_and_port(@servers.first)
           super(:host => host, :port => port, :db => options[:db])
         end
 

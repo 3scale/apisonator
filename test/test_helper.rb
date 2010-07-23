@@ -7,6 +7,7 @@ require 'fakefs/safe'
 require 'mocha'
 require 'nokogiri'
 require 'rack/test'
+require 'resque_unit'
 require 'timecop'
 
 require '3scale/backend'

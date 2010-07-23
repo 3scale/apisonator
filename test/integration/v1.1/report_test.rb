@@ -64,26 +64,6 @@ module V1_1
       assert_equal 'user_key is invalid', node.content
     end
     
-    def test_report_fails_on_inactive_contract
-      contract = Contract.load(@service_id, @user_key)
-      contract.state = :suspended
-      contract.save
-
-      post '/transactions.xml',
-        {:provider_key => @provider_key,
-         :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}},
-        'HTTP_ACCEPT' => 'application/vnd.3scale-v1.1+xml'
-
-      assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
-      
-      doc = Nokogiri::XML(last_response.body)
-      node = doc.at('errors:root error[index = "0"]')
-
-      assert_not_nil node
-      assert_equal 'user.inactive_contract', node['code']
-      assert_equal 'contract is not active', node.content
-    end
-    
     def test_report_fails_on_invalid_metric_name
       post '/transactions.xml',
         {:provider_key => @provider_key,

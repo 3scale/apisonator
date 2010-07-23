@@ -7,6 +7,8 @@ class TransactorTest < Test::Unit::TestCase
     @storage = Storage.instance(true)
     @storage.flushdb
 
+    Resque.reset!
+
     setup_master_service
 
     @provider_key = 'provider_key'
@@ -43,75 +45,34 @@ class TransactorTest < Test::Unit::TestCase
                   :plan_id => @plan_id,
                   :plan_name => @plan_name)
   end
-  
-  def test_report_aggregates
-    time = Time.now
-    
-    Aggregator.stubs(:aggregate)
 
-    Aggregator.expects(:aggregate).
-      with([{:service_id  => @service_id,
-             :contract_id => @contract_id_one,
-             :timestamp   => time,
-             :usage       => {@metric_id => 1}},
-            {:service_id  => @service_id,
-             :contract_id => @contract_id_two,
-             :timestamp   => time,
-             :usage       => {@metric_id => 1}}])
-    
-    Timecop.freeze(time) do
+  def test_report_queues_transaction
+    Timecop.freeze(2010, 7, 26, 14, 2) do
       Transactor.report(
         @provider_key,
         {'0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
          '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}}})
+
+      assert_queued Transactor::Processor,
+                    [[{:service_id  => @service_id,
+                       :contract_id => @contract_id_one,
+                       :timestamp   => '2010-07-26 12:02:00 UTC',
+                       :usage       => {@metric_id => 1}},
+                      {:service_id  => @service_id,
+                       :contract_id => @contract_id_two,
+                       :timestamp   => '2010-07-26 12:02:00 UTC',
+                       :usage       => {@metric_id => 1}}]]
     end
   end
   
-  def test_report_handles_transactions_with_utc_timestamps
-    Aggregator.stubs(:aggregate)
-    
-    Aggregator.expects(:aggregate).with do |transactions|
-      transactions.first[:timestamp] == Time.utc(2010, 5, 7, 18, 11, 25)
-    end
+  def test_report_succeeds_even_when_a_contract_is_not_active
+    contract = Contract.load(@service_id, @user_key_one)
+    contract.state = :suspended
+    contract.save
 
-    Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
-                                           'usage' => {'hits' => 1},
-                                           'timestamp' => '2010-05-07 18:11:25'})
-  end
-  
-  def test_report_handles_transactions_with_local_timestamps
-    Aggregator.stubs(:aggregate)
-
-    Aggregator.expects(:aggregate).with do |transactions|
-      transactions.first[:timestamp] == Time.utc(2010, 5, 7, 11, 11, 25)
-    end
-    
-    Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
-                                           'usage' => {'hits' => 1},
-                                           'timestamp' => '2010-05-07 18:11:25 +07:00'})
-  end
-
-  def test_report_archives
-    time = Time.now
-    
-    Archiver.stubs(:add)
-
-    Archiver.expects(:add).
-      with([{:service_id  => @service_id,
-             :contract_id => @contract_id_one,
-             :timestamp   => time,
-             :usage       => {@metric_id => 1}},
-            {:service_id  => @service_id,
-             :contract_id => @contract_id_two,
-             :timestamp   => time,
-             :usage       => {@metric_id => 1}}])
-
-    Timecop.freeze(time) do
-      Transactor.report(
-        @provider_key,
-        {'0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
-         '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}}})
-    end
+    assert Transactor.report(@provider_key,
+                             '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
+                             '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
   end
   
   def test_report_raises_an_exception_when_provider_key_is_invalid
@@ -150,25 +111,6 @@ class TransactorTest < Test::Unit::TestCase
       assert_equal 2, exception.codes.size
       assert_equal 'user.invalid_key', exception.codes[0]
       assert_equal 'user.invalid_key', exception.codes[1]
-    end
-  end
-  
-  def test_report_raises_an_exception_when_the_contract_is_not_active
-    contract = Contract.load(@service_id, @user_key_one)
-    contract.state = :suspended
-    contract.save
-
-    begin
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
-        '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
-
-      flunk 'Expected MultipleErrors exception, but none raised'
-
-    rescue MultipleErrors => exception
-      assert_equal 1, exception.codes.size
-      assert_equal 'user.inactive_contract', exception.codes[0]
     end
   end
   
@@ -250,44 +192,22 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-  def test_report_aggregates_backend_hit
+  def test_report_queues_backend_hit
     time = Time.now
-    
-    Aggregator.stubs(:aggregate)
-
-    Aggregator.expects(:aggregate).
-      with([{:service_id  => @master_service_id,
-             :contract_id => @master_contract_id,
-             :timestamp   => time,
-              :usage       => {@master_hits_id => 1,
-                               @master_reports_id => 1,
-                               @master_transactions_id => 2}}])
 
     Timecop.freeze(time) do
       Transactor.report(
         @provider_key,
         '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
         '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
-    end
-  end
-  
-  def test_report_archives_backend_hit
-    time = Time.now
 
-    Archiver.stubs(:add)
-
-    Archiver.expects(:add).with([{:service_id  => @master_service_id,
-                                  :contract_id => @master_contract_id,
-                                  :timestamp   => time,
-                                  :usage       => {@master_hits_id => 1,
-                                                   @master_reports_id => 1,
-                                                   @master_transactions_id => 2}}])
-
-    Timecop.freeze(time) do
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
-        '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
+      assert_queued Transactor::Processor, 
+                    [[{:service_id  => @master_service_id,
+                       :contract_id => @master_contract_id,
+                       :timestamp   => time.getutc.to_s,
+                       :usage       => {@master_hits_id => 1,
+                                        @master_reports_id => 1,
+                                        @master_transactions_id => 2}}]]
     end
   end
 
@@ -310,7 +230,11 @@ class TransactorTest < Test::Unit::TestCase
     Timecop.freeze(2010, 5, 14) do
       Transactor.report(@provider_key,
                         0 => {'user_key' => @user_key_one, 'usage' => {'hits' => 2}})
+    end
 
+    Resque.run!
+
+    Timecop.freeze(2010, 5, 14) do
       status = Transactor.authorize(@provider_key, @user_key_one)
       assert_equal 2, status.usage_reports.count
     
@@ -351,7 +275,11 @@ class TransactorTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
                                              'usage' => {'hits' => 5}})
+    end
 
+    Resque.run!
+
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
       status = Transactor.authorize(@provider_key, @user_key_one)
       assert !status.authorized?
       assert_equal 'user.exceeded_limits',      status.rejection_reason_code
@@ -383,33 +311,19 @@ class TransactorTest < Test::Unit::TestCase
       Transactor.authorize(@provider_key, 'baaa')
     end
   end
-
-  def test_authorize_aggregates_backend_hit
-    time = Time.now
-
-    Aggregator.expects(:aggregate).
-      with([{:service_id  => @master_service_id,
-             :contract_id => @master_contract_id,
-             :timestamp   => time,
-             :usage       => {@master_hits_id => 1,
-                              @master_authorizes_id => 1}}])
-
-    Timecop.freeze(time) do
-      Transactor.authorize(@provider_key, @user_key_one)
-    end
-  end
   
-  def test_authorize_archives_backend_hit
+  def test_authorize_queues_backend_hit
     time = Time.now
-
-    Archiver.expects(:add).with([{:service_id  => @master_service_id,
-                                  :contract_id => @master_contract_id,
-                                  :timestamp   => time,
-                                  :usage       => {@master_hits_id => 1,
-                                                   @master_authorizes_id => 1}}])
 
     Timecop.freeze(time) do
       Transactor.authorize(@provider_key, @user_key_one)
+
+      assert_queued Transactor::Processor, 
+                    [[{:service_id  => @master_service_id,
+                       :contract_id => @master_contract_id,
+                       :timestamp   => time.getutc.to_s,
+                       :usage       => {@master_hits_id => 1,
+                                        @master_authorizes_id => 1}}]]
     end
   end
 end
