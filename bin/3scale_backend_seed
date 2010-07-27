@@ -14,10 +14,6 @@ parser = OptionParser.new do |parser|
     usage_limits = true
   end
 
-  parser.on('-e', '--environment ENVIRONMENT', 'Framework environment (default is development)') do |value|
-    ENV['RACK_ENV'] = value
-  end
-
   parser.parse!
 end
 

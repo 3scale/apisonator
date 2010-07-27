@@ -50,7 +50,7 @@ module ThreeScale
           "3scale_backend listening on #{host}:#{port}"
         end
  
-        puts ">> Starting #{server.name} in #{ENV['RACK_ENV']} environment. Let's roll!"
+        puts ">> Starting #{server.name}. Let's roll!"
 
         server.daemonize if @options[:daemonize]
         server.start
@@ -96,7 +96,6 @@ module ThreeScale
         
           parser.on('-a', '--address HOST',    'bind to HOST address (default: 0.0.0.0)')      { |value| @options[:host] = value }
           parser.on('-p', '--port PORT',       'use PORT (default: 3000)')                     { |value| @options[:port] = value.to_i }
-          parser.on('-e', '--environment ENV', 'environment to run in (default: development)') { |value| ENV['RACK_ENV'] = value }
           parser.on('-d', '--daemonize',       'run as daemon')                                { |value| @options[:daemonize] = true }
           parser.on('-l', '--log FILE' ,       'log file')                                     { |value| @options[:log_file] = value }
 

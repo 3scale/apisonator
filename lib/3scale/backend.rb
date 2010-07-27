@@ -1,5 +1,3 @@
-ENV['RACK_ENV'] = 'development' if ENV['RACK_ENV'].nil? || ENV['RACK_ENV'].empty?
-
 require '3scale/core'
 require 'aws/s3'
 require 'builder'
