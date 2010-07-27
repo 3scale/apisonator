@@ -4,27 +4,29 @@ require 'optparse'
 require 'digest/md5'
 
 transactions_count = 0
+provider_key       = nil
+user_keys          = []
 
 parser = OptionParser.new do |parser|
   parser.on('-t', '--transactions NUMBER', 'Number of transactions in the postfile.') do |value|
     transactions_count = value.to_i
   end
 
+  parser.on('-p', '--provider-key KEY', 'Provider key') do |value|
+    provider_key = value
+  end
+
+  parser.on('-u', '--user-keys KEYS', 'List of user keys (separated by commas)') do |values|
+    user_keys = values.split(/\s*,\s*/)
+  end
+
   parser.parse!
 end
 
+abort "Provider key is required" unless provider_key
+abort "At least one user key is required" unless user_keys.size > 0
+
 transactions_count = 1 if transactions_count < 1
-
-def generate_key
-  Digest::MD5.hexdigest(rand.to_s)
-end
-
-provider_key = generate_key
-
-user_keys_count = (transactions_count / 10)
-user_keys_count = 1 if user_keys_count < 1
-
-user_keys = Array.new(user_keys_count) { generate_key }
 
 output = ''
 output << "provider_key=#{provider_key}"
