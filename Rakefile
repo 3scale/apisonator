@@ -41,6 +41,8 @@ begin
     gemspec.files.exclude 'data'
     gemspec.files.exclude 'deploy.rb'
 
+    gemspec.executables = ['3scale_backend', '3scale_backend_worker']
+
     gemspec.add_dependency '3scale_core'
     gemspec.add_dependency 'aws-s3',                  '~> 0.6'
     gemspec.add_dependency 'builder',                 '~> 2.1'

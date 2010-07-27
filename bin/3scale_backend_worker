@@ -3,6 +3,8 @@
 require '3scale/backend'
 require 'daemons'
 
-Daemons.run_proc('3scale_backend_worker', :multiple => true) do
+Daemons.run_proc('3scale_backend_worker', :multiple => true,
+                                          :dir_mode => :normal,
+                                          :dir      => '/var/run/3scale') do
   ThreeScale::Backend::Worker.work
 end

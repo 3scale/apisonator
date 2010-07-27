@@ -79,7 +79,7 @@ module ThreeScale
       end
       
       def pid_file
-        "/tmp/3scale_backend_#{@options[:port]}.pid"
+        "/var/run/3scale/3scale_backend_#{@options[:port]}.pid"
       end
 
       def log?
