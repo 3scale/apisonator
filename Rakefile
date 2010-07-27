@@ -46,10 +46,12 @@ begin
     gemspec.add_dependency 'builder',                 '~> 2.1'
     gemspec.add_dependency 'eventmachine',            '~> 0.12'
     gemspec.add_dependency 'redis',                   '~> 2.0'
+    gemspec.add_dependency 'resque',                  '~> 1.9'
     gemspec.add_dependency 'hoptoad_notifier',        '~> 2.2'
     gemspec.add_dependency 'rack',                    '~> 1.1'
     gemspec.add_dependency 'rack-rest_api_versioning'
     gemspec.add_dependency 'thin',                    '~> 1.2'
+    gemspec.add_dependency 'yajl-ruby',               '~> 0.7'
   end
 
   # HAX: I wan't only git:release, nothing else.

@@ -81,7 +81,7 @@ module ThreeScale
         end
 
         def sanitize_name(name)
-          name.downcase.strip
+          name.strip
         end
 
         def sane_value?(value)

@@ -19,13 +19,6 @@ module Metric
       assert_equal expected_output, actual_output
     end
 
-    def test_process_usage_handles_metric_names_with_messed_up_case
-      Metric.save(:service_id => 1001, :id => 2001, :name => 'hits')
-      metrics = Metric::Collection.new(1001)
-      
-      assert_equal({'2001' => 1}, metrics.process_usage('HiTs' => 1))
-    end
-
     def test_process_usage_handles_metric_names_with_leading_or_trailing_whitespace_junk
       Metric.save(:service_id => 1001, :id => 2001, :name => 'hits')
       metrics = Metric::Collection.new(1001)
