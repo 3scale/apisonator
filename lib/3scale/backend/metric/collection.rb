@@ -34,10 +34,11 @@ module ThreeScale
 
         def parse_usage(raw_usage)
           (raw_usage || {}).inject({}) do |usage, (name, value)|
-            metric_id = metric_id(sanitize_name(name))
+            name      = sanitize_name(name)
+            metric_id = metric_id(name)
 
-            raise MetricNotFound unless metric_id
-            raise UsageValueInvalid unless sane_value?(value)
+            raise MetricInvalid.new(name)            unless metric_id
+            raise UsageValueInvalid.new(name, value) unless sane_value?(value)
 
             usage.update(metric_id => value.to_i)
           end

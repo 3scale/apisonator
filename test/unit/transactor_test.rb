@@ -4,6 +4,7 @@ class TransactorTest < Test::Unit::TestCase
   include TestHelpers::MasterService
 
   def setup
+    # TODO: all this fixtures are maybe not necessary here. Revise!
     @storage = Storage.instance(true)
     @storage.flushdb
 
@@ -46,33 +47,16 @@ class TransactorTest < Test::Unit::TestCase
                   :plan_name => @plan_name)
   end
 
-  def test_report_queues_transaction
-    Timecop.freeze(2010, 7, 26, 14, 2) do
-      Transactor.report(
-        @provider_key,
-        {'0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
-         '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}}})
+  def test_report_queues_transactions_to_report
+    Transactor.report(
+      @provider_key,
+      {'0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
+       '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}}})
 
-      assert_queued Transactor::Processor,
-                    [[{:service_id  => @service_id,
-                       :contract_id => @contract_id_one,
-                       :timestamp   => '2010-07-26 12:02:00 UTC',
-                       :usage       => {@metric_id => 1}},
-                      {:service_id  => @service_id,
-                       :contract_id => @contract_id_two,
-                       :timestamp   => '2010-07-26 12:02:00 UTC',
-                       :usage       => {@metric_id => 1}}]]
-    end
-  end
-  
-  def test_report_succeeds_even_when_a_contract_is_not_active
-    contract = Contract.load(@service_id, @user_key_one)
-    contract.state = :suspended
-    contract.save
-
-    assert Transactor.report(@provider_key,
-                             '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
-                             '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
+    assert_queued Transactor::ReportJob,
+                  [@service_id,
+                    {'0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
+                     '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}}}]
   end
   
   def test_report_raises_an_exception_when_provider_key_is_invalid
@@ -83,131 +67,18 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
   
-  def test_report_raises_an_exception_when_one_user_key_is_invalid
-    begin
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => 'invalid',     'usage' => {'hits' => 1}},
-        '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
-
-      flunk 'Expected MultipleErrors exception, but none raised'
-
-    rescue MultipleErrors => exception
-      assert_equal 1, exception.codes.size
-      assert_equal 'user.invalid_key', exception.codes[0]
-    end
-  end
-  
-  def test_report_raises_an_exception_when_many_user_keys_are_invalid
-    begin
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => 'invalid', 'usage' => {'hits' => 1}},
-        '1' => {'user_key' => 'invalid', 'usage' => {'hits' => 1}})
-
-      flunk 'Expected MultipleErrors exception, but none raised'
-
-    rescue MultipleErrors => exception
-      assert_equal 2, exception.codes.size
-      assert_equal 'user.invalid_key', exception.codes[0]
-      assert_equal 'user.invalid_key', exception.codes[1]
-    end
-  end
-  
-  def test_report_raises_an_exception_when_metric_names_in_one_transaction_are_invalid
-    begin
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
-        '1' => {'user_key' => @user_key_two, 'usage' => {'monkeys' => 1}})
-
-      flunk 'Expected MultipleErrors exception, but none raised'
-
-    rescue MultipleErrors => exception
-      assert_equal 1, exception.codes.size
-      assert_equal 'provider.invalid_metric', exception.codes[1]
-    end
-  end
-  
-  def test_report_raises_an_exception_when_metric_names_in_many_transactions_of_different_contract_are_invalid
-    begin
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => @user_key_one, 'usage' => {'penguins' => 1}},
-        '1' => {'user_key' => @user_key_two, 'usage' => {'monkeys' => 1}})
-
-      flunk 'Expected MultipleErrors exception, but none raised'
-
-    rescue MultipleErrors => exception
-      assert_equal 2, exception.codes.size
-      assert_equal 'provider.invalid_metric', exception.codes[0]
-      assert_equal 'provider.invalid_metric', exception.codes[1]
-    end
-  end
-  
-  def test_report_raises_an_exception_when_metric_names_in_many_transactions_of_the_same_contract_are_invalid
-    begin
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => @user_key_one, 'usage' => {'penguins' => 1}},
-        '1' => {'user_key' => @user_key_one, 'usage' => {'monkeys' => 1}})
-
-      flunk 'Expected MultipleErrors exception, but none raised'
-
-    rescue MultipleErrors => exception
-      assert_equal 2, exception.codes.size
-      assert_equal 'provider.invalid_metric', exception.codes[0]
-      assert_equal 'provider.invalid_metric', exception.codes[1]
-    end
-  end
-  
-  def test_report_raises_an_exception_with_entries_for_invalid_transactions_only
-    begin
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
-        '1' => {'user_key' => @user_key_one, 'usage' => {'monkeys' => 1}})
-
-      flunk 'Expected MultipleErrors exception, but none raised'
-
-    rescue MultipleErrors => exception
-      assert_equal 1, exception.codes.size
-      assert_equal 'provider.invalid_metric', exception.codes[1]
-    end
-  end
-  
-  def test_report_does_not_aggregate_anything_when_at_least_one_transaction_is_invalid
-    Aggregator.stubs(:aggregate)
-    
-    Aggregator.expects(:aggregate).with do |transactions|
-      transactions.any? { |transaction| transaction[:service_id] = @service_id }
-    end.never
-
-    begin
-      Transactor.report(
-        @provider_key,
-        '0' => {'user_key' => 'invalid',     'usage' => {'hits' => 1}},
-        '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
-    rescue MultipleErrors
-    end
-  end
-
   def test_report_queues_backend_hit
-    time = Time.now
-
-    Timecop.freeze(time) do
+    Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
       Transactor.report(
         @provider_key,
         '0' => {'user_key' => @user_key_one, 'usage' => {'hits' => 1}},
         '1' => {'user_key' => @user_key_two, 'usage' => {'hits' => 1}})
 
-      assert_queued Transactor::Processor, 
-                    [[{:service_id  => @master_service_id,
-                       :contract_id => @master_contract_id,
-                       :timestamp   => time.getutc.to_s,
-                       :usage       => {@master_hits_id => 1,
-                                        @master_reports_id => 1,
-                                        @master_transactions_id => 2}}]]
+      assert_queued Transactor::NotifyJob, 
+                    [@provider_key, 
+                     {'transactions/create_multiple' => 1,
+                      'transactions'                 => 2},
+                     '2010-07-29 11:48:00 UTC']
     end
   end
 
@@ -219,22 +90,25 @@ class TransactorTest < Test::Unit::TestCase
   end
 
   def test_authorize_returns_status_object_with_usage_reports_if_the_plan_has_usage_limits
-    UsageLimit.save(:service_id => @service_id, :plan_id => @plan_id, :metric_id => @metric_id,
+    UsageLimit.save(:service_id => @service_id, 
+                    :plan_id    => @plan_id, 
+                    :metric_id  => @metric_id,
                     :month => 10000, :day => 200)
 
-    Timecop.freeze(2010, 5, 13) do
+    Timecop.freeze(Time.utc(2010, 5, 13)) do
       Transactor.report(@provider_key,
                         0 => {'user_key' => @user_key_one, 'usage' => {'hits' => 3}})
+      Resque.run!
     end
 
-    Timecop.freeze(2010, 5, 14) do
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
       Transactor.report(@provider_key,
                         0 => {'user_key' => @user_key_one, 'usage' => {'hits' => 2}})
+      Resque.run!
     end
 
-    Resque.run!
 
-    Timecop.freeze(2010, 5, 14) do
+    Timecop.freeze(Time.utc(2010, 5, 14)) do
       status = Transactor.authorize(@provider_key, @user_key_one)
       assert_equal 2, status.usage_reports.count
     
@@ -264,7 +138,7 @@ class TransactorTest < Test::Unit::TestCase
 
     status = Transactor.authorize(@provider_key, @user_key_one)
     assert !status.authorized?
-    assert_equal 'user.inactive_contract', status.rejection_reason_code
+    assert_equal 'contract_not_active',    status.rejection_reason_code
     assert_equal 'contract is not active', status.rejection_reason_text
   end
   
@@ -275,14 +149,13 @@ class TransactorTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       Transactor.report(@provider_key, 0 => {'user_key' => @user_key_one,
                                              'usage' => {'hits' => 5}})
+      Resque.run!
     end
-
-    Resque.run!
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       status = Transactor.authorize(@provider_key, @user_key_one)
       assert !status.authorized?
-      assert_equal 'user.exceeded_limits',      status.rejection_reason_code
+      assert_equal 'limits_exceeded',           status.rejection_reason_code
       assert_equal 'usage limits are exceeded', status.rejection_reason_text
     end
   end
@@ -313,17 +186,13 @@ class TransactorTest < Test::Unit::TestCase
   end
   
   def test_authorize_queues_backend_hit
-    time = Time.now
-
-    Timecop.freeze(time) do
+    Timecop.freeze(Time.utc(2010, 7, 29, 17, 9)) do
       Transactor.authorize(@provider_key, @user_key_one)
 
-      assert_queued Transactor::Processor, 
-                    [[{:service_id  => @master_service_id,
-                       :contract_id => @master_contract_id,
-                       :timestamp   => time.getutc.to_s,
-                       :usage       => {@master_hits_id => 1,
-                                        @master_authorizes_id => 1}}]]
+      assert_queued Transactor::NotifyJob, 
+                    [@provider_key, 
+                     {'transactions/authorize' => 1},
+                     '2010-07-29 17:09:00 UTC']
     end
   end
 end

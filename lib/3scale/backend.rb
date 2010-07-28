@@ -12,6 +12,7 @@ require 'yajl'
 require 'zlib'
 
 require '3scale/backend/configuration'
+require '3scale/backend/hash_hacks'
 require '3scale/backend/time_hacks'
 
 module ThreeScale
@@ -21,6 +22,7 @@ module ThreeScale
     autoload :Aggregator,            '3scale/backend/aggregator'
     autoload :Archiver,              '3scale/backend/archiver'
     autoload :Contract,              '3scale/backend/contract'
+    autoload :ErrorReporter,         '3scale/backend/error_reporter'
     autoload :Metric,                '3scale/backend/metric'
     autoload :Route,                 '3scale/backend/route'
     autoload :Router,                '3scale/backend/router'
@@ -34,8 +36,7 @@ module ThreeScale
     autoload :Error,                 '3scale/backend/errors'
     autoload :ERROR_MESSAGES,        '3scale/backend/errors'
     autoload :LimitsExceeded,        '3scale/backend/errors'
-    autoload :MetricNotFound,        '3scale/backend/errors'
-    autoload :MultipleErrors,        '3scale/backend/errors'
+    autoload :MetricInvalid,         '3scale/backend/errors'
     autoload :ProviderKeyInvalid,    '3scale/backend/errors'
     autoload :UnsupportedApiVersion, '3scale/backend/errors'
     autoload :UserKeyInvalid,        '3scale/backend/errors'

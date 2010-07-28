@@ -2,70 +2,49 @@ module ThreeScale
   module Backend
     # Methods for reporting and authorizing transactions.
     module Transactor
-      autoload :Status, '3scale/backend/transactor/status'
+      autoload :NotifyJob,  '3scale/backend/transactor/notify_job'
+      autoload :ProcessJob, '3scale/backend/transactor/process_job' 
+      autoload :ReportJob,  '3scale/backend/transactor/report_job' 
+      autoload :Status,     '3scale/backend/transactor/status'
 
       include Core::StorageKeyHelpers
-      include Configurable
       
       extend self
 
       def report(provider_key, raw_transactions)
-        report_backend_hit(provider_key, 'transactions/create_multiple' => 1,
-                                         'transactions' => raw_transactions.size)
+        notify(provider_key, 'transactions/create_multiple' => 1,
+                             'transactions' => raw_transactions.size)
 
-        service_id = Core::Service.load_id(provider_key) || raise(ProviderKeyInvalid)
-        errors = {}
-        transactions = []
+        service_id = load_service(provider_key)
 
-        group_by_user_key(raw_transactions) do |user_key, grouped_transactions|
-          begin
-            contract = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
-            usages = process_usages(service_id, grouped_transactions)
-
-            grouped_transactions.each do |transaction|
-              transactions << {
-                :service_id  => service_id,
-                :contract_id => contract.id,
-                :timestamp   => transaction['timestamp'] || Time.now.getutc.to_s,
-                :usage       => usages[transaction['index']]}
-            end
-          rescue MultipleErrors => exception
-            errors.merge!(exception.codes)
-          rescue Error => exception
-            grouped_transactions.each do |transaction|
-              errors[transaction['index']] = exception.code
-            end
-          end
-        end
-
-        if errors.empty?
-          process_transactions(transactions)
-        else
-          raise MultipleErrors.new(errors) unless errors.empty?
-        end
+        Resque.enqueue(ReportJob, service_id, raw_transactions)
       end
 
       def authorize(provider_key, user_key)
-        report_backend_hit(provider_key, 'transactions/authorize' => 1)
+        notify(provider_key, 'transactions/authorize' => 1)
 
-        service_id = Core::Service.load_id(provider_key) || raise(ProviderKeyInvalid)
-        contract   = Contract.load(service_id, user_key) || raise(UserKeyInvalid)
+        service_id = load_service(provider_key)
+        contract   = load_contract(service_id, user_key)
         usage      = load_current_usage(contract)
         
         status = Status.new(contract, usage)
-        status.reject!('user.inactive_contract') unless contract.live?
-        status.reject!('user.exceeded_limits')   unless validate_usage_limits(contract, usage)
+        status.reject!(ContractNotActive.new) unless contract.live?
+        status.reject!(LimitsExceeded.new)    unless validate_usage_limits(contract, usage)
         status
       end
 
       private
+        
+      def load_service(provider_key)
+        Core::Service.load_id(provider_key) || raise(ProviderKeyInvalid, provider_key)
+      end
       
-      def group_by_user_key(transactions, &block)
-        transactions.map do |index, transaction|
-          transaction.merge('index' => index.to_i)
-        end.group_by do |transaction|
-          transaction['user_key'] || transaction['client_ip']
-        end.each(&block)
+      def load_contract(service_id, user_key)
+        Contract.load(service_id, user_key) || raise(UserKeyInvalid, user_key)
+      end
+
+      def notify(provider_key, usage)
+        Resque.enqueue(NotifyJob, provider_key, usage, Time.now.getutc.to_s)
       end
       
       def load_current_usage(contract)
@@ -102,70 +81,7 @@ module ThreeScale
       def validate_usage_limits(contract, usage)
         contract.usage_limits.all? { |limit| limit.validate(usage) }
       end
-    
-      def process_usages(service_id, transactions)
-        metrics = Metric.load_all(service_id)
-        errors = {}
-
-        usages = transactions.inject({}) do |usages, transaction|
-          begin
-            usages[transaction['index']] = metrics.process_usage(transaction['usage'])
-          rescue Error => exception
-            errors[transaction['index']] = exception.code
-          end
-          
-          usages
-        end
-
-        raise MultipleErrors, errors unless errors.empty?
-        usages
-      end
       
-      class Processor
-        @queue = :transactions
-
-        def self.perform(transactions)
-          transactions = preprocess(transactions)
-
-          Aggregator.aggregate(transactions)
-          Archiver.add(transactions)
-        end
-
-        def self.preprocess(transactions)
-          transactions.map do |transaction|
-            transaction = symbolize_keys(transaction)
-            transaction[:timestamp] = Time.parse_to_utc(transaction[:timestamp])
-            transaction
-          end
-        end
-
-        def self.symbolize_keys(hash)
-          hash.inject({}) do |memo, (key, value)|
-            memo[key.to_sym] = value
-            memo
-          end
-        end
-      end
-
-      def process_transactions(transactions)
-        Resque.enqueue(Processor, transactions)
-      end
-
-      def report_backend_hit(provider_key, usage)
-        contract = Contract.load(master_service_id, provider_key) || raise(ProviderKeyInvalid)
-        master_metrics = Metric.load_all(master_service_id)
-
-        process_transactions([{:service_id  => master_service_id,
-                               :contract_id => contract.id,
-                               :timestamp   => Time.now.getutc.to_s,
-                               :usage       => master_metrics.process_usage(usage)}])
-      end
-
-      def master_service_id
-        value = configuration.master_service_id
-        value ? value.to_s : raise("Can't find master service id. Make sure the \"master_service_id\" configuration value is set correctly")
-      end
-
       def storage
         Storage.instance
       end

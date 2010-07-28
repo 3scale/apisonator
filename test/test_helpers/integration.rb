@@ -9,7 +9,7 @@ module TestHelpers
   
     def app
       Rack::Builder.new do
-        use Rack::RestApiVersioning, :default_version => '1.0'
+        use Rack::RestApiVersioning, :default_version => '1.1'
         run ThreeScale::Backend::Router.new
       end
     end

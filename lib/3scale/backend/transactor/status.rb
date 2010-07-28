@@ -51,17 +51,15 @@ module ThreeScale
           @authorized     = true
         end
 
-        def reject!(code)
+        def reject!(error)
           @authorized = false
-          @rejection_reason_code ||= code
+          @rejection_reason_code ||= error.code
+          @rejection_reason_text ||= error.message
         end
       
         attr_reader :timestamp
         attr_reader :rejection_reason_code
-
-        def rejection_reason_text
-          ERROR_MESSAGES[rejection_reason_code]
-        end
+        attr_reader :rejection_reason_text
 
         def authorized?
           @authorized
@@ -80,8 +78,37 @@ module ThreeScale
           values && values[usage_limit.metric_id] || 0
         end
 
+        TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+
         def to_xml(options = {})
-          Serializers::Status.serialize(self, options)
+          xml = Builder::XmlMarkup.new
+          xml.instruct! unless options[:skip_instruct]
+
+          xml.status do
+            xml.authorized authorized? ? 'true' : 'false'
+            xml.reason     rejection_reason_text unless authorized?
+
+            xml.plan       plan_name
+
+            unless usage_reports.empty?
+              xml.usage_reports do
+                usage_reports.each do |report|
+                  attributes = {:metric => report.metric_name,
+                                :period => report.period}
+                  attributes[:exceeded] = 'true' if report.exceeded?
+
+                  xml.usage_report(attributes) do
+                    xml.period_start  report.period_start.strftime(TIME_FORMAT)
+                    xml.period_end    report.period_end.strftime(TIME_FORMAT)
+                    xml.max_value     report.max_value
+                    xml.current_value report.current_value
+                  end
+                end
+              end
+            end
+          end
+
+          xml.target!
         end
 
         private

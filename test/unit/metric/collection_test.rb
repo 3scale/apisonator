@@ -37,7 +37,7 @@ module Metric
       Metric.save(:service_id => 1001, :id => 2001, :name => 'hits')
       metrics = Metric::Collection.new(1001)
 
-      assert_raise MetricNotFound do
+      assert_raise MetricInvalid do
         metrics.process_usage('ninjastars' => 1000)
       end
     end

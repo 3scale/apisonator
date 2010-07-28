@@ -9,16 +9,14 @@ class ReportTest < Test::Unit::TestCase
     @storage = Storage.instance(true)
     @storage.flushdb
 
+    Resque.reset!
+
     setup_master_service
 
     @master_contract_id = next_id
-    @master_plan_id = next_id
     @provider_key = 'provider_key'
-    Contract.save(:service_id => @master_service_id, 
-                  :plan_id => @master_plan_id,
-                  :id => @master_contract_id, 
-                  :user_key => @provider_key,
-                  :state => :live)
+    Contract.save(:service_id => @master_service_id, :user_key => @provider_key,
+                  :id => @master_contract_id, :state => :live)
 
     @service_id = next_id
     Core::Service.save(:provider_key => @provider_key, :id => @service_id)
@@ -40,7 +38,7 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 200, last_response.status
   end
-  
+
   def test_successful_report_increments_the_stats_counters
     Timecop.freeze(Time.utc(2010, 5, 10, 17, 36)) do
       post '/transactions.xml',
@@ -81,7 +79,7 @@ class ReportTest < Test::Unit::TestCase
       assert_equal '1', node.at("values value[metric_id = \"#{@metric_id}\"]").content
     end
   end
-
+  
   def test_successful_report_with_utc_timestamped_transactions
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -107,69 +105,116 @@ class ReportTest < Test::Unit::TestCase
     key = service_key(@service_id, @metric_id, :hour, '2010051113')
     assert_equal 1, @storage.get(key).to_i
   end
-  
+
   def test_report_fails_on_invalid_provider_key
     post '/transactions.xml',
       :provider_key => 'boo',
       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
 
-    assert_equal 'application/xml', last_response.headers['Content-Type']
+    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
     
     doc = Nokogiri::XML(last_response.body)
 
-    assert_equal 1, doc.search('errors:root error').count
-    node = doc.at('errors:root error')
+    node = doc.at('error:root')
 
     assert_not_nil node
-    assert_equal 'provider.invalid_key', node['code']
-    assert_equal 'provider authentication key is invalid', node.content
+    assert_equal 'provider_key_invalid', node['code']
+    assert_equal 'provider key "boo" is invalid', node.content
   end
 
-  def test_report_fails_on_invalid_user_key
+  def test_report_reports_error_on_invalid_user_key
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:user_key => 'boo', :usage => {'hits' => 1}}}
 
-    assert_equal 'application/xml', last_response.headers['Content-Type']
-    
-    doc = Nokogiri::XML(last_response.body)
-    node = doc.at('errors:root error[index = "0"]')
+    assert_equal 200, last_response.status
 
-    assert_not_nil node
-    assert_equal 'user.invalid_key', node['code']
-    assert_equal 'user_key is invalid', node.content
+    Resque.run!
+
+    error = ErrorReporter.all(@service_id).last
+
+    assert_not_nil error
+    assert_equal 'user_key_invalid', error[:code]
+    assert_equal 'user key "boo" is invalid', error[:message]
   end
   
-  def test_report_fails_on_invalid_metric_name
+  def test_report_reports_error_on_invalid_metric_name
     post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => @user_key, :usage => {'nukes' => 1}}}
+       :provider_key => @provider_key,
+       :transactions => {0 => {:user_key => @user_key, :usage => {'nukes' => 1}}}
 
-    assert_equal 'application/xml', last_response.headers['Content-Type']
-    
-    doc = Nokogiri::XML(last_response.body)
-    node = doc.at('errors:root error[index = "0"]')
+    assert_equal 200, last_response.status
 
-    assert_not_nil node
-    assert_equal 'provider.invalid_metric', node['code']
-    assert_equal 'metric does not exist', node.content
+    Resque.run!
+
+    error = ErrorReporter.all(@service_id).last
+
+    assert_not_nil error
+    assert_equal 'metric_invalid', error[:code]
+    assert_equal 'metric "nukes" is invalid', error[:message]
   end
   
-  def test_report_fails_on_invalid_usage_value
+  def test_report_reports_error_on_empty_usage_value
     post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 'tons!'}}}
+       :provider_key => @provider_key,
+       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => ' '}}}
 
-    assert_equal 'application/xml', last_response.headers['Content-Type']
+    assert_equal 200, last_response.status
     
-    doc = Nokogiri::XML(last_response.body)
-    node = doc.at('errors:root error[index = "0"]')
+    Resque.run!
 
-    assert_not_nil node
-    assert_equal 'provider.invalid_usage_value', node['code']
-    assert_equal 'usage value is invalid', node.content
+    error = ErrorReporter.all(@service_id).last
+
+    assert_not_nil error
+    assert_equal 'usage_value_invalid', error[:code]
+    assert_equal %Q(usage value for metric "hits" can't be empty), error[:message]
   end
   
+  def test_report_reports_error_on_invalid_usage_value
+    post '/transactions.xml',
+       :provider_key => @provider_key,
+       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 'tons!'}}}
+
+    assert_equal 200, last_response.status
+    
+    Resque.run!
+
+    error = ErrorReporter.all(@service_id).last
+
+    assert_not_nil error
+    assert_equal 'usage_value_invalid', error[:code]
+    assert_equal 'usage value "tons!" for metric "hits" is invalid', error[:message]
+  end
+
+  def test_report_does_not_aggregate_anything_when_at_least_one_transaction_is_invalid
+    post '/transactions.xml',
+       :provider_key => @provider_key,
+       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}},
+                         1 => {:user_key => 'boo',     :usage => {'hits' => 1}}}
+
+    Resque.run!
+
+    key = contract_key(@service_id, @contract_id, @metric_id, 
+                       :month, Time.now.strftime('%Y%m01'))
+    assert_nil @storage.get(key)
+  end
+  
+  def test_report_does_not_archive_anything_when_at_least_one_transaction_is_invalid
+    path = configuration.archiver.path
+    FileUtils.rm_rf(path)
+
+    Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}},
+                          1 => {:user_key => 'foo',     :usage => {'hits' => 1}}}
+      
+      Resque.run!
+
+      assert !File.exists?("#{path}/service-#{@service_id}/20100511.xml.part")
+    end
+  end
+
   def test_report_succeeds_on_inactive_contract
     contract = Contract.load(@service_id, @user_key)
     contract.state = :suspended
@@ -190,6 +235,8 @@ class ReportTest < Test::Unit::TestCase
 
     Transactor.report(@provider_key,
                       '0' => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
+
+    Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
