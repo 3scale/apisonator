@@ -8,7 +8,7 @@ module ThreeScale
     class Worker
       include Resque::Helpers
 
-      QUEUE = :transactions
+      QUEUE = :main
 
       def initialize(options = {})
         trap('TERM') { shutdown }

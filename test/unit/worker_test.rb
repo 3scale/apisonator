@@ -4,6 +4,10 @@ class WorkerTest < Test::Unit::TestCase
   def setup
   end
 
+  def test_queue_name
+    assert_equal :main, Worker::QUEUE
+  end
+
   def test_works_off_queued_job
     job = stub('job', :queue => Worker::QUEUE, :payload => 'foo')
     job.expects(:perform)
