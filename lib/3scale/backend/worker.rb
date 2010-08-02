@@ -67,7 +67,7 @@ module ThreeScale
       private
 
       def reserve
-        stuff = redis.lpop(QUEUE)
+        stuff = redis.lpop("queue:#{QUEUE}")
         stuff && Resque::Job.new(QUEUE, decode(stuff))
       end
 
