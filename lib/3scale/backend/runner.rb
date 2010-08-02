@@ -15,7 +15,7 @@ module ThreeScale
       attr_reader :options
       attr_reader :command
 
-      COMMANDS = [:start, :stop, :restart, :restore_backup]
+      COMMANDS = [:start, :stop, :restart, :restore_backup, :archive]
 
       def run
         parse!(ARGV)
@@ -26,7 +26,7 @@ module ThreeScale
           if command
             abort "Unknown command: #{command}. Use one of: #{COMMANDS.join(', ')}"
           else
-            abort parser.to_s
+            abort @parser.to_s
           end
         end        
       end
@@ -34,11 +34,11 @@ module ThreeScale
       def start
         require '3scale/backend'
 
-        me = self
+        log = !options[:daemonize] || options[:log_file]
 
         server = Thin::Server.new(options[:host], options[:port]) do
           use HoptoadNotifier::Rack if HoptoadNotifier.configuration
-          use Rack::CommonLogger    if me.log?
+          use Rack::CommonLogger    if log
           use Rack::ContentLength
           use Rack::RestApiVersioning, :default_version => '1.1'
           
@@ -74,13 +74,15 @@ module ThreeScale
         ThreeScale::Backend::Storage.instance(true).restore_backup
         puts ">> Done."
       end
+
+      def archive
+        require '3scale/backend'
+        ThreeScale::Backend::Archiver.store(:tag => `hostname`.strip)
+        ThreeScale::Backend::Archiver.cleanup
+      end
       
       def pid_file
         "/var/run/3scale/3scale_backend_#{options[:port]}.pid"
-      end
-
-      def log?
-        !options[:daemonize] || options[:log_file]
       end
 
       private
