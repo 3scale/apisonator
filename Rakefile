@@ -56,10 +56,26 @@ begin
     gemspec.add_dependency 'yajl-ruby',               '~> 0.7'
   end
 
-  # HAX: I wan't only git:release, nothing else.
+  # HAX: I want only git:release, nothing else.
   Rake::Task['release'].clear_prerequisites
   task :release => 'git:release'
 
 rescue LoadError
   puts "Jeweler not available. Install it with: gem install jeweler"
+end
+
+
+desc "Send all completed archives to a remote storage and clean them up."
+task :archive => ['archive:store', 'archive:cleanup']
+
+namespace :archive do
+  task :store do
+    require '3scale/backend'
+    ThreeScale::Backend::Archiver.store(:tag => `hostname`.strip)
+  end
+
+  task :cleanup do
+    require '3scale/backend'
+    ThreeScale::Backend::Archiver.cleanup
+  end
 end
