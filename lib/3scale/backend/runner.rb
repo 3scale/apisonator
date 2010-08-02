@@ -12,18 +12,21 @@ module ThreeScale
         @options = {:host => '0.0.0.0', :port => 3000}
       end
 
+      attr_reader :options
+      attr_reader :command
+
       COMMANDS = [:start, :stop, :restart, :restore_backup]
 
       def run
         parse!(ARGV)
 
-        if COMMANDS.include?(@command)
-          send(@command)
+        if COMMANDS.include?(command)
+          send(command)
         else
-          if @command
-            abort "Unknown command: #{@command}. Use one of: #{COMMANDS.join(', ')}"
+          if command
+            abort "Unknown command: #{command}. Use one of: #{COMMANDS.join(', ')}"
           else
-            abort @parser.to_s
+            abort parser.to_s
           end
         end        
       end
@@ -33,7 +36,7 @@ module ThreeScale
 
         me = self
 
-        server = Thin::Server.new(@options[:host], @options[:port]) do
+        server = Thin::Server.new(options[:host], options[:port]) do
           use HoptoadNotifier::Rack if HoptoadNotifier.configuration
           use Rack::CommonLogger    if me.log?
           use Rack::ContentLength
@@ -43,7 +46,7 @@ module ThreeScale
         end
 
         server.pid_file = pid_file
-        server.log_file = @options[:log_file] || "/dev/null"
+        server.log_file = options[:log_file] || "/dev/null"
 
         # Hack to set the process name.
         def server.name
@@ -52,7 +55,7 @@ module ThreeScale
  
         puts ">> Starting #{server.name}. Let's roll!"
 
-        server.daemonize if @options[:daemonize]
+        server.daemonize if options[:daemonize]
         server.start
       end
 
@@ -67,23 +70,17 @@ module ThreeScale
       def restore_backup
         require '3scale/backend'
 
-        EM.run do
-          Fiber.new do
-            puts ">> Replaying write commands from backup."
-            ThreeScale::Backend::Storage.instance(true).restore_backup
-            puts ">> Done."
-
-            EM.stop
-          end.resume
-        end
+        puts ">> Replaying write commands from backup."
+        ThreeScale::Backend::Storage.instance(true).restore_backup
+        puts ">> Done."
       end
       
       def pid_file
-        "/var/run/3scale/3scale_backend_#{@options[:port]}.pid"
+        "/var/run/3scale/3scale_backend_#{options[:port]}.pid"
       end
 
       def log?
-        !@options[:daemonize] || @options[:log_file]
+        !options[:daemonize] || options[:log_file]
       end
 
       private
