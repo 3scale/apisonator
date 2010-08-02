@@ -79,7 +79,7 @@ module ThreeScale
           @server_index = 0
           @backup_file  = options[:backup_file] || DEFAULT_BACKUP_FILE
       
-          host, port = host_and_port(@servers.first)
+          host, port = host_and_port(@servers.first || DEFAULT_SERVER)
           super(:host => host, :port => port, :db => options[:db])
         end
 
@@ -154,7 +154,7 @@ module ThreeScale
         end
       
         def host_and_port(server)
-          host, port = (server || DEFAULT_SERVER).split(':')
+          host, port = server.split(':')
           port       = port.to_i
 
           [host, port]

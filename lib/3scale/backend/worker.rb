@@ -7,6 +7,7 @@ module ThreeScale
 
     class Worker
       include Resque::Helpers
+      include Configurable
 
       QUEUE = :main
 
@@ -34,7 +35,7 @@ module ThreeScale
         loop do
           break if @shutdown
 
-          if job = Resque::Job.reserve(QUEUE)
+          if job = reserve
             working_on(job)
             perform(job)
             done_working
@@ -64,6 +65,11 @@ module ThreeScale
       attr_reader :polling_frequency
 
       private
+
+      def reserve
+        stuff = redis.lpop(QUEUE)
+        stuff && Resque::Job.new(QUEUE, decode(stuff))
+      end
 
       def perform(job)
         job.perform
@@ -120,6 +126,19 @@ module ThreeScale
 
       def hostname
         @hostname ||= `hostname`.chomp
+      end
+
+      def redis
+        @redis ||= begin
+                     server = (configuration.redis.servers || []).first
+                     host, port = server ? server.split(':') : [nil, nil]
+                     
+                     ::Redis::Namespace.new(
+                       :resque,
+                       :redis => ::Redis.new(:host => host, 
+                                             :port => port,
+                                             :db   => configuration.redis.db))
+                   end
       end
     end
   end
