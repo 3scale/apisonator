@@ -120,4 +120,54 @@ class StorageFailoverTest < Test::Unit::TestCase
     assert_equal "set foo 1\nset bar 2\nincr foo\nincrby bar 42\n",
                  File.read('/tmp/3scale_backend/backup_storage')
   end
+  
+  def test_commands_written_to_backup_file_can_be_restored
+    start_redis_server(6400)
+    start_redis_server(6401)
+
+    redis_send(6400, 'flushdb')
+    redis_send(6401, 'flushdb')
+    
+    stop_redis_server(6400)
+
+    FileUtils.rm_rf('/tmp/3scale_backend/backup_storage')
+
+    servers = ['127.0.0.1:6400', '127.0.0.1:6401']
+    
+    storage = Storage.new(:servers => servers)
+    storage.set('foo', '1')
+    storage.set('bar', '2')
+
+    start_redis_server(6400)
+
+    storage = Storage.new(:servers => servers)
+    storage.restore_backup
+
+    assert_equal '1', storage.get('foo')
+    assert_equal '2', storage.get('bar')
+  end
+  
+  def test_commands_with_arguments_with_spaces_written_to_backup_file_can_be_restored
+    start_redis_server(6400)
+    start_redis_server(6401)
+
+    redis_send(6400, 'flushdb')
+    redis_send(6401, 'flushdb')
+    
+    stop_redis_server(6400)
+
+    FileUtils.rm_rf('/tmp/3scale_backend/backup_storage')
+
+    servers = ['127.0.0.1:6400', '127.0.0.1:6401']
+    
+    storage = Storage.new(:servers => servers)
+    storage.rpush('queue', Yajl::Encoder.encode(:stuff => 'foo bar'))
+
+    start_redis_server(6400)
+
+    storage = Storage.new(:servers => servers)
+    storage.restore_backup
+
+    assert_equal 'foo bar', Yajl::Parser.parse(storage.lpop('queue'))['stuff']
+  end
 end
