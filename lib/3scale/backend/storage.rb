@@ -169,14 +169,11 @@ module ThreeScale
         end
       
         def encode_command_for_backup(command)
-          # TODO: would be good to escape spaces and newlines in each argument,
-          # but the normal (non-backup) processig doesn't do it neither, so let's
-          # not bother now.
-          command.join(' ')
+          command.map(&:to_s).map(&:escape_whitespaces).join(' ')
         end
       
         def decode_command_for_backup(command)
-          command.split(/\s+/)
+          command.split(/\s+/).map(&:unescape_whitespaces)
         end
       end
       

@@ -13,6 +13,7 @@ require 'zlib'
 
 require '3scale/backend/configuration'
 require '3scale/backend/hash_hacks'
+require '3scale/backend/string_hacks'
 require '3scale/backend/time_hacks'
 
 module ThreeScale
