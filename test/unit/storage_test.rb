@@ -20,15 +20,6 @@ class StorageTest < Test::Unit::TestCase
     assert_equal 'junk',  @storage.get('bar')
   end
 
-  def test_restore_backup_handles_commands_with_arguments_with_whitespaces
-    write_backup_file("rpush foo #{Yajl::Encoder.encode('stuff' => 'one two')}")
-
-    @storage.restore_backup
-    item = Yajl::Parser.parse(@storage.lpop('foo'))
-
-    assert_equal 'one two', item['stuff']    
-  end
-
   def test_restore_backup_deletes_the_backup_file
     write_backup_file('set foo stuff')
     

@@ -147,7 +147,7 @@ class StorageFailoverTest < Test::Unit::TestCase
     assert_equal '2', storage.get('bar')
   end
   
-  def test_commands_with_arguments_with_spaces_written_to_backup_file_can_be_restored
+  def test_commands_with_arguments_with_whitespaces_written_to_backup_file_can_be_restored
     start_redis_server(6400)
     start_redis_server(6401)
 
