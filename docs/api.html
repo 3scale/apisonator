@@ -1,0 +1,282 @@
+<h2>3scale API for Service Management</h2>
+
+<p>API version 2.0 (the documentation for the previous version is <a href="/support/api-service-management-v1.0">here</a>).</p>
+
+<p>The other way to integrate your API with our API Management solution is to use the 3scale REST API for authenticating calls and reporting usage.</p>
+
+<h3>Documentation</h3>
+<p>This document describes the protocol used for your API to communicate with 3scale backend server for validating and reporting transactions between your infrastructure and your API users.</p>
+
+<h3>“In account” help</h3>
+
+<p>Remember that you can also use the “help” menu item from within your account (top right in the login box) to activate in-account help. This contains configuration information and also links to all the areas of the account you need to interact with.</p>
+
+<h3>Definitions</h3>
+<dl class="def">
+  <dt>transaction</dt><dd>A process consisting of receiving user’s request, processing it and sending a response back to the user.<p></p>
+  </dd><dt>resource</dt>
+  <dd>Anything that is spent during execution of the transaction and that can be measured. This can be for example amount of CPU time spent during the processing, or amount of storage space used for storing some data, and so on.</dd>
+  <dt>provider authentication key</dt>
+  <dd>Key that uniquely identifies the provider in the 3scale backend.</dd>
+  <dt>provider verification key</dt>
+  <dd>Key used by user to verify authenticity of the provider.</dd>
+
+  <dt>user key</dt>
+  <dd>Key that uniquely identifies the user.</dd>
+</dl>
+
+<h3>Operations</h3>
+<p>The API exposes a simple REST-based interface that provides these operations: <strong>authorize</strong>,  and <strong>report</strong>.</p>
+
+<h4>AUTHORIZE</h4>
+
+<p>This is a read-only operation that checks if given key is valid and active and that the usage reported for the user corresponding to the key is not over the limits.</p>
+<p><code class="http">
+  GET /transactions/authorize.xml?user_key=&lt;user_key&gt;&amp;amp;provider_key=&lt;provider_key&gt;</code></p>
+<h4 class="sub">Parameters</h4>
+<dl class="def">
+  <dt><var>provider_key</var></dt>
+  <dd>(required) Provider authentication key</dd>
+  <dt><var>user_key</var></dt>
+  <dd>(required) user key</dd>
+</dl>
+<p><br class="clear"></p>
+<h4 class="sub">Successful Response</h4>
+<p>Has status code <code class="http">200 OK</code> and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit (times are all UTC).</p>
+
+<p>Example of successful authorize response</p>
+
+<code class="xml"><pre>
+&lt;status&gt;
+  &lt;authorized&gt;true&lt;/authorized&gt;
+  &lt;plan&gt;Pro&lt;/plan&gt;
+
+  &lt;usage_reports&gt;
+    &lt;usage_report metric="hits" period="month"&gt;
+      &lt;period_start&gt;2010-08-01 00:00:00 +00:00&lt;/period_start&gt;
+      &lt;period_end&gt;2010-09-01 00:00:00 +00:00&lt;/period_end&gt;
+      &lt;current_value&gt;17344&lt;current_value&gt;
+      &lt;max_value&gt;20000&lt;/max_value&gt;
+    &lt;/usage_report&gt;
+
+    &lt;usage_report metric="hits" period="day"&gt;
+      &lt;period_start&gt;2010-08-04 00:00:00 +00:00&lt;/period_start&gt;
+      &lt;period_end&gt;2010-08-05 00:00:00 +00:00&lt;/period_end&gt;
+      &lt;current_value&gt;732&lt;/current_value&gt;
+      &lt;max_value&gt;1000&lt;/max_value&gt;
+    &lt;/usage_report&gt;
+  &lt;/usage_reports/&gt;
+&lt;/status&gt;
+</pre></code>
+
+<p>Example of failed authorize response (exceeded limits)</p>
+
+<code class="xml"><pre>
+&lt;status&gt;
+  &lt;authorized&gt;false&lt;/authorized&gt;
+  &lt;reason&gt;Usage limits are exceeded&lt;/reason&gt;
+  &lt;plan&gt;Pro&lt;/plan&gt;
+
+  &lt;usage_reports&gt;
+    &lt;usage_report metric="hits" period="month"&gt;
+      &lt;period_start&gt;2010-08-01 00:00:00 +00:00&lt;/period_start&gt;
+      &lt;period_end&gt;2010-09-01 00:00:00 +00:00&lt;/period_end&gt;
+      &lt;current_value&gt;17344&lt;current_value&gt;
+      &lt;max_value&gt;20000&lt;/max_value&gt;
+    &lt;/usage_report&gt;
+
+    &lt;usage_report metric="hits" period="day" exceeded="true"&gt;
+      &lt;period_start&gt;2010-08-04 00:00:00 +00:00&lt;/period_start&gt;
+      &lt;period_end&gt;2010-08-05 00:00:00 +00:00&lt;/period_end&gt;
+      &lt;current_value&gt;1042&lt;/current_value&gt;
+      &lt;max_value&gt;1000&lt;/max_value&gt;
+    &lt;/usage_report&gt;
+  &lt;/usage_reports/&gt;
+&lt;/status&gt;
+</pre></code>
+
+<p>Explanation of the elements</p>
+
+<dl class="def">
+  <dt><var>status</var></dt>
+  <dd>Root element of the response.</dd>
+
+  <dt><var>authorized</var></dt>
+  <dd>Contains text "true" if the authorization was successful, or "false" if it failed.</dd>
+
+  <dt><var>reason</var></dt>
+  <dd>Human readable textual description of failure reason. This element appears only if <var>authorize</var> is false.</dd>
+
+  <dt><var>plan</var></dt>
+  <dd>Name of the plan the user is signed up to.</dd>
+
+  <dt><var>usage_reports</var></dt>
+  <dd>Contains list of <var>usage_report</var> elements - one per each usage limit defined for the plan the user is signed up to.</dd>
+
+  <dt><var>usage_report</var></dt>
+  <dd>Contains information about usage status. Contains these elements: <var>period_start</var>, <var>period_end</var>, <var>current_value</var> and <var>max_value</var>. Has attributes <var>metric</var> with the name of the metric the limit applies to, <var>period</var>, which is the period of the limit (year, month, week, day, hour, minute) and optionaly <var>exceeded</var> which is set to "true" if the limit is exceeded in the current period.</dd>
+
+  <dt><var>period_start</var></dt>
+  <dd>Start of the limit period. It's in the form <samp>YYYY-MM-DD HH:MM:SS +ZZ:ZZ</samp>. <samp>+ZZ:ZZ</samp> (or <samp>-ZZ:ZZ</samp>) is a time offset (in hours and minutes) from UTC.</dd>
+
+  <dt><var>period_end</var></dt>
+  <dd>End of the limit period. Same format as <var>period_start</var></dd>
+
+  <dt><var>current_value</var></dt>
+  <dd>Value of the corresponding metric accumulated so far in the current period.</dd>
+
+  <dt><var>max_value</var></dt>
+  <dd>Maximum value allowed by the usage limit.</dd>
+</dl>
+
+<h4 class="sub">Errors</h4>
+
+<p>In case of error, the response body contains an XML-formatted object with a single element <var>error</var>. This element has one attribute <var>code</var> containing a unique string identifier of the error. The content of this element is a human-readable English description of the error.</p>
+
+<p>These are all possible error identifiers and their meanings:</p>
+<dl class="def">
+  <dt><var>provider_key_invalid</var></dt>
+  <dd>Provider key is not valid</dd>
+
+  <dt><var>user_key_invalid</var></dt>
+  <dd>User key is not valid</dd>
+</dl>
+
+<p><br class="clear" /></p>
+
+<p>This is an example of an error response:</p>
+<div class="example">
+<code class="xml"><pre>
+&lt;?xml version=“1.0” encoding=“utf-8” ?&gt;
+&lt;error code=“user_key_invalid"&gt;user key "abcd1234" is invalid&lt;error&gt;
+</pre></code>
+</div>
+
+<h4 class="sub">Example Request</h4>
+<div class="example">
+<code class="http">
+GET /transactions/authorize.xml?user_key=user_key&amp;provider_key=pkey HTTP/1.1
+
+Host: backend.3scale.net
+</code>
+</div>
+
+<h4>REPORT</h4>
+
+<p>This operation is used to report 3scale system about transactions. Any number of transactions can be reported in one request.</p>
+<p><code class="http">POST /transactions.xml</code></p>
+<h4 class="sub">Parameters</h4>
+<dl class="def">
+
+  <dt><var>transactions</var></dt>
+  <dd>(required) List of parameters for each transaction in the batch. More details are explained below.</dd>
+  <dt><var>provider_key</var></dt>
+  <dd>(required) Provider authentication key</dd>
+</dl>
+<p><br class="clear"></p>
+
+<h5>The structure of the transactions parameter</h5>
+<p>The <em>transactions</em> should contain numerically indexed list of records, one for each transaction. Each record can contain these parameters:</p>
+
+<dl class="def">
+  <dt><var>user_key</var></dt>
+  <dd>(required) user key</dd>
+
+  <dt><var>usage</var></dt>
+  <dd>(required) usage data of the transaction. This should be associative array (a hash) of the form: <code>{metric => value, ...}</code>, where metric is name of the metric that measures the particular resource (for example “storage” or “hits”) and value is any amount of the corresponding resource spend in the transaction.</dd>
+
+  <dt><var>timestamp</var></dt>
+  <dd>(optional) if given, should be date and time when the transaction occured. It can be 
+  specified in two ways: First, in UTC (Greenwitch time), second, in any other time zone.
+  In the first case, the timestamp has to be in this format: <code>YYYY-MM-DD&nbsp;HH:MM:SS</code>
+  for example <code>2009-01-01 17:45:02</code>.
+  In the second case, the format has to be <code>YYYY-MM-DD&nbsp;HH:MM:SS&nbsp;+HH:MM</code> 
+  or <code>YYYY-MM-DD&nbsp;HH:MM:SS&nbsp;-HH:MM</code>, where the <code>+HH:MM</code>
+  (or <code>-HH:MM</code>) part specifies the time offset from UTC in hours and minutes. For example, for timestamp in PST (Pacific Standard Time), it should look like this: <code>2009-01-01&nbsp;22:15:31&nbsp;-08:00</code>.</dd>
+</dl>
+
+<p><br class="clear" /></p>
+
+<p>These parameters have to be encoded in <span class="caps">HTTP</span> <span class="caps">POST</span> request. The usual way to do it, is to “flatten” the nested data structure. Example:</p>
+<p>Having these parameters for two transactions:</p>
+<div class="example">
+<code class="javascript"><pre>
+{
+  "0": {
+    "user_key": "user_key",
+    "usage": {"hits": 1, "transfer": 4500},
+    "timestamp": "2009-01-01 14:23:08"},
+
+  "1": {
+    "user_key": "user_key",
+    "usage": {"hits": 1, "transfer": 2840},
+    "timestamp": "2009-01-01 18:11:59"}}
+</pre></code>
+</div>
+
+<p>They have to be encoded like this:</p>
+<div class="example">
+<code class="http"><pre>
+transactions[0][user_key]=user_key&amp;
+transactions[0][usage][hits]=1&amp;
+transactions[0][usage][transfer]=4500&amp;
+transactions[0][timestamp]=2009-01-01%2014%3A23%3A08&amp;
+transactions[1][user_key]=user_key&amp;
+transactions[1][usage][hits]=1&amp;
+transactions[1][usage][transfer]=2840&amp;
+transactions[1][timestamp]=2009-01-01%2018%3A11%3A59
+</pre></code>
+</div>
+<p>(note that spaces are encoded as <code>%20</code> and colons as <code>%3A</code> according to URL encoding rules)</p>
+
+<h4 class="sub">Successful Response</h4>
+<p>Has status code <code class="http">200 OK</code> and no response body</p>
+
+<h4 class="sub">Errors</h4>
+
+<p>Processing transactions, especially if there is lot of them, can be time consuming task. To achieve low response times, most of the processing is actually done offline. Fot this reason, there are two ways the errors are reported:</p>
+
+<h5>Errors detected during request processing</h5>
+
+<p>Only one type of error can occur during request processing - invalid provider key. In case the provider key is not valid, the response has status code <code class="http">403 Forbidden</code> and the body contains XML document with description of the error. Example:</p>
+
+<div class="example">
+<code class="xml"><pre>
+<?xml version=“1.0” encoding=“utf-8” ?>
+<error code="provider_key_invalid">Provider key "abcd1234" is invalid</error>
+</pre></code>
+
+<h5>Error detected during offline processing</h5>
+
+<p>If an error occurs during offline processing, it's description is stored and can be examined by visiting the provider admin area on www.3scale.net. There is also couple of options to set up error notifications.</p>
+
+<p>Errors that can occur in the offline processing are:</p>
+
+<ul>
+  <li>invalid user key</li>
+  <li>invalid metric</li>
+  <li>invalid usage value</li>
+</ul>
+
+<p>Note that transactions from a single batch are reported only if <strong>all of them are valid</strong>. If there is an error in processing of at least one of them, <strong>none is reported</strong>.</p>
+
+<h4 class="sub">Example Request</h4>
+
+<div class="example">
+<code class="http"><pre>
+POST /transactions.xml <span class="caps">HTTP</span>/1.1
+Host: backend.3scale.net
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 428
+
+transactions[0][user_key]=user_key&amp;
+transactions[0][usage][hits]=1&amp;
+transactions[0][usage][transfer]=4500&amp;
+transactions[0][timestamp]=2009-01-01%2014%3A23%3A08&amp;
+transactions[1][user_key]=user_key&amp;
+transactions[1][usage][hits]=1&amp;
+transactions[1][usage][transfer]=2840&amp;
+transactions[1][timestamp]=2009-01-01%2018%3A11%3A59&amp;
+provider_key=pkey
+</pre></code>
+</div>
