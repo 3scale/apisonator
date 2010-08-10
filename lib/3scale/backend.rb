@@ -54,7 +54,7 @@ end
 ThreeScale::Backend.configuration.tap do |config|
   # Add configuration sections
   config.add_section(:aws, :access_key_id, :secret_access_key)
-  config.add_section(:redis, :servers, :db)
+  config.add_section(:redis, :servers, :db, :backup_file)
   config.add_section(:archiver, :path, :s3_bucket)
 
   # Default config

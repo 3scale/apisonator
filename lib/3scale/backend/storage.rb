@@ -8,8 +8,9 @@ module ThreeScale
       # +reset+ parameter to true.
       def self.instance(reset = false)
         @@instance = nil if reset
-        @@instance ||= new(:servers => configuration.redis.servers,
-                           :db      => configuration.redis.db)
+        @@instance ||= new(:servers     => configuration.redis.servers,
+                           :db          => configuration.redis.db,
+                           :backup_file => configuration.redis.backup_file)
       end
 
       def initialize(options)
