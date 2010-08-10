@@ -95,17 +95,17 @@ class AuthorizeTest < Test::Unit::TestCase
       
       day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_not_nil day
-      assert_equal '2010-05-15 00:00:00', day.at('period_start').content
-      assert_equal '2010-05-16 00:00:00', day.at('period_end').content
-      assert_equal '2',                   day.at('current_value').content
-      assert_equal '100',                 day.at('max_value').content
+      assert_equal '2010-05-15 00:00:00 +0000', day.at('period_start').content
+      assert_equal '2010-05-16 00:00:00 +0000', day.at('period_end').content
+      assert_equal '2',                         day.at('current_value').content
+      assert_equal '100',                       day.at('max_value').content
       
       month = usage_reports.at('usage_report[metric = "hits"][period = "month"]')
       assert_not_nil month
-      assert_equal '2010-05-01 00:00:00', month.at('period_start').content
-      assert_equal '2010-06-01 00:00:00', month.at('period_end').content
-      assert_equal '5',                   month.at('current_value').content
-      assert_equal '10000',               month.at('max_value').content
+      assert_equal '2010-05-01 00:00:00 +0000', month.at('period_start').content
+      assert_equal '2010-06-01 00:00:00 +0000', month.at('period_end').content
+      assert_equal '5',                         month.at('current_value').content
+      assert_equal '10000',                     month.at('max_value').content
     end
   end
 

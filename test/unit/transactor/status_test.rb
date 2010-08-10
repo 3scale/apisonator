@@ -135,10 +135,10 @@ module Transactor
 
         report = usage_reports.at('usage_report[metric = "foos"][period = "month"]')
         assert_not_nil report
-        assert_equal '2010-05-01 00:00:00', report.at('period_start').content
-        assert_equal '2010-06-01 00:00:00', report.at('period_end').content
-        assert_equal '429',                 report.at('current_value').content
-        assert_equal '2000',                report.at('max_value').content
+        assert_equal '2010-05-01 00:00:00 +0000', report.at('period_start').content
+        assert_equal '2010-06-01 00:00:00 +0000', report.at('period_end').content
+        assert_equal '429',                       report.at('current_value').content
+        assert_equal '2000',                      report.at('max_value').content
       end
     end
 
