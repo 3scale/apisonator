@@ -1,102 +1,54 @@
 require 'optparse'
-require 'thin'
 
 module ThreeScale
   module Backend
-    class Runner
-      def self.run
-        new.run
-      end
+    module Runner
+      extend self
 
-      def initialize
-        @options = {:host => '0.0.0.0', :port => 3000}
-      end
-
-      attr_reader :options
-      attr_reader :command
-
+      DEFAULT_OPTIONS = {:host => '0.0.0.0', :port => 3000}
       COMMANDS = [:start, :stop, :restart, :restore_backup, :archive]
 
       def run
-        parse!(ARGV)
-
-        if COMMANDS.include?(command)
-          send(command)
-        else
-          if command
-            abort "Unknown command: #{command}. Use one of: #{COMMANDS.join(', ')}"
-          else
-            abort @parser.to_s
-          end
-        end        
+        send(*parse!(ARGV))
       end
 
-      def start
-        require '3scale/backend'
-
-        log = !options[:daemonize] || options[:log_file]
-
-        server = Thin::Server.new(options[:host], options[:port]) do
-          use HoptoadNotifier::Rack if HoptoadNotifier.configuration
-          use Rack::CommonLogger    if log
-          use Rack::ContentLength
-          use Rack::RestApiVersioning, :default_version => '1.1'
-          
-          run ThreeScale::Backend::Router.new
-        end
-
-        server.pid_file = pid_file
-        server.log_file = options[:log_file] || "/dev/null"
-
-        # Hack to set the process name.
-        def server.name
-          "3scale_backend listening on #{host}:#{port}"
-        end
- 
-        puts ">> Starting #{server.name}. Let's roll!"
-
-        server.daemonize if options[:daemonize]
-        server.start
+      def start(options)
+        Server.start(options)
       end
 
-      def stop
-        Thin::Server.kill(pid_file)
+      def stop(options)
+        Server.stop(options)
       end
 
-      def restart
-        Thin::Server.restart(pid_file)
+      def restart(options)
+        Server.restart(options)
       end
 
-      def restore_backup
-        require '3scale/backend'
-
+      def restore_backup(options)
         puts ">> Replaying write commands from backup."
-        ThreeScale::Backend::Storage.instance(true).restore_backup
+        Storage.instance(true).restore_backup
         puts ">> Done."
       end
 
-      def archive
-        require '3scale/backend'
-        ThreeScale::Backend::Archiver.store(:tag => `hostname`.strip)
-        ThreeScale::Backend::Archiver.cleanup
+      def archive(options)
+        Archiver.store(:tag => `hostname`.strip)
+        Archiver.cleanup
       end
       
-      def pid_file
-        "/var/run/3scale/3scale_backend_#{options[:port]}.pid"
-      end
-
       private
 
       def parse!(argv)
-        @parser = OptionParser.new do |parser|
+        options = DEFAULT_OPTIONS
+
+        parser = OptionParser.new do |parser|
           parser.banner = 'Usage: 3scale_backend [options] command'
           parser.separator ""
           parser.separator "Options:"
         
-          parser.on('-a', '--address HOST',    'bind to HOST address (default: 0.0.0.0)')      { |value| @options[:host] = value }
-          parser.on('-p', '--port PORT',       'use PORT (default: 3000)')                     { |value| @options[:port] = value.to_i }
-          parser.on('-d', '--daemonize',       'run as daemon')                                { |value| @options[:daemonize] = true }
-          parser.on('-l', '--log FILE' ,       'log file')                                     { |value| @options[:log_file] = value }
+          parser.on('-a', '--address HOST', 'bind to HOST address (default: 0.0.0.0)') { |value| options[:host] = value }
+          parser.on('-p', '--port PORT',    'use PORT (default: 3000)')                { |value| options[:port] = value.to_i }
+          parser.on('-d', '--daemonize',    'run as daemon')                           { |value| options[:daemonize] = true }
+          parser.on('-l', '--log FILE' ,    'log file')                                { |value| options[:log_file] = value }
 
           parser.separator ""
           parser.separator "Commands: #{COMMANDS.join(', ')}"
@@ -104,8 +56,18 @@ module ThreeScale
           parser.parse!
         end
 
-        @command = argv.shift
-        @command &&= @command.to_sym
+        command = argv.shift
+        command &&= command.to_sym
+        
+        unless COMMANDS.include?(command)
+          if command
+            abort "Unknown command: #{command}. Use one of: #{COMMANDS.join(', ')}"
+          else
+            abort parser.to_s
+          end
+        end
+
+        [command, options]
       end
     end
   end
