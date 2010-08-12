@@ -5,7 +5,7 @@ require 'digest/md5'
 
 transactions_count = 0
 provider_key       = nil
-user_keys          = []
+app_ids            = []
 
 parser = OptionParser.new do |parser|
   parser.on('-t', '--transactions NUMBER', 'Number of transactions in the postfile.') do |value|
@@ -16,15 +16,15 @@ parser = OptionParser.new do |parser|
     provider_key = value
   end
 
-  parser.on('-u', '--user-keys KEYS', 'List of user keys (separated by commas)') do |values|
-    user_keys = values.split(/\s*,\s*/)
+  parser.on('-a', '--app_ids IDS', 'List of application ids (separated by commas)') do |values|
+    app_ids = values.split(/\s*,\s*/)
   end
 
   parser.parse!
 end
 
 abort "Provider key is required" unless provider_key
-abort "At least one user key is required" unless user_keys.size > 0
+abort "At least one app id is required" unless app_ids.size > 0
 
 transactions_count = 1 if transactions_count < 1
 
@@ -32,7 +32,7 @@ output = ''
 output << "provider_key=#{provider_key}"
 
 transactions_count.times do |index|
-  output << "&transactions[#{index}][user_key]=#{user_keys[index % user_keys.size]}"
+  output << "&transactions[#{index}][app_id]=#{app_ids[index % app_ids.size]}"
   output << "&transactions[#{index}][usage][hits]=1"
 end
 

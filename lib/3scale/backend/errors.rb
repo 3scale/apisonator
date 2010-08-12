@@ -26,15 +26,15 @@ module ThreeScale
       end
     end
     
-    class UserKeyInvalid < Error
-      def initialize(key)
-        super %Q(user key "#{key}" is invalid)
+    class ApplicationNotFound < Error
+      def initialize(id)
+        super %Q(application with id="#{id}" was not found)
       end
     end
 
-    class ContractNotActive < Error
+    class ApplicationNotActive < Error
       def initialize
-        super %Q(contract is not active)
+        super %Q(application is not active)
       end
     end
 

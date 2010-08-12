@@ -19,8 +19,8 @@ module ThreeScale
       private
 
       def aggregate_one(transaction)
-        service_prefix  = service_key_prefix(transaction[:service_id])
-        contract_prefix = contract_key_prefix(service_prefix, transaction[:contract_id])
+        service_prefix     = service_key_prefix(transaction[:service_id])
+        application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
 
         timestamp = transaction[:timestamp]
 
@@ -31,23 +31,20 @@ module ThreeScale
           increment(service_metric_prefix, :month,      timestamp, value)
           increment(service_metric_prefix, :week,       timestamp, value)
           increment(service_metric_prefix, :day,        timestamp, value)
-          increment(service_metric_prefix, 6 * 60 * 60, timestamp, value)
           increment(service_metric_prefix, :hour,       timestamp, value)
-          increment(service_metric_prefix, 2 * 60,      timestamp, value)
 
-          contract_metric_prefix = metric_key_prefix(contract_prefix, metric_id)
+          application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
 
-          increment(contract_metric_prefix, :eternity,   nil,       value)
-          increment(contract_metric_prefix, :year,       timestamp, value)
-          increment(contract_metric_prefix, :month,      timestamp, value)
-          increment(contract_metric_prefix, :week,       timestamp, value)
-          increment(contract_metric_prefix, :day,        timestamp, value)
-          increment(contract_metric_prefix, 6 * 60 * 60, timestamp, value)
-          increment(contract_metric_prefix, :hour,       timestamp, value)
-          increment(contract_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+          increment(application_metric_prefix, :eternity,   nil,       value)
+          increment(application_metric_prefix, :year,       timestamp, value)
+          increment(application_metric_prefix, :month,      timestamp, value)
+          increment(application_metric_prefix, :week,       timestamp, value)
+          increment(application_metric_prefix, :day,        timestamp, value)
+          increment(application_metric_prefix, :hour,       timestamp, value)
+          increment(application_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
         end
 
-        update_contract_set(service_prefix, transaction[:contract_id])
+        update_application_set(service_prefix, transaction[:application_id])
       end
 
       def service_key_prefix(service_id)
@@ -55,8 +52,10 @@ module ThreeScale
         "stats/{service:#{service_id}}"
       end
 
-      def contract_key_prefix(prefix, contract_id)
-        "#{prefix}/cinstance:#{contract_id}"
+      def application_key_prefix(prefix, application_id)
+        # XXX: For backwards compatibility, this is called cinstance. It will be eventually
+        # renamed to application...
+        "#{prefix}/cinstance:#{application_id}"
       end
 
       def metric_key_prefix(prefix, metric_id)
@@ -81,9 +80,9 @@ module ThreeScale
         "#{prefix}/#{time_part}"
       end
 
-      def update_contract_set(prefix, contract_id)
+      def update_application_set(prefix, application_id)
         key = encode_key("#{prefix}/cinstances")
-        storage.sadd(key, encode_key(contract_id))
+        storage.sadd(key, encode_key(application_id))
       end
 
       def storage

@@ -3,8 +3,8 @@ require 'aws/s3'
 require 'builder'
 require 'redis'
 require 'fiber'
-require 'hoptoad_notifier'
 require 'ostruct'
+require 'rack/hoptoad'
 require 'rack/rest_api_versioning'
 require 'resque'
 require 'time'
@@ -21,8 +21,8 @@ module ThreeScale
     autoload :Action,                '3scale/backend/action'
     autoload :Actions,               '3scale/backend/actions'
     autoload :Aggregator,            '3scale/backend/aggregator'
+    autoload :Application,           '3scale/backend/application'
     autoload :Archiver,              '3scale/backend/archiver'
-    autoload :Contract,              '3scale/backend/contract'
     autoload :ErrorReporter,         '3scale/backend/error_reporter'
     autoload :Metric,                '3scale/backend/metric'
     autoload :Route,                 '3scale/backend/route'
@@ -35,14 +35,13 @@ module ThreeScale
     autoload :UsageLimit,            '3scale/backend/usage_limit'
     autoload :Worker,                '3scale/backend/worker'
    
-    autoload :ContractNotActive,     '3scale/backend/errors'
+    autoload :ApplicationNotActive,  '3scale/backend/errors'
+    autoload :ApplicationNotFound,   '3scale/backend/errors'
     autoload :Error,                 '3scale/backend/errors'
-    autoload :ERROR_MESSAGES,        '3scale/backend/errors'
     autoload :LimitsExceeded,        '3scale/backend/errors'
     autoload :MetricInvalid,         '3scale/backend/errors'
     autoload :ProviderKeyInvalid,    '3scale/backend/errors'
     autoload :UnsupportedApiVersion, '3scale/backend/errors'
-    autoload :UserKeyInvalid,        '3scale/backend/errors'
     autoload :UsageValueInvalid,     '3scale/backend/errors'
   end
 
@@ -58,6 +57,7 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:aws, :access_key_id, :secret_access_key)
   config.add_section(:redis, :servers, :db, :backup_file)
   config.add_section(:archiver, :path, :s3_bucket)
+  config.add_section(:hoptoad, :api_key)
 
   # Default config
   config.master_service_id = 1

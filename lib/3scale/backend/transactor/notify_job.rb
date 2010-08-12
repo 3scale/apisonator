@@ -8,13 +8,13 @@ module ThreeScale
         @queue = :main
 
         def self.perform(provider_key, usage, timestamp)
-          if contract = Contract.load(master_service_id, provider_key)
+          if Application.exists?(master_service_id, provider_key)
             master_metrics = Metric.load_all(master_service_id)
 
-            ProcessJob.perform([{:service_id  => master_service_id,
-                                 :contract_id => contract.id,
-                                 :timestamp   => timestamp,
-                                 :usage       => master_metrics.process_usage(usage)}])
+            ProcessJob.perform([{:service_id     => master_service_id,
+                                 :application_id => provider_key,
+                                 :timestamp      => timestamp,
+                                 :usage          => master_metrics.process_usage(usage)}])
           end
         end
 

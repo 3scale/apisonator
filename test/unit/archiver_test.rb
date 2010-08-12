@@ -11,11 +11,11 @@ class ArchiverTest < Test::Unit::TestCase
   end
 
   def test_add_creates_partial_file_if_it_does_not_exist
-    transaction = {:service_id  => 4001,
-                   :contract_id => 5001,
-                   :usage       => {6001 => 1, 6002 => 224},
-                   :timestamp   => Time.utc(2010, 4, 12, 21, 44),
-                   :client_ip   => '1.2.3.4'}
+    transaction = {:service_id     => '4001',
+                   :application_id => '5001',
+                   :usage          => {6001 => 1, 6002 => 224},
+                   :timestamp      => Time.utc(2010, 4, 12, 21, 44),
+                   :client_ip      => '1.2.3.4'}
 
     Archiver.add([transaction])
 
@@ -28,7 +28,7 @@ class ArchiverTest < Test::Unit::TestCase
     doc = Nokogiri::XML(content)
 
     assert_not_nil doc.at('transaction')
-      assert_equal '5001', doc.at('transaction contract_id').content
+      assert_equal '5001', doc.at('transaction application_id').content
       assert_equal '2010-04-12 21:44:00', doc.at('transaction timestamp').content
 
       assert_not_nil doc.at('transaction values')
@@ -44,9 +44,9 @@ class ArchiverTest < Test::Unit::TestCase
     # Data already existing in the file
     xml = Builder::XmlMarkup.new
     xml.transaction do
-      xml.contract_id '5001'
-      xml.timestamp   '2010-04-12 21:44:00'
-      xml.ip          '1.2.3.4'
+      xml.application_id '5001'
+      xml.timestamp      '2010-04-12 21:44:00'
+      xml.ip             '1.2.3.4'
       xml.values do
         xml.value '1',   :metric_id => '6001'
         xml.value '224', :metric_id => '6002'
@@ -55,11 +55,11 @@ class ArchiverTest < Test::Unit::TestCase
 
     File.open(filename, 'w') { |io| io.write(xml.target!) }
 
-    transaction = {:service_id  => 4001,
-                   :contract_id => 5002,
-                   :usage       => {6001 => 1, 6002 => 835},
-                   :timestamp   => Time.utc(2010, 4, 12, 23, 19),
-                   :client_ip   => '1.2.3.5'}
+    transaction = {:service_id     => '4001',
+                   :application_id => '5002',
+                   :usage          => {6001 => 1, 6002 => 835},
+                   :timestamp      => Time.utc(2010, 4, 12, 23, 19),
+                   :client_ip      => '1.2.3.5'}
     
 
     Archiver.add([transaction])
@@ -73,7 +73,7 @@ class ArchiverTest < Test::Unit::TestCase
 
     assert_equal 2, nodes.count
 
-    assert_equal '5001', nodes[0].at('contract_id').content
+    assert_equal '5001', nodes[0].at('application_id').content
     assert_equal '2010-04-12 21:44:00', nodes[0].at('timestamp').content
 
     assert_equal '1',   nodes[0].at('values value[metric_id = "6001"]').content
@@ -82,7 +82,7 @@ class ArchiverTest < Test::Unit::TestCase
     assert_equal '1.2.3.4', nodes[0].at('ip').content
 
 
-    assert_equal '5002', nodes[1].at('contract_id').content
+    assert_equal '5002', nodes[1].at('application_id').content
     assert_equal '2010-04-12 23:19:00', nodes[1].at('timestamp').content
 
     assert_equal '1',   nodes[1].at('values value[metric_id = "6001"]').content
@@ -92,10 +92,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
 
   def test_store_sends_complete_files_to_the_archive_storage
-    Archiver.add([{:service_id  => 4001,
-                   :contract_id => 5002,
-                   :usage       => {6001 => 1},
-                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
+    Archiver.add([{:service_id     => 4001,
+                   :application_id => 5002,
+                   :usage          => {6001 => 1},
+                   :timestamp      => Time.utc(2010, 4, 12, 23, 19)}])
 
     Timecop.freeze(2010, 4, 13, 12, 30) do
       name = nil
@@ -109,10 +109,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
   
   def test_store_does_not_send_incomplete_files_to_the_archive_storage
-    Archiver.add([{:service_id  => 4001,
-                   :contract_id => 5002,
-                   :usage       => {6001 => 1},
-                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
+    Archiver.add([{:service_id     => 4001,
+                   :application_id => 5002,
+                   :usage          => {6001 => 1},
+                   :timestamp      => Time.utc(2010, 4, 12, 23, 19)}])
 
     Timecop.freeze(2010, 4, 12, 23, 44) do
       storage = stub('storage')
@@ -123,10 +123,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
 
   def test_store_makes_the_files_valid_xml_and_compresses_them
-    Archiver.add([{:service_id  => 4001,
-                   :contract_id => 5002,
-                   :usage       => {6001 => 1},
-                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
+    Archiver.add([{:service_id     => 4001,
+                   :application_id => 5002,
+                   :usage          => {6001 => 1},
+                   :timestamp      => Time.utc(2010, 4, 12, 23, 19)}])
 
     Timecop.freeze(2010, 4, 13, 12, 30) do
       name = nil
@@ -151,17 +151,17 @@ class ArchiverTest < Test::Unit::TestCase
       node = doc.at('transactions:root[service_id = "4001"] transaction')
 
       assert_not_nil node
-      assert_equal '5002', node.at('contract_id').content
+      assert_equal '5002', node.at('application_id').content
       assert_equal '1', node.at('values value[metric_id = "6001"]').content
       assert_equal '2010-04-12 23:19:00', node.at('timestamp').content
     end
   end
 
   def test_cleanup_deletes_processed_partial_files_older_than_two_days
-    Archiver.add([{:service_id  => 4001,
-                   :contract_id => 5002,
-                   :usage       => {6001 => 1},
-                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
+    Archiver.add([{:service_id     => 4001,
+                   :application_id => 5002,
+                   :usage          => {6001 => 1},
+                   :timestamp      => Time.utc(2010, 4, 12, 23, 19)}])
     
     path = '/tmp/3scale_backend/archive/service-4001/20100412.xml.part'
 
@@ -173,10 +173,10 @@ class ArchiverTest < Test::Unit::TestCase
   end
   
   def test_cleanup_does_not_delete_processed_partial_files_not_older_than_two_days
-    Archiver.add([{:service_id  => 4001,
-                   :contract_id => 5002,
-                   :usage       => {6001 => 1},
-                   :timestamp   => Time.utc(2010, 4, 12, 23, 19)}])
+    Archiver.add([{:service_id     => 4001,
+                   :application_id => 5002,
+                   :usage          => {6001 => 1},
+                   :timestamp      => Time.utc(2010, 4, 12, 23, 19)}])
     
     path = '/tmp/3scale_backend/archive/service-4001/20100412.xml.part'
 

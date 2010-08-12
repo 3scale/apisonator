@@ -3,7 +3,7 @@ module ThreeScale
     module ErrorReporter
       extend self
 
-      def push(service_id, error)
+      def report(service_id, error)
         storage.rpush(queue_key(service_id), encode(error))
       end
 

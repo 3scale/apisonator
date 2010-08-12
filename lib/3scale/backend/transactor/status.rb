@@ -44,8 +44,8 @@ module ThreeScale
           end
         end
 
-        def initialize(contract, current_values, timestamp = Time.now.getutc)
-          @contract       = contract
+        def initialize(application, current_values, timestamp = Time.now.getutc)
+          @application    = application or raise 'application is required'
           @timestamp      = timestamp
           @current_values = current_values
           @authorized     = true
@@ -66,7 +66,7 @@ module ThreeScale
         end
 
         def plan_name
-          @contract.plan_name
+          @application.plan_name
         end
 
         def usage_reports
@@ -114,7 +114,7 @@ module ThreeScale
         private
 
         def load_usage_reports
-          @contract.usage_limits.map do |usage_limit|
+          @application.usage_limits.map do |usage_limit|
             UsageReport.new(self, usage_limit)
           end
         end

@@ -7,10 +7,11 @@ module ThreeScale
 
       def start(options)
         log = !options[:daemonize] || options[:log_file]
+        configuration = ThreeScale::Backend.configuration
 
         server = ::Thin::Server.new(options[:host], options[:port]) do
-          use HoptoadNotifier::Rack if HoptoadNotifier.configuration
-          use Rack::CommonLogger    if log
+          use Rack::Hoptoad configuration.hoptoad.api_key if configuration.hoptoad.api_key
+          use Rack::CommonLogger if log
           use Rack::ContentLength
           use Rack::RestApiVersioning, :default_version => '1.1'
           

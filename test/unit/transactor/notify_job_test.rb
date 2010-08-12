@@ -10,21 +10,20 @@ module Transactor
 
       setup_master_service
       
-      @contract_id  = next_id
       @provider_key = 'provider_key'
 
-      Contract.save(:id => @contract_id,
-                    :service_id => @master_service_id,
-                    :user_key => @provider_key,
-                    :state => :live)
+      Application.save(:id         => @provider_key,
+                       :service_id => @master_service_id,
+                       :state      => :active,
+                       :plan_id    => next_id)
     end
 
     def test_processes_the_transactions
       Transactor::ProcessJob.expects(:perform).
-        with([{:service_id  => @master_service_id,
-               :contract_id => @contract_id,
-               :timestamp   => Time.utc(2010, 7, 29, 18, 21),
-               :usage       => {@master_hits_id => 1, @master_authorizes_id => 1}}])
+        with([{:service_id     => @master_service_id,
+               :application_id => @provider_key,
+               :timestamp      => Time.utc(2010, 7, 29, 18, 21),
+               :usage          => {@master_hits_id => 1, @master_authorizes_id => 1}}])
 
       Transactor::NotifyJob.perform(@provider_key, 
                                     {'transactions/authorize' => 1},

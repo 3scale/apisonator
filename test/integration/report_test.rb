@@ -13,19 +13,20 @@ class ReportTest < Test::Unit::TestCase
 
     setup_master_service
 
-    @master_contract_id = next_id
     @provider_key = 'provider_key'
-    Contract.save(:service_id => @master_service_id, :user_key => @provider_key,
-                  :id => @master_contract_id, :state => :live)
+    Application.save(:service_id => @master_service_id, 
+                     :id         => @provider_key,
+                     :state      => :active)
 
     @service_id = next_id
     Core::Service.save(:provider_key => @provider_key, :id => @service_id)
 
-    @contract_id = next_id
-    @user_key = 'user_key'
+    @application_id = next_id
     @plan_id = next_id
-    Contract.save(:service_id => @service_id, :plan_id => @plan_id, :id => @contract_id,
-                  :user_key => @user_key, :state => :live)
+    Application.save(:service_id => @service_id, 
+                     :id         => @application_id,
+                     :plan_id    => @plan_id, 
+                     :state      => :active)
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
@@ -34,7 +35,7 @@ class ReportTest < Test::Unit::TestCase
   def test_successful_report_responds_with_200
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
     assert_equal 200, last_response.status
   end
@@ -43,13 +44,13 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 10, 17, 36)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
       
       Resque.run!
 
-      key_month = contract_key(@service_id, @contract_id, @metric_id, :month, '20100501')
-      key_day   = contract_key(@service_id, @contract_id, @metric_id, :day,   '20100510')
-      key_hour  = contract_key(@service_id, @contract_id, @metric_id, :hour,  '2010051017')
+      key_month = application_key(@service_id, @application_id, @metric_id, :month, '20100501')
+      key_day   = application_key(@service_id, @application_id, @metric_id, :day,   '20100510')
+      key_hour  = application_key(@service_id, @application_id, @metric_id, :hour,  '2010051017')
 
       assert_equal 1, @storage.get(key_month).to_i
       assert_equal 1, @storage.get(key_day).to_i
@@ -64,7 +65,7 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
       
       Resque.run!
 
@@ -83,7 +84,7 @@ class ReportTest < Test::Unit::TestCase
   def test_successful_report_with_utc_timestamped_transactions
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:user_key  => @user_key,
+      :transactions => {0 => {:app_id    => @application_id,
                               :usage     => {'hits' => 1},
                               :timestamp => '2010-05-11 13:34:42'}}
 
@@ -96,7 +97,7 @@ class ReportTest < Test::Unit::TestCase
   def test_successful_report_with_local_timestamped_transactions
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:user_key  => @user_key,
+      :transactions => {0 => {:app_id    => @application_id,
                               :usage     => {'hits' => 1},
                               :timestamp => '2010-05-11 11:08:25 -02:00'}}
     
@@ -109,7 +110,7 @@ class ReportTest < Test::Unit::TestCase
   def test_report_fails_on_invalid_provider_key
     post '/transactions.xml',
       :provider_key => 'boo',
-      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
     
@@ -122,10 +123,10 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 'provider key "boo" is invalid', node.content
   end
 
-  def test_report_reports_error_on_invalid_user_key
+  def test_report_reports_error_on_invalid_application_id
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => 'boo', :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => 'boo', :usage => {'hits' => 1}}}
 
     assert_equal 200, last_response.status
 
@@ -134,14 +135,14 @@ class ReportTest < Test::Unit::TestCase
     error = ErrorReporter.all(@service_id).last
 
     assert_not_nil error
-    assert_equal 'user_key_invalid', error[:code]
-    assert_equal 'user key "boo" is invalid', error[:message]
+    assert_equal 'application_not_found', error[:code]
+    assert_equal 'application with id="boo" was not found', error[:message]
   end
   
   def test_report_reports_error_on_invalid_metric_name
     post '/transactions.xml',
        :provider_key => @provider_key,
-       :transactions => {0 => {:user_key => @user_key, :usage => {'nukes' => 1}}}
+       :transactions => {0 => {:app_id => @application_id, :usage => {'nukes' => 1}}}
 
     assert_equal 200, last_response.status
 
@@ -157,7 +158,7 @@ class ReportTest < Test::Unit::TestCase
   def test_report_reports_error_on_empty_usage_value
     post '/transactions.xml',
        :provider_key => @provider_key,
-       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => ' '}}}
+       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => ' '}}}
 
     assert_equal 200, last_response.status
     
@@ -173,7 +174,8 @@ class ReportTest < Test::Unit::TestCase
   def test_report_reports_error_on_invalid_usage_value
     post '/transactions.xml',
        :provider_key => @provider_key,
-       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 'tons!'}}}
+       :transactions => {0 => {:app_id => @application_id, 
+                               :usage  => {'hits' => 'tons!'}}}
 
     assert_equal 200, last_response.status
     
@@ -189,13 +191,13 @@ class ReportTest < Test::Unit::TestCase
   def test_report_does_not_aggregate_anything_when_at_least_one_transaction_is_invalid
     post '/transactions.xml',
        :provider_key => @provider_key,
-       :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}},
-                         1 => {:user_key => 'boo',     :usage => {'hits' => 1}}}
+       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}},
+                         1 => {:app_id => 'boo',           :usage => {'hits' => 1}}}
 
     Resque.run!
 
-    key = contract_key(@service_id, @contract_id, @metric_id, 
-                       :month, Time.now.strftime('%Y%m01'))
+    key = application_key(@service_id, @application_id, @metric_id, 
+                          :month, Time.now.strftime('%Y%m01'))
     assert_nil @storage.get(key)
   end
   
@@ -206,8 +208,8 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}},
-                          1 => {:user_key => 'foo',     :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}},
+                          1 => {:app_id => 'foo',     :usage => {'hits' => 1}}}
       
       Resque.run!
 
@@ -215,14 +217,14 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_report_succeeds_on_inactive_contract
-    contract = Contract.load(@service_id, @user_key)
-    contract.state = :suspended
-    contract.save
+  def test_report_succeeds_when_application_is_not_active
+    application = Application.load(@service_id, @application_id)
+    application.state = :suspended
+    application.save
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
     assert_equal 200, last_response.status
   end
@@ -234,21 +236,21 @@ class ReportTest < Test::Unit::TestCase
                     :month      => 2)
 
     Transactor.report(@provider_key,
-                      '0' => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
+                      '0' => {'app_id' => @application_id, 'usage' => {'hits' => 2}})
 
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
     assert_equal 200, last_response.status
       
     Resque.run!
 
-    assert_equal 3, @storage.get(contract_key(
-      @service_id, @contract_id, @metric_id, :month,
-      Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
+    assert_equal 3, @storage.get(
+      application_key(@service_id, @application_id, @metric_id, :month,
+                      Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
   end
   
   def test_report_succeeds_when_provider_usage_limits_are_exceeded
@@ -259,22 +261,22 @@ class ReportTest < Test::Unit::TestCase
 
     3.times do
       Transactor.report(@provider_key,
-                        '0' => {'user_key' => @user_key, 'usage' => {'hits' => 1}})
+                        '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
     end
 
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
     assert_equal 200, last_response.status
       
     Resque.run!
 
-    assert_equal 4, @storage.get(contract_key(
-      @service_id, @contract_id, @metric_id, :month,
-      Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
+    assert_equal 4, @storage.get(
+      application_key(@service_id, @application_id, @metric_id, :month,
+                      Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
   end
 
 
@@ -282,19 +284,19 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
       
       Resque.run!
 
-      assert_equal 1, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_hits_id,
-                                               :month, '20100501')).to_i
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_hits_id,
+                                                   :month, '20100501')).to_i
 
-      assert_equal 1, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_reports_id,
-                                               :month, '20100501')).to_i
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_reports_id,
+                                                   :month, '20100501')).to_i
     end
   end
   
@@ -302,16 +304,16 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}},
-                          1 => {:user_key => @user_key, :usage => {'hits' => 1}},
-                          2 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}},
+                          1 => {:app_id => @application_id, :usage => {'hits' => 1}},
+                          2 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
       Resque.run!
 
-      assert_equal 3, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_transactions_id,
-                                                :month, '20100501')).to_i
+      assert_equal 3, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_transactions_id,
+                                                   :month, '20100501')).to_i
     end
   end
   
@@ -322,8 +324,8 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}},
-                          1 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}},
+                          1 => {:app_id => @application_id, :usage => {'hits' => 1}}}
       
       Resque.run!
 
@@ -345,12 +347,12 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => 'boo',
-        :transactions => {0 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
-      assert_equal 0, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_reports_id,
-                                                :month, '20100501')).to_i
+      assert_equal 0, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_reports_id,
+                                                   :month, '20100501')).to_i
     end
   end
   
@@ -358,14 +360,14 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => 'baa', :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => 'baa', :usage => {'hits' => 1}}}
       
       Resque.run!
 
-      assert_equal 1, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_reports_id,
-                                                :month, '20100501')).to_i
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_reports_id,
+                                                   :month, '20100501')).to_i
     end
   end
   
@@ -373,15 +375,15 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:user_key => 'baa',     :usage => {'hits' => 1}},
-                          1 => {:user_key => @user_key, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => 'baa',           :usage => {'hits' => 1}},
+                          1 => {:app_id => @application_id, :usage => {'hits' => 1}}}
       
       Resque.run!
 
-      assert_equal 2, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_transactions_id,
-                                                :month, '20100501')).to_i
+      assert_equal 2, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_transactions_id,
+                                                   :month, '20100501')).to_i
     end
   end
 end

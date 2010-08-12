@@ -10,9 +10,9 @@ class ErrorReporterTest < Test::Unit::TestCase
     @service_id = next_id
   end
 
-  def test_push_pushes_error_to_the_storage
+  def test_report_pushes_error_to_the_storage
     Timecop.freeze(Time.utc(2010, 7, 29, 15, 10)) do
-      ErrorReporter.push(@service_id, UserKeyInvalid.new('foo'))
+      ErrorReporter.report(@service_id, ApplicationNotFound.new('boo'))
     end
 
     raw_error = @storage.lpop("errors/service_id:#{@service_id}")
@@ -21,15 +21,15 @@ class ErrorReporterTest < Test::Unit::TestCase
 
     error = Yajl::Parser.parse(raw_error)
 
-    assert_equal 'user_key_invalid',          error['code']
-    assert_equal 'user key "foo" is invalid', error['message']
-    assert_equal '2010-07-29 15:10:00 UTC',   error['timestamp']
+    assert_equal 'application_not_found',                   error['code']
+    assert_equal 'application with id="boo" was not found', error['message']
+    assert_equal '2010-07-29 15:10:00 UTC',                 error['timestamp']
   end
 
   def test_all_returns_collection_of_errors
     @storage.rpush("errors/service_id:#{@service_id}", 
-                   Yajl::Encoder.encode(:code      => 'user_key_invalid',
-                                        :message   => 'user key "foo" is invalid',
+                   Yajl::Encoder.encode(:code      => 'application_not_found',
+                                        :message   => 'application with id="foo" was not found',
                                         :timestamp => '2010-07-29 15:23:00 UTC'))
 
     @storage.rpush("errors/service_id:#{@service_id}", 
@@ -37,8 +37,8 @@ class ErrorReporterTest < Test::Unit::TestCase
                                         :message   => 'metric "bars" is invalid',
                                         :timestamp => '2010-07-29 15:44:00 UTC'))
 
-    expected = [{:code      => 'user_key_invalid',
-                 :message   => 'user key "foo" is invalid',
+    expected = [{:code      => 'application_not_found',
+                 :message   => 'application with id="foo" was not found',
                  :timestamp => Time.utc(2010, 7, 29, 15, 23)},
                 {:code      => 'metric_invalid',
                  :message   => 'metric "bars" is invalid',
@@ -51,13 +51,13 @@ class ErrorReporterTest < Test::Unit::TestCase
     assert_equal [], ErrorReporter.all(@service_id)
   end
 
-  def test_pushed_error_is_in_the_collection_of_errors
+  def test_reported_error_is_in_the_collection_of_errors
     Timecop.freeze(Time.utc(2010, 7, 29, 15, 59)) do
-      ErrorReporter.push(@service_id, UserKeyInvalid.new('foo'))
+      ErrorReporter.report(@service_id, ApplicationNotFound.new('boo'))
     end
 
-    assert_equal({:code      => 'user_key_invalid',
-                  :message   => 'user key "foo" is invalid',
+    assert_equal({:code      => 'application_not_found',
+                  :message   => 'application with id="boo" was not found',
                   :timestamp => Time.utc(2010, 7, 29, 15, 59)},
                  ErrorReporter.all(@service_id).last)
   end

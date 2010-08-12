@@ -12,24 +12,20 @@ class HugePayloadTest < Test::Unit::TestCase
 
     setup_master_service
 
-    @master_contract_id = next_id
     @provider_key = 'provider_key'
-    Contract.save(:id         => @master_contract_id,
-                  :service_id => @master_service_id, 
-                  :user_key   => @provider_key,
-                  :state      => :live)
+    Application.save(:id         => @provider_key,
+                     :service_id => @master_service_id, 
+                     :state      => :active)
 
     @service_id = next_id
     Core::Service.save(:provider_key => @provider_key, :id => @service_id)
 
-    @contract_id = next_id
-    @user_key = 'user_key'
+    @application_id = next_id
     @plan_id = next_id
-    Contract.save(:id         => @contract_id,
-                  :service_id => @service_id, 
-                  :plan_id    => @plan_id, 
-                  :user_key   => @user_key, 
-                  :state      => :live)
+    Application.save(:id         => @application_id,
+                     :service_id => @service_id, 
+                     :plan_id    => @plan_id, 
+                     :state      => :active)
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
@@ -52,7 +48,7 @@ class HugePayloadTest < Test::Unit::TestCase
     result << "provider_key=#{@provider_key}"
 
     transactions_count.times do |index|
-      result << "&transactions[#{index}][user_key]=#{@user_key}"
+      result << "&transactions[#{index}][app_id]=#{@application_id}"
       result << "&transactions[#{index}][usage][hits]=1"
     end
 

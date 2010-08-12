@@ -13,13 +13,13 @@ class ErrorsTest < Test::Unit::TestCase
   end
 
   def test_code
-    assert_equal 'user_key_invalid', UserKeyInvalid.code
-    assert_equal 'user_key_invalid', UserKeyInvalid.new('foo').code
+    assert_equal 'application_not_found', ApplicationNotFound.code
+    assert_equal 'application_not_found', ApplicationNotFound.new('boo').code
   end
 
-  def test_message_of_user_key_invalid
-    error = UserKeyInvalid.new('foo')
-    assert_equal 'user key "foo" is invalid', error.message
+  def test_message_of_application_not_found
+    error = ApplicationNotFound.new('boo')
+    assert_equal 'application with id="boo" was not found', error.message
   end
   
   def test_message_of_provider_key_invalid
@@ -48,9 +48,9 @@ class ErrorsTest < Test::Unit::TestCase
     assert_equal %Q(usage value "really a lot" for metric "hits" is invalid), error.message
   end
 
-  def test_message_of_contract_not_active_error
-    error = ContractNotActive.new
-    assert_equal 'contract is not active', error.message
+  def test_message_of_application_not_active_error
+    error = ApplicationNotActive.new
+    assert_equal 'application is not active', error.message
   end
   
   def test_message_of_limits_exceeded_error

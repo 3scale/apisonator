@@ -20,27 +20,28 @@ module ThreeScale
         Resque.enqueue(ReportJob, service_id, raw_transactions)
       end
 
-      def authorize(provider_key, user_key)
+      def authorize(provider_key, application_id)
         notify(provider_key, 'transactions/authorize' => 1)
 
-        service_id = load_service(provider_key)
-        contract   = load_contract(service_id, user_key)
-        usage      = load_current_usage(contract)
+        service_id  = load_service(provider_key)
+        application = load_application(service_id, application_id)
+        usage       = load_current_usage(application)
         
-        status = Status.new(contract, usage)
-        status.reject!(ContractNotActive.new) unless contract.live?
-        status.reject!(LimitsExceeded.new)    unless validate_usage_limits(contract, usage)
+        status = Status.new(application, usage)
+        status.reject!(ApplicationNotActive.new) unless application.active?
+        status.reject!(LimitsExceeded.new) unless validate_usage_limits(application, usage)
         status
       end
 
       private
         
       def load_service(provider_key)
-        Core::Service.load_id(provider_key) || raise(ProviderKeyInvalid, provider_key)
+        Core::Service.load_id(provider_key) or raise ProviderKeyInvalid, provider_key
       end
       
-      def load_contract(service_id, user_key)
-        Contract.load(service_id, user_key) || raise(UserKeyInvalid, user_key)
+      def load_application(service_id, application_id)
+        Application.load(service_id, application_id) or 
+          raise ApplicationNotFound, application_id
       end
 
       def notify(provider_key, usage)
@@ -51,8 +52,8 @@ module ThreeScale
         time.to_s
       end
       
-      def load_current_usage(contract)
-        pairs = contract.usage_limits.map do |usage_limit|
+      def load_current_usage(application)
+        pairs = application.usage_limits.map do |usage_limit|
           [usage_limit.metric_id, usage_limit.period]
         end
 
@@ -61,7 +62,7 @@ module ThreeScale
         now = Time.now.getutc
 
         keys = pairs.map do |metric_id, period|
-          usage_value_key(contract, metric_id, period, now)
+          usage_value_key(application, metric_id, period, now)
         end
 
         raw_values = storage.mget(*keys)
@@ -75,15 +76,14 @@ module ThreeScale
         values
       end
       
-      def usage_value_key(contract, metric_id, period, time)
-        # TODO: extract this key generation out.
-        encode_key("stats/{service:#{contract.service_id}}/" +
-                   "cinstance:#{contract.id}/metric:#{metric_id}/" +
+      def usage_value_key(application, metric_id, period, time)
+        encode_key("stats/{service:#{application.service_id}}/" +
+                   "cinstance:#{application.id}/metric:#{metric_id}/" +
                    "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
       end
 
-      def validate_usage_limits(contract, usage)
-        contract.usage_limits.all? { |limit| limit.validate(usage) }
+      def validate_usage_limits(application, usage)
+        application.usage_limits.all? { |limit| limit.validate(usage) }
       end
       
       def storage

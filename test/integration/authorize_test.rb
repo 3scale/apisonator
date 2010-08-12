@@ -13,24 +13,24 @@ class AuthorizeTest < Test::Unit::TestCase
 
     setup_master_service
 
-    @master_contract_id = next_id
     @master_plan_id = next_id
     @provider_key = 'provider_key'
-    Contract.save(:service_id => @master_service_id, 
-                  :plan_id => @master_plan_id,
-                  :id => @master_contract_id, 
-                  :user_key => @provider_key,
-                  :state => :live)
+    Application.save(:service_id => @master_service_id, 
+                     :id => @provider_key, 
+                     :state => :active,
+                     :plan_id => @master_plan_id)
 
     @service_id = next_id
     Core::Service.save(:provider_key => @provider_key, :id => @service_id)
 
-    @contract_id = next_id
-    @user_key = 'user_key'
+    @application_id = next_id
     @plan_id = next_id
     @plan_name = 'kickass'
-    Contract.save(:service_id => @service_id, :user_key => @user_key, :id => @contract_id,
-                  :state => :live, :plan_id => @plan_id, :plan_name => @plan_name)
+    Application.save(:service_id => @service_id, 
+                     :id         => @application_id,
+                     :state      => :active, 
+                     :plan_id    => @plan_id, 
+                     :plan_name  => @plan_name)
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
@@ -38,21 +38,21 @@ class AuthorizeTest < Test::Unit::TestCase
     
   def test_successful_authorize_responds_with_200
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id       => @application_id
 
     assert_equal 200, last_response.status
   end
 
   def test_response_of_successful_authorize_has_custom_content_type
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id       => @application_id
     
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
   end
 
   def test_response_of_successful_authorize_contains_plan_name
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id     => @application_id
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal @plan_name, doc.at('status:root plan').content
@@ -60,7 +60,7 @@ class AuthorizeTest < Test::Unit::TestCase
 
   def test_response_of_successful_authorize_contains_authorized_flag_set_to_true
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id     => @application_id
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
@@ -74,19 +74,19 @@ class AuthorizeTest < Test::Unit::TestCase
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       Transactor.report(@provider_key,
-                        0 => {'user_key' => @user_key, 'usage' => {'hits' => 3}})
+                        0 => {'app_id' => @application_id, 'usage' => {'hits' => 3}})
       Resque.run!
     end
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       Transactor.report(@provider_key,
-                        0 => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
+                        0 => {'app_id' => @application_id, 'usage' => {'hits' => 2}})
       Resque.run!
     end
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                         :user_key     => @user_key
+                                         :app_id     => @application_id
 
       doc = Nokogiri::XML(last_response.body)
       
@@ -112,10 +112,10 @@ class AuthorizeTest < Test::Unit::TestCase
   def test_response_of_successful_authorize_does_not_contain_usage_reports_if_the_plan_has_no_usage_limits
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       Transactor.report(@provider_key,
-                        0 => {'user_key' => @user_key, 'usage' => {'hits' => 2}})
+                        0 => {'app_id' => @application_id, 'usage' => {'hits' => 2}})
 
       get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                         :user_key     => @user_key
+                                         :app_id     => @application_id
 
       doc = Nokogiri::XML(last_response.body)
       
@@ -125,7 +125,7 @@ class AuthorizeTest < Test::Unit::TestCase
 
   def test_authorize_fails_on_invalid_provider_key
     get '/transactions/authorize.xml', :provider_key => 'boo',
-                                       :user_key     => @user_key
+                                       :app_id     => @application_id
     
     assert_equal 403,                               last_response.status
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
@@ -139,9 +139,9 @@ class AuthorizeTest < Test::Unit::TestCase
     assert_equal 'provider key "boo" is invalid', node.content
   end
 
-  def test_authorize_fails_on_invalid_user_key
+  def test_authorize_fails_on_invalid_application_id
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => 'boo'
+                                       :app_id       => 'boo'
 
     assert_equal 403,                               last_response.status
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
@@ -150,44 +150,44 @@ class AuthorizeTest < Test::Unit::TestCase
     node = doc.at('error:root')
 
     assert_not_nil node
-    assert_equal 'user_key_invalid',          node['code']
-    assert_equal 'user key "boo" is invalid', node.content
+    assert_equal 'application_not_found',                   node['code']
+    assert_equal 'application with id="boo" was not found', node.content
   end
 
-  def test_authorize_succeeeds_on_inactive_contract
-    contract = Contract.load(@service_id, @user_key)
-    contract.state = :suspended
-    contract.save
+  def test_authorize_succeeeds_on_inactive_application
+    application = Application.load(@service_id, @application_id)
+    application.state = :suspended
+    application.save
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id       => @application_id
 
     assert_equal 200,                               last_response.status
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
   end
 
-  def test_response_contains_authorized_flag_set_to_false_on_inactive_contract
-    contract = Contract.load(@service_id, @user_key)
-    contract.state = :suspended
-    contract.save
+  def test_response_contains_authorized_flag_set_to_false_on_inactive_application
+    application = Application.load(@service_id, @application_id)
+    application.state = :suspended
+    application.save
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id       => @application_id
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status authorized').content
   end
 
-  def test_response_contains_rejection_reason_on_inactive_contract
-    contract = Contract.load(@service_id, @user_key)
-    contract.state = :suspended
-    contract.save
+  def test_response_contains_rejection_reason_on_inactive_application
+    application = Application.load(@service_id, @application_id)
+    application.state = :suspended
+    application.save
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id       => @application_id
 
     doc = Nokogiri::XML(last_response.body)
-    assert_equal 'contract is not active', doc.at('status reason').content
+    assert_equal 'application is not active', doc.at('status reason').content
   end
 
   def test_authorize_succeeds_on_exceeded_client_usage_limits
@@ -197,12 +197,12 @@ class AuthorizeTest < Test::Unit::TestCase
                     :day => 4)
 
     Transactor.report(@provider_key,
-                      0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+                      0 => {'app_id' => @application_id, 'usage' => {'hits' => 5}})
 
     Resque.run!
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id     => @application_id
 
     assert_equal 200,                               last_response.status
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
@@ -212,17 +212,17 @@ class AuthorizeTest < Test::Unit::TestCase
     UsageLimit.save(:service_id => @master_service_id,
                     :plan_id    => @master_plan_id,
                     :metric_id  => @master_hits_id,
-                    :day => 2)
+                    :day        => 2)
 
     3.times do
       Transactor.report(@provider_key,
-                        0 => {'user_key' => @user_key, 'usage' => {'hits' => 1}})
+                        0 => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
     end
 
     Resque.run!
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id       => @application_id
 
     assert_equal 200,                               last_response.status
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
@@ -235,12 +235,12 @@ class AuthorizeTest < Test::Unit::TestCase
                     :day => 4)
     
     Transactor.report(@provider_key,
-                      0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+                      0 => {'app_id' => @application_id, 'usage' => {'hits' => 5}})
 
     Resque.run!
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id       => @application_id
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status authorized').content
@@ -253,12 +253,12 @@ class AuthorizeTest < Test::Unit::TestCase
                     :month => 10, :day => 4)
     
     Transactor.report(@provider_key,
-                      0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+                      0 => {'app_id' => @application_id, 'usage' => {'hits' => 5}})
 
     Resque.run!
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key     => @user_key
+                                       :app_id       => @application_id
 
     doc   = Nokogiri::XML(last_response.body)
     day   = doc.at('usage_report[metric = "hits"][period = "day"]')
@@ -271,65 +271,65 @@ class AuthorizeTest < Test::Unit::TestCase
   def test_successful_authorize_reports_backend_hit
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                         :user_key     => @user_key
+                                         :app_id       => @application_id
 
       Resque.run!
 
-      assert_equal 1, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_hits_id,
-                                                :month, '20100501')).to_i
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_hits_id,
+                                                   :month, '20100501')).to_i
 
-      assert_equal 1, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_authorizes_id,
-                                                :month, '20100501')).to_i
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_authorizes_id,
+                                                   :month, '20100501')).to_i
     end
   end
 
   def test_authorize_with_invalid_provider_key_does_not_report_backend_hit
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => 'boo',
-                                         :user_key     => @user_key
+                                         :app_id       => @application_id
 
       Resque.run!
 
-      assert_equal 0, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_authorizes_id,
-                                                :month, '20100501')).to_i
+      assert_equal 0, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_authorizes_id,
+                                                   :month, '20100501')).to_i
     end
   end
 
-  def test_authorize_with_invalid_user_key_reports_backend_hit
+  def test_authorize_with_invalid_application_id_reports_backend_hit
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                         :user_key     => 'baa'
+                                         :app_id       => 'baa'
 
       Resque.run!
 
-      assert_equal 1, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_authorizes_id,
-                                                :month, '20100501')).to_i
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_authorizes_id,
+                                                   :month, '20100501')).to_i
     end
   end
 
-  def test_authorize_with_inactive_contract_reports_backend_hit
-    contract = Contract.load(@service_id, @user_key)
-    contract.state = :suspended
-    contract.save
+  def test_authorize_with_inactive_application_reports_backend_hit
+    application = Application.load(@service_id, @application_id)
+    application.state = :suspended
+    application.save
 
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                         :user_key     => @user_key
+                                         :app_id       => @application_id
 
       Resque.run!
 
-      assert_equal 1, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_authorizes_id,
-                                                :month, '20100501')).to_i
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_authorizes_id,
+                                                   :month, '20100501')).to_i
     end
   end
 
@@ -337,25 +337,25 @@ class AuthorizeTest < Test::Unit::TestCase
     UsageLimit.save(:service_id => @service_id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
-                    :day => 4)
+                    :day        => 4)
 
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       Transactor.report(@provider_key,
-                        0 => {'user_key' => @user_key, 'usage' => {'hits' => 5}})
+                        0 => {'app_id' => @application_id, 'usage' => {'hits' => 5}})
       Resque.run!
     end
 
 
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                         :user_key     => @user_key
+                                         :app_id       => @application_id
 
       Resque.run!
 
-      assert_equal 1, @storage.get(contract_key(@master_service_id,
-                                                @master_contract_id,
-                                                @master_authorizes_id,
-                                                :month, '20100501')).to_i
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_key,
+                                                   @master_authorizes_id,
+                                                   :month, '20100501')).to_i
     end
   end
 
@@ -365,7 +365,7 @@ class AuthorizeTest < Test::Unit::TestCase
 
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                         :user_key     => @user_key
+                                         :app_id       => @application_id
       
       Resque.run!
 

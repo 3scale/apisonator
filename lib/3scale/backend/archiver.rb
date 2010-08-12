@@ -71,9 +71,9 @@ module ThreeScale
         builder = Builder::XmlMarkup.new(:target => io)
         builder.transaction do
 
-          builder.contract_id transaction[:contract_id]
-          builder.timestamp   transaction[:timestamp].strftime('%Y-%m-%d %H:%M:%S')
-          builder.ip          transaction[:client_ip] if transaction[:client_ip]
+          builder.application_id transaction[:application_id]
+          builder.timestamp      transaction[:timestamp].strftime('%Y-%m-%d %H:%M:%S')
+          builder.ip             transaction[:client_ip] if transaction[:client_ip]
 
           builder.values do
             transaction[:usage].each do |metric_id, value|
