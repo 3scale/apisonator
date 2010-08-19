@@ -31,7 +31,9 @@ module ThreeScale
           increment(service_metric_prefix, :month,      timestamp, value)
           increment(service_metric_prefix, :week,       timestamp, value)
           increment(service_metric_prefix, :day,        timestamp, value)
+          increment(service_metric_prefix, 6 * 60 * 60, timestamp, value)
           increment(service_metric_prefix, :hour,       timestamp, value)
+          increment(service_metric_prefix, 2 * 60,      timestamp, value)
 
           application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
 
@@ -40,6 +42,7 @@ module ThreeScale
           increment(application_metric_prefix, :month,      timestamp, value)
           increment(application_metric_prefix, :week,       timestamp, value)
           increment(application_metric_prefix, :day,        timestamp, value)
+          increment(application_metric_prefix, 6 * 60 * 60, timestamp, value)
           increment(application_metric_prefix, :hour,       timestamp, value)
           increment(application_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
         end

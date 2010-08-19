@@ -21,7 +21,7 @@ module ThreeScale
         end
 
         def self.parse_timestamp(timestamp)
-          return Time.now.getutc              if timestamp.nil?
+          return Time.now.getutc              if timestamp.blank?
           return timestamp                    if timestamp.is_a?(Time)
           return Time.parse_to_utc(timestamp)
         end

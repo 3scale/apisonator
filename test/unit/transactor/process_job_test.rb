@@ -72,8 +72,21 @@ module Transactor
       
       Transactor::ProcessJob.perform([{'service_id'     => @service_id,
                                        'application_id' => @application_id_one,
-                                       'timestamp'   => '2010-05-07 18:11:25 +07:00',
-                                       'usage'       => {@metric_id => 1}}])
+                                       'timestamp'      => '2010-05-07 18:11:25 +07:00',
+                                       'usage'          => {@metric_id => 1}}])
+    end
+
+    def test_handles_transactions_with_blank_timestamps
+      Timecop.freeze(Time.utc(2010, 8, 19, 11, 43)) do
+        Aggregator.expects(:aggregate).with do |transactions|
+          transactions.first[:timestamp] == Time.utc(2010, 8, 19, 11, 43)
+        end
+        
+        Transactor::ProcessJob.perform([{'service_id'     => @service_id,
+                                         'application_id' => @application_id_one,
+                                         'timestamp'      => '',
+                                         'usage'          => {@metric_id => 1}}])
+      end
     end
   end
 end

@@ -12,9 +12,11 @@ require 'yajl'
 require 'zlib'
 
 require '3scale/backend/configuration'
-require '3scale/backend/hash_hacks'
-require '3scale/backend/string_hacks'
-require '3scale/backend/time_hacks'
+
+require '3scale/backend/extensions/hash'
+require '3scale/backend/extensions/nil_class'
+require '3scale/backend/extensions/string'
+require '3scale/backend/extensions/time'
 
 module ThreeScale
   module Backend

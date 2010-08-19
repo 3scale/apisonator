@@ -107,6 +107,21 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(key).to_i
   end
 
+  def test_report_uses_current_time_if_timestamp_is_blank
+    Timecop.freeze(Time.utc(2010, 8, 19, 11, 24)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id    => @application_id,
+                                :usage     => {'hits' => 1},
+                                :timestamp => ''}}
+
+      Resque.run!
+    end
+
+    key = service_key(@service_id, @metric_id, :hour, '2010081911')
+    assert_equal 1, @storage.get(key).to_i
+  end
+
   def test_report_fails_on_invalid_provider_key
     post '/transactions.xml',
       :provider_key => 'boo',
