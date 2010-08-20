@@ -15,7 +15,7 @@ module ThreeScale
           use Rack::ContentLength
           use Rack::RestApiVersioning, :default_version => '1.1'
           
-          run ThreeScale::Backend::Router.new
+          run ThreeScale::Backend::WebApplication.new
         end
         
         server.pid_file = pid_file(options[:port])

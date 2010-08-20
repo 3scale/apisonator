@@ -52,6 +52,7 @@ begin
     gemspec.add_dependency 'hoptoad_notifier',        '~> 2.2'
     gemspec.add_dependency 'rack',                    '~> 1.1'
     gemspec.add_dependency 'rack-rest_api_versioning'
+    gemspec.add_dependency 'sinatra',                 '~> 1.0'
     gemspec.add_dependency 'thin',                    '~> 1.2'
     gemspec.add_dependency 'yajl-ruby',               '~> 0.7'
   end
