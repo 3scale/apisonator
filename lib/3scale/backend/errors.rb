@@ -25,6 +25,16 @@ module ThreeScale
                downcase
       end
     end
+
+    class ApplicationKeyInvalid < Error
+      def initialize(key)
+        if key.blank?
+          super %Q(application key is missing)
+        else
+          super %Q(application key "#{key}" is invalid)
+        end
+      end
+    end
     
     class ApplicationNotFound < Error
       def initialize(id)
@@ -58,7 +68,7 @@ module ThreeScale
 
     class UsageValueInvalid < Error
       def initialize(metric_name, value)
-        if value.nil? || value =~ /^\s*$/
+        if value.blank?
           super %Q(usage value for metric "#{metric_name}" can't be empty)
         else
           super %Q(usage value "#{value}" for metric "#{metric_name}" is invalid)

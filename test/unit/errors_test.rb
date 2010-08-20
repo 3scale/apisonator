@@ -26,24 +26,34 @@ class ErrorsTest < Test::Unit::TestCase
     error = ProviderKeyInvalid.new('foo')
     assert_equal 'provider key "foo" is invalid', error.message
   end
+
+  def test_message_of_application_key_invalid_when_the_key_is_blank
+    error = ApplicationKeyInvalid.new(nil)
+    assert_equal %Q(application key is missing), error.message
+    
+    error = ApplicationKeyInvalid.new('')
+    assert_equal %Q(application key is missing), error.message
+  end
+  
+  def test_message_of_application_key_invalid_when_the_key_is_not_blank
+    error = ApplicationKeyInvalid.new('foo')
+    assert_equal %Q(application key "foo" is invalid), error.message
+  end
   
   def test_message_of_metric_invalid
     error = MetricInvalid.new('foos')
     assert_equal 'metric "foos" is invalid', error.message
   end
   
-  def test_message_of_usage_value_invalid_when_the_value_is_empty
+  def test_message_of_usage_value_invalid_when_the_value_is_blank
     error = UsageValueInvalid.new('hits', nil)
     assert_equal %Q(usage value for metric "hits" can't be empty), error.message
     
     error = UsageValueInvalid.new('hits', '')
     assert_equal %Q(usage value for metric "hits" can't be empty), error.message
-    
-    error = UsageValueInvalid.new('hits', '  ')
-    assert_equal %Q(usage value for metric "hits" can't be empty), error.message
   end
   
-  def test_message_of_usage_value_invalid_when_the_value_is_not_empty
+  def test_message_of_usage_value_invalid_when_the_value_is_not_blank
     error = UsageValueInvalid.new('hits', 'really a lot')
     assert_equal %Q(usage value "really a lot" for metric "hits" is invalid), error.message
   end

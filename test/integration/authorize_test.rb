@@ -123,7 +123,7 @@ class AuthorizeTest < Test::Unit::TestCase
     end
   end
 
-  def test_authorize_fails_on_invalid_provider_key
+  def test_fails_on_invalid_provider_key
     get '/transactions/authorize.xml', :provider_key => 'boo',
                                        :app_id     => @application_id
     
@@ -139,7 +139,7 @@ class AuthorizeTest < Test::Unit::TestCase
     assert_equal 'provider key "boo" is invalid', node.content
   end
 
-  def test_authorize_fails_on_invalid_application_id
+  def test_fails_on_invalid_application_id
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => 'boo'
 
@@ -154,7 +154,7 @@ class AuthorizeTest < Test::Unit::TestCase
     assert_equal 'application with id="boo" was not found', node.content
   end
 
-  def test_authorize_succeeeds_on_inactive_application
+  def test_does_not_authorize_on_inactive_application
     application = Application.load(@service_id, @application_id)
     application.state = :suspended
     application.save
@@ -164,33 +164,13 @@ class AuthorizeTest < Test::Unit::TestCase
 
     assert_equal 200,                               last_response.status
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
-  end
-
-  def test_response_contains_authorized_flag_set_to_false_on_inactive_application
-    application = Application.load(@service_id, @application_id)
-    application.state = :suspended
-    application.save
-
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application_id
-
+    
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status authorized').content
-  end
-
-  def test_response_contains_rejection_reason_on_inactive_application
-    application = Application.load(@service_id, @application_id)
-    application.state = :suspended
-    application.save
-
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application_id
-
-    doc = Nokogiri::XML(last_response.body)
     assert_equal 'application is not active', doc.at('status reason').content
   end
 
-  def test_authorize_succeeds_on_exceeded_client_usage_limits
+  def test_does_not_authorize_on_exceeded_client_usage_limits
     UsageLimit.save(:service_id => @service_id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -206,47 +186,13 @@ class AuthorizeTest < Test::Unit::TestCase
 
     assert_equal 200,                               last_response.status
     assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
-  end
-
-  def test_authorize_succeeds_on_exceeded_provider_usage_limits
-    UsageLimit.save(:service_id => @master_service_id,
-                    :plan_id    => @master_plan_id,
-                    :metric_id  => @master_hits_id,
-                    :day        => 2)
-
-    3.times do
-      Transactor.report(@provider_key,
-                        0 => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
-    end
-
-    Resque.run!
-
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application_id
-
-    assert_equal 200,                               last_response.status
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
-  end
     
-  def test_response_contains_authorized_flag_set_to_false_on_exceeded_limits
-    UsageLimit.save(:service_id => @service_id,
-                    :plan_id    => @plan_id,
-                    :metric_id  => @metric_id,
-                    :day => 4)
-    
-    Transactor.report(@provider_key,
-                      0 => {'app_id' => @application_id, 'usage' => {'hits' => 5}})
-
-    Resque.run!
-
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application_id
-
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status authorized').content
+    assert_equal 'usage limits are exceeded', doc.at('status reason').content
   end
 
-  def test_response_contains_usage_reports_marked_as_exceeded_on_exceeded_limits
+  def test_response_contains_usage_reports_marked_as_exceeded_on_exceeded_client_usage_limits
     UsageLimit.save(:service_id => @service_id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -266,6 +212,94 @@ class AuthorizeTest < Test::Unit::TestCase
 
     assert_equal 'true', day['exceeded']
     assert_nil           month['exceeded']
+  end
+
+  def test_succeeds_if_no_application_key_is_defined_nor_passed
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id
+
+    assert_equal 200, last_response.status
+    
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status authorized').content
+  end
+  
+  def test_succeeds_if_one_application_key_is_defined_and_the_same_one_is_passed
+    application = Application.load(@service_id, @application_id)
+    application_key = application.create_key!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id,
+                                       :app_key      => application_key
+
+    assert_equal 200, last_response.status
+    
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status authorized').content
+  end
+  
+  def test_succeeds_if_multiple_application_keys_are_defined_and_one_of_them_is_passed
+    application = Application.load(@service_id, @application_id)
+    application_key_one = application.create_key!
+    application_key_two = application.create_key!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id,
+                                       :app_key      => application_key_one
+
+    assert_equal 200, last_response.status
+    
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status authorized').content
+  end
+
+  def test_does_not_authorize_if_application_key_is_defined_but_not_passed
+    application = Application.load(@service_id, @application_id)
+    application.create_key!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id
+
+    assert_equal 200, last_response.status
+    
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'false',                      doc.at('status authorized').content
+    assert_equal 'application key is missing', doc.at('status reason').content
+  end
+  
+  def test_does_not_authorize_if_application_key_is_defined_but_wrong_one_is_passed
+    application = Application.load(@service_id, @application_id)
+    application.create_key!('foo')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id,
+                                       :app_key      => 'bar'
+
+    assert_equal 200, last_response.status
+    
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'false',                            doc.at('status authorized').content
+    assert_equal 'application key "bar" is invalid', doc.at('status reason').content
+  end
+  
+  def test_succeeds_on_exceeded_provider_usage_limits
+    UsageLimit.save(:service_id => @master_service_id,
+                    :plan_id    => @master_plan_id,
+                    :metric_id  => @master_hits_id,
+                    :day        => 2)
+
+    3.times do
+      Transactor.report(@provider_key,
+                        0 => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
+    end
+
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id
+
+    assert_equal 200,                               last_response.status
+    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
   end
 
   def test_successful_authorize_reports_backend_hit

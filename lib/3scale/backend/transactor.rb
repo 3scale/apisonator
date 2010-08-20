@@ -20,7 +20,7 @@ module ThreeScale
         Resque.enqueue(ReportJob, service_id, raw_transactions)
       end
 
-      def authorize(provider_key, application_id)
+      def authorize(provider_key, application_id, application_key = nil)
         notify(provider_key, 'transactions/authorize' => 1)
 
         service_id  = load_service(provider_key)
@@ -28,8 +28,12 @@ module ThreeScale
         usage       = load_current_usage(application)
         
         status = Status.new(application, usage)
-        status.reject!(ApplicationNotActive.new) unless application.active?
-        status.reject!(LimitsExceeded.new) unless validate_usage_limits(application, usage)
+
+        status.reject_unless!(ApplicationKeyInvalid.new(application_key)) do
+          validate_application_key(application, application_key)
+        end
+        status.reject_unless!(ApplicationNotActive.new) { application.active? }
+        status.reject_unless!(LimitsExceeded.new) { validate_usage_limits(application, usage) }
         status
       end
 
@@ -84,6 +88,10 @@ module ThreeScale
 
       def validate_usage_limits(application, usage)
         application.usage_limits.all? { |limit| limit.validate(usage) }
+      end
+
+      def validate_application_key(application, key)
+        application.keys_empty? || application.has_key?(key)
       end
       
       def storage

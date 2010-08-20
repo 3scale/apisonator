@@ -56,6 +56,12 @@ module ThreeScale
           @rejection_reason_code ||= error.code
           @rejection_reason_text ||= error.message
         end
+
+        def reject_unless!(error, &block)
+          if authorized? && !block.call
+            reject!(error)
+          end
+        end
       
         attr_reader :timestamp
         attr_reader :rejection_reason_code

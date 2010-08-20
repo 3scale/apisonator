@@ -173,6 +173,55 @@ class TransactorTest < Test::Unit::TestCase
       assert status.authorized?
     end
   end
+
+  def test_authorize_succeeds_if_no_application_key_is_defined_nor_passed
+    status = Transactor.authorize(@provider_key, @application_id_one, nil)
+    assert status.authorized?
+  end
+  
+  def test_authorize_succeeds_if_no_application_key_is_defined_and_blank_one_is_passed
+    status = Transactor.authorize(@provider_key, @application_id_one, '')
+    assert status.authorized?
+  end
+
+  def test_authorize_succeeds_if_one_application_key_is_defined_and_the_same_is_passed
+    application = Application.load(@service_id, @application_id_one)
+    application_key = application.create_key!
+
+    status = Transactor.authorize(@provider_key, @application_id_one, application_key)
+    assert status.authorized?
+  end
+  
+  def test_authorize_succeeds_if_multiple_application_keys_are_defined_and_one_of_them_is_passed
+    application = Application.load(@service_id, @application_id_one)
+    application_key_one = application.create_key!
+    application_key_two = application.create_key!
+
+    status = Transactor.authorize(@provider_key, @application_id_one, application_key_one)
+    assert status.authorized?
+  end
+
+  def test_authorize_returns_unauthorized_status_object_if_application_key_is_defined_but_not_passed
+    application = Application.load(@service_id, @application_id_one)
+    application.create_key!
+    
+    status = Transactor.authorize(@provider_key, @application_id_one, nil)
+
+    assert !status.authorized?
+    assert_equal 'application_key_invalid',    status.rejection_reason_code
+    assert_equal 'application key is missing', status.rejection_reason_text
+  end
+  
+  def test_authorize_returns_unauthorized_status_object_if_invalid_application_key_is_passed
+    application = Application.load(@service_id, @application_id_one)
+    application.create_key!('foo')
+    
+    status = Transactor.authorize(@provider_key, @application_id_one, 'bar')
+
+    assert !status.authorized?
+    assert_equal 'application_key_invalid',          status.rejection_reason_code
+    assert_equal 'application key "bar" is invalid', status.rejection_reason_text
+  end
   
   def test_authorize_raises_an_exception_when_provider_key_is_invalid
     assert_raise ProviderKeyInvalid do
