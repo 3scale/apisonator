@@ -127,15 +127,8 @@ class ReportTest < Test::Unit::TestCase
       :provider_key => 'boo',
       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
-    
-    doc = Nokogiri::XML(last_response.body)
-
-    node = doc.at('error:root')
-
-    assert_not_nil node
-    assert_equal 'provider_key_invalid', node['code']
-    assert_equal 'provider key "boo" is invalid', node.content
+    assert_error_response :code    => 'provider_key_invalid',
+                          :message => 'provider key "boo" is invalid'
   end
 
   def test_report_reports_error_on_invalid_application_id

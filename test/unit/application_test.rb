@@ -117,4 +117,24 @@ class ApplicationTest < Test::Unit::TestCase
     assert  application.has_key?(key_two)
     assert !application.has_key?('invalid')
   end
+
+  def test_delete_key_bang_deletes_a_key_with_the_given_value
+    application = Application.save(:service_id => '1001',
+                                   :id         => '2001',
+                                   :state      => :active)
+    key = application.create_key!
+
+    application.delete_key!(key)
+    assert !application.has_key?(key)
+  end
+
+  def test_delete_key_bang_raises_an_exception_if_a_key_with_the_given_value_does_not_exists
+    application = Application.save(:service_id => '1001',
+                                   :id         => '2001',
+                                   :state      => :active)
+
+    assert_raise ApplicationKeyNotFound do
+      application.delete_key!('boo')
+    end
+  end
 end

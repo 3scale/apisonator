@@ -26,6 +26,9 @@ module ThreeScale
       end
     end
 
+    class NotFound < Error
+    end
+
     class ApplicationKeyInvalid < Error
       def initialize(key)
         if key.blank?
@@ -35,8 +38,14 @@ module ThreeScale
         end
       end
     end
+
+    class ApplicationKeyNotFound < NotFound
+      def initialize(key)
+        super %Q(application key "#{key}" was not found)
+      end
+    end
     
-    class ApplicationNotFound < Error
+    class ApplicationNotFound < NotFound
       def initialize(id)
         super %Q(application with id="#{id}" was not found)
       end

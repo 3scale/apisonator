@@ -14,7 +14,7 @@ module ThreeScale
           use Rack::CommonLogger if log
           use Rack::RestApiVersioning, :default_version => '1.1'
           
-          run ThreeScale::Backend::WebApplication.new
+          run ThreeScale::Backend::Endpoint.new
         end
         
         server.pid_file = pid_file(options[:port])

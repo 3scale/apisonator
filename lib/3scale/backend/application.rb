@@ -18,6 +18,12 @@ module ThreeScale
         value
       end
 
+      # Deletes the given key if it exists, raises an exception if not.
+      def delete_key!(value)
+        raise ApplicationKeyNotFound, value unless has_key?(value)
+        storage.srem(storage_key(:keys), value)
+      end
+
       # Returns all application keys of this application.
       def keys
         storage.smembers(storage_key(:keys)) || []

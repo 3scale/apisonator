@@ -3,7 +3,6 @@ require File.dirname(__FILE__) + '/../test_helper'
 class ApplicationKeysTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::MasterService
-  # include TestHelpers::StorageKeys
   
   def setup
     @storage = Storage.instance(true)
@@ -33,18 +32,133 @@ class ApplicationKeysTest < Test::Unit::TestCase
                      :plan_name  => @plan_name)
   end
 
-  def test_index_fails_on_invalid_provider_key
-    get "/applications/#{@application_id}/keys", :provider_key => 'boo'
-    
-    assert_equal 403,                               last_response.status
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
+  def test_index_renders_list_of_application_keys
+    application = Application.load(@service_id, @application_id)
+    application.create_key!('foo')
+    application.create_key!('bar')
+
+    get "/applications/#{@application_id}/keys.xml", :provider_key => @provider_key
+    assert_equal 200, last_response.status
 
     doc = Nokogiri::XML(last_response.body)
+    assert_equal 2, doc.search('keys:root key').count
+    
+    node = doc.at('key[value=foo]')
+    assert_not_nil node
+    assert_equal "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}", node['url']
+    
+    node = doc.at('key[value=bar]')
+    assert_not_nil node
+    assert_equal "http://example.org/applications/#{@application_id}/keys/bar.xml?provider_key=#{@provider_key}", node['url']
+  end
 
-    node = doc.at('error:root')
+  def test_index_renders_empty_list_if_there_are_no_application_keys
+    get "/applications/#{@application_id}/keys.xml", :provider_key => @provider_key
+    assert_equal 200, last_response.status
+
+    doc = Nokogiri::XML(last_response.body)
+    assert_not_nil    doc.at('keys:root')
+    assert_equal   0, doc.search('key').count
+  end
+
+  def test_index_fails_on_invalid_provider_key
+    get "/applications/#{@application_id}/keys.xml", :provider_key => 'boo'
+   
+    assert_error_response :code    => 'provider_key_invalid',
+                          :message => 'provider key "boo" is invalid'
+  end
+
+  def test_index_fails_on_invalid_application_id
+    get "/applications/boo/keys.xml", :provider_key => @provider_key
+
+    assert_error_response :status  => 404,
+                          :code    => 'application_not_found',
+                          :message => 'application with id="boo" was not found'
+  end
+
+  def test_create_creates_new_random_key
+    SecureRandom.stubs(:hex).returns('foo')
+
+    post "/applications/#{@application_id}/keys.xml", :provider_key => @provider_key
+
+    url = "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}"
+
+    assert_equal 201, last_response.status
+    assert_equal url, last_response.headers['Location']
+
+    doc  = Nokogiri::XML(last_response.body)
+    node = doc.at('key:root[value=foo]')
 
     assert_not_nil node
-    assert_equal 'provider_key_invalid',          node['code']
-    assert_equal 'provider key "boo" is invalid', node.content
+    assert_equal url, node['url']
+
+    application = Application.load(@service_id, @application_id)
+    assert application.has_key?('foo')
+  end
+
+  def test_create_fails_on_invalid_provider_key
+    post "/applications/#{@application_id}/keys.xml", :provider_key => 'boo'
+
+    assert_error_response :code    => 'provider_key_invalid',
+                          :message => 'provider key "boo" is invalid'
+  end
+  
+  def test_create_fails_on_invalid_application_id
+    post "/applications/invalid/keys.xml", :provider_key => @provider_key
+
+    assert_error_response :status  => 404,
+                          :code    => 'application_not_found',
+                          :message => 'application with id="invalid" was not found'
+  end
+
+  def test_delete_deletes_the_key
+    application = Application.load(@service_id, @application_id)
+    application_key = application.create_key!
+
+    delete "/applications/#{@application_id}/keys/#{application_key}.xml",
+           :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+    assert !application.has_key?(application_key)
+  end
+  
+  def test_delete_fails_on_invalid_provider_key
+    application = Application.load(@service_id, @application_id)
+    application_key = application.create_key!
+
+    delete "/applications/#{@application_id}/keys/#{application_key}.xml", 
+           :provider_key => 'boo'
+
+    assert_error_response :code    => 'provider_key_invalid',
+                          :message => 'provider key "boo" is invalid'
+  end
+  
+  def test_delete_fails_on_invalid_application_id
+    application = Application.load(@service_id, @application_id)
+    application_key = application.create_key!
+
+    delete "/applications/boo/keys/#{application_key}.xml", 
+           :provider_key => @provider_key
+
+    assert_error_response :status  => 404,
+                          :code    => 'application_not_found',
+                          :message => 'application with id="boo" was not found'
+  end
+
+  def test_delete_fails_on_invalid_key
+    delete "/applications/#{@application_id}/keys/boo.xml", 
+           :provider_key => @provider_key
+
+    assert_error_response :status  => 404,
+                          :code    => 'application_key_not_found',
+                          :message => 'application key "boo" was not found'
+  end
+  
+  def test_create_fails_on_invalid_application_id
+    post "/applications/invalid/keys.xml", :provider_key => @provider_key
+
+    assert_error_response :status  => 404,
+                          :code    => 'application_not_found',
+                          :message => 'application with id="invalid" was not found'
   end
 end

@@ -126,32 +126,19 @@ class AuthorizeTest < Test::Unit::TestCase
   def test_fails_on_invalid_provider_key
     get '/transactions/authorize.xml', :provider_key => 'boo',
                                        :app_id     => @application_id
-    
-    assert_equal 403,                               last_response.status
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
 
-    doc = Nokogiri::XML(last_response.body)
-
-    node = doc.at('error:root')
-
-    assert_not_nil node
-    assert_equal 'provider_key_invalid',          node['code']
-    assert_equal 'provider key "boo" is invalid', node.content
+    assert_error_response :code    => 'provider_key_invalid',
+                          :message => 'provider key "boo" is invalid'
   end
 
   def test_fails_on_invalid_application_id
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => 'boo'
 
-    assert_equal 403,                               last_response.status
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
-    
-    doc = Nokogiri::XML(last_response.body)
-    node = doc.at('error:root')
 
-    assert_not_nil node
-    assert_equal 'application_not_found',                   node['code']
-    assert_equal 'application with id="boo" was not found', node.content
+    assert_error_response :status  => 404,
+                          :code    => 'application_not_found',
+                          :message => 'application with id="boo" was not found'
   end
 
   def test_does_not_authorize_on_inactive_application
