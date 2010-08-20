@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class RouterTest < Test::Unit::TestCase
+class WebApplicationTest < Test::Unit::TestCase
   include TestHelpers::Integration
 
   def test_on_invalid_path_responds_with_404
@@ -15,4 +15,6 @@ class RouterTest < Test::Unit::TestCase
     post '/transaction/authorize.xml'
     assert_equal 404, last_response.status
   end
+
+  # TODO: test unexpected error response
 end

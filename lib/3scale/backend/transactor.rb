@@ -15,16 +15,15 @@ module ThreeScale
         notify(provider_key, 'transactions/create_multiple' => 1,
                              'transactions' => raw_transactions.size)
 
-        service_id = load_service(provider_key)
-
+        service_id = Service.load_id!(provider_key)
         Resque.enqueue(ReportJob, service_id, raw_transactions)
       end
 
       def authorize(provider_key, application_id, application_key = nil)
         notify(provider_key, 'transactions/authorize' => 1)
 
-        service_id  = load_service(provider_key)
-        application = load_application(service_id, application_id)
+        service_id  = Service.load_id!(provider_key)
+        application = Application.load!(service_id, application_id)
         usage       = load_current_usage(application)
         
         status = Status.new(application, usage)
@@ -39,15 +38,6 @@ module ThreeScale
 
       private
         
-      def load_service(provider_key)
-        Core::Service.load_id(provider_key) or raise ProviderKeyInvalid, provider_key
-      end
-      
-      def load_application(service_id, application_id)
-        Application.load(service_id, application_id) or 
-          raise ApplicationNotFound, application_id
-      end
-
       def notify(provider_key, usage)
         Resque.enqueue(NotifyJob, provider_key, usage, encode_time(Time.now.getutc))
       end

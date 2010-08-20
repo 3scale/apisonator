@@ -6,6 +6,29 @@ class ApplicationTest < Test::Unit::TestCase
     @storage.flushdb
   end
 
+  def test_load_bang_raises_an_exception_if_application_does_not_exist
+    assert_raise ApplicationNotFound do
+      Application.load!('1001', '2001')
+    end
+  end
+
+  def test_load_bang_returns_application_if_it_exists
+    Application.save(:service_id => '1001', 
+                     :id         => '2001', 
+                     :state      => :active,
+                     :plan_id    => '3001',
+                     :plan_name  => 'cool')
+
+    application = Application.load!('1001', '2001')
+
+    assert_instance_of Application, application
+    assert_equal '1001',  application.service_id
+    assert_equal '2001',  application.id
+    assert_equal :active, application.state
+    assert_equal '3001',  application.plan_id
+    assert_equal 'cool',  application.plan_name
+  end
+
   def test_active_returns_true_if_application_is_in_active_state
     application = Application.new(:state => :active)
     assert application.active?

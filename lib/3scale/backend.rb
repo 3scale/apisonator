@@ -30,6 +30,7 @@ module ThreeScale
     autoload :Runner,                '3scale/backend/runner'
     autoload :Serializers,           '3scale/backend/serializers'
     autoload :Server,                '3scale/backend/server'
+    autoload :Service,               '3scale/backend/service'
     autoload :Storage,               '3scale/backend/storage'
     autoload :Transactor,            '3scale/backend/transactor'
     autoload :UsageLimit,            '3scale/backend/usage_limit'

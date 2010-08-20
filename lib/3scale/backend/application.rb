@@ -1,6 +1,10 @@
 module ThreeScale
   module Backend
     class Application < Core::Application
+      def self.load!(service_id, application_id)
+        load(service_id, application_id) or raise ApplicationNotFound, application_id
+      end
+
       def usage_limits
         UsageLimit.load_all(service_id, plan_id)
       end
