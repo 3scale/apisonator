@@ -8,17 +8,14 @@ module TestHelpers
     end
   
     def app
-      Rack::Builder.new do
-        use Rack::RestApiVersioning, :default_version => '1.1'
-        run ThreeScale::Backend::Endpoint.new
-      end
+      ThreeScale::Backend::Endpoint.new
     end
 
     private
 
     def assert_error_response(options = {})
       options = {:status       => 403, 
-                 :content_type => 'application/vnd.3scale-v1.1+xml'}.merge(options)
+                 :content_type => 'application/vnd.3scale-v2.0+xml'}.merge(options)
 
       assert_equal options[:status],       last_response.status
       assert_equal options[:content_type], last_response.content_type

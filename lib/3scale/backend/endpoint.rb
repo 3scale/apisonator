@@ -2,9 +2,11 @@ module ThreeScale
   module Backend
     class Endpoint < Sinatra::Base
       set :environment, :production
+          
+      use Rack::RestApiVersioning, :default_version => '2.0'
 
       before do
-        content_type 'application/vnd.3scale-v1.1+xml'
+        content_type 'application/vnd.3scale-v2.0+xml'
       end
 
       get '/check.txt' do

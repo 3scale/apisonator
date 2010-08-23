@@ -47,7 +47,7 @@ class AuthorizeTest < Test::Unit::TestCase
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id
     
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
+    assert_equal 'application/vnd.3scale-v2.0+xml', last_response.content_type
   end
 
   def test_response_of_successful_authorize_contains_plan_name
@@ -150,7 +150,7 @@ class AuthorizeTest < Test::Unit::TestCase
                                        :app_id       => @application_id
 
     assert_equal 200,                               last_response.status
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
+    assert_equal 'application/vnd.3scale-v2.0+xml', last_response.content_type
     
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status authorized').content
@@ -172,7 +172,7 @@ class AuthorizeTest < Test::Unit::TestCase
                                        :app_id     => @application_id
 
     assert_equal 200,                               last_response.status
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
+    assert_equal 'application/vnd.3scale-v2.0+xml', last_response.content_type
     
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status authorized').content
@@ -286,7 +286,7 @@ class AuthorizeTest < Test::Unit::TestCase
                                        :app_id       => @application_id
 
     assert_equal 200,                               last_response.status
-    assert_equal 'application/vnd.3scale-v1.1+xml', last_response.content_type
+    assert_equal 'application/vnd.3scale-v2.0+xml', last_response.content_type
   end
 
   def test_successful_authorize_reports_backend_hit
