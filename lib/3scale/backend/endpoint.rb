@@ -22,7 +22,7 @@ module ThreeScale
       post '/transactions.xml' do
         Transactor.report(params[:provider_key], params[:transactions])
 
-        status 200
+        status 202
       end
       
       get '/transactions/authorize.xml' do
@@ -31,7 +31,7 @@ module ThreeScale
                                              params[:app_key])
         
         status 200
-        body authorization.to_xml
+        authorization.to_xml
       end
 
       get '/applications/:app_id/keys.xml' do

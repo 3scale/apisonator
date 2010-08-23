@@ -38,7 +38,7 @@ class HugePayloadTest < Test::Unit::TestCase
                                   'CONTENT_TYPE'   => 'application/x-www-form-urlencoded',
                                   'CONTENT_LENGTH' => payload.bytesize
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
   end
 
   private

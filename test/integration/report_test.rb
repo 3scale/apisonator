@@ -38,12 +38,12 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 'POST', last_response.headers['Allow']
   end
 
-  def test_successful_report_responds_with_200
+  def test_successful_report_responds_with_202
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
   end
 
   def test_successful_report_increments_the_stats_counters
@@ -142,7 +142,7 @@ class ReportTest < Test::Unit::TestCase
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => 'boo', :usage => {'hits' => 1}}}
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
 
     Resque.run!
 
@@ -158,7 +158,7 @@ class ReportTest < Test::Unit::TestCase
        :provider_key => @provider_key,
        :transactions => {0 => {:app_id => @application_id, :usage => {'nukes' => 1}}}
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
 
     Resque.run!
 
@@ -174,7 +174,7 @@ class ReportTest < Test::Unit::TestCase
        :provider_key => @provider_key,
        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => ' '}}}
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
     
     Resque.run!
 
@@ -191,7 +191,7 @@ class ReportTest < Test::Unit::TestCase
        :transactions => {0 => {:app_id => @application_id, 
                                :usage  => {'hits' => 'tons!'}}}
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
     
     Resque.run!
 
@@ -240,7 +240,7 @@ class ReportTest < Test::Unit::TestCase
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
   end
 
   def test_report_succeeds_when_client_usage_limits_are_exceeded
@@ -258,7 +258,7 @@ class ReportTest < Test::Unit::TestCase
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
       
     Resque.run!
 
@@ -284,7 +284,7 @@ class ReportTest < Test::Unit::TestCase
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
 
-    assert_equal 200, last_response.status
+    assert_equal 202, last_response.status
       
     Resque.run!
 
