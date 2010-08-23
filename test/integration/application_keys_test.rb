@@ -32,6 +32,22 @@ class ApplicationKeysTest < Test::Unit::TestCase
                      :plan_name  => @plan_name)
   end
 
+  def test_options_request_returns_list_of_allowed_methods
+    request "/applications/#{@application_id}/keys.xml", 
+      :method => 'OPTIONS',
+      :params => {:provider_key => @provider_key}
+
+    assert_equal 200,         last_response.status
+    assert_equal 'GET, POST', last_response.headers['Allow']
+    
+    request "/applications/#{@application_id}/keys/foo.xml", 
+      :method => 'OPTIONS',
+      :params => {:provider_key => @provider_key}
+
+    assert_equal 200,      last_response.status
+    assert_equal 'DELETE', last_response.headers['Allow']
+  end
+
   def test_index_renders_list_of_application_keys
     application = Application.load(@service_id, @application_id)
     application.create_key!('foo')
@@ -41,15 +57,18 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
 
     doc = Nokogiri::XML(last_response.body)
-    assert_equal 2, doc.search('keys:root key').count
+    keys_node = doc.at('keys:root')
+
+    assert_not_nil keys_node    
+    assert_equal 2,     keys_node.search('key').count
+
+    key_one_node = keys_node.at('key[value=foo]')
+    assert_not_nil key_one_node
+    assert_equal "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}", key_one_node['href']
     
-    node = doc.at('key[value=foo]')
-    assert_not_nil node
-    assert_equal "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}", node['url']
-    
-    node = doc.at('key[value=bar]')
-    assert_not_nil node
-    assert_equal "http://example.org/applications/#{@application_id}/keys/bar.xml?provider_key=#{@provider_key}", node['url']
+    key_two_node = keys_node.at('key[value=bar]')
+    assert_not_nil key_two_node
+    assert_equal "http://example.org/applications/#{@application_id}/keys/bar.xml?provider_key=#{@provider_key}", key_two_node['href']
   end
 
   def test_index_renders_empty_list_if_there_are_no_application_keys
@@ -78,19 +97,17 @@ class ApplicationKeysTest < Test::Unit::TestCase
 
   def test_create_creates_new_random_key
     SecureRandom.stubs(:hex).returns('foo')
+    
+    url = "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}"
 
     post "/applications/#{@application_id}/keys.xml", :provider_key => @provider_key
-
-    url = "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}"
 
     assert_equal 201, last_response.status
     assert_equal url, last_response.headers['Location']
 
-    doc  = Nokogiri::XML(last_response.body)
-    node = doc.at('key:root[value=foo]')
-
-    assert_not_nil node
-    assert_equal url, node['url']
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'foo', doc.at('key:root')['value']
+    assert_equal url,   doc.at('key:root')['href']
 
     application = Application.load(@service_id, @application_id)
     assert application.has_key?('foo')
@@ -152,13 +169,5 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_error_response :status  => 404,
                           :code    => 'application_key_not_found',
                           :message => 'application key "boo" was not found'
-  end
-  
-  def test_create_fails_on_invalid_application_id
-    post "/applications/invalid/keys.xml", :provider_key => @provider_key
-
-    assert_error_response :status  => 404,
-                          :code    => 'application_not_found',
-                          :message => 'application with id="invalid" was not found'
   end
 end

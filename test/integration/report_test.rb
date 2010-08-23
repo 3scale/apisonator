@@ -32,6 +32,12 @@ class ReportTest < Test::Unit::TestCase
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
   end
 
+  def test_options_request_returns_list_of_allowed_methods
+    request '/transactions.xml', :method => 'OPTIONS'
+    assert_equal 200,    last_response.status
+    assert_equal 'POST', last_response.headers['Allow']
+  end
+
   def test_successful_report_responds_with_200
     post '/transactions.xml',
       :provider_key => @provider_key,

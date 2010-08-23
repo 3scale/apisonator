@@ -9,9 +9,14 @@ module ThreeScale
         content_type 'application/vnd.3scale-v2.0+xml'
       end
 
+      register AllowMethods
+      allow_methods '/transactions.xml',                   :post
+      allow_methods '/transactions/authorize.xml',         :get
+      allow_methods '/applications/:app_id/keys.xml',      :get, :post
+      allow_methods '/applications/:app_id/keys/:key.xml', :delete
+
       get '/check.txt' do
         content_type 'text/plain'
-        status 200
       end
 
       post '/transactions.xml' do
@@ -36,7 +41,7 @@ module ThreeScale
           xml.instruct!
           xml.keys do
             application.keys.sort.each do |key|
-              xml.key :value => key, :url => application_key_url(application, key)
+              xml.key :value => key, :href => application_key_url(application, key)
             end
           end
         end
@@ -51,10 +56,10 @@ module ThreeScale
 
         builder do |xml|
           xml.instruct!
-          xml.key :value => key, :url => url 
+          xml.key :value => key, :href => url 
         end
       end
-
+      
       delete '/applications/:app_id/keys/:key.xml' do
         application.delete_key!(params[:key])
 

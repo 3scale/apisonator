@@ -19,6 +19,7 @@ require '3scale/backend/extensions'
 module ThreeScale
   module Backend
     autoload :Aggregator,             '3scale/backend/aggregator'
+    autoload :AllowMethods,           '3scale/backend/allow_methods'
     autoload :Application,            '3scale/backend/application'
     autoload :Archiver,               '3scale/backend/archiver'
     autoload :Endpoint,               '3scale/backend/endpoint'
