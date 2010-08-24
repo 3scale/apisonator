@@ -22,10 +22,6 @@ module ThreeScale
         content_type 'text/plain'
       end
 
-      get '/raise' do
-        raise 'Bang!'
-      end
-
       post '/transactions.xml' do
         Transactor.report(params[:provider_key], params[:transactions])
 
