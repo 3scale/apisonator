@@ -2,6 +2,7 @@ module ThreeScale
   module Backend
     class Endpoint < Sinatra::Base
       set :environment, :production
+
       disable :logging
       disable :dump_errors
           
@@ -19,6 +20,10 @@ module ThreeScale
 
       get '/check.txt' do
         content_type 'text/plain'
+      end
+
+      get '/raise' do
+        raise 'Bang!'
       end
 
       post '/transactions.xml' do
