@@ -1,10 +1,13 @@
 module ThreeScale
   module Backend
     class Endpoint < Sinatra::Base
-      set :environment, :production
-
       disable :logging
-      disable :dump_errors
+      disable :raise_errors
+      disable :show_exceptions
+
+      configure :production do
+        disable :dump_errors
+      end
           
       use Rack::RestApiVersioning, :default_version => '2.0'
 
