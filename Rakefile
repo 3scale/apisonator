@@ -39,7 +39,7 @@ begin
     gemspec.authors  = ['Adam Cigánek']
 
     gemspec.files.exclude 'data'
-    gemspec.files.exclude 'deploy.rb'
+    gemspec.files.exclude 'deploy'
 
     gemspec.executables = ['3scale_backend', '3scale_backend_worker']
 
