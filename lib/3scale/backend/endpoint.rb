@@ -4,7 +4,6 @@ module ThreeScale
       set :environment, :production
       disable :logging
       disable :dump_errors
-
           
       use Rack::RestApiVersioning, :default_version => '2.0'
 
