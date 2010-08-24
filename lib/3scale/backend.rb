@@ -41,6 +41,7 @@ module ThreeScale
     autoload :Error,                  '3scale/backend/errors'
     autoload :LimitsExceeded,         '3scale/backend/errors'
     autoload :MetricInvalid,          '3scale/backend/errors'
+    autoload :NotFound,               '3scale/backend/errors'
     autoload :ProviderKeyInvalid,     '3scale/backend/errors'
     autoload :UnsupportedApiVersion,  '3scale/backend/errors'
     autoload :UsageValueInvalid,      '3scale/backend/errors'
