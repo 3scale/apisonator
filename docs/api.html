@@ -1,5 +1,3 @@
-TODO: Update this - mention applications, replace user_key with app_id, ...
-
 <h2>3scale API for Service Management</h2>
 
 <p>API version 2.0 (the documentation for the previous version is <a href="/support/api-service-management-v1.0">here</a>).</p>
@@ -7,7 +5,7 @@ TODO: Update this - mention applications, replace user_key with app_id, ...
 <p>The other way to integrate your API with our API Management solution is to use the 3scale REST API for authenticating calls and reporting usage.</p>
 
 <h3>Documentation</h3>
-<p>This document describes the protocol used for your API to communicate with 3scale backend server for validating and reporting transactions between your infrastructure and your API users.</p>
+<p>This document describes the protocol used for your API to communicate with 3scale backend server for authorizing and reporting transactions between your infrastructure and your API users.</p>
 
 <h3>“In account” help</h3>
 
@@ -15,36 +13,58 @@ TODO: Update this - mention applications, replace user_key with app_id, ...
 
 <h3>Definitions</h3>
 <dl class="def">
-  <dt>transaction</dt><dd>A process consisting of receiving user’s request, processing it and sending a response back to the user.<p></p>
-  </dd><dt>resource</dt>
-  <dd>Anything that is spent during execution of the transaction and that can be measured. This can be for example amount of CPU time spent during the processing, or amount of storage space used for storing some data, and so on.</dd>
-  <dt>provider authentication key</dt>
-  <dd>Key that uniquely identifies the provider in the 3scale backend.</dd>
-  <dt>provider verification key</dt>
-  <dd>Key used by user to verify authenticity of the provider.</dd>
+  <dt>service</dt>
+  <dd>any web service implementing an API</dd>
 
-  <dt>user key</dt>
-  <dd>Key that uniquely identifies the user.</dd>
+  <dt>provider</dt>
+  <dd>an organization, company or individual providing a service</dd>
+  
+  <dt>application</dt>
+  <dd>a cosumer endpoint of a web service (website, embeddable widget, desktop program, mobile application, HTTP enabled microwawe oven, ...)</dd>
+
+  <dt>transaction</dt>
+  <dd>Single unit of interaction between an application and a service. In case of HTTP-base web services, this is usually one request-response exchange.</dd>
+
+  <dt>resource</dt>
+  <dd>Anything that is spent during a transaction and can be measured. This can be for example CPU time spent during the processing, or storage space used for storing some data, and so on.</dd>
+
+  <dt>metric</dt>
+  <dd>A way to measure a resource. For example: number of API hits, amout of disk space in megabytes, CPU time in miliseconds, ...</dd>
+  
+  <dt>provider key</dt>
+  <dd>Unique textual identifier of a provider.</dd>
+  
+  <dt>application id</dt>
+  <dd>Public unique textual identifiier of an application.</dd>
+  
+  <dt>application key</dt>
+  <dd>Secret key for authenticating transactions.</dd>
 </dl>
 
 <h3>Operations</h3>
-<p>The API exposes a simple REST-based interface that provides these operations: <strong>authorize</strong>,  and <strong>report</strong>.</p>
+<p>The API exposes a simple REST-based interface that provides these operations: <strong>authorize</strong>, and <strong>report</strong>.</p>
 
 <h4>AUTHORIZE</h4>
 
-<p>This is a read-only operation that checks if given key is valid and active and that the usage reported for the user corresponding to the key is not over the limits.</p>
-<p><code class="http">
-  GET /transactions/authorize.xml?user_key=&lt;user_key&gt;&amp;amp;provider_key=&lt;provider_key&gt;</code></p>
+<p>Read-only operation tho authorize an application. It is used to check if a particular application exists, is active and is within usage limits of the service. It can be optionally used to authenticate a call using an application key.</p>
+
+<code class="http"><pre>
+  GET /transactions/authorize.xml?app_id={app_id}&amp;amp;provider_key={provider_key}[&amp;app_key={app_key}]
+</pre></code>
+
 <h4 class="sub">Parameters</h4>
 <dl class="def">
   <dt><var>provider_key</var></dt>
-  <dd>(required) Provider authentication key</dd>
-  <dt><var>user_key</var></dt>
-  <dd>(required) user key</dd>
+  <dd>Provider key. Required.</dd>
+  <dt><var>app_id</var></dt>
+  <dd>Application id. Required.</dd>
+  <dt><var>app_key</var></dt>
+  <dd>Applicaiton key. Required only if it is defined for the application.</dd>
 </dl>
+
 <p><br class="clear"></p>
 <h4 class="sub">Successful Response</h4>
-<p>Has status code <code class="http">200 OK</code> and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit (times are all UTC).</p>
+<p>Has status code <code class="http">200 OK</code> and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit.</p>
 
 <p>Example of successful authorize response</p>
 
@@ -140,8 +160,8 @@ TODO: Update this - mention applications, replace user_key with app_id, ...
   <dt><var>provider_key_invalid</var></dt>
   <dd>Provider key is not valid</dd>
 
-  <dt><var>user_key_invalid</var></dt>
-  <dd>User key is not valid</dd>
+  <dt><var>application_not_found</var></dt>
+  <dd>Application with the given id does not exist.</dd>
 </dl>
 
 <p><br class="clear" /></p>
@@ -150,16 +170,16 @@ TODO: Update this - mention applications, replace user_key with app_id, ...
 <div class="example">
 <code class="xml"><pre>
 &lt;?xml version=“1.0” encoding=“utf-8” ?&gt;
-&lt;error code=“user_key_invalid"&gt;user key "abcd1234" is invalid&lt;error&gt;
+&lt;error code=“application_not_found"&gt;Application with id="12345678" was not found&lt;error&gt;
 </pre></code>
 </div>
 
 <h4 class="sub">Example Request</h4>
 <div class="example">
 <code class="http">
-GET /transactions/authorize.xml?user_key=user_key&amp;provider_key=pkey HTTP/1.1
+GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key HTTP/1.1
 
-Host: backend.3scale.net
+Host: su1.3scale.net
 </code>
 </div>
 
@@ -171,9 +191,9 @@ Host: backend.3scale.net
 <dl class="def">
 
   <dt><var>transactions</var></dt>
-  <dd>(required) List of parameters for each transaction in the batch. More details are explained below.</dd>
+  <dd>List of parameters for each transaction in the batch. More details are explained below. Required.</dd>
   <dt><var>provider_key</var></dt>
-  <dd>(required) Provider authentication key</dd>
+  <dd>Provider key. Required.</dd>
 </dl>
 <p><br class="clear"></p>
 
@@ -181,36 +201,36 @@ Host: backend.3scale.net
 <p>The <em>transactions</em> should contain numerically indexed list of records, one for each transaction. Each record can contain these parameters:</p>
 
 <dl class="def">
-  <dt><var>user_key</var></dt>
-  <dd>(required) user key</dd>
+  <dt><var>app_id</var></dt>
+  <dd>Application ID. Required.</dd>
 
   <dt><var>usage</var></dt>
-  <dd>(required) usage data of the transaction. This should be associative array (a hash) of the form: <code>{metric => value, ...}</code>, where metric is name of the metric that measures the particular resource (for example “storage” or “hits”) and value is any amount of the corresponding resource spend in the transaction.</dd>
+  <dd>Usage data of the transaction. This should be associative array (a hash) of the form: <code>{metric => value, ...}</code>, where metric is name of the metric that measures the particular resource (for example “storage” or “hits”) and value is any amount of the corresponding resource spend in the transaction. Required.</dd>
 
   <dt><var>timestamp</var></dt>
-  <dd>(optional) if given, should be date and time when the transaction occured. It can be 
+  <dd>If given, should be date and time when the transaction occured. It can be 
   specified in two ways: First, in UTC (Greenwitch time), second, in any other time zone.
   In the first case, the timestamp has to be in this format: <code>YYYY-MM-DD&nbsp;HH:MM:SS</code>
   for example <code>2009-01-01 17:45:02</code>.
   In the second case, the format has to be <code>YYYY-MM-DD&nbsp;HH:MM:SS&nbsp;+HH:MM</code> 
   or <code>YYYY-MM-DD&nbsp;HH:MM:SS&nbsp;-HH:MM</code>, where the <code>+HH:MM</code>
-  (or <code>-HH:MM</code>) part specifies the time offset from UTC in hours and minutes. For example, for timestamp in PST (Pacific Standard Time), it should look like this: <code>2009-01-01&nbsp;22:15:31&nbsp;-08:00</code>.</dd>
+  (or <code>-HH:MM</code>) part specifies the time offset from UTC in hours and minutes. For example, for timestamp in PST (Pacific Standard Time), it should look like this: <code>2009-01-01&nbsp;22:15:31&nbsp;-08:00</code>. Optional. If not specified, the time when the transaction was received is used.</dd>
 </dl>
 
 <p><br class="clear" /></p>
 
-<p>These parameters have to be encoded in <span class="caps">HTTP</span> <span class="caps">POST</span> request. The usual way to do it, is to “flatten” the nested data structure. Example:</p>
+<p>These parameters have to be encoded in <span class="caps">HTTP</span> <span class="caps">POST</span> request using the <code>application/x-www-form-urlencoded</code> media type. The usual way to do it, is to “flatten” the nested data structure. Example:</p>
 <p>Having these parameters for two transactions:</p>
 <div class="example">
 <code class="javascript"><pre>
 {
   "0": {
-    "user_key": "user_key",
+    "app_id": "app_id",
     "usage": {"hits": 1, "transfer": 4500},
     "timestamp": "2009-01-01 14:23:08"},
 
   "1": {
-    "user_key": "user_key",
+    "app_id": "app_id",
     "usage": {"hits": 1, "transfer": 2840},
     "timestamp": "2009-01-01 18:11:59"}}
 </pre></code>
@@ -219,11 +239,11 @@ Host: backend.3scale.net
 <p>They have to be encoded like this:</p>
 <div class="example">
 <code class="http"><pre>
-transactions[0][user_key]=user_key&amp;
+transactions[0][app_id]=app_id&amp;
 transactions[0][usage][hits]=1&amp;
 transactions[0][usage][transfer]=4500&amp;
 transactions[0][timestamp]=2009-01-01%2014%3A23%3A08&amp;
-transactions[1][user_key]=user_key&amp;
+transactions[1][app_id]=app_id&amp;
 transactions[1][usage][hits]=1&amp;
 transactions[1][usage][transfer]=2840&amp;
 transactions[1][timestamp]=2009-01-01%2018%3A11%3A59
@@ -232,7 +252,7 @@ transactions[1][timestamp]=2009-01-01%2018%3A11%3A59
 <p>(note that spaces are encoded as <code>%20</code> and colons as <code>%3A</code> according to URL encoding rules)</p>
 
 <h4 class="sub">Successful Response</h4>
-<p>Has status code <code class="http">200 OK</code> and no response body</p>
+<p>Has status code <code class="http">202 Accepted</code> and no response body</p>
 
 <h4 class="sub">Errors</h4>
 
@@ -244,8 +264,8 @@ transactions[1][timestamp]=2009-01-01%2018%3A11%3A59
 
 <div class="example">
 <code class="xml"><pre>
-<?xml version=“1.0” encoding=“utf-8” ?>
-<error code="provider_key_invalid">Provider key "abcd1234" is invalid</error>
+&lt;?xml version=“1.0” encoding=“utf-8” ?&gt;
+&lt;error code="provider_key_invalid"&gt;Provider key "abcd1234" is invalid&lt;/error&gt;
 </pre></code>
 
 <h5>Error detected during offline processing</h5>
@@ -255,7 +275,7 @@ transactions[1][timestamp]=2009-01-01%2018%3A11%3A59
 <p>Errors that can occur in the offline processing are:</p>
 
 <ul>
-  <li>invalid user key</li>
+  <li>invalid application id</li>
   <li>invalid metric</li>
   <li>invalid usage value</li>
 </ul>
@@ -266,16 +286,16 @@ transactions[1][timestamp]=2009-01-01%2018%3A11%3A59
 
 <div class="example">
 <code class="http"><pre>
-POST /transactions.xml <span class="caps">HTTP</span>/1.1
-Host: backend.3scale.net
+POST /transactions.xml HTTP/1.1
+Host: su1.3scale.net
 Content-Type: application/x-www-form-urlencoded
 Content-Length: 428
 
-transactions[0][user_key]=user_key&amp;
+transactions[0][app_id]=app_id&amp;
 transactions[0][usage][hits]=1&amp;
 transactions[0][usage][transfer]=4500&amp;
 transactions[0][timestamp]=2009-01-01%2014%3A23%3A08&amp;
-transactions[1][user_key]=user_key&amp;
+transactions[1][app_id]=app_id&amp;
 transactions[1][usage][hits]=1&amp;
 transactions[1][usage][transfer]=2840&amp;
 transactions[1][timestamp]=2009-01-01%2018%3A11%3A59&amp;
