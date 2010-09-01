@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../test_helper'
+require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class ApplicationTest < Test::Unit::TestCase
   def setup
@@ -44,7 +44,8 @@ class ApplicationTest < Test::Unit::TestCase
                                    :id         => '2001', 
                                    :state      => :active)
 
-    assert_equal nil, @storage.smembers('application/service_id:1001/id:2001/keys')
+    assert_equal nil, @storage.get('application/service_id:1001/id:2001/keys')
+    assert_equal [], @storage.smembers('application/service_id:1001/id:2001/keys')
   end
 
   def test_keys_is_empty_if_there_are_no_keys

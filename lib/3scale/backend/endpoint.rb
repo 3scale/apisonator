@@ -83,6 +83,10 @@ module ThreeScale
         end
       end
 
+      error Sinatra:: NotFound do
+        error 404, ""
+      end
+      
       private
 
       def application
