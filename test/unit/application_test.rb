@@ -44,8 +44,11 @@ class ApplicationTest < Test::Unit::TestCase
                                    :id         => '2001', 
                                    :state      => :active)
 
-    assert_equal nil, @storage.get('application/service_id:1001/id:2001/keys')
-    assert_equal [], @storage.smembers('application/service_id:1001/id:2001/keys')
+    value = @storage.smembers('application/service_id:1001/id:2001/keys')
+
+    # Some versions of redis (or redis client) return nil when the keys doesn't exists,
+    # sone return empty array. I don't care, important is there are no keys yet.
+    assert value.nil? || value.empty?
   end
 
   def test_keys_is_empty_if_there_are_no_keys
