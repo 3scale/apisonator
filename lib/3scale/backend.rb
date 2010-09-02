@@ -23,7 +23,7 @@ module ThreeScale
     autoload :Application,            '3scale/backend/application'
     autoload :Archiver,               '3scale/backend/archiver'
     autoload :Endpoint,               '3scale/backend/endpoint'
-    autoload :ErrorReporter,          '3scale/backend/error_reporter'
+    autoload :ErrorStorage,           '3scale/backend/error_storage'
     autoload :Metric,                 '3scale/backend/metric'
     autoload :Runner,                 '3scale/backend/runner'
     autoload :Serializers,            '3scale/backend/serializers'

@@ -149,7 +149,7 @@ class ReportTest < Test::Unit::TestCase
 
     Resque.run!
 
-    error = ErrorReporter.all(@service_id).last
+    error = ErrorStorage.list(@service_id).last
 
     assert_not_nil error
     assert_equal 'application_not_found', error[:code]
@@ -165,7 +165,7 @@ class ReportTest < Test::Unit::TestCase
 
     Resque.run!
 
-    error = ErrorReporter.all(@service_id).last
+    error = ErrorStorage.list(@service_id).last
 
     assert_not_nil error
     assert_equal 'metric_invalid', error[:code]
@@ -181,7 +181,7 @@ class ReportTest < Test::Unit::TestCase
     
     Resque.run!
 
-    error = ErrorReporter.all(@service_id).last
+    error = ErrorStorage.list(@service_id).last
 
     assert_not_nil error
     assert_equal 'usage_value_invalid', error[:code]
@@ -198,7 +198,7 @@ class ReportTest < Test::Unit::TestCase
     
     Resque.run!
 
-    error = ErrorReporter.all(@service_id).last
+    error = ErrorStorage.list(@service_id).last
 
     assert_not_nil error
     assert_equal 'usage_value_invalid', error[:code]

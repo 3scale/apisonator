@@ -78,21 +78,21 @@ module Transactor
     end
 
     def test_reports_error_on_invalid_application_id
-      ErrorReporter.expects(:report).with(@service_id, is_a(ApplicationNotFound))
+      ErrorStorage.expects(:store).with(@service_id, is_a(ApplicationNotFound))
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}})
     end
     
     def test_reports_error_on_invalid_metric
-      ErrorReporter.expects(:report).with(@service_id, is_a(MetricInvalid))
+      ErrorStorage.expects(:store).with(@service_id, is_a(MetricInvalid))
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}})
     end
     
     def test_reports_error_on_invalid_usage_value
-      ErrorReporter.expects(:report).with(@service_id, is_a(UsageValueInvalid))
+      ErrorStorage.expects(:store).with(@service_id, is_a(UsageValueInvalid))
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}})

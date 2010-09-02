@@ -18,6 +18,8 @@ module ThreeScale
       register AllowMethods
       allow_methods '/transactions.xml',                   :post
       allow_methods '/transactions/authorize.xml',         :get
+      allow_methods '/transactions/errors.xml',            :get, :delete
+      allow_methods '/transactions/errors/count.xml',      :get
       allow_methods '/applications/:app_id/keys.xml',      :get, :post
       allow_methods '/applications/:app_id/keys/:key.xml', :delete
 
@@ -27,7 +29,6 @@ module ThreeScale
 
       post '/transactions.xml' do
         Transactor.report(params[:provider_key], params[:transactions])
-
         status 202
       end
       
@@ -38,6 +39,37 @@ module ThreeScale
         
         status 200
         authorization.to_xml
+      end
+
+      get '/transactions/errors.xml' do
+        errors = ErrorStorage.list(service_id, :page     => params[:page],
+                                               :per_page => params[:per_page])
+
+        status 200
+        builder do |xml|
+          xml.instruct!
+          xml.errors do
+            errors.each do |error|
+              xml.error error[:message], :code      => error[:code], 
+                                         :timestamp => error[:timestamp]
+            end
+          end
+        end
+      end
+
+      get '/transactions/errors/count.xml' do
+        count = ErrorStorage.count(service_id)
+
+        status 200
+        builder do |xml|
+          xml.instruct!
+          xml.count count
+        end
+      end
+
+      delete '/transactions/errors.xml' do
+        ErrorStorage.delete_all(service_id)
+        status 200
       end
 
       get '/applications/:app_id/keys.xml' do

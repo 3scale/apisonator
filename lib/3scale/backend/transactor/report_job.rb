@@ -10,7 +10,7 @@ module ThreeScale
           transactions = parse_transactions(service_id, raw_transactions)
           ProcessJob.perform(transactions)
         rescue Error => error
-          ErrorReporter.report(service_id, error)
+          ErrorStorage.store(service_id, error)
         end
 
         def self.parse_transactions(service_id, raw_transactions)

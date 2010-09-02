@@ -11,6 +11,9 @@ require 'timecop'
 
 require '3scale/backend'
 
+# Require test helpers.
+Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
+
 ThreeScale::Backend.configure do |config|
   # so I don't accidentally access s3
   config.aws.access_key_id     = 'test_access_key_id'
@@ -23,7 +26,6 @@ class Test::Unit::TestCase
   include ThreeScale
   include ThreeScale::Backend
   include ThreeScale::Backend::Configurable
-end
 
-# Require test helpers.
-Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
+  extend TestHelpers::HumanTestNames
+end

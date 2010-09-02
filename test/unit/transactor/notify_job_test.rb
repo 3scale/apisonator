@@ -42,7 +42,7 @@ module Transactor
     end
 
     def test_does_not_report_error_if_provider_key_is_invalid
-      ErrorReporter.expects(:push).never
+      ErrorStorage.expects(:store).never
 
       Transactor::NotifyJob.perform('foo',
                                     {'transactions/authorize' => 1},
