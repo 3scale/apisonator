@@ -43,7 +43,7 @@ begin
 
     gemspec.executables = ['3scale_backend', '3scale_backend_worker']
 
-    gemspec.add_dependency '3scale_core',             '>= 0.2.3'
+    gemspec.add_dependency '3scale_core',             '>= 0.2.6'
     gemspec.add_dependency 'aws-s3',                  '~> 0.6'
     gemspec.add_dependency 'builder',                 '~> 2.1'
     gemspec.add_dependency 'redis',                   '~> 2.0'

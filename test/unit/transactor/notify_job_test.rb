@@ -11,17 +11,20 @@ module Transactor
       setup_master_service
       
       @provider_key = 'provider_key'
+      @provider_application_id = next_id
 
-      Application.save(:id         => @provider_key,
+      Application.save(:id         => @provider_application_id,
                        :service_id => @master_service_id,
                        :state      => :active,
                        :plan_id    => next_id)
+      Application.save_id_by_key(@master_service_id, @provider_key, 
+                                 @provider_application_id)
     end
 
     def test_processes_the_transactions
       Transactor::ProcessJob.expects(:perform).
         with([{:service_id     => @master_service_id,
-               :application_id => @provider_key,
+               :application_id => @provider_application_id,
                :timestamp      => Time.utc(2010, 7, 29, 18, 21),
                :usage          => {@master_hits_id => 1, @master_authorizes_id => 1}}])
 

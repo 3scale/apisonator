@@ -15,10 +15,13 @@ class AuthorizeTest < Test::Unit::TestCase
 
     @master_plan_id = next_id
     @provider_key = 'provider_key'
+    @provider_application_id = next_id
     Application.save(:service_id => @master_service_id, 
-                     :id => @provider_key, 
+                     :id => @provider_application_id, 
                      :state => :active,
                      :plan_id => @master_plan_id)
+    Application.save_id_by_key(@master_service_id, @provider_key, 
+                               @provider_application_id)
 
     @service_id = next_id
     Core::Service.save(:provider_key => @provider_key, :id => @service_id)
@@ -297,12 +300,12 @@ class AuthorizeTest < Test::Unit::TestCase
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
-                                                   @provider_key,
+                                                   @provider_application_id,
                                                    @master_hits_id,
                                                    :month, '20100501')).to_i
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
-                                                   @provider_key,
+                                                   @provider_application_id,
                                                    @master_authorizes_id,
                                                    :month, '20100501')).to_i
     end
@@ -316,7 +319,7 @@ class AuthorizeTest < Test::Unit::TestCase
       Resque.run!
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
-                                                   @provider_key,
+                                                   @provider_application_id,
                                                    @master_authorizes_id,
                                                    :month, '20100501')).to_i
     end
@@ -330,7 +333,7 @@ class AuthorizeTest < Test::Unit::TestCase
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
-                                                   @provider_key,
+                                                   @provider_application_id,
                                                    @master_authorizes_id,
                                                    :month, '20100501')).to_i
     end
@@ -348,7 +351,7 @@ class AuthorizeTest < Test::Unit::TestCase
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
-                                                   @provider_key,
+                                                   @provider_application_id,
                                                    @master_authorizes_id,
                                                    :month, '20100501')).to_i
     end
@@ -374,7 +377,7 @@ class AuthorizeTest < Test::Unit::TestCase
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
-                                                   @provider_key,
+                                                   @provider_application_id,
                                                    @master_authorizes_id,
                                                    :month, '20100501')).to_i
     end
