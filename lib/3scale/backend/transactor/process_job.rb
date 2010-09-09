@@ -8,8 +8,9 @@ module ThreeScale
         def self.perform(transactions)
           transactions = preprocess(transactions)
 
-          Aggregator.aggregate(transactions)
-          Archiver.add(transactions)
+          TransactionStorage.store_all(transactions)
+          Aggregator.aggregate_all(transactions)
+          Archiver.add_all(transactions)
         end
 
         def self.preprocess(transactions)

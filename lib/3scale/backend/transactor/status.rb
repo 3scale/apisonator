@@ -84,8 +84,6 @@ module ThreeScale
           values && values[usage_limit.metric_id] || 0
         end
 
-        TIME_FORMAT = '%Y-%m-%d %H:%M:%S %z'
-
         def to_xml(options = {})
           xml = Builder::XmlMarkup.new
           xml.instruct! unless options[:skip_instruct]

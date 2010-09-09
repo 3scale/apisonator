@@ -26,7 +26,7 @@ class ErrorStorageTest < Test::Unit::TestCase
     assert_equal '2010-07-29 15:10:00 UTC',                 error['timestamp']
   end
 
-  test '#list returns the errors from the storage' do
+  test '#list returns errors from the storage' do
     @storage.rpush("errors/service_id:#{@service_id}", 
                    Yajl::Encoder.encode(:code      => 'application_not_found',
                                         :message   => 'application with id="foo" was not found',
@@ -145,7 +145,7 @@ class ErrorStorageTest < Test::Unit::TestCase
                  ErrorStorage.list(@service_id).last)
   end
 
-  test 'list returns the errors sorted from the newest to the oldest' do
+  test 'list returns the errors in reverse-insertion order' do
     ErrorStorage.store(@service_id, MetricInvalid.new('foo'))
     ErrorStorage.store(@service_id, UsageValueInvalid.new('hits', 'lots'))
 

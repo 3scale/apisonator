@@ -20,6 +20,7 @@ module ThreeScale
       allow_methods '/transactions/authorize.xml',         :get
       allow_methods '/transactions/errors.xml',            :get, :delete
       allow_methods '/transactions/errors/count.xml',      :get
+      allow_methods '/transactions/latest.xml',            :get
       allow_methods '/applications/:app_id/keys.xml',      :get, :post
       allow_methods '/applications/:app_id/keys/:key.xml', :delete
 
@@ -70,6 +71,27 @@ module ThreeScale
       delete '/transactions/errors.xml' do
         ErrorStorage.delete_all(service_id)
         status 200
+      end
+
+      get '/transactions/latest.xml' do
+        transactions = TransactionStorage.list(service_id)
+
+        status 200
+        builder do |xml|
+          xml.instruct!
+          xml.transactions do
+            transactions.each do |transaction|
+              timestamp = transaction[:timestamp].strftime(TIME_FORMAT)
+
+              xml.transaction :application_id => transaction[:application_id],
+                              :timestamp      => timestamp do
+                transaction[:usage].each do |metric_id, value|
+                  xml.value value, :metric_id => metric_id
+                end
+              end
+            end
+          end
+        end
       end
 
       get '/applications/:app_id/keys.xml' do

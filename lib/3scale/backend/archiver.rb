@@ -7,8 +7,8 @@ module ThreeScale
       include Configurable
 
       # Add the transactions to the archive.
-      def add(transactions)
-        transactions.each { |transaction| add_one(transaction) }
+      def add_all(transactions)
+        transactions.each { |transaction| add(transaction) }
       end
 
       # Collects all completed temporary files and sends them to a remote storage.
@@ -44,7 +44,7 @@ module ThreeScale
 
       private
       
-      def add_one(transaction)
+      def add(transaction)
         path = path_for(transaction)
         ensure_directory_exists(File.dirname(path))
 
