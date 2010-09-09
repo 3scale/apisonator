@@ -1,6 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-class AuthorizeTest < Test::Unit::TestCase
+class TransactionsAuthorizeTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::MasterService
   include TestHelpers::StorageKeys
