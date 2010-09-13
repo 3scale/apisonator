@@ -1,14 +1,14 @@
 module ThreeScale
   module Backend
     module ErrorStorage
-      include JsonSerialization
+      include StorageHelpers
       extend self
 
       def store(service_id, error)
         storage.lpush(queue_key(service_id), 
-                      json_encode(:code      => error.code,
-                                  :message   => error.message,
-                                  :timestamp => Time.now.getutc.to_s))
+                      encode(:code      => error.code,
+                             :message   => error.message,
+                             :timestamp => Time.now.getutc.to_s))
       end
 
       PER_PAGE = 100
@@ -20,7 +20,7 @@ module ThreeScale
         range    = pagination_to_range(page.to_i, per_page.to_i)
 
         raw_items = (storage.lrange(queue_key(service_id), range.begin, range.end) || [])
-        raw_items.map(&method(:json_decode))
+        raw_items.map(&method(:decode))
       end
 
       def count(service_id)
@@ -42,10 +42,6 @@ module ThreeScale
         range_end   = range_start + per_page - 1
 
         range_start..range_end
-      end
-
-      def storage
-        Storage.instance
       end
     end
   end

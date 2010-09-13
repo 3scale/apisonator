@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     module TransactionStorage
-      include JsonSerialization
+      include StorageHelpers
       extend self
 
       LIMIT = 100
@@ -20,25 +20,21 @@ module ThreeScale
         key = queue_key(transaction[:service_id])
 
         storage.lpush(key, 
-                      json_encode(:application_id => transaction[:application_id],
-                                  :usage          => transaction[:usage],
-                                  :timestamp      => transaction[:timestamp]))
+                      encode(:application_id => transaction[:application_id],
+                             :usage          => transaction[:usage],
+                             :timestamp      => transaction[:timestamp]))
         storage.ltrim(key, 0, LIMIT - 1)
       end
 
       def list(service_id)
         raw_items = storage.lrange(queue_key(service_id), 0, -1)
-        raw_items.map(&method(:json_decode))
+        raw_items.map(&method(:decode))
       end
 
       private
 
       def queue_key(service_id)
         "transactions/service_id:#{service_id}"
-      end
-
-      def storage
-        Storage.instance
       end
     end
   end

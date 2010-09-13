@@ -1,16 +1,20 @@
 module ThreeScale
   module Backend
-    module JsonSerialization
+    module StorageHelpers
       private
       
-      def json_encode(stuff)
+      def encode(stuff)
         Yajl::Encoder.encode(stuff)
       end
 
-      def json_decode(encoded_stuff)
+      def decode(encoded_stuff)
         stuff = Yajl::Parser.parse(encoded_stuff).symbolize_keys
         stuff[:timestamp] = Time.parse_to_utc(stuff[:timestamp]) if stuff[:timestamp]
         stuff
+      end
+
+      def storage
+        Storage.instance
       end
     end
   end
