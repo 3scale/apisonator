@@ -26,10 +26,11 @@ module ThreeScale
     autoload :ErrorStorage,           '3scale/backend/error_storage'
     autoload :Metric,                 '3scale/backend/metric'
     autoload :Runner,                 '3scale/backend/runner'
-    autoload :Serializers,            '3scale/backend/serializers'
     autoload :Server,                 '3scale/backend/server'
     autoload :Service,                '3scale/backend/service'
     autoload :Storage,                '3scale/backend/storage'
+    autoload :StorageHelpers,         '3scale/backend/storage_helpers'
+    autoload :TransactionStorage,     '3scale/backend/transaction_storage'
     autoload :Transactor,             '3scale/backend/transactor'
     autoload :UsageLimit,             '3scale/backend/usage_limit'
     autoload :Worker,                 '3scale/backend/worker'
@@ -52,6 +53,9 @@ module ThreeScale
       ThreeScale::Backend::Storage.instance
     end
   end
+  
+  TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
+  PIPELINED_SLICE_SIZE = 1000
 end
 
 ThreeScale::Backend.configuration.tap do |config|

@@ -1,10 +1,14 @@
 module ThreeScale
   module Backend
     module ErrorStorage
+      include StorageHelpers
       extend self
 
       def store(service_id, error)
-        storage.lpush(queue_key(service_id), encode(error))
+        storage.lpush(queue_key(service_id), 
+                      encode(:code      => error.code,
+                             :message   => error.message,
+                             :timestamp => Time.now.getutc.to_s))
       end
 
       PER_PAGE = 100
@@ -33,27 +37,11 @@ module ThreeScale
         "errors/service_id:#{service_id}"
       end
 
-      def encode(error)
-        Yajl::Encoder.encode(:code      => error.code,
-                             :message   => error.message,
-                             :timestamp => Time.now.getutc.to_s)
-      end
-
-      def decode(encoded_error)
-        error = Yajl::Parser.parse(encoded_error).symbolize_keys
-        error[:timestamp] = Time.parse_to_utc(error[:timestamp]) if error[:timestamp]
-        error
-      end
-
       def pagination_to_range(page, per_page)
         range_start = (page - 1) * per_page
         range_end   = range_start + per_page - 1
 
         range_start..range_end
-      end
-
-      def storage
-        Storage.instance
       end
     end
   end
