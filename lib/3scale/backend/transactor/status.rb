@@ -51,18 +51,15 @@ module ThreeScale
           @authorized     = true
         end
 
+        attr_reader :application
+        attr_reader :current_values
+
         def reject!(error)
           @authorized = false
           @rejection_reason_code ||= error.code
           @rejection_reason_text ||= error.message
         end
 
-        def reject_unless!(error, &block)
-          if authorized? && !block.call
-            reject!(error)
-          end
-        end
-      
         attr_reader :timestamp
         attr_reader :rejection_reason_code
         attr_reader :rejection_reason_text

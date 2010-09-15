@@ -19,6 +19,12 @@ module ThreeScale
         Resque.enqueue(ReportJob, service_id, transactions)
       end
 
+      VALIDATORS = [Validators::Key,
+                    # Validators::Domain,
+                    # Validators::Ip,
+                    Validators::State,
+                    Validators::Limits]
+
       def authorize(provider_key, params)
         notify(provider_key, 'transactions/authorize' => 1)
 
@@ -26,14 +32,9 @@ module ThreeScale
         application = Application.load!(service_id, params[:app_id])
         usage       = load_current_usage(application)
         
-        status = Status.new(application, usage)
-
-        status.reject_unless!(ApplicationKeyInvalid.new(params[:app_key])) do
-          validate_application_key(application, params[:app_key])
+        Status.new(application, usage).tap do |status|
+          VALIDATORS.all? { |validator| validator.apply(status, params) }
         end
-        status.reject_unless!(ApplicationNotActive.new) { application.active? }
-        status.reject_unless!(LimitsExceeded.new) { validate_usage_limits(application, usage) }
-        status
       end
 
       private
@@ -76,14 +77,6 @@ module ThreeScale
                    "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
       end
 
-      def validate_usage_limits(application, usage)
-        application.usage_limits.all? { |limit| limit.validate(usage) }
-      end
-
-      def validate_application_key(application, key)
-        application.has_no_keys? || application.has_key?(key)
-      end
-      
       def storage
         Storage.instance
       end

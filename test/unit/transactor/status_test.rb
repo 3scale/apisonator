@@ -113,31 +113,6 @@ module Transactor
       assert_equal 'application_not_active', status.rejection_reason_code
     end
 
-    def test_reject_unless_bang_rejects_when_the_block_evaluates_to_false
-      status = Transactor::Status.new(@application, {})
-      status.reject_unless!(ApplicationNotActive.new) { false }
-
-      assert !status.authorized?
-    end
-    
-    def test_reject_unless_bang_does_no_reject_when_the_block_evaluates_to_true
-      status = Transactor::Status.new(@application, {})
-      status.reject_unless!(ApplicationNotActive.new) { true }
-
-      assert status.authorized?
-    end
-    
-    def test_reject_unless_bang_does_no_evaluate_the_block_if_already_rejected
-      status = Transactor::Status.new(@application, {})
-      status.reject!(ApplicationNotActive.new)
-
-      evaluated = false
-
-      status.reject_unless!(LimitsExceeded.new) { evaluated = true; false }
-
-      assert !evaluated
-    end
-
     def test_to_xml
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
