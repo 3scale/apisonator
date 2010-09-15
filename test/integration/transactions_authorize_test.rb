@@ -250,7 +250,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_equal 'application key is missing', doc.at('status reason').content
   end
   
-  def test_does_not_authorize_if_application_key_is_defined_but_wrong_one_is_passed
+  test 'does not authorize if application key is defined but wrong one is passed' do
     application = Application.load(@service_id, @application_id)
     application.create_key('foo')
 
@@ -298,6 +298,23 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_equal 'false',             doc.at('status authorized').content
     assert_equal 'domain is missing', doc.at('status reason').content
   end
+  
+  test 'does not authorize if domain constraint is defined but unmatching domain is passed' do
+    application = Application.load(@service_id, @application_id)
+    application.create_domain_constraint('foo.example.org')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id,
+                                       :domain       => 'bar.example.org'
+
+    assert_equal 200, last_response.status
+    
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'false', doc.at('status authorized').content
+    assert_equal 'domain "bar.example.org" is not allowed', doc.at('status reason').content
+  end
+
+  # ...
   
   test 'succeeds on exceeded provider usage limits' do
     UsageLimit.save(:service_id => @master_service_id,

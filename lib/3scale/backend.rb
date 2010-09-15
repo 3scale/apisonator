@@ -40,6 +40,7 @@ module ThreeScale
     autoload :ApplicationKeyInvalid,  '3scale/backend/errors'
     autoload :ApplicationNotActive,   '3scale/backend/errors'
     autoload :ApplicationNotFound,    '3scale/backend/errors'
+    autoload :DomainInvalid,          '3scale/backend/errors'
     autoload :Error,                  '3scale/backend/errors'
     autoload :LimitsExceeded,         '3scale/backend/errors'
     autoload :MetricInvalid,          '3scale/backend/errors'

@@ -51,6 +51,16 @@ module ThreeScale
       end
     end
 
+    class DomainInvalid < Error
+      def initialize(domain)
+        if domain.blank?
+          super %Q(domain is missing)
+        else
+          super %Q(domain "#{domain}" is not allowed)
+        end
+      end
+    end
+
     class LimitsExceeded < Error
       def initialize
         super %Q(usage limits are exceeded)

@@ -63,8 +63,18 @@ class ErrorsTest < Test::Unit::TestCase
     assert_equal 'application is not active', error.message
   end
   
-  def test_message_of_limits_exceeded_error
+  test 'message of LimitsExceeded' do
     error = LimitsExceeded.new
     assert_equal 'usage limits are exceeded', error.message
+  end
+
+  test 'message of DomainInvalid when the value is blank' do
+    error = DomainInvalid.new(nil)
+    assert_equal 'domain is missing', error.message
+  end
+  
+  test 'message of DomainInvalid when the value is not blank' do
+    error = DomainInvalid.new('foo.example.org')
+    assert_equal 'domain "foo.example.org" is not allowed', error.message
   end
 end
