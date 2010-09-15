@@ -41,11 +41,11 @@ class TransactorTest < Test::Unit::TestCase
                      :plan_name => @plan_name)
   end
 
-  def test_report_queues_transactions_to_report
-    Transactor.report(
-      @provider_key,
-      {'0' => {'app_id' => @application_id_one, 'usage' => {'hits' => 1}},
-       '1' => {'app_id' => @application_id_two, 'usage' => {'hits' => 1}}})
+  test 'report queues transactions to report' do
+    Transactor.report(@provider_key, '0' => {'app_id' => @application_id_one,
+                                             'usage'  => {'hits' => 1}},
+                                     '1' => {'app_id' => @application_id_two,
+                                             'usage'  => {'hits' => 1}})
 
     assert_queued Transactor::ReportJob,
                   [@service_id,
@@ -53,20 +53,19 @@ class TransactorTest < Test::Unit::TestCase
                      '1' => {'app_id' => @application_id_two, 'usage' => {'hits' => 1}}}]
   end
   
-  def test_report_raises_an_exception_when_provider_key_is_invalid
+  test 'report raises an exception when provider key is invalid' do
     assert_raise ProviderKeyInvalid do
-      Transactor.report(
-        'booo',
-        {'0' => {'app_id' => @application_id_one, 'usage' => {'hits' => 1}}})
+      Transactor.report('booo', '0' => {'app_id' => @application_id_one,
+                                        'usage'  => {'hits' => 1}})
     end
   end
   
-  def test_report_queues_backend_hit
+  test 'report queues backend hit' do
     Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
-      Transactor.report(
-        @provider_key,
-        '0' => {'app_id' => @application_id_one, 'usage' => {'hits' => 1}},
-        '1' => {'app_id' => @application_id_two, 'usage' => {'hits' => 1}})
+      Transactor.report(@provider_key, '0' => {'app_id' => @application_id_one,
+                                               'usage'  => {'hits' => 1}},
+                                       '1' => {'app_id' => @application_id_two,
+                                               'usage'  => {'hits' => 1}})
 
       assert_queued Transactor::NotifyJob, 
                     [@provider_key, 
@@ -76,14 +75,14 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-  def test_authorize_returns_status_object_with_the_plan_name
-    status = Transactor.authorize(@provider_key, @application_id_one)
+  test 'authorize returns status object with the plan name' do
+    status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
 
     assert_not_nil status
     assert_equal @plan_name, status.plan_name
   end
 
-  def test_authorize_returns_status_object_with_usage_reports_if_the_plan_has_usage_limits
+  test 'authorize returns status object with usage reports if the plan has usage limits' do
     UsageLimit.save(:service_id => @service_id, 
                     :plan_id    => @plan_id, 
                     :metric_id  => @metric_id,
@@ -106,7 +105,7 @@ class TransactorTest < Test::Unit::TestCase
 
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      status = Transactor.authorize(@provider_key, @application_id_one)
+      status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
       assert_equal 2, status.usage_reports.count
     
       report_month = status.usage_reports.find { |report| report.period == :month }
@@ -123,23 +122,23 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
   
-  def test_authorize_returns_status_object_without_usage_reports_if_the_plan_has_no_usage_limits
-    status = Transactor.authorize(@provider_key, @application_id_one)
+  test 'authorize returns status object without usage reports if the plan has no usage limits' do
+    status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
     assert_equal 0, status.usage_reports.count
   end
 
-  def test_authorize_returns_unauthorized_status_object_when_application_is_suspended
+  test 'authorize returns unauthorized status object when application is suspended' do
     application = Application.load(@service_id, @application_id_one)
     application.state = :suspended
     application.save
 
-    status = Transactor.authorize(@provider_key, @application_id_one)
+    status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
     assert !status.authorized?
     assert_equal 'application_not_active',    status.rejection_reason_code
     assert_equal 'application is not active', status.rejection_reason_text
   end
   
-  def test_authorize_returns_unauthorized_status_object_when_usage_limits_are_exceeded
+  test 'authorize returns unauthorized status object when usage limits are exceeded' do
     UsageLimit.save(:service_id => @service_id, 
                     :plan_id    => @plan_id, 
                     :metric_id  => @metric_id,
@@ -152,14 +151,14 @@ class TransactorTest < Test::Unit::TestCase
     end
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      status = Transactor.authorize(@provider_key, @application_id_one)
+      status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
       assert !status.authorized?
       assert_equal 'limits_exceeded',           status.rejection_reason_code
       assert_equal 'usage limits are exceeded', status.rejection_reason_text
     end
   end
   
-  def test_authorize_succeeds_if_there_are_usage_limits_that_are_not_exceeded
+  test 'authorize succeeds if there are usage limits that are not exceeded' do
     UsageLimit.save(:service_id => @service_id, 
                     :plan_id    => @plan_id, 
                     :metric_id  => @metric_id,
@@ -167,56 +166,60 @@ class TransactorTest < Test::Unit::TestCase
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       Transactor.report(@provider_key, 0 => {'app_id' => @application_id_one,
-                                             'usage' => {'hits' => 3}})
+                                             'usage'  => {'hits' => 3}})
 
-      status = Transactor.authorize(@provider_key, @application_id_one)
+      status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
       assert status.authorized?
     end
   end
 
-  def test_authorize_succeeds_if_no_application_key_is_defined_nor_passed
-    status = Transactor.authorize(@provider_key, @application_id_one, nil)
+  test 'authorize succeeds if no application key is defined nor passed' do
+    status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
     assert status.authorized?
   end
   
   def test_authorize_succeeds_if_no_application_key_is_defined_and_blank_one_is_passed
-    status = Transactor.authorize(@provider_key, @application_id_one, '')
+    status = Transactor.authorize(@provider_key, :app_id  => @application_id_one,
+                                                 :app_key => '')
     assert status.authorized?
   end
 
-  def test_authorize_succeeds_if_one_application_key_is_defined_and_the_same_is_passed
+  test 'authorize succeeds if one application key is defined and the same is passed' do
     application = Application.load(@service_id, @application_id_one)
     application_key = application.create_key
 
-    status = Transactor.authorize(@provider_key, @application_id_one, application_key)
+    status = Transactor.authorize(@provider_key, :app_id  => @application_id_one,
+                                                 :app_key => application_key)
     assert status.authorized?
   end
   
-  def test_authorize_succeeds_if_multiple_application_keys_are_defined_and_one_of_them_is_passed
+  test 'authorize succeeds if multiple application keys are defined and one of them is passed' do
     application = Application.load(@service_id, @application_id_one)
     application_key_one = application.create_key
     application_key_two = application.create_key
 
-    status = Transactor.authorize(@provider_key, @application_id_one, application_key_one)
+    status = Transactor.authorize(@provider_key, :app_id  => @application_id_one,
+                                                 :app_key => application_key_one)
     assert status.authorized?
   end
 
-  def test_authorize_returns_unauthorized_status_object_if_application_key_is_defined_but_not_passed
+  test 'authorize returns unauthorized status object if application key is defined but not passed' do
     application = Application.load(@service_id, @application_id_one)
     application.create_key
     
-    status = Transactor.authorize(@provider_key, @application_id_one, nil)
+    status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
 
     assert !status.authorized?
     assert_equal 'application_key_invalid',    status.rejection_reason_code
     assert_equal 'application key is missing', status.rejection_reason_text
   end
   
-  def test_authorize_returns_unauthorized_status_object_if_invalid_application_key_is_passed
+  test 'authorize returns unauthorized status object if invalid application key is passed' do
     application = Application.load(@service_id, @application_id_one)
     application.create_key('foo')
     
-    status = Transactor.authorize(@provider_key, @application_id_one, 'bar')
+    status = Transactor.authorize(@provider_key, :app_id  => @application_id_one,
+                                                 :app_key => 'bar')
 
     assert !status.authorized?
     assert_equal 'application_key_invalid',          status.rejection_reason_code
@@ -229,15 +232,15 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
   
-  def test_authorize_raises_an_exception_when_application_id_is_invalid
+  test 'authorize raises an exception when application id is invalid' do
     assert_raise ApplicationNotFound do
-      Transactor.authorize(@provider_key, 'baaa')
+      Transactor.authorize(@provider_key, :app_id => 'baaa')
     end
   end
   
-  def test_authorize_queues_backend_hit
+  test 'authorize queues backend hit' do
     Timecop.freeze(Time.utc(2010, 7, 29, 17, 9)) do
-      Transactor.authorize(@provider_key, @application_id_one)
+      Transactor.authorize(@provider_key, :app_id => @application_id_one)
 
       assert_queued Transactor::NotifyJob, 
                     [@provider_key, 

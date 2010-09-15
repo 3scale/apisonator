@@ -236,7 +236,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_authorized last_response
   end
 
-  def test_does_not_authorize_if_application_key_is_defined_but_not_passed
+  test 'does not authorize if application key is defined but not passed' do
     application = Application.load(@service_id, @application_id)
     application.create_key
 
@@ -285,6 +285,20 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_authorized last_response
   end
   
+  test 'does not authorize if domain constraint is defined but no domain is passed' do
+    application = Application.load(@service_id, @application_id)
+    application.create_domain_constraint('example.org')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id
+
+    assert_equal 200, last_response.status
+    
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal 'false',             doc.at('status authorized').content
+    assert_equal 'domain is missing', doc.at('status reason').content
+  end
+  
   test 'succeeds on exceeded provider usage limits' do
     UsageLimit.save(:service_id => @master_service_id,
                     :plan_id    => @master_plan_id,
@@ -305,7 +319,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_equal 'application/vnd.3scale-v2.0+xml', last_response.content_type
   end
 
-  def test_successful_authorize_reports_backend_hit
+  test 'successful authorize reports backend hit' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => @application_id

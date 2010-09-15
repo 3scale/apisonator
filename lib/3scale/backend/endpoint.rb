@@ -34,9 +34,7 @@ module ThreeScale
       end
       
       get '/transactions/authorize.xml' do
-        authorization = Transactor.authorize(params[:provider_key],
-                                             params[:app_id],
-                                             params[:app_key])
+        authorization = Transactor.authorize(params[:provider_key], params)
         
         status 200
         authorization.to_xml

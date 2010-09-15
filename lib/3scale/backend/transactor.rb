@@ -11,25 +11,25 @@ module ThreeScale
       
       extend self
 
-      def report(provider_key, raw_transactions)
+      def report(provider_key, transactions)
         notify(provider_key, 'transactions/create_multiple' => 1,
-                             'transactions' => raw_transactions.size)
+                             'transactions' => transactions.size)
 
         service_id = Service.load_id!(provider_key)
-        Resque.enqueue(ReportJob, service_id, raw_transactions)
+        Resque.enqueue(ReportJob, service_id, transactions)
       end
 
-      def authorize(provider_key, application_id, application_key = nil)
+      def authorize(provider_key, params)
         notify(provider_key, 'transactions/authorize' => 1)
 
         service_id  = Service.load_id!(provider_key)
-        application = Application.load!(service_id, application_id)
+        application = Application.load!(service_id, params[:app_id])
         usage       = load_current_usage(application)
         
         status = Status.new(application, usage)
 
-        status.reject_unless!(ApplicationKeyInvalid.new(application_key)) do
-          validate_application_key(application, application_key)
+        status.reject_unless!(ApplicationKeyInvalid.new(params[:app_key])) do
+          validate_application_key(application, params[:app_key])
         end
         status.reject_unless!(ApplicationNotActive.new) { application.active? }
         status.reject_unless!(LimitsExceeded.new) { validate_usage_limits(application, usage) }
