@@ -32,14 +32,16 @@ class ApplicationKeysTest < Test::Unit::TestCase
                      :plan_name  => @plan_name)
   end
 
-  def test_options_request_returns_list_of_allowed_methods
+  test 'OPTIONS /applications/{app_id}/keys.xml returns GET and POST' do
     request "/applications/#{@application_id}/keys.xml", 
       :method => 'OPTIONS',
       :params => {:provider_key => @provider_key}
 
     assert_equal 200,         last_response.status
     assert_equal 'GET, POST', last_response.headers['Allow']
-    
+  end
+
+  test 'OPTIONS /applications/{app_id}/keys/{key}.xml returns DELETE' do
     request "/applications/#{@application_id}/keys/foo.xml", 
       :method => 'OPTIONS',
       :params => {:provider_key => @provider_key}
@@ -48,10 +50,10 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_equal 'DELETE', last_response.headers['Allow']
   end
 
-  def test_index_renders_list_of_application_keys
+  test 'GET /applications/{app_id}/keys.xml renders list of application keys' do
     application = Application.load(@service_id, @application_id)
-    application.create_key!('foo')
-    application.create_key!('bar')
+    application.create_key('foo')
+    application.create_key('bar')
 
     get "/applications/#{@application_id}/keys.xml", :provider_key => @provider_key
     assert_equal 200, last_response.status
@@ -71,7 +73,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_equal "http://example.org/applications/#{@application_id}/keys/bar.xml?provider_key=#{@provider_key}", key_two_node['href']
   end
 
-  def test_index_renders_empty_list_if_there_are_no_application_keys
+  test 'GET /applications/{app_id}/keys.xml renders empty list if there are no application keys' do
     get "/applications/#{@application_id}/keys.xml", :provider_key => @provider_key
     assert_equal 200, last_response.status
 
@@ -80,14 +82,14 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_equal   0, doc.search('key').count
   end
 
-  def test_index_fails_on_invalid_provider_key
+  test 'GET /applications/{app_id}/keys.xml fails on invalid provider key' do
     get "/applications/#{@application_id}/keys.xml", :provider_key => 'boo'
    
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
   end
 
-  def test_index_fails_on_invalid_application_id
+  test 'GET /applications/{app_id}keys.xml fails on invalid application id' do
     get "/applications/boo/keys.xml", :provider_key => @provider_key
 
     assert_error_response :status  => 404,
@@ -95,7 +97,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
                           :message => 'application with id="boo" was not found'
   end
 
-  def test_create_creates_new_random_key
+  test 'POST /applications/{app_id]/keys.xml creates new random key' do
     SecureRandom.stubs(:hex).returns('foo')
     
     url = "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}"
@@ -113,14 +115,14 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert application.has_key?('foo')
   end
 
-  def test_create_fails_on_invalid_provider_key
+  test 'POST /applications/{app_id}/keys.xml fails on invalid provider key' do
     post "/applications/#{@application_id}/keys.xml", :provider_key => 'boo'
 
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
   end
   
-  def test_create_fails_on_invalid_application_id
+  test 'POST /applications/{app_id}/keys.xml fails on invalid application id' do
     post "/applications/invalid/keys.xml", :provider_key => @provider_key
 
     assert_error_response :status  => 404,
@@ -128,9 +130,9 @@ class ApplicationKeysTest < Test::Unit::TestCase
                           :message => 'application with id="invalid" was not found'
   end
 
-  def test_delete_deletes_the_key
+  test 'DELETE /applications/{app_id}/keys/{key}.xml deletes the key' do
     application = Application.load(@service_id, @application_id)
-    application_key = application.create_key!
+    application_key = application.create_key
 
     delete "/applications/#{@application_id}/keys/#{application_key}.xml",
            :provider_key => @provider_key
@@ -139,9 +141,9 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert !application.has_key?(application_key)
   end
   
-  def test_delete_fails_on_invalid_provider_key
+  test 'DELETE /applications/{app_id}/keys/{key}.xml fails on invalid provider key' do
     application = Application.load(@service_id, @application_id)
-    application_key = application.create_key!
+    application_key = application.create_key
 
     delete "/applications/#{@application_id}/keys/#{application_key}.xml", 
            :provider_key => 'boo'
@@ -150,9 +152,9 @@ class ApplicationKeysTest < Test::Unit::TestCase
                           :message => 'provider key "boo" is invalid'
   end
   
-  def test_delete_fails_on_invalid_application_id
+  test 'DELETE /applications/{app_id}/keys/{key}.xml fails on invalid application id' do
     application = Application.load(@service_id, @application_id)
-    application_key = application.create_key!
+    application_key = application.create_key
 
     delete "/applications/boo/keys/#{application_key}.xml", 
            :provider_key => @provider_key
@@ -162,12 +164,10 @@ class ApplicationKeysTest < Test::Unit::TestCase
                           :message => 'application with id="boo" was not found'
   end
 
-  def test_delete_fails_on_invalid_key
+  test 'DELETE /applications/{app_id}/keys/{key}.xml succeeds if the key does not exist' do
     delete "/applications/#{@application_id}/keys/boo.xml", 
            :provider_key => @provider_key
 
-    assert_error_response :status  => 404,
-                          :code    => 'application_key_not_found',
-                          :message => 'application key "boo" was not found'
+    assert_equal 200, last_response.status           
   end
 end

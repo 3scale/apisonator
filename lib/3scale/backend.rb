@@ -24,6 +24,7 @@ module ThreeScale
     autoload :Archiver,               '3scale/backend/archiver'
     autoload :Endpoint,               '3scale/backend/endpoint'
     autoload :ErrorStorage,           '3scale/backend/error_storage'
+    autoload :HasSet,                 '3scale/backend/has_set'
     autoload :Metric,                 '3scale/backend/metric'
     autoload :Runner,                 '3scale/backend/runner'
     autoload :Server,                 '3scale/backend/server'
@@ -36,7 +37,6 @@ module ThreeScale
     autoload :Worker,                 '3scale/backend/worker'
    
     autoload :ApplicationKeyInvalid,  '3scale/backend/errors'
-    autoload :ApplicationKeyNotFound, '3scale/backend/errors'
     autoload :ApplicationNotActive,   '3scale/backend/errors'
     autoload :ApplicationNotFound,    '3scale/backend/errors'
     autoload :Error,                  '3scale/backend/errors'

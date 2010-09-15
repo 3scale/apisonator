@@ -108,7 +108,7 @@ module ThreeScale
       end
       
       post '/applications/:app_id/keys.xml' do
-        key = application.create_key!
+        key = application.create_key
         url = application_key_url(application, key)
 
         headers 'Location' => url
@@ -121,7 +121,7 @@ module ThreeScale
       end
       
       delete '/applications/:app_id/keys/:key.xml' do
-        application.delete_key!(params[:key])
+        application.delete_key(params[:key])
 
         status 200
       end

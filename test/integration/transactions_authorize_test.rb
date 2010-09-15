@@ -39,21 +39,21 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
   end
     
-  def test_successful_authorize_responds_with_200
+  test 'successful authorize responds with 200' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id
 
     assert_equal 200, last_response.status
   end
 
-  def test_response_of_successful_authorize_has_custom_content_type
+  test 'successful authorize has custom content type' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id
     
     assert_equal 'application/vnd.3scale-v2.0+xml', last_response.content_type
   end
 
-  def test_response_of_successful_authorize_contains_plan_name
+  test 'successful authorize renders plan name' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application_id
 
@@ -204,48 +204,41 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_nil           month['exceeded']
   end
 
-  def test_succeeds_if_no_application_key_is_defined_nor_passed
+  # application keys tests
+
+  test 'succeeds if no application key is defined nor passed' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id
 
-    assert_equal 200, last_response.status
-    
-    doc = Nokogiri::XML(last_response.body)
-    assert_equal 'true', doc.at('status authorized').content
+    assert_authorized last_response
   end
   
-  def test_succeeds_if_one_application_key_is_defined_and_the_same_one_is_passed
+  test 'succeeds if one application key is defined and the same one is passed' do
     application = Application.load(@service_id, @application_id)
-    application_key = application.create_key!
+    application_key = application.create_key
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id,
                                        :app_key      => application_key
 
-    assert_equal 200, last_response.status
-    
-    doc = Nokogiri::XML(last_response.body)
-    assert_equal 'true', doc.at('status authorized').content
+    assert_authorized last_response
   end
   
-  def test_succeeds_if_multiple_application_keys_are_defined_and_one_of_them_is_passed
+  test 'succeeds if multiple application keys are defined and one of them is passed' do
     application = Application.load(@service_id, @application_id)
-    application_key_one = application.create_key!
-    application_key_two = application.create_key!
+    application_key_one = application.create_key
+    application_key_two = application.create_key
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id,
                                        :app_key      => application_key_one
 
-    assert_equal 200, last_response.status
-    
-    doc = Nokogiri::XML(last_response.body)
-    assert_equal 'true', doc.at('status authorized').content
+    assert_authorized last_response
   end
 
   def test_does_not_authorize_if_application_key_is_defined_but_not_passed
     application = Application.load(@service_id, @application_id)
-    application.create_key!
+    application.create_key
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id
@@ -259,7 +252,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
   
   def test_does_not_authorize_if_application_key_is_defined_but_wrong_one_is_passed
     application = Application.load(@service_id, @application_id)
-    application.create_key!('foo')
+    application.create_key('foo')
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id,
@@ -271,8 +264,28 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_equal 'false',                            doc.at('status authorized').content
     assert_equal 'application key "bar" is invalid', doc.at('status reason').content
   end
+
+  # domain constraints tests
+
+  test 'succeeds if no domain constraint is defined and no domain is passed' do
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id
+
+    assert_authorized last_response
+  end
+    
+  test 'succeeds if simple domain constraint is defined and matching domain is passed' do
+    application = Application.load(@service_id, @application_id)
+    application.create_domain_constraint('example.org')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_id,
+                                       :domain       => 'example.org'
+
+    assert_authorized last_response
+  end
   
-  def test_succeeds_on_exceeded_provider_usage_limits
+  test 'succeeds on exceeded provider usage limits' do
     UsageLimit.save(:service_id => @master_service_id,
                     :plan_id    => @master_plan_id,
                     :metric_id  => @master_hits_id,
@@ -404,5 +417,14 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
       assert_equal '1', node.at("values value[metric_id = \"#{@master_hits_id}\"]").content
       assert_equal '1', node.at("values value[metric_id = \"#{@master_authorizes_id}\"]").content
     end
+  end
+
+  private
+
+  def assert_authorized(response)
+    assert_equal 200, response.status
+    
+    doc = Nokogiri::XML(response.body)
+    assert_equal 'true', doc.at('status authorized').content
   end
 end

@@ -38,12 +38,6 @@ module ThreeScale
         end
       end
     end
-
-    class ApplicationKeyNotFound < NotFound
-      def initialize(key)
-        super %Q(application key "#{key}" was not found)
-      end
-    end
     
     class ApplicationNotFound < NotFound
       def initialize(id)

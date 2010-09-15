@@ -186,7 +186,7 @@ class TransactorTest < Test::Unit::TestCase
 
   def test_authorize_succeeds_if_one_application_key_is_defined_and_the_same_is_passed
     application = Application.load(@service_id, @application_id_one)
-    application_key = application.create_key!
+    application_key = application.create_key
 
     status = Transactor.authorize(@provider_key, @application_id_one, application_key)
     assert status.authorized?
@@ -194,8 +194,8 @@ class TransactorTest < Test::Unit::TestCase
   
   def test_authorize_succeeds_if_multiple_application_keys_are_defined_and_one_of_them_is_passed
     application = Application.load(@service_id, @application_id_one)
-    application_key_one = application.create_key!
-    application_key_two = application.create_key!
+    application_key_one = application.create_key
+    application_key_two = application.create_key
 
     status = Transactor.authorize(@provider_key, @application_id_one, application_key_one)
     assert status.authorized?
@@ -203,7 +203,7 @@ class TransactorTest < Test::Unit::TestCase
 
   def test_authorize_returns_unauthorized_status_object_if_application_key_is_defined_but_not_passed
     application = Application.load(@service_id, @application_id_one)
-    application.create_key!
+    application.create_key
     
     status = Transactor.authorize(@provider_key, @application_id_one, nil)
 
@@ -214,7 +214,7 @@ class TransactorTest < Test::Unit::TestCase
   
   def test_authorize_returns_unauthorized_status_object_if_invalid_application_key_is_passed
     application = Application.load(@service_id, @application_id_one)
-    application.create_key!('foo')
+    application.create_key('foo')
     
     status = Transactor.authorize(@provider_key, @application_id_one, 'bar')
 

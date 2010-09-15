@@ -81,7 +81,7 @@ module ThreeScale
       end
 
       def validate_application_key(application, key)
-        application.keys_empty? || application.has_key?(key)
+        application.has_no_keys? || application.has_key?(key)
       end
       
       def storage
