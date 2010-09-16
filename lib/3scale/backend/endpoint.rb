@@ -9,14 +9,13 @@ module ThreeScale
         disable :dump_errors
       end
           
+      register AllowMethods
+
       use Rack::RestApiVersioning, :default_version => '2.0'
 
       before do
         content_type 'application/vnd.3scale-v2.0+xml'
       end
-
-      register AllowMethods
-
 
       post '/transactions.xml' do
         Transactor.report(params[:provider_key], params[:transactions])
@@ -82,22 +81,23 @@ module ThreeScale
         end
       end
 
-      get '/applications/:app_id/keys.xml' do
+      get '/applications/:app_id/constraints/keys.xml' do
         status 200
 
         builder do |xml|
           xml.instruct!
           xml.keys do
-            application.keys.sort.each do |key|
-              xml.key :value => key, :href => application_key_url(application, key)
+            application.keys.sort.each do |item|
+              xml.key :value => item,
+                      :href  => application_constraint_url(application, :keys, item)
             end
           end
         end
       end
       
-      post '/applications/:app_id/keys.xml' do
+      post '/applications/:app_id/constraints/keys.xml' do
         key = application.create_key
-        url = application_key_url(application, key)
+        url = application_constraint_url(application, :keys, key)
 
         headers 'Location' => url
         status 201
@@ -108,10 +108,23 @@ module ThreeScale
         end
       end
 
-      delete '/applications/:app_id/keys/:key.xml' do
+      delete '/applications/:app_id/constraints/keys/:key.xml' do
         application.delete_key(params[:key])
 
         status 200
+      end
+
+      get '/applications/:app_id/constraints/domains.xml' do
+        status 200
+
+        builder do |xml|
+          xml.instruct!
+          xml.domain_constraints do
+            application.domain_constraints.sort.each do |item|
+              xml.domain_constraint :value => item, :href  => application_constraint_url(application, :domains, item)
+            end
+          end
+        end
       end
 
       get '/check.txt' do
@@ -143,8 +156,8 @@ module ThreeScale
         @service_id ||= Service.load_id!(params[:provider_key])
       end
 
-      def application_key_url(application, key)
-        url("/applications/#{application.id}/keys/#{key}.xml")
+      def application_constraint_url(application, type, value)
+        url("/applications/#{application.id}/constraints/#{type}/#{value}.xml")
       end
 
       def url(path)
