@@ -20,8 +20,8 @@ module ThreeScale
       end
 
       VALIDATORS = [Validators::Key,
-                    Validators::Domain,
-                    # Validators::Ip,
+                    Validators::ReferrerFilters,
+                    Validators::Referrer,
                     Validators::State,
                     Validators::Limits]
 

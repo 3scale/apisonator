@@ -70,11 +70,22 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal [key], application.keys
   end
 
-  test 'application has no domain constraints when created' do
+  test 'application has no access rules when created' do
     application = Application.save(:service_id => '1001', 
                                    :id         => '2001', 
                                    :state      => :active)
 
-    assert application.domain_constraints.empty?
+    assert application.referrer_filters.empty?
+  end
+
+  test '#create_referrer_filter with blank argument raises an exception' do
+    application = Application.save(:service_id => '1001', 
+                                   :id         => '2001', 
+                                   :state      => :active)
+
+
+    assert_raise ReferrerFilterInvalid do
+      application.create_referrer_filter('')
+    end
   end
 end

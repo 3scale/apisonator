@@ -26,8 +26,8 @@ module ThreeScale
       end
     end
 
-    class NotFound < Error
-    end
+    NotFound = Class.new(Error)
+    Invalid  = Class.new(Error)
 
     class ApplicationKeyInvalid < Error
       def initialize(key)
@@ -51,16 +51,6 @@ module ThreeScale
       end
     end
 
-    class DomainInvalid < Error
-      def initialize(domain)
-        if domain.blank?
-          super %Q(domain is missing)
-        else
-          super %Q(domain "#{domain}" is not allowed)
-        end
-      end
-    end
-
     class LimitsExceeded < Error
       def initialize
         super %Q(usage limits are exceeded)
@@ -76,6 +66,25 @@ module ThreeScale
     class MetricInvalid < Error
       def initialize(metric_name)
         super %Q(metric "#{metric_name}" is invalid)
+      end
+    end
+    
+    class ReferrerFilterInvalid < Invalid
+    end
+    
+    class ReferrerFiltersMissing < Error
+      def initialize
+        super 'referrer filters are missing'
+      end
+    end
+    
+    class ReferrerNotAllowed < Error
+      def initialize(referrer)
+        if referrer.blank?
+          super %Q(referrer is missing)
+        else
+          super %Q(referrer "#{referrer}" is not allowed)
+        end
       end
     end
 

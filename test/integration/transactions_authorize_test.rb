@@ -265,29 +265,27 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_equal 'application key "bar" is invalid', doc.at('status reason').content
   end
 
-  # domain constraints tests
+  # access rules tests
 
-  test 'succeeds if no domain constraint is defined and no domain is passed' do
+  test 'succeeds if no access rule is defined and no referrer is passed' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id
 
     assert_authorized last_response
   end
     
-  test 'succeeds if simple domain constraint is defined and matching domain is passed' do
-    application = Application.load(@service_id, @application_id)
-    application.create_domain_constraint('example.org')
+  test 'succeeds if simple domain access rule is defined and matching referrer is passed' do
+    @application.create_referrer_filter('example.org')
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id,
-                                       :domain       => 'example.org'
+                                       :referrer     => 'example.org'
 
     assert_authorized last_response
   end
   
-  test 'does not authorize if domain constraint is defined but no domain is passed' do
-    application = Application.load(@service_id, @application_id)
-    application.create_domain_constraint('example.org')
+  test 'does not authorize if access rule is defined but no referrer is passed' do
+    @application.create_referrer_filter('example.org')
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id
@@ -295,23 +293,53 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
     
     doc = Nokogiri::XML(last_response.body)
-    assert_equal 'false',             doc.at('status authorized').content
-    assert_equal 'domain is missing', doc.at('status reason').content
+    assert_equal 'false',               doc.at('status authorized').content
+    assert_equal 'referrer is missing', doc.at('status reason').content
   end
   
-  test 'does not authorize if domain constraint is defined but unmatching domain is passed' do
-    application = Application.load(@service_id, @application_id)
-    application.create_domain_constraint('foo.example.org')
+  test 'does not authorize if simple domain access rule is defined but referrer does not match' do
+    @application.create_referrer_filter('foo.example.org')
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_id,
-                                       :domain       => 'bar.example.org'
+                                       :referrer     => 'bar.example.org'
 
-    assert_equal 200, last_response.status
-    
-    doc = Nokogiri::XML(last_response.body)
-    assert_equal 'false', doc.at('status authorized').content
-    assert_equal 'domain "bar.example.org" is not allowed', doc.at('status reason').content
+    assert_not_authorized last_response, 'referrer "bar.example.org" is not allowed'
+  end
+
+  # access rules presence test
+
+  test 'succeeds if access rules are not required' do
+    @service.referrer_filters_required = false
+    @service.save
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_authorized last_response
+  end
+  
+  test 'succeeds if access rules are required and defined' do
+    @service.referrer_filters_required = true
+    @service.save
+
+    @application.create_referrer_filter('foo.example.org')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :referrer     => 'foo.example.org'
+
+    assert_authorized last_response
+  end
+
+  test 'does not authorize if access rules are required but not defined' do
+    @service.referrer_filters_required = true
+    @service.save
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_not_authorized last_response, 'referrer filters are missing'
   end
 
   # ...
@@ -384,9 +412,8 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
   end
 
   def test_authorize_with_inactive_application_reports_backend_hit
-    application = Application.load(@service_id, @application_id)
-    application.state = :suspended
-    application.save
+    @application.state = :suspended
+    @application.save
 
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,

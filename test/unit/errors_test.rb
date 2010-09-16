@@ -58,7 +58,7 @@ class ErrorsTest < Test::Unit::TestCase
     assert_equal %Q(usage value "really a lot" for metric "hits" is invalid), error.message
   end
 
-  def test_message_of_application_not_active_error
+  test 'message of ApplicationNotActive' do
     error = ApplicationNotActive.new
     assert_equal 'application is not active', error.message
   end
@@ -68,13 +68,13 @@ class ErrorsTest < Test::Unit::TestCase
     assert_equal 'usage limits are exceeded', error.message
   end
 
-  test 'message of DomainInvalid when the value is blank' do
-    error = DomainInvalid.new(nil)
-    assert_equal 'domain is missing', error.message
+  test 'message of ReferrerNotAllowed when the value is blank' do
+    error = ReferrerNotAllowed.new(nil)
+    assert_equal 'referrer is missing', error.message
   end
   
-  test 'message of DomainInvalid when the value is not blank' do
-    error = DomainInvalid.new('foo.example.org')
-    assert_equal 'domain "foo.example.org" is not allowed', error.message
+  test 'message of ReferrerNotAllowed when the value is not blank' do
+    error = ReferrerNotAllowed.new('foo.example.org')
+    assert_equal 'referrer "foo.example.org" is not allowed', error.message
   end
 end

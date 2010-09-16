@@ -1,13 +1,13 @@
 module ThreeScale
   module Backend
     module Validators
-      class Domain < Base
+      class Referrer < Base
         def apply
-          if application.has_domain_constraints?
-            if application.has_domain_constraint?(params[:domain])
+          if application.has_referrer_filters?
+            if application.has_referrer_filter?(params[:referrer])
               succeed!
             else
-              fail!(DomainInvalid.new(params[:domain]))
+              fail!(ReferrerNotAllowed.new(params[:referrer]))
             end
           else
             succeed!
@@ -15,6 +15,8 @@ module ThreeScale
         end
 
         # TODO: wildcard domain match: *.example.org
+        # TODO: ip match
+        # TODO: ip subnet match
       end
     end
   end
