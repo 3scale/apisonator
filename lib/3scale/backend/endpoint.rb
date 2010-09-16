@@ -8,6 +8,8 @@ module ThreeScale
       configure :production do
         disable :dump_errors
       end
+
+      set :views, File.dirname(__FILE__) + '/views'
           
       register AllowMethods
 
@@ -19,112 +21,69 @@ module ThreeScale
 
       post '/transactions.xml' do
         Transactor.report(params[:provider_key], params[:transactions])
-        status 202
+        empty_response 202
       end
       
       get '/transactions/authorize.xml' do
         authorization = Transactor.authorize(params[:provider_key], params)
-        
-        status 200
         authorization.to_xml
       end
 
       get '/transactions/errors.xml' do
-        errors = ErrorStorage.list(service_id, :page     => params[:page],
-                                               :per_page => params[:per_page])
+        @errors = ErrorStorage.list(service_id, :page     => params[:page],
+                                                :per_page => params[:per_page])
 
-        status 200
-        builder do |xml|
-          xml.instruct!
-          xml.errors do
-            errors.each do |error|
-              xml.error error[:message], :code      => error[:code], 
-                                         :timestamp => error[:timestamp]
-            end
-          end
-        end
+        builder :transaction_errors
       end
       
       delete '/transactions/errors.xml' do
         ErrorStorage.delete_all(service_id)
-        status 200
+        empty_response
       end
 
       get '/transactions/errors/count.xml' do
-        count = ErrorStorage.count(service_id)
+        @count = ErrorStorage.count(service_id)
 
-        status 200
-        builder do |xml|
-          xml.instruct!
-          xml.count count
-        end
+        builder :transaction_error_count
       end
 
       get '/transactions/latest.xml' do
-        transactions = TransactionStorage.list(service_id)
+        @transactions = TransactionStorage.list(service_id)
 
-        status 200
-        builder do |xml|
-          xml.instruct!
-          xml.transactions do
-            transactions.each do |transaction|
-              timestamp = transaction[:timestamp].strftime(TIME_FORMAT)
-
-              xml.transaction :application_id => transaction[:application_id],
-                              :timestamp      => timestamp do
-                transaction[:usage].each do |metric_id, value|
-                  xml.value value, :metric_id => metric_id
-                end
-              end
-            end
-          end
-        end
+        builder :latest_transactions
       end
 
       get '/applications/:app_id/constraints/keys.xml' do
-        status 200
+        @keys = application.keys
 
-        builder do |xml|
-          xml.instruct!
-          xml.keys do
-            application.keys.sort.each do |item|
-              xml.key :value => item,
-                      :href  => application_constraint_url(application, :keys, item)
-            end
-          end
-        end
+        builder :application_keys
       end
       
       post '/applications/:app_id/constraints/keys.xml' do
-        key = application.create_key
-        url = application_constraint_url(application, :keys, key)
+        @key = application.create_key
 
-        headers 'Location' => url
+        headers 'Location' => application_constraint_url(application, :keys, @key)
         status 201
-
-        builder do |xml|
-          xml.instruct!
-          xml.key :value => key, :href => url 
-        end
+        builder :create_application_key
       end
 
       delete '/applications/:app_id/constraints/keys/:key.xml' do
         application.delete_key(params[:key])
-
-        status 200
+        empty_response
       end
 
       get '/applications/:app_id/constraints/domains.xml' do
-        status 200
+        @domain_constraints = application.domain_constraints
 
-        builder do |xml|
-          xml.instruct!
-          xml.domain_constraints do
-            application.domain_constraints.sort.each do |item|
-              xml.domain_constraint :value => item, :href  => application_constraint_url(application, :domains, item)
-            end
-          end
-        end
+        builder :application_domain_constraints
+      end
+      
+      post '/applications/:app_id/constraints/domains.xml' do
+        @domain_constraint = application.create_domain_constraint(params[:domain_constraint])
+
+        headers 'Location' => application_constraint_url(application, :domains, @domain_constraint)
+        status 201
+        builder :create_application_domain_constraint
       end
 
       get '/check.txt' do
@@ -167,6 +126,11 @@ module ThreeScale
         url = "#{protocol}://#{server}#{path}"
         url += "?provider_key=#{params[:provider_key]}" if params[:provider_key]
         url
+      end
+
+      def empty_response(code = 200)
+        status code
+        body nil
       end
     end
   end
