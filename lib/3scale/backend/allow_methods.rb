@@ -1,18 +1,33 @@
 module ThreeScale
   module Backend
     module AllowMethods
-      # Define http methods allowed for a path. This makes the application respond correctly
-      # to an OPTIONS request against the given path.
-      #
-      # Example:
-      #
-      #   allow_method '/foos/:id', :get, :put, :delete
-      #
-      def allow_methods(path, *methods)
-        route 'OPTIONS', path do
-          headers['Allow'] = methods.map(&:to_s).map(&:upcase).join(', ')
-          status 200
+      ALLOWABLE_METHODS = ['GET', 'POST', 'PUT', 'DELETE']
+
+      def self.registered(app)
+        class << app
+          alias_method :route_without_allowed_methods, :route
+          alias_method :route, :route_with_allowed_methods
         end
+      end
+
+      def route_with_allowed_methods(method, path, options = {}, &block)
+        allow_method(method, path) if ALLOWABLE_METHODS.include?(method)
+        route_without_allowed_methods(method, path, options, &block)
+      end
+
+      def allow_method(method, path)
+        @@allowed_methods ||= {}
+
+        unless @@allowed_methods[path]
+          route 'OPTIONS', path do
+            headers['Allow'] = @@allowed_methods[path].uniq.join(', ')
+            status 200
+          end
+
+          @@allowed_methods[path] = []
+        end
+
+        @@allowed_methods[path] << method
       end
     end
   end

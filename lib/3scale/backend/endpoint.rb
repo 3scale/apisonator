@@ -16,17 +16,7 @@ module ThreeScale
       end
 
       register AllowMethods
-      allow_methods '/transactions.xml',                   :post
-      allow_methods '/transactions/authorize.xml',         :get
-      allow_methods '/transactions/errors.xml',            :get, :delete
-      allow_methods '/transactions/errors/count.xml',      :get
-      allow_methods '/transactions/latest.xml',            :get
-      allow_methods '/applications/:app_id/keys.xml',      :get, :post
-      allow_methods '/applications/:app_id/keys/:key.xml', :delete
 
-      get '/check.txt' do
-        content_type 'text/plain'
-      end
 
       post '/transactions.xml' do
         Transactor.report(params[:provider_key], params[:transactions])
@@ -55,6 +45,11 @@ module ThreeScale
           end
         end
       end
+      
+      delete '/transactions/errors.xml' do
+        ErrorStorage.delete_all(service_id)
+        status 200
+      end
 
       get '/transactions/errors/count.xml' do
         count = ErrorStorage.count(service_id)
@@ -64,11 +59,6 @@ module ThreeScale
           xml.instruct!
           xml.count count
         end
-      end
-
-      delete '/transactions/errors.xml' do
-        ErrorStorage.delete_all(service_id)
-        status 200
       end
 
       get '/transactions/latest.xml' do
@@ -117,11 +107,15 @@ module ThreeScale
           xml.key :value => key, :href => url 
         end
       end
-      
+
       delete '/applications/:app_id/keys/:key.xml' do
         application.delete_key(params[:key])
 
         status 200
+      end
+
+      get '/check.txt' do
+        content_type 'text/plain'
       end
 
       error do
@@ -135,7 +129,7 @@ module ThreeScale
         end
       end
 
-      error Sinatra:: NotFound do
+      error Sinatra::NotFound do
         error 404, ""
       end
       

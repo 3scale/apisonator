@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class ApplicationKeysTest < Test::Unit::TestCase
   include TestHelpers::Integration
-  include TestHelpers::MasterService
+  include TestHelpers::Sequences
   
   def setup
     @storage = Storage.instance(true)
@@ -10,26 +10,14 @@ class ApplicationKeysTest < Test::Unit::TestCase
 
     Resque.reset!
 
-    setup_master_service
-
-    @master_plan_id = next_id
     @provider_key = 'provider_key'
-    Application.save(:service_id => @master_service_id, 
-                     :id => @provider_key, 
-                     :state => :active,
-                     :plan_id => @master_plan_id)
-
-    @service_id = next_id
+    @service_id   = next_id
     Core::Service.save(:provider_key => @provider_key, :id => @service_id)
 
     @application_id = next_id
-    @plan_id = next_id
-    @plan_name = 'kickass'
     Application.save(:service_id => @service_id, 
                      :id         => @application_id,
-                     :state      => :active, 
-                     :plan_id    => @plan_id, 
-                     :plan_name  => @plan_name)
+                     :state      => :active)
   end
 
   test 'OPTIONS /applications/{app_id}/keys.xml returns GET and POST' do
