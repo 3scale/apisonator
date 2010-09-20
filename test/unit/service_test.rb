@@ -5,15 +5,27 @@ class ServiceTest < Test::Unit::TestCase
     Storage.instance(true).flushdb
   end
 
-  def test_load_id_bang_raises_an_exception_if_service_does_not_exist
+  test 'load_id! raises an exception if service does not exist' do
     assert_raise ProviderKeyInvalid do
       Service.load_id!('foo')
     end
   end
 
-  def test_load_id_bang_returns_service_id_if_it_exists
+  test 'load_id! returns service id if it exists' do
     Service.save(:provider_key => 'foo', :id => '1001')
 
     assert_equal '1001', Service.load_id!('foo')
+  end
+
+  test 'load! raises an exception if service does not exist' do
+    assert_raise ProviderKeyInvalid do
+      Service.load!('foo')
+    end
+  end
+  
+  test 'load! returns service if it exists' do
+    Service.save(:provider_key => 'foo', :id => '1001')
+    
+    assert_not_nil Service.load!('foo')
   end
 end

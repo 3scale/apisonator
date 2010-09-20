@@ -70,7 +70,7 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal [key], application.keys
   end
 
-  test 'application has no access rules when created' do
+  test 'application has no referrer filters when created' do
     application = Application.save(:service_id => '1001', 
                                    :id         => '2001', 
                                    :state      => :active)

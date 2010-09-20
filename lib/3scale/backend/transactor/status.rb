@@ -44,13 +44,15 @@ module ThreeScale
           end
         end
 
-        def initialize(application, current_values, timestamp = Time.now.getutc)
+        def initialize(service, application, current_values, timestamp = Time.now.getutc)
+          @service        = service
           @application    = application or raise 'application is required'
           @timestamp      = timestamp
           @current_values = current_values
           @authorized     = true
         end
 
+        attr_reader :service
         attr_reader :application
         attr_reader :current_values
 

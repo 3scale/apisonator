@@ -11,17 +11,15 @@ class ApplicationKeysTest < Test::Unit::TestCase
     Resque.reset!
 
     @provider_key = 'provider_key'
-    @service_id   = next_id
-    Core::Service.save(:provider_key => @provider_key, :id => @service_id)
 
-    @application_id = next_id
-    Application.save(:service_id => @service_id, 
-                     :id         => @application_id,
-                     :state      => :active)
+    @service     = Core::Service.save(:provider_key => @provider_key, :id => next_id)
+    @application = Application.save(:service_id => @service.id, 
+                                    :id         => next_id,
+                                    :state      => :active)
   end
 
   test 'OPTIONS .../keys.xml returns GET and POST' do
-    request "/applications/#{@application_id}/keys.xml", 
+    request "/applications/#{@application.id}/keys.xml", 
       :method => 'OPTIONS',
       :params => {:provider_key => @provider_key}
 
@@ -30,7 +28,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
   end
 
   test 'OPTIONS .../keys/{key}.xml returns DELETE' do
-    request "/applications/#{@application_id}/keys/foo.xml", 
+    request "/applications/#{@application.id}/keys/foo.xml", 
       :method => 'OPTIONS',
       :params => {:provider_key => @provider_key}
 
@@ -39,11 +37,10 @@ class ApplicationKeysTest < Test::Unit::TestCase
   end
 
   test 'GET .../keys.xml renders list of application keys' do
-    application = Application.load(@service_id, @application_id)
-    application.create_key('foo')
-    application.create_key('bar')
+    @application.create_key('foo')
+    @application.create_key('bar')
 
-    get "/applications/#{@application_id}/keys.xml",
+    get "/applications/#{@application.id}/keys.xml",
       :provider_key => @provider_key
 
     assert_equal 200, last_response.status
@@ -56,15 +53,15 @@ class ApplicationKeysTest < Test::Unit::TestCase
 
     key_one_node = keys_node.at('key[value=foo]')
     assert_not_nil key_one_node
-    assert_equal "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}", key_one_node['href']
+    assert_equal "http://example.org/applications/#{@application.id}/keys/foo.xml?provider_key=#{@provider_key}", key_one_node['href']
     
     key_two_node = keys_node.at('key[value=bar]')
     assert_not_nil key_two_node
-    assert_equal "http://example.org/applications/#{@application_id}/keys/bar.xml?provider_key=#{@provider_key}", key_two_node['href']
+    assert_equal "http://example.org/applications/#{@application.id}/keys/bar.xml?provider_key=#{@provider_key}", key_two_node['href']
   end
 
   test 'GET .../keys.xml renders empty list if there are no application keys' do
-    get "/applications/#{@application_id}/keys.xml",
+    get "/applications/#{@application.id}/keys.xml",
       :provider_key => @provider_key
 
     assert_equal 200, last_response.status
@@ -75,7 +72,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
   end
 
   test 'GET .../keys.xml fails on invalid provider key' do
-    get "/applications/#{@application_id}/keys.xml", :provider_key => 'boo'
+    get "/applications/#{@application.id}/keys.xml", :provider_key => 'boo'
    
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
@@ -92,9 +89,9 @@ class ApplicationKeysTest < Test::Unit::TestCase
   test 'POST .../keys.xml creates new random key' do
     SecureRandom.stubs(:hex).returns('foo')
     
-    url = "http://example.org/applications/#{@application_id}/keys/foo.xml?provider_key=#{@provider_key}"
+    url = "http://example.org/applications/#{@application.id}/keys/foo.xml?provider_key=#{@provider_key}"
 
-    post "/applications/#{@application_id}/keys.xml",
+    post "/applications/#{@application.id}/keys.xml",
       :provider_key => @provider_key
 
     assert_equal 201, last_response.status
@@ -104,12 +101,11 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_equal 'foo', doc.at('key:root')['value']
     assert_equal url,   doc.at('key:root')['href']
 
-    application = Application.load(@service_id, @application_id)
-    assert application.has_key?('foo')
+    assert @application.has_key?('foo')
   end
 
   test 'POST .../keys.xml fails on invalid provider key' do
-    post "/applications/#{@application_id}/keys.xml", :provider_key => 'boo'
+    post "/applications/#{@application.id}/keys.xml", :provider_key => 'boo'
 
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
@@ -124,21 +120,19 @@ class ApplicationKeysTest < Test::Unit::TestCase
   end
 
   test 'DELETE .../keys/{key}.xml deletes the key' do
-    application = Application.load(@service_id, @application_id)
-    application_key = application.create_key
+    application_key = @application.create_key
 
-    delete "/applications/#{@application_id}/keys/#{application_key}.xml",
+    delete "/applications/#{@application.id}/keys/#{application_key}.xml",
            :provider_key => @provider_key
 
     assert_equal 200, last_response.status
-    assert !application.has_key?(application_key)
+    assert !@application.has_key?(application_key)
   end
   
   test 'DELETE .../keys/{key}.xml fails on invalid provider key' do
-    application = Application.load(@service_id, @application_id)
-    application_key = application.create_key
+    application_key = @application.create_key
 
-    delete "/applications/#{@application_id}/keys/#{application_key}.xml", 
+    delete "/applications/#{@application.id}/keys/#{application_key}.xml", 
            :provider_key => 'boo'
 
     assert_error_response :code    => 'provider_key_invalid',
@@ -146,8 +140,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
   end
   
   test 'DELETE .../keys/{key}.xml fails on invalid application id' do
-    application = Application.load(@service_id, @application_id)
-    application_key = application.create_key
+    application_key = @application.create_key
 
     delete "/applications/boo/keys/#{application_key}.xml", 
            :provider_key => @provider_key
@@ -158,7 +151,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
   end
 
   test 'DELETE .../keys/{key}.xml succeeds if the key does not exist' do
-    delete "/applications/#{@application_id}/keys/boo.xml", 
+    delete "/applications/#{@application.id}/keys/boo.xml", 
            :provider_key => @provider_key
 
     assert_equal 200, last_response.status           

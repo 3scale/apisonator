@@ -20,19 +20,19 @@ module ThreeScale
       end
 
       VALIDATORS = [Validators::Key,
-                    Validators::ReferrerFilters,
                     Validators::Referrer,
+                    Validators::ReferrerFilters,
                     Validators::State,
                     Validators::Limits]
 
       def authorize(provider_key, params)
         notify(provider_key, 'transactions/authorize' => 1)
 
-        service_id  = Service.load_id!(provider_key)
-        application = Application.load!(service_id, params[:app_id])
+        service     = Service.load!(provider_key)
+        application = Application.load!(service.id, params[:app_id])
         usage       = load_current_usage(application)
         
-        Status.new(application, usage).tap do |status|
+        Status.new(service, application, usage).tap do |status|
           VALIDATORS.all? { |validator| validator.apply(status, params) }
         end
       end

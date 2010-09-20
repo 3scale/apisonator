@@ -10,20 +10,19 @@ module Validators
       Resque.reset!
 
       @service_id     = next_id
-      @application_id = next_id
       @plan_id        = next_id
       @metric_id      = next_id
 
       Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
 
       @application = Application.save(:service_id => @service_id,
-                                      :id         => @application_id,
+                                      :id         => next_id,
                                       :state      => :active,
                                       :plan_id    => @plan_id)
     end
 
     test 'succeeds if there are no usage limits' do
-      status = Transactor::Status.new(@application, :day => {@metric_id => 7000000})
+      status = Transactor::Status.new(nil, @application, :day => {@metric_id => 7000000})
       assert Limits.apply(status, {})
     end
     
@@ -33,7 +32,7 @@ module Validators
                       :metric_id  => @metric_id,
                       :day        => 4)
 
-      status = Transactor::Status.new(@application, :day => {@metric_id => 3})
+      status = Transactor::Status.new(nil, @application, :day => {@metric_id => 3})
       assert Limits.apply(status, {})
     end
 
@@ -43,7 +42,7 @@ module Validators
                       :metric_id  => @metric_id,
                       :day        => 4)
 
-      status = Transactor::Status.new(@application, :day => {@metric_id => 6})
+      status = Transactor::Status.new(nil, @application, :day => {@metric_id => 6})
       assert !Limits.apply(status, {})
 
       assert_equal 'limits_exceeded',           status.rejection_reason_code

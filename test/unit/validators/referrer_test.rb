@@ -8,30 +8,27 @@ module Validators
     def setup
       Storage.instance(true).flushdb
 
-      service_id     = next_id
-      application_id = next_id
-
-      @application = Application.save(:service_id => service_id,
-                                      :id         => application_id,
+      @application = Application.save(:service_id => next_id,
+                                      :id         => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(@application, {})
+      @status = Transactor::Status.new(nil, @application, {})
     end
 
-    test 'succeeds if no access rule is defined and no referrer is passed' do
+    test 'succeeds if no referrer filter is defined and no referrer is passed' do
       assert Referrer.apply(@status, {})
     end
   
-    test 'succeeds if no access rule is defined and blank referrer is passed' do
+    test 'succeeds if no referrer filter is defined and blank referrer is passed' do
       assert Referrer.apply(@status, :referrer => '')
     end
     
-    test 'succeeds if simple domain access rule is defined and matching referrer is passed' do
+    test 'succeeds if simple domain referrer filter is defined and matching referrer is passed' do
       @application.create_referrer_filter('example.org')
       assert Referrer.apply(@status, :referrer => 'example.org')
     end
 
-    test 'fails if access rule is defined but no referrer is passed' do
+    test 'fails if referrer filter is defined but no referrer is passed' do
       @application.create_referrer_filter('example.org')
 
       assert !Referrer.apply(@status, {})

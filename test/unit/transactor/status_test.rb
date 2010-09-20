@@ -3,20 +3,21 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 module Transactor
   class StatusTest < Test::Unit::TestCase
     include TestHelpers::StorageKeys
+    include TestHelpers::Sequences
 
     def setup
       @storage = Storage.instance(true)
       @storage.flushdb
       
-      @service_id     = 1001
-      @plan_id        = 2001
-      @application_id = 3001
-      @metric_id      = 4001
+      @service_id     = next_id
+      @plan_id        = next_id
+      @application_id = next_id
+      @metric_id      = next_id
 
       @plan_name      = 'awesome'
 
       @application    = Application.new(:service_id => @service_id,
-                                        :id         => @application_id,
+                                        :id         => next_id,
                                         :plan_id    => @plan_id,
                                         :plan_name  => @plan_name)
 
@@ -25,7 +26,7 @@ module Transactor
                   :name       => 'foos')
     end
 
-    def test_status_contains_usage_reports
+    test 'status contains usage reports' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
@@ -35,7 +36,7 @@ module Transactor
       usage = {:month => {@metric_id.to_s => 429}}
 
       Timecop.freeze(time) do
-        status = Transactor::Status.new(@application, usage)
+        status = Transactor::Status.new(nil, @application, usage)
 
         assert_equal 1, status.usage_reports.count
 
@@ -49,71 +50,71 @@ module Transactor
       end
     end
 
-    def test_usage_report_is_marked_as_exceeded_when_current_value_is_greater_than_max_value
+    test 'usage report is marked as exceeded when current value is greater than max value' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 2002}}
-      status = Transactor::Status.new(@application, usage)
+      status = Transactor::Status.new(nil, @application, usage)
 
       assert status.usage_reports.first.exceeded?
     end
     
-    def test_usage_report_is_not_marked_as_exceeded_when_current_value_is_less_than_max_value
+    test 'usage report is not marked as exceeded when current value is less than max value' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 1999}}
-      status = Transactor::Status.new(@application, usage)
+      status = Transactor::Status.new(nil, @application, usage)
 
       assert !status.usage_reports.first.exceeded?
     end
     
-    def test_usage_report_is_not_marked_as_exceeded_when_current_value_equals_max_value
+    test 'usage report is not marked as exceeded when current value equals max value' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 2000}}
-      status = Transactor::Status.new(@application, usage)
+      status = Transactor::Status.new(nil, @application, usage)
 
       assert !status.usage_reports.first.exceeded?
     end
 
-    def test_status_is_authorized_by_default
-      status = Transactor::Status.new(@application, {})
+    test '#authorized? returns true by default' do
+      status = Transactor::Status.new(nil, @application, {})
       assert status.authorized?
     end
 
-    def test_status_is_not_authorized_when_rejected
-      status = Transactor::Status.new(@application, {})
+    test '#authorized? returns false when rejected' do
+      status = Transactor::Status.new(nil, @application, {})
       status.reject!(ApplicationNotActive.new)
 
       assert !status.authorized?
     end
     
-    def test_status_contains_rejection_reason_when_rejected
-      status = Transactor::Status.new(@application, {})
+    test 'status contains rejection reason when rejected' do
+      status = Transactor::Status.new(nil, @application, {})
       status.reject!(ApplicationNotActive.new)
 
       assert_equal 'application_not_active',    status.rejection_reason_code
       assert_equal 'application is not active', status.rejection_reason_text
     end
 
-    def test_rejection_reason_can_be_set_only_once
-      status = Transactor::Status.new(@application, {})
+    test 'rejection reason can be set only once' do
+      status = Transactor::Status.new(nil, @application, {})
       status.reject!(ApplicationNotActive.new)
       status.reject!(LimitsExceeded.new)
       
       assert_equal 'application_not_active', status.rejection_reason_code
     end
 
-    def test_to_xml
+    test '#to_xml' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
@@ -123,7 +124,7 @@ module Transactor
       usage = {:month => {@metric_id.to_s => 429}}
 
       Timecop.freeze(time) do
-        xml = Transactor::Status.new(@application, usage).to_xml
+        xml = Transactor::Status.new(nil, @application, usage).to_xml
         doc = Nokogiri::XML(xml)
         
         root = doc.at('status:root')        
@@ -144,19 +145,19 @@ module Transactor
       end
     end
 
-    def test_does_not_serialize_empty_usage_reports
+    test '#to_xml does not serialize empty usage reports' do
       usage = {:month => {@metric_id.to_s => 429}}
 
-      xml = Transactor::Status.new(@application, usage).to_xml
+      xml = Transactor::Status.new(nil, @application, usage).to_xml
       doc = Nokogiri::XML(xml)
 
       assert_nil doc.at('status usage_reports')        
     end
 
-    def test_serialize_rejected_status
+    test '#to_xml on rejected status' do
       usage = {:month => {@metric_id.to_s => 429}}
 
-      status = Transactor::Status.new(@application, usage)
+      status = Transactor::Status.new(nil, @application, usage)
       status.reject!(ApplicationNotActive.new)
 
       doc = Nokogiri::XML(status.to_xml)
@@ -165,7 +166,7 @@ module Transactor
       assert_equal 'application is not active', doc.at('status reason').content
     end
 
-    def test_serialize_marks_exceeded_usage_reports
+    test '#to_xml marks exceeded usage reports' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
@@ -174,7 +175,7 @@ module Transactor
       usage = {:month => {@metric_id.to_s => 1420},
                :day   => {@metric_id.to_s => 122}}
 
-      xml = Transactor::Status.new(@application, usage).to_xml
+      xml = Transactor::Status.new(nil, @application, usage).to_xml
       doc = Nokogiri::XML(xml)
      
       month  = doc.at('usage_report[metric = "foos"][period = "month"]')
