@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/../test_helper'
+require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 # Use the HUGE_PAYLOAD_SIZE env variable to define the size of the payload (number of transaction in it). Default is 10000.
 
