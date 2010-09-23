@@ -2,9 +2,11 @@ module ThreeScale
   module Backend
     module Validators
       class Referrer < Base
+        BYPASS = '*'
+
         def apply
           if application.has_referrer_filters?
-            if application.has_referrer_filter?(params[:referrer])
+            if application.referrer_filters.any? { |filter| matches?(filter, params[:referrer]) }
               succeed!
             else
               fail!(ReferrerNotAllowed.new(params[:referrer]))
@@ -14,9 +16,20 @@ module ThreeScale
           end
         end
 
-        # TODO: wildcard domain match: *.example.org
-        # TODO: ip match
-        # TODO: ip subnet match
+        # TODO: ip subnet match ?
+
+        private
+
+        def matches?(pattern, value)
+          if value == BYPASS
+            true
+          else
+            pattern = Regexp.quote(pattern)
+            pattern = pattern.gsub('\*', '.*')
+
+            /#{pattern}/ =~ value
+          end
+        end
       end
     end
   end

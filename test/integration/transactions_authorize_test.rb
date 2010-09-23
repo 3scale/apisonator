@@ -125,7 +125,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     end
   end
 
-  def test_fails_on_invalid_provider_key
+  test 'fails on invalid provider key' do
     get '/transactions/authorize.xml', :provider_key => 'boo',
                                        :app_id     => @application.id
 
@@ -133,7 +133,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
                           :message => 'provider key "boo" is invalid'
   end
 
-  def test_fails_on_invalid_application_id
+  test 'fails on invalid application id' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => 'boo'
 
@@ -143,7 +143,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
                           :message => 'application with id="boo" was not found'
   end
 
-  def test_does_not_authorize_on_inactive_application
+  test 'does not authorize on inactive application' do
     @application.state = :suspended
     @application.save
 
@@ -153,7 +153,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_not_authorized last_response, 'application is not active'
   end
 
-  def test_does_not_authorize_on_exceeded_client_usage_limits
+  test 'does not authorize on exceeded client usage limits' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -259,6 +259,26 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     assert_authorized last_response
   end
+
+  test 'succeeds if wildcard domain filter is defined and matching referrer is passed' do
+    @application.create_referrer_filter('*.bar.example.org')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :referrer     => 'foo.bar.example.org'
+
+    assert_authorized last_response
+  end
+
+  test 'succeeds if a referrer filter is defined but referrer is bypassed' do
+    @application.create_referrer_filter('example.org')
+    
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :referrer     => '*'
+
+    assert_authorized last_response
+  end
   
   test 'does not authorize if domain filter is defined but no referrer is passed' do
     @application.create_referrer_filter('example.org')
@@ -277,6 +297,16 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
                                        :referrer     => 'bar.example.org'
 
     assert_not_authorized last_response, 'referrer "bar.example.org" is not allowed'
+  end
+  
+  test 'does not authorize if wildcard domain filter is defined but referrer does not match' do
+    @application.create_referrer_filter('*.foo.example.org')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :referrer     => 'baz.bar.example.org'
+
+    assert_not_authorized last_response, 'referrer "baz.bar.example.org" is not allowed'
   end
 
   # referrer filters presence test
