@@ -140,7 +140,13 @@ module ThreeScale
         end
 
         def write_to_socket(*commands)
-          @sock.write(join_commands(commands))
+          if Redis::VERSION.to_f < 2.1
+            @sock.write(join_commands(commands))
+          else
+            commands.each do |command|
+              connection.write(command)
+            end
+          end
         end
     
         def next_server!
@@ -177,7 +183,7 @@ module ThreeScale
           command.split(/\s+/).map(&:unescape_whitespaces)
         end
       end
-      
+
       class Client < ::Redis::Client
         include Failover
       end

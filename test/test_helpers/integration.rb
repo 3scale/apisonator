@@ -18,7 +18,7 @@ module TestHelpers
                  :content_type => 'application/vnd.3scale-v2.0+xml'}.merge(options)
 
       assert_equal options[:status],       last_response.status
-      assert_equal options[:content_type], last_response.content_type
+      assert_includes last_response.content_type, options[:content_type]
 
       doc = Nokogiri::XML(last_response.body)
       node = doc.at('error:root')

@@ -49,7 +49,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
     
-    assert_equal 'application/vnd.3scale-v2.0+xml', last_response.content_type
+    assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
 
   test 'successful authorize renders plan name' do
@@ -363,7 +363,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
                                        :app_id       => @application.id
 
     assert_equal 200,                               last_response.status
-    assert_equal 'application/vnd.3scale-v2.0+xml', last_response.content_type
+    assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
 
   test 'successful authorize reports backend hit' do
