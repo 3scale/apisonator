@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Endpoint < Sinatra::Base
+    class Listener < Sinatra::Base
       disable :logging
       disable :raise_errors
       disable :show_exceptions
@@ -10,7 +10,7 @@ module ThreeScale
       end
 
       set :views, File.dirname(__FILE__) + '/views'
-          
+
       register AllowMethods
 
       use Rack::RestApiVersioning, :default_version => '2.0'
@@ -23,7 +23,7 @@ module ThreeScale
         Transactor.report(params[:provider_key], params[:transactions])
         empty_response 202
       end
-      
+
       get '/transactions/authorize.xml' do
         authorization = Transactor.authorize(params[:provider_key], params)
         authorization.to_xml
@@ -35,7 +35,7 @@ module ThreeScale
 
         builder :transaction_errors
       end
-      
+
       delete '/transactions/errors.xml' do
         ErrorStorage.delete_all(service_id)
         empty_response
@@ -58,7 +58,7 @@ module ThreeScale
 
         builder :application_keys
       end
-      
+
       post '/applications/:app_id/keys.xml' do
         @key = application.create_key
 
@@ -77,7 +77,7 @@ module ThreeScale
 
         builder :application_referrer_filters
       end
-      
+
       post '/applications/:app_id/referrer_filters.xml' do
         @referrer_filter = application.create_referrer_filter(params[:referrer_filter])
 
@@ -85,7 +85,7 @@ module ThreeScale
         status 201
         builder :create_application_referrer_filter
       end
-      
+
       delete '/applications/:app_id/referrer_filters/:id.xml' do
         application.delete_referrer_filter(params[:id])
         empty_response
@@ -111,7 +111,7 @@ module ThreeScale
       error Sinatra::NotFound do
         error 404, ""
       end
-      
+
       private
 
       def application

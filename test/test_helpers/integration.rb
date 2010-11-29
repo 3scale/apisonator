@@ -6,15 +6,15 @@ module TestHelpers
         include Rack::Test::Methods
       end
     end
-  
+
     def app
-      ThreeScale::Backend::Endpoint.new
+      ThreeScale::Backend::Listener.new
     end
 
     private
 
     def assert_error_response(options = {})
-      options = {:status       => 403, 
+      options = {:status       => 403,
                  :content_type => 'application/vnd.3scale-v2.0+xml'}.merge(options)
 
       assert_equal options[:status],       last_response.status

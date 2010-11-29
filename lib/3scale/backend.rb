@@ -22,9 +22,9 @@ module ThreeScale
     autoload :AllowMethods,           '3scale/backend/allow_methods'
     autoload :Application,            '3scale/backend/application'
     autoload :Archiver,               '3scale/backend/archiver'
-    autoload :Endpoint,               '3scale/backend/endpoint'
     autoload :ErrorStorage,           '3scale/backend/error_storage'
     autoload :HasSet,                 '3scale/backend/has_set'
+    autoload :Listener,               '3scale/backend/listener'
     autoload :Metric,                 '3scale/backend/metric'
     autoload :Runner,                 '3scale/backend/runner'
     autoload :Server,                 '3scale/backend/server'
@@ -36,7 +36,7 @@ module ThreeScale
     autoload :UsageLimit,             '3scale/backend/usage_limit'
     autoload :Validators,             '3scale/backend/validators'
     autoload :Worker,                 '3scale/backend/worker'
-   
+
     autoload :ApplicationKeyInvalid,  '3scale/backend/errors'
     autoload :ApplicationNotActive,   '3scale/backend/errors'
     autoload :ApplicationNotFound,    '3scale/backend/errors'
@@ -58,7 +58,7 @@ module ThreeScale
       ThreeScale::Backend::Storage.instance
     end
   end
-  
+
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
   PIPELINED_SLICE_SIZE = 1000
 end

@@ -12,17 +12,17 @@ module ThreeScale
         server = ::Thin::Server.new(options[:host], options[:port]) do
           use Rack::Hoptoad, configuration.hoptoad.api_key if configuration.hoptoad.api_key
           use Rack::CommonLogger if log
-          
-          run ThreeScale::Backend::Endpoint.new
+
+          run ThreeScale::Backend::Listener.new
         end
-        
+
         server.pid_file = pid_file(options[:port])
         server.log_file = options[:log_file] || "/dev/null"
-      
+
         # Hack to set process name (so it looks nicer in a process list).
         def server.name
           "3scale_backend listening on #{host}:#{port}"
-        end      
+        end
 
         puts ">> Starting #{server.name}. Let's roll!"
         server.daemonize if options[:daemonize]
@@ -37,7 +37,7 @@ module ThreeScale
         ::Thin::Server.restart(pid_file(options[:port]))
       end
 
-      def pid_file(port)        
+      def pid_file(port)
         "/var/run/3scale/3scale_backend_#{port}.pid"
       end
     end
