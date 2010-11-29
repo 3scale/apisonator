@@ -35,6 +35,7 @@ module ThreeScale
     autoload :Transactor,             '3scale/backend/transactor'
     autoload :UsageLimit,             '3scale/backend/usage_limit'
     autoload :Validators,             '3scale/backend/validators'
+    autoload :Version,                '3scale/backend/version'
     autoload :Worker,                 '3scale/backend/worker'
 
     autoload :ApplicationKeyInvalid,  '3scale/backend/errors'

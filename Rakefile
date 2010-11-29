@@ -14,7 +14,7 @@ namespace :test do
     task.test_files = FileList['test/unit/**/*_test.rb']
     task.verbose = true
   end
-  
+
   Rake::TestTask.new(:integration) do |task|
     task.test_files = FileList['test/integration/**/*_test.rb']
     task.verbose = true
@@ -26,40 +26,16 @@ namespace :test do
   end
 end
 
-begin
-  require 'jeweler'
+desc 'Tag and push the current version'
+task :release => ['release:tag', 'release:push']
 
-  Jeweler::Tasks.new do |gemspec|
-    gemspec.name     = '3scale_backend'
-    gemspec.summary  = '3scale web service management system backend'
-    gemspec.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'
-
-    gemspec.email    = 'adam@3scale.net'
-    gemspec.homepage = 'http://www.3scale.net'
-    gemspec.authors  = ['Adam Cigánek']
-
-    gemspec.files.exclude 'data'
-    gemspec.files.exclude 'deploy'
-
-    gemspec.executables = ['3scale_backend', '3scale_backend_worker']
-
-    gemspec.add_dependency '3scale_core',             '>= 0.2.7'
-    gemspec.add_dependency 'aws-s3',                  '~> 0.6'
-    gemspec.add_dependency 'builder',                 '~> 2.1'
-    gemspec.add_dependency 'redis',                   '~> 2.0'
-    gemspec.add_dependency 'resque',                  '~> 1.9'
-    gemspec.add_dependency 'rack',                    '~> 1.1'
-    gemspec.add_dependency 'rack_hoptoad',            '~> 0.1'
-    gemspec.add_dependency 'rack-rest_api_versioning'
-    gemspec.add_dependency 'sinatra',                 '~> 1.0'
-    gemspec.add_dependency 'thin',                    '~> 1.2'
-    gemspec.add_dependency 'yajl-ruby',               '~> 0.7'
+namespace :release do
+  task :tag do
+    require File.dirname(__FILE__) + '/lib/3scale/backend/version'
+    system "git tag v#{ThreeScale::Backend::VERSION}"
   end
 
-  # HAX: I want only git:release, nothing else.
-  Rake::Task['release'].clear_prerequisites
-  task :release => 'git:release'
-
-rescue LoadError
-  puts "Jeweler not available. Install it with: gem install jeweler"
+  task :push do
+    system "git push --tags"
+  end
 end

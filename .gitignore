@@ -1,5 +1,4 @@
 pkg
-*.gemspec
 
 lib/3scale/core
 lib/3scale/core.rb

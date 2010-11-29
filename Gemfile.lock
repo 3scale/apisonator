@@ -1,0 +1,88 @@
+PATH
+  remote: .
+  specs:
+    3scale_backend (0.10.1)
+      3scale_core (>= 0.2.7)
+      aws-s3 (~> 0.6)
+      builder (~> 2.1)
+      rack (~> 1.1)
+      rack-rest_api_versioning
+      rack_hoptoad (~> 0.1)
+      redis (= 2.0.13)
+      resque (~> 1.9)
+      sinatra (~> 1.0)
+      thin (~> 1.2)
+      yajl-ruby (~> 0.7)
+
+GEM
+  remote: http://rubygems.org/
+  specs:
+    3scale_core (0.2.7)
+    aws-s3 (0.6.2)
+      builder
+      mime-types
+      xml-simple
+    builder (2.1.2)
+    daemons (1.1.0)
+    eventmachine (0.12.10)
+    fakefs (0.2.1)
+    json (1.4.6)
+    mime-types (1.16)
+    mocha (0.9.10)
+      rake
+    nokogiri (1.4.4)
+    rack (1.2.1)
+    rack-rest_api_versioning (0.0.2)
+      rack
+    rack-test (0.5.6)
+      rack (>= 1.0)
+    rack_hoptoad (0.1.5)
+      rack
+      toadhopper (~> 1.0.1)
+    rake (0.8.7)
+    redis (2.0.13)
+    redis-namespace (0.8.0)
+      redis (< 3.0.0)
+    resque (1.10.0)
+      json (~> 1.4.6)
+      redis-namespace (~> 0.8.0)
+      sinatra (>= 0.9.2)
+      vegas (~> 0.1.2)
+    resque_unit (0.2.7)
+    sinatra (1.1.0)
+      rack (~> 1.1)
+      tilt (~> 1.1)
+    thin (1.2.7)
+      daemons (>= 1.0.9)
+      eventmachine (>= 0.12.6)
+      rack (>= 1.0.0)
+    tilt (1.1)
+    timecop (0.3.5)
+    toadhopper (1.0.6)
+    vegas (0.1.8)
+      rack (>= 1.0.0)
+    xml-simple (1.0.12)
+    yajl-ruby (0.7.8)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  3scale_backend!
+  3scale_core (>= 0.2.7)
+  aws-s3 (~> 0.6)
+  builder (~> 2.1)
+  fakefs
+  mocha
+  nokogiri
+  rack (~> 1.1)
+  rack-rest_api_versioning
+  rack-test
+  rack_hoptoad (~> 0.1)
+  redis (= 2.0.13)
+  resque (~> 1.9)
+  resque_unit (= 0.2.7)
+  sinatra (~> 1.0)
+  thin (~> 1.2)
+  timecop
+  yajl-ruby (~> 0.7)
