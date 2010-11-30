@@ -10,8 +10,36 @@ module ThreeScale
 
       include Sets
 
-      def self.load!(service_id, application_id)
-        load(service_id, application_id) or raise ApplicationNotFound, application_id
+      def self.load!(service_id, app_id)
+        load(service_id, app_id) or raise ApplicationNotFound, app_id
+      end
+
+      def self.load_by_id_or_user_key!(service_id, app_id, user_key)
+        case
+        when app_id && user_key
+          raise AuthenticationError
+        when app_id
+          load!(service_id, app_id)
+        when user_key
+          app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
+          load(service_id, app_id) or raise UserKeyInvalid, user_key
+        else
+          raise ApplicationNotFound
+        end
+      end
+
+      def self.extract_id!(service_id, app_id, user_key)
+        case
+        when app_id && user_key
+          raise AuthenticationError
+        when app_id
+          exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
+        when user_key
+          app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
+          exists?(service_id, app_id) and app_id or raise UserKeyInvalid, user_key
+        else
+          raise ApplicationNotFound
+        end
       end
 
       def usage_limits

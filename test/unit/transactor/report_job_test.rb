@@ -13,15 +13,15 @@ module Transactor
       Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
 
       @plan_id = next_id
-    
+
       @application_id = next_id
       Application.save(:id         => @application_id,
                        :service_id => @service_id,
                        :state      => :active,
                        :plan_id    => @plan_id)
     end
-    
-    def test_processes_the_transactions
+
+    test 'processes the transactions' do
       Transactor::ProcessJob.expects(:perform).
         with([{:service_id     => @service_id,
                :application_id => @application_id,
@@ -32,70 +32,95 @@ module Transactor
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
     end
 
-    def test_does_not_process_any_transaction_if_at_least_one_has_invalid_application_id
+    test 'does not process any transaction if at least one has invalid application id' do
       Transactor::ProcessJob.expects(:perform).never
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
                      '1' => {'app_id' => 'boo',           'usage' => {'hits' => 1}})
     end
-    
-    def test_does_not_process_any_transaction_if_at_least_one_has_invalid_metric
+
+    test 'does not process any transaction if at least one has invalid metric' do
       Transactor::ProcessJob.expects(:perform).never
-      
+
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
                      '1' => {'app_id' => @application_id, 'usage' => {'foos' => 1}})
     end
-    
-    def test_does_not_process_any_transaction_if_at_least_one_has_invalid_usage_value
+
+    test 'does not process any transaction if at least one has invalid usage value' do
       Transactor::ProcessJob.expects(:perform).never
-      
+
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
                      '1' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}})
     end
-    
-    def test_does_not_raise_an_exception_on_invalid_application_id
+
+    test 'does not raise an exception on invalid application id' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
           @service_id, '0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}})
       end
     end
-    
-    def test_does_not_raise_an_exception_on_invalid_metric
+
+    test 'does not raise an exception on invalid metric' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
           @service_id, '0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}})
       end
     end
-    
-    def test_does_not_raise_an_exception_on_invalid_usage_value
+
+    test 'does not raise an exception on invalid usage value' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
           @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}})
       end
     end
 
-    def test_reports_error_on_invalid_application_id
+    test 'reports error on invalid application id' do
       ErrorStorage.expects(:store).with(@service_id, is_a(ApplicationNotFound))
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}})
     end
-    
-    def test_reports_error_on_invalid_metric
+
+    test 'reports error on invalid metric' do
       ErrorStorage.expects(:store).with(@service_id, is_a(MetricInvalid))
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}})
     end
-    
-    def test_reports_error_on_invalid_usage_value
+
+    test 'reports error on invalid usage value' do
       ErrorStorage.expects(:store).with(@service_id, is_a(UsageValueInvalid))
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}})
+    end
+
+    # Legacy authentication
+
+    test 'processes the transaction with legacy user key' do
+      user_key = 'foobar'
+      Application.save_id_by_key(@service_id, user_key, @application_id)
+
+      Transactor::ProcessJob.expects(:perform).
+        with([{:service_id     => @service_id,
+               :application_id => @application_id,
+               :timestamp      => nil,
+               :usage          => {@metric_id => 1}}])
+
+      Transactor::ReportJob.perform(
+        @service_id, '0' => {'user_key' => user_key, 'usage' => {'hits' => 1}})
+    end
+
+    test 'reports error on invalid legacy user key' do
+      Application.save_id_by_key(@service_id, 'foobar', @application_id)
+
+      ErrorStorage.expects(:store).with(@service_id, is_a(UserKeyInvalid))
+
+      Transactor::ReportJob.perform(
+        @service_id, '0' => {'user_key' => 'noway', 'usage' => {'hits' => 1}})
     end
   end
 end

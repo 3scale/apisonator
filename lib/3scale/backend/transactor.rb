@@ -3,12 +3,12 @@ module ThreeScale
     # Methods for reporting and authorizing transactions.
     module Transactor
       autoload :NotifyJob,  '3scale/backend/transactor/notify_job'
-      autoload :ProcessJob, '3scale/backend/transactor/process_job' 
-      autoload :ReportJob,  '3scale/backend/transactor/report_job' 
+      autoload :ProcessJob, '3scale/backend/transactor/process_job'
+      autoload :ReportJob,  '3scale/backend/transactor/report_job'
       autoload :Status,     '3scale/backend/transactor/status'
 
       include Core::StorageKeyHelpers
-      
+
       extend self
 
       def report(provider_key, transactions)
@@ -29,16 +29,18 @@ module ThreeScale
         notify(provider_key, 'transactions/authorize' => 1)
 
         service     = Service.load!(provider_key)
-        application = Application.load!(service.id, params[:app_id])
+        application = Application.load_by_id_or_user_key!(service.id,
+                                                          params[:app_id],
+                                                          params[:user_key])
         usage       = load_current_usage(application)
-        
+
         Status.new(service, application, usage).tap do |status|
           VALIDATORS.all? { |validator| validator.apply(status, params) }
         end
       end
 
       private
-        
+
       def notify(provider_key, usage)
         Resque.enqueue(NotifyJob, provider_key, usage, encode_time(Time.now.getutc))
       end
@@ -46,7 +48,7 @@ module ThreeScale
       def encode_time(time)
         time.to_s
       end
-      
+
       def load_current_usage(application)
         pairs = application.usage_limits.map do |usage_limit|
           [usage_limit.metric_id, usage_limit.period]
@@ -70,7 +72,7 @@ module ThreeScale
 
         values
       end
-      
+
       def usage_value_key(application, metric_id, period, time)
         encode_key("stats/{service:#{application.service_id}}/" +
                    "cinstance:#{application.id}/metric:#{metric_id}/" +

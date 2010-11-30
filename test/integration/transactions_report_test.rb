@@ -13,41 +13,40 @@ class TransactionsReportTest < Test::Unit::TestCase
 
     setup_provider_fixtures
 
-    @application_id = next_id
-    Application.save(:service_id => @service_id,
-                     :id         => @application_id,
-                     :plan_id    => @plan_id,
-                     :state      => :active)
+    @application = Application.save(:service_id => @service_id,
+                                    :id         => next_id,
+                                    :plan_id    => @plan_id,
+                                    :state      => :active)
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
   end
 
-  def test_options_request_returns_list_of_allowed_methods
+  test 'options request returns list of allowed methods' do
     request '/transactions.xml', :method => 'OPTIONS'
     assert_equal 200,    last_response.status
     assert_equal 'POST', last_response.headers['Allow']
   end
 
-  def test_successful_report_responds_with_202
+  test 'successful report responds with 202' do
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
   end
 
-  def test_successful_report_increments_the_stats_counters
+  test 'successful report increments the stats counters' do
     Timecop.freeze(Time.utc(2010, 5, 10, 17, 36)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
       Resque.run!
 
-      key_month = application_key(@service_id, @application_id, @metric_id, :month, '20100501')
-      key_day   = application_key(@service_id, @application_id, @metric_id, :day,   '20100510')
-      key_hour  = application_key(@service_id, @application_id, @metric_id, :hour,  '2010051017')
+      key_month = application_key(@service_id, @application.id, @metric_id, :month, '20100501')
+      key_day   = application_key(@service_id, @application.id, @metric_id, :day,   '20100510')
+      key_hour  = application_key(@service_id, @application.id, @metric_id, :hour,  '2010051017')
 
       assert_equal 1, @storage.get(key_month).to_i
       assert_equal 1, @storage.get(key_day).to_i
@@ -55,14 +54,14 @@ class TransactionsReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_successful_report_archives_the_transactions
+  test 'successful report archives the transactions' do
     path = configuration.archiver.path
     FileUtils.rm_rf(path)
 
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
       Resque.run!
 
@@ -78,10 +77,10 @@ class TransactionsReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_successful_report_with_utc_timestamped_transactions
+  test 'successful report with utc timestamped transactions' do
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id    => @application_id,
+      :transactions => {0 => {:app_id    => @application.id,
                               :usage     => {'hits' => 1},
                               :timestamp => '2010-05-11 13:34:42'}}
 
@@ -91,10 +90,10 @@ class TransactionsReportTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(key).to_i
   end
 
-  def test_successful_report_with_local_timestamped_transactions
+  test 'successful report with local timestamped transactions' do
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id    => @application_id,
+      :transactions => {0 => {:app_id    => @application.id,
                               :usage     => {'hits' => 1},
                               :timestamp => '2010-05-11 11:08:25 -02:00'}}
 
@@ -104,11 +103,11 @@ class TransactionsReportTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(key).to_i
   end
 
-  def test_report_uses_current_time_if_timestamp_is_blank
+  test 'report uses current time if timestamp is blank' do
     Timecop.freeze(Time.utc(2010, 8, 19, 11, 24)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id    => @application_id,
+        :transactions => {0 => {:app_id    => @application.id,
                                 :usage     => {'hits' => 1},
                                 :timestamp => ''}}
 
@@ -119,16 +118,16 @@ class TransactionsReportTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(key).to_i
   end
 
-  def test_report_fails_on_invalid_provider_key
+  test 'report fails on invalid provider key' do
     post '/transactions.xml',
       :provider_key => 'boo',
-      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
   end
 
-  def test_report_reports_error_on_invalid_application_id
+  test 'report reports error on invalid application id' do
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => 'boo', :usage => {'hits' => 1}}}
@@ -144,10 +143,12 @@ class TransactionsReportTest < Test::Unit::TestCase
     assert_equal 'application with id="boo" was not found', error[:message]
   end
 
-  def test_report_reports_error_on_invalid_metric_name
+  # TODO: reports error on missing app id
+
+  test 'report reports error on invalid metric name' do
     post '/transactions.xml',
        :provider_key => @provider_key,
-       :transactions => {0 => {:app_id => @application_id, :usage => {'nukes' => 1}}}
+       :transactions => {0 => {:app_id => @application.id, :usage => {'nukes' => 1}}}
 
     assert_equal 202, last_response.status
 
@@ -160,10 +161,10 @@ class TransactionsReportTest < Test::Unit::TestCase
     assert_equal 'metric "nukes" is invalid', error[:message]
   end
 
-  def test_report_reports_error_on_empty_usage_value
+  test 'report reports error on empty usage value' do
     post '/transactions.xml',
        :provider_key => @provider_key,
-       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => ' '}}}
+       :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => ' '}}}
 
     assert_equal 202, last_response.status
 
@@ -176,10 +177,10 @@ class TransactionsReportTest < Test::Unit::TestCase
     assert_equal %Q(usage value for metric "hits" can't be empty), error[:message]
   end
 
-  def test_report_reports_error_on_invalid_usage_value
+  test 'report reports error on invalid usage value' do
     post '/transactions.xml',
        :provider_key => @provider_key,
-       :transactions => {0 => {:app_id => @application_id,
+       :transactions => {0 => {:app_id => @application.id,
                                :usage  => {'hits' => 'tons!'}}}
 
     assert_equal 202, last_response.status
@@ -193,27 +194,27 @@ class TransactionsReportTest < Test::Unit::TestCase
     assert_equal 'usage value "tons!" for metric "hits" is invalid', error[:message]
   end
 
-  def test_report_does_not_aggregate_anything_when_at_least_one_transaction_is_invalid
+  test 'report does not aggregate anything when at least one transaction is invalid' do
     post '/transactions.xml',
        :provider_key => @provider_key,
-       :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}},
+       :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
                          1 => {:app_id => 'boo',           :usage => {'hits' => 1}}}
 
     Resque.run!
 
-    key = application_key(@service_id, @application_id, @metric_id,
+    key = application_key(@service_id, @application.id, @metric_id,
                           :month, Time.now.strftime('%Y%m01'))
     assert_nil @storage.get(key)
   end
 
-  def test_report_does_not_archive_anything_when_at_least_one_transaction_is_invalid
+  test 'report does not archive anything when at least one transaction is invalid' do
     path = configuration.archiver.path
     FileUtils.rm_rf(path)
 
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}},
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
                           1 => {:app_id => 'foo',     :usage => {'hits' => 1}}}
 
       Resque.run!
@@ -222,43 +223,43 @@ class TransactionsReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_report_succeeds_when_application_is_not_active
-    application = Application.load(@service_id, @application_id)
+  test 'report succeeds when application is not active' do
+    application = Application.load(@service_id, @application.id)
     application.state = :suspended
     application.save
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
   end
 
-  def test_report_succeeds_when_client_usage_limits_are_exceeded
+  test 'report succeeds when client usage limits are exceeded' do
     UsageLimit.save(:service_id => @service_id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
                     :month      => 2)
 
     Transactor.report(@provider_key,
-                      '0' => {'app_id' => @application_id, 'usage' => {'hits' => 2}})
+                      '0' => {'app_id' => @application.id, 'usage' => {'hits' => 2}})
 
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
 
     Resque.run!
 
     assert_equal 3, @storage.get(
-      application_key(@service_id, @application_id, @metric_id, :month,
+      application_key(@service_id, @application.id, @metric_id, :month,
                       Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
   end
 
-  def test_report_succeeds_when_provider_usage_limits_are_exceeded
+  test 'report succeeds when provider usage limits are exceeded' do
     UsageLimit.save(:service_id => @master_service_id,
                     :plan_id    => @master_plan_id,
                     :metric_id  => @master_hits_id,
@@ -266,30 +267,85 @@ class TransactionsReportTest < Test::Unit::TestCase
 
     3.times do
       Transactor.report(@provider_key,
-                        '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
+                        '0' => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
     end
 
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
 
     Resque.run!
 
     assert_equal 4, @storage.get(
-      application_key(@service_id, @application_id, @metric_id, :month,
+      application_key(@service_id, @application.id, @metric_id, :month,
                       Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
   end
 
+  test 'report succeeds when valid legacy user key passed' do
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application.id)
 
-  def test_successful_report_aggregates_backend_hit
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:user_key => user_key, :usage => {'hits' => 1}}}
+
+    assert_equal 202, last_response.status
+
+    Resque.run!
+
+    key = application_key(@service_id, @application.id, @metric_id, :month,
+                          Time.now.getutc.beginning_of_cycle(:month).to_compact_s)
+    assert_equal 1, @storage.get(key).to_i
+  end
+
+  test 'report reports error on invalid legacy user key' do
+    Application.save_id_by_key(@service_id, 'foobar', @application.id)
+
+    post '/transactions.xml',
+       :provider_key => @provider_key,
+       :transactions => {0 => {:user_key => 'inyourface', :usage => {'hits' => 1}}}
+
+    assert_equal 202, last_response.status
+
+    Resque.run!
+
+    error = ErrorStorage.list(@service_id).last
+
+    assert_not_nil error
+    assert_equal 'user_key_invalid', error[:code]
+    assert_equal 'user key "inyourface" is invalid', error[:message]
+  end
+
+  test 'report reports error when both application id and legacy user key are used' do
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application.id)
+
+    post '/transactions.xml',
+       :provider_key => @provider_key,
+       :transactions => {0 => {:app_id   => @application.id,
+                               :user_key => user_key,
+                               :usage    => {'hits' => 1}}}
+
+    assert_equal 202, last_response.status
+
+    Resque.run!
+
+    error = ErrorStorage.list(@service_id).last
+
+    assert_not_nil error
+    assert_equal 'authentication_error', error[:code]
+    assert_equal 'either app_id or user_key is allowed, not both', error[:message]
+  end
+
+  test 'successful report aggregates backend hit' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
       Resque.run!
 
@@ -305,13 +361,13 @@ class TransactionsReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_successful_report_aggregates_number_of_transactions
+  test 'successful report aggregates number of transactions' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}},
-                          1 => {:app_id => @application_id, :usage => {'hits' => 1}},
-                          2 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
       Resque.run!
 
@@ -322,15 +378,15 @@ class TransactionsReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_successful_report_archives_backend_hit
+  test 'successful report archives backend hit' do
     path = configuration.archiver.path
     FileUtils.rm_rf(path)
 
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}},
-                          1 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
       Resque.run!
 
@@ -348,11 +404,11 @@ class TransactionsReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_report_with_invalid_provider_key_does_not_report_backend_hit
+  test 'report with invalid provider key does not report backend hit' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => 'boo',
-        :transactions => {0 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -361,7 +417,7 @@ class TransactionsReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_report_with_invalid_transaction_reports_backend_hit
+  test 'report with invalid transaction reports backend hit' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
@@ -376,12 +432,12 @@ class TransactionsReportTest < Test::Unit::TestCase
     end
   end
 
-  def test_report_with_invalid_transaction_reports_number_of_all_transactions
+  test 'report with invalid transaction reports number of all transactions' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => 'baa',           :usage => {'hits' => 1}},
-                          1 => {:app_id => @application_id, :usage => {'hits' => 1}}}
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
       Resque.run!
 

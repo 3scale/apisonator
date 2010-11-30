@@ -41,6 +41,7 @@ module ThreeScale
     autoload :ApplicationKeyInvalid,  '3scale/backend/errors'
     autoload :ApplicationNotActive,   '3scale/backend/errors'
     autoload :ApplicationNotFound,    '3scale/backend/errors'
+    autoload :AuthenticationError,    '3scale/backend/errors'
     autoload :Error,                  '3scale/backend/errors'
     autoload :Invalid,                '3scale/backend/errors'
     autoload :LimitsExceeded,         '3scale/backend/errors'
@@ -52,6 +53,7 @@ module ThreeScale
     autoload :ReferrerNotAllowed,     '3scale/backend/errors'
     autoload :UnsupportedApiVersion,  '3scale/backend/errors'
     autoload :UsageValueInvalid,      '3scale/backend/errors'
+    autoload :UserKeyInvalid,         '3scale/backend/errors'
   end
 
   module Core

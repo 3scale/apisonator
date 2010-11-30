@@ -16,12 +16,10 @@ module ThreeScale
         def self.parse_transactions(service_id, raw_transactions)
           transactions = []
 
-          group_by_application_id(raw_transactions) do |application_id, grouped_transactions|
-            check_application(service_id, application_id)
-
+          group_by_application_id(service_id, raw_transactions) do |application_id, group|
             metrics  = Metric.load_all(service_id)
 
-            grouped_transactions.each do |raw_transaction|
+            group.each do |raw_transaction|
               transactions << {
                 :service_id     => service_id,
                 :application_id => application_id,
@@ -33,17 +31,11 @@ module ThreeScale
           transactions
         end
 
-        def self.group_by_application_id(transactions, &block)
+        def self.group_by_application_id(service_id, transactions, &block)
           transactions = transactions.values if transactions.respond_to?(:values)
           transactions.group_by do |transaction|
-            transaction['app_id']
+            Application.extract_id!(service_id, transaction['app_id'], transaction['user_key'])
           end.each(&block)
-        end
-
-        def self.check_application(service_id, application_id)
-          unless Application.exists?(service_id, application_id)
-            raise ApplicationNotFound, application_id 
-          end
         end
       end
     end

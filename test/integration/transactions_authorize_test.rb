@@ -128,6 +128,13 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
                           :message => 'application with id="boo" was not found'
   end
 
+  test 'fails on missing application id' do
+    get '/transactions/authorize.xml', :provider_key => @provider_key
+
+    assert_error_response :status  => 404,
+                          :code    => 'application_not_found'
+  end
+
   test 'does not authorize on inactive application' do
     @application.state = :suspended
     @application.save
@@ -346,12 +353,43 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
-
-    assert_equal 200,                               last_response.status
-    assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
+    assert_authorized last_response
   end
 
-  # Legacy authentication support
+  # Legacy authentication
+
+  test 'succeeds when valid legacy user key passed' do
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application.id)
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :user_key     => user_key
+    assert_authorized last_response
+  end
+
+  test 'fails on invalid legacy user key passed' do
+    Application.save_id_by_key(@service_id, 'foobar', @application.id)
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :user_key     => 'biteme'
+
+    assert_error_response :code    => 'user_key_invalid',
+                          :message => 'user key "biteme" is invalid'
+  end
+
+  test 'fails when both application_id and legacy user key are passed' do
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application.id)
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :user_key     => user_key
+
+    assert_error_response :code    => 'authentication_error',
+                          :message => 'either app_id or user_key is allowed, not both'
+  end
+
+  # Backend hitting
 
   test 'successful authorize reports backend hit' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do

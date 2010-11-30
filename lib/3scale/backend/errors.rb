@@ -32,58 +32,58 @@ module ThreeScale
     class ApplicationKeyInvalid < Error
       def initialize(key)
         if key.blank?
-          super %Q(application key is missing)
+          super %(application key is missing)
         else
-          super %Q(application key "#{key}" is invalid)
+          super %(application key "#{key}" is invalid)
         end
       end
     end
-    
+
     class ApplicationNotFound < NotFound
-      def initialize(id)
-        super %Q(application with id="#{id}" was not found)
+      def initialize(id = nil)
+        super %(application with id="#{id}" was not found)
       end
     end
 
     class ApplicationNotActive < Error
       def initialize
-        super %Q(application is not active)
+        super %(application is not active)
       end
     end
 
     class LimitsExceeded < Error
       def initialize
-        super %Q(usage limits are exceeded)
+        super %(usage limits are exceeded)
       end
     end
 
     class ProviderKeyInvalid < Error
       def initialize(key)
-        super %Q(provider key "#{key}" is invalid)
+        super %(provider key "#{key}" is invalid)
       end
     end
 
     class MetricInvalid < Error
       def initialize(metric_name)
-        super %Q(metric "#{metric_name}" is invalid)
+        super %(metric "#{metric_name}" is invalid)
       end
     end
-    
+
     class ReferrerFilterInvalid < Invalid
     end
-    
+
     class ReferrerFiltersMissing < Error
       def initialize
         super 'referrer filters are missing'
       end
     end
-    
+
     class ReferrerNotAllowed < Error
       def initialize(referrer)
         if referrer.blank?
-          super %Q(referrer is missing)
+          super %(referrer is missing)
         else
-          super %Q(referrer "#{referrer}" is not allowed)
+          super %(referrer "#{referrer}" is not allowed)
         end
       end
     end
@@ -91,14 +91,28 @@ module ThreeScale
     class UsageValueInvalid < Error
       def initialize(metric_name, value)
         if value.blank?
-          super %Q(usage value for metric "#{metric_name}" can't be empty)
+          super %(usage value for metric "#{metric_name}" can't be empty)
         else
-          super %Q(usage value "#{value}" for metric "#{metric_name}" is invalid)
+          super %(usage value "#{value}" for metric "#{metric_name}" is invalid)
         end
       end
     end
 
     class UnsupportedApiVersion < Error
+    end
+
+    # Legacy API support
+
+    class AuthenticationError < Error
+      def initialize
+        super %(either app_id or user_key is allowed, not both)
+      end
+    end
+
+    class UserKeyInvalid < Error
+      def initialize(key)
+        super %(user key "#{key}" is invalid)
+      end
     end
   end
 end

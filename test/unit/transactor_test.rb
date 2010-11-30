@@ -11,48 +11,46 @@ class TransactorTest < Test::Unit::TestCase
 
     setup_provider_fixtures
 
-    @application_id_one = next_id
-    Application.save(:service_id => @service_id,
-                     :id => @application_id_one,
-                     :state => :active,
-                     :plan_id => @plan_id,
-                     :plan_name => @plan_name)
+    @application_one = Application.save(:service_id => @service_id,
+                                        :id         => next_id,
+                                        :state      => :active,
+                                        :plan_id    => @plan_id,
+                                        :plan_name  => @plan_name)
 
-    @application_id_two = next_id
-    Application.save(:service_id => @service_id,
-                     :id => @application_id_two,
-                     :state => :active,
-                     :plan_id => @plan_id,
-                     :plan_name => @plan_name)
+    @application_two = Application.save(:service_id => @service_id,
+                                        :id         => next_id,
+                                        :state      => :active,
+                                        :plan_id    => @plan_id,
+                                        :plan_name  => @plan_name)
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
   end
 
   test 'report queues transactions to report' do
-    Transactor.report(@provider_key, '0' => {'app_id' => @application_id_one,
+    Transactor.report(@provider_key, '0' => {'app_id' => @application_one.id,
                                              'usage'  => {'hits' => 1}},
-                                     '1' => {'app_id' => @application_id_two,
+                                     '1' => {'app_id' => @application_two.id,
                                              'usage'  => {'hits' => 1}})
 
     assert_queued Transactor::ReportJob,
                   [@service_id,
-                    {'0' => {'app_id' => @application_id_one, 'usage' => {'hits' => 1}},
-                     '1' => {'app_id' => @application_id_two, 'usage' => {'hits' => 1}}}]
+                    {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
+                     '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}}]
   end
 
   test 'report raises an exception when provider key is invalid' do
     assert_raise ProviderKeyInvalid do
-      Transactor.report('booo', '0' => {'app_id' => @application_id_one,
+      Transactor.report('booo', '0' => {'app_id' => @application_one.id,
                                         'usage'  => {'hits' => 1}})
     end
   end
 
   test 'report queues backend hit' do
     Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
-      Transactor.report(@provider_key, '0' => {'app_id' => @application_id_one,
+      Transactor.report(@provider_key, '0' => {'app_id' => @application_one.id,
                                                'usage'  => {'hits' => 1}},
-                                       '1' => {'app_id' => @application_id_two,
+                                       '1' => {'app_id' => @application_two.id,
                                                'usage'  => {'hits' => 1}})
 
       assert_queued Transactor::NotifyJob,
@@ -64,7 +62,7 @@ class TransactorTest < Test::Unit::TestCase
   end
 
   test 'authorize returns status object with the plan name' do
-    status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
+    status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
     assert_not_nil status
     assert_equal @plan_name, status.plan_name
@@ -79,21 +77,21 @@ class TransactorTest < Test::Unit::TestCase
 
     Timecop.freeze(Time.utc(2010, 5, 13)) do
       Transactor.report(@provider_key,
-                        0 => {'app_id' => @application_id_one,
+                        0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 3}})
       Resque.run!
     end
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       Transactor.report(@provider_key,
-                        0 => {'app_id' => @application_id_one,
+                        0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 2}})
       Resque.run!
     end
 
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
+      status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
       assert_equal 2, status.usage_reports.count
 
       report_month = status.usage_reports.find { |report| report.period == :month }
@@ -111,13 +109,13 @@ class TransactorTest < Test::Unit::TestCase
   end
 
   test 'authorize returns status object without usage reports if the plan has no usage limits' do
-    status = Transactor.authorize(@provider_key, :app_id => @application_id_one)
+    status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
     assert_equal 0, status.usage_reports.count
   end
 
   test 'authorize raises an exception when provider key is invalid' do
     assert_raise ProviderKeyInvalid do
-      Transactor.authorize('booo', @application_id_one)
+      Transactor.authorize('booo', @application_one.id)
     end
   end
 
@@ -127,9 +125,40 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
+  test 'authorize raises an exception when application id is missing' do
+    assert_raise ApplicationNotFound do
+      Transactor.authorize(@provider_key, {})
+    end
+  end
+
+  test 'authorize works with legacy user key' do
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application_one.id)
+
+    assert_not_nil Transactor.authorize(@provider_key, :user_key => user_key)
+  end
+
+  test 'authorize raises an exception when legacy user key is invalid' do
+    Application.save_id_by_key(@service_id, 'foobar', @application_one.id)
+
+    assert_raise UserKeyInvalid do
+      Transactor.authorize(@provider_key, :user_key => 'eatthis')
+    end
+  end
+
+  test 'authorize raises an exception when both application id and legacy user key are passed' do
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application_one.id)
+
+    assert_raise AuthenticationError do
+      Transactor.authorize(@provider_key, :app_id   => @application_one.id,
+                                          :user_key => user_key)
+    end
+  end
+
   test 'authorize queues backend hit' do
     Timecop.freeze(Time.utc(2010, 7, 29, 17, 9)) do
-      Transactor.authorize(@provider_key, :app_id => @application_id_one)
+      Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
