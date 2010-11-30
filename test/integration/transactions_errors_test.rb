@@ -1,31 +1,20 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class TransactionsErrorsTest < Test::Unit::TestCase
+  include TestHelpers::Fixtures
   include TestHelpers::Integration
-  include TestHelpers::MasterService
 
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
 
     Resque.reset!
-    
-    setup_master_service
 
-    @master_plan_id = next_id
-    @provider_application_id = next_id
-    @provider_key = 'provider_key'
-    Application.save(:service_id => @master_service_id, 
-                     :id => @provider_application_id, 
-                     :state => :active,
-                     :plan_id => @master_plan_id)
-
-    @service_id = next_id
-    Core::Service.save(:provider_key => @provider_key, :id => @service_id)
+    setup_provider_fixtures
   end
 
   test 'OPTION /transactions/errors.xml returns GET and DELETE' do
-    request "/transactions/errors.xml", 
+    request "/transactions/errors.xml",
       :method => 'OPTIONS',
       :params => {:provider_key => @provider_key}
 
@@ -70,25 +59,25 @@ class TransactionsErrorsTest < Test::Unit::TestCase
     # First page
     get "/transactions/errors.xml", :provider_key => @provider_key, :page => 1, :per_page => 3
     assert_equal 200, last_response.status
-    
+
     doc = Nokogiri::XML(last_response.body)
     assert_equal 3, doc.search('error').size
     assert_equal 'application_not_found', doc.search('error').first['code']
-    
+
 
     # Second page
     get "/transactions/errors.xml", :provider_key => @provider_key, :page => 2, :per_page => 3
     assert_equal 200, last_response.status
-    
+
     doc = Nokogiri::XML(last_response.body)
     assert_equal 3, doc.search('error').size
     assert_equal 'usage_value_invalid', doc.search('error').first['code']
-    
+
 
     # Third page
     get "/transactions/errors.xml", :provider_key => @provider_key, :page => 3, :per_page => 3
     assert_equal 200, last_response.status
-    
+
     doc = Nokogiri::XML(last_response.body)
     assert_equal 2, doc.search('error').size
     assert_equal 'metric_invalid', doc.search('error').first['code']
@@ -101,16 +90,16 @@ class TransactionsErrorsTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
     assert_equal 100, Nokogiri::XML(last_response.body).search('error').size
   end
-  
+
   test 'GET /transactions/errors.xml fails on invalid provider key' do
     get "/transactions/errors.xml", :provider_key => 'boo'
-   
+
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
   end
 
   test 'OPTION /transactions/errors/count.xml returns GET' do
-    request "/transactions/errors/count.xml", 
+    request "/transactions/errors/count.xml",
       :method => 'OPTIONS',
       :params => {:provider_key => @provider_key}
 
@@ -123,14 +112,14 @@ class TransactionsErrorsTest < Test::Unit::TestCase
 
     get "/transactions/errors/count.xml", :provider_key => @provider_key
     assert_equal 200, last_response.status
-    
+
     doc = Nokogiri::XML(last_response.body)
     assert_equal '5', doc.at('count').content
   end
-  
+
   test 'GET /transactions/errors/count.xml fails on invalid provider key' do
     get "/transactions/errors/count.xml", :provider_key => 'boo'
-   
+
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
   end
@@ -143,10 +132,10 @@ class TransactionsErrorsTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
     assert_equal [], ErrorStorage.list(@service_id)
   end
-  
+
   test 'DELETE /transactions/errors.xml fails on invalid provider key' do
     delete "/transactions/errors.xml", :provider_key => 'boo'
-   
+
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
   end

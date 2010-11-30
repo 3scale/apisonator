@@ -1,43 +1,28 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class TransactionsAuthorizeTest < Test::Unit::TestCase
+  include TestHelpers::Fixtures
   include TestHelpers::Integration
-  include TestHelpers::MasterService
   include TestHelpers::StorageKeys
-  
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
 
     Resque.reset!
 
-    setup_master_service
+    setup_provider_fixtures
 
-    @master_plan_id = next_id
-    @provider_key = 'provider_key'
-    @provider_application_id = next_id
-    Application.save(:service_id => @master_service_id, 
-                     :id => @provider_application_id, 
-                     :state => :active,
-                     :plan_id => @master_plan_id)
-    Application.save_id_by_key(@master_service_id, @provider_key, 
-                               @provider_application_id)
-
-    @service = Core::Service.save(:provider_key => @provider_key, :id => next_id)
-
-    @plan_id = next_id
-    @plan_name = 'kickass'
-
-    @application = Application.save(:service_id => @service.id, 
+    @application = Application.save(:service_id => @service.id,
                                     :id         => next_id,
-                                    :state      => :active, 
-                                    :plan_id    => @plan_id, 
+                                    :state      => :active,
+                                    :plan_id    => @plan_id,
                                     :plan_name  => @plan_name)
 
     @metric_id = next_id
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
   end
-    
+
   test 'successful authorize responds with 200' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
@@ -48,7 +33,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
   test 'successful authorize has custom content type' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
-    
+
     assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
 
@@ -68,7 +53,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_equal 'true', doc.at('status:root authorized').content
   end
 
-  def test_response_of_successful_authorize_contains_usage_reports_if_the_plan_has_usage_limits
+  test 'response of successful authorize contains usage reports if the plan has usage limits' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -91,17 +76,17 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
                                          :app_id     => @application.id
 
       doc = Nokogiri::XML(last_response.body)
-      
+
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      
+
       day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_not_nil day
       assert_equal '2010-05-15 00:00:00 +0000', day.at('period_start').content
       assert_equal '2010-05-16 00:00:00 +0000', day.at('period_end').content
       assert_equal '2',                         day.at('current_value').content
       assert_equal '100',                       day.at('max_value').content
-      
+
       month = usage_reports.at('usage_report[metric = "hits"][period = "month"]')
       assert_not_nil month
       assert_equal '2010-05-01 00:00:00 +0000', month.at('period_start').content
@@ -120,7 +105,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
                                          :app_id     => @application.id
 
       doc = Nokogiri::XML(last_response.body)
-      
+
       assert_nil doc.at('usage_reports')
     end
   end
@@ -175,7 +160,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
                     :month => 10, :day => 4)
-    
+
     Transactor.report(@provider_key,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
@@ -200,7 +185,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     assert_authorized last_response
   end
-  
+
   test 'succeeds if one application key is defined and the same one is passed' do
     application_key = @application.create_key
 
@@ -210,7 +195,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     assert_authorized last_response
   end
-  
+
   test 'succeeds if multiple application keys are defined and one of them is passed' do
     application_key_one = @application.create_key
     application_key_two = @application.create_key
@@ -230,7 +215,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     assert_not_authorized last_response, 'application key is missing'
   end
-  
+
   test 'does not authorize if application key is defined but wrong one is passed' do
     @application.create_key('foo')
 
@@ -249,7 +234,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     assert_authorized last_response
   end
-    
+
   test 'succeeds if simple domain filter is defined and matching referrer is passed' do
     @application.create_referrer_filter('example.org')
 
@@ -272,14 +257,14 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
   test 'succeeds if a referrer filter is defined but referrer is bypassed' do
     @application.create_referrer_filter('example.org')
-    
+
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id,
                                        :referrer     => '*'
 
     assert_authorized last_response
   end
-  
+
   test 'does not authorize if domain filter is defined but no referrer is passed' do
     @application.create_referrer_filter('example.org')
 
@@ -288,7 +273,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     assert_not_authorized last_response, 'referrer is missing'
   end
-  
+
   test 'does not authorize if simple domain filter is defined but referrer does not match' do
     @application.create_referrer_filter('foo.example.org')
 
@@ -298,7 +283,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     assert_not_authorized last_response, 'referrer "bar.example.org" is not allowed'
   end
-  
+
   test 'does not authorize if wildcard domain filter is defined but referrer does not match' do
     @application.create_referrer_filter('*.foo.example.org')
 
@@ -320,7 +305,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
     assert_authorized last_response
   end
-  
+
   test 'succeeds if referrer filters are required and defined' do
     @service.referrer_filters_required = true
     @service.save
@@ -345,7 +330,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
   end
 
   # ...
-  
+
   test 'succeeds on exceeded provider usage limits' do
     UsageLimit.save(:service_id => @master_service_id,
                     :plan_id    => @master_plan_id,
@@ -365,6 +350,8 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     assert_equal 200,                               last_response.status
     assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
+
+  # Legacy authentication support
 
   test 'successful authorize reports backend hit' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
@@ -430,7 +417,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     end
   end
 
-  def test_authorize_with_exceeded_usage_limits_reports_backend_hit
+  test 'authorize with exceeded usage limits reports backend hit' do
     UsageLimit.save(:service_id => @service_id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -463,7 +450,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id
-      
+
       Resque.run!
 
       content = File.read("#{path}/service-#{@master_service_id}/20100511.xml.part")
@@ -483,7 +470,7 @@ class TransactionsAuthorizeTest < Test::Unit::TestCase
 
   def assert_authorized(response)
     assert_equal 200, response.status
-    
+
     doc = Nokogiri::XML(response.body)
     assert_equal 'true', doc.at('status authorized').content
   end

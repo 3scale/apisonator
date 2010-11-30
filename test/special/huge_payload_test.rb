@@ -3,28 +3,19 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 # Use the HUGE_PAYLOAD_SIZE env variable to define the size of the payload (number of transaction in it). Default is 10000.
 
 class HugePayloadTest < Test::Unit::TestCase
+  include TestHelpers::Fixtures
   include TestHelpers::Integration
-  include TestHelpers::MasterService
 
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
 
-    setup_master_service
-
-    @provider_key = 'provider_key'
-    Application.save(:id         => @provider_key,
-                     :service_id => @master_service_id, 
-                     :state      => :active)
-
-    @service_id = next_id
-    Core::Service.save(:provider_key => @provider_key, :id => @service_id)
+    setup_provider_fixtures
 
     @application_id = next_id
-    @plan_id = next_id
     Application.save(:id         => @application_id,
-                     :service_id => @service_id, 
-                     :plan_id    => @plan_id, 
+                     :service_id => @service_id,
+                     :plan_id    => @plan_id,
                      :state      => :active)
 
     @metric_id = next_id
@@ -34,7 +25,7 @@ class HugePayloadTest < Test::Unit::TestCase
   def test_report_handles_huge_payloads
     payload = generate_payload((ENV['HUGE_PAYLOAD_SIZE'] || 10000).to_i)
 
-    post '/transactions.xml', {}, :input           => payload, 
+    post '/transactions.xml', {}, :input           => payload,
                                   'CONTENT_TYPE'   => 'application/x-www-form-urlencoded',
                                   'CONTENT_LENGTH' => payload.bytesize
 
