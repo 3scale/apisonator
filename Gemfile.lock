@@ -8,7 +8,7 @@ PATH
       rack (~> 1.1)
       rack-rest_api_versioning
       rack_hoptoad (~> 0.1)
-      redis (= 2.0.13)
+      redis (= 2.1.1)
       resque (~> 1.9)
       sinatra (~> 1.0)
       thin (~> 1.2)
@@ -40,7 +40,7 @@ GEM
       rack
       toadhopper (~> 1.0.1)
     rake (0.8.7)
-    redis (2.0.13)
+    redis (2.1.1)
     redis-namespace (0.8.0)
       redis (< 3.0.0)
     resque (1.10.0)
@@ -79,7 +79,7 @@ DEPENDENCIES
   rack-rest_api_versioning
   rack-test
   rack_hoptoad (~> 0.1)
-  redis (= 2.0.13)
+  redis (= 2.1.1)
   resque (~> 1.9)
   resque_unit (= 0.2.7)
   sinatra (~> 1.0)

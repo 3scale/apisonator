@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.add_dependency '3scale_core',             '>= 0.2.7'
   s.add_dependency 'aws-s3',                  '~> 0.6'
   s.add_dependency 'builder',                 '~> 2.1'
-  s.add_dependency 'redis',                   '2.0.13'
+  s.add_dependency 'redis',                   '2.1.1'
   s.add_dependency 'resque',                  '~> 1.9'
   s.add_dependency 'rack',                    '~> 1.1'
   s.add_dependency 'rack_hoptoad',            '~> 0.1'

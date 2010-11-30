@@ -1,4 +1,5 @@
 pkg
+.bundle
 
 lib/3scale/core
 lib/3scale/core.rb

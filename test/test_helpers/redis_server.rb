@@ -44,6 +44,7 @@ port #{port}
 databases 1
 dbfilename test-dump-#{port}.rdb
 dir /tmp/
+save 1 1
 END
 
       path = "/tmp/test-redis-#{port}.conf"
@@ -62,7 +63,7 @@ END
 
       STDOUT.reopen('/dev/null')
       STDOUT.sync = true
-      
+
       STDERR.reopen('/dev/null')
       STDERR.sync = true
 

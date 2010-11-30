@@ -4,7 +4,7 @@ module ThreeScale
       include Configurable
 
       # Returns a shared instance of the storage. If there is no instance yet,
-      # creates one first. If you want to always create a fresh instance, set the 
+      # creates one first. If you want to always create a fresh instance, set the
       # +reset+ parameter to true.
       def self.instance(reset = false)
         @@instance = nil if reset
@@ -24,7 +24,7 @@ module ThreeScale
       module Failover
         DEFAULT_SERVER = '127.0.0.1:6379'
         DEFAULT_BACKUP_FILE = '/tmp/3scale_backend/backup_storage'
-      
+
         READ_COMMANDS = [
           :exists,
           :type,
@@ -72,14 +72,14 @@ module ThreeScale
           :info,
 
           # This is not a typical read command, but it's definitelly not write.
-          :select        
+          :select
         ].to_set
 
         def initialize(options)
           @servers      = options[:servers] || []
           @server_index = 0
           @backup_file  = options[:backup_file] || DEFAULT_BACKUP_FILE
-      
+
           host, port = host_and_port(@servers.first || DEFAULT_SERVER)
           super(:host => host, :port => port, :db => options[:db])
         end
@@ -126,7 +126,7 @@ module ThreeScale
         end
 
         private
-        
+
         def write_to_backup(*commands)
           FileUtils.mkdir_p(File.dirname(@backup_file))
 
@@ -140,15 +140,11 @@ module ThreeScale
         end
 
         def write_to_socket(*commands)
-          if Redis::VERSION.to_f < 2.1
-            @sock.write(join_commands(commands))
-          else
-            commands.each do |command|
-              connection.write(command)
-            end
+          commands.each do |command|
+            connection.write(command)
           end
         end
-    
+
         def next_server!
           return false if @server_index >= @servers.count - 1
 
@@ -159,14 +155,14 @@ module ThreeScale
         def current_server
           @servers[@server_index]
         end
-      
+
         def host_and_port(server)
           host, port = server.split(':')
           port       = port.to_i
 
           [host, port]
         end
-      
+
         def write_command?(command)
           !READ_COMMANDS.include?(command.first.to_sym)
         end
@@ -174,11 +170,11 @@ module ThreeScale
         def connected_to_backup_server?
           @server_index > 0
         end
-      
+
         def encode_command_for_backup(command)
           command.map(&:to_s).map(&:escape_whitespaces).join(' ')
         end
-      
+
         def decode_command_for_backup(command)
           command.split(/\s+/).map(&:unescape_whitespaces)
         end
