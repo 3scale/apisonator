@@ -12,7 +12,7 @@ module Validators
                                       :id         => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(nil, @application, {})
+      @status = Transactor::Status.new(:application => @application)
     end
 
     test 'succeeds when application is active' do

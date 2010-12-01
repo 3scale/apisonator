@@ -7,7 +7,7 @@ module ThreeScale
             @parent      = parent
             @usage_limit = usage_limit
           end
-        
+
           def metric_name
             @usage_limit.metric_name
           end
@@ -29,7 +29,7 @@ module ThreeScale
           end
 
           def current_value
-            @parent.current_value_for_usage_limit(@usage_limit)
+            @parent.value_for_usage_limit(@usage_limit)
           end
 
           def exceeded?
@@ -44,17 +44,18 @@ module ThreeScale
           end
         end
 
-        def initialize(service, application, current_values, timestamp = Time.now.getutc)
-          @service        = service
-          @application    = application or raise 'application is required'
-          @timestamp      = timestamp
-          @current_values = current_values
-          @authorized     = true
+        def initialize(attributes = {})
+          @service     = attributes[:service]
+          @application = attributes[:application] or raise ':application is required'
+          @values      = attributes[:values] || {}
+          @timestamp   = attributes[:timestamp] || Time.now.getutc
+          @authorized  = true
         end
 
         attr_reader :service
         attr_reader :application
-        attr_reader :current_values
+        attr_reader :values
+        attr_reader :predicted_values
 
         def reject!(error)
           @authorized = false
@@ -78,8 +79,8 @@ module ThreeScale
           @usage_report ||= load_usage_reports
         end
 
-        def current_value_for_usage_limit(usage_limit)
-          values = @current_values[usage_limit.period]
+        def value_for_usage_limit(usage_limit)
+          values = @values[usage_limit.period]
           values && values[usage_limit.metric_id] || 0
         end
 

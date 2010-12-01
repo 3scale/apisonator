@@ -12,17 +12,17 @@ module Validators
                                       :id         => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(nil, @application, {})
+      @status = Transactor::Status.new(:application => @application)
     end
 
     test 'succeeds if no referrer filter is defined and no referrer is passed' do
       assert Referrer.apply(@status, {})
     end
-  
+
     test 'succeeds if no referrer filter is defined and blank referrer is passed' do
       assert Referrer.apply(@status, :referrer => '')
     end
-    
+
     test 'succeeds if simple domain filter is defined and matching referrer is passed' do
       @application.create_referrer_filter('example.org')
       assert Referrer.apply(@status, :referrer => 'example.org')
@@ -35,7 +35,7 @@ module Validators
       assert Referrer.apply(@status, :referrer => 'bar.example.org')
       assert Referrer.apply(@status, :referrer => 'foo.bar.example.org')
     end
-    
+
     test 'succeeds if simple ip filter is defined and matching referrer is passed' do
       @application.create_referrer_filter('127.0.0.1')
       assert Referrer.apply(@status, :referrer => '127.0.0.1')
@@ -57,7 +57,7 @@ module Validators
 
     test 'fails if simple domain filter is defined but non-matching referrer is passed' do
       @application.create_referrer_filter('foo.example.org')
-      
+
       assert !Referrer.apply(@status, :referrer => 'bar.example.org')
 
       assert_equal 'referrer_not_allowed',                      @status.rejection_reason_code
@@ -70,7 +70,7 @@ module Validators
       assert !Referrer.apply(@status, :referrer => 'foo.example.com')
       assert !Referrer.apply(@status, :referrer => 'example.org')
     end
-    
+
     test 'fails if simple ip filter is defined but non-matching referrer is passed' do
       @application.create_referrer_filter('127.0.0.1')
       assert !Referrer.apply(@status, :referrer => '127.0.0.2')
@@ -78,7 +78,7 @@ module Validators
 
     test 'dot in a filter matches only dot' do
       @application.create_referrer_filter('fo.example.org')
-      
+
       assert !Referrer.apply(@status, :referrer => 'forexample.org')
     end
 
@@ -89,7 +89,7 @@ module Validators
 
       assert !Referrer.apply(@status, :referrer => 'bar.example.org')
       assert !Referrer.apply(@status, :referrer => 'baz.example.org')
-      
+
       assert  Referrer.apply(@status, :referrer => 'ba[rz].example.org')
     end
 

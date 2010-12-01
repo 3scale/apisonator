@@ -11,9 +11,10 @@ module Validators
       @service     = Service.save(:provider_key => 'foobar', :id => next_id)
       @application = Application.save(:service_id => @service.id,
                                       :id         => next_id,
-                                      :state => :active)
+                                      :state      => :active)
 
-      @status = Transactor::Status.new(@service, @application, {})
+      @status = Transactor::Status.new(:service     => @service,
+                                       :application => @application)
     end
 
     test 'succeeds when referrer filters are not required' do

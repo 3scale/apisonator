@@ -8,7 +8,7 @@ module Transactor
     def setup
       @storage = Storage.instance(true)
       @storage.flushdb
-      
+
       @service_id     = next_id
       @plan_id        = next_id
       @application_id = next_id
@@ -21,8 +21,8 @@ module Transactor
                                         :plan_id    => @plan_id,
                                         :plan_name  => @plan_name)
 
-      Metric.save(:service_id => @service_id, 
-                  :id         => @metric_id, 
+      Metric.save(:service_id => @service_id,
+                  :id         => @metric_id,
                   :name       => 'foos')
     end
 
@@ -36,7 +36,8 @@ module Transactor
       usage = {:month => {@metric_id.to_s => 429}}
 
       Timecop.freeze(time) do
-        status = Transactor::Status.new(nil, @application, usage)
+        status = Transactor::Status.new(:application => @application,
+                                        :values      => usage)
 
         assert_equal 1, status.usage_reports.count
 
@@ -57,11 +58,12 @@ module Transactor
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 2002}}
-      status = Transactor::Status.new(nil, @application, usage)
+      status = Transactor::Status.new(:application => @application,
+                                      :values      => usage)
 
       assert status.usage_reports.first.exceeded?
     end
-    
+
     test 'usage report is not marked as exceeded when current value is less than max value' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
@@ -69,11 +71,12 @@ module Transactor
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 1999}}
-      status = Transactor::Status.new(nil, @application, usage)
+      status = Transactor::Status.new(:application => @application,
+                                      :values      => usage)
 
       assert !status.usage_reports.first.exceeded?
     end
-    
+
     test 'usage report is not marked as exceeded when current value equals max value' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
@@ -81,25 +84,26 @@ module Transactor
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 2000}}
-      status = Transactor::Status.new(nil, @application, usage)
+      status = Transactor::Status.new(:application => @application,
+                                      :values      => usage)
 
       assert !status.usage_reports.first.exceeded?
     end
 
     test '#authorized? returns true by default' do
-      status = Transactor::Status.new(nil, @application, {})
+      status = Transactor::Status.new(:application => @application)
       assert status.authorized?
     end
 
     test '#authorized? returns false when rejected' do
-      status = Transactor::Status.new(nil, @application, {})
+      status = Transactor::Status.new(:application => @application)
       status.reject!(ApplicationNotActive.new)
 
       assert !status.authorized?
     end
-    
+
     test 'status contains rejection reason when rejected' do
-      status = Transactor::Status.new(nil, @application, {})
+      status = Transactor::Status.new(:application => @application)
       status.reject!(ApplicationNotActive.new)
 
       assert_equal 'application_not_active',    status.rejection_reason_code
@@ -107,10 +111,10 @@ module Transactor
     end
 
     test 'rejection reason can be set only once' do
-      status = Transactor::Status.new(nil, @application, {})
+      status = Transactor::Status.new(:application => @application)
       status.reject!(ApplicationNotActive.new)
       status.reject!(LimitsExceeded.new)
-      
+
       assert_equal 'application_not_active', status.rejection_reason_code
     end
 
@@ -124,10 +128,11 @@ module Transactor
       usage = {:month => {@metric_id.to_s => 429}}
 
       Timecop.freeze(time) do
-        xml = Transactor::Status.new(nil, @application, usage).to_xml
+        xml = Transactor::Status.new(:application => @application,
+                                     :values      => usage).to_xml
         doc = Nokogiri::XML(xml)
-        
-        root = doc.at('status:root')        
+
+        root = doc.at('status:root')
         assert_not_nil root
 
         assert_equal 'true',     root.at('authorized').content
@@ -146,18 +151,20 @@ module Transactor
     end
 
     test '#to_xml does not serialize empty usage reports' do
-      usage = {:month => {@metric_id.to_s => 429}}
+      usage  = {:month => {@metric_id.to_s => 429}}
+      status = Transactor::Status.new(:application => @application,
+                                      :values      => usage)
 
-      xml = Transactor::Status.new(nil, @application, usage).to_xml
-      doc = Nokogiri::XML(xml)
+      doc = Nokogiri::XML(status.to_xml)
 
-      assert_nil doc.at('status usage_reports')        
+      assert_nil doc.at('status usage_reports')
     end
 
     test '#to_xml on rejected status' do
       usage = {:month => {@metric_id.to_s => 429}}
 
-      status = Transactor::Status.new(nil, @application, usage)
+      status = Transactor::Status.new(:application => @application,
+                                      :values      => usage)
       status.reject!(ApplicationNotActive.new)
 
       doc = Nokogiri::XML(status.to_xml)
@@ -172,12 +179,13 @@ module Transactor
                       :metric_id  => @metric_id,
                       :month => 2000, :day => 100)
 
-      usage = {:month => {@metric_id.to_s => 1420},
-               :day   => {@metric_id.to_s => 122}}
+      usage  = {:month => {@metric_id.to_s => 1420},
+                :day   => {@metric_id.to_s => 122}}
+      status = Transactor::Status.new(:application => @application,
+                                      :values      => usage)
 
-      xml = Transactor::Status.new(nil, @application, usage).to_xml
-      doc = Nokogiri::XML(xml)
-     
+      doc = Nokogiri::XML(status.to_xml)
+
       month  = doc.at('usage_report[metric = "foos"][period = "month"]')
       day    = doc.at('usage_report[metric = "foos"][period = "day"]')
 

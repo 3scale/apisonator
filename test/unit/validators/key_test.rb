@@ -12,13 +12,13 @@ module Validators
                                       :id         => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(nil, @application, {})
+      @status = Transactor::Status.new(:application => @application)
     end
 
     test 'succeeds if no application key is defined nor passed' do
       assert Key.apply(@status, {})
     end
-  
+
     test 'succeeds if no application key is defined and blank one is passed' do
       assert Key.apply(@status, :app_key => '')
     end
@@ -38,16 +38,16 @@ module Validators
 
     test 'fails if application key is defined but not passed' do
       @application.create_key
-      
+
       assert !Key.apply(@status, {})
 
       assert_equal 'application_key_invalid',    @status.rejection_reason_code
       assert_equal 'application key is missing', @status.rejection_reason_text
     end
-    
+
     test 'fails if invalid application key is passed' do
       @application.create_key('foo')
-      
+
       assert !Key.apply(@status, :app_key => 'bar')
 
       assert_equal 'application_key_invalid',          @status.rejection_reason_code

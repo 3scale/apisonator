@@ -34,7 +34,9 @@ module ThreeScale
                                                           params[:user_key])
         usage       = load_current_usage(application)
 
-        Status.new(service, application, usage).tap do |status|
+        Status.new(:service     => service,
+                   :application => application,
+                   :values      => usage).tap do |status|
           VALIDATORS.all? { |validator| validator.apply(status, params) }
         end
       end
@@ -47,6 +49,9 @@ module ThreeScale
 
       def encode_time(time)
         time.to_s
+      end
+
+      def parse_predicted_usage(service, usage)
       end
 
       def load_current_usage(application)
