@@ -1,14 +1,14 @@
 API version 2.0 (the documentation for the previous version is <a href="/support/api-service-management-v1-1/">here</a>).
 
 The other way to integrate your API with our API Management solution is to use the 3scale REST API for authenticating calls and reporting usage.
-<hr />
+
 <h3>Documentation</h3>
+
 This document describes the protocol used for your API to communicate with 3scale backend server for authorizing and reporting transactions between your infrastructure and your API users.
-<hr />
 
 <h3>Definitions</h3>
 
-<dl class="def">
+<dl>
   <dt>service</dt>
   <dd>any web service implementing an API</dd>
   
@@ -37,13 +37,9 @@ This document describes the protocol used for your API to communicate with 3scal
   <dd>Secret key for authenticating transactions.</dd> 
 </dl>
 
-<hr />
-
 <h3>Operations</h3>
 
 The API exposes a simple REST-based interface that provides these operations: <strong>authorize</strong>, and <strong>report</strong>.
-
-<hr />
 
 <h4>AUTHORIZE</h4>
 
@@ -51,9 +47,9 @@ Read-only operation tho authorize an application. It is used to check if a parti
 
 <code class="http"><pre>GET /transactions/authorize.xml?app_id={app_id}&amp;provider_key={provider_key}[&amp;app_key={app_key}]</pre></code>
 
-<h5 class="sub">Parameters</h5>
+<h5>Parameters</h5>
 
-<dl class="def">
+<dl>
   <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
   <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
   <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd> 
@@ -65,18 +61,18 @@ Read-only operation tho authorize an application. It is used to check if a parti
 
 It's possible to pass a "predicted usage" to the authorize call. This can serve two purposes: 
 
-1) To make sure an API call won't go over the limits before the call is make, if the usage spend by the call is known in advance. In this case, the estimated usage can be passed to the authorize call,
-and it will respond whether the actual API call is still within limit. In other words, without the <var>usage</var> parameter, authorize only checks the usage that has already been reported. If the <var>usage</var> parameter is passes in, it will check whether the already reported usage + the passed in predicted usage is still within limit.
+<ol>
+  <li>To make sure an API call won't go over the limits before the call is make, if the usage spend by the call is known in advance. In this case, the estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit. In other words, without the <var>usage</var> parameter, authorize only checks the usage that has already been reported. If the <var>usage</var> parameter is passes in, it will check whether the already reported usage + the passed in predicted usage is still within limit.</li>
 
-2) To limit the authorization only to a subset of metrics. If <var>usage</var> is passed in, only the metrics listed in it will be checked against the limits. For example: There are two metrics defined: <var>searches</var> and <var>updates</var>. <var>updates</var> are already over limit, but <var>searches</var> are not. In this case, the user should still be allowed to do a search call, but not an update one. To authorize this, pass <code>usage[searches]=1</code> to the authorize call.
+  <li>To limit the authorization only to a subset of metrics. If <var>usage</var> is passed in, only the metrics listed in it will be checked against the limits. For example: There are two metrics defined: <var>searches</var> and <var>updates</var>. <var>updates</var> are already over limit, but <var>searches</var> are not. In this case, the user should still be allowed to do a search call, but not an update one. To authorize this, pass <code>usage[searches]=1</code> to the authorize call.</li>
+</ol>
 
 NOTE: Even if the predicted usage is passed in, authorize is still a read-only operation. You have to make the <strong>report</strong> call to report the usage.
 
 NOTE: <var>usage</var> is an associative array of the form <code>{metric : value}</code>. Please reffer to the "Encoding complex data structures in URLs" appendix for more info.
 
-<br class="clear" />
+<h5>Successful Response</h5>
 
-<h5 class="sub">Successful Response</h5>
 Has status code <code class="http">200 OK</code> and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit.
 
 Example of successful authorize response
@@ -101,10 +97,9 @@ Example of successful authorize response
       &lt;max_value&gt;1000&lt;/max_value&gt;
     &lt;/usage_report&gt;
   &lt;/usage_reports/&gt;
-&lt;/status&gt;</pre>
-</code>
+&lt;/status&gt;</pre></code>
 
-<hr />Example of failed authorize response (exceeded limits)<hr />
+Example of failed authorize response (exceeded limits)
 
 <code class="xml">
 <pre>&lt;status&gt;
@@ -132,50 +127,79 @@ Example of successful authorize response
 
 Explanation of the elements
 
-<dl class="def"> <dt><var>status</var></dt> <dd>Root element of the response.</dd> <dt><var>authorized</var></dt> <dd>Contains text "true" if the authorization was successful, or "false" if it failed.</dd> <dt><var>reason</var></dt> <dd>Human readable textual description of failure reason. This element appears only if <var>authorize</var> is false.</dd> <dt><var>plan</var></dt> <dd>Name of the plan the user is signed up to.</dd> <dt><var>usage_reports</var></dt> <dd>Contains list of <var>usage_report</var> elements - one per each usage limit defined for the plan the user is signed up to.</dd> <dt><var>usage_report</var></dt> <dd>Contains information about usage status. Contains these elements: <var>period_start</var>, <var>period_end</var>, <var>current_value</var> and <var>max_value</var>. Has attributes <var>metric</var> with the name of the metric the limit applies to, <var>period</var>, which is the period of the limit (year, month, week, day, hour, minute) and optionaly <var>exceeded</var> which is set to "true" if the limit is exceeded in the current period.</dd> <dt><var>period_start</var></dt> <dd>Start of the limit period. It's in the form <samp>YYYY-MM-DD HH:MM:SS +ZZ:ZZ</samp>. <samp>+ZZ:ZZ</samp> (or <samp>-ZZ:ZZ</samp>) is a time offset (in hours and minutes) from UTC.</dd> <dt><var>period_end</var></dt> <dd>End of the limit period. Same format as <var>period_start</var></dd> <dt><var>current_value</var></dt> <dd>Value of the corresponding metric accumulated so far in the current period.</dd> <dt><var>max_value</var></dt> <dd>Maximum value allowed by the usage limit.</dd> </dl>
-<hr />
+<dl>
+  <dt><var>status</var></dt>
+  <dd>Root element of the response.</dd>
+  
+  <dt><var>authorized</var></dt>
+  <dd>Contains text "true" if the authorization was successful, or "false" if it failed.</dd>
+  
+  <dt><var>reason</var></dt>
+  <dd>Human readable textual description of failure reason. This element appears only if <var>authorize</var> is false.</dd>
+  
+  <dt><var>plan</var></dt>
+  <dd>Name of the plan the user is signed up to.</dd>
+  
+  <dt><var>usage_reports</var></dt>
+  <dd>Contains list of <var>usage_report</var> elements - one per each usage limit defined for the plan the user is signed up to.</dd>
 
-<h5 class="sub">Errors</h5>
+  <dt><var>usage_report</var></dt>
+  <dd>Contains information about usage status. Contains these elements: <var>period_start</var>, <var>period_end</var>, <var>current_value</var> and <var>max_value</var>. Has attributes <var>metric</var> with the name of the metric the limit applies to, <var>period</var>, which is the period of the limit (year, month, week, day, hour, minute) and optionaly <var>exceeded</var> which is set to "true" if the limit is exceeded in the current period.</dd>
+  
+  <dt><var>period_start</var></dt>
+  <dd>Start of the limit period. It's in the form <samp>YYYY-MM-DD HH:MM:SS +ZZ:ZZ</samp>. <samp>+ZZ:ZZ</samp> (or <samp>-ZZ:ZZ</samp>) is a time offset (in hours and minutes) from UTC.</dd>
+
+  <dt><var>period_end</var></dt> 
+  <dd>End of the limit period. Same format as <var>period_start</var></dd>
+  
+  <dt><var>current_value</var></dt>
+  <dd>Value of the corresponding metric accumulated so far in the current period.</dd>
+  
+  <dt><var>max_value</var></dt>
+  <dd>Maximum value allowed by the usage limit.</dd>
+</dl>
+
+<h5>Errors</h5>
 
 In case of error, the response body contains an XML-formatted object with a single element <var>error</var>. This element has one attribute <var>code</var> containing a unique string identifier of the error. The content of this element is a human-readable English description of the error.
 
 These are all possible error identifiers and their meanings:
 
-<dl class="def"> <dt><var>provider_key_invalid</var></dt> <dd>Provider key is not valid</dd> <dt><var>application_not_found</var></dt> <dd>Application with the given id does not exist.</dd> </dl><br class="clear" />
+<dl>
+  <dt><var>provider_key_invalid</var></dt>
+  <dd>Provider key is not valid</dd>
+  
+  <dt><var>application_not_found</var></dt>
+  <dd>Application with the given id does not exist.</dd>
+</dl>
 
 This is an example of an error response:
-<div class="example"><code class="xml">
+
+<code class="xml">
 <pre>&lt;?xml version=“1.0” encoding=“utf-8” ?&gt;
 &lt;error code=“application_not_found"&gt;Application with id="12345678" was not found&lt;/error&gt;</pre>
 </code>
 
-</div>
-<hr />
+<h5>Example Request</h5>
 
-<h5 class="sub">Example Request</h5>
-
-<div class="example"><code class="http"><pre>
+<code class="http"><pre>
 GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key HTTP/1.1
 
-Host: su1.3scale.net</pre></code></div>
+Host: su1.3scale.net</pre></code>
 
-<hr />
+<h5>Example Request with referrer</h5>
 
-<h5 class="sub">Example Request with referrer</h5>
-
-<div class="example"><code class="http"><pre>
+<code class="http"><pre>
 GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;referrer=example.org HTTP/1.1
 
-Host: su1.3scale.net</pre></code></div>
+Host: su1.3scale.net</pre></code>
 
-<hr />
+<h5>Example Request with usage</h5>
 
-<h5 class="sub">Example Request with usage</h5>
-
-<div class="example"><code class="http"><pre>
+<code class="http"><pre>
 GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;usage[hits]=1&amp;usage[transfer]=1024 HTTP/1.1
 
-Host: su1.3scale.net</pre></code></div>
+Host: su1.3scale.net</pre></code>
 
 
 <h4>REPORT</h4>
@@ -184,51 +208,60 @@ This operation is used to report 3scale system about transactions. Any number of
 
 <code class="http">POST /transactions.xml</code>
 
-<hr />
+<h5>Parameters</h5>
 
-<h5 class="sub">Parameters</h5>
+<dl>
+  <dt><var>transactions</var></dt>
+  <dd>List of parameters for each transaction in the batch. More details are explained below. Required.</dd>
+  
+  <dt><var>provider_key</var></dt>
+  <dd>Provider key. Required.</dd>
+</dl>
 
-<dl class="def"> <dt><var>transactions</var></dt> <dd>List of parameters for each transaction in the batch. More details are explained below. Required.</dd> <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd> </dl><br class="clear" />
 <h6>The structure of the transactions parameter</h6>
+
 The <em>transactions</em> should contain numerically indexed list of records, one for each transaction. Each record can contain these parameters:
 
-<dl class="def"> <dt><var>app_id</var></dt> <dd>Application ID. Required.</dd> <dt><var>usage</var></dt> <dd>Usage data of the transaction. This should be associative array (a hash) of the form: <code>{metric =&gt; value, ...}</code>, where metric is name of the metric that measures the particular resource (for example “storage” or “hits”) and value is any amount of the corresponding resource spend in the transaction. Required.</dd> <dt><var>timestamp</var></dt> <dd>If given, should be date and time when the transaction occured. It can be
+<dl>
+  <dt><var>app_id</var></dt>
+  <dd>Application ID. Required.</dd>
+  
+  <dt><var>usage</var></dt>
+  <dd>Usage data of the transaction. This should be associative array (a hash) of the form: <code>{metric =&gt; value, ...}</code>, where metric is name of the metric that measures the particular resource (for example “storage” or “hits”) and value is any amount of the corresponding resource spend in the transaction. Required.</dd>
+  
+  <dt><var>timestamp</var></dt>
+  <dd>If given, should be date and time when the transaction occured. It can be
 specified in two ways: First, in UTC (Greenwitch time), second, in any other time zone.
 In the first case, the timestamp has to be in this format: <code>YYYY-MM-DD HH:MM:SS</code>
-for example <code>2009-01-01 17:45:02</code>.
-In the second case, the format has to be <code>YYYY-MM-DD HH:MM:SS +HH:MM</code>
-or <code>YYYY-MM-DD HH:MM:SS -HH:MM</code>, where the <code>+HH:MM</code>
-(or <code>-HH:MM</code>) part specifies the time offset from UTC in hours and minutes. For example, for timestamp in PST (Pacific Standard Time), it should look like this: <code>2009-01-01 22:15:31 -08:00</code>. Optional. If not specified, the time when the transaction was received is used.</dd> </dl><br class="clear" />
+for example <code>2009-01-01 17:45:02</code>. In the second case, the format has to be <code>YYYY-MM-DD HH:MM:SS +HH:MM</code> or <code>YYYY-MM-DD HH:MM:SS -HH:MM</code>, where the <code>+HH:MM</code>
+(or <code>-HH:MM</code>) part specifies the time offset from UTC in hours and minutes. For example, for timestamp in PST (Pacific Standard Time), it should look like this: <code>2009-01-01 22:15:31 -08:00</code>. Optional. If not specified, the time when the transaction was received is used.</dd>
+</dl>
 
 These parameters have to be encoded in <span class="caps">HTTP</span> <span class="caps">POST</span> request using the <code>application/x-www-form-urlencoded</code> media type. Please reffer to the "Encoding complex data structures in URLs for more info".
 
-<hr />
-
-<h5 class="sub">Successful Response</h5>
+<h5>Successful Response</h5>
 
 Has status code <code class="http">202 Accepted</code> and no response body
 
-<hr />
-
-<h5 class="sub">Errors</h5>
+<h5>Errors</h5>
 
 Processing transactions, especially if there is lot of them, can be time consuming task. To achieve low response times, most of the processing is actually done offline. Fot this reason, there are two ways the errors are reported:
-
-<hr />
 
 <h6>Errors detected during request processing</h6>
 
 Only one type of error can occur during request processing - invalid provider key. In case the provider key is not valid, the response has status code <code class="http">403 Forbidden</code> and the body contains XML document with description of the error. Example:
 
-<div class="example"><code class="xml">
+<code class="xml">
 <pre>&lt;?xml version=“1.0” encoding=“utf-8” ?&gt;
 &lt;error code="provider_key_invalid"&gt;Provider key "abcd1234" is invalid&lt;/error&gt;</pre>
 </code>
 
 <h6>Errors detected during offline processing</h6>
+
 If an error occurs during offline processing, it's description is stored and can be examined by visiting the provider admin area on www.3scale.net.
 
 Errors that can occur in the offline processing are:
+
 <ul>
 	<li>invalid application id</li>
 	<li>invalid metric</li>
@@ -238,10 +271,9 @@ Errors that can occur in the offline processing are:
 
 Note that transactions from a single batch are reported only if <strong>all of them are valid</strong>. If there is an error in processing of at least one of them, <strong>none is reported</strong>.
 
-<hr />
+<h5>Example Request</h5>
 
-<h5 class="sub">Example Request</h5>
-<div class="example"><code class="http">
+<code class="http">
 <pre>POST /transactions.xml HTTP/1.1
 Host: su1.3scale.net
 Content-Type: application/x-www-form-urlencoded
@@ -257,14 +289,14 @@ transactions[1][usage][transfer]=2840&amp;
 transactions[1][timestamp]=2009-01-01%2018%3A11%3A59&amp;
 provider_key=pkey</pre>
 </code>
-</div>
 
 <h3>Appendix: Encoding complex data structures in URLs</h3>
 
-The usual way to encode a complex data structure (array, associative array, nested structures) is to “flatten” is. Example:
+The usual way to encode a complex data structure (array, associative array, nested structures) is to “flatten” it. 
 
-Having this structure:
-<div class="example"><code class="javascript">
+For example, having this structure:
+
+<code class="javascript">
 <pre>{
   "0": {
     "app_id": "app_id",
@@ -277,9 +309,9 @@ Having this structure:
     "timestamp": "2009-01-01 18:11:59"}}</pre>
 </code>
 
-</div>
 It has to be encoded like this:
-<div class="example"><code class="http">
+
+<code class="http">
 <pre>transactions[0][app_id]=app_id&amp;
 transactions[0][usage][hits]=1&amp;
 transactions[0][usage][transfer]=4500&amp;
@@ -289,6 +321,5 @@ transactions[1][usage][hits]=1&amp;
 transactions[1][usage][transfer]=2840&amp;
 transactions[1][timestamp]=2009-01-01%2018%3A11%3A59</pre>
 </code>
-</div>
 
 (note that spaces are encoded as <code>%20</code> and colons as <code>%3A</code> according to URL encoding rules)
