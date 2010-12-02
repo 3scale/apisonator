@@ -93,6 +93,7 @@ module ThreeScale
 
       get '/check.txt' do
         content_type 'text/plain'
+        body 'ok'
       end
 
       error do
