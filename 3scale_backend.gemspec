@@ -35,7 +35,10 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'resque_unit', '0.2.7'
   s.add_development_dependency 'timecop'
  
-  s.files        = Dir.glob('{bin,lib}/**/*.rb') + %w[README.rdoc Rakefile]
+  s.files = Dir.glob('{lib,bin}/**/*')
+  s.files << 'README.rdoc'
+  s.files << 'Rakefile'
+
   s.executables  = ['3scale_backend', '3scale_backend_worker']
   s.require_path = 'lib'
 end
