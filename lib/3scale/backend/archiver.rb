@@ -38,6 +38,10 @@ module ThreeScale
         each_file_to_cleanup do |file|
           File.delete(file)
         end
+
+        Dir["#{root}/*"].each do |dir|
+          Dir.delete(dir) if File.directory?(dir) && Dir["#{dir}/**/*"].empty?
+        end
       end
 
       private
