@@ -14,11 +14,7 @@ require '3scale/backend'
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
 
 ThreeScale::Backend.configure do |config|
-  # so I don't accidentally access s3
-  config.aws.access_key_id     = 'test_access_key_id'
-  config.aws.secret_access_key = 'test_secret_access_key'
-
-  config.redis.db              = 2
+  config.redis.db = 2
 end
 
 class Test::Unit::TestCase

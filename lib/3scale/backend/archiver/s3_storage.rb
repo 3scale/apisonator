@@ -4,9 +4,9 @@ module ThreeScale
       class S3Storage
         include Configurable
 
-        def initialize(bucket_name)
-          @bucket_name = bucket_name
-          establish_connection
+        def initialize(options)
+          @bucket_name = options[:bucket] || configuration.archiver.s3_bucket
+          establish_connection(options.slice(:access_key_id, :secret_access_key))
         end
 
         def store(name, content)
@@ -19,11 +19,8 @@ module ThreeScale
 
         private
 
-        def establish_connection
+        def establish_connection(options)
           unless AWS::S3::Base.connected?
-            options = {}
-            options[:access_key_id]     = configuration.aws.access_key_id
-            options[:secret_access_key] = configuration.aws.secret_access_key
             options[:use_ssl] = true
 
             AWS::S3::Base.establish_connection!(options)
