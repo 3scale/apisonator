@@ -11,6 +11,7 @@ require 'securerandom'
 require 'sinatra/base'
 require 'time'
 require 'yajl'
+require 'yaml'
 require 'zlib'
 
 require '3scale/backend/configuration'
