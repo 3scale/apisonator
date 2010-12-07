@@ -4,9 +4,9 @@ module ThreeScale
       class S3Storage
         include Configurable
 
-        def initialize(options)
-          @bucket_name = options[:bucket] || configuration.archiver.s3_bucket
-          establish_connection(options.slice(:access_key_id, :secret_access_key))
+        def initialize(bucket_name)
+          @bucket_name = bucket_name
+          establish_connection
         end
 
         def store(name, content)
@@ -19,8 +19,12 @@ module ThreeScale
 
         private
 
-        def establish_connection(options)
+        def establish_connection
           unless AWS::S3::Base.connected?
+            path = File.expand_path('~/.aws.yml')
+            raise "~/.aws.yml not found. Make sure this file exists and contains the AWS credentials." unless File.exist?(path)
+
+            options = YAML.load_file(path).symbolize_keys
             options[:use_ssl] = true
 
             AWS::S3::Base.establish_connection!(options)

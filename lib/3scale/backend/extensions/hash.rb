@@ -8,13 +8,6 @@ module ThreeScale
             memo
           end
         end
-
-        def slice(*keys)
-          keys.inject({}) do |memo, key|
-            memo[key] = self[key] if has_key?(key)
-            memo
-          end
-        end
       end
     end
   end

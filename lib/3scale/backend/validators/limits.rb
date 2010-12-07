@@ -29,7 +29,7 @@ module ThreeScale
 
         def filter_metrics(values, metric_ids)
           values.inject({}) do |memo, (period, usage)|
-            memo[period] = usage.slice(*metric_ids)
+            memo[period] = slice_hash(usage, metric_ids)
             memo
           end
         end
@@ -41,6 +41,14 @@ module ThreeScale
               memo[period][metric_id] += value
             end
 
+            memo
+          end
+        end
+
+        # TODO: Move this to extensions/hash.rb
+        def slice_hash(hash, keys)
+          keys.inject({}) do |memo, key|
+            memo[key] = hash[key] if hash.has_key?(key)
             memo
           end
         end

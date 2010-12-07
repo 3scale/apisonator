@@ -19,10 +19,12 @@ module ThreeScale
       # +tag+::     some string that will be appended to the name of the file on the remote
       #             storage. This is useful if there are multiple machines using the same storage,
       #             so each machine can use an unique tag (it's hostname for example).
-      #
+      #  
       def store(options = {})
-        tag     = options.delete(:tag) or raise ArgumentError ':tag is missing'
-        storage = options[:storage] || S3Storage.new(options)
+        raise ArgumentError ':tag is missing' unless options[:tag]
+
+        storage = options[:storage] || S3Storage.new(configuration.archiver.s3_bucket)
+        tag     = options[:tag]
 
         each_file_to_store do |file|
           service_id, date = extract_service_id_and_date(file)
@@ -45,7 +47,7 @@ module ThreeScale
       end
 
       private
-
+      
       def add(transaction)
         path = path_for(transaction)
         ensure_directory_exists(File.dirname(path))
@@ -88,7 +90,7 @@ module ThreeScale
       def each_file_to_store(&block)
         each_partial_file_older_than(Time.now.beginning_of_day, &block)
       end
-
+      
       def each_file_to_cleanup(&block)
         each_partial_file_older_than((Time.now - Time::ONE_DAY).beginning_of_day, &block)
       end
@@ -109,7 +111,7 @@ module ThreeScale
       def name_for_storage(service_id, date, tag)
         "service-#{service_id}/#{date}/#{tag}.xml.gz"
       end
-
+      
       CHUNK_SIZE = 1024
 
       def complete_and_compress(source_io, service_id)
