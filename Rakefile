@@ -39,3 +39,8 @@ namespace :release do
     system "git push --tags"
   end
 end
+
+desc 'Start the backend server in development'
+task :start do
+  system "ruby -Ilib bin/3scale_backend -p #{ENV['PORT'] || 3001} start"
+end
