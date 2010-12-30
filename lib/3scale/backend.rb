@@ -1,6 +1,7 @@
 require '3scale/core'
 require 'aws/s3'
 require 'builder'
+require 'hiredis'
 require 'redis'
 require 'fiber'
 require 'ostruct'
