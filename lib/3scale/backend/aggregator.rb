@@ -31,7 +31,6 @@ module ThreeScale
           increment(service_metric_prefix, :day,        timestamp, value)
           increment(service_metric_prefix, 6 * 60 * 60, timestamp, value)
           increment(service_metric_prefix, :hour,       timestamp, value)
-          increment(service_metric_prefix, 2 * 60,      timestamp, value)
 
           application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
 

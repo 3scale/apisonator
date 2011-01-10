@@ -5,6 +5,7 @@ PATH
       3scale_core (>= 0.2.7)
       aws-s3 (~> 0.6)
       builder (~> 2.1)
+      hiredis (= 0.1.4)
       rack (~> 1.1)
       rack-rest_api_versioning
       rack_hoptoad (~> 0.1)
@@ -26,6 +27,9 @@ GEM
     daemons (1.1.0)
     eventmachine (0.12.10)
     fakefs (0.2.1)
+    hiredis (0.1.4)
+      rake-compiler (~> 0.7.1)
+      redis (~> 2.1.1)
     json (1.4.6)
     mime-types (1.16)
     mocha (0.9.10)
@@ -40,6 +44,8 @@ GEM
       rack
       toadhopper (~> 1.0.1)
     rake (0.8.7)
+    rake-compiler (0.7.5)
+      rake
     redis (2.1.1)
     redis-namespace (0.8.0)
       redis (< 3.0.0)
@@ -73,6 +79,7 @@ DEPENDENCIES
   aws-s3 (~> 0.6)
   builder (~> 2.1)
   fakefs
+  hiredis (= 0.1.4)
   mocha
   nokogiri
   rack (~> 1.1)
