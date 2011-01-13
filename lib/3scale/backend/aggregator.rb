@@ -27,7 +27,6 @@ module ThreeScale
 
           increment(service_metric_prefix, :eternity,   nil,       value)
           increment(service_metric_prefix, :month,      timestamp, value)
-          increment(service_metric_prefix, :week,       timestamp, value)
           increment(service_metric_prefix, :day,        timestamp, value)
           increment(service_metric_prefix, 6 * 60 * 60, timestamp, value)
           increment(service_metric_prefix, :hour,       timestamp, value)
@@ -37,7 +36,6 @@ module ThreeScale
           increment(application_metric_prefix, :eternity,   nil,       value)
           increment(application_metric_prefix, :year,       timestamp, value)
           increment(application_metric_prefix, :month,      timestamp, value)
-          increment(application_metric_prefix, :week,       timestamp, value)
           increment(application_metric_prefix, :day,        timestamp, value)
           increment(application_metric_prefix, 6 * 60 * 60, timestamp, value)
           increment(application_metric_prefix, :hour,       timestamp, value)
