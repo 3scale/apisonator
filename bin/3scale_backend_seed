@@ -68,8 +68,8 @@ class Seeder
     service_id   = 1001
     Service.save(:provider_key => provider_key, :id => service_id)
 
-    # Create master contract
-    Contract.save(:service_id => master_service_id, :user_key => provider_key,
+    # Create master cinstance
+    Application.save(:service_id => master_service_id,
               :id => 1002, :state => :live)
 
     # Create metrics
@@ -94,20 +94,19 @@ class Seeder
   end
 
   def seed_buyer_data(service_id, plan_id, params)
-    # Create contracts
-    user_keys = []   
+    # Create cinstances
+    app_ids = []   
     params['transactions'].values.each do |transaction|
-      user_keys << transaction['user_key']
+      app_ids << transaction['app_id']
     end
-    user_keys.uniq!
+    app_ids.uniq!
 
-    user_keys.each_with_index do |key, index|
-      Contract.save(:service_id => service_id,
-                    :user_key   => key,
+    app_ids.each_with_index do |app_id, index|
+      Application.save(:service_id => service_id,
                     :plan_id    => plan_id,
                     :plan_name  => 'test',
-                    :id         => index + 3000,
-                    :state => :live)
+                    :id         => app_id,
+                    :state => :active)
     end
   end
 end
