@@ -43,7 +43,7 @@ module ThreeScale
       end
 
       def usage_limits
-        UsageLimit.load_all(service_id, plan_id)
+        @usage_limits ||= UsageLimit.load_all(service_id, plan_id)
       end
 
       # Creates new application key and adds it to the list of keys of this application.
