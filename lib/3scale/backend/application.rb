@@ -42,6 +42,14 @@ module ThreeScale
         end
       end
 
+      def metric_names
+        @metric_names ||= {}
+      end
+
+      def metric_name(metric_id)
+        metric_names[metric_id] ||= Metric.load_name(service_id, metric_id)
+      end
+
       def usage_limits
         @usage_limits ||= UsageLimit.load_all(service_id, plan_id)
       end

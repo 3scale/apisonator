@@ -9,7 +9,7 @@ module ThreeScale
           end
 
           def metric_name
-            @usage_limit.metric_name
+            @parent.application.metric_name(@usage_limit.metric_id)
           end
 
           def period

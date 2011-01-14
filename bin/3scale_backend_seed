@@ -74,6 +74,7 @@ class Seeder
 
     # Create metrics
     Metric.save(:service_id => service_id, :id => 8001, :name => 'hits')
+    Metric.save(:service_id => service_id, :id => 8002, :name => 'other')
 
     # Create plan
     plan_id = 2001
@@ -84,10 +85,16 @@ class Seeder
                       :plan_id    => plan_id,
                       :metric_id  => 8001,
                       :month      => 1000000,
-                      :week       =>  500000,
                       :day        =>  100000,
                       :hour       =>   10000,
                       :minute     =>    1000)
+      UsageLimit.save(:service_id => service_id,
+                      :plan_id    => plan_id,
+                      :metric_id  => 8002,
+                      :month      =>  200000,
+                      :day        =>   20000,
+                      :hour       =>    2000,
+                      :minute     =>     200)
     end
 
     [service_id, plan_id]
