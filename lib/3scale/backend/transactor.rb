@@ -37,7 +37,13 @@ module ThreeScale
         Status.new(:service     => service,
                    :application => application,
                    :values      => usage).tap do |status|
-          VALIDATORS.all? { |validator| validator.apply(status, params) }
+          VALIDATORS.all? do |validator|
+            if validator == Validators::Referrer && !status.service.referrer_filters_required?
+              true
+            else
+              validator.apply(status, params)
+            end
+          end
         end
       end
 

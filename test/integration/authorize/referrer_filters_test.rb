@@ -10,6 +10,8 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
 
     setup_provider_fixtures
 
+    @service.referrer_filters_required = true # if this is disabled we bypass the verification
+    @service.save
     @application = Application.save(:service_id => @service.id,
                                     :id         => next_id,
                                     :state      => :active,
@@ -18,6 +20,8 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
   end
 
   test 'succeeds if no referrer filter is defined and no referrer is passed' do
+    @service.referrer_filters_required = false
+    @service.save
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
 
@@ -94,9 +98,6 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
   end
 
   test 'succeeds if referrer filters are required and defined' do
-    @service.referrer_filters_required = true
-    @service.save
-
     @application.create_referrer_filter('foo.example.org')
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
@@ -107,9 +108,6 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
   end
 
   test 'does not authorize if referrer filters are required but not defined' do
-    @service.referrer_filters_required = true
-    @service.save
-
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
 
