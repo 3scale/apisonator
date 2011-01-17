@@ -67,6 +67,9 @@ module ThreeScale
 
         return {} if pairs.empty?
 
+        # preloading metric names
+        application.metric_names = ThreeScale::Core::Metric.load_all_names(application.service_id, pairs.map{|e| e.first}.uniq)
+
         now = Time.now.getutc
 
         keys = pairs.map do |metric_id, period|

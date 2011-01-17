@@ -46,6 +46,10 @@ module ThreeScale
         @metric_names ||= {}
       end
 
+      def metric_names=(hash)
+        @metric_names = hash
+      end
+
       def metric_name(metric_id)
         metric_names[metric_id] ||= Metric.load_name(service_id, metric_id)
       end
