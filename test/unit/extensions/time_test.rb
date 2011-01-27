@@ -46,6 +46,11 @@ module Extensions
                    Time.utc(2009, 6, 11, 13, 30).beginning_of_cycle(:day)
     end
 
+    def test_beginning_of_cycle_with_week
+      assert_equal Time.utc(2009, 6, 8),
+                   Time.utc(2009, 6, 11, 13, 30).beginning_of_cycle(:week)
+    end
+
     def test_beginning_of_cycle_with_month
       assert_equal Time.utc(2009, 6,  1), 
                    Time.utc(2009, 6, 11, 13, 30).beginning_of_cycle(:month)
@@ -114,6 +119,21 @@ module Extensions
     def test_end_of_cycle_with_day_in_the_last_day_of_a_year
       assert_equal Time.utc(2011, 1, 1),
                    Time.utc(2010, 12, 31, 13, 30).end_of_cycle(:day)
+    end
+
+    def test_end_of_cycle_with_week
+      assert_equal Time.utc(2010, 5, 24),
+                   Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:week)
+    end
+
+    def test_end_of_cycle_with_week_in_the_last_week_of_a_month
+      assert_equal Time.utc(2010, 5, 3),
+                   Time.utc(2010, 4, 29, 13, 30).end_of_cycle(:week)
+    end
+
+    def test_end_of_cycle_with_week_in_the_last_week_of_a_year
+      assert_equal Time.utc(2012, 1, 2),
+                   Time.utc(2011, 12, 30, 13, 30).end_of_cycle(:week)
     end
 
     def test_end_of_cycle_with_month

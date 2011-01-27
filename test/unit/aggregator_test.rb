@@ -16,12 +16,14 @@ class AggregatorTest < Test::Unit::TestCase
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
+    assert_equal '1', @storage.get(service_key(1001, 3001, :week,   '20100503'))
     assert_equal '1', @storage.get(service_key(1001, 3001, :day,    '20100507'))
     assert_equal '1', @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :eternity))
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
+    assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :week,   '20100503'))
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :minute, '201005071323'))

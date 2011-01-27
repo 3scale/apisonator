@@ -9,6 +9,7 @@ module ThreeScale
         case cycle
         when :year   then self.class.utc(year, 1, 1)
         when :month  then self.class.utc(year, month, 1)
+        when :week   then beginning_of_week
         when :day    then beginning_of_day
         when :hour   then self.class.utc(year, month, day, hour)
         when :minute then self.class.utc(year, month, day, hour, min)
@@ -22,6 +23,7 @@ module ThreeScale
         case cycle
         when :year   then self.class.utc(year + 1, 1, 1)
         when :month  then end_of_month
+        when :week   then end_of_week
         when :day    then beginning_of_day + ONE_DAY
         when :hour   then beginning_of_cycle(:hour) + ONE_HOUR
         when :minute then beginning_of_cycle(:minute) + ONE_MINUTE
@@ -36,6 +38,17 @@ module ThreeScale
         else
           self.class.utc(year, month + 1, 1)
         end
+      end
+
+      def beginning_of_week
+        # This is stolen from active support and slightly modified
+        days_to_monday = wday != 0 ? wday - 1 : 6
+        (self - days_to_monday * ONE_DAY).beginning_of_day
+      end
+
+      def end_of_week
+        days_to_next_monday = wday != 0 ? 8 - wday : 1
+        (self + days_to_next_monday * ONE_DAY).beginning_of_day
       end
 
       def beginning_of_day
