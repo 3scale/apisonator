@@ -26,7 +26,17 @@ module ThreeScale
 
       get '/transactions/authorize.xml' do
         authorization = Transactor.authorize(params[:provider_key], params)
-        authorization.to_xml
+        response_code = if authorization.authorized?
+                          200
+                        else
+                          409
+                        end
+        status response_code
+        if params[:no_body]
+          body nil
+        else
+          body authorization.to_xml
+        end
       end
 
       get '/transactions/errors.xml' do
@@ -97,15 +107,21 @@ module ThreeScale
       end
 
       error do
+        error_code = 0
         case exception = env['sinatra.error']
         when ThreeScale::Backend::Invalid
-          error 422, exception.to_xml
+          error_code = 422
         when ThreeScale::Backend::NotFound
-          error 404, exception.to_xml
+          error_code = 404
         when ThreeScale::Backend::Error
-          error 403, exception.to_xml
+          error_code = 403
         else
           raise exception
+        end
+        if params[:no_body]
+          error error_code, ""
+        else
+          error error_code, exception.to_xml
         end
       end
 

@@ -10,7 +10,7 @@ module TestHelpers
     end
 
     def assert_not_authorized(reason = nil)
-      assert_equal 200, last_response.status
+      assert_equal 409, last_response.status
 
       doc = Nokogiri::XML(last_response.body)
       assert_equal 'false', doc.at('status authorized').content

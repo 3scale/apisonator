@@ -30,6 +30,15 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
+  test 'successful authorize with no body responds with 200' do
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :no_body      => true
+
+    assert_equal 200, last_response.status
+    assert_equal "", last_response.body
+  end
+
   test 'successful authorize has custom content type' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
@@ -118,6 +127,15 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                           :message => 'provider key "boo" is invalid'
   end
 
+  test 'fails on invalid provider key with no body' do
+    get '/transactions/authorize.xml', :provider_key => 'boo',
+                                       :app_id     => @application.id,
+                                       :no_body    => true
+
+    assert_equal 403, last_response.status
+    assert_equal "", last_response.body
+  end
+
   test 'fails on invalid application id' do
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => 'boo'
@@ -126,6 +144,16 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     assert_error_response :status  => 404,
                           :code    => 'application_not_found',
                           :message => 'application with id="boo" was not found'
+  end
+
+  test 'fails on invalid application id with no body' do
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => 'boo',
+                                       :no_body      => true
+
+
+    assert_equal 404, last_response.status
+    assert_equal "", last_response.body
   end
 
   test 'fails on missing application id' do
@@ -142,7 +170,20 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
 
+    assert_equal 409, last_response.status
     assert_not_authorized 'application is not active'
+  end
+  
+  test 'does not authorize on inactive application with no body' do
+    @application.state = :suspended
+    @application.save
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :no_body      => true
+
+    assert_equal 409, last_response.status
+    assert_equal "", last_response.body
   end
 
   test 'does not authorize on exceeded client usage limits' do
@@ -159,7 +200,27 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id
 
+    assert_equal 409, last_response.status
     assert_not_authorized 'usage limits are exceeded'
+  end
+
+  test 'does not authorize on exceeded client usage limits with no body' do
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => @plan_id,
+                    :metric_id  => @metric_id,
+                    :day => 4)
+
+    Transactor.report(@provider_key,
+                      0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
+
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id     => @application.id,
+                                       :no_body    => true
+
+    assert_equal 409, last_response.status
+    assert_equal "", last_response.body
   end
 
   test 'response contains usage reports marked as exceeded on exceeded client usage limits' do
