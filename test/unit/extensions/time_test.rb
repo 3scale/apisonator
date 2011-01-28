@@ -20,17 +20,6 @@ module Extensions
                    Time.utc(2009, 6, 11, 13, 45).beginning_of_cycle(24 * 60 * 60)
     end
 
-    def test_beginning_of_cycle_with_6_hours    
-      assert_equal Time.utc(2009, 6, 11, 00, 00),
-                   Time.utc(2009, 6, 11,  4, 00).beginning_of_cycle(6 * 60 * 60)
-      
-      assert_equal Time.utc(2009, 6, 11,  6, 00),
-                   Time.utc(2009, 6, 11,  8, 00).beginning_of_cycle(6 * 60 * 60)
-      
-      assert_equal Time.utc(2009, 6, 11, 12, 00),
-                   Time.utc(2009, 6, 11, 14, 00).beginning_of_cycle(6 * 60 * 60)
-    end
-
     def test_beginning_of_cycle_with_minute
       assert_equal Time.utc(2009, 6, 11, 13, 30), 
                    Time.utc(2009, 6, 11, 13, 30, 29).beginning_of_cycle(:minute)
