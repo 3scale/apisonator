@@ -39,9 +39,6 @@ module ThreeScale
             working_on(job)
             perform(job)
             done_working
-          else
-            break if polling_frequency <= 0
-            sleep(polling_frequency)
           end
 
           break if one_off?
@@ -67,8 +64,8 @@ module ThreeScale
       private
 
       def reserve
-        stuff = redis.lpop("queue:#{QUEUE}")
-        stuff && Resque::Job.new(QUEUE, decode(stuff))
+        stuff = redis.blpop("queue:#{QUEUE}", "60") # first is queue name, second is our class
+        !stuff.nil? && !stuff.empty? && Resque::Job.new(QUEUE, decode(stuff[1]))
       end
 
       def perform(job)

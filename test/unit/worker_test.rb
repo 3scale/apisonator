@@ -12,7 +12,14 @@ class WorkerTest < Test::Unit::TestCase
     encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [])
 
     redis = Redis.any_instance
-    redis.expects(:lpop).with("resque:queue:#{Worker::QUEUE}").returns(encoded_job)
+    redis.expects(:blpop).with("resque:queue:#{Worker::QUEUE}", "60").returns(encoded_job)
+
+    Worker.work(:one_off => true)
+  end
+
+  def test_no_jobs_in_the_queue
+    redis = Redis.any_instance
+    redis.expects(:blpop).with("resque:queue:#{Worker::QUEUE}", "60").returns(nil)
 
     Worker.work(:one_off => true)
   end

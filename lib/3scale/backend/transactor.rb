@@ -12,11 +12,11 @@ module ThreeScale
       extend self
 
       def report(provider_key, transactions)
-        notify(provider_key, 'transactions/create_multiple' => 1,
-                             'transactions' => transactions.size)
-
         service_id = Service.load_id!(provider_key)
         Resque.enqueue(ReportJob, service_id, transactions)
+
+        notify(provider_key, 'transactions/create_multiple' => 1,
+                             'transactions' => transactions.size)
       end
 
       VALIDATORS = [Validators::Key,
