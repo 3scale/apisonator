@@ -4,7 +4,7 @@ module ThreeScale
 
       # Job for reporting transactions.
       class ReportJob
-        @queue = :main
+        @queue = :priority
 
         def self.perform(service_id, raw_transactions)
           transactions = parse_transactions(service_id, raw_transactions)

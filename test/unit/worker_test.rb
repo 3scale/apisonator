@@ -5,21 +5,22 @@ class WorkerTest < Test::Unit::TestCase
   end
 
   def test_queue_name
-    assert_equal :main, Worker::QUEUE
+    assert_equal :priority, Worker::QUEUES[0]
+    assert_equal :main, Worker::QUEUES[1]
   end
 
   def test_pops_jobs_from_a_queue
     encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [])
 
     redis = Redis.any_instance
-    redis.expects(:blpop).with("resque:queue:#{Worker::QUEUE}", "60").returns(encoded_job)
+    redis.expects(:blpop).with(*Worker::QUEUES.map{|q| "resque:queue:#{q}"}, "60").returns(encoded_job)
 
     Worker.work(:one_off => true)
   end
 
   def test_no_jobs_in_the_queue
     redis = Redis.any_instance
-    redis.expects(:blpop).with("resque:queue:#{Worker::QUEUE}", "60").returns(nil)
+    redis.expects(:blpop).with(*Worker::QUEUES.map{|q| "resque:queue:#{q}"}, "60").returns(nil)
 
     Worker.work(:one_off => true)
   end

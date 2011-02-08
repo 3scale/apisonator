@@ -9,7 +9,8 @@ module ThreeScale
       include Resque::Helpers
       include Configurable
 
-      QUEUE = :main
+      # the order is relevant
+      QUEUES = [:priority, :main]
 
       def initialize(options = {})
         trap('TERM') { shutdown }
@@ -52,7 +53,7 @@ module ThreeScale
       end
 
       def to_s
-        @to_s ||= "#{hostname}:#{Process.pid}:#{QUEUE}"
+        @to_s ||= "#{hostname}:#{Process.pid}:#{QUEUES.join(',')}"
       end
 
       def one_off?
@@ -64,8 +65,8 @@ module ThreeScale
       private
 
       def reserve
-        stuff = redis.blpop("queue:#{QUEUE}", "60") # first is queue name, second is our class
-        !stuff.nil? && !stuff.empty? && Resque::Job.new(QUEUE, decode(stuff[1]))
+        stuff = redis.blpop(*QUEUES.map{|q| "queue:#{q}"}, "60") # first is queue name, second is our class
+        !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
       end
 
       def perform(job)
