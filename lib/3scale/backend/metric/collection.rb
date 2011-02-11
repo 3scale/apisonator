@@ -46,7 +46,7 @@ module ThreeScale
 
         def process_ancestors(usage)
           usage.keys.inject(usage.dup) do |memo, id|
-            ancestors_ids(id).each do |ancestor_id|
+            ancestor_id(id).each do |ancestor_id|
               memo[ancestor_id] ||= 0
               memo[ancestor_id] += memo[id]
             end
@@ -55,6 +55,8 @@ module ThreeScale
           end
         end
 
+        # FIXME: as of right now the maximum depth of metrics/methods is 1, therefore let's skip the extra query
+        #        by using the ancestor_id method instead
         def ancestors_ids(id)
           results = []
           while id_of_parent = parent_id(id)
@@ -63,6 +65,10 @@ module ThreeScale
           end
 
           results
+        end
+
+        def ancestor_id(id)
+          [parent_id(id)].compact
         end
 
         def parent_id(id)
