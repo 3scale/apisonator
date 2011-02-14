@@ -38,6 +38,13 @@ class AuthrepReportingTest < Test::Unit::TestCase
                                      :app_id       => @application.id,
                                      :usage        => {'hits' => 2}
 
+    doc = Nokogiri::XML(last_response.body)
+    usage_reports = doc.at('usage_reports')
+    assert_not_nil usage_reports
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
+    assert_not_nil day
+    assert_equal '3', day.at('current_value').content
+
     Resque.run!
 
     assert_equal 3, @storage.get(application_key(@service.id,
@@ -78,6 +85,13 @@ class AuthrepReportingTest < Test::Unit::TestCase
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
                                      :usage        => {'hits' => 1}
+
+    doc = Nokogiri::XML(last_response.body)
+    usage_reports = doc.at('usage_reports')
+    assert_not_nil usage_reports
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
+    assert_not_nil day
+    assert_equal '3', day.at('current_value').content
 
     Resque.run!
 

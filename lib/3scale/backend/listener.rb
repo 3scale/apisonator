@@ -50,7 +50,7 @@ module ThreeScale
         if params[:no_body]
           body nil
         else
-          body authorization.to_xml
+          body authorization.to_xml(:usage => params[:usage])
         end
       end
 

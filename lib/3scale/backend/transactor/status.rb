@@ -105,7 +105,11 @@ module ThreeScale
                     xml.period_start  report.period_start.strftime(TIME_FORMAT)
                     xml.period_end    report.period_end.strftime(TIME_FORMAT)
                     xml.max_value     report.max_value
-                    xml.current_value report.current_value
+                    if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
+                      xml.current_value report.current_value + options[:usage][report.metric_name].to_i
+                    else
+                      xml.current_value report.current_value
+                    end
                   end
                 end
               end
