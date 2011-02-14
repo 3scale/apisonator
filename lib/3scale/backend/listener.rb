@@ -39,6 +39,21 @@ module ThreeScale
         end
       end
 
+      get '/transactions/authrep.xml' do
+        authorization = Transactor.authrep(params[:provider_key], params)
+        response_code = if authorization.authorized?
+                          200
+                        else
+                          409
+                        end
+        status response_code
+        if params[:no_body]
+          body nil
+        else
+          body authorization.to_xml
+        end
+      end
+
       get '/transactions/errors.xml' do
         @errors = ErrorStorage.list(service_id, :page     => params[:page],
                                                 :per_page => params[:per_page])

@@ -47,6 +47,36 @@ module ThreeScale
         end
       end
 
+      def authrep(provider_key, params)
+        service     = Service.load!(provider_key)
+        application = Application.load_by_id_or_user_key!(service.id,
+                                                          params[:app_id],
+                                                          params[:user_key])
+        usage       = load_current_usage(application)
+        status = Status.new(:service     => service,
+                   :application => application,
+                   :values      => usage).tap do |status|
+          VALIDATORS.all? do |validator|
+            if validator == Validators::Referrer && !status.service.referrer_filters_required?
+              true
+            else
+              validator.apply(status, params)
+            end
+          end
+        end
+
+        if status.authorized? && !params[:usage].nil? && !params[:usage].empty?
+          Resque.enqueue(ReportJob, service.id, ({ 0 => {"app_id" => application.id, "usage" => params[:usage]}}))
+          notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => params[:usage].size)
+        else
+          notify(provider_key, 'transactions/authorize' => 1)
+        end
+        status
+      rescue ThreeScale::Backend::ApplicationNotFound => e # we still want to track these
+        notify(provider_key, 'transactions/authorize' => 1)
+        raise e
+      end
+
       private
 
       def notify(provider_key, usage)

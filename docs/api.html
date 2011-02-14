@@ -43,7 +43,7 @@ The API exposes a simple REST-based interface that provides these operations: <s
 
 <h4>AUTHORIZE</h4>
 
-Read-only operation tho authorize an application. It is used to check if a particular application exists, is active and is within usage limits of the service. It can be optionally used to authenticate a call using an application key.
+Read-only operation to authorize an application. It is used to check if a particular application exists, is active and is within usage limits of the service. It can be optionally used to authenticate a call using an application key.
 
 <code class="http"><pre>GET /transactions/authorize.xml?app_id={app_id}&amp;provider_key={provider_key}[&amp;app_key={app_key}]</pre></code>
 
@@ -54,6 +54,7 @@ Read-only operation tho authorize an application. It is used to check if a parti
   <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
   <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd> 
   <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
+  <dt><var>no_body</var></dt> <dd>Specify this parameter to remove the HTTP body from the response. Optional. Example: no_body=true</dd>
   <dt><var>usage</var></dt> <dd>Predicted usage. Optional</dd>
 </dl>
 
@@ -62,7 +63,7 @@ Read-only operation tho authorize an application. It is used to check if a parti
 It's possible to pass a "predicted usage" to the authorize call. This can serve two purposes: 
 
 <ol>
-  <li>To make sure an API call won't go over the limits before the call is make, if the usage spend by the call is known in advance. In this case, the estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit. In other words, without the <var>usage</var> parameter, authorize only checks the usage that has already been reported. If the <var>usage</var> parameter is passes in, it will check whether the already reported usage + the passed in predicted usage is still within limit.</li>
+  <li>To make sure an API call won't go over the limits before the call is made, if the usage of the call is known in advance. In this case, the estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit. In other words, without the <var>usage</var> parameter, authorize only checks the usage that has already been reported. If the <var>usage</var> parameter is passes in, it will check whether the already reported usage + the passed in predicted usage is still within limit.</li>
 
   <li>To limit the authorization only to a subset of metrics. If <var>usage</var> is passed in, only the metrics listed in it will be checked against the limits. For example: There are two metrics defined: <var>searches</var> and <var>updates</var>. <var>updates</var> are already over limit, but <var>searches</var> are not. In this case, the user should still be allowed to do a search call, but not an update one. To authorize this, pass <code>usage[searches]=1</code> to the authorize call.</li>
 </ol>
@@ -73,7 +74,7 @@ NOTE: <var>usage</var> is an associative array of the form <code>{metric : value
 
 <h5>Successful Response</h5>
 
-Has status code <code class="http">200 OK</code> and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit.
+Has status code <code class="http">200 OK</code> (if authorization is granted), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit. If the no_body parameter is specified, there is no body in the response.
 
 Example of successful authorize response
 
@@ -201,6 +202,38 @@ GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_ke
 
 Host: su1.3scale.net</pre></code>
 
+<h4>AUTHREP</h4>
+
+"One-shot" operation to authorize an application and report traffic. The only difference between this call and the regular authorize call is that metric usage will be reported if the authorization is successful.
+
+<code class="http"><pre>GET /transactions/authrep.xml?app_id={app_id}&amp;provider_key={provider_key}[&amp;app_key={app_key}]&amp;usage[hits]=1</pre></code>
+
+<h5>Parameters</h5>
+
+<dl>
+  <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
+  <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
+  <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd> 
+  <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
+  <dt><var>no_body</var></dt> <dd>Specify this parameter to remove the HTTP body from the response. Optional. Example: no_body=true</dd>
+  <dt><var>usage</var></dt> <dd>Metric usage. If the authorization succeeds and the application is still within the limits with this usage, it's aggregated to the application statistics and usage limits.</dd>
+</dl>
+
+<h5>Usage</h5>
+
+The usage parameters should be passed along in order to report traffic. 
+
+<ol>
+  <li>This will make sure an API call won't go over the limits. It will check whether the already reported usage + the passed in usage is still within limit.</li>
+
+  <li>If the authorization is successful the usage will then be "reported" and aggregated for statistics and usage limits purposes. There is no need to make a second call to report the traffic since this is already taken care of.</li>
+</ol>
+
+NOTE: <var>usage</var> is an associative array of the form <code>{metric : value}</code>. Please refer to the "Encoding complex data structures in URLs" appendix for more info.
+
+<h5>Successful Response</h5>
+
+Has status code <code class="http">200 OK</code> (if authorization is granted - and therefore reported), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit. If the no_body parameter is specified, there is no body in the response.
 
 <h4>REPORT</h4>
 
