@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    3scale_backend (0.12.5)
+    3scale_backend (0.12.7)
       3scale_core (>= 0.2.8)
       aws-s3 (~> 0.6)
       builder (~> 2.1)
@@ -62,7 +62,7 @@ GEM
       daemons (>= 1.0.9)
       eventmachine (>= 0.12.6)
       rack (>= 1.0.0)
-    tilt (1.1)
+    tilt (1.2.1)
     timecop (0.3.5)
     toadhopper (1.0.6)
     vegas (0.1.8)
@@ -75,21 +75,9 @@ PLATFORMS
 
 DEPENDENCIES
   3scale_backend!
-  3scale_core (>= 0.2.8)
-  aws-s3 (~> 0.6)
-  builder (~> 2.1)
   fakefs
-  hiredis (= 0.1.4)
   mocha
   nokogiri
-  rack (~> 1.1)
-  rack-rest_api_versioning
   rack-test
-  rack_hoptoad (~> 0.1)
-  redis (= 2.1.1)
-  resque (~> 1.9)
   resque_unit (= 0.2.7)
-  sinatra (~> 1.0)
-  thin (~> 1.2)
   timecop
-  yajl-ruby (~> 0.7)
