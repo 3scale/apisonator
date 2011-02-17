@@ -51,5 +51,10 @@ module TestHelpers
       @plan_id = next_id
       @plan_name = "plan#{@plan_id}"
     end
+
+    def setup_oauth_provider_fixtures
+      setup_provider_fixtures
+      @service = Core::Service.save(:provider_key => @provider_key, :id => @service_id, :backend_version => 'oauth')
+    end
   end
 end

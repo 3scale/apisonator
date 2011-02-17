@@ -51,6 +51,18 @@ module ThreeScale
       end
     end
 
+    class OauthNotEnabled < Error
+      def initialize
+        super %(oauth is not enabled)
+      end
+    end
+
+    class RedirectUrlInvalid < Error
+      def initialize(url)
+        super %(redirect_url "#{url}" is invalid)
+      end
+    end
+
     class LimitsExceeded < Error
       def initialize
         super %(usage limits are exceeded)

@@ -25,6 +25,14 @@ module ThreeScale
                     Validators::State,
                     Validators::Limits]
 
+      OAUTH_VALIDATORS = [Validators::OauthSetting,
+                          Validators::OauthKey,
+                          Validators::RedirectUrl,
+                          Validators::Referrer,
+                          Validators::ReferrerFilters,
+                          Validators::State,
+                          Validators::Limits]
+
       def authorize(provider_key, params)
         notify(provider_key, 'transactions/authorize' => 1)
 
@@ -38,6 +46,28 @@ module ThreeScale
                    :application => application,
                    :values      => usage).tap do |status|
           VALIDATORS.all? do |validator|
+            if validator == Validators::Referrer && !status.service.referrer_filters_required?
+              true
+            else
+              validator.apply(status, params)
+            end
+          end
+        end
+      end
+
+      def oauth_authorize(provider_key, params)
+        notify(provider_key, 'transactions/authorize' => 1)
+
+        service     = Service.load!(provider_key)
+        application = Application.load_by_id_or_user_key!(service.id,
+                                                          params[:app_id],
+                                                          params[:user_key])
+        usage       = load_current_usage(application)
+
+        Status.new(:service     => service,
+                   :application => application,
+                   :values      => usage).tap do |status|
+          OAUTH_VALIDATORS.all? do |validator|
             if validator == Validators::Referrer && !status.service.referrer_filters_required?
               true
             else

@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     3scale_backend (0.13.1)
-      3scale_core (>= 0.2.8)
+      3scale_core (>= 0.2.10)
       aws-s3 (~> 0.6)
       builder (~> 2.1)
       hiredis (= 0.1.4)
@@ -18,7 +18,7 @@ PATH
 GEM
   remote: http://rubygems.org/
   specs:
-    3scale_core (0.2.8)
+    3scale_core (0.2.10)
     aws-s3 (0.6.2)
       builder
       mime-types
