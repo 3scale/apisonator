@@ -1,12 +1,12 @@
+require '3scale/backend/transactor/notify_job'
+require '3scale/backend/transactor/process_job'
+require '3scale/backend/transactor/report_job'
+require '3scale/backend/transactor/status'
+
 module ThreeScale
   module Backend
     # Methods for reporting and authorizing transactions.
     module Transactor
-      autoload :NotifyJob,  '3scale/backend/transactor/notify_job'
-      autoload :ProcessJob, '3scale/backend/transactor/process_job'
-      autoload :ReportJob,  '3scale/backend/transactor/report_job'
-      autoload :Status,     '3scale/backend/transactor/status'
-
       include Core::StorageKeyHelpers
 
       extend self

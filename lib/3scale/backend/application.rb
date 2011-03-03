@@ -2,7 +2,7 @@ module ThreeScale
   module Backend
     class Application < Core::Application
       module Sets
-        include HasSet
+        include ThreeScale::Backend::HasSet
 
         has_set :referrer_filters
         has_set :keys

@@ -65,7 +65,8 @@ module ThreeScale
       private
 
       def reserve
-        stuff = redis.blpop(*QUEUES.map{|q| "queue:#{q}"}, "60") # first is queue name, second is our class
+        queues = QUEUES.map{|q| "queue:#{q}"} # for some reason having this inline in the blpop is invalid syntax in jruby 1.6.0.RC2
+        stuff = redis.blpop(*queues, "60") # first is queue name, second is our class
         !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
       end
 
