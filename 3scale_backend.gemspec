@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.name        = '3scale_backend'
   s.version     = ThreeScale::Backend::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ["Adam Cigánek", "Tiago Macedo"]
+  s.authors     = ["Adam Cigánek", "Tiago Macedo","Josep M. Pujol"]
   s.email       = 'tiago@3scale.net'
   s.homepage    = 'http://www.3scale.net'
   s.summary     = '3scale web service management system backend'
@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
  
   s.required_rubygems_version = ">= 1.3.7"
     
-  s.add_dependency '3scale_core',             '>= 0.2.8'
+  s.add_dependency '3scale_core',             '>= 0.3.0'
   s.add_dependency 'aws-s3',                  '~> 0.6'
   s.add_dependency 'builder',                 '~> 2.1'
   s.add_dependency 'hiredis',                 '0.1.4'

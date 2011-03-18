@@ -1,3 +1,6 @@
+require 'logger'
+require 'ruby-debug'
+
 module ThreeScale
   module Backend
     # Worker for working off background jobs. This is very stripped down version of the
@@ -18,6 +21,7 @@ module ThreeScale
 
         @one_off           = options[:one_off]
         @polling_frequency = options[:polling_frequency] || 5
+
       end
       
       # == Options
@@ -27,11 +31,11 @@ module ThreeScale
       #                        polling it for new jobs. If zero, will process everything 
       #                        in the queue and quit.
       def self.work(options = {})
-        new(options).work
+				new(options).work
       end
 
       def work
-        register_worker
+			  register_worker
 
         loop do
           break if @shutdown

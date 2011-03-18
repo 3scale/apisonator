@@ -1,3 +1,6 @@
+
+require 'json'
+
 module ThreeScale
   module Backend
     module Transactor
@@ -105,11 +108,19 @@ module ThreeScale
                     xml.period_start  report.period_start.strftime(TIME_FORMAT)
                     xml.period_end    report.period_end.strftime(TIME_FORMAT)
                     xml.max_value     report.max_value
-                    if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
-                      xml.current_value report.current_value + options[:usage][report.metric_name].to_i
-                    else
-                      xml.current_value report.current_value
-                    end
+
+										if options[:anchors_for_caching].nil?
+
+                    	if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
+                      	xml.current_value report.current_value + options[:usage][report.metric_name].to_i
+                    	else
+                      	xml.current_value report.current_value
+                    	end
+										else
+											## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
+											## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
+											xml.current_value "|.|#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
+										end
                   end
                 end
               end

@@ -40,7 +40,37 @@ namespace :release do
   end
 end
 
+desc 'Seed, put info into redis using data/postfile3, plan :default'
+task :seed do
+	system "ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3"	
+end
+
+desc 'Seed, put info into redis using data/postfile3, plan :user'
+task :seed_user do
+	system "ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3"	
+end
+
+
 desc 'Start the backend server in development'
 task :start do
   system "ruby -Ilib bin/3scale_backend -p #{ENV['PORT'] || 3001} start"
 end
+
+desc 'Start a backend_worker in development'
+task :start_worker do
+  system "ruby -Ilib bin/3scale_backend_worker_no_daemon"
+end
+
+desc 'Stop a backend_worker in development'
+task :stop_worker do
+  system "ruby -Ilib bin/3scale_backend_worker stop"
+end
+
+desc 'Restart a backend_worker in development'
+task :restart_worker do
+  system "ruby -Ilib bin/3scale_backend_worker restart"
+end
+
+
+
+

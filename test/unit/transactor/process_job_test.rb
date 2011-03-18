@@ -5,11 +5,23 @@ module Transactor
     include TestHelpers::Sequences
 
     def setup
+			@provider_key = next_id
       @service_id = next_id
       @application_id_one = next_id
       @application_id_two = next_id
 
       @metric_id = next_id
+
+			Service.save(:provider_key => @provider_key, :id => @service_id)
+
+    	Application.save(:service_id => @service_id,
+              :id => @application_id_one, :state => :live)
+			Application.save(:service_id => @service_id,
+              :id => @application_id_two, :state => :live)
+		
+    	# Create metrics
+    	Metric.save(:service_id => @service_id, :id => @metric_id, :name => @metric_id)
+
     end
 
     def test_aggregates
@@ -34,6 +46,8 @@ module Transactor
     end
     
     def test_archives
+
+
       Archiver.expects(:add_all).
         with([{:service_id     => @service_id,
                :application_id => @application_id_one,

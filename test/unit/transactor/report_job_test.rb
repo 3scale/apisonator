@@ -114,6 +114,7 @@ module Transactor
         @service_id, '0' => {'user_key' => user_key, 'usage' => {'hits' => 1}})
     end
 
+
     test 'reports error on invalid legacy user key' do
       Application.save_id_by_key(@service_id, 'foobar', @application_id)
 

@@ -1,11 +1,49 @@
+require 'ruby-debug'
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class AggregatorTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
 
+	def seed_data
+
+		#MASTER_SERVICE_ID = 1
+
+		## for the master
+		master_service_id = ThreeScale::Backend.configuration.master_service_id
+		Metric.save(
+      :service_id => master_service_id,
+      :id         => 100,
+      :name       => 'hits',
+      :children   => [Metric.new(:id => 101, :name => 'transactions/create_multiple'),
+                      Metric.new(:id => 102, :name => 'transactions/authorize')])
+
+    Metric.save(
+      :service_id => master_service_id,
+      :id         => 200,
+      :name       => 'transactions')
+
+		## for the provider    
+
+		provider_key = "provider_key"
+    service_id   = 1001
+    Service.save(:provider_key => provider_key, :id => service_id)
+
+    # Create master cinstance
+    Application.save(:service_id => service_id,
+              :id => 2001, :state => :live)
+		
+    # Create metrics
+    Metric.save(:service_id => service_id, :id => 3001, :name => 'hits')
+
+
+	end
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
+
+		seed_data()
+
   end
 
   test 'aggregate_all increments_all_stats_counters' do
@@ -14,6 +52,7 @@ class AggregatorTest < Test::Unit::TestCase
                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                :usage          => {'3001' => 1}}])
 
+	
     assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
     assert_equal '1', @storage.get(service_key(1001, 3001, :week,   '20100503'))

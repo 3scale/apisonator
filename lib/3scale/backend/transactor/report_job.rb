@@ -24,7 +24,9 @@ module ThreeScale
                 :service_id     => service_id,
                 :application_id => application_id,
                 :timestamp      => raw_transaction['timestamp'],
-                :usage          => metrics.process_usage(raw_transaction['usage'])}
+                :usage          => metrics.process_usage(raw_transaction['usage']),
+								:user_id				=> raw_transaction['user_id'],
+								:no_body				=> raw_transaction['no_body']}
             end
           end
 

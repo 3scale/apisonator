@@ -15,7 +15,9 @@ module ThreeScale
       end
 
       def self.load_by_id_or_user_key!(service_id, app_id, user_key)
+
         case
+			
         when app_id && user_key
           raise AuthenticationError
         when app_id

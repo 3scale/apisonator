@@ -33,7 +33,8 @@ module ThreeScale
         private
 
         def parse_usage(raw_usage)
-          (raw_usage || {}).inject({}) do |usage, (name, value)|
+					
+					 (raw_usage || {}).inject({}) do |usage, (name, value)|
             name      = sanitize_name(name)
             metric_id = metric_id(name)
 

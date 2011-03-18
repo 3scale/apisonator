@@ -52,10 +52,10 @@ class ErrorsTest < Test::Unit::TestCase
 
   def test_message_of_usage_value_invalid_when_the_value_is_blank
     error = UsageValueInvalid.new('hits', nil)
-    assert_equal %(usage value for metric "hits" can't be empty), error.message
+    assert_equal %(usage value for metric "hits" can not be empty), error.message
 
     error = UsageValueInvalid.new('hits', '')
-    assert_equal %(usage value for metric "hits" can't be empty), error.message
+    assert_equal %(usage value for metric "hits" can not be empty), error.message
   end
 
   test 'message of UsageValueInvalid when the value is not blank' do

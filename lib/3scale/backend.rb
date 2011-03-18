@@ -17,10 +17,14 @@ require 'zlib'
 
 require '3scale/backend/configuration'
 require '3scale/backend/extensions'
+require '3scale/backend/has_set'
+require '3scale/backend/application'
+require '3scale/backend/aggregator'
+
 
 module ThreeScale
   module Backend
-    autoload :Aggregator,             '3scale/backend/aggregator'
+    
     autoload :AllowMethods,           '3scale/backend/allow_methods'
     autoload :Application,            '3scale/backend/application'
     autoload :Archiver,               '3scale/backend/archiver'
@@ -38,8 +42,9 @@ module ThreeScale
     autoload :UsageLimit,             '3scale/backend/usage_limit'
     autoload :Validators,             '3scale/backend/validators'
     autoload :Version,                '3scale/backend/version'
+		autoload :Aggregator,             '3scale/backend/aggregator'
     autoload :Worker,                 '3scale/backend/worker'
-
+ 
     autoload :ApplicationKeyInvalid,  '3scale/backend/errors'
     autoload :ApplicationNotActive,   '3scale/backend/errors'
     autoload :ApplicationNotFound,    '3scale/backend/errors'

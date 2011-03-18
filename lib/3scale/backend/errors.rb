@@ -91,7 +91,7 @@ module ThreeScale
     class UsageValueInvalid < Error
       def initialize(metric_name, value)
         if value.blank?
-          super %(usage value for metric "#{metric_name}" can't be empty)
+          super %(usage value for metric "#{metric_name}" can not be empty)
         else
           super %(usage value "#{value}" for metric "#{metric_name}" is invalid)
         end
@@ -100,6 +100,23 @@ module ThreeScale
 
     class UnsupportedApiVersion < Error
     end
+
+		# new errors for the user limiting
+
+		class UserNotDefined < Error
+			def initialize(id)
+				super %(application with id="#{id}" requires a user (user_id))
+			end
+		end
+
+
+		class UserRequiresRegistration < Error
+			def initialize(service_id, user_id)
+				super %(user with user_id="#{user_id}" requires registration to use service with id="#{service_id}")
+			end
+		end
+
+
 
     # Legacy API support
 
