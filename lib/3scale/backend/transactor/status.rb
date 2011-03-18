@@ -97,6 +97,14 @@ module ThreeScale
 
             xml.plan       plan_name
 
+            if options[:oauth]
+              xml.application do
+                xml.id           application.id
+                xml.key          application.keys.first
+                xml.redirect_url application.redirect_url
+              end
+            end
+
             unless usage_reports.empty?
               xml.usage_reports do
                 usage_reports.each do |report|

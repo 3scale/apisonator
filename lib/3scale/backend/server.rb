@@ -11,7 +11,7 @@ module ThreeScale
 
         server = ::Thin::Server.new(options[:host], options[:port]) do
           use Rack::Hoptoad, configuration.hoptoad.api_key if configuration.hoptoad.api_key
-          use Rack::CommonLogger if log
+          use ThreeScale::Backend::Logger if log
 
           run ThreeScale::Backend::Listener.new
         end

@@ -1,15 +1,15 @@
 require 'json'
 require 'ruby-debug'
 
+require '3scale/backend/transactor/notify_job'
+require '3scale/backend/transactor/process_job'
+require '3scale/backend/transactor/report_job'
+require '3scale/backend/transactor/status'
+
 module ThreeScale
   module Backend
     # Methods for reporting and authorizing transactions.
     module Transactor
-      autoload :NotifyJob,  '3scale/backend/transactor/notify_job'
-      autoload :ProcessJob, '3scale/backend/transactor/process_job'
-      autoload :ReportJob,  '3scale/backend/transactor/report_job'
-      autoload :Status,     '3scale/backend/transactor/status'
-
       include Core::StorageKeyHelpers
 
       extend self
@@ -34,6 +34,14 @@ module ThreeScale
                     Validators::Referrer,
                     Validators::ReferrerFilters,
                     Validators::State]
+
+      OAUTH_VALIDATORS = [Validators::OauthSetting,
+                          Validators::OauthKey,
+                          Validators::RedirectUrl,
+                          Validators::Referrer,
+                          Validators::ReferrerFilters,
+                          Validators::State,
+                          Validators::Limits]
 
       def authorize(provider_key, params)
         notify(provider_key, 'transactions/authorize' => 1)
@@ -152,6 +160,27 @@ status = Status.new(:service     => service,
         raise e
       end
 
+      def oauth_authorize(provider_key, params)
+        notify(provider_key, 'transactions/authorize' => 1)
+
+        service     = Service.load!(provider_key)
+        application = Application.load_by_id_or_user_key!(service.id,
+                                                          params[:app_id],
+                                                          params[:user_key])
+        usage       = load_current_usage(application)
+
+        Status.new(:service     => service,
+                   :application => application,
+                   :values      => usage).tap do |status|
+          OAUTH_VALIDATORS.all? do |validator|
+            if validator == Validators::Referrer && !status.service.referrer_filters_required?
+              true
+            else
+              validator.apply(status, params)
+            end
+          end
+        end
+      end
 
       def authrep(provider_key, params)
 

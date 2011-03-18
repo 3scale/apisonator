@@ -57,6 +57,21 @@ module ThreeScale
 
       end
 
+      get '/transactions/oauth_authorize.xml' do
+        authorization = Transactor.oauth_authorize(params[:provider_key], params)
+        response_code = if authorization.authorized?
+                          200
+                        else
+                          409
+                        end
+        status response_code
+        if params[:no_body]
+          body nil
+        else
+          body authorization.to_xml(:oauth => true)
+        end
+      end
+
       get '/transactions/authrep.xml' do
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
 

@@ -1,8 +1,8 @@
+require '3scale/backend/archiver/s3_storage'
+
 module ThreeScale
   module Backend
     module Archiver
-      autoload :S3Storage, '3scale/backend/archiver/s3_storage'
-
       extend self
       include Configurable
 
