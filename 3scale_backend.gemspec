@@ -16,12 +16,12 @@ Gem::Specification.new do |s|
  
   s.required_rubygems_version = ">= 1.3.7"
     
-  s.add_dependency '3scale_core',             '>= 0.3.0'
+  s.add_dependency '3scale_core',             '~> 0.3.0'
   s.add_dependency 'aws-s3',                  '~> 0.6'
   s.add_dependency 'builder',                 '~> 2.1'
   s.add_dependency 'hiredis',                 '0.1.4'
   s.add_dependency 'redis',                   '2.1.1'
-  s.add_dependency 'resque',                  '~> 1.14' # please use this in production/staging -> https://github.com/tmacedo/resque
+  s.add_dependency 'resque',                  '~> 1.14.0' # please use this in production/staging -> https://github.com/tmacedo/resque
   s.add_dependency 'rack',                    '~> 1.1'
   s.add_dependency 'rack_hoptoad',            '~> 0.1'
   s.add_dependency 'rack-rest_api_versioning'
