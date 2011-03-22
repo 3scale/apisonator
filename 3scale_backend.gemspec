@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'builder',                 '~> 2.1'
   s.add_dependency 'hiredis',                 '0.1.4'
   s.add_dependency 'redis',                   '2.1.1'
-  s.add_dependency 'resque',                  '~> 1.9'
+  s.add_dependency 'resque',                  '~> 1.14' # please use this in production/staging -> https://github.com/tmacedo/resque
   s.add_dependency 'rack',                    '~> 1.1'
   s.add_dependency 'rack_hoptoad',            '~> 0.1'
   s.add_dependency 'rack-rest_api_versioning'
