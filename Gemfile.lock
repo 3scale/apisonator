@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     3scale_backend (0.14.1)
-      3scale_core (>= 0.2.11)
+      3scale_core (~> 0.2.11)
       aws-s3 (~> 0.6)
       builder (~> 2.1)
       hiredis (= 0.1.4)
@@ -10,7 +10,7 @@ PATH
       rack-rest_api_versioning
       rack_hoptoad (~> 0.1)
       redis (= 2.1.1)
-      resque (~> 1.14)
+      resque (~> 1.14.0)
       sinatra (~> 1.0)
       thin (~> 1.2)
       yajl-ruby (~> 0.7)
