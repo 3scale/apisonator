@@ -128,6 +128,11 @@ module ThreeScale
 			end
 		end
 
+    class ServiceLoadInconsitency < Error
+      def initialize(service_id, other_service_id)
+        super %(service.load_by_id with id="#{service}" loaded the service with id="#{other_service_id}")
+      end
+    end
 
 
     # Legacy API support

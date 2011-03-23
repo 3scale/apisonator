@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'ruby-debug'
 require 'optparse'
 
 file = nil
@@ -73,11 +74,17 @@ class Seeder
     # Create service
     provider_key = params['provider_key']
     service_id   = 1001
-    Service.save(:provider_key => provider_key, :id => service_id, :user_registration_required => false)
+    plan_id = 2001
+    user_plan_id = 2002
+    user_plan_name = "user_plan_name"
+
+    Service.save(:provider_key => provider_key, :id => service_id, :user_registration_required => false, :default_user_plan_id => user_plan_id, :default_user_plan_name => user_plan_name)
+
+    ##s = Service.load!(provider_key)
+    ##u = User.load!(s,"aaaa")
 
     # Create master cinstance
-    Application.save(:service_id => master_service_id,
-              :id => 1002, :state => :live)
+    Application.save(:service_id => master_service_id, :id => 1002, :state => :live)
 
     # Create metrics
     Metric.save(:service_id => service_id, :id => 8001, :name => 'hits')
@@ -129,7 +136,7 @@ class Seeder
 											:minute			=>		10)
 		end
 
-
+   
     [service_id, plan_id, user_plan_id]
   end
 

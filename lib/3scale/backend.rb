@@ -45,6 +45,7 @@ require '3scale/backend/storage'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
+require '3scale/backend/user'
 
 require '3scale/backend/version'
 require '3scale/backend/worker'

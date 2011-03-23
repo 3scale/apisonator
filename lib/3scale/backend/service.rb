@@ -8,6 +8,7 @@ module ThreeScale
       def self.load!(provider_key)
         load(provider_key) or raise ProviderKeyInvalid, provider_key
       end
+
     end
   end
 end

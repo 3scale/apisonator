@@ -3,9 +3,17 @@ module ThreeScale
     module Validators
       class Limits < Base
         def apply
-          values = process(status.values, params[:usage])
+  
+          values = process(status.values, params[:usage]) unless status.application.nil?
+          user_values = process(status.user_values, params[:usage]) unless status.user.nil? 
 
-          if application.usage_limits.all? { |limit| limit.validate(values) }
+          check_user = true
+          check_app = true
+
+          check_app = status.application.usage_limits.all? { |limit| limit.validate(values) } unless status.application.nil?
+          check_user =  status.user.usage_limits.all? { |limit| limit.validate(user_values) } unless status.user.nil?
+
+          if check_user && check_app
             succeed!
           else
             fail!(LimitsExceeded.new)

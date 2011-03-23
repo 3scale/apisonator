@@ -1,0 +1,4 @@
+#! /usr/bin/env ruby
+
+require '3scale/backend'
+ThreeScale::Backend::Worker.work
