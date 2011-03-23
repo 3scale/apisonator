@@ -174,7 +174,7 @@ class ReportTest < Test::Unit::TestCase
 
     assert_not_nil error
     assert_equal 'usage_value_invalid', error[:code]
-    assert_equal %Q(usage value for metric "hits" can't be empty), error[:message]
+    assert_equal %Q(usage value for metric "hits" can not be empty), error[:message]
   end
 
   test 'report reports error on invalid usage value' do

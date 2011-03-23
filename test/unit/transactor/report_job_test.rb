@@ -27,8 +27,7 @@ module Transactor
                :application_id => @application_id,
                :timestamp      => nil,
                :usage          => {@metric_id => 1},
-               :user_id        => nil,
-               :no_body        => nil}])
+               :user_id        => nil}])
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
@@ -111,8 +110,7 @@ module Transactor
                :application_id => @application_id,
                :timestamp      => nil,
                :usage          => {@metric_id => 1},
-               :user_id        => nil,
-               :no_body        => nil}])
+               :user_id        => nil}])
 
       Transactor::ReportJob.perform(
         @service_id, '0' => {'user_key' => user_key, 'usage' => {'hits' => 1}})
