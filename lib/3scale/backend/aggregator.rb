@@ -4,27 +4,23 @@ require 'ruby-debug'
 module ThreeScale
   module Backend
     module Aggregator
-	
       include Core::StorageKeyHelpers
-		
       extend self
-		
+
       def aggregate_all(transactions)
-				applications = Hash.new
+        applications = Hash.new
         users = Hash.new
 
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
           storage.pipelined do
             slice.each do |transaction|
+              key = transaction[:application_id]
+              key = transaction[:user_key] if key.nil?
 
-							key = transaction[:application_id]
-							key = transaction[:user_key] if key.nil?
-
-							## the key must be application+user if users exists since this is the lowest
-							## granularity.
-							## applications contains the list of application, or application+users that need to be limit checked
-						
-							applications[key] = {:application_id => transaction[:application_id], :user_key => transaction[:user_key], :service_id => transaction[:service_id]}
+              ## the key must be application+user if users exists since this is the lowest
+              ## granularity.
+              ## applications contains the list of application, or application+users that need to be limit checked
+              applications[key] = {:application_id => transaction[:application_id], :user_key => transaction[:user_key], :service_id => transaction[:service_id]}
 
               unless (transaction[:user_id].nil?)
                 key = transaction[:user_id]
@@ -36,27 +32,24 @@ module ThreeScale
           end
         end
 
-				## now we have done all incrementes for all the transactions, we
-				## need to update the cached_status for for the transactor
-
-				update_status_cache(applications,users)
-       
-				
+        ## now we have done all incrementes for all the transactions, we
+        ## need to update the cached_status for for the transactor
+        update_status_cache(applications,users)
       end
 
       private
 
-			def aggregate(transaction)
+      def aggregate(transaction)
         service_prefix     = service_key_prefix(transaction[:service_id])
         application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
 	
-				# this one is for the limits of the users
-				if transaction[:user_id].nil?
-					user_prefix = nil
-				else
-					user_prefix = user_key_prefix(service_prefix,transaction[:user_id])
-				end
-				
+        # this one is for the limits of the users
+        if transaction[:user_id].nil?
+          user_prefix = nil
+        else
+          user_prefix = user_key_prefix(service_prefix,transaction[:user_id])
+        end
+
         timestamp = transaction[:timestamp]
 
         transaction[:usage].each do |metric_id, value|
@@ -78,35 +71,30 @@ module ThreeScale
           increment(application_metric_prefix, :hour,       timestamp, value)
           increment(application_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
 
-					unless transaction[:user_id].nil? 
-					
+          unless transaction[:user_id].nil? 
             user_metric_prefix = metric_key_prefix(user_prefix, metric_id)
-
-						increment(user_metric_prefix, :eternity,   nil,       value)
-          	increment(user_metric_prefix, :year,       timestamp, value)
-          	increment(user_metric_prefix, :month,      timestamp, value)
-          	increment(user_metric_prefix, :week,       timestamp, value)
-          	increment(user_metric_prefix, :day,        timestamp, value)
-          	increment(user_metric_prefix, :hour,       timestamp, value)
-          	increment(user_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
-            
-					end
-					
-
+            increment(user_metric_prefix, :eternity,   nil,       value)
+            increment(user_metric_prefix, :year,       timestamp, value)
+            increment(user_metric_prefix, :month,      timestamp, value)
+            increment(user_metric_prefix, :week,       timestamp, value)
+            increment(user_metric_prefix, :day,        timestamp, value)
+            increment(user_metric_prefix, :hour,       timestamp, value)
+            increment(user_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+          end
         end
 
         update_application_set(service_prefix, transaction[:application_id])
         update_user_set(service_prefix, transaction[:user_id]) unless transaction[:user_id].nil?
-
       end		
 
-			## copied from transactor.rb
+
+      ## copied from transactor.rb
       def load_user_current_usage(user)
         pairs = user.usage_limits.map do |usage_limit|
           [usage_limit.metric_id, usage_limit.period]
         end
         # preloading metric names
-	      user.metric_names = ThreeScale::Core::Metric.load_all_names(user.service_id, pairs.map{|e| e.first}.uniq)
+        user.metric_names = ThreeScale::Core::Metric.load_all_names(user.service_id, pairs.map{|e| e.first}.uniq)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
           user_usage_value_key(user, metric_id, period, now)
@@ -145,7 +133,7 @@ module ThreeScale
       end
 
       ## copied from transactor.rb
-			def usage_value_key(application, metric_id, period, time)
+      def usage_value_key(application, metric_id, period, time)
         encode_key("stats/{service:#{application.service_id}}/" +
                    "cinstance:#{application.id}/metric:#{metric_id}/" +
                    "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
@@ -158,69 +146,56 @@ module ThreeScale
                    "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
       end
 
-			
-	
-			def update_status_cache(applications, users = {}) 
-
-				applications.each do |appid, values|
-	
-					application = Application.load_by_id_or_user_key!(values[:service_id],values[:application_id],values[:user_key])
-					usage = load_current_usage(application)	
-					status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
-					ThreeScale::Backend::Validators::Limits.apply(status,{})
+      def update_status_cache(applications, users = {}) 
+        applications.each do |appid, values|
+          application = Application.load_by_id_or_user_key!(values[:service_id],values[:application_id],values[:user_key])
+          usage = load_current_usage(application)	
+          status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
+          ThreeScale::Backend::Validators::Limits.apply(status,{})
 
           key = caching_key(values[:service_id],:application,application.id)
-					
-					if status.authorized?
-						storage.pipelined do 
-							storage.set(key,status.to_xml(:anchors_for_caching => true))
-							storage.expire(key,60-Time.now.sec)
-							storage.srem("limit_violations_set",key)
-						end
-					else
-						## it just violated the Limits, add to the violation set
-						storage.pipelined do 
-							storage.set(key,status.to_xml(:anchors_for_caching => true))
-							storage.expire(key,60-Time.now.sec)
-							storage.sadd("limit_violations_set",key)
-						end 
-					end
 
-				end
-
+          if status.authorized?
+            storage.pipelined do 
+              storage.set(key,status.to_xml(:anchors_for_caching => true))
+              storage.expire(key,60-Time.now.sec)
+              storage.srem("limit_violations_set",key)
+            end
+          else
+            ## it just violated the Limits, add to the violation set
+            storage.pipelined do 
+              storage.set(key,status.to_xml(:anchors_for_caching => true))
+              storage.expire(key,60-Time.now.sec)
+              storage.sadd("limit_violations_set",key)
+            end 
+          end
+        end
 
         users.each do |userid, values|
-
           service ||= Service.load_by_id(values[:service_id])
           raise ServiceLoadInconsitency.new(values[:service_id],service.id) if service.id != values[:service_id] 
           user = User.load!(service,values[:user_id])
-					usage = load_user_current_usage(user)	
-					status = ThreeScale::Backend::Transactor::Status.new(:user => user, :user_values => usage)					
-					ThreeScale::Backend::Validators::Limits.apply(status,{})
+          usage = load_user_current_usage(user)	
+          status = ThreeScale::Backend::Transactor::Status.new(:user => user, :user_values => usage)					
+          ThreeScale::Backend::Validators::Limits.apply(status,{})
 
           key = caching_key(service.id,:user,user.username)
-					
-					if status.authorized?
-						storage.pipelined do 
-							storage.set(key,status.to_xml(:anchors_for_caching => true))
-							storage.expire(key,60-Time.now.sec)
-							storage.srem("limit_violations_set",key)
-						end
-					else
-						## it just violated the Limits, add to the violation set
-						storage.pipelined do 
-							storage.set(key,status.to_xml(:anchors_for_caching => true))
-							storage.expire(key,60-Time.now.sec)
-							storage.sadd("limit_violations_set",key)
-						end 
-					end
-
+          if status.authorized?
+            storage.pipelined do 
+              storage.set(key,status.to_xml(:anchors_for_caching => true))
+              storage.expire(key,60-Time.now.sec)
+              storage.srem("limit_violations_set",key)
+            end
+          else
+            ## it just violated the Limits, add to the violation set
+            storage.pipelined do 
+              storage.set(key,status.to_xml(:anchors_for_caching => true))
+              storage.expire(key,60-Time.now.sec)
+              storage.sadd("limit_violations_set",key)
+            end 
+          end
         end
-
-
-			end
-
-
+      end
 
       def service_key_prefix(service_id)
         # The { ... } is the key tag. See redis docs for more info about key tags.
@@ -233,7 +208,7 @@ module ThreeScale
         "#{prefix}/cinstance:#{application_id}"
       end
 
-			def user_key_prefix(prefix, user_id)
+      def user_key_prefix(prefix, user_id)
         # XXX: For backwards compatibility, this is called cinstance. It will be eventually
         # renamed to application...
         "#{prefix}/uinstance:#{user_id}"
@@ -270,14 +245,10 @@ module ThreeScale
         storage.sadd(key, encode_key(user_id))
       end
 
-
-			# copied from transactor.rb
-
+      # copied from transactor.rb
       def caching_key(service_id, type ,id)
-         "cache/service:#{service_id}/#{type.to_s}:#{id}"
+        "cache/service:#{service_id}/#{type.to_s}:#{id}"
       end
-
-
 
       def storage
         Storage.instance

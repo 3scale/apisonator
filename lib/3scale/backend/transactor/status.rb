@@ -1,4 +1,3 @@
-
 require 'json'
 
 module ThreeScale
@@ -48,9 +47,9 @@ module ThreeScale
 
           def inspect
             "#<#{self.class.name} period=#{period}" +
-                                " metric_name=#{metric_name}" +
-                                " max_value=#{max_value}" +
-                                " current_value=#{current_value}>"
+            " metric_name=#{metric_name}" +
+            " max_value=#{max_value}" +
+            " current_value=#{current_value}>"
           end
         end
 
@@ -150,7 +149,6 @@ module ThreeScale
               xml.user_plan         user_plan_name
             end
 
-
             if options[:oauth]
               xml.application do
                 xml.id           application.id
@@ -162,7 +160,6 @@ module ThreeScale
             if @user.nil?
 
               xml.__separator__ if options[:anchors_for_caching]
-
               unless application_usage_reports.empty?
                 xml.usage_reports do
                   application_usage_reports.each do |report|
@@ -175,70 +172,57 @@ module ThreeScale
                       xml.period_end    report.period_end.strftime(TIME_FORMAT)
                       xml.max_value     report.max_value
 
-										  if not options[:anchors_for_caching]
-
-                     
-
+                      if not options[:anchors_for_caching]
                       	if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
-                        	xml.current_value report.current_value + options[:usage][report.metric_name].to_i
+                          xml.current_value report.current_value + options[:usage][report.metric_name].to_i
                       	else 
-                        	xml.current_value report.current_value
-                      	end
-										  else
-											  ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
-											  ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-											  xml.current_value "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
-										  end
+                          xml.current_value report.current_value
+                        end
+                      else
+                        ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
+                        ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
+                        xml.current_value "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
+                      end
                     end
                   end
                 end
               end
-
               xml.__separator__ if options[:anchors_for_caching]
-
-
             else
-
               xml.__separator__ if options[:anchors_for_caching]
-
               unless application_usage_reports.empty? 
                 attributes = {:from => "application"}
                 xml.usage_reports(attributes) do
                   application_usage_reports.each do |report|
-                    attributes = {:metric => report.metric_name,
-                                  :period => report.period}
+                    attributes = {:metric => report.metric_name, :period => report.period}
                     attributes[:exceeded] = 'true' if report.exceeded?
-
                     xml.usage_report(attributes) do
                       xml.period_start  report.period_start.strftime(TIME_FORMAT)
                       xml.period_end    report.period_end.strftime(TIME_FORMAT)
                       xml.max_value     report.max_value
 
-										  if not options[:anchors_for_caching]
-
-                      	if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
-                        	xml.current_value report.current_value + options[:usage][report.metric_name].to_i
+                      if not options[:anchors_for_caching]
+                        if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
+                          xml.current_value report.current_value + options[:usage][report.metric_name].to_i
                       	else 
-                        	xml.current_value report.current_value
-                      	end
-										  else
-											  ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
-											  ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-											  xml.current_value "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
-										  end
+                          xml.current_value report.current_value
+                        end
+                      else
+                        ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
+                        ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
+                        xml.current_value "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
+                      end
                     end
                   end
                 end
               end
-
               xml.__separator__ if options[:anchors_for_caching]
 
               unless user_usage_reports.empty?
                 attributes = {:from => "user"}
                 xml.usage_reports(attributes) do
                   user_usage_reports.each do |report|
-                    attributes = {:metric => report.metric_name,
-                                  :period => report.period}
+                    attributes = {:metric => report.metric_name, :period => report.period}
                     attributes[:exceeded] = 'true' if report.exceeded?
 
                     xml.usage_report(attributes) do
@@ -246,23 +230,21 @@ module ThreeScale
                       xml.period_end    report.period_end.strftime(TIME_FORMAT)
                       xml.max_value     report.max_value
 
-										  if not options[:anchors_for_caching] 
-
-                      	if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
-                        	xml.current_value report.current_value + options[:usage][report.metric_name].to_i
-                      	else 
-                        	xml.current_value report.current_value
-                      	end
-										  else
-											  ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
-											  ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-											  xml.current_value "|.|user,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
-										  end
+                      if not options[:anchors_for_caching] 
+                        if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
+                          xml.current_value report.current_value + options[:usage][report.metric_name].to_i
+                        else 
+                          xml.current_value report.current_value
+                        end
+                      else
+                        ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
+                        ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
+                        xml.current_value "|.|user,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
+                      end
                     end
                   end
                 end
               end
-
               xml.__separator__ if options[:anchors_for_caching]
             end
           end
@@ -286,8 +268,6 @@ module ThreeScale
             UsageReport.new(self, usage_limit, :user)
           end
         end
-
-
       end
     end
   end

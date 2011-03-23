@@ -16,9 +16,9 @@ parser = OptionParser.new do |parser|
     usage_limits = true
   end
 
-	parser.on('-u','--user','Generated a plan with limits by user') do
-		user_limits = true
-	end
+  parser.on('-u','--user','Generated a plan with limits by user') do
+    user_limits = true
+  end
 
   parser.parse!
 end
@@ -42,11 +42,9 @@ class Seeder
     storage = Storage.instance
     storage.flushall
 
-	 	master_service_id   = seed_master_data
-   	service_id, plan_id, user_plan_id = seed_provider_data(master_service_id, params, usage_limits, user_limits)
-   	seed_buyer_data(service_id, plan_id, user_plan_id, params, user_limits)
-	
-
+    master_service_id   = seed_master_data
+    service_id, plan_id, user_plan_id = seed_provider_data(master_service_id, params, usage_limits, user_limits)
+    seed_buyer_data(service_id, plan_id, user_plan_id, params, user_limits)
   end
 
   private
@@ -89,7 +87,7 @@ class Seeder
     # Create metrics
     Metric.save(:service_id => service_id, :id => 8001, :name => 'hits')
 
-   	Metric.save(
+    Metric.save(
       :service_id => service_id,
       :id         => 8001,
       :name       => 'hits',
@@ -97,10 +95,8 @@ class Seeder
                       Metric.new(:id => 80012, :name => 'method2')])
 
     Metric.save(:service_id => service_id, :id => 8002, :name => 'other')
-
-		Metric.save(:service_id => service_id, :id => 8003, :name => 'stats_metric')
-
-		Metric.save(:service_id => service_id, :id => 8004, :name => 'user_metric')
+    Metric.save(:service_id => service_id, :id => 8003, :name => 'stats_metric')
+    Metric.save(:service_id => service_id, :id => 8004, :name => 'user_metric')
 
 
     # Create plan
@@ -124,19 +120,17 @@ class Seeder
                       :minute     =>     200)
     end
 
-		user_plan_id = 2002
+    user_plan_id = 2002
 
-		if user_limits
-
-			UsageLimit.save(:service_id => service_id,
+    if user_limits
+      UsageLimit.save(:service_id => service_id,
                       :plan_id    => user_plan_id,
                       :metric_id  => 8004,
-                      :day        =>   10000,
-                      :hour       =>    100,
-											:minute			=>		10)
-		end
+                      :day        => 10000,
+                      :hour       => 100,
+                      :minute     => 10)
+    end
 
-   
     [service_id, plan_id, user_plan_id]
   end
 
@@ -153,16 +147,12 @@ class Seeder
     app_ids.each_with_index do |app_id, index|
       Application.save(:service_id => service_id,
                     :plan_id    => plan_id,
-                    :plan_name  => 'test',									    
-										:user_required => user_limits,
+                    :plan_name  => 'test',
+                    :user_required => user_limits,
                     :id         => app_id,
                     :state => :active)
     end
   end
-
-
- 
-
 end
 
 

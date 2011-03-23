@@ -26,101 +26,92 @@ module ThreeScale
 
 
       get '/transactions/authorize.xml' do
-
-				authorization, cached_authorization_text, cached_authorization_result = Transactor.authorize(params[:provider_key], params)
-        
+	authorization, cached_authorization_text, cached_authorization_result = Transactor.authorize(params[:provider_key], params)
         if cached_authorization_text.nil? || cached_authorization_result.nil?
-    			response_code = if authorization.authorized?
-		                        200
-		                      else
-		                        409
-		                      end
-		      status response_code
-		      if params[:no_body]
-		        body nil
-		      else
-						body authorization.to_xml
-		      end
-				else
-
-					response_code = if cached_authorization_result
-														200
-													else
-														409
-													end
-					status response_code
-					if params[:no_body]
-						body nil
-					else
-						body cached_authorization_text
-					end
-				end
-
+          response_code = if authorization.authorized?
+            200
+          else
+            409
+          end
+          status response_code
+          if params[:no_body]
+            body nil
+          else
+            body authorization.to_xml
+          end
+        else
+          response_code = if cached_authorization_result
+            200
+          else
+            409
+          end
+          status response_code
+          if params[:no_body]
+            body nil
+          else
+            body cached_authorization_text
+          end
+        end
       end
 
       get '/transactions/oauth_authorize.xml' do
-
         authorization, cached_authorization_text, cached_authorization_result = Transactor.oauth_authorize(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
-    			response_code = if authorization.authorized?
-		                        200
-		                      else
-		                        409
-		                      end
-		      status response_code
-		      if params[:no_body]
-		        body nil
-		      else
-						body authorization.to_xml(:oauth => true)
-		      end
-				else
-
-					response_code = if cached_authorization_result
-														200
-													else
-														409
-													end
-					status response_code
-					if params[:no_body]
-						body nil
-					else
-						body cached_authorization_text
-					end
-				end
+          response_code = if authorization.authorized?
+            200
+          else
+            409
+          end
+          status response_code
+          if params[:no_body]
+            body nil
+          else
+            body authorization.to_xml(:oauth => true)
+          end
+        else
+          response_code = if cached_authorization_result
+            200
+          else
+            409
+          end
+          status response_code
+          if params[:no_body]
+            body nil
+          else
+            body cached_authorization_text
+          end
+        end
       end
 
       get '/transactions/authrep.xml' do
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
 
-				if cached_authorization_text.nil? || cached_authorization_result.nil?
-    			response_code = if authorization.authorized?
-		                        200
-		                      else
-		                        409
-		                      end
-		      status response_code
-		      if params[:no_body]
-		        body nil
-		      else
-						body authorization.to_xml(:usage => params[:usage])
-		      end
-				else
-
-					response_code = if cached_authorization_result
-														200
-													else
-														409
-													end
-					status response_code
-					if params[:no_body]
-						body nil
-					else
-						body cached_authorization_text
-					end
-				end
-
-				
+        if cached_authorization_text.nil? || cached_authorization_result.nil?
+          response_code = if authorization.authorized?
+            200
+          else
+            409
+          end
+          status response_code
+          if params[:no_body]
+            body nil
+          else
+            body authorization.to_xml(:usage => params[:usage])
+          end
+        else
+          response_code = if cached_authorization_result
+            200
+          else
+            409
+          end
+          status response_code
+          if params[:no_body]
+            body nil
+          else
+            body cached_authorization_text
+          end
+        end
       end
 
       get '/transactions/errors.xml' do

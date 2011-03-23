@@ -1,4 +1,3 @@
-
 module ThreeScale
   module Backend
     class User 
@@ -19,9 +18,7 @@ module ThreeScale
 
         user = nil
 
-        if state.nil? 
-          ## the user does not exist
-
+        if state.nil? ## the user does not exist
           return nil if service.user_registration_required?
           ## the user did not exist and we need to create it
 
@@ -30,23 +27,17 @@ module ThreeScale
                      :state      => :active.to_sym,
                      :plan_id    => service.default_user_plan_id,
                      :plan_name  => service.default_user_plan_name) 
-
           user.save
-
         else 
-       
           user = User.new(:service_id => service.id,
-                        :username   => username,
-                        :state      => state.to_sym,
-                        :plan_id    => plan_id,
-                        :plan_name  => plan_name)
-
+                          :username   => username,
+                          :state      => state.to_sym,
+                          :plan_id    => plan_id,
+                          :plan_name  => plan_name)
         end
 
         return user
-
       end
-
 
       def self.save(attributes)
         user = new(attributes)
@@ -90,9 +81,6 @@ module ThreeScale
       def self.storage_key(service_id, username)
          "service:#{service_id}/user:#{username}"
       end
-
-
-
     end
   end
 end

@@ -18,14 +18,13 @@ module ThreeScale
 
           group_by_application_id(service_id, raw_transactions) do |application_id, group|
             metrics  = Metric.load_all(service_id)
-
             group.each do |raw_transaction|
               transactions << {
                 :service_id     => service_id,
                 :application_id => application_id,
                 :timestamp      => raw_transaction['timestamp'],
                 :usage          => metrics.process_usage(raw_transaction['usage']),
-								:user_id				=> raw_transaction['user_id']}
+                :user_id        => raw_transaction['user_id']}
             end
           end
 

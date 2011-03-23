@@ -113,20 +113,19 @@ module ThreeScale
     class UnsupportedApiVersion < Error
     end
 
-		# new errors for the user limiting
+    # new errors for the user limiting
+    class UserNotDefined < Error
+      def initialize(id)
+        super %(application with id="#{id}" requires a user (user_id))
+      end
+    end
 
-		class UserNotDefined < Error
-			def initialize(id)
-				super %(application with id="#{id}" requires a user (user_id))
-			end
-		end
 
-
-		class UserRequiresRegistration < Error
-			def initialize(service_id, user_id)
-				super %(user with user_id="#{user_id}" requires registration to use service with id="#{service_id}")
-			end
-		end
+    class UserRequiresRegistration < Error
+      def initialize(service_id, user_id)
+        super %(user with user_id="#{user_id}" requires registration to use service with id="#{service_id}")
+      end
+    end
 
     class ServiceLoadInconsitency < Error
       def initialize(service_id, other_service_id)
