@@ -41,7 +41,7 @@ This document describes the protocol used for your API to communicate with 3scal
 
 The API exposes a simple REST-based interface that provides these operations: <strong>authorize</strong>, and <strong>report</strong>.
 
-<h4>AUTHORIZE</h4>
+<h4>Authorize</h4>
 
 Read-only operation to authorize an application. It is used to check if a particular application exists, is active and is within usage limits of the service. It can be optionally used to authenticate a call using an application key.
 
@@ -202,7 +202,165 @@ GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_ke
 
 Host: su1.3scale.net</pre></code>
 
-<h4>AUTHREP</h4>
+<h4>OAuth Authorize</h4>
+
+It's a modified version of the authorize call that returns some extra data that is needed to power OAuth APIs. It's only available for users with OAuth enabled APIs.
+
+<code class="http"><pre>GET /transactions/oauth_authorize.xml?app_id={app_id}&amp;provider_key={provider_key}[&amp;app_key={app_key}]</pre></code>
+
+<h5>Parameters</h5>
+
+<dl>
+  <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
+  <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
+  <dt><var>app_key</var></dt> <dd>Application key. Optionl. Will be validated if sent.</dd> 
+  <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
+  <dt><var>no_body</var></dt> <dd>Specify this parameter to remove the HTTP body from the response. Optional. Example: no_body=true</dd>
+  <dt><var>usage</var></dt> <dd>Predicted usage. Optional</dd>
+  <dt><var>redirect_url</var></dt> <dd>Redirect URL for OAuth. Optional. Will be validated if sent.</dd>
+</dl>
+
+<h5>Successful Response</h5>
+
+Has status code <code class="http">200 OK</code> (if authorization is granted), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit. If the no_body parameter is specified, there is no body in the response.
+
+Example of successful authorize response
+
+<code class="xml">
+<pre>&lt;status&gt;
+  &lt;authorized&gt;true&lt;/authorized&gt;
+  &lt;plan&gt;Pro&lt;/plan&gt;
+
+  &lt;application&gt;
+    &lt;id&gt;57c53c8a&lt;/id&gt;
+    &lt;key&gt;433dbee8b34524326a2b4a3c126ec5c3&lt;/key&gt;
+    &lt;redirect_url&gt;http://www.example.com/redirect_url&lt;/redirect_url&gt;
+  &lt;/application&gt;
+
+  &lt;usage_reports&gt;
+    &lt;usage_report metric="hits" period="month"&gt;
+      &lt;period_start&gt;2010-08-01 00:00:00 +00:00&lt;/period_start&gt;
+      &lt;period_end&gt;2010-09-01 00:00:00 +00:00&lt;/period_end&gt;
+      &lt;current_value&gt;17344&lt;/current_value&gt;
+      &lt;max_value&gt;20000&lt;/max_value&gt;
+    &lt;/usage_report&gt;
+
+    &lt;usage_report metric="hits" period="day"&gt;
+      &lt;period_start&gt;2010-08-04 00:00:00 +00:00&lt;/period_start&gt;
+      &lt;period_end&gt;2010-08-05 00:00:00 +00:00&lt;/period_end&gt;
+      &lt;current_value&gt;732&lt;/current_value&gt;
+      &lt;max_value&gt;1000&lt;/max_value&gt;
+    &lt;/usage_report&gt;
+  &lt;/usage_reports/&gt;
+&lt;/status&gt;</pre></code>
+
+Example of failed authorize response (exceeded limits)
+
+<code class="xml">
+<pre>&lt;status&gt;
+  &lt;authorized&gt;false&lt;/authorized&gt;
+  &lt;reason&gt;Usage limits are exceeded&lt;/reason&gt;
+  &lt;plan&gt;Pro&lt;/plan&gt;
+
+  &lt;application&gt;
+    &lt;id&gt;57c53c8a&lt;/id&gt;
+    &lt;key&gt;433dbee8b34524326a2b4a3c126ec5c3&lt;/key&gt;
+    &lt;redirect_url&gt;http://www.example.com/redirect_url&lt;/redirect_url&gt;
+  &lt;/application&gt;
+
+  &lt;usage_reports&gt;
+    &lt;usage_report metric="hits" period="month"&gt;
+      &lt;period_start&gt;2010-08-01 00:00:00 +00:00&lt;/period_start&gt;
+      &lt;period_end&gt;2010-09-01 00:00:00 +00:00&lt;/period_end&gt;
+      &lt;current_value&gt;17344&lt;/current_value&gt;
+      &lt;max_value&gt;20000&lt;/max_value&gt;
+    &lt;/usage_report&gt;
+
+    &lt;usage_report metric="hits" period="day" exceeded="true"&gt;
+      &lt;period_start&gt;2010-08-04 00:00:00 +00:00&lt;/period_start&gt;
+      &lt;period_end&gt;2010-08-05 00:00:00 +00:00&lt;/period_end&gt;
+      &lt;current_value&gt;1042&lt;/current_value&gt;
+      &lt;max_value&gt;1000&lt;/max_value&gt;
+    &lt;/usage_report&gt;
+  &lt;/usage_reports/&gt;
+&lt;/status&gt;</pre>
+</code>
+
+Explanation of the elements
+
+<dl>
+  <dt><var>status</var></dt>
+  <dd>Root element of the response.</dd>
+  
+  <dt><var>authorized</var></dt>
+  <dd>Contains text "true" if the authorization was successful, or "false" if it failed.</dd>
+  
+  <dt><var>reason</var></dt>
+  <dd>Human readable textual description of failure reason. This element appears only if <var>authorize</var> is false.</dd>
+  
+  <dt><var>plan</var></dt>
+  <dd>Name of the plan the user is signed up to.</dd>
+
+  <dt><var>application</var></dt>
+  <dd>Parent element that holds the application details.</dd>
+
+  <dt><var>id</var></dt>
+  <dd>ID of the application. Matches the sent app_id.</dd>
+
+  <dt><var>key</var></dt>
+  <dd>Key of the application. You should use this as your OAuth v1.0a secret or OAuth v2.0 key.</dd>
+
+  <dt><var>redirect_url</var></dt>
+  <dd>Rdirect URL configured by the author of the application. If it's a web application you might be interested in making sure you'll only redirect users to this URL.</dd>
+  
+  <dt><var>usage_reports</var></dt>
+  <dd>Contains list of <var>usage_report</var> elements - one per each usage limit defined for the plan the user is signed up to.</dd>
+
+  <dt><var>usage_report</var></dt>
+  <dd>Contains information about usage status. Contains these elements: <var>period_start</var>, <var>period_end</var>, <var>current_value</var> and <var>max_value</var>. Has attributes <var>metric</var> with the name of the metric the limit applies to, <var>period</var>, which is the period of the limit (year, month, week, day, hour, minute) and optionaly <var>exceeded</var> which is set to "true" if the limit is exceeded in the current period.</dd>
+  
+  <dt><var>period_start</var></dt>
+  <dd>Start of the limit period. It's in the form <samp>YYYY-MM-DD HH:MM:SS +ZZ:ZZ</samp>. <samp>+ZZ:ZZ</samp> (or <samp>-ZZ:ZZ</samp>) is a time offset (in hours and minutes) from UTC.</dd>
+
+  <dt><var>period_end</var></dt> 
+  <dd>End of the limit period. Same format as <var>period_start</var></dd>
+  
+  <dt><var>current_value</var></dt>
+  <dd>Value of the corresponding metric accumulated so far in the current period.</dd>
+  
+  <dt><var>max_value</var></dt>
+  <dd>Maximum value allowed by the usage limit.</dd>
+</dl>
+
+<h5>Errors</h5>
+
+In case of error, the response body contains an XML-formatted object with a single element <var>error</var>. This element has one attribute <var>code</var> containing a unique string identifier of the error. The content of this element is a human-readable English description of the error.
+
+These are all possible error identifiers and their meanings:
+
+<dl>
+  <dt><var>provider_key_invalid</var></dt>
+  <dd>Provider key is not valid</dd>
+  
+  <dt><var>application_not_found</var></dt>
+  <dd>Application with the given id does not exist.</dd>
+</dl>
+
+This is an example of an error response:
+
+<code class="xml">
+<pre>&lt;?xml version=“1.0” encoding=“utf-8” ?&gt;
+&lt;error code=“application_not_found"&gt;Application with id="12345678" was not found&lt;/error&gt;</pre>
+</code>
+
+<h5>Example Request</h5>
+
+<code class="http"><pre>
+GET /transactions/oauth_authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key HTTP/1.1
+
+Host: su1.3scale.net</pre></code>
+
+<h4>Authrep</h4>
 
 "One-shot" operation to authorize an application and report traffic. The only difference between this call and the regular authorize call is that metric usage will be reported if the authorization is successful.
 
@@ -235,7 +393,7 @@ NOTE: <var>usage</var> is an associative array of the form <code>{metric : value
 
 Has status code <code class="http">200 OK</code> (if authorization is granted - and therefore reported), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit. If the no_body parameter is specified, there is no body in the response.
 
-<h4>REPORT</h4>
+<h4>Report</h4>
 
 This operation is used to report 3scale system about transactions. Any number of transactions can be reported in one request.
 
