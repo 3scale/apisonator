@@ -127,7 +127,7 @@ class TransactorTest < Test::Unit::TestCase
 
   test 'authorize raises an exception when provider key is invalid' do
     assert_raise ProviderKeyInvalid do
-      Transactor.authorize('booo', @application_one.id)
+      Transactor.authorize('booo', :app_id => @application_one.id)
     end
   end
 

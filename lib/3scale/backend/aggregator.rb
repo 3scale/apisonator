@@ -1,10 +1,14 @@
 require 'json'
 require 'ruby-debug'
 
+require '3scale/backend/cache'
+require '3scale/backend/errors'
+
 module ThreeScale
   module Backend
     module Aggregator
       include Core::StorageKeyHelpers
+      include Backend::Cache
       extend self
 
       def aggregate_all(transactions)
@@ -15,12 +19,11 @@ module ThreeScale
           storage.pipelined do
             slice.each do |transaction|
               key = transaction[:application_id]
-              key = transaction[:user_key] if key.nil?
-
+             
               ## the key must be application+user if users exists since this is the lowest
               ## granularity.
               ## applications contains the list of application, or application+users that need to be limit checked
-              applications[key] = {:application_id => transaction[:application_id], :user_key => transaction[:user_key], :service_id => transaction[:service_id]}
+              applications[key] = {:application_id => transaction[:application_id], :service_id => transaction[:service_id]}
 
               unless (transaction[:user_id].nil?)
                 key = transaction[:user_id]
@@ -148,27 +151,17 @@ module ThreeScale
 
       def update_status_cache(applications, users = {}) 
         applications.each do |appid, values|
-          application = Application.load_by_id_or_user_key!(values[:service_id],values[:application_id],values[:user_key])
+
+          ##application = Application.load_by_id_or_user_key!(values[:service_id],values[:application_id],values[:user_key])
+          application = Application.load(values[:service_id],values[:application_id])
           usage = load_current_usage(application)	
           status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
           ThreeScale::Backend::Validators::Limits.apply(status,{})
 
-          key = caching_key(values[:service_id],:application,application.id)
 
-          if status.authorized?
-            storage.pipelined do 
-              storage.set(key,status.to_xml(:anchors_for_caching => true))
-              storage.expire(key,60-Time.now.sec)
-              storage.srem("limit_violations_set",key)
-            end
-          else
-            ## it just violated the Limits, add to the violation set
-            storage.pipelined do 
-              storage.set(key,status.to_xml(:anchors_for_caching => true))
-              storage.expire(key,60-Time.now.sec)
-              storage.sadd("limit_violations_set",key)
-            end 
-          end
+          key = caching_key(values[:service_id],:application,application.id)
+          set_status_in_cache(key,status)
+
         end
 
         users.each do |userid, values|
@@ -179,21 +172,10 @@ module ThreeScale
           status = ThreeScale::Backend::Transactor::Status.new(:user => user, :user_values => usage)					
           ThreeScale::Backend::Validators::Limits.apply(status,{})
 
+            
           key = caching_key(service.id,:user,user.username)
-          if status.authorized?
-            storage.pipelined do 
-              storage.set(key,status.to_xml(:anchors_for_caching => true))
-              storage.expire(key,60-Time.now.sec)
-              storage.srem("limit_violations_set",key)
-            end
-          else
-            ## it just violated the Limits, add to the violation set
-            storage.pipelined do 
-              storage.set(key,status.to_xml(:anchors_for_caching => true))
-              storage.expire(key,60-Time.now.sec)
-              storage.sadd("limit_violations_set",key)
-            end 
-          end
+          set_status_in_cache(key,status)
+
         end
       end
 
@@ -245,10 +227,7 @@ module ThreeScale
         storage.sadd(key, encode_key(user_id))
       end
 
-      # copied from transactor.rb
-      def caching_key(service_id, type ,id)
-        "cache/service:#{service_id}/#{type.to_s}:#{id}"
-      end
+      
 
       def storage
         Storage.instance

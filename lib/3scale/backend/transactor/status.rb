@@ -134,20 +134,15 @@ module ThreeScale
         end
 
 
-
+        ## WARNING/CAUTION: any change in to_xml must be reflected in cache.rb/clean_cached_xml !!!
         def to_xml(options = {})
+         
           xml = Builder::XmlMarkup.new
           xml.instruct! unless options[:skip_instruct]
+          
           xml.status do
             xml.authorized authorized? ? 'true' : 'false'
             xml.reason     rejection_reason_text unless authorized?
-
-            if @user.nil?
-              xml.plan       plan_name
-            else
-              xml.application_plan  plan_name
-              xml.user_plan         user_plan_name
-            end
 
             if options[:oauth]
               xml.application do
@@ -160,6 +155,7 @@ module ThreeScale
             if @user.nil?
 
               xml.__separator__ if options[:anchors_for_caching]
+              xml.plan       plan_name
               unless application_usage_reports.empty?
                 xml.usage_reports do
                   application_usage_reports.each do |report|
@@ -187,12 +183,13 @@ module ThreeScale
                   end
                 end
               end
-              xml.__separator__ if options[:anchors_for_caching]
+              
             else
+
               xml.__separator__ if options[:anchors_for_caching]
+              xml.plan  plan_name unless plan_name.nil?
               unless application_usage_reports.empty? 
-                attributes = {:from => "application"}
-                xml.usage_reports(attributes) do
+                xml.usage_reports do
                   application_usage_reports.each do |report|
                     attributes = {:metric => report.metric_name, :period => report.period}
                     attributes[:exceeded] = 'true' if report.exceeded?
@@ -217,7 +214,7 @@ module ThreeScale
                 end
               end
               xml.__separator__ if options[:anchors_for_caching]
-
+              xml.user_plan user_plan_name
               unless user_usage_reports.empty?
                 attributes = {:from => "user"}
                 xml.usage_reports(attributes) do
@@ -245,11 +242,20 @@ module ThreeScale
                   end
                 end
               end
-              xml.__separator__ if options[:anchors_for_caching]
             end
+            xml.__separator__ if options[:anchors_for_caching]
           end
 
-          xml.target!
+          if options[:anchors_for_caching]
+            ## little hack to avoid parsing for <authorized> to know the state. Not very nice but leave it like this.
+            
+            s = authorized? ? "1<__separator__/>" : "0<__separator__/>"
+            s << xml.target!
+            return s
+          else
+            return xml.target!
+          end
+          
         end
 
         
