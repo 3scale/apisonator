@@ -3,7 +3,6 @@ module ThreeScale
     module Validators
       class Limits < Base
         def apply
-  
           values = process(status.values, params[:usage]) unless status.application.nil?
           user_values = process(status.user_values, params[:usage]) unless status.user.nil? 
 

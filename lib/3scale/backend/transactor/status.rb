@@ -5,7 +5,7 @@ module ThreeScale
     module Transactor
       class Status
         class UsageReport
-          def initialize(parent, usage_limit, type = :application)
+          def initialize(parent, usage_limit, type)
             @parent      = parent
             @usage_limit = usage_limit
             @type        = type
@@ -69,11 +69,11 @@ module ThreeScale
         end
 
         attr_reader :service
-        attr_reader :application
-        attr_reader :values
+        attr_accessor :application
+        attr_accessor :values
         attr_reader :predicted_values
-        attr_reader :user
-        attr_reader :user_values  
+        attr_accessor :user
+        attr_accessor :user_values  
 
         def reject!(error)
           @authorized = false
@@ -186,63 +186,69 @@ module ThreeScale
               
             else
 
-              xml.__separator__ if options[:anchors_for_caching]
-              xml.plan  plan_name unless plan_name.nil?
-              unless application_usage_reports.empty? 
-                xml.usage_reports do
-                  application_usage_reports.each do |report|
-                    attributes = {:metric => report.metric_name, :period => report.period}
-                    attributes[:exceeded] = 'true' if report.exceeded?
-                    xml.usage_report(attributes) do
-                      xml.period_start  report.period_start.strftime(TIME_FORMAT)
-                      xml.period_end    report.period_end.strftime(TIME_FORMAT)
-                      xml.max_value     report.max_value
+              if !@application.nil? && !options[:exclude_application]  
+                xml.__separator__ if options[:anchors_for_caching]
+                xml.plan  plan_name unless plan_name.nil?
+                unless application_usage_reports.empty? 
+                  xml.usage_reports do
+                    application_usage_reports.each do |report|
+                      attributes = {:metric => report.metric_name, :period => report.period}
+                      attributes[:exceeded] = 'true' if report.exceeded?
+                      xml.usage_report(attributes) do
+                        xml.period_start  report.period_start.strftime(TIME_FORMAT)
+                        xml.period_end    report.period_end.strftime(TIME_FORMAT)
+                        xml.max_value     report.max_value
 
-                      if not options[:anchors_for_caching]
-                        if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
-                          xml.current_value report.current_value + options[:usage][report.metric_name].to_i
-                      	else 
-                          xml.current_value report.current_value
+                        if not options[:anchors_for_caching]
+                          if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
+                            xml.current_value report.current_value + options[:usage][report.metric_name].to_i
+                        	else 
+                            xml.current_value report.current_value
+                          end
+                        else
+                          ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
+                          ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
+                          xml.current_value "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
                         end
-                      else
-                        ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
-                        ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                        xml.current_value "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
                       end
                     end
                   end
                 end
               end
-              xml.__separator__ if options[:anchors_for_caching]
-              xml.user_plan user_plan_name
-              unless user_usage_reports.empty?
-                attributes = {:from => "user"}
-                xml.usage_reports(attributes) do
-                  user_usage_reports.each do |report|
-                    attributes = {:metric => report.metric_name, :period => report.period}
-                    attributes[:exceeded] = 'true' if report.exceeded?
 
-                    xml.usage_report(attributes) do
-                      xml.period_start  report.period_start.strftime(TIME_FORMAT)
-                      xml.period_end    report.period_end.strftime(TIME_FORMAT)
-                      xml.max_value     report.max_value
+              if !@user.nil? && !options[:exclude_user]
+                xml.__separator__ if options[:anchors_for_caching]
+                xml.user_plan user_plan_name
+                unless user_usage_reports.empty?
+                  attributes = {:from => "user"}
+                  xml.usage_reports(attributes) do
+                    user_usage_reports.each do |report|
+                      attributes = {:metric => report.metric_name, :period => report.period}
+                      attributes[:exceeded] = 'true' if report.exceeded?
 
-                      if not options[:anchors_for_caching] 
-                        if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
-                          xml.current_value report.current_value + options[:usage][report.metric_name].to_i
-                        else 
-                          xml.current_value report.current_value
+                      xml.usage_report(attributes) do
+                        xml.period_start  report.period_start.strftime(TIME_FORMAT)
+                        xml.period_end    report.period_end.strftime(TIME_FORMAT)
+                        xml.max_value     report.max_value
+
+                        if not options[:anchors_for_caching] 
+                          if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? # this is a authrep request and therefore we should sum the usage
+                            xml.current_value report.current_value + options[:usage][report.metric_name].to_i
+                          else 
+                            xml.current_value report.current_value
+                          end
+                        else
+                          ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
+                          ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
+                          xml.current_value "|.|user,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
                         end
-                      else
-                        ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
-                        ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                        xml.current_value "|.|user,#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
                       end
                     end
                   end
                 end
               end
             end
+
             xml.__separator__ if options[:anchors_for_caching]
           end
 

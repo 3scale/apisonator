@@ -108,10 +108,20 @@ class TransactorTest < Test::Unit::TestCase
         assert_equal 2,      report_day.current_value
         assert_equal 200,    report_day.max_value
       else
+
         ## this means it comes from the cache, 
         ## warning: need to reproduce the above asserts for xml
         assert_not_nil status_xml
         assert_not_nil status_result
+
+        status, tmp1, tmp2 = Transactor.authorize(@provider_key, { :app_id => @application_one.id, :no_caching => true })
+
+        assert_not_nil status
+        assert_equal  tmp1, nil
+        assert_equal  tmp2, nil
+
+        assert_equal status_xml, status.to_xml                
+
       end
     end
   end
@@ -121,6 +131,17 @@ class TransactorTest < Test::Unit::TestCase
     if not status.nil?
       assert_equal 0, status.usage_reports.count
     else
+      assert_not_nil status_xml
+      assert_not_nil status_result
+
+      status, tmp1, tmp2 = Transactor.authorize(@provider_key, { :app_id => @application_one.id, :no_caching => true })
+
+      assert_not_nil status
+      assert_equal  tmp1, nil
+      assert_equal  tmp2, nil
+
+      assert_equal status_xml, status.to_xml   
+
       ## warning: need to reproduce the above asserts for xml
     end
   end

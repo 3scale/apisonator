@@ -160,7 +160,7 @@ module ThreeScale
 
 
           key = caching_key(values[:service_id],:application,application.id)
-          set_status_in_cache(key,status)
+          set_status_in_cache(key,status,{:exclude_user => true})
 
         end
 
@@ -174,7 +174,7 @@ module ThreeScale
 
             
           key = caching_key(service.id,:user,user.username)
-          set_status_in_cache(key,status)
+          set_status_in_cache(key,status,{:exclude_application => true})
 
         end
       end

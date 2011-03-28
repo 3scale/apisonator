@@ -60,8 +60,12 @@ module ThreeScale
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
 
+          options[:usage] = params[:usage] unless params[:usage].nil?
+          options[:add_usage_on_report] = true unless params[:usage].nil?
+
           if isknown && !service_id.nil?
-            status_xml, status_result = get_status_in_cache(service_id, application_id, username, params[:usage], options = {})
+
+            status_xml, status_result = get_status_in_cache(service_id, application_id, username, params[:usage], options)
             if status_xml.nil? || status_result.nil? 
               need_nocache = true
             else
@@ -87,21 +91,17 @@ module ThreeScale
           if params[:no_caching].nil?
             combination_save(data_combination) unless data_combination.nil?
 
+            
+
             if (user.nil?)
+              #debugger
               key = caching_key(service.id,:application,application.id)
               set_status_in_cache(key,status)
             else
-              tmp_user = status.user
-              status.user = nil 
               key = caching_key(service.id,:application,application.id)
-              set_status_in_cache(key,status)
-        
-              status.user = tmp_user
-              tmp_app = status.application
-              status.application = nil
+              set_status_in_cache(key,status,{:exclude_user => true})
               key = caching_key(service.id,:user,user.username)
-              set_status_in_cache(key,status)
-              status.application = tmp_app
+              set_status_in_cache(key,status,{:exclude_application => true})
             end
           end
         end
@@ -122,8 +122,13 @@ module ThreeScale
 
         if not (params[:user_id].nil? || params[:user_id].empty?)
           ## user_id on the paramters
-          user = User.load!(service,params[:user_id])
-          raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
+          if application.user_required? 
+            user = User.load!(service,params[:user_id])
+            raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
+          else
+            user = nil
+            params[:user_id] = nil
+          end
         else
           raise UserNotDefined, application.id if application.user_required?
           params[:user_id]=nil
@@ -164,6 +169,9 @@ module ThreeScale
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
 
+          options[:usage] = params[:usage] unless params[:usage].nil?
+          options[:add_usage_on_report] = true unless params[:usage].nil?
+
           if isknown && !service_id.nil?
             status_xml, status_result = get_status_in_cache(service_id, application_id, username, params[:usage], options = {})
             if status_xml.nil? || status_result.nil? 
@@ -194,17 +202,10 @@ module ThreeScale
               key = caching_key(service.id,:application,application.id)
               set_status_in_cache(key,status)
             else
-              tmp_user = status.user
-              status.user = nil 
               key = caching_key(service.id,:application,application.id)
-              set_status_in_cache(key,status)
-        
-              status.user = tmp_user
-              tmp_app = status.application
-              status.application = nil
+              set_status_in_cache(key,status,{:exclude_user => true})
               key = caching_key(service.id,:user,user.username)
-              set_status_in_cache(key,status)
-              status.application = tmp_app
+              set_status_in_cache(key,status,{:exclude_application => true})
             end
           end
         end
@@ -222,8 +223,13 @@ module ThreeScale
 
         if not (params[:user_id].nil? || params[:user_id].empty?)
           ## user_id on the paramters
-          user = User.load!(service,params[:user_id])
-          raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
+          if application.user_required? 
+            user = User.load!(service,params[:user_id])
+            raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
+          else
+            user = nil
+            params[:user_id] = nil
+          end
         else
           raise UserNotDefined, application.id if application.user_required?
           params[:user_id]=nil
@@ -258,14 +264,19 @@ module ThreeScale
         if params[:no_caching].nil?
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination = combination_seen(provider_key,params)
+          isknown, service_id, data_combination, dirty_app_xml = combination_seen(provider_key,params)
           ## warning, this way of building application_id might be problematic.   
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
 
+          options[:dirty_app_xml] = dirty_app_xml
+
+          options[:usage] = params[:usage] unless params[:usage].nil?
+          options[:add_usage_on_report] = true unless params[:usage].nil?
+
           if isknown && !service_id.nil?
-            status_xml, status_result = get_status_in_cache(service_id, application_id, username, params[:usage], options = {})
+            status_xml, status_result = get_status_in_cache(service_id, application_id, username, options)
             if status_xml.nil? || status_result.nil? 
               need_nocache = true
             else
@@ -294,24 +305,19 @@ module ThreeScale
               key = caching_key(service.id,:application,application.id)
               set_status_in_cache(key,status)
             else
-              tmp_user = status.user
-              status.user = nil 
               key = caching_key(service.id,:application,application.id)
-              set_status_in_cache(key,status)
-        
-              status.user = tmp_user
-              tmp_app = status.application
-              status.application = nil
+              set_status_in_cache(key,status,{:exclude_user => true})
               key = caching_key(service.id,:user,user.username)
-              set_status_in_cache(key,status)
-              status.application = tmp_app
+              set_status_in_cache(key,status,{:exclude_application => true})
             end
           end
         end
 
         if !params[:usage].nil? && ((!status.nil? && status.authorized?) || (status.nil? && status_result)) 
-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => params[:usage], "user_id" => username}}))
-          notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => params[:usage].size)
+          storage.pipelined do
+            report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => params[:usage], "user_id" => username}}))
+            notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => params[:usage].size)
+          end
         else
           notify(provider_key, 'transactions/authorize' => 1)
         end
@@ -334,8 +340,13 @@ module ThreeScale
 
         if not (params[:user_id].nil? || params[:user_id].empty?)
           ## user_id on the paramters
-          user = User.load!(service,params[:user_id])
-          raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
+          if application.user_required? 
+            user = User.load!(service,params[:user_id])
+            raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
+          else
+            user = nil
+            params[:user_id] = nil
+          end
         else
           raise UserNotDefined, application.id if application.user_required?
           params[:user_id]=nil
@@ -343,7 +354,7 @@ module ThreeScale
         
         usage = load_current_usage(application)
         user_usage = load_user_current_usage(user) unless user.nil?
- 
+
         status = Status.new(:service => service, :application => application, :values => usage, :user => user, :user_values => user_usage).tap do |st|
           VALIDATORS.all? do |validator|
             if validator == Validators::Referrer && !st.service.referrer_filters_required?
