@@ -54,11 +54,14 @@ module ThreeScale
 
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination = combination_seen(provider_key,params)
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(provider_key,params)
           ## warning, this way of building application_id might be problematic.   
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
+
+          options[:dirty_app_xml] = dirty_app_xml
+          options[:dirty_user_xml] = dirty_user_xml
 
           options[:usage] = params[:usage] unless params[:usage].nil?
           options[:add_usage_on_report] = true unless params[:usage].nil?
@@ -163,17 +166,20 @@ module ThreeScale
         if params[:no_caching].nil?
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination = combination_seen(provider_key,params)
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(provider_key,params)
           ## warning, this way of building application_id might be problematic.   
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
 
+          options[:dirty_app_xml] = dirty_app_xml
+          options[:dirty_user_xml] = dirty_user_xml
+
           options[:usage] = params[:usage] unless params[:usage].nil?
           options[:add_usage_on_report] = true unless params[:usage].nil?
 
           if isknown && !service_id.nil?
-            status_xml, status_result = get_status_in_cache(service_id, application_id, username, params[:usage], options = {})
+            status_xml, status_result = get_status_in_cache(service_id, application_id, username, params[:usage], options)
             if status_xml.nil? || status_result.nil? 
               need_nocache = true
             else
@@ -264,13 +270,14 @@ module ThreeScale
         if params[:no_caching].nil?
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination, dirty_app_xml = combination_seen(provider_key,params)
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(provider_key,params)
           ## warning, this way of building application_id might be problematic.   
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
 
           options[:dirty_app_xml] = dirty_app_xml
+          options[:dirty_user_xml] = dirty_user_xml
 
           options[:usage] = params[:usage] unless params[:usage].nil?
           options[:add_usage_on_report] = true unless params[:usage].nil?
@@ -373,24 +380,8 @@ module ThreeScale
         raise e
       end
 
-
-
-
       ## -------------------
-
-      def self.put_limit_violation(application_id, expires_in)
-        key = "limit_violations/#{application_id}"
-        storage.pipelined do 
-          storage.set(key,1) 
-          storage.expire(key,expires_in) 
-          storage.sadd("limit_violations_set",application_id)
-        end
-      end
-
-     
       
-
-  
       private
 
 
