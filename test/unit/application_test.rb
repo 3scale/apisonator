@@ -1,6 +1,9 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class ApplicationTest < Test::Unit::TestCase
+
+  ##include TestHelpers::Integration
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -184,4 +187,59 @@ class ApplicationTest < Test::Unit::TestCase
       application.create_referrer_filter('')
     end
   end
+
+  test 'check version' do
+
+    application = Application.save(:service_id => '1001',
+                                   :id         => '2001',
+                                   :state      => :active)
+
+
+    debugger
+    application.save
+
+    v_old = application.version
+    application.create_referrer_filter('192.*')
+    v_new = application.version
+    assert_not_equal v_old, v_new
+    v_old = v_new
+
+    v_old = application.version
+    application.create_key
+    v_new = application.version
+    assert_not_equal v_old, v_new
+    v_old = v_new
+
+    v_old = application.get_version
+    application.create_key("key")
+    v_new = application.version
+    assert_not_equal v_old, v_new
+    v_old = v_new
+
+
+  end
+
+  test 'remove application keys test' do
+    application = Application.save(:service_id => '1001',
+                                   :id         => '2001',
+                                   :state      => :active)
+
+    #debugger
+
+    key_foo = application.create_key('foo')
+    assert_equal 'foo', key_foo
+
+    key_bar = application.create_key('bar')
+    assert_equal 'bar', key_bar
+
+    assert_equal [key_foo, key_bar], application.keys
+
+    #delete "/applications/#{application.id}/keys/#{key_foo}.xml"
+    #assert_equal [key_bar], application.keys
+
+    application.remove_key(key_foo)
+    assert_equal [key_bar], application.keys
+    
+  end
+
 end
