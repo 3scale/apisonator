@@ -195,7 +195,6 @@ class ApplicationTest < Test::Unit::TestCase
                                    :state      => :active)
 
 
-    debugger
     application.save
 
     v_old = application.version
@@ -224,8 +223,6 @@ class ApplicationTest < Test::Unit::TestCase
                                    :id         => '2001',
                                    :state      => :active)
 
-    #debugger
-
     key_foo = application.create_key('foo')
     assert_equal 'foo', key_foo
 
@@ -237,7 +234,7 @@ class ApplicationTest < Test::Unit::TestCase
     #delete "/applications/#{application.id}/keys/#{key_foo}.xml"
     #assert_equal [key_bar], application.keys
 
-    application.remove_key(key_foo)
+    application.delete_key(key_foo)
     assert_equal [key_bar], application.keys
     
   end
