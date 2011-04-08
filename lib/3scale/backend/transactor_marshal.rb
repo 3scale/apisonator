@@ -1,5 +1,4 @@
 require 'json'
-require 'ruby-debug'
 
 module ThreeScale
   module Backend

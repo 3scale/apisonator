@@ -1,5 +1,4 @@
 require 'json'
-require 'ruby-debug'
 
 require '3scale/backend/transactor/notify_job'
 require '3scale/backend/transactor/process_job'

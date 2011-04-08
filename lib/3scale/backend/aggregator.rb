@@ -1,5 +1,4 @@
 require 'json'
-require 'ruby-debug'
 
 require '3scale/backend/cache'
 require '3scale/backend/errors'

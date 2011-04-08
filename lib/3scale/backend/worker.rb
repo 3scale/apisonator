@@ -1,5 +1,4 @@
 require 'logger'
-require 'ruby-debug'
 
 module ThreeScale
   module Backend

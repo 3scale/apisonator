@@ -1,4 +1,3 @@
-require 'ruby-debug'
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class AggregatorTest < Test::Unit::TestCase
