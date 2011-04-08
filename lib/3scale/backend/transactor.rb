@@ -97,7 +97,6 @@ module ThreeScale
             
 
             if (user.nil?)
-              #debugger
               key = caching_key(service.id,:application,application.id)
               set_status_in_cache(key,status)
             else
