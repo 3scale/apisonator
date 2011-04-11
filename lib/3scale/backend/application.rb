@@ -3,7 +3,6 @@ module ThreeScale
     class Application < Core::Application
       module Sets
         include ThreeScale::Backend::HasSet
-
         has_set :referrer_filters
         has_set :keys
       end
@@ -64,13 +63,26 @@ module ThreeScale
       # If +value+ is nil, generates new random key, otherwise uses the given value as
       # the new key.
       def create_key(value = nil)
+        Application.incr_version(service_id,id)
         super(value || SecureRandom.hex(16))
+      end
+
+      def delete_key(value)
+        Application.incr_version(service_id,id)
+        super(value)
       end
 
       def create_referrer_filter(value)
         raise ReferrerFilterInvalid, "referrer filter can't be blank" if value.blank?
-        super
+        Application.incr_version(service_id,id)
+        super(value)
       end
+
+      def delete_referrer_filter(value)
+        Application.incr_version(service_id,id)
+        super(value)
+      end
+        
 
       def active?
         state == :active

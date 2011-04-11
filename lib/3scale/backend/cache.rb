@@ -16,18 +16,18 @@ module ThreeScale
                                 :referrer,  
                                 :redirect_url]
 
-      COMBINATION_TTL   = 3600 # 1 hour
-      STATUS_TTL        = 60   # 1 minute, this is too short but we need minute information on the output :-( 
-
-      # 2 redis call: 1 mget of 2, 1 mget of 2 or 3. They need to be sequential due to unknown service_id
-
+      COMBINATION_TTL       = 3600 # 1 hour
+      STATUS_TTL            = 60   # 1 minute, this is too short but we need minute information on the output :-( 
+      SERVICE_ID_CACHE_TTL  = 300  # 5 minutes
+     
       ## this is a little bit dangerous, but we can live with it
       def get_service_id(provider_key)
+        current_time = Time.now
         @@provider_key_2_service_id ||= Hash.new
-        sid = @@provider_key_2_service_id[provider_key]
-        if sid.nil?
+        sid, time = @@provider_key_2_service_id[provider_key]
+        if sid.nil? || (current_time-time > SERVICE_ID_CACHE_TTL)  
           sid = storage.get("service/provider_key:#{provider_key}/id")
-          @@provider_key_2_service_id[provider_key] = sid unless sid.nil?
+          @@provider_key_2_service_id[provider_key] = [sid, current_time] unless sid.nil?
         end
         sid
       end
@@ -51,7 +51,6 @@ module ThreeScale
           if username.nil?
             
             cached_app_key = caching_key(service_id,:application,application_id)
-
 
             version, ver_service, ver_application, dirty_app_xml = storage.mget(key_version,Service.storage_key(service_id, :version),Application.storage_key(service_id,application_id,:version),cached_app_key)
             

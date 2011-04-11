@@ -28,6 +28,10 @@ module ThreeScale
         storage.sismember(storage_key(name), value)
       end
 
+      def size(name)
+        storage.scard(storage_key(name)).to_i
+      end
+
       module ClassMethods
         def has_set(name)
           plural   = name.to_sym
@@ -39,6 +43,7 @@ module ThreeScale
           define_method("has_#{plural}?")     { has_set_items?(name) }
           define_method("has_no_#{plural}?")  { !has_set_items?(name) }
           define_method("has_#{singular}?")   { |value| has_set_item?(name, value) }
+          define_method("size_#{plural}")     { size(name) }
         end
       end
     end

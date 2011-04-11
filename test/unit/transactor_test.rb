@@ -199,4 +199,5 @@ class TransactorTest < Test::Unit::TestCase
                      '2010-07-29 17:09:00 UTC']
     end
   end
+
 end

@@ -140,7 +140,6 @@ module ThreeScale
 
       get '/applications/:app_id/keys.xml' do
         @keys = application.keys
-
         builder :application_keys
       end
 

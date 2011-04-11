@@ -193,29 +193,35 @@ class ApplicationTest < Test::Unit::TestCase
     application = Application.save(:service_id => '1001',
                                    :id         => '2001',
                                    :state      => :active)
+   
+    version_app = Application.get_version(application.service_id, application.id)
+    
+    application.create_referrer_filter('192.*') 
+    assert_equal (version_app.to_i+1).to_s, Application.get_version(application.service_id, application.id)
+    assert_equal 1, application.size_referrer_filters
 
+    application.delete_referrer_filter('192.*') 
+    assert_equal (version_app.to_i+2).to_s, Application.get_version(application.service_id, application.id)
+    assert_equal 0, application.size_referrer_filters
 
-    application.save
+    key = application.create_key
+    assert_not_nil key
+    assert_equal (version_app.to_i+3).to_s, Application.get_version(application.service_id, application.id)
+    assert_equal 1, application.size_keys
 
-    v_old = application.version
-    application.create_referrer_filter('192.*')
-    v_new = application.version
-    assert_not_equal v_old, v_new
-    v_old = v_new
+    application.delete_key(key)
+    assert_equal (version_app.to_i+4).to_s, Application.get_version(application.service_id, application.id)
+    assert_equal 0, application.size_keys
+    
+    key = application.create_key('key1')
+    assert_equal  'key1', key
+    assert_equal (version_app.to_i+5).to_s, Application.get_version(application.service_id, application.id)
+    assert_equal 1, application.size_keys
 
-    v_old = application.version
-    application.create_key
-    v_new = application.version
-    assert_not_equal v_old, v_new
-    v_old = v_new
-
-    v_old = application.get_version
-    application.create_key("key")
-    v_new = application.version
-    assert_not_equal v_old, v_new
-    v_old = v_new
-
-
+    application.delete_key(key)
+    assert_equal (version_app.to_i+6).to_s, Application.get_version(application.service_id, application.id)
+    assert_equal 0, application.size_keys
+        
   end
 
   test 'remove application keys test' do
@@ -230,9 +236,6 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal 'bar', key_bar
 
     assert_equal [key_foo, key_bar], application.keys
-
-    #delete "/applications/#{application.id}/keys/#{key_foo}.xml"
-    #assert_equal [key_bar], application.keys
 
     application.delete_key(key_foo)
     assert_equal [key_bar], application.keys

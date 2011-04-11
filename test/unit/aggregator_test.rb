@@ -40,9 +40,7 @@ class AggregatorTest < Test::Unit::TestCase
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
-
 		seed_data()
-
   end
 
   test 'aggregate_all increments_all_stats_counters' do
@@ -51,7 +49,6 @@ class AggregatorTest < Test::Unit::TestCase
                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                :usage          => {'3001' => 1}}])
 
-	
     assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
     assert_equal '1', @storage.get(service_key(1001, 3001, :week,   '20100503'))
