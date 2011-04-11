@@ -20,16 +20,25 @@ module ThreeScale
       STATUS_TTL            = 60   # 1 minute, this is too short but we need minute information on the output :-( 
       SERVICE_ID_CACHE_TTL  = 300  # 5 minutes
      
+      
       ## this is a little bit dangerous, but we can live with it
       def get_service_id(provider_key)
         current_time = Time.now
-        @@provider_key_2_service_id ||= Hash.new
+        @@provider_key_2_service_id ||= Hash.new 
         sid, time = @@provider_key_2_service_id[provider_key]
-        if sid.nil? || (current_time-time > SERVICE_ID_CACHE_TTL)  
+        if sid.nil? || (current_time-time > SERVICE_ID_CACHE_TTL)
           sid = storage.get("service/provider_key:#{provider_key}/id")
           @@provider_key_2_service_id[provider_key] = [sid, current_time] unless sid.nil?
         end
         sid
+      end
+
+      def signature(params)
+          key_version = "cache_combination/"
+          VALID_PARAMS_FOR_CACHE.each do |label|
+             key_version << "#{label}:#{params[label]}/"
+          end 
+          key_version
       end
 
       def combination_seen(provider_key, params)  
@@ -39,10 +48,7 @@ module ThreeScale
        
         if !service_id.nil?
   
-          key_version = "cache_combination/"
-          VALID_PARAMS_FOR_CACHE.each do |label|
-             key_version << "#{label}:#{params[label]}/"
-          end 
+          key_version = signature(params)
 
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?
