@@ -2,10 +2,10 @@
 
 
 host="http://localhost:3001"
-method="/transactions/authrep.xml"
+method="/transactions/authorize.xml"
 provider_key="pkey"
 app_id="app_id"
-usage="usage[method1]=1&usage[other]=3&usage[user_metric]=1"
+#usage="usage[method1]=1&usage[other]=3&usage[user_metric]=1"
 usage=""
 no_body=""
 #no_body="no_body=true&"

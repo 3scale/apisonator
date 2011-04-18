@@ -67,7 +67,8 @@ module ThreeScale
 
           if isknown && !service_id.nil?
 
-            status_xml, status_result = get_status_in_cache(service_id, application_id, username, params[:usage], options)
+            status_xml, status_result = get_status_in_cache(service_id, application_id, username, options)
+
             if status_xml.nil? || status_result.nil? 
               need_nocache = true
             else
@@ -177,7 +178,7 @@ module ThreeScale
           options[:add_usage_on_report] = true unless params[:usage].nil?
 
           if isknown && !service_id.nil?
-            status_xml, status_result = get_status_in_cache(service_id, application_id, username, params[:usage], options)
+            status_xml, status_result = get_status_in_cache(service_id, application_id, username, options)
             if status_xml.nil? || status_result.nil? 
               need_nocache = true
             else
