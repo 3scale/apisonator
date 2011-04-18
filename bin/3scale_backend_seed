@@ -102,6 +102,7 @@ class Seeder
     plan_id = 2001
 
     if usage_limits
+    #if false
       # Create limits
       UsageLimit.save(:service_id => service_id,
                       :plan_id    => plan_id,
@@ -118,8 +119,6 @@ class Seeder
                       :hour       =>    2000,
                       :minute     =>     200)
     end
-
-    user_plan_id = 2002
 
     if user_limits
       UsageLimit.save(:service_id => service_id,

@@ -97,7 +97,7 @@ module ThreeScale
            plan_name 
         end
 
-        def user_plan_name
+       	def user_plan_name
           @user.plan_name unless @user.nil?
         end
 
@@ -220,8 +220,9 @@ module ThreeScale
                 xml.__separator__ if options[:anchors_for_caching]
                 xml.user_plan user_plan_name
                 unless user_usage_reports.empty?
-                  attributes = {:from => "user"}
-                  xml.usage_reports(attributes) do
+                  ##attributes = {:from => "user"}
+                  ##xml.usage_reports(attributes) do
+                  xml.user_usage_reports do
                     user_usage_reports.each do |report|
                       attributes = {:metric => report.metric_name, :period => report.period}
                       attributes[:exceeded] = 'true' if report.exceeded?
