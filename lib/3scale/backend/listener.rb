@@ -20,13 +20,24 @@ module ThreeScale
       end
 
       post '/transactions.xml' do
+	      ## return error code 400 (Bad request) if the parameters are not there
+        ## I put 403 (Forbidden) for consitency however it should be 400 IMHO
+	      if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || params[:transactions].nil? || params[:transactions].class==Array
+		      empty_response 403
+		      return
+	      end
         Transactor.report(params[:provider_key], params[:transactions])
         empty_response 202
       end
 
 
       get '/transactions/authorize.xml' do
-	authorization, cached_authorization_text, cached_authorization_result = Transactor.authorize(params[:provider_key], params)
+	      if params.nil? || params[:provider_key].nil? || params[:provider_key].empty?
+		      empty_response 403
+		      return
+	      end
+        authorization, cached_authorization_text, cached_authorization_result = Transactor.authorize(params[:provider_key], params)
+
         if cached_authorization_text.nil? || cached_authorization_result.nil?
           response_code = if authorization.authorized?
             200
@@ -55,6 +66,10 @@ module ThreeScale
       end
 
       get '/transactions/oauth_authorize.xml' do
+        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty?
+		      empty_response 403
+		      return
+	      end
         authorization, cached_authorization_text, cached_authorization_result = Transactor.oauth_authorize(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
@@ -85,7 +100,11 @@ module ThreeScale
       end
 
       get '/transactions/authrep.xml' do
-        authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
+        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty?
+		      empty_response 403
+		      return
+	      end
+	      authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
           response_code = if authorization.authorized?

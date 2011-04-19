@@ -19,19 +19,22 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 404, last_response.status
   end
 
+  def test_empty_report
+    post '/transactions.xml'
+    assert_equal 403, last_response.status
+  end
+
   def test_unexpected_exception_bubbles_through
     Transactor.stubs(:report).raises(UnexpectedError.new('bang!'))
-
     assert_raise UnexpectedError do
-      post '/transactions.xml'
+      post '/transactions.xml?transactions[0]=foo2', :provider_key => 'foo'
     end
   end
 
   def test_expected_exception_is_caught
     Transactor.stubs(:report).raises(ExpectedError.new('bang!'))
-
     assert_nothing_raised do
-      post '/transactions.xml'
+      post '/transactions.xml?transactions[0]=foo2', :provider_key => 'foo',
     end
   end
 end

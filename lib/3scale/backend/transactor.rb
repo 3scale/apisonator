@@ -18,7 +18,7 @@ module ThreeScale
       def report(provider_key, transactions)
         service_id = Service.load_id!(provider_key)
 
-				report_enqueue(service_id, transactions)
+	report_enqueue(service_id, transactions)
         #Resque.enqueue(ReportJob, service_id, transactions)
 
         notify(provider_key, 'transactions/create_multiple' => 1,
@@ -66,9 +66,7 @@ module ThreeScale
           options[:add_usage_on_report] = true unless params[:usage].nil?
 
           if isknown && !service_id.nil?
-
             status_xml, status_result = get_status_in_cache(service_id, application_id, username, options)
-
             if status_xml.nil? || status_result.nil? 
               need_nocache = true
             else
@@ -94,8 +92,6 @@ module ThreeScale
           if params[:no_caching].nil?
             combination_save(data_combination) unless data_combination.nil?
 
-            
-
             if (user.nil?)
               key = caching_key(service.id,:application,application.id)
               set_status_in_cache(key,status)
@@ -107,8 +103,6 @@ module ThreeScale
             end
           end
         end
-
-       
 
         [status, status_xml, status_result]
 
