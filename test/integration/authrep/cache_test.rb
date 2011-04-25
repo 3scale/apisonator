@@ -77,7 +77,7 @@ class AuthrepCacheTest < Test::Unit::TestCase
                   :app_id       => @application.id,
                   :usage        => {'hits' => 2}}
 
-        key_version = Cache.signature(params)
+        key_version = Cache.signature(:authrep,params)
 
         get '/transactions/authrep.xml', params
         Resque.run!

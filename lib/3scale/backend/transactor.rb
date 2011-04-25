@@ -17,8 +17,7 @@ module ThreeScale
 
       def report(provider_key, transactions)
         service_id = Service.load_id!(provider_key)
-
-	report_enqueue(service_id, transactions)
+	      report_enqueue(service_id, transactions)
         #Resque.enqueue(ReportJob, service_id, transactions)
 
         notify(provider_key, 'transactions/create_multiple' => 1,
@@ -53,7 +52,7 @@ module ThreeScale
 
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(provider_key,params)
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:authorize,provider_key,params)
           ## warning, this way of building application_id might be problematic.   
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?
@@ -159,7 +158,7 @@ module ThreeScale
         if params[:no_caching].nil?
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(provider_key,params)
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:oauth_authorize,provider_key,params)
           ## warning, this way of building application_id might be problematic.   
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?
@@ -263,7 +262,7 @@ module ThreeScale
         if params[:no_caching].nil?
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(provider_key,params)
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:authrep,provider_key,params)
           ## warning, this way of building application_id might be problematic.   
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?

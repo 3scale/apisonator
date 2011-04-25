@@ -33,22 +33,22 @@ module ThreeScale
         sid
       end
 
-      def signature(params)
-          key_version = "cache_combination/"
+      def signature(action, params)
+          key_version = "cache_combination/#{action}/"
           VALID_PARAMS_FOR_CACHE.each do |label|
              key_version << "#{label}:#{params[label]}/"
           end 
           key_version
       end
 
-      def combination_seen(provider_key, params)  
+      def combination_seen(action, provider_key, params)  
 
         key_version = nil
         service_id = get_service_id(provider_key)      
        
         if !service_id.nil?
   
-          key_version = signature(params)
+          key_version = signature(action, params)
 
           application_id = params[:app_id] 
           application_id = params[:user_key] if application_id.nil?
