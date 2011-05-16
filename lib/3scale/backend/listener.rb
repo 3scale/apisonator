@@ -26,7 +26,8 @@ module ThreeScale
           empty_response 403
           return
         end
-        Transactor.report(params[:provider_key], params[:transactions])
+        
+        Transactor.report(params[:provider_key], params[:service_id], params[:transactions])
         empty_response 202
       end
 
@@ -136,7 +137,6 @@ module ThreeScale
       get '/transactions/errors.xml' do
         @errors = ErrorStorage.list(service_id, :page     => params[:page],
                                                 :per_page => params[:per_page])
-
         builder :transaction_errors
       end
 
@@ -163,7 +163,12 @@ module ThreeScale
       end
 
       post '/applications/:app_id/keys.xml' do
-        @key = application.create_key
+
+        if params[:key].nil? || params[:key].empty?
+          @key = application.create_key
+        else
+          @key = application.create_key(params[:key])
+        end
 
         headers 'Location' => application_resource_url(application, :keys, @key)
         status 201
@@ -208,6 +213,8 @@ module ThreeScale
           error_code = 404
         when ThreeScale::Backend::Error
           error_code = 403
+        when ThreeScale::Core::Error
+          error_code = 405
         else
           raise exception
         end
@@ -229,7 +236,11 @@ module ThreeScale
       end
 
       def service_id
-        @service_id ||= Service.load_id!(params[:provider_key])
+        if params[:service_id].nil? || params[:service_id].empty?
+          @service_id ||= Service.load_id!(params[:provider_key])
+        else
+          @service_id = params[:service_id]
+        end
       end
 
       def application_resource_url(application, type, value)

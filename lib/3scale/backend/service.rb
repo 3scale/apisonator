@@ -8,6 +8,11 @@ module ThreeScale
       def self.load!(provider_key)
         load(provider_key) or raise ProviderKeyInvalid, provider_key
       end
+
+      def self.load_by_id!(service_id)
+        load_by_id(service_id) or raise ServiceIdInvalid, service_id
+      end
+
     end
   end
 end

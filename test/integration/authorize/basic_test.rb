@@ -69,13 +69,13 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                     :day => 100, :month => 10000)
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, @service.id,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 3}})
       Resque.run!
     end
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, @service.id,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 2}})
       Resque.run!
     end
@@ -107,7 +107,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
 
   test 'response of successful authorize does not contain usage reports if the plan has no usage limits' do
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, @service.id,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 2}})
 
       get '/transactions/authorize.xml', :provider_key => @provider_key,
@@ -192,7 +192,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day => 4)
 
-    Transactor.report(@provider_key,
+    Transactor.report(@provider_key, @service.id,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
@@ -210,7 +210,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day => 4)
 
-    Transactor.report(@provider_key,
+    Transactor.report(@provider_key, @service.id,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
@@ -229,7 +229,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :month => 10, :day => 4)
 
-    Transactor.report(@provider_key,
+    Transactor.report(@provider_key, @service.id,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
@@ -252,7 +252,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                     :day        => 2)
 
     3.times do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, @service.id,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
     end
 

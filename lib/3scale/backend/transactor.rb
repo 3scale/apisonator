@@ -15,11 +15,11 @@ module ThreeScale
       include Backend::Cache
       extend self
 
-      def report(provider_key, transactions)
-        service_id = Service.load_id!(provider_key)
+      def report(provider_key, service_id, transactions)
+        ## need to load provider_key anyway, otherwise there is a security hole 
+        service_id_by_prov_key = Service.load_id!(provider_key)
+        service_id = service_id_by_prov_key if service_id.nil? || service_id.empty? 
 	      report_enqueue(service_id, transactions)
-        #Resque.enqueue(ReportJob, service_id, transactions)
-
         notify(provider_key, 'transactions/create_multiple' => 1,
                              'transactions' => transactions.size)
       end
@@ -109,8 +109,14 @@ module ThreeScale
 
       def authorize_nocache(provider_key, params, options = {})
         
+        if params[:service_id].nil? || params[:service_id].empty?
+          service = Service.load!(provider_key)
+        else
+          service = Service.load_by_id!(params[:service_id])
+        end
 
-        service     = Service.load!(provider_key)
+        raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
         application = Application.load_by_id_or_user_key!(service.id,
                                                           params[:app_id],
                                                           params[:user_key])
@@ -214,7 +220,14 @@ module ThreeScale
 
       def oauth_authorize_nocache(provider_key, params, options = {})
     
-        service = Service.load!(provider_key)
+        if params[:service_id].nil? || params[:service_id].empty?
+          service = Service.load!(provider_key)
+        else
+          service = Service.load_by_id!(params[:service_id])
+        end
+
+        raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
         application =  Application.load_by_id_or_user_key!(service.id,
                                                           params[:app_id],
                                                           params[:user_key])
@@ -332,7 +345,14 @@ module ThreeScale
         user = nil
         user_usage = nil
 
-        service = Service.load!(provider_key)
+        if params[:service_id].nil? || params[:service_id].empty?
+          service = Service.load!(provider_key)
+        else
+          service = Service.load_by_id!(params[:service_id])
+        end
+
+        raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
         application =  Application.load_by_id_or_user_key!(service.id,
                                                           params[:app_id],
                                                           params[:user_key])

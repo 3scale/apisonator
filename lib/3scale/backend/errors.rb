@@ -75,6 +75,12 @@ module ThreeScale
       end
     end
 
+    class ServiceIdInvalid < Error
+      def initialize(id)
+        super %(service id "#{id}" is invalid)
+      end
+    end
+
     class MetricInvalid < Error
       def initialize(metric_name)
         super %(metric "#{metric_name}" is invalid)

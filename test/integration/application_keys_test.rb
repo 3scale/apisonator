@@ -104,6 +104,34 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert @application.has_key?('foo')
   end
 
+
+  test 'POST .../keys.xml creates a custom key' do
+    #SecureRandom.stubs(:hex).returns('foo')
+    
+    @custom_key = 'custom_key_1'
+    url = "http://example.org/applications/#{@application.id}/keys/#{@custom_key}.xml?provider_key=#{@provider_key}"
+
+    post "/applications/#{@application.id}/keys.xml",
+      :provider_key => @provider_key,
+      :key => @custom_key
+
+    assert_equal 201, last_response.status
+    assert_equal url, last_response.headers['Location']
+
+    doc = Nokogiri::XML(last_response.body)
+    assert_equal @custom_key, doc.at('key:root')['value']
+    assert_equal url,   doc.at('key:root')['href']
+
+    assert_equal [@custom_key], @application.keys
+
+    assert @application.has_key?(@custom_key)
+    
+
+  end
+
+  
+
+
   test 'POST .../keys.xml fails on invalid provider key' do
     post "/applications/#{@application.id}/keys.xml", :provider_key => 'boo'
 

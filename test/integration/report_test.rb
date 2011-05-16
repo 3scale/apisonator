@@ -241,7 +241,7 @@ class ReportTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :month      => 2)
 
-    Transactor.report(@provider_key,
+    Transactor.report(@provider_key, nil,
                       '0' => {'app_id' => @application.id, 'usage' => {'hits' => 2}})
 
     Resque.run!
@@ -266,7 +266,7 @@ class ReportTest < Test::Unit::TestCase
                     :month      => 2)
 
     3.times do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, nil,
                         '0' => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
     end
 

@@ -89,13 +89,13 @@ class OauthBasicTest < Test::Unit::TestCase
                     :day => 100, :month => 10000)
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, @service.id,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 3}})
       Resque.run!
     end
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, nil,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 2}})
       Resque.run!
     end
@@ -127,10 +127,11 @@ class OauthBasicTest < Test::Unit::TestCase
 
   test 'response of successful authorize does not contain usage reports if the plan has no usage limits' do
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, @service.id,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 2}})
 
       get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                               :service_id   => @service.id,
                                                :app_id     => @application.id
 
       doc = Nokogiri::XML(last_response.body)
@@ -212,12 +213,13 @@ class OauthBasicTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day => 4)
 
-    Transactor.report(@provider_key,
+    Transactor.report(@provider_key, @service.id,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                             :service_id => @service.id,
                                              :app_id     => @application.id
 
     assert_equal 409, last_response.status
@@ -230,7 +232,7 @@ class OauthBasicTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day => 4)
 
-    Transactor.report(@provider_key,
+    Transactor.report(@provider_key, nil,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
@@ -249,7 +251,7 @@ class OauthBasicTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :month => 10, :day => 4)
 
-    Transactor.report(@provider_key,
+    Transactor.report(@provider_key, nil,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
@@ -272,14 +274,15 @@ class OauthBasicTest < Test::Unit::TestCase
                     :day        => 2)
 
     3.times do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, nil,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
     end
 
     Resque.run!
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id       => @application.id
+                                             :app_id       => @application.id,
+                                             :service_id   => @service.id
     assert_authorized
   end
 end

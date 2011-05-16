@@ -86,7 +86,9 @@ class AuthrepCacheTest < Test::Unit::TestCase
         Resque.run!
         
         version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
+
         current_version = "s:#{ver_service}/a:#{ver_application}"
+
         assert_equal version, current_version
 
         get '/transactions/authrep.xml', params

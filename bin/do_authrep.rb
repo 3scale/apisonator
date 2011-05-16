@@ -1,12 +1,10 @@
 #! /usr/bin/env ruby
-
-
 host="http://localhost:3001"
-method="/transactions/authorize.xml"
+method="/transactions/authrep.xml"
 provider_key="pkey"
 app_id="app_id"
 #usage="usage[method1]=1&usage[other]=3&usage[user_metric]=1"
-usage=""
+usage="usage[hits]=1"
 no_body=""
 #no_body="no_body=true&"
 user_id=""

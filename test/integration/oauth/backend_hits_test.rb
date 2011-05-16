@@ -95,7 +95,7 @@ class OauthBackendHitsTest < Test::Unit::TestCase
                     :day        => 4)
 
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, nil,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
       Resque.run!
     end
