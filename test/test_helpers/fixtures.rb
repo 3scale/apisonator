@@ -52,6 +52,43 @@ module TestHelpers
       @plan_name = "plan#{@plan_id}"
     end
 
+    def setup_provider_fixtures_multiple_services
+      setup_master_fixtures unless @master_service_id
+
+      @provider_application_id = next_id
+      @provider_key = "provider_key#{@provider_application_id}"
+
+      Application.save(:service_id => @master_service_id,
+                       :id         => @provider_application_id,
+                       :state      => :active,
+                       :plan_id    => @master_plan_id)
+
+      Application.save_id_by_key(@master_service_id,
+                                 @provider_key,
+                                 @provider_application_id)
+
+      service_id = next_id
+      @service_1 = Core::Service.save(:provider_key => @provider_key, :id => service_id)
+
+      service_id = next_id
+      @service_2 = Core::Service.save(:provider_key => @provider_key, :id => service_id)
+
+      service_id = next_id
+      @service_3 = Core::Service.save(:provider_key => @provider_key, :id => service_id)
+
+      @plan_id_1 = next_id
+      @plan_name_1 = "plan#{@plan_id_1}"
+
+      @plan_id_2 = next_id
+      @plan_name_2 = "plan#{@plan_id_2}"
+
+      @plan_id_3 = next_id
+      @plan_name_3 = "plan#{@plan_id_3}"
+
+    end
+
+
+
     def setup_oauth_provider_fixtures
       setup_provider_fixtures
       @service = Core::Service.save(:provider_key => @provider_key, :id => @service_id, :backend_version => 'oauth')

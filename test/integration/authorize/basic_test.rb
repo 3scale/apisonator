@@ -192,7 +192,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day => 4)
 
-    Transactor.report(@provider_key, @service.id,
+    Transactor.report(@provider_key, nil,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
