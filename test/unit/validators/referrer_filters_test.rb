@@ -8,7 +8,7 @@ module Validators
     def setup
       Storage.instance(true).flushdb
 
-      @service     = Service.save(:provider_key => 'foobar', :id => next_id)
+      @service     = Service.save!(:provider_key => 'foobar', :id => next_id)
       @application = Application.save(:service_id => @service.id,
                                       :id         => next_id,
                                       :state      => :active)
@@ -19,14 +19,14 @@ module Validators
 
     test 'succeeds when referrer filters are not required' do
       @service.referrer_filters_required = false
-      @service.save
+      @service.save!
 
       assert ReferrerFilters.apply(@status, {})
     end
 
     test 'succeeds when referrer filters are required and defined' do
       @service.referrer_filters_required = true
-      @service.save
+      @service.save!
 
       @application.create_referrer_filter('foo.example.org')
 

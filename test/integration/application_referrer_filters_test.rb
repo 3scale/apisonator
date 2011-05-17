@@ -12,7 +12,7 @@ class ApplicationReferrerFiltersTest < Test::Unit::TestCase
 
     @provider_key = 'provider_key'
     @service_id   = next_id
-    Core::Service.save(:provider_key => @provider_key, :id => @service_id)
+    Core::Service.save!(:provider_key => @provider_key, :id => @service_id)
 
     @application_id = next_id
     Application.save(:service_id => @service_id, 

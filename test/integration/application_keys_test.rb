@@ -12,7 +12,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
 
     @provider_key = 'provider_key'
 
-    @service     = Core::Service.save(:provider_key => @provider_key, :id => next_id)
+    @service     = Core::Service.save!(:provider_key => @provider_key, :id => next_id)
     @application = Application.save(:service_id => @service.id, 
                                     :id         => next_id,
                                     :state      => :active)

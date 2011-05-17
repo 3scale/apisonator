@@ -9,7 +9,7 @@ module Validators
       Storage.instance(true).flushdb
       Resque.reset!
 
-      @service = Core::Service.save(:provider_key => 'foo', :id => next_id)
+      @service = Core::Service.save!(:provider_key => 'foo', :id => next_id)
       @plan_id = next_id
 
       @metric_id = next_id

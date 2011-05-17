@@ -46,7 +46,7 @@ module TestHelpers
                                  @provider_application_id)
 
       @service_id = next_id
-      @service = Core::Service.save(:provider_key => @provider_key, :id => @service_id)
+      @service = Core::Service.save!(:provider_key => @provider_key, :id => @service_id)
 
       @plan_id = next_id
       @plan_name = "plan#{@plan_id}"
@@ -68,13 +68,13 @@ module TestHelpers
                                  @provider_application_id)
 
       service_id = next_id
-      @service_1 = Core::Service.save(:provider_key => @provider_key, :id => service_id)
+      @service_1 = Core::Service.save!(:provider_key => @provider_key, :id => service_id)
 
       service_id = next_id
-      @service_2 = Core::Service.save(:provider_key => @provider_key, :id => service_id)
+      @service_2 = Core::Service.save!(:provider_key => @provider_key, :id => service_id)
 
       service_id = next_id
-      @service_3 = Core::Service.save(:provider_key => @provider_key, :id => service_id)
+      @service_3 = Core::Service.save!(:provider_key => @provider_key, :id => service_id)
 
       @plan_id_1 = next_id
       @plan_name_1 = "plan#{@plan_id_1}"
@@ -91,7 +91,7 @@ module TestHelpers
 
     def setup_oauth_provider_fixtures
       setup_provider_fixtures
-      @service = Core::Service.save(:provider_key => @provider_key, :id => @service_id, :backend_version => 'oauth')
+      @service = Core::Service.save!(:provider_key => @provider_key, :id => @service_id, :backend_version => 'oauth')
     end
   end
 end
