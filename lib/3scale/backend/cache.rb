@@ -51,7 +51,9 @@ module ThreeScale
           key_version = signature(action, params)
 
           application_id = params[:app_id] 
+          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           application_id = params[:user_key] if application_id.nil?
+
           username = params[:user_id]
 
           if username.nil?
@@ -226,7 +228,7 @@ module ThreeScale
           ## case of only application, no user
           #is_app_violation, dirty_app_xml = storage.pipelined do
           #  storage.sismember("limit_violations_set",cached_app_key)
-          #  storage.get(cached_app_key)
+          #  storage.get(cached_fapp_key)
           #end
           #cached_status_result = !is_app_violation
 
@@ -277,7 +279,46 @@ module ThreeScale
 
       end
 
-      
+      ## sets all the application by id:app_key      
+      def set_status_in_cache_application(service_id, application, status, options ={})
+        options[:anchors_for_caching] = true
+        content = status.to_xml(options)
+
+        keys = []
+        application.keys.each do |app_key|
+
+          if app_key.nil?
+            k = application.id
+          else
+            k = "#{application.id}:#{app_key}"
+          end
+
+          keys << caching_key(service_id,:application,k)
+
+        end
+
+        keys << caching_key(service_id,:application,application.id) if keys.size==0
+
+        if status.authorized?
+          storage.pipelined do
+            keys.each do |key|
+              storage.set(key,content)
+              storage.expire(key,STATUS_TTL-Time.now.sec)
+              storage.srem("limit_violations_set",key)
+            end
+          end
+        else
+          storage.pipelined do
+            keys.each do |key|
+              storage.set(key,content)
+              storage.expire(key,STATUS_TTL-Time.now.sec)
+              storage.sadd("limit_violations_set",key)
+            end
+          end
+        end
+
+      end
+
 
       def set_status_in_cache(key, status, options ={})
         options[:anchors_for_caching] = true   

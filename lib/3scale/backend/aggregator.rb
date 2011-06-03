@@ -157,9 +157,10 @@ module ThreeScale
           status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
           ThreeScale::Backend::Validators::Limits.apply(status,{})
 
+          set_status_in_cache_application(values[:service_id],application,status,{:exclude_user => true})
 
-          key = caching_key(values[:service_id],:application,application.id)
-          set_status_in_cache(key,status,{:exclude_user => true})
+          ##key = caching_key(values[:service_id],:application,application.id)
+          ##set_status_in_cache(key,status,{:exclude_user => true})
 
         end
 
@@ -170,8 +171,7 @@ module ThreeScale
           usage = load_user_current_usage(user)	
           status = ThreeScale::Backend::Transactor::Status.new(:user => user, :user_values => usage)					
           ThreeScale::Backend::Validators::Limits.apply(status,{})
-
-            
+         
           key = caching_key(service.id,:user,user.username)
           set_status_in_cache(key,status,{:exclude_application => true})
 

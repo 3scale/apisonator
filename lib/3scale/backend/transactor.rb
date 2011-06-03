@@ -1,5 +1,4 @@
 require 'json'
-
 require '3scale/backend/transactor/notify_job'
 require '3scale/backend/transactor/process_job'
 require '3scale/backend/transactor/report_job'
@@ -54,7 +53,8 @@ module ThreeScale
           ## before
           isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:authorize,provider_key,params)
           ## warning, this way of building application_id might be problematic.   
-          application_id = params[:app_id] 
+          application_id = params[:app_id]
+          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
 
@@ -85,6 +85,8 @@ module ThreeScale
 
           service_id = service.id
           application_id = application.id
+          #application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
+          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           username = nil
           username = user.username unless user.nil?
 
@@ -92,10 +94,10 @@ module ThreeScale
             combination_save(data_combination) unless data_combination.nil?
 
             if (user.nil?)
-              key = caching_key(service.id,:application,application.id)
+              key = caching_key(service.id,:application,application_id)
               set_status_in_cache(key,status)
             else
-              key = caching_key(service.id,:application,application.id)
+              key = caching_key(service.id,:application,application_id)
               set_status_in_cache(key,status,{:exclude_user => true})
               key = caching_key(service.id,:user,user.username)
               set_status_in_cache(key,status,{:exclude_application => true})
@@ -109,7 +111,6 @@ module ThreeScale
 
       def authorize_nocache(provider_key, params, options = {})
         
-
         service     = Service.load!(provider_key)
         application = Application.load_by_id_or_user_key!(service.id,
                                                           params[:app_id],
@@ -160,7 +161,9 @@ module ThreeScale
           ## before
           isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:oauth_authorize,provider_key,params)
           ## warning, this way of building application_id might be problematic.   
-          application_id = params[:app_id] 
+          application_id = params[:app_id]
+          #application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
+          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
 
@@ -190,6 +193,7 @@ module ThreeScale
 
           service_id = service.id
           application_id = application.id
+          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           username = nil
           username = user.username unless user.nil?
 
@@ -197,10 +201,10 @@ module ThreeScale
             combination_save(data_combination) unless data_combination.nil?
 
             if (user.nil?)
-              key = caching_key(service.id,:application,application.id)
+              key = caching_key(service.id,:application,application_id)
               set_status_in_cache(key,status)
             else
-              key = caching_key(service.id,:application,application.id)
+              key = caching_key(service.id,:application,application_id)
               set_status_in_cache(key,status,{:exclude_user => true})
               key = caching_key(service.id,:user,user.username)
               set_status_in_cache(key,status,{:exclude_application => true})
@@ -251,7 +255,6 @@ module ThreeScale
       end
 
     
-
       def authrep(provider_key, params, options ={})
 
         status = nil
@@ -265,6 +268,7 @@ module ThreeScale
           isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:authrep,provider_key,params)
           ## warning, this way of building application_id might be problematic.   
           application_id = params[:app_id] 
+          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           application_id = params[:user_key] if application_id.nil?
           username = params[:user_id]
 
@@ -275,6 +279,7 @@ module ThreeScale
           options[:add_usage_on_report] = true unless params[:usage].nil?
 
           if isknown && !service_id.nil?
+    
             status_xml, status_result = get_status_in_cache(service_id, application_id, username, options)
             if status_xml.nil? || status_result.nil? 
               need_nocache = true
@@ -294,17 +299,19 @@ module ThreeScale
 
           service_id = service.id
           application_id = application.id
+          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           username = nil
           username = user.username unless user.nil?
 
+          
           if params[:no_caching].nil?
             combination_save(data_combination) unless data_combination.nil?
 
             if (user.nil?)
-              key = caching_key(service.id,:application,application.id)
+              key = caching_key(service.id,:application,application_id)
               set_status_in_cache(key,status)
             else
-              key = caching_key(service.id,:application,application.id)
+              key = caching_key(service.id,:application,application_id)
               set_status_in_cache(key,status,{:exclude_user => true})
               key = caching_key(service.id,:user,user.username)
               set_status_in_cache(key,status,{:exclude_application => true})

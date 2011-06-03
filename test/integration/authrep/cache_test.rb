@@ -24,6 +24,94 @@ class AuthrepCacheTest < Test::Unit::TestCase
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
   end
 
+  test 'checking correct behaviour of caching by app_key' do 
+
+    get '/transactions/authorize.xml',    :provider_key => @provider_key,
+                                          :app_id       => @application.id
+                                          
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status:root authorized').content
+    assert_equal 200, last_response.status
+
+
+    @application.create_key("app_key1")
+    @application.create_key("app_key2")
+
+    ## error is app_keys defined and not passed
+
+    get '/transactions/authorize.xml',    :provider_key => @provider_key,
+                                          :app_id       => @application.id
+                                        
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal 'false', doc.at('status:root authorized').content
+    assert_equal 409, last_response.status
+
+    ## checking that they can be remove and then it's fine
+    
+    @application.delete_key("app_key1")
+    @application.delete_key("app_key2")
+
+
+    get '/transactions/authorize.xml',    :provider_key => @provider_key,
+                                          :app_id       => @application.id
+   
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status:root authorized').content
+    assert_equal 200, last_response.status
+
+    ## putting the app_keys back in place and checking that either key goes well and putting one 
+    ## that does not exist gives an error. Then, checking that a good key does not get the cached
+    ## error, and finally checking that a repeated bad key does not get the cached good result. 
+
+    @application.create_key("app_key1")
+    @application.create_key("app_key2")
+
+    get '/transactions/authorize.xml',    :provider_key => @provider_key,
+                                          :app_id       => @application.id,
+                                          :app_key      => "app_key1"
+             
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status:root authorized').content
+    assert_equal 200, last_response.status
+
+
+    get '/transactions/authorize.xml',    :provider_key => @provider_key,
+                                          :app_id       => @application.id,
+                                          :app_key      => "app_key2"
+                                        
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status:root authorized').content
+    assert_equal 200, last_response.status
+
+    
+    get '/transactions/authorize.xml',    :provider_key => @provider_key,
+                                          :app_id       => @application.id,
+                                          :app_key      => "fake_app_key2"
+                                        
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal 'false', doc.at('status:root authorized').content
+    assert_equal 409, last_response.status
+
+    get '/transactions/authorize.xml',    :provider_key => @provider_key,
+                                          :app_id       => @application.id,
+                                          :app_key      => "app_key2"
+                                        
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal 'true', doc.at('status:root authorized').content
+    assert_equal 200, last_response.status
+
+
+    get '/transactions/authorize.xml',    :provider_key => @provider_key,
+                                          :app_id       => @application.id,
+                                          :app_key      => "fake_app_key2"
+                                        
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal 'false', doc.at('status:root authorized').content
+    assert_equal 409, last_response.status
+
+
+  end
+
   test 'cached vs. non-cached authrep' do
 
     cached = []
