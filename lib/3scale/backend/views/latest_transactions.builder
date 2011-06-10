@@ -1,7 +1,7 @@
 xml.instruct!
 xml.transactions do
   @transactions.each do |transaction|
-    timestamp = transaction[:timestamp].strftime(ThreeScale::TIME_FORMAT)
+    timestamp = transaction[:timestamp].nil? ? '' : transaction[:timestamp].strftime(ThreeScale::TIME_FORMAT)
 
     xml.transaction :application_id => transaction[:application_id],
                     :timestamp      => timestamp do
