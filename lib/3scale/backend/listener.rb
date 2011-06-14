@@ -163,12 +163,18 @@ module ThreeScale
       end
 
       post '/applications/:app_id/keys.xml' do
-        @key = application.create_key
+
+        if params[:key].nil? || params[:key].empty?
+          @key = application.create_key
+        else
+          @key = application.create_key(params[:key])
+        end
 
         headers 'Location' => application_resource_url(application, :keys, @key)
         status 201
         builder :create_application_key
       end
+
 
       delete '/applications/:app_id/keys/:key.xml' do
         application.delete_key(params[:key])
