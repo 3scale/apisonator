@@ -26,7 +26,7 @@ module ThreeScale
 
               unless (transaction[:user_id].nil?)
                 key = transaction[:user_id]
-                users[key] = {:service_id => transaction[:service_id], :user_id =>transaction[:user_id]}
+                users[key] = {:service_id => transaction[:service_id], :user_id => transaction[:user_id]}
               end
 
               aggregate(transaction)
@@ -151,20 +151,17 @@ module ThreeScale
       def update_status_cache(applications, users = {}) 
         applications.each do |appid, values|
 
-          ##application = Application.load_by_id_or_user_key!(values[:service_id],values[:application_id],values[:user_key])
           application = Application.load(values[:service_id],values[:application_id])
           usage = load_current_usage(application)	
           status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
           ThreeScale::Backend::Validators::Limits.apply(status,{})
 
           set_status_in_cache_application(values[:service_id],application,status,{:exclude_user => true})
-
-          ##key = caching_key(values[:service_id],:application,application.id)
-          ##set_status_in_cache(key,status,{:exclude_user => true})
-
+        
         end
 
-        users.each do |userid, values|
+        users.each do |userid, values|e
+
           service ||= Service.load_by_id(values[:service_id])
           raise ServiceLoadInconsistency.new(values[:service_id],service.id) if service.id != values[:service_id] 
           user = User.load!(service,values[:user_id])

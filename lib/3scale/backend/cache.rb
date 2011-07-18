@@ -1,4 +1,3 @@
-
 require '3scale/backend/errors'
 
 module ThreeScale
@@ -14,7 +13,8 @@ module ThreeScale
                                 :user_key, 
                                 :user_id, 
                                 :referrer,  
-                                :redirect_url]
+                                :redirect_url,
+                                :usage]
 
       COMBINATION_TTL       = 3600 # 1 hour
       STATUS_TTL            = 60   # 1 minute, this is too short but we need minute information on the output :-( 
@@ -33,10 +33,47 @@ module ThreeScale
         sid
       end
 
+      def stats
+        @@stats
+      end
+
+      def stats=(s)
+        @@stats=s
+      end
+
+      def report_cache_hit
+        @@stats ||= {:count => 0, :miss => 0}
+        @@stats[:count]=@@stats[:count]+1
+      end
+
+      def report_cache_miss
+        @@stats ||= {:count => 0, :miss => 0}
+        @@stats[:count]=@@stats[:count]+1
+        @@stats[:miss]=@@stats[:miss]+1
+      end
+
+      def caching_enable
+        storage.set("settings/caching_enabled",1)
+      end
+
+      def caching_disable
+        storage.set("settings/caching_enabled",0)
+      end
+
+      def caching_enabled?
+        storage.get("settings/caching_enabled")!="0"
+      end
+
       def signature(action, params)
           key_version = "cache_combination/#{action}/"
           VALID_PARAMS_FOR_CACHE.each do |label|
-             key_version << "#{label}:#{params[label]}/"
+            if label!=:usage || params[:usage].nil?
+              key_version << "#{label}:#{params[label]}/"
+            else
+              params[:usage].each do |key,value|
+                key_version << "#{label}:#{key}:"  
+              end
+            end
           end 
           key_version
       end
@@ -49,27 +86,33 @@ module ThreeScale
         if !service_id.nil?
   
           key_version = signature(action, params)
-
           application_id = params[:app_id] 
-          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           application_id = params[:user_key] if application_id.nil?
 
           username = params[:user_id]
 
+          application_id = "" if application_id.nil?
+          application_id_cached = application_id.clone 
+          application_id_cached << ":"
+          application_id_cached << params[:app_key] unless params[:app_key].nil?
+          application_id_cached << ":"
+          application_id_cached << params[:referrer] unless params[:referrer].nil?
+          # FIXME: this needs to be done for redirect_url(??)
+
           if username.nil?
             
-            cached_app_key = caching_key(service_id,:application,application_id)
+            cached_app_key = caching_key(service_id,:application,application_id_cached)
 
-            version, ver_service, ver_application, dirty_app_xml = storage.mget(key_version,Service.storage_key(service_id, :version),Application.storage_key(service_id,application_id,:version),cached_app_key)
+            version, ver_service, ver_application, dirty_app_xml, caching_enabled = storage.mget(key_version,Service.storage_key(service_id, :version),Application.storage_key(service_id,application_id,:version),cached_app_key,"settings/caching_enabled")
             
             current_version = "s:#{ver_service}/a:#{ver_application}"
 
           else
 
-            cached_app_key = caching_key(service_id,:application,application_id)
+            cached_app_key = caching_key(service_id,:application,application_id_cached)
             cached_user_key = caching_key(service_id,:user,username)
             
-            version, ver_service, ver_application, ver_user, dirty_app_xml, dirty_user_xml = storage.mget(key_version,Service.storage_key(service_id, :version),Application.storage_key(service_id,application_id,:version),User.storage_key(service_id,username,:version),cached_app_key,cached_user_key)
+            version, ver_service, ver_application, ver_user, dirty_app_xml, dirty_user_xml, caching_enabled = storage.mget(key_version,Service.storage_key(service_id, :version),Application.storage_key(service_id,application_id,:version),User.storage_key(service_id,username,:version),cached_app_key,cached_user_key,"settings/caching_enabled")
 
             current_version = "s:#{ver_service}/a:#{ver_application}/u:#{ver_user}"
           end
@@ -96,7 +139,11 @@ module ThreeScale
 
         combination_data = {:key => key_version, :current_version => current_version}
 
-        return [isknown, service_id, combination_data, dirty_app_xml, dirty_user_xml]
+        ## the default of settings/caching_enabled results on true, to disable caching set 
+        ## settings/caching_enabled to 0
+        caching_enabled = caching_enabled!="0"
+
+        return [isknown, service_id, combination_data, dirty_app_xml, dirty_user_xml, caching_enabled]
 
       end
 
@@ -197,108 +244,39 @@ module ThreeScale
           ## then, just forget and let the proper way to calculated
           violation_just_happened = true
         else
-          
           violation_just_happened = false
         end
-
-
 
         return [newxmlstr, authorized, violation_just_happened]
       end
 
       
-
-      ## preemptive_usage is whether or not the usage[] from params needs
-      ## to be accounted for in the calculation of the limits
-      ## options[:add_usage]=true, add the usage in the result
-      ## options[:obey_limits]=true, returns the real status, not from cache, 
-      ## if the usage (+ the params[usage] if :add_usage==true) 
-      ## are above the max_value
-      ## {:add_usage_on_report => true, :add_usage_on_limit_check => false}
-
-      def get_status_in_cache(service_id, application_id, username, options = {}) 
-        status = nil
-
-        cached_app_key = caching_key(service_id,:application,application_id)
-        is_app_violation = true
-        is_user_violation = true
-
-
-        if username.nil?
-          ## case of only application, no user
-          #is_app_violation, dirty_app_xml = storage.pipelined do
-          #  storage.sismember("limit_violations_set",cached_app_key)
-          #  storage.get(cached_fapp_key)
-          #end
-          #cached_status_result = !is_app_violation
-
-          if options[:dirty_app_xml].nil?            
-            dirty_app_xml = storage.get(cached_app_key) 
-          else
-            dirty_app_xml = options[:dirty_app_xml]
-          end
-
-          if not dirty_app_xml.nil?
-            #options[:usage] = usage unless usage.nil? 
-            cached_status_xml, cached_status_result, violation_just_happened = clean_cached_xml(dirty_app_xml, nil, options)
-            if not violation_just_happened
-              return [cached_status_xml, cached_status_result] 
-            end
-          end
-
-        else
-          ## case of application and user
-
-          cached_user_key = caching_key(service_id,:user,username)
-          if options[:dirty_app_xml].nil? || options[:dirty_user_xml].nil?
-            dirty_app_xml, dirty_user_xml = storage.mget(cached_app_key,cached_user_key) 
-          else
-            dirty_app_xml = options[:dirty_app_xml]
-            dirty_user_xml = options[:dirty_user_xml]
-          end
-
-          #cached_user_key = caching_key(service_id,:user,username)
-          #is_app_violation, is_user_violation, dirty_app_xml, dirty_user_xml = storage.pipelined do
-          #  storage.sismember("limit_violations_set",cached_app_key)
-          #  storage.sismember("limit_violations_set",cached_user_key)
-          #  storage.get(cached_app_key)
-          #  storage.get(cached_user_key)
-          #end
-          #cached_status_result = !(is_app_violation || is_user_violation)
-
-          if !dirty_app_xml.nil? && !dirty_user_xml.nil? 
-            #options[:usage] = usage unless usage.nil?
-            cached_status_xml, cached_status_result, violation_just_happened = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
-            if not violation_just_happened
-              return [cached_status_xml, cached_status_result]
-            end 
-          end
-        end
-
-        return [nil, nil, nil]
-
-      end
-
       ## sets all the application by id:app_key      
       def set_status_in_cache_application(service_id, application, status, options ={})
         options[:anchors_for_caching] = true
         content = status.to_xml(options)
 
+        tmp_keys = []
         keys = []
+
         application.keys.each do |app_key|
+          tmp_keys << "#{application.id}:#{app_key}"
+        end
+    
+        tmp_keys << "#{application.id}:" if application.keys.size==0
 
-          if app_key.nil?
-            k = application.id
-          else
-            k = "#{application.id}:#{app_key}"
-          end
-
-          keys << caching_key(service_id,:application,k)
-
+        application.referrer_filters.each do |referrer|
+          tmp_keys.each do |item|
+            keys << caching_key(service_id,:application,"#{item}:#{referrer}")
+          end  
         end
 
-        keys << caching_key(service_id,:application,application.id) if keys.size==0
-
+        if application.referrer_filters.size==0
+          tmp_keys.each do |item|
+            keys << caching_key(service_id,:application,"#{item}:")
+          end
+        end
+                
         if status.authorized?
           storage.pipelined do
             keys.each do |key|

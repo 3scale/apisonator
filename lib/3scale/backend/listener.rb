@@ -36,6 +36,7 @@ module ThreeScale
           empty_response 403
           return
         end
+        
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authorize(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
@@ -70,6 +71,7 @@ module ThreeScale
           empty_response 403
           return
         end
+
         authorization, cached_authorization_text, cached_authorization_result = Transactor.oauth_authorize(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
@@ -104,6 +106,7 @@ module ThreeScale
           empty_response 403
           return
         end
+
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?

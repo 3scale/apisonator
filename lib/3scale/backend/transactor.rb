@@ -1,4 +1,3 @@
-require 'json'
 require '3scale/backend/transactor/notify_job'
 require '3scale/backend/transactor/process_job'
 require '3scale/backend/transactor/report_job'
@@ -17,8 +16,6 @@ module ThreeScale
       def report(provider_key, transactions)
         service_id = Service.load_id!(provider_key)
 	      report_enqueue(service_id, transactions)
-        #Resque.enqueue(ReportJob, service_id, transactions)
-
         notify(provider_key, 'transactions/create_multiple' => 1,
                              'transactions' => transactions.size)
       end
@@ -44,67 +41,34 @@ module ThreeScale
 
         status = nil
         status_xml = nil
-        status_result = nil   
-        need_nocache = true
+        status_result = nil  
+        data_combination = nil 
+        cache_miss = true
 
         if params[:no_caching].nil?
 
-          ## check is the keys/id combination from params has been seen
-          ## before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:authorize,provider_key,params)
-          ## warning, this way of building application_id might be problematic.   
-          application_id = params[:app_id]
-          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
-          application_id = params[:user_key] if application_id.nil?
-          username = params[:user_id]
+          ## check is the keys/id combination from params has been seen before
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:authorize,provider_key,params)
 
-          options[:dirty_app_xml] = dirty_app_xml
-          options[:dirty_user_xml] = dirty_user_xml
+          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
+            options[:usage] = params[:usage] unless params[:usage].nil?
+            options[:add_usage_on_report] = false
 
-          options[:usage] = params[:usage] unless params[:usage].nil?
-          options[:add_usage_on_report] = true unless params[:usage].nil?
-
-          if isknown && !service_id.nil?
-            status_xml, status_result = get_status_in_cache(service_id, application_id, username, options)
-            if status_xml.nil? || status_result.nil? 
-              need_nocache = true
-            else
-              ## that's the nice case, everything was cached
-              need_nocache = false
-            end
-          else
-            need_nocache = true
+            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)          
+            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
           end
         end
 
-        if need_nocache         
-          ## this are the classic calls to the methods, but they need to return 
-          ## additional objects
-
+        if cache_miss
+          report_cache_miss
           status, service, application, user = authorize_nocache(provider_key,params,options)
-
-          service_id = service.id
-          application_id = application.id
-          #application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
-          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
-          username = nil
-          username = user.username unless user.nil?
-
-          if params[:no_caching].nil?
-            combination_save(data_combination) unless data_combination.nil?
-
-            if (user.nil?)
-              key = caching_key(service.id,:application,application_id)
-              set_status_in_cache(key,status)
-            else
-              key = caching_key(service.id,:application,application_id)
-              set_status_in_cache(key,status,{:exclude_user => true})
-              key = caching_key(service.id,:user,user.username)
-              set_status_in_cache(key,status,{:exclude_application => true})
-            end
-          end
+          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+          status_xml = nil
+          status_result = nil
+        else
+          report_cache_hit
         end
-
+        
         [status, status_xml, status_result]
 
       end
@@ -154,62 +118,37 @@ module ThreeScale
         status = nil
         status_xml = nil
         status_result = nil   
-        need_nocache = true
+        cache_miss = true
+        data_combination = nil
 
         if params[:no_caching].nil?
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:oauth_authorize,provider_key,params)
-          ## warning, this way of building application_id might be problematic.   
-          application_id = params[:app_id]
-          #application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
-          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
-          application_id = params[:user_key] if application_id.nil?
-          username = params[:user_id]
 
-          options[:dirty_app_xml] = dirty_app_xml
-          options[:dirty_user_xml] = dirty_user_xml
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:oauth_authorize,provider_key,params)
 
-          options[:usage] = params[:usage] unless params[:usage].nil?
-          options[:add_usage_on_report] = true unless params[:usage].nil?
+          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
 
-          if isknown && !service_id.nil?
-            status_xml, status_result = get_status_in_cache(service_id, application_id, username, options)
-            if status_xml.nil? || status_result.nil? 
-              need_nocache = true
-            else
-              ## that's the nice case, everything was cached
-              need_nocache = false
-            end
-          else
-            need_nocache = true
+            options[:usage] = params[:usage] unless params[:usage].nil?
+            options[:add_usage_on_report] = false
+
+            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
+            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
+
           end
+
+          
+
         end
 
-        if need_nocache         
-          ## this are the classic calls to the methods, but they need to return 
-          ## additional objects
+        if cache_miss
+          report_cache_miss
           status, service, application, user = oauth_authorize_nocache(provider_key,params,options)
-
-          service_id = service.id
-          application_id = application.id
-          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
-          username = nil
-          username = user.username unless user.nil?
-
-          if params[:no_caching].nil?
-            combination_save(data_combination) unless data_combination.nil?
-
-            if (user.nil?)
-              key = caching_key(service.id,:application,application_id)
-              set_status_in_cache(key,status)
-            else
-              key = caching_key(service.id,:application,application_id)
-              set_status_in_cache(key,status,{:exclude_user => true})
-              key = caching_key(service.id,:user,user.username)
-              set_status_in_cache(key,status,{:exclude_application => true})
-            end
-          end
+          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+          status_xml = nil
+          status_result = nil
+        else
+          report_cache_hit
         end
 
         [status, status_xml, status_result]
@@ -259,64 +198,50 @@ module ThreeScale
 
         status = nil
         status_xml = nil
-        status_result = nil   
-        need_nocache = true
+        status_result = nil
+        data_combination = nil 
+        cache_miss = true
 
         if params[:no_caching].nil?
           ## check is the keys/id combination from params has been seen
           ## before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml = combination_seen(:authrep,provider_key,params)
-          ## warning, this way of building application_id might be problematic.   
-          application_id = params[:app_id] 
-          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
-          application_id = params[:user_key] if application_id.nil?
-          username = params[:user_id]
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:authrep,provider_key,params)
 
-          options[:dirty_app_xml] = dirty_app_xml
-          options[:dirty_user_xml] = dirty_user_xml
+          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
+      
+            options[:usage] = params[:usage] unless params[:usage].nil?
+            options[:add_usage_on_report] = true unless params[:usage].nil?
 
-          options[:usage] = params[:usage] unless params[:usage].nil?
-          options[:add_usage_on_report] = true unless params[:usage].nil?
-
-          if isknown && !service_id.nil?
-    
-            status_xml, status_result = get_status_in_cache(service_id, application_id, username, options)
-            if status_xml.nil? || status_result.nil? 
-              need_nocache = true
-            else
-              ## that's the nice case, everything was cached
-              need_nocache = false
-            end
-          else
-            need_nocache = true
+            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
+            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
+          
           end
+
+          ##combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+
         end
 
-        if need_nocache         
-          ## this are the classic calls to the methods, but they need to return 
-          ## additional objects
+        ##cache_miss ? report_cache_miss : report_cache_hit
+        ##combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+        if cache_miss
+          report_cache_miss
           status, service, application, user = authrep_nocache(provider_key,params,options)
+          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+          status_xml = nil
+          status_result = nil
+        else
+          report_cache_hit
+        end
 
+        if application.nil?
+          application_id = params[:app_id]
+          application_id = params[:user_key] if params[:app_id].nil?
+          username = params[:user_id]
+        else
           service_id = service.id
           application_id = application.id
-          application_id = "#{application_id}:#{params[:app_key]}" unless application_id.nil? or params[:app_key].nil?
           username = nil
           username = user.username unless user.nil?
-
-          
-          if params[:no_caching].nil?
-            combination_save(data_combination) unless data_combination.nil?
-
-            if (user.nil?)
-              key = caching_key(service.id,:application,application_id)
-              set_status_in_cache(key,status)
-            else
-              key = caching_key(service.id,:application,application_id)
-              set_status_in_cache(key,status,{:exclude_user => true})
-              key = caching_key(service.id,:user,user.username)
-              set_status_in_cache(key,status,{:exclude_application => true})
-            end
-          end
         end
 
         if !params[:usage].nil? && ((!status.nil? && status.authorized?) || (status.nil? && status_result)) 
@@ -484,11 +409,10 @@ module ThreeScale
                    "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
       end
 
-
-
       def storage
         Storage.instance
       end
+
     end
   end
 end

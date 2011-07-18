@@ -7,10 +7,12 @@ module ThreeScale
       # creates one first. If you want to always create a fresh instance, set the
       # +reset+ parameter to true.
       def self.instance(reset = false)
+       
         @@instance = nil if reset
         @@instance ||= new(:servers     => configuration.redis.servers,
                            :db          => configuration.redis.db,
                            :backup_file => configuration.redis.backup_file)
+        @@instance      
       end
 
       def initialize(options)
