@@ -1,3 +1,4 @@
+require 'ruby-debug'
 require '3scale/core'
 require 'aws/s3'
 require 'builder'
@@ -47,6 +48,7 @@ require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
 require '3scale/backend/user'
 require '3scale/backend/cache'
+require '3scale/backend/alerts'
 
 require '3scale/backend/version'
 require '3scale/backend/worker'
