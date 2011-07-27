@@ -160,7 +160,7 @@ module ThreeScale
         
         end
 
-        users.each do |userid, values|e
+        users.each do |userid, values|
 
           service ||= Service.load_by_id(values[:service_id])
           raise ServiceLoadInconsistency.new(values[:service_id],service.id) if service.id != values[:service_id] 
