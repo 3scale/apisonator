@@ -50,7 +50,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     assert_equal 3, @storage.get(application_key(@service.id,
                                                  @application.id,
                                                  @metric_id,
-                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+                                                 :month, Time.now.getutc.strftime("%Y%m01"))).to_i
 
 
     assert_not_authorized 'usage limits are exceeded'
@@ -80,7 +80,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     assert_equal 2, @storage.get(application_key(@service.id,
                                                  @application.id,
                                                  @metric_id,
-                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+                                                 :month, Time.now.getutc.strftime("%Y%m01"))).to_i
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
@@ -98,7 +98,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     assert_equal 3, @storage.get(application_key(@service.id,
                                                  @application.id,
                                                  @metric_id,
-                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+                                                 :month, Time.now.getutc.strftime("%Y%m01"))).to_i
 
     assert_authorized
   end
@@ -128,7 +128,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     assert_equal 5, @storage.get(application_key(@service.id,
                                                  @application.id,
                                                  @metric_id,
-                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+                                                 :month, Time.now.getutc.strftime("%Y%m01"))).to_i
 
 
     assert_not_authorized 'usage limits are exceeded'

@@ -14,6 +14,8 @@ module ThreeScale
       extend self
 
       def report(provider_key, transactions)
+        ## FIXME this one is wrong!!! can you actually get the another service than default?
+        ## did I merge multi-services here? probably not
         service_id = Service.load_id!(provider_key)
 	      report_enqueue(service_id, transactions)
         notify(provider_key, 'transactions/create_multiple' => 1,
@@ -22,7 +24,7 @@ module ThreeScale
 
       VALIDATORS = [Validators::Key,
                     Validators::Referrer,
-                    Validators::ReferrerFilters,
+                   Validators::ReferrerFilters,
                     Validators::State,
                     Validators::Limits]
 
@@ -303,6 +305,28 @@ module ThreeScale
         notify(provider_key, 'transactions/authorize' => 1)
         raise e
       end
+
+      def utilization(provider_key, service_id, application_id)
+
+        ## FIXME check for multi_services
+
+        application = Application.load!(service_id, application_id)
+        usage = load_current_usage(application)	
+        status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
+        ThreeScale::Backend::Validators::Limits.apply(status, {})
+
+        max_utilization = 0
+        max_record = 0
+
+        max_utilization, max_record = ThreeScale::Backend::Alerts.utilization(status) if status.usage_reports.size > 0
+        max_utilization = (max_utilization * 100.to_f).round
+
+        stats = ThreeScale::Backend::Alerts.stats(service_id, application_id)
+
+        return [status.usage_reports, max_record, max_utilization, stats]
+
+      end
+
 
       ## -------------------
       

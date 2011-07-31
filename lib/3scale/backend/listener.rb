@@ -139,7 +139,6 @@ module ThreeScale
       get '/transactions/errors.xml' do
         @errors = ErrorStorage.list(service_id, :page     => params[:page],
                                                 :per_page => params[:per_page])
-
         builder :transaction_errors
       end
 
@@ -149,20 +148,62 @@ module ThreeScale
       end
 
       get '/transactions/errors/count.xml' do
-        @count = ErrorStorage.count(service_id)
-
+        @count = ErrorStorage.count(service_id)		
         builder :transaction_error_count
       end
 
       get '/transactions/latest.xml' do
         @transactions = TransactionStorage.list(service_id)
-
         builder :latest_transactions
       end
 
+      get '/services/:service_id/alerts.xml' do  
+        ## this load the default service by provider key, but taking the one in paramters
+        ## multiservices need to check that provider owns :service_id 
+        ss = service_id     
+        @list = AlertStorage.list(params[:service_id])
+        builder :latest_alerts
+      end
+
+      get '/services/:service_id/alert_limits.xml' do
+        ## this load the default service by provider key, but taking the one in paramters
+        ## multiservices need to check that provider owns :service_id 
+        ss = service_id
+        @list = Alerts.list_allowed_limit(params[:service_id])
+        builder :alert_limits
+      end
+
+      post '/services/:service_id/alert_limits/:limit.xml' do
+        ## this load the default service by provider key, but taking the one in paramters
+        ## multiservices need to check that provider owns :service_id 
+        ss = service_id 
+        @list = Alerts.add_allowed_limit(params[:service_id],params[:limit])
+        builder :alert_limits
+      end
+
+      delete '/services/:service_id/alert_limits/:limit.xml' do
+        ## this load the default service by provider key, but taking the one in paramters
+        ## multiservices need to check that provider owns :service_id 
+        ss = service_id 
+        @list = Alerts.delete_allowed_limit(params[:service_id],params[:limit])
+        builder :alert_limits
+      end
+
+      get "/services/:service_id/applications/:app_id/utilization.xml" do
+
+        @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(params[:provider_key], params[:service_id], params[:app_id])
+        builder :utilization
+
+      end
+      
       get '/applications/:app_id/keys.xml' do
         @keys = application.keys
         builder :application_keys
+      end
+
+      get '/applications/:app_id/utilization.xml' do 
+        application.utilization
+        builder :application_utilization
       end
 
       post '/applications/:app_id/keys.xml' do

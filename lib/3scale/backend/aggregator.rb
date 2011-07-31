@@ -25,6 +25,9 @@ module ThreeScale
               ## granularity.
               ## applications contains the list of application, or application+users that need to be limit checked
               applications[key] = {:application_id => transaction[:application_id], :service_id => transaction[:service_id]}
+              ## who puts service_id here? it turns out is the transactor.report_enqueue
+              if transaction[:service_id].nil?
+              end
 
               unless (transaction[:user_id].nil?)
                 key = transaction[:user_id]
@@ -152,7 +155,7 @@ module ThreeScale
 
       def update_status_cache(applications, users = {}) 
 
-        current_timestamp = Time.now.utc
+        current_timestamp = Time.now.getutc
 
         applications.each do |appid, values|
 
@@ -231,8 +234,7 @@ module ThreeScale
         storage.sadd(key, encode_key(user_id))
       end
 
-      
-
+     
       def storage
         Storage.instance
       end

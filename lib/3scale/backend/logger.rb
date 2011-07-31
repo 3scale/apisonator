@@ -2,7 +2,7 @@ module ThreeScale
   module Backend
     class Logger < Rack::CommonLogger
       def log(env, status, header, began_at)
-        now = Time.now
+        now = Time.now.getutc
         length = extract_content_length(header)
         if env["REQUEST_METHOD"].to_s.upcase == "POST"
           provider_key = Rack::Request.new(env).params["provider_key"]

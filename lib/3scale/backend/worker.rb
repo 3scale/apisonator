@@ -97,7 +97,7 @@ module ThreeScale
 
       def working_on(job)
         data = encode(:queue   => job.queue,
-                      :run_at  => Time.now.to_s,
+                      :run_at  => Time.now.getutc.to_s,
                       :payload => job.payload)
 
         redis.set("worker:#{self}", data)
@@ -109,7 +109,7 @@ module ThreeScale
       end
 
       def started!
-        redis.set("worker:#{self}:started", Time.now.to_s)
+        redis.set("worker:#{self}:started", Time.now.getutc.to_s)
       end
 
       def stopped!
