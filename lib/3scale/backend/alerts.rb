@@ -1,5 +1,5 @@
 require '3scale/backend/alert_storage'
-require 'ruby-debug'
+
 module ThreeScale
   module Backend
     module Alerts
