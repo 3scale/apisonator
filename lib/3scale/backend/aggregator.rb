@@ -1,6 +1,7 @@
 require 'json'
 
 require '3scale/backend/cache'
+require '3scale/backend/alerts'
 require '3scale/backend/errors'
 
 module ThreeScale
@@ -8,6 +9,7 @@ module ThreeScale
     module Aggregator
       include Core::StorageKeyHelpers
       include Backend::Cache
+      include Backend::Alerts
       extend self
 
       def aggregate_all(transactions)
@@ -23,6 +25,9 @@ module ThreeScale
               ## granularity.
               ## applications contains the list of application, or application+users that need to be limit checked
               applications[key] = {:application_id => transaction[:application_id], :service_id => transaction[:service_id]}
+              ## who puts service_id here? it turns out is the transactor.report_enqueue
+              if transaction[:service_id].nil?
+              end
 
               unless (transaction[:user_id].nil?)
                 key = transaction[:user_id]
@@ -149,6 +154,9 @@ module ThreeScale
       end
 
       def update_status_cache(applications, users = {}) 
+
+        current_timestamp = Time.now.getutc
+
         applications.each do |appid, values|
 
           application = Application.load(values[:service_id],values[:application_id])
@@ -156,6 +164,9 @@ module ThreeScale
           status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
           ThreeScale::Backend::Validators::Limits.apply(status,{})
 
+          max_utilization, max_record = utilization(status)
+          update_utilization(status,max_utilization, max_record,current_timestamp) if max_utilization>=0.0
+          
           set_status_in_cache_application(values[:service_id],application,status,{:exclude_user => true})
         
         end
@@ -223,8 +234,7 @@ module ThreeScale
         storage.sadd(key, encode_key(user_id))
       end
 
-      
-
+     
       def storage
         Storage.instance
       end

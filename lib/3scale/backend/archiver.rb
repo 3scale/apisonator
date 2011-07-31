@@ -88,11 +88,11 @@ module ThreeScale
       end
 
       def each_file_to_store(&block)
-        each_partial_file_older_than(Time.now.beginning_of_day, &block)
+        each_partial_file_older_than(Time.now.getutc.beginning_of_day, &block)
       end
       
       def each_file_to_cleanup(&block)
-        each_partial_file_older_than((Time.now - Time::ONE_DAY).beginning_of_day, &block)
+        each_partial_file_older_than((Time.now.getutc - Time::ONE_DAY).beginning_of_day, &block)
       end
 
       def each_partial_file_older_than(time)

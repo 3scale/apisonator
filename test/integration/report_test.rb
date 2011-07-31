@@ -203,7 +203,7 @@ class ReportTest < Test::Unit::TestCase
     Resque.run!
 
     key = application_key(@service_id, @application.id, @metric_id,
-                          :month, Time.now.strftime('%Y%m01'))
+                          :month, Time.now.getutc.strftime('%Y%m01'))
     assert_nil @storage.get(key)
   end
 

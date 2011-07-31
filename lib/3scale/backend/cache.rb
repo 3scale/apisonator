@@ -23,7 +23,7 @@ module ThreeScale
       
       ## this is a little bit dangerous, but we can live with it
       def get_service_id(provider_key)
-        current_time = Time.now
+        current_time = Time.now.getutc
         @@provider_key_2_service_id ||= Hash.new 
         sid, time = @@provider_key_2_service_id[provider_key]
         if sid.nil? || (current_time-time > SERVICE_ID_CACHE_TTL)
@@ -281,7 +281,7 @@ module ThreeScale
           storage.pipelined do
             keys.each do |key|
               storage.set(key,content)
-              storage.expire(key,STATUS_TTL-Time.now.sec)
+              storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
               storage.srem("limit_violations_set",key)
             end
           end
@@ -289,7 +289,7 @@ module ThreeScale
           storage.pipelined do
             keys.each do |key|
               storage.set(key,content)
-              storage.expire(key,STATUS_TTL-Time.now.sec)
+              storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
               storage.sadd("limit_violations_set",key)
             end
           end
@@ -303,14 +303,14 @@ module ThreeScale
         if status.authorized?
           storage.pipelined do
             storage.set(key,status.to_xml(options))
-            storage.expire(key,STATUS_TTL-Time.now.sec)
+            storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
             storage.srem("limit_violations_set",key)
           end
         else
           ## it just violated the Limits, add to the violation set
           storage.pipelined do 
             storage.set(key,status.to_xml(options))
-            storage.expire(key,STATUS_TTL-Time.now.sec)
+            storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
             storage.sadd("limit_violations_set",key)
           end 
         end
