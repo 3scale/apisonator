@@ -27,7 +27,7 @@ class AuthorizePredictedUsageTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day => 4)
 
-    Transactor.report(@provider_key, 0 => {'app_id' => @application.id,
+    Transactor.report(@provider_key, nil, 0 => {'app_id' => @application.id,
                                            'usage'  => {'hits' => 3}})
     Resque.run!
 
@@ -54,7 +54,7 @@ class AuthorizePredictedUsageTest < Test::Unit::TestCase
                     :metric_id  => metric_two_id,
                     :day        => 4)
 
-    Transactor.report(@provider_key, 0 => {'app_id' => @application.id,
+    Transactor.report(@provider_key, nil, 0 => {'app_id' => @application.id,
                                            'usage'  => {'hits'  => 2,
                                                         'hacks' => 5}})
     Resque.run!
@@ -78,12 +78,13 @@ class AuthorizePredictedUsageTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day        => 4)
 
-    Transactor.report(@provider_key, 0 => {'app_id' => @application.id,
+    Transactor.report(@provider_key, @service.id, 0 => {'app_id' => @application.id,
                                            'usage'  => {'hits'  => 5}})
     Resque.run!
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id,
+                                       :service_id   => @service.id,
                                        :usage        => {'queries' => 1}
 
     assert_not_authorized 'usage limits are exceeded'

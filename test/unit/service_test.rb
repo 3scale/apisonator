@@ -12,7 +12,7 @@ class ServiceTest < Test::Unit::TestCase
   end
 
   test 'load_id! returns service id if it exists' do
-    Service.save(:provider_key => 'foo', :id => '1001')
+    Service.save!(:provider_key => 'foo', :id => '1001')
 
     assert_equal '1001', Service.load_id!('foo')
   end
@@ -24,7 +24,7 @@ class ServiceTest < Test::Unit::TestCase
   end
   
   test 'load! returns service if it exists' do
-    Service.save(:provider_key => 'foo', :id => '1001')
+    Service.save!(:provider_key => 'foo', :id => '1001')
     
     assert_not_nil Service.load!('foo')
   end

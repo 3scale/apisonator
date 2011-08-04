@@ -26,7 +26,8 @@ module ThreeScale
           empty_response 403
           return
         end
-        Transactor.report(params[:provider_key], params[:transactions])
+        
+        Transactor.report(params[:provider_key], params[:service_id], params[:transactions])
         empty_response 202
       end
 
@@ -158,42 +159,28 @@ module ThreeScale
       end
 
       get '/services/:service_id/alerts.xml' do  
-        ## this load the default service by provider key, but taking the one in paramters
-        ## multiservices need to check that provider owns :service_id 
-        ss = service_id     
-        @list = AlertStorage.list(params[:service_id])
+        @list = Transactor.latest_alerts(service_id)
         builder :latest_alerts
       end
 
       get '/services/:service_id/alert_limits.xml' do
-        ## this load the default service by provider key, but taking the one in paramters
-        ## multiservices need to check that provider owns :service_id 
-        ss = service_id
-        @list = Alerts.list_allowed_limit(params[:service_id])
+        @list = Transactor.alert_limit(service_id)
         builder :alert_limits
       end
 
       post '/services/:service_id/alert_limits/:limit.xml' do
-        ## this load the default service by provider key, but taking the one in paramters
-        ## multiservices need to check that provider owns :service_id 
-        ss = service_id 
-        @list = Alerts.add_allowed_limit(params[:service_id],params[:limit])
+        @list = Transactor.add_alert_limit(service_id, params[:limit])
         builder :alert_limits
       end
 
       delete '/services/:service_id/alert_limits/:limit.xml' do
-        ## this load the default service by provider key, but taking the one in paramters
-        ## multiservices need to check that provider owns :service_id 
-        ss = service_id 
-        @list = Alerts.delete_allowed_limit(params[:service_id],params[:limit])
+        @list = Transactor.delete_alert_limit(service_id, params[:limit])
         builder :alert_limits
       end
 
       get "/services/:service_id/applications/:app_id/utilization.xml" do
-
-        @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(params[:provider_key], params[:service_id], params[:app_id])
+        @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, params[:app_id])
         builder :utilization
-
       end
       
       get '/applications/:app_id/keys.xml' do
@@ -258,6 +245,8 @@ module ThreeScale
           error_code = 404
         when ThreeScale::Backend::Error
           error_code = 403
+        when ThreeScale::Core::Error
+          error_code = 405
         else
           raise exception
         end
@@ -278,8 +267,15 @@ module ThreeScale
         @application ||= Application.load!(service_id, params[:app_id])
       end
 
+      # FIXME: this operations can be done more efficiently, without loading the whole service
       def service_id
-        @service_id ||= Service.load_id!(params[:provider_key])
+        if params[:service_id].nil? || params[:service_id].empty?
+          @service_id ||= Service.load_id!(params[:provider_key])
+        else
+          service = Service.load_by_id(params[:service_id]) 
+          raise ProviderKeyInvalid, params[:provider_key] if service.nil? || service.provider_key!=params[:provider_key]
+          @service_id ||= params[:service_id]
+        end
       end
 
       def application_resource_url(application, type, value)

@@ -1,0 +1,36 @@
+
+the service is created as default if default_service => true when save or when it's the first one
+
+
+1) Script for the migration
+
+service/provider_key:*/id
+put also
+service/provider_key:*/ids as sadd
+
+2) 
+
+make sure there is no Service.delete(
+
+replace all for 
+
+self.delete_by_id(id, options = {})
+
+3) Those are extremely dangerous
+
+def self.exists?(provider_key)
+        storage.exists(id_storage_key(provider_key))
+      end
+      
+      def self.load_id(provider_key)
+        storage.get(id_storage_key(provider_key))
+      end
+
+      def self.save_id(provider_key, id)
+        storage.set(id_storage_key(provider_key), id)
+      end
+      
+      def self.delete_id(provider_key)
+        storage.del(id_storage_key(provider_key))
+      end
+

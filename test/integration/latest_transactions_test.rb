@@ -36,11 +36,11 @@ class LatestTransactionsTest < Test::Unit::TestCase
   end
 
   test 'GET /transactions/latest.xml returns list of latest transactions' do
-    Transactor.report(@provider_key, 0 => {'app_id'    => @application_id,
+    Transactor.report(@provider_key, @service_id, 0 => {'app_id'    => @application_id,
                                            'usage'     => {'foos' => 1},
                                            'timestamp' => '2010-09-09 11:00:00'})
 
-    Transactor.report(@provider_key, 0 => {'app_id'    => @application_id,
+    Transactor.report(@provider_key, @service_id, 0 => {'app_id'    => @application_id,
                                            'usage'     => {'bars' => 2},
                                            'timestamp' => '2010-09-09 12:00:00'})
     Resque.run!
@@ -64,7 +64,7 @@ class LatestTransactionsTest < Test::Unit::TestCase
 
   test 'GET /transactions/latest.xml returns at most 100 transactions' do
     110.times do
-      Transactor.report(@provider_key, 0 => {'app_id'    => @application_id,
+      Transactor.report(@provider_key, nil, 0 => {'app_id'    => @application_id,
                                              'usage'     => {'bars' => 2}})
     end
 

@@ -42,7 +42,7 @@ class AlertsTest < Test::Unit::TestCase
 
   end
 
-    test 'only one event for each application is stored per alert_ttl changing the alert limits' do 
+  test 'only one event for each application is stored per alert_ttl changing the alert limits' do 
     
     timestamp = Time.utc(2010, 5, 14, 12, 00, 00)
 
@@ -51,7 +51,8 @@ class AlertsTest < Test::Unit::TestCase
     Timecop.freeze(timestamp) do
       
       
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, 
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 90}})
       Resque.run!
 
@@ -59,7 +60,8 @@ class AlertsTest < Test::Unit::TestCase
 
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*0.5) do
       
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, 
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
       Resque.run!
 
@@ -73,6 +75,7 @@ class AlertsTest < Test::Unit::TestCase
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*3.0) do
      
       Transactor.report(@provider_key,
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
       Resque.run!
 
@@ -80,6 +83,7 @@ class AlertsTest < Test::Unit::TestCase
 
       ## this one should over 100 and below 120 should not happen since 
       Transactor.report(@provider_key,
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 10}})
       Resque.run!
 
@@ -87,6 +91,7 @@ class AlertsTest < Test::Unit::TestCase
 
 
       Transactor.report(@provider_key,
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 20}})
       Resque.run!
 
@@ -115,8 +120,8 @@ class AlertsTest < Test::Unit::TestCase
 
     Timecop.freeze(timestamp) do
       
-      
       Transactor.report(@provider_key,
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 90}})
       Resque.run!
 
@@ -126,6 +131,7 @@ class AlertsTest < Test::Unit::TestCase
       
       
       Transactor.report(@provider_key,
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
       Resque.run!
 
@@ -138,10 +144,12 @@ class AlertsTest < Test::Unit::TestCase
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*3.0) do
      
       Transactor.report(@provider_key,
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
       Resque.run!
 
       Transactor.report(@provider_key,
+                        @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 10}})
       Resque.run!
 

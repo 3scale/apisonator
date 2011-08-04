@@ -33,7 +33,7 @@ class CacheTest < Test::Unit::TestCase
                     :day        => 100)
 
     @service.referrer_filters_required = true
-    @service.save
+    @service.save!
   
     referrer = @application.create_referrer_filter('*.bar.example.org')
 
@@ -100,7 +100,7 @@ class CacheTest < Test::Unit::TestCase
 
     #old_referrer_filters = @service.referrer_filters_required
     @service.referrer_filters_required = true
-    @service.save
+    @service.save!
   
     app_key = @application.create_key("app_key")
     referrer = @application.create_referrer_filter('*.bar.example.org')
@@ -167,7 +167,7 @@ class CacheTest < Test::Unit::TestCase
 
     
     @service.referrer_filters_required = false
-    @service.save
+    @service.save!
 
   end
 
@@ -182,7 +182,7 @@ class CacheTest < Test::Unit::TestCase
 
     #old_referrer_filters = @service.referrer_filters_required
     @service.referrer_filters_required = true
-    @service.save
+    @service.save!
     tmp_last_response = nil
     app_key = @application.create_key("app_key")
     referrer = @application.create_referrer_filter('*.bar.example.org')
@@ -251,7 +251,7 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 409, last_response.status
     
     @service.referrer_filters_required = false
-    @service.save
+    @service.save!
 
 
     ##Transactor.caching_enable

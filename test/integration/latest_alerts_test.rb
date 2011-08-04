@@ -62,11 +62,19 @@ class LatestAlertsTest < Test::Unit::TestCase
 
   test 'test errors on the paramters' do 
 
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => "fake_provider_key"
-                                   
+    get "/services/#{@service_id}/alerts.xml",       :provider_key => "fake_provider_key"                 
+    doc   = Nokogiri::XML(last_response.body)
+    error = doc.at('error:root')
+    assert_not_nil error
+    assert_equal 'provider_key_invalid', error['code']
     assert_equal 403, last_response.status
 
-    ## FIXME this test should fail when in multiservices
+    get "/services/fake_service_id/alerts.xml",       :provider_key => @provider_key             
+    doc   = Nokogiri::XML(last_response.body)
+    error = doc.at('error:root')
+    assert_not_nil error
+    assert_equal 'provider_key_invalid', error['code']
+    assert_equal 403, last_response.status
 
     get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key
                                    
@@ -80,12 +88,10 @@ class LatestAlertsTest < Test::Unit::TestCase
   
   test 'adding removing alert_limits' do
 
-
     get "/services/#{@service_id}/alert_limits.xml", :provider_key => @provider_key
     assert_equal 200, last_response.status
     doc   = Nokogiri::XML(last_response.body)                       
 
-   
     assert_equal Alerts::ALERT_BINS.size, doc.search("limit").size
 
     doc.search("limit").each do |item|

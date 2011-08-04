@@ -12,7 +12,7 @@ module Transactor
 
       @metric_id = next_id
 
-			Service.save(:provider_key => @provider_key, :id => @service_id)
+			Service.save!(:provider_key => @provider_key, :id => @service_id)
 
     	Application.save(:service_id => @service_id,
               :id => @application_id_one, :state => :live)

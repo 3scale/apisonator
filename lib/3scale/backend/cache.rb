@@ -7,7 +7,8 @@ module ThreeScale
       include Core::StorageKeyHelpers
       extend self
 
-      VALID_PARAMS_FOR_CACHE = [:provider_key, 
+      VALID_PARAMS_FOR_CACHE = [:provider_key,
+                                :service_id, 
                                 :app_id, 
                                 :app_key, 
                                 :user_key, 
@@ -81,8 +82,17 @@ module ThreeScale
       def combination_seen(action, provider_key, params)  
 
         key_version = nil
-        service_id = get_service_id(provider_key)      
-       
+
+        if params[:service_id].nil? || params[:service_id].empty?
+          #memoizing provider_key by service_id is no longer possible, because it can 
+          #change in the meantime, extremely unconvenient
+          #service_id = get_service_id(provider_key)
+          service_id = Service.load_id!(provider_key) 
+          
+        else
+          service_id = params[:service_id]
+        end
+
         if !service_id.nil?
   
           key_version = signature(action, params)

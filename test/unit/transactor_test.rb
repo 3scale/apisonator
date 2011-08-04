@@ -28,9 +28,9 @@ class TransactorTest < Test::Unit::TestCase
   end
 
   test 'report queues transactions to report' do
-    Transactor.report(@provider_key, '0' => {'app_id' => @application_one.id,
+    Transactor.report(@provider_key, nil, '0' => {'app_id' => @application_one.id,
                                              'usage'  => {'hits' => 1}},
-                                     '1' => {'app_id' => @application_two.id,
+                                          '1' => {'app_id' => @application_two.id,
                                              'usage'  => {'hits' => 1}})
 
     assert_queued Transactor::ReportJob,
@@ -39,16 +39,38 @@ class TransactorTest < Test::Unit::TestCase
                      '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}}]
   end
 
+  test 'report queues transactions to report with explicit service id' do
+    Transactor.report(@provider_key, @service_id, '0' => {'app_id' => @application_one.id,
+                                             'usage'  => {'hits' => 1}},
+                                          '1' => {'app_id' => @application_two.id,
+                                             'usage'  => {'hits' => 1}})
+
+    assert_queued Transactor::ReportJob,
+                  [@service_id,
+                    {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
+                     '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}}]
+  end
+
+
+
   test 'report raises an exception when provider key is invalid' do
     assert_raise ProviderKeyInvalid do
-      Transactor.report('booo', '0' => {'app_id' => @application_one.id,
+      Transactor.report('booo', nil, '0' => {'app_id' => @application_one.id,
                                         'usage'  => {'hits' => 1}})
     end
   end
 
+  test 'report raises an exception when provider key is invalid even with a valid service id' do
+    assert_raise ProviderKeyInvalid do
+      Transactor.report('booo', @service_id, '0' => {'app_id' => @application_one.id,
+                                        'usage'  => {'hits' => 1}})
+    end
+  end
+
+
   test 'report queues backend hit' do
     Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
-      Transactor.report(@provider_key, '0' => {'app_id' => @application_one.id,
+      Transactor.report(@provider_key, nil, '0' => {'app_id' => @application_one.id,
                                                'usage'  => {'hits' => 1}},
                                        '1' => {'app_id' => @application_two.id,
                                                'usage'  => {'hits' => 1}})
@@ -61,12 +83,30 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
+ test 'report queues backend hit with explicit service id' do
+    Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
+      Transactor.report(@provider_key, @service_id, '0' => {'app_id' => @application_one.id,
+                                               'usage'  => {'hits' => 1}},
+                                       '1' => {'app_id' => @application_two.id,
+                                               'usage'  => {'hits' => 1}})
+
+      assert_queued Transactor::NotifyJob,
+                    [@provider_key,
+                     {'transactions/create_multiple' => 1,
+                      'transactions'                 => 2},
+                     '2010-07-29 11:48:00 UTC']
+    end
+  end
+
+
   test 'authorize returns status object with the plan name' do
     status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
     assert_not_nil status.first
     assert_equal @plan_name, status.first.plan_name
   end
+
+
 
   test 'authorize returns status object with usage reports if the plan has usage limits' do
     UsageLimit.save(:service_id => @service_id,
@@ -76,14 +116,14 @@ class TransactorTest < Test::Unit::TestCase
                     :day        => 200)
 
     Timecop.freeze(Time.utc(2010, 5, 13)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key,nil,
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 3}})
       Resque.run!
     end
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      Transactor.report(@provider_key,
+      Transactor.report(@provider_key, @service_id,
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 2}})
       Resque.run!
@@ -114,7 +154,7 @@ class TransactorTest < Test::Unit::TestCase
         assert_not_nil status_xml
         assert_not_nil status_result
 
-        status, tmp1, tmp2 = Transactor.authorize(@provider_key, { :app_id => @application_one.id, :no_caching => true })
+        status, tmp1, tmp2 = Transactor.authorize(@provider_key, { :service_id => @service_id, :app_id => @application_one.id, :no_caching => true })
 
         assert_not_nil status
         assert_equal  tmp1, nil

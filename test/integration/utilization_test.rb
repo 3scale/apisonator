@@ -66,7 +66,11 @@ class StatusSnapshotTest < Test::Unit::TestCase
 
     get "/services/fake_service_id/applications/#{@application_id1}/utilization.xml", 
        :provider_key => @provider_key
-    assert_equal 404, last_response.status
+    assert_equal 403, last_response.status
+
+    get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
+       :provider_key => 'fake_provider_key'
+    assert_equal 403, last_response.status
 
   end
 

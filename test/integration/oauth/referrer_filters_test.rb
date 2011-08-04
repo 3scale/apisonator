@@ -11,7 +11,7 @@ class OauthReferrerFiltersTest < Test::Unit::TestCase
     setup_oauth_provider_fixtures
 
     @service.referrer_filters_required = true # if this is disabled we bypass the verification
-    @service.save
+    @service.save!
     @application = Application.save(:service_id => @service.id,
                                     :id         => next_id,
                                     :state      => :active,
@@ -21,7 +21,7 @@ class OauthReferrerFiltersTest < Test::Unit::TestCase
 
   test 'succeeds if no referrer filter is defined and no referrer is passed' do
     @service.referrer_filters_required = false
-    @service.save
+    @service.save!
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id
 
@@ -89,7 +89,7 @@ class OauthReferrerFiltersTest < Test::Unit::TestCase
 
   test 'succeeds if referrer filters are not required' do
     @service.referrer_filters_required = false
-    @service.save
+    @service.save!
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id

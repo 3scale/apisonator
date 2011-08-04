@@ -13,10 +13,10 @@ module ThreeScale
       include Backend::Cache
       extend self
 
-      def report(provider_key, transactions)
-        ## FIXME this one is wrong!!! can you actually get the another service than default?
-        ## did I merge multi-services here? probably not
-        service_id = Service.load_id!(provider_key)
+      def report(provider_key, service_id, transactions)
+        ## need to load provider_key anyway, otherwise there is a security hole 
+        service_id_by_prov_key = Service.load_id!(provider_key)
+        service_id = service_id_by_prov_key if service_id.nil? || service_id.empty? 
 	      report_enqueue(service_id, transactions)
         notify(provider_key, 'transactions/create_multiple' => 1,
                              'transactions' => transactions.size)
@@ -77,7 +77,14 @@ module ThreeScale
 
       def authorize_nocache(provider_key, params, options = {})
         
-        service     = Service.load!(provider_key)
+        if params[:service_id].nil? || params[:service_id].empty?
+          service = Service.load!(provider_key)
+        else
+          service = Service.load_by_id!(params[:service_id])
+        end
+
+        raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
         application = Application.load_by_id_or_user_key!(service.id,
                                                           params[:app_id],
                                                           params[:user_key])
@@ -159,7 +166,14 @@ module ThreeScale
 
       def oauth_authorize_nocache(provider_key, params, options = {})
     
-        service = Service.load!(provider_key)
+        if params[:service_id].nil? || params[:service_id].empty?
+          service = Service.load!(provider_key)
+        else
+          service = Service.load_by_id!(params[:service_id])
+        end
+
+        raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
         application =  Application.load_by_id_or_user_key!(service.id,
                                                           params[:app_id],
                                                           params[:user_key])
@@ -266,7 +280,14 @@ module ThreeScale
         user = nil
         user_usage = nil
 
-        service = Service.load!(provider_key)
+        if params[:service_id].nil? || params[:service_id].empty?
+          service = Service.load!(provider_key)
+        else
+          service = Service.load_by_id!(params[:service_id])
+        end
+
+        raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
         application =  Application.load_by_id_or_user_key!(service.id,
                                                           params[:app_id],
                                                           params[:user_key])
@@ -306,9 +327,10 @@ module ThreeScale
         raise e
       end
 
-      def utilization(provider_key, service_id, application_id)
+      def utilization(service_id, application_id)
 
-        ## FIXME check for multi_services
+        #service = Service.load_by_id!(service_id)
+        #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
 
         application = Application.load!(service_id, application_id)
         usage = load_current_usage(application)	
@@ -325,6 +347,35 @@ module ThreeScale
 
         return [status.usage_reports, max_record, max_utilization, stats]
 
+      end
+
+      def latest_alerts(service_id)
+        #service = Service.load_by_id!(service_id)
+        #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+        @list = AlertStorage.list(service_id)
+
+      end
+
+      def alert_limit(service_id)
+        #service = Service.load_by_id!(service_id)
+        #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+        @list = Alerts.list_allowed_limit(service_id)
+      end
+
+      def add_alert_limit(service_id, limit)
+
+        ##service = Service.load_by_id!(service_id)
+        ##raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
+        @list = Alerts.add_allowed_limit(service_id,limit)
+      end
+
+      def delete_alert_limit(service_id, limit)
+
+        #service = Service.load_by_id!(service_id)
+        #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
+        @list = Alerts.delete_allowed_limit(service_id,limit)
       end
 
 

@@ -59,9 +59,32 @@ class AuthrepApplicationKeysTest < Test::Unit::TestCase
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
-                                       :app_key      => 'bar'
+                                     :app_key      => 'bar'
 
     assert_not_authorized 'application key "bar" is invalid'
   end
+
+  test 'authorize with a random app key and a custom one' do
+    key1 = @application.create_key('foo_app_key')
+    key2 = @application.create_key
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :app_key      => key1
+
+    assert_authorized 
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :app_key      => key2
+
+    assert_authorized 
+
+    assert_equal key1, "foo_app_key"
+
+    assert_equal [key2, "foo_app_key"].sort, @application.keys.sort  
+
+  end
+
 end
 

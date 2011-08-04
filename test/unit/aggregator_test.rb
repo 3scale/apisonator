@@ -25,7 +25,7 @@ class AggregatorTest < Test::Unit::TestCase
 
 		provider_key = "provider_key"
     service_id   = 1001
-    Service.save(:provider_key => provider_key, :id => service_id)
+    Service.save!(:provider_key => provider_key, :id => service_id)
 
     # Create master cinstance
     Application.save(:service_id => service_id,
