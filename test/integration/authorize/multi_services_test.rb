@@ -1,10 +1,11 @@
-require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
 class MultiServicesTest < Test::Unit::TestCase
   include TestHelpers::AuthorizeAssertions
   include TestHelpers::Fixtures
   include TestHelpers::Integration
   include TestHelpers::StorageKeys
+  include TestHelpers::Errors
 
 
   def setup
@@ -60,18 +61,120 @@ class MultiServicesTest < Test::Unit::TestCase
 
   end
 
-  
+  test 'right place to declare service_id' do 
 
-  test 'provider key with multiple services, check that call to authrep.xml (most coverge) works with explicit/implicit service ids' do
-
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_3.id,
-                                     :service_id   => @service_3.id,
-                                     :usage        => {'hits' => 3}
-
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :service_id   => @service_3.id,  
+      :transactions => {0 => {:service_id => @service_2.id, :app_id => @application_3.id, :usage => {'hits' => 3}}}
+    assert_equal 202, last_response.status
     Resque.run!
+
+   
+   
+    assert_equal 3, @storage.get(application_key(@service_3.id,
+                                                 @application_3.id,
+                                                 @metric_id_3,
+                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+
+    assert_equal 0, @storage.get(application_key(@service_2.id,
+                                                 @application_3.id,
+                                                 @metric_id_3,
+                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+
+    assert_equal 0, @storage.get(application_key(@service_2.id,
+                                                 @application_3.id,
+                                                 @metric_id_2,
+                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+
+    assert_not_errors_in_transactions
+
+  end
+
+  test 'sending an application that does not belong to the default service' do 
+
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:service_id => @service_3.id, :app_id => @application_3.id, :usage => {'hits' => 3}}}
+    assert_equal 202, last_response.status
+    Resque.run!
+
+    assert_equal 0, @storage.get(application_key(@service_3.id,
+                                                 @application_3.id,
+                                                 @metric_id_3,
+                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+
+
+    get "/transactions/errors.xml", :provider_key => @provider_key
     assert_equal 200, last_response.status
-    
+
+    doc = Nokogiri::XML(last_response.body)
+    node = doc.search('errors error').first
+
+    assert_not_nil node
+    assert_equal 'application_not_found',   node['code']
+    assert_equal "application with id=\"#{@application_3.id}\" was not found", node.content
+
+  end
+
+  test 'authorize with fake service_id and app_id' do
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => "fake id",
+                                       :service_id   => @service_3.id
+    Resque.run!
+    assert_equal 404, last_response.status
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_3.id,
+                                       :service_id   => "fake id"
+    Resque.run!
+    assert_equal 403, last_response.status
+
+    assert_not_errors_in_transactions
+
+
+  end
+
+  test 'check scoping of the applications by service' do 
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_1.id,
+                                       :service_id   => @service_3.id
+    Resque.run!
+    assert_equal 404, last_response.status
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_3.id,
+                                       :service_id   => @service_1.id
+    Resque.run!
+    assert_equal 404, last_response.status
+   
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_3.id
+    Resque.run!
+    assert_equal 404, last_response.status
+
+    assert_not_errors_in_transactions
+
+
+  end  
+
+  test 'provider key with multiple services with authorize/report works with explicit/implicit service ids' do
+
+   
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :service_id   => @service_3.id,  
+      :transactions => {0 => {:app_id => @application_3.id, :usage => {'hits' => 3}}}
+    assert_equal 202, last_response.status
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_3.id,
+                                       :service_id   => @service_3.id
+
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -85,14 +188,19 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  :month, Time.now.strftime("%Y%m01"))).to_i
 
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :service_id   => @service_2.id,  
+      :transactions => {0 => {:app_id => @application_2.id, :usage => {'hits' => 2}}}
+    assert_equal 202, last_response.status
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
                                      :app_id       => @application_2.id,
                                      :service_id   => @service_2.id,
                                      :usage        => {'hits' => 2}
 
-    Resque.run!
-    assert_equal 200, last_response.status
-    
+    assert_equal 200, last_response.status    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -105,14 +213,19 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_2,
                                                  :month, Time.now.strftime("%Y%m01"))).to_i
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :service_id   => @service_1.id,
-                                     :usage        => {'hits' => 1}
-
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :service_id   => @service_1.id,  
+      :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 1}}}
+    assert_equal 202, last_response.status
     Resque.run!
-    assert_equal 200, last_response.status
-    
+
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                     :app_id       => @application_1.id,
+                                     :service_id   => @service_1.id
+
+    assert_equal 200, last_response.status    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -127,13 +240,17 @@ class MultiServicesTest < Test::Unit::TestCase
     
 
     ## now without explicit service_id
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 10}
 
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 10}}}
+    assert_equal 202, last_response.status
     Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_1.id
+
     assert_equal 200, last_response.status
-    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -146,19 +263,27 @@ class MultiServicesTest < Test::Unit::TestCase
                                                   @metric_id_1,
                                                   :month, Time.now.strftime("%Y%m01"))).to_i   
 
+
+    assert_not_errors_in_transactions
+
   
   end
 
-  test 'provider key with multiple services, check that call to authrep.xml (most coverge) works with explicit/implicit service ids while changing the default service' do
+  test 'provider key with multiple services, check that call to authorize works with explicit/implicit service ids while changing the default service' do
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_2.id,
-                                     :service_id   => @service_2.id,
-                                     :usage        => {'hits' => 2}
-
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :service_id   => @service_2.id,  
+      :transactions => {0 => {:app_id => @application_2.id, :usage => {'hits' => 2}}}
+    assert_equal 202, last_response.status
     Resque.run!
-    assert_equal 200, last_response.status
-    
+
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_2.id,
+                                       :service_id   => @service_2.id
+
+    assert_equal 200, last_response.status    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -171,14 +296,19 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_2,
                                                  :month, Time.now.strftime("%Y%m01"))).to_i
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :service_id   => @service_1.id,
-                                     :usage        => {'hits' => 1}
-
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :service_id   => @service_1.id,  
+      :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 1}}}
+    assert_equal 202, last_response.status
     Resque.run!
-    assert_equal 200, last_response.status
-    
+
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_1.id,
+                                       :service_id   => @service_1.id
+
+    assert_equal 200, last_response.status    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -192,13 +322,17 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  :month, Time.now.strftime("%Y%m01"))).to_i    
     
     ## now without explicit service_id
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 10}
-
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 10}}}
+    assert_equal 202, last_response.status
     Resque.run!
-    assert_equal 200, last_response.status
-    
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_1.id,
+                                       :usage        => {'hits' => 10}
+
+    assert_equal 200, last_response.status    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -215,13 +349,17 @@ class MultiServicesTest < Test::Unit::TestCase
 
     @service_2.make_default_service
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:app_id => @application_2.id, :usage => {'hits' => 10}}}
+    assert_equal 202, last_response.status
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
                                      :app_id       => @application_2.id,
                                      :usage        => {'hits' => 10}
 
-    Resque.run!
-    assert_equal 200, last_response.status
-    
+    assert_equal 200, last_response.status    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -241,15 +379,18 @@ class MultiServicesTest < Test::Unit::TestCase
     
 
     ## more calls
-
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :service_id   => @service_1.id,
-                                     :usage        => {'hits' => 20}
-
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :service_id => @service_1.id,
+      :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 20}}}
+    assert_equal 202, last_response.status
     Resque.run!
-    assert_equal 200, last_response.status
-    
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                     :app_id       => @application_1.id,
+                                     :service_id   => @service_1.id
+
+    assert_equal 200, last_response.status    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -262,15 +403,19 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_1,
                                                  :month, Time.now.strftime("%Y%m01"))).to_i    
 
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :service_id => @service_2.id,
+      :transactions => {0 => {:app_id => @application_2.id, :usage => {'hits' => 20}}}
+    assert_equal 202, last_response.status
+    Resque.run!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
                                      :app_id       => @application_2.id,
                                      :service_id   => @service_2.id,
                                      :usage        => {'hits' => 20}
 
-    Resque.run!
-    assert_equal 200, last_response.status
-    
+    assert_equal 200, last_response.status    
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -283,13 +428,15 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_2,
                                                  :month, Time.now.strftime("%Y%m01"))).to_i    
 
+    assert_not_errors_in_transactions
+
   end
 
-  test 'provider_key needs to be checked regardless if the service_id is correct' do
+  test 'provider_key needs to be checked regardless if the service_id is correct with authorize/report' do
 
-    get '/transactions/authrep.xml', :provider_key => 'fakeproviderkey',
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 2}
+    get '/transactions/authorize.xml', :provider_key => 'fakeproviderkey',
+                                       :app_id       => @application_1.id,
+                                       :usage        => {'hits' => 2}
 
     Resque.run!
     assert_equal 403, last_response.status
@@ -300,10 +447,10 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 'provider_key_invalid', error['code']
 
 
-    get '/transactions/authrep.xml', :provider_key => 'fakeproviderkey',
-                                     :service_id   => @service_1.id,
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 1}
+    get '/transactions/authorize.xml', :provider_key => 'fakeproviderkey',
+                                       :service_id   => @service_1.id,
+                                       :app_id       => @application_1.id,
+                                       :usage        => {'hits' => 1}
     Resque.run!
     assert_equal 403, last_response.status
     doc = Nokogiri::XML(last_response.body)
@@ -312,10 +459,10 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 'provider_key_invalid', error['code']
    
 
-    get '/transactions/authrep.xml', :provider_key => 'fakeproviderkey',
-                                     :service_id   => @service_2.id,
-                                     :app_id       => @application_2.id,
-                                     :usage        => {'hits' => 2}
+    get '/transactions/authorize.xml', :provider_key => 'fakeproviderkey',
+                                       :service_id   => @service_2.id,
+                                       :app_id       => @application_2.id,
+                                       :usage        => {'hits' => 2}
 
     Resque.run!
     assert_equal 403, last_response.status
@@ -324,17 +471,18 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_not_nil error
     assert_equal 'provider_key_invalid', error['code']
 
-
+    assert_not_errors_in_transactions
+  
   end
 
-  test 'testing that the app_id matches the service that is default service' do
+  test 'testing that the app_id matches the service that is default service with authorize' do
   
     ## user want to access the service_2 but forget to add service_id, and app_id == @application_2.id does not
     ## exists for the service_1
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_2.id,
-                                     :usage        => {'hits' => 2}
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application_2.id,
+                                       :usage        => {'hits' => 2}
 
     Resque.run!
     assert_equal 404, last_response.status
@@ -343,13 +491,14 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_not_nil error
     assert_equal 'application_not_found', error['code']
     
-    
+    assert_not_errors_in_transactions
+
   end
 
 
-  test 'when service_id is not valid there is an error no matter if the provider key is valid' do
+  test 'when service_id is not valid there is an error no matter if the provider key is valid with authorize' do
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
                                      :service_id   => @service_2.id << "666",
                                      :app_id       => @application_2.id,
                                      :usage        => {'hits' => 2}
@@ -360,16 +509,19 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_not_nil error
     assert_equal 'service_id_invalid', error['code']
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :service_id   => @service_1.id << "666",
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 2}
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :service_id   => @service_1.id << "666",
+                                       :app_id       => @application_1.id,
+                                       :usage        => {'hits' => 2}
     Resque.run!
     assert_equal 403, last_response.status
     doc = Nokogiri::XML(last_response.body)
     error = doc.at('error:root')
     assert_not_nil error
     assert_equal 'service_id_invalid', error['code']
+
+    assert_not_errors_in_transactions
+
 
   end
 

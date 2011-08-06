@@ -16,6 +16,8 @@ class WorkerTest < Test::Unit::TestCase
     redis.expects(:blpop).with(*Worker::QUEUES.map{|q| "resque:queue:#{q}"}, "60").returns(encoded_job)
 
     Worker.work(:one_off => true)
+    ## FIXME: NOT CLEAR. This produces an exception on resque and the job is stored in resque:failed, unclear
+    ## what's the aim of the test 
   end
 
   def test_no_jobs_in_the_queue
