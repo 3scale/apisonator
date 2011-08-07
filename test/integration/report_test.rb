@@ -20,6 +20,9 @@ class ReportTest < Test::Unit::TestCase
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
+
+    
+
   end
 
   test 'options request returns list of allowed methods' do
@@ -447,4 +450,53 @@ class ReportTest < Test::Unit::TestCase
                                                    :month, '20100501')).to_i
     end
   end
+
+  test 'failed report on wrong provider key' do
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      post '/transactions.xml',
+        :provider_key => "fake_provider_key",
+        :transactions => {0 => {:app_id => 'baa',           :usage => {'hits' => 1}},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+
+      Resque.run!
+
+      assert_equal 403, last_response.status
+      doc = Nokogiri::XML(last_response.body)
+      error = doc.at('error:root')
+      assert_not_nil error
+      assert_equal 'provider_key_invalid', error['code']
+
+             
+      assert_equal 0, @storage.get(application_key(@master_service_id,
+                                                   @provider_application_id,
+                                                   @master_transactions_id,
+                                                   :month, '20100501')).to_i
+
+      
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :service_id => "fake_service_id",
+        :transactions => {0 => {:app_id => 'baa',           :usage => {'hits' => 1}},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+
+      Resque.run!
+
+      assert_equal 403, last_response.status
+      doc = Nokogiri::XML(last_response.body)
+      error = doc.at('error:root')
+      assert_not_nil error
+      assert_equal 'provider_key_invalid', error['code']
+
+             
+      assert_equal 0, @storage.get(application_key(@master_service_id,
+                                                   @provider_application_id,
+                                                   @master_transactions_id,
+                                                   :month, '20100501')).to_i
+ 
+
+
+    end
+  end
+
+  
 end

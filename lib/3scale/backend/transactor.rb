@@ -15,9 +15,16 @@ module ThreeScale
 
       def report(provider_key, service_id, transactions)
         ## need to load provider_key anyway, otherwise there is a security hole 
-        service_id_by_prov_key = Service.load_id!(provider_key)
-        service_id = service_id_by_prov_key if service_id.nil? || service_id.empty? 
-	      report_enqueue(service_id, transactions)
+
+        if service_id.nil? || service_id.empty?
+          service = Service.load(provider_key)
+        else
+          service = Service.load_by_id(service_id)
+        end
+
+        raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
+
+	      report_enqueue(service.id, transactions)
         notify(provider_key, 'transactions/create_multiple' => 1,
                              'transactions' => transactions.size)
       end

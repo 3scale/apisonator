@@ -525,7 +525,47 @@ class MultiServicesTest < Test::Unit::TestCase
 
   end
 
+  test 'failed report on invalid provider_key and service_id' do
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :service_id => @service_1.id,
+        :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 1}}}
+
+      Resque.run!
+      assert_equal 202, last_response.status
+      
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :service_id => "fake_service_id",
+        :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 1}}}
+
+      Resque.run!
+
+      assert_equal 403, last_response.status
+      doc = Nokogiri::XML(last_response.body)
+      error = doc.at('error:root')
+      assert_not_nil error
+      assert_equal 'provider_key_invalid', error['code']
+
+      post '/transactions.xml',
+        :provider_key => "fake_provider_key",
+        :service_id => @service_1.id,
+        :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 1}}}
+
+      Resque.run!
+
+      assert_equal 403, last_response.status
+      doc = Nokogiri::XML(last_response.body)
+      error = doc.at('error:root')
+      assert_not_nil error
+      assert_equal 'provider_key_invalid', error['code']
+
+                  
+    end
   
+  end
 
 end
 

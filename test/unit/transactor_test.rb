@@ -116,7 +116,7 @@ class TransactorTest < Test::Unit::TestCase
                     :day        => 200)
 
     Timecop.freeze(Time.utc(2010, 5, 13)) do
-      Transactor.report(@provider_key,nil,
+      Transactor.report(@provider_key, nil,
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 3}})
       Resque.run!
@@ -165,6 +165,25 @@ class TransactorTest < Test::Unit::TestCase
       end
     end
   end
+
+  test 'report raises an exception when invalid provider_key and service_id' do
+    assert_raise ProviderKeyInvalid do
+      Transactor.report(@provider_key, "fake_service_id",
+                        0 => {'app_id' => @application_one.id,
+                              'usage'  => {'hits' => 3}})
+    end
+
+    assert_raise ProviderKeyInvalid do
+      Transactor.report("fake_provider_key", @service_id,
+                        0 => {'app_id' => @application_one.id,
+                              'usage'  => {'hits' => 3}})
+    end
+
+
+
+  end
+
+
 
   test 'authorize returns status object without usage reports if the plan has no usage limits' do
     status, status_xml, status_result = Transactor.authorize(@provider_key, :app_id => @application_one.id)
@@ -239,5 +258,80 @@ class TransactorTest < Test::Unit::TestCase
                      '2010-07-29 17:09:00 UTC']
     end
   end
+
+  test 'authrep returns status object without usage reports if the plan has no usage limits' do
+    status, status_xml, status_result = Transactor.authrep(@provider_key, :app_id => @application_one.id)
+    if not status.nil?
+      assert_equal 0, status.usage_reports.count
+    else
+      assert_not_nil status_xml
+      assert_not_nil status_result
+
+      status, tmp1, tmp2 = Transactor.authrep(@provider_key, { :app_id => @application_one.id, :no_caching => true })
+
+      assert_not_nil status
+      assert_equal  tmp1, nil
+      assert_equal  tmp2, nil
+
+      assert_equal status_xml, status.to_xml   
+
+      ## warning: need to reproduce the above asserts for xml
+    end
+  end
+
+  test 'authrep raises an exception when provider key is invalid' do
+    assert_raise ProviderKeyInvalid do
+      Transactor.authrep('booo', :app_id => @application_one.id)
+    end
+  end
+
+  test 'authrep raises an exception when application id is invalid' do
+    assert_raise ApplicationNotFound do
+      Transactor.authrep(@provider_key, :app_id => 'baaa')
+    end
+  end
+
+  test 'authrep raises an exception when application id is missing' do
+    assert_raise ApplicationNotFound do
+      Transactor.authrep(@provider_key, {})
+    end
+  end
+
+  test 'authrep works with legacy user key' do
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application_one.id)
+
+    assert_not_nil Transactor.authrep(@provider_key, :user_key => user_key)
+  end
+
+  test 'authrep raises an exception when legacy user key is invalid' do
+    Application.save_id_by_key(@service_id, 'foobar', @application_one.id)
+
+    assert_raise UserKeyInvalid do
+      Transactor.authrep(@provider_key, :user_key => 'eatthis')
+    end
+  end
+
+  test 'authrep raises an exception when both application id and legacy user key are passed' do
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application_one.id)
+
+    assert_raise AuthenticationError do
+      Transactor.authrep(@provider_key, :app_id   => @application_one.id,
+                                          :user_key => user_key)
+    end
+  end
+
+  test 'authrep queues backend hit' do
+    Timecop.freeze(Time.utc(2010, 7, 29, 17, 9)) do
+      Transactor.authrep(@provider_key, :app_id => @application_one.id)
+
+      assert_queued Transactor::NotifyJob,
+                    [@provider_key,
+                     {'transactions/authorize' => 1},
+                     '2010-07-29 17:09:00 UTC']
+    end
+  end
+
 
 end
