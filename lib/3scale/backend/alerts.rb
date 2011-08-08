@@ -33,18 +33,23 @@ module ThreeScale
         max_record = nil
 
         status.usage_reports.each do |item|         
-          utilization = item.current_value / item.max_value.to_f if item.max_value>0
-          if utilization > max_utilization
-            max_record = item
-            max_utilization = utilization
+          if item.max_value > 0 
+            utilization = item.current_value / item.max_value.to_f 
+
+            if utilization > max_utilization
+              max_record = item
+              max_utilization = utilization
+            end
           end
         end
 
         status.user_usage_reports.each do |item|
-          utilization = item.current_value / item.max_value.to_f if item.max_value>0
-          if utilization > max_utilization
-            max_record = item
-            max_utilization = utilization
+          if item.max_value>0
+            utilization = item.current_value / item.max_value.to_f 
+            if utilization > max_utilization
+              max_record = item
+              max_utilization = utilization
+            end
           end
         end
 
