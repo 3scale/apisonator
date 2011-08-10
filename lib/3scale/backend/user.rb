@@ -2,9 +2,9 @@ module ThreeScale
   module Backend
     class User < Core::User
 
-      def self.load!(service, username)
-        load(service, username)
-      end
+      #def self.load!(service, username)
+      #  load(service, username)
+      #end
 
       def metric_names
         @metric_names ||= {}

@@ -175,7 +175,7 @@ module ThreeScale
 
           service ||= Service.load_by_id(values[:service_id])
           raise ServiceLoadInconsistency.new(values[:service_id],service.id) if service.id != values[:service_id] 
-          user = User.load!(service,values[:user_id])
+          user = User.load_or_create!(service,values[:user_id])
           usage = load_user_current_usage(user)	
           status = ThreeScale::Backend::Transactor::Status.new(:user => user, :user_values => usage)					
           ThreeScale::Backend::Validators::Limits.apply(status,{})

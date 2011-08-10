@@ -99,7 +99,7 @@ module ThreeScale
         if not (params[:user_id].nil? || params[:user_id].empty?)
           ## user_id on the paramters
           if application.user_required? 
-            user = User.load!(service,params[:user_id])
+            user = User.load_or_create!(service,params[:user_id])
             raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
           else
             user = nil
@@ -188,7 +188,7 @@ module ThreeScale
         if not (params[:user_id].nil? || params[:user_id].empty?)
           ## user_id on the paramters
           if application.user_required? 
-            user = User.load!(service,params[:user_id])
+            user = User.load_or_create!(service,params[:user_id])
             raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
           else
             user = nil
@@ -302,7 +302,7 @@ module ThreeScale
         if not (params[:user_id].nil? || params[:user_id].empty?)
           ## user_id on the paramters
           if application.user_required? 
-            user = User.load!(service,params[:user_id])
+            user = User.load_or_create!(service,params[:user_id])
             raise UserRequiresRegistration, service.id, params[:user_id] if user.nil?     
           else
             user = nil
