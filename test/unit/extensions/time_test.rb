@@ -156,7 +156,18 @@ module Extensions
       assert_equal Time.utc(2010, 5, 7, 13, 28, 12), Time.parse_to_utc('2010-05-07 17:28:12 +0400')
     end
 
+    def test_parse_to_utc_with_input_with_offset
+      assert_equal Time.utc(2010, 5, 7, 12+8, 28, 12), Time.parse_to_utc('2010-05-07 12:28:12 PST')
+    end
+
     def test_parse_to_utc_returns_nil_on_invalid_input
+      assert_nil Time.parse_to_utc(nil)
+      assert_nil Time.parse_to_utc('')
+      assert_nil Time.parse_to_utc(0)
+      assert_nil Time.parse_to_utc({:a => 10})  
+      assert_nil Time.parse_to_utc('0')
+      assert_nil Time.parse_to_utc('2011/11')
+      assert_nil Time.parse_to_utc('2011/18/20')
       assert_nil Time.parse_to_utc('choke on this!')
     end
   end

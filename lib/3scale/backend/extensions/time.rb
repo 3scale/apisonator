@@ -92,19 +92,30 @@ module ThreeScale
       
       module ClassMethods
         def parse_to_utc(input)
-          parts = Date._parse(input)
-          return if parts.nil? || parts.empty?
+          parts = nil
 
-          time = Time.utc(parts[:year],
-                          parts[:mon],
-                          parts[:mday],
-                          parts[:hour],
-                          parts[:min],
-                          parts[:sec],
-                          parts[:sec_fraction])
+          begin
+            parts = Date._parse(input.to_s)
+          rescue TypeError => e
+          end
 
-          time -= parts[:offset] if parts[:offset]
-          time
+          return if parts.nil? || parts.empty? || !parts.has_key?(:year) || !parts.has_key?(:mon) || !parts.has_key?(:mday) 
+
+          time = nil
+          begin
+            time = Time.utc(parts[:year],
+                            parts[:mon],
+                            parts[:mday],
+                            parts[:hour],
+                            parts[:min],
+                            parts[:sec],
+                            parts[:sec_fraction])
+            time -= parts[:offset] if parts[:offset]
+            
+          rescue ArgumentError => e
+          end
+
+          return time
         end
       end
     end

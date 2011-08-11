@@ -496,7 +496,106 @@ class ReportTest < Test::Unit::TestCase
 
 
     end
+
   end
 
-  
+  test 'not fail on bogus timestamp on report, default to current timestamp' do
+
+
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => nil}}
+
+      Resque.run!
+
+      assert_equal 1, @storage.get(application_key(@master_service_id,
+                                                   @provider_application_id,
+                                                   @master_transactions_id,
+                                                   :month, '20100501')).to_i   
+
+
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => ''}}
+
+      Resque.run!
+
+      assert_equal 2, @storage.get(application_key(@master_service_id,
+                                                   @provider_application_id,
+                                                   @master_transactions_id,
+                                                   :month, '20100501')).to_i   
+
+
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '0'}}
+
+      Resque.run!
+
+      assert_equal 3, @storage.get(application_key(@master_service_id,
+                                                   @provider_application_id,
+                                                   @master_transactions_id,
+                                                   :month, '20100501')).to_i   
+
+
+
+    end
+  end
+
+
+  test 'checking correct behavior of timestamps on report' do
+
+
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      ts = Time.utc(2010,4,12,13,33)
+
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => ts.to_s}}
+
+      Resque.run!
+
+      assert_equal 0, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                   :month, '20100501')).to_i
+      
+      assert_equal 1, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                   :month, '20100401')).to_i
+
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => "2003/10/01"}}
+
+      Resque.run!
+
+      assert_equal 1, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                   :month, '20031001')).to_i
+
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => "2003"}}
+
+      Resque.run!
+
+      assert_equal 1, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                   :month, '20100501')).to_i
+
+
+
+    end
+
+
+
+  end
+
+
 end
