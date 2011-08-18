@@ -35,6 +35,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rack-test'
   s.add_development_dependency 'resque_unit', '0.2.7'
   s.add_development_dependency 'timecop'
+  s.add_development_dependency 'simplecov', '~> 0.4.0'
  
   s.files = Dir.glob('{lib,bin}/**/*')
   s.files << 'README.rdoc'
