@@ -107,10 +107,32 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
     assert_authorized
   end
 
-  test 'does not authorize if referrer filters are required but not defined' do
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+ test 'authorize always is referrer filters at the service level are set to false' do
+    @service.referrer_filters_required = false
+    @service.save!
 
-    assert_not_authorized 'referrer filters are missing'
+    @application.create_referrer_filter('*.foo.example.org')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :referrer     => 'test.foo.example.org'
+
+    assert_authorized
   end
+
+
+  test 'authorize always is referrer filters at the service level are set to false, even when incorrect' do
+    @service.referrer_filters_required = false
+    @service.save!
+
+    @application.create_referrer_filter('*.foo.example.org')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :referrer     => 'baz.bar.example.org'
+
+    assert_authorized
+  end
+
+  
 end

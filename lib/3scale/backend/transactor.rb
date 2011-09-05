@@ -31,7 +31,6 @@ module ThreeScale
 
       VALIDATORS = [Validators::Key,
                     Validators::Referrer,
-                   Validators::ReferrerFilters,
                     Validators::State,
                     Validators::Limits]
 
@@ -40,7 +39,6 @@ module ThreeScale
                           Validators::OauthKey,
                           Validators::RedirectUrl,
                           Validators::Referrer,
-                          Validators::ReferrerFilters,
                           Validators::State,
                           Validators::Limits]
 
