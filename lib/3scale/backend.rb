@@ -25,7 +25,6 @@ require '3scale/backend/validators/oauth_key'
 require '3scale/backend/validators/limits'
 require '3scale/backend/validators/redirect_url'
 require '3scale/backend/validators/referrer'
-require '3scale/backend/validators/referrer_filters'
 require '3scale/backend/validators/state'
 
 require '3scale/backend/configuration'
