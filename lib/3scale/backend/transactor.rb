@@ -478,15 +478,28 @@ module ThreeScale
       end
 
       def usage_value_key(application, metric_id, period, time)
-        encode_key("stats/{service:#{application.service_id}}/" +
+        if period == :eternity
+          encode_key("stats/{service:#{application.service_id}}/" +
+                   "cinstance:#{application.id}/metric:#{metric_id}/" +
+                   "#{period}")
+        else
+          encode_key("stats/{service:#{application.service_id}}/" +
                    "cinstance:#{application.id}/metric:#{metric_id}/" +
                    "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
+        end
+
       end
 
       def user_usage_value_key(user, metric_id, period, time)
-        encode_key("stats/{service:#{user.service_id}}/" +
+        if period == :eternity
+          encode_key("stats/{service:#{user.service_id}}/" +
+                   "uinstance:#{user.username}/metric:#{metric_id}/" +
+                   "#{period}")
+        else
+          encode_key("stats/{service:#{user.service_id}}/" +
                    "uinstance:#{user.username}/metric:#{metric_id}/" +
                    "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
+        end
       end
 
       def storage

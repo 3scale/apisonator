@@ -285,4 +285,131 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :service_id   => @service.id
     assert_authorized
   end
+
+  test 'succeeds on eternity limits' do
+
+    Timecop.freeze(Time.utc(2010, 5, 15)) do
+
+      UsageLimit.save(:service_id => @service.id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :month => 4)
+    
+      UsageLimit.save(:service_id => @service.id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :eternity   => 10)
+
+
+      3.times do
+        Transactor.report(@provider_key, nil,
+                          0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
+      end
+
+      Resque.run!
+
+      get '/transactions/oauth_authorize.xml',  :provider_key => @provider_key,
+                                                :app_id       => @application.id
+      
+      doc   = Nokogiri::XML(last_response.body)
+      month   = doc.at('usage_report[metric = "hits"][period = "month"]')      
+      assert_not_nil month
+      assert_equal '2010-05-01 00:00:00 +0000', month.at('period_start').content
+      assert_equal '2010-06-01 00:00:00 +0000', month.at('period_end').content
+      assert_equal '3', month.at('current_value').content
+      assert_equal '4', month.at('max_value').content
+      assert_nil   month['exceeded']
+
+
+      eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')      
+      assert_not_nil  eternity
+      assert_nil      eternity.at('period_start')
+      assert_nil      eternity.at('period_end')
+      assert_equal    '3', eternity.at('current_value').content
+      assert_equal    '10', eternity.at('max_value').content
+      assert_nil      eternity['exceeded']
+
+    end
+
+   
+  end
+
+  test 'does not authorize on eternity limits' do
+
+    Timecop.freeze(Time.utc(2010, 5, 15)) do
+
+      UsageLimit.save(:service_id => @service.id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :month => 20)
+    
+      UsageLimit.save(:service_id => @service.id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :eternity   => 2)
+
+
+      3.times do
+        Transactor.report(@provider_key, nil,
+                          0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
+      end
+
+      Resque.run!
+
+      get '/transactions/oauth_authorize.xml',  :provider_key => @provider_key,
+                                                :app_id       => @application.id
+      
+      doc   = Nokogiri::XML(last_response.body)
+      month   = doc.at('usage_report[metric = "hits"][period = "month"]')      
+      assert_not_nil month
+      assert_equal  '2010-05-01 00:00:00 +0000', month.at('period_start').content
+      assert_equal  '2010-06-01 00:00:00 +0000', month.at('period_end').content
+      assert_equal  '3', month.at('current_value').content
+      assert_equal  '20', month.at('max_value').content
+      assert_nil    month['exceeded']
+
+      eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')      
+      assert_not_nil  eternity
+      assert_nil      eternity.at('period_start')
+      assert_nil      eternity.at('period_end')
+      assert_equal    '3', eternity.at('current_value').content
+      assert_equal    '2', eternity.at('max_value').content
+      assert_equal    'true', eternity['exceeded']
+
+
+    end
+
+  end
+
+  test 'eternity is not returned if the limit on it is not defined' do
+
+    Timecop.freeze(Time.utc(2010, 5, 15)) do
+
+      UsageLimit.save(:service_id => @service.id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :month => 20)
+
+      1.times do
+        Transactor.report(@provider_key, nil,
+                          0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
+      end
+
+      Resque.run!
+
+      get '/transactions/oauth_authorize.xml',  :provider_key => @provider_key,
+                                                :app_id       => @application.id
+    
+      doc   = Nokogiri::XML(last_response.body)
+      month   = doc.at('usage_report[metric = "hits"][period = "month"]')
+      eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+
+      assert_not_nil month
+      assert_nil     eternity
+    
+    end
+
+  end
+
+
 end

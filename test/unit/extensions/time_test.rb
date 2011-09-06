@@ -50,6 +50,11 @@ module Extensions
                    Time.utc(2009, 6, 11, 13, 30).beginning_of_cycle(:year)
     end
 
+    def test_beginning_of_cycle_with_eternity    
+      assert_equal Time.utc(1970, 1,  1), 
+                   Time.utc(2009, 6, 11, 13, 30).beginning_of_cycle(:eternity)
+    end
+
     def test_end_of_cycle_with_minute
       assert_equal Time.utc(2010, 5, 17, 13, 31),
                    Time.utc(2010, 5, 17, 13, 30, 17).end_of_cycle(:minute)
@@ -139,6 +144,19 @@ module Extensions
       assert_equal Time.utc(2011, 1, 1),
                    Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:year)
     end
+
+    def test_end_of_cycle_with_eternity
+      assert_equal Time.utc(9999, 12, 31),
+                   Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:eternity)
+    end
+
+
+  
+    def test_end_of_cycle_with_year
+      assert_equal Time.utc(2011, 1, 1),
+                   Time.utc(2010, 5, 17, 13, 30).end_of_cycle(:year)
+    end
+
 
     def test_to_compact_s
       assert_equal '20091103123455', Time.utc(2009, 11,  3, 12, 34, 55).to_compact_s

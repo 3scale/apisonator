@@ -164,8 +164,8 @@ module ThreeScale
                     attributes[:exceeded] = 'true' if report.exceeded?
 
                     xml.usage_report(attributes) do
-                      xml.period_start  report.period_start.strftime(TIME_FORMAT)
-                      xml.period_end    report.period_end.strftime(TIME_FORMAT)
+                      xml.period_start  report.period_start.strftime(TIME_FORMAT) unless report.period == :eternity
+                      xml.period_end    report.period_end.strftime(TIME_FORMAT) unless report.period == :eternity
                       xml.max_value     report.max_value
 
                       if not options[:anchors_for_caching]
@@ -195,8 +195,8 @@ module ThreeScale
                       attributes = {:metric => report.metric_name, :period => report.period}
                       attributes[:exceeded] = 'true' if report.exceeded?
                       xml.usage_report(attributes) do
-                        xml.period_start  report.period_start.strftime(TIME_FORMAT)
-                        xml.period_end    report.period_end.strftime(TIME_FORMAT)
+                        xml.period_start  report.period_start.strftime(TIME_FORMAT) unless report.period == :eternity
+                        xml.period_end    report.period_end.strftime(TIME_FORMAT) unless report.period == :eternity
                         xml.max_value     report.max_value
 
                         if not options[:anchors_for_caching]
@@ -228,8 +228,8 @@ module ThreeScale
                       attributes[:exceeded] = 'true' if report.exceeded?
 
                       xml.usage_report(attributes) do
-                        xml.period_start  report.period_start.strftime(TIME_FORMAT)
-                        xml.period_end    report.period_end.strftime(TIME_FORMAT)
+                        xml.period_start  report.period_start.strftime(TIME_FORMAT) unless report.period == :eternity
+                        xml.period_end    report.period_end.strftime(TIME_FORMAT) unless report.period == :eternity
                         xml.max_value     report.max_value
 
                         if not options[:anchors_for_caching] 
