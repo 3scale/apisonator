@@ -1,6 +1,7 @@
 require '3scale/backend/transactor/notify_job'
 require '3scale/backend/transactor/process_job'
 require '3scale/backend/transactor/report_job'
+require '3scale/backend/transactor/log_job'
 require '3scale/backend/transactor/status'
 require '3scale/backend/cache'
 require '3scale/backend/errors'
@@ -27,6 +28,8 @@ module ThreeScale
 	      report_enqueue(service.id, transactions)
         notify(provider_key, 'transactions/create_multiple' => 1,
                              'transactions' => transactions.size)
+
+        
       end
 
       VALIDATORS = [Validators::Key,

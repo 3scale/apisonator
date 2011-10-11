@@ -21,11 +21,16 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     @metric_id = next_id
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
+
+    ## apilog is imcomplete because the response and the code (response code) are unknow at this stage
+    @apilog = {'request' => "API original request"}
+
   end
 
   test 'successful authorize responds with 200' do
     get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
+                                     :app_id       => @application.id,
+                                     :log          => @apilog
 
     assert_equal 200, last_response.status
   end
@@ -33,7 +38,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
   test 'successful authorize with no body responds with 200' do
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
-                                     :no_body      => true
+                                     :no_body      => true,
+                                     :log          => @apilog
 
     assert_equal 200, last_response.status
     assert_equal "", last_response.body
@@ -41,7 +47,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
   test 'successful authorize has custom content type' do
     get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
+                                     :app_id       => @application.id,
+                                     :log          => @apilog
 
     assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
@@ -121,7 +128,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
   test 'fails on invalid provider key' do
     get '/transactions/authrep.xml', :provider_key => 'boo',
-                                     :app_id     => @application.id
+                                     :app_id     => @application.id,
+                                     :log        => @apilog
+
 
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
@@ -130,7 +139,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
   test 'fails on invalid provider key with no body' do
     get '/transactions/authrep.xml', :provider_key => 'boo',
                                      :app_id     => @application.id,
-                                     :no_body    => true
+                                     :no_body    => true,
+                                     :log        => @apilog
 
     assert_equal 403, last_response.status
     assert_equal "", last_response.body
@@ -138,7 +148,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
   test 'fails on invalid application id' do
     get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => 'boo'
+                                     :app_id       => 'boo',
+                                     :log        => @apilog       
 
 
     assert_error_response :status  => 404,
@@ -168,7 +179,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
     @application.save
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
+                                     :app_id       => @application.id,
+                                     :log        => @apilog
+
 
     assert_equal 409, last_response.status
     assert_not_authorized 'application is not active'
@@ -180,7 +193,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
-                                     :no_body      => true
+                                     :no_body      => true,
+                                     :log        => @apilog
 
     assert_equal 409, last_response.status
     assert_equal "", last_response.body
@@ -198,7 +212,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
     Resque.run!
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id     => @application.id
+                                     :app_id     => @application.id,
+                                     :log        => @apilog
 
     assert_equal 409, last_response.status
     assert_not_authorized 'usage limits are exceeded'
@@ -235,7 +250,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
     Resque.run!
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
+                                     :app_id       => @application.id,
+                                     :log        => @apilog
+
 
     doc   = Nokogiri::XML(last_response.body)
     day   = doc.at('usage_report[metric = "hits"][period = "day"]')
@@ -286,7 +303,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
       Resque.run!
 
       get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+                                       :app_id       => @application.id,
+                                       :log        => @apilog
       
       doc   = Nokogiri::XML(last_response.body)
       month   = doc.at('usage_report[metric = "hits"][period = "month"]')      

@@ -21,11 +21,16 @@ class OauthBasicTest < Test::Unit::TestCase
 
     @metric_id = next_id
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
+
+    ## apilog is imcomplete because the response and the code (response code) are unknow at this stage
+    @apilog = {'request' => "API original request"}
+
   end
 
   test 'successful authorize responds with 200' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id       => @application.id
+                                             :app_id       => @application.id,
+                                             :log          => @apilog
 
     assert_equal 200, last_response.status
   end
@@ -33,7 +38,8 @@ class OauthBasicTest < Test::Unit::TestCase
   test 'successful authorize with no body responds with 200' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id,
-                                             :no_body      => true
+                                             :no_body      => true,
+                                             :log          => @apilog
 
     assert_equal 200, last_response.status
     assert_equal "", last_response.body
@@ -41,14 +47,16 @@ class OauthBasicTest < Test::Unit::TestCase
 
   test 'successful authorize has custom content type' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id       => @application.id
+                                             :app_id       => @application.id,
+                                             :log          => @apilog
 
     assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
 
   test 'successful authorize renders plan name' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id     => @application.id
+                                             :app_id     => @application.id,
+                                             :log          => @apilog
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal @plan_name, doc.at('status:root plan').content
@@ -56,7 +64,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
   test 'response of successful authorize contains authorized flag set to true' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id     => @application.id
+                                             :app_id     => @application.id,
+                                             :log          => @apilog
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
@@ -74,7 +83,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id     => @application.id
+                                             :app_id     => @application.id,
+                                             :log          => @apilog
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal @application.id,           doc.at('application/id').content
@@ -102,7 +112,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                               :app_id     => @application.id
+                                               :app_id     => @application.id,
+                                               :log          => @apilog
 
       doc = Nokogiri::XML(last_response.body)
 
@@ -132,7 +143,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
       get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                                :service_id   => @service.id,
-                                               :app_id     => @application.id
+                                               :app_id     => @application.id,
+                                               :log          => @apilog
 
       doc = Nokogiri::XML(last_response.body)
 
@@ -142,7 +154,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
   test 'fails on invalid provider key' do
     get '/transactions/oauth_authorize.xml', :provider_key => 'boo',
-                                             :app_id     => @application.id
+                                             :app_id     => @application.id,
+                                             :log          => @apilog
 
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
@@ -151,7 +164,8 @@ class OauthBasicTest < Test::Unit::TestCase
   test 'fails on invalid provider key with no body' do
     get '/transactions/oauth_authorize.xml', :provider_key => 'boo',
                                              :app_id     => @application.id,
-                                             :no_body    => true
+                                             :no_body    => true,
+                                             :log        => @apilog
 
     assert_equal 403, last_response.status
     assert_equal "", last_response.body
@@ -159,7 +173,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
   test 'fails on invalid application id' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id       => 'boo'
+                                             :app_id       => 'boo',
+                                             :log          => @apilog
 
 
     assert_error_response :status  => 404,
@@ -170,8 +185,8 @@ class OauthBasicTest < Test::Unit::TestCase
   test 'fails on invalid application id with no body' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => 'boo',
-                                             :no_body      => true
-
+                                             :no_body      => true,
+                                             :log          => @apilog
 
     assert_equal 404, last_response.status
     assert_equal "", last_response.body
@@ -189,7 +204,9 @@ class OauthBasicTest < Test::Unit::TestCase
     @application.save
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id       => @application.id
+                                             :app_id       => @application.id,
+                                             :log          => @apilog
+
 
     assert_equal 409, last_response.status
     assert_not_authorized 'application is not active'
@@ -201,7 +218,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id,
-                                             :no_body      => true
+                                             :no_body      => true,
+                                             :log          => @apilog
 
     assert_equal 409, last_response.status
     assert_equal "", last_response.body
@@ -220,7 +238,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :service_id => @service.id,
-                                             :app_id     => @application.id
+                                             :app_id     => @application.id,
+                                             :log          => @apilog
 
     assert_equal 409, last_response.status
     assert_not_authorized 'usage limits are exceeded'
@@ -239,7 +258,8 @@ class OauthBasicTest < Test::Unit::TestCase
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id     => @application.id,
-                                             :no_body    => true
+                                             :no_body    => true,
+                                             :log          => @apilog
 
     assert_equal 409, last_response.status
     assert_equal "", last_response.body

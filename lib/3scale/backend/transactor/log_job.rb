@@ -1,15 +1,13 @@
 module ThreeScale
   module Backend
     module Transactor
-      # Job for processing (aggregating and archiving) transactions.
-      class ProcessJob
+      # Job to process the api calls between buyer and provider
+      class LogJob
         @queue = :main
 
         def self.perform(transactions)
           transactions = preprocess(transactions)
-          TransactionStorage.store_all(transactions)
-          Aggregator.aggregate_all(transactions)
-          Archiver.add_all(transactions)
+          LogStorage.store_all(transactions)          
         end
 
         def self.preprocess(transactions)

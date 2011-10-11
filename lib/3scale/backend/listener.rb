@@ -1,3 +1,4 @@
+require 'ruby-debug'
 module ThreeScale
   module Backend
     class Listener < Sinatra::Base

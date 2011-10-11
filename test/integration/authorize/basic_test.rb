@@ -387,4 +387,5 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     end
   end
 
+
 end

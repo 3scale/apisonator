@@ -21,7 +21,11 @@ class ReportTest < Test::Unit::TestCase
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
 
-    
+    @apilog = {'request' => "API original request", 'response' => "API original response", 'code' => "200"}
+    @apilog2 = {'request' => "API original request 2", 'response' => "API original response 2", 'code' => "200"}
+    @apilog3 = {'request' => "API original request 3", 'response' => "API original response 3", 'code' => "200"}
+    @apilog_imcomplete = {'code' => "200"}
+    @apilog_empty = {}
 
   end
 
@@ -34,7 +38,7 @@ class ReportTest < Test::Unit::TestCase
   test 'successful report responds with 202' do
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
 
     assert_equal 202, last_response.status
   end
@@ -43,7 +47,7 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 10, 17, 36)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
 
       Resque.run!
 
@@ -64,7 +68,7 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
 
       Resque.run!
 
@@ -124,7 +128,7 @@ class ReportTest < Test::Unit::TestCase
   test 'report fails on invalid provider key' do
     post '/transactions.xml',
       :provider_key => 'boo',
-      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
 
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
@@ -133,7 +137,7 @@ class ReportTest < Test::Unit::TestCase
   test 'report reports error on invalid application id' do
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => 'boo', :usage => {'hits' => 1}}}
+      :transactions => {0 => {:app_id => 'boo', :usage => {'hits' => 1}, :log => @apilog}}
 
     assert_equal 202, last_response.status
 
@@ -368,9 +372,9 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                          1 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                          2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog1},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog2}}
 
       Resque.run!
 
@@ -589,13 +593,12 @@ class ReportTest < Test::Unit::TestCase
                                                    @metric_id,
                                                    :month, '20100501')).to_i
 
-
-
     end
 
-
-
   end
+
+  
+  
 
 
 end
