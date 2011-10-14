@@ -1,4 +1,3 @@
-require 'ruby-debug'
 module ThreeScale
   module Backend
     class Listener < Sinatra::Base
@@ -138,6 +137,8 @@ module ThreeScale
         end
       end
 
+      ## TRANSACTIONS & ERRORS
+
       get '/transactions/errors.xml' do
         @errors = ErrorStorage.list(service_id, :page     => params[:page],
                                                 :per_page => params[:per_page])
@@ -158,6 +159,40 @@ module ThreeScale
         @transactions = TransactionStorage.list(service_id)
         builder :latest_transactions
       end
+
+      ## LOG REQUESTS
+
+      get '/services/:service_id/applications/:app_id/log_requests.xml' do
+        @list = LogRequestStorage.list_by_application(service_id, application.id)
+        builder :log_requests
+      end
+
+      get '/services/:service_id/log_requests.xml' do
+        @list = LogRequestStorage.list_by_service(service_id)
+        builder :log_requests
+      end
+
+      get '/services/:service_id/applications/:app_id/log_requests/count.xml' do
+        @count = LogRequestStorage.count_by_application(service_id, application.id)
+        builder :log_requests_count
+      end
+
+      get '/services/:service_id/log_requests/count.xml' do
+        @count = LogRequestStorage.count_by_service(service_id)
+        builder :log_requests_count
+      end
+
+      delete '/services/:service_id/applications/:app_id/log_requests.xml' do
+        LogRequestStorage.delete_by_application(service_id, application.id)
+        empty_response
+      end
+
+      delete '/services/:service_id/log_requests.xml' do
+        LogRequestStorage.delete_by_service(service_id)
+        empty_response
+      end
+
+      ## ALERTS & VIOLATIONS
 
       get '/services/:service_id/alerts.xml' do  
         @list = Transactor.latest_alerts(service_id)
@@ -180,7 +215,7 @@ module ThreeScale
       end
 
       get "/services/:service_id/applications/:app_id/utilization.xml" do
-        @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, params[:app_id])
+        @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, application.id)
         builder :utilization
       end
       
@@ -206,7 +241,6 @@ module ThreeScale
         status 201
         builder :create_application_key
       end
-
 
       delete '/applications/:app_id/keys/:key.xml' do
         application.delete_key(params[:key])
@@ -264,8 +298,8 @@ module ThreeScale
 
       private
 
-      def application
-        @application ||= Application.load!(service_id, params[:app_id])
+      def application 
+        @application ||= Application.load_by_id_or_user_key!(service_id, params[:app_id], params[:user_key])
       end
 
       # FIXME: this operations can be done more efficiently, without loading the whole service

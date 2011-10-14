@@ -1,7 +1,7 @@
 require '3scale/backend/transactor/notify_job'
 require '3scale/backend/transactor/process_job'
 require '3scale/backend/transactor/report_job'
-require '3scale/backend/transactor/log_job'
+require '3scale/backend/transactor/log_request_job'
 require '3scale/backend/transactor/status'
 require '3scale/backend/cache'
 require '3scale/backend/errors'
@@ -268,10 +268,16 @@ module ThreeScale
           username = user.username unless user.nil?
         end
 
-        if !params[:usage].nil? && ((!status.nil? && status.authorized?) || (status.nil? && status_result)) 
+        if (!params[:usage].nil? || !params[:log].nil?) && ((!status.nil? && status.authorized?) || (status.nil? && status_result)) 
           storage.pipelined do
-            report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => params[:usage], "user_id" => username}}))
-            notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => params[:usage].size)
+            report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => params[:usage], "user_id" => username, "log" => params[:log]}}))
+            if params[:usage].nil?
+              val = 0
+            else 
+              val = params[:usage].size
+            end
+            ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
+            notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
           end
         else
           notify(provider_key, 'transactions/authorize' => 1)

@@ -57,6 +57,14 @@ module Transactor
                      '1' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}})
     end
 
+    test 'does not process any transaction if no usage is defined' do
+      Transactor::ProcessJob.expects(:perform).never
+
+      Transactor::ReportJob.perform(
+        @service_id, '0' => {'app_id' => @application_id},
+                     '1' => {'app_id' => @application_id})
+    end
+
     test 'does not raise an exception on invalid application id' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
