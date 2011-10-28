@@ -22,7 +22,7 @@ module ThreeScale
       post '/transactions.xml' do
         ## return error code 400 (Bad request) if the parameters are not there
         ## I put 403 (Forbidden) for consitency however it should be 400 I
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || params[:transactions].nil? || params[:transactions].class==Array
+        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || params[:transactions].nil? || params[:transactions].is_a?(Array)
           empty_response 403
           return
         end
@@ -33,7 +33,7 @@ module ThreeScale
 
 
       get '/transactions/authorize.xml' do
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty?
+        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
           return
         end
@@ -68,7 +68,7 @@ module ThreeScale
       end
 
       get '/transactions/oauth_authorize.xml' do
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty?
+        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
           return
         end
@@ -103,7 +103,7 @@ module ThreeScale
       end
 
       get '/transactions/authrep.xml' do
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty?
+        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
           return
         end

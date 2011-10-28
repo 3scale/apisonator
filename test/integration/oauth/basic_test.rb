@@ -431,5 +431,19 @@ class OauthBasicTest < Test::Unit::TestCase
 
   end
 
+  test 'usage must be an array regression' do
+
+    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => ""
+    assert_equal 403, last_response.status
+
+    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => "1001"
+    assert_equal 403, last_response.status
+
+  end
+
 
 end

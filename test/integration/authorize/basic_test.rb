@@ -387,5 +387,19 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     end
   end
 
+  test 'usage must be an array regression' do
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => ""
+    assert_equal 403, last_response.status
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => "1001"
+    assert_equal 403, last_response.status
+
+  end
+
 
 end
