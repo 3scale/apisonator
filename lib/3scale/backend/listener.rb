@@ -21,12 +21,14 @@ module ThreeScale
 
       post '/transactions.xml' do
         ## return error code 400 (Bad request) if the parameters are not there
-        ## I put 403 (Forbidden) for consitency however it should be 400 I
+        ## I put 403 (Forbidden) for consitency however it should be 400 
+        ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
+
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || params[:transactions].nil? || params[:transactions].is_a?(Array)
           empty_response 403
           return
         end
-        
+
         Transactor.report(params[:provider_key], params[:service_id], params[:transactions])
         empty_response 202
       end
