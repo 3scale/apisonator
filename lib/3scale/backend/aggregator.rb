@@ -100,6 +100,9 @@ module ThreeScale
         pairs = user.usage_limits.map do |usage_limit|
           [usage_limit.metric_id, usage_limit.period]
         end
+        if pairs.nil? or pairs.size==0 
+          return {}
+        end
         # preloading metric names
         user.metric_names = ThreeScale::Core::Metric.load_all_names(user.service_id, pairs.map{|e| e.first}.uniq)
         now = Time.now.getutc

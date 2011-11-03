@@ -97,7 +97,7 @@ module ThreeScale
                                                           params[:app_id],
                                                           params[:user_key])
 
-        if not (params[:user_id].nil? || params[:user_id].empty?)
+        if not (params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String))
           ## user_id on the paramters
           if application.user_required? 
             user = User.load_or_create!(service,params[:user_id])
@@ -186,7 +186,7 @@ module ThreeScale
                                                           params[:app_id],
                                                           params[:user_key])
 
-        if not (params[:user_id].nil? || params[:user_id].empty?)
+        if not (params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String))
           ## user_id on the paramters
           if application.user_required? 
             user = User.load_or_create!(service,params[:user_id])
@@ -306,7 +306,7 @@ module ThreeScale
                                                           params[:app_id],
                                                           params[:user_key])
 
-        if not (params[:user_id].nil? || params[:user_id].empty?)
+        if not (params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String))
           ## user_id on the paramters
           if application.user_required? 
             user = User.load_or_create!(service,params[:user_id])
@@ -413,7 +413,7 @@ module ThreeScale
 
       def check_for_users(service, application, params)
         if application.user_required? 
-          raise UserNotDefined, application.id if params[:user_id].nil? || params[:user_id].empty?
+          raise UserNotDefined, application.id if params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String)
 
           if service.user_registration_required?
             raise UserRequiresRegistration, service.id, params[:user_id] unless service.user_exists?(params[:user_id])
@@ -446,6 +446,9 @@ module ThreeScale
       def load_user_current_usage(user)
         pairs = user.usage_limits.map do |usage_limit|
           [usage_limit.metric_id, usage_limit.period]
+        end
+        if pairs.nil? or pairs.size==0 
+          return {}
         end
         # preloading metric names
         user.metric_names = ThreeScale::Core::Metric.load_all_names(user.service_id, pairs.map{|e| e.first}.uniq)
