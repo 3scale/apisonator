@@ -25,7 +25,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'rack',                    '~> 1.1'
   s.add_dependency 'rack_hoptoad',            '~> 0.1'
   s.add_dependency 'rack-rest_api_versioning'
-  s.add_dependency 'sinatra',                 '~> 1.0'
+  s.add_dependency 'sinatra',                 '~> 1.2.6'
   s.add_dependency 'thin',                    '~> 1.2'
   s.add_dependency 'yajl-ruby',               '~> 0.7'
 
