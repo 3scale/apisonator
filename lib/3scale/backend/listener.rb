@@ -226,9 +226,11 @@ module ThreeScale
         builder :application_keys
       end
 
-      get '/applications/:app_id/utilization.xml' do 
-        application.utilization
-        builder :application_utilization
+      get '/applications/:app_id/utilization.xml' do
+        ## FIXME: two ways of doing the same
+        ## "/services/:service_id/applications/:app_id/utilization.xml"
+        @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, application.id)
+        builder :utilization
       end
 
       post '/applications/:app_id/keys.xml' do
@@ -251,7 +253,6 @@ module ThreeScale
 
       get '/applications/:app_id/referrer_filters.xml' do
         @referrer_filters = application.referrer_filters
-
         builder :application_referrer_filters
       end
 
