@@ -119,6 +119,8 @@ module ThreeScale
           VALIDATORS.all? do |validator|
             if validator == Validators::Referrer && !st.service.referrer_filters_required?
               true
+            elsif validator == Validators::Key && service.backend_version.to_i == 1
+              true
             else
               validator.apply(st, params)
             end
@@ -206,6 +208,8 @@ module ThreeScale
         status = Status.new(:service     => service, :application => application, :values => usage, :user => user, :user_values => user_usage).tap do |status|
           OAUTH_VALIDATORS.all? do |validator|
             if validator == Validators::Referrer && !status.service.referrer_filters_required?
+              true
+            elsif validator == Validators::Key && service.backend_version.to_i == 1
               true
             else
               validator.apply(status, params)
@@ -326,6 +330,8 @@ module ThreeScale
         status = Status.new(:service => service, :application => application, :values => usage, :user => user, :user_values => user_usage).tap do |st|
           VALIDATORS.all? do |validator|
             if validator == Validators::Referrer && !st.service.referrer_filters_required?
+              true
+            elsif validator == Validators::Key && service.backend_version.to_i == 1
               true
             else
               validator.apply(st, params)
