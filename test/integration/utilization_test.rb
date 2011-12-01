@@ -44,6 +44,7 @@ class StatusSnapshotTest < Test::Unit::TestCase
 
   end
 
+
   test 'basic working of status_snapshot' do
 
     post '/transactions.xml',
@@ -186,5 +187,43 @@ class StatusSnapshotTest < Test::Unit::TestCase
     end    
 
   end 
+
+  test 'regression test, plan with only zero limits should not blow' do 
+
+    application_id = next_id
+    plan_id = next_id
+    plan_name = "zero_limits"
+
+    Application.save(:service_id => @service.id,
+                      :id         => application_id,
+                      :state      => :active,
+                      :plan_id    => plan_id,
+                      :plan_name  => plan_name)
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => plan_id,
+                    :metric_id  => @hits_id,
+                    :month        => 0)
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => plan_id,
+                    :metric_id  => @foos_id,
+                    :month        => 0)
+
+    get "/services/#{@service_id}/applications/#{application_id}/utilization.xml", 
+       :provider_key => @provider_key
+                                                       
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal doc.at('max_utilization')[:value], '0'
+    assert_equal doc.search('usage_report').size, 2
+    metric_name = doc.search('usage_report').first[:metric_name]
+    assert_equal doc.search('max_usage_report').size, 1
+    assert_equal doc.search('max_usage_report').first[:period], "month"
+    assert_equal doc.search('max_usage_report').first[:metric_name], metric_name
+    assert_equal doc.search('max_usage_report').first[:max_value], "0"
+
+  end
+
 
 end

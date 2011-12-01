@@ -53,6 +53,13 @@ module ThreeScale
           end
         end
 
+        if max_utilization == -1
+          ## case that all the limits have max_value==0
+          max_utilization = 0
+          max_record = status.usage_reports.first 
+          max_record = status.user_usage_reports.first if max_record.nil?        
+        end
+
         [max_utilization, max_record]
       end
 
@@ -121,7 +128,7 @@ module ThreeScale
                     :application_id => status.application.id, 
                     :service_id => status.application.service_id,
                     :timestamp => timestamp,
-                    :limit => "#{max_record.metric_name} per #{max_record.period}: #{max_record.current_value} of #{max_record.max_value}"}
+                    :limit => "#{max_record.metric_name} per #{max_record.period}: #{max_record.current_value}/#{max_record.max_value}"}
        
           Backend::AlertStorage::store(alert)
 

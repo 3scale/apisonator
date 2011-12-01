@@ -172,7 +172,7 @@ class LatestAlertsTest < Test::Unit::TestCase
     assert_equal @service_id, doc.search('alert')[0].attributes["service_id"].content
     assert_equal @application_id3, doc.search('alert')[0].attributes["application_id"].content
     assert_equal "80", doc.search('alert')[0].attributes["utilization"].content
-    assert_equal "foos per month: 81 of 100", doc.search('alert')[0].attributes["limit"].content
+    assert_equal "foos per month: 81/100", doc.search('alert')[0].attributes["limit"].content
     assert_not_nil doc.search('alert')[0].attributes["timestamp"].content
     assert_not_nil doc.search('alert')[0].attributes["id"].content
 
@@ -284,7 +284,7 @@ class LatestAlertsTest < Test::Unit::TestCase
     assert_equal @service_id, doc.search('alert')[0].attributes["service_id"].content
     assert_equal @application_id3, doc.search('alert')[0].attributes["application_id"].content
     assert_equal "100", doc.search('alert')[0].attributes["utilization"].content
-    assert_equal "foos per month: 115 of 100", doc.search('alert')[0].attributes["limit"].content
+    assert_equal "foos per month: 115/100", doc.search('alert')[0].attributes["limit"].content
     assert_not_nil doc.search('alert')[0].attributes["timestamp"].content
     assert_not_nil doc.search('alert')[0].attributes["id"].content
 

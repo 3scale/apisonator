@@ -4,7 +4,9 @@ xml.utilization do
 
     xml.max_utilization :value => @max_utilization
 
-    xml.max_usage_report :period => @max_record.period, :metric_name => @max_record.metric_name, :max_value => @max_record.max_value, :current_value => @max_record.current_value
+    if !@max_record.nil?
+      xml.max_usage_report :period => @max_record.period, :metric_name => @max_record.metric_name, :max_value => @max_record.max_value, :current_value => @max_record.current_value
+    end
 
     xml.usage_reports do 
       @usage_reports.each do |item|
