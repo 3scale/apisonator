@@ -188,6 +188,29 @@ class StatusSnapshotTest < Test::Unit::TestCase
 
   end 
 
+  test 'test applications with plans without limits' do 
+
+    application_id = next_id
+    plan_id = next_id
+    plan_name = "no_limits"
+
+    Application.save(:service_id => @service.id,
+                      :id         => application_id,
+                      :state      => :active,
+                      :plan_id    => plan_id,
+                      :plan_name  => plan_name)
+
+    get "/services/#{@service_id}/applications/#{application_id}/utilization.xml", 
+       :provider_key => @provider_key
+                                                       
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal doc.search('utilization').size, 1
+    assert_nil doc.at('max_utilization')
+    assert_nil doc.at('usage_report')
+
+  end
+
   test 'regression test, plan with only zero limits should not blow' do 
 
     application_id = next_id
