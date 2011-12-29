@@ -27,7 +27,7 @@ module ThreeScale
             usage   = metrics.process_usage(raw_usage)
 
             values = filter_metrics(values, usage.keys)
-            values = increment(values, usage)
+            values = increment_or_set(values, usage)
             values
           else
             values
@@ -41,11 +41,16 @@ module ThreeScale
           end
         end
 
-        def increment(values, usage)
+        def increment_or_set(values, usage)
           usage.inject(values) do |memo, (metric_id, value)|
             memo.keys.each do |period|
-              memo[period][metric_id] ||= 0
-              memo[period][metric_id] += value
+              val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(value)
+              if val.nil?
+                memo[period][metric_id] ||= 0
+                memo[period][metric_id] += value.to_i
+              else
+                memo[period][metric_id] = val
+              end
             end
 
             memo
@@ -59,6 +64,9 @@ module ThreeScale
             memo
           end
         end
+        
+        
+        
       end
     end
   end

@@ -43,6 +43,11 @@ module ThreeScale
         ## need to update the cached_status for for the transactor
         update_status_cache(applications,users)
       end
+  
+      def get_value_of_set_if_exists(value_str) 
+        return nil if value_str[0]!="#"
+        return value_str[1..value_str.size].to_i
+      end
 
       private
 
@@ -60,33 +65,44 @@ module ThreeScale
         timestamp = transaction[:timestamp]
 
         transaction[:usage].each do |metric_id, value|
+          
+          val = get_value_of_set_if_exists(value)
+          if val.nil?
+            type = :increment
+          else
+            type = :set
+            value = val
+          end
+          
+          value = value.to_i
+          
           service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
 
-          increment(service_metric_prefix, :eternity,   nil,       value)
-          increment(service_metric_prefix, :month,      timestamp, value)
-          increment(service_metric_prefix, :week,       timestamp, value)
-          increment(service_metric_prefix, :day,        timestamp, value)
-          increment(service_metric_prefix, :hour,       timestamp, value)
+          increment_or_set(type, service_metric_prefix, :eternity,   nil,       value)
+          increment_or_set(type, service_metric_prefix, :month,      timestamp, value)
+          increment_or_set(type, service_metric_prefix, :week,       timestamp, value)
+          increment_or_set(type, service_metric_prefix, :day,        timestamp, value)
+          increment_or_set(type, service_metric_prefix, :hour,       timestamp, value)
 
           application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
 
-          increment(application_metric_prefix, :eternity,   nil,       value)
-          increment(application_metric_prefix, :year,       timestamp, value)
-          increment(application_metric_prefix, :month,      timestamp, value)
-          increment(application_metric_prefix, :week,       timestamp, value)
-          increment(application_metric_prefix, :day,        timestamp, value)
-          increment(application_metric_prefix, :hour,       timestamp, value)
-          increment(application_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+          increment_or_set(type, application_metric_prefix, :eternity,   nil,       value)
+          increment_or_set(type, application_metric_prefix, :year,       timestamp, value)
+          increment_or_set(type, application_metric_prefix, :month,      timestamp, value)
+          increment_or_set(type, application_metric_prefix, :week,       timestamp, value)
+          increment_or_set(type, application_metric_prefix, :day,        timestamp, value)
+          increment_or_set(type, application_metric_prefix, :hour,       timestamp, value)
+          increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
 
           unless transaction[:user_id].nil? 
             user_metric_prefix = metric_key_prefix(user_prefix, metric_id)
-            increment(user_metric_prefix, :eternity,   nil,       value)
-            increment(user_metric_prefix, :year,       timestamp, value)
-            increment(user_metric_prefix, :month,      timestamp, value)
-            increment(user_metric_prefix, :week,       timestamp, value)
-            increment(user_metric_prefix, :day,        timestamp, value)
-            increment(user_metric_prefix, :hour,       timestamp, value)
-            increment(user_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+            increment_or_set(type, user_metric_prefix, :eternity,   nil,       value)
+            increment_or_set(type, user_metric_prefix, :year,       timestamp, value)
+            increment_or_set(type, user_metric_prefix, :month,      timestamp, value)
+            increment_or_set(type, user_metric_prefix, :week,       timestamp, value)
+            increment_or_set(type, user_metric_prefix, :day,        timestamp, value)
+            increment_or_set(type, user_metric_prefix, :hour,       timestamp, value)
+            increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
           end
         end
 
@@ -223,9 +239,9 @@ module ThreeScale
         "#{prefix}/metric:#{metric_id}"
       end
 
-      def increment(prefix, granularity, timestamp, value, options = {})
+      def increment_or_set(type, prefix, granularity, timestamp, value, options = {})
         key = counter_key(prefix, granularity, timestamp)
-        updated_value = storage.incrby(key, value)
+        type == :set ?  updated_value = storage.set(key, value) : updated_value = storage.incrby(key, value)
         storage.expire(key, options[:expires_in]) if options[:expires_in]
       end
       

@@ -41,15 +41,20 @@ module ThreeScale
             raise MetricInvalid.new(name)            unless metric_id
             raise UsageValueInvalid.new(name, value) unless sane_value?(value)
 
-            usage.update(metric_id => value.to_i)
+            usage.update(metric_id => value)
           end
         end
 
         def process_ancestors(usage)
           usage.keys.inject(usage.dup) do |memo, id|
             ancestor_id(id).each do |ancestor_id|
-              memo[ancestor_id] ||= 0
-              memo[ancestor_id] += memo[id]
+              val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(memo[id])
+              if val.nil?
+                memo[ancestor_id] ||= 0
+                memo[ancestor_id] += memo[id].to_i
+              else
+                memo[ancestor_id] = val.to_i
+              end
             end
 
             memo
@@ -92,8 +97,9 @@ module ThreeScale
           name.strip
         end
 
+        ## accepts postive integers or positive integers preffixed with # (for sets)
         def sane_value?(value)
-          value.is_a?(Numeric) || value.to_s =~ /\A\s*\d+\s*\Z/
+          value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/ 
         end
       end
     end
