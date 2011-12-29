@@ -5,7 +5,7 @@ module ThreeScale
         def apply
           values = process(status.values, params[:usage]) unless status.application.nil?
           user_values = process(status.user_values, params[:usage]) unless status.user.nil? 
-
+          
           check_user = true
           check_app = true
 
@@ -45,11 +45,12 @@ module ThreeScale
           usage.inject(values) do |memo, (metric_id, value)|
             memo.keys.each do |period|
               val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(value)
+
               if val.nil?
                 memo[period][metric_id] ||= 0
                 memo[period][metric_id] += value.to_i
               else
-                memo[period][metric_id] = val
+                memo[period][metric_id] = val.to_i
               end
             end
 
@@ -64,8 +65,6 @@ module ThreeScale
             memo
           end
         end
-        
-        
         
       end
     end

@@ -204,7 +204,7 @@ module ThreeScale
           ## both need to be authorized, other not authorized. This might produce a collision
           ## on the reasons, but let's assume app has precedence
 
-          v[1]=w[2] if !user_authorized && app_authorized
+          v[1]=w[1] if !user_authorized && app_authorized
             
           newxmlstr = ""
           for i in 1..v.size-1 do
@@ -230,16 +230,28 @@ module ThreeScale
             curr_value = curr_value.to_i
             max_value = max_value.to_i
             inc = 0
-            inc = options[:usage][metric].to_i unless options[:usage].nil?
-
+            val = nil
+            
+            inc = options[:usage][metric].to_i unless options[:usage].nil?  
+            val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][metric]) unless options[:usage].nil? 
+            
             limit_violation_without_usage = (curr_value > max_value) unless limit_violation_without_usage
-            limit_violation_with_usage = (curr_value + inc > max_value) unless limit_violation_with_usage
+            
+            if val.nil?
+              limit_violation_with_usage = (curr_value + inc > max_value) unless limit_violation_with_usage
+            else
+              limit_violation_with_usage = (val.to_i > max_value) unless limit_violation_with_usage
+            end
 
             if authorized && options[:add_usage_on_report]
               ## only increase if asked explicity via options[:add_usage_on_report] and if the status was
               ## authorized to begin with, otherwise we might increment on a status that is not authorized
               ## and that would look weird for the user
-              str = (curr_value + inc).to_s
+              if val.nil?
+                str = (curr_value + inc).to_s
+              else
+                str = val.to_s
+              end
             else
               str = curr_value.to_s
             end
@@ -248,12 +260,16 @@ module ThreeScale
           newxmlstr << str
           i += 1
         end
-
+        
         if authorized && (limit_violation_without_usage || limit_violation_with_usage)
           ## the cache says that the status was authorized but a violation just occured on the limits... 
-          ## then, just forget and let the proper way to calculated
+          ## then, just forget and let the proper way to calculate it
           violation_just_happened = true
-        else
+        elsif !authorized && limit_violation_without_usage && !limit_violation_with_usage
+          ## the cache says that the status was NOT authorized and there is a limit violation without summing the usage
+          ## but because a negative usage or a set now it's ok, just forget the cache and the the proper way to calculate
+          violation_just_happened = true
+        else 
           violation_just_happened = false
         end
 
