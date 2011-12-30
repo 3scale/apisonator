@@ -1,5 +1,4 @@
 require 'json'
-
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
@@ -45,7 +44,7 @@ module ThreeScale
       end
   
       def get_value_of_set_if_exists(value_str) 
-        return nil if value_str[0]!="#"
+        return nil if value_str.nil? || value_str[0]!="#" 
         return value_str[1..value_str.size].to_i
       end
 

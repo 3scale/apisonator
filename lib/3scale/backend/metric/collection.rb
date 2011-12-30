@@ -48,12 +48,13 @@ module ThreeScale
         def process_ancestors(usage)
           usage.keys.inject(usage.dup) do |memo, id|
             ancestor_id(id).each do |ancestor_id|
+             
               val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(memo[id])
               if val.nil?
                 memo[ancestor_id] ||= 0
                 memo[ancestor_id] += memo[id].to_i
               else
-                memo[ancestor_id] = val.to_i
+                memo[ancestor_id] = memo[id]
               end
             end
 

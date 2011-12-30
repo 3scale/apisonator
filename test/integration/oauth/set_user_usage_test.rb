@@ -11,7 +11,7 @@ class SetUserUsageTest < Test::Unit::TestCase
 
     Resque.reset!
 
-    setup_provider_fixtures
+    setup_oauth_provider_fixtures
     
     @default_user_plan_id = next_id
     @default_user_plan_name = "user plan mobile"
@@ -39,7 +39,7 @@ class SetUserUsageTest < Test::Unit::TestCase
 
   end
   
-  test 'check behavior of set values on usage passed as parameter of authorize' do
+  test 'check behavior of set values on usage passed as parameter of oauth_authorize' do
     
     Timecop.freeze(Time.utc(2011, 1, 1)) do
       post '/transactions.xml',
@@ -52,7 +52,7 @@ class SetUserUsageTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :user_id => "user2", :usage => {'hits' => "#98"}}}
       Resque.run!
     
-      get '/transactions/authorize.xml', :provider_key => @provider_key,
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :user_id    => "user1",
                                        :usage      => {'hits' => 2}
@@ -60,7 +60,7 @@ class SetUserUsageTest < Test::Unit::TestCase
       assert_user_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), "hits", "day", 99, 100)
       assert_not_authorized("usage limits are exceeded")
       
-      get '/transactions/authorize.xml', :provider_key => @provider_key,
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :user_id    => "user2",
                                        :usage      => {'hits' => 2}
@@ -77,7 +77,7 @@ class SetUserUsageTest < Test::Unit::TestCase
                           1 => {:app_id => @application.id, :user_id => "user2", :usage => {'hits' => 2}}}
       Resque.run!
     
-      get '/transactions/authorize.xml', :provider_key => @provider_key,
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :user_id     => "user1",
                                        :usage      => {'hits' => 2}
@@ -87,7 +87,7 @@ class SetUserUsageTest < Test::Unit::TestCase
       assert_user_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), "hits", "day", 101, 100)
       assert_not_authorized("usage limits are exceeded")
       
-      get '/transactions/authorize.xml', :provider_key => @provider_key,
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :user_id    => "user2",
                                        :usage      => {'hits' => 2}
@@ -95,7 +95,7 @@ class SetUserUsageTest < Test::Unit::TestCase
       assert_user_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), "hits", "day", 100, 100)
       assert_not_authorized("usage limits are exceeded")
       
-      get '/transactions/authorize.xml', :provider_key => @provider_key,
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :user_id    => "user2"
                                     
@@ -106,7 +106,7 @@ class SetUserUsageTest < Test::Unit::TestCase
     
     Timecop.freeze(Time.utc(2011, 1, 1)) do
       
-      get '/transactions/authorize.xml', :provider_key => @provider_key,
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :user_id      => "user1",
                                        :usage      => {'hits' => "#66"}
@@ -114,7 +114,7 @@ class SetUserUsageTest < Test::Unit::TestCase
       assert_user_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), "hits", "day", 101, 100)
       assert_authorized()
       
-      get '/transactions/authorize.xml', :provider_key => @provider_key,
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :user_id      => "user2",
                                        :usage      => {'hits' => "#100"}
@@ -126,7 +126,7 @@ class SetUserUsageTest < Test::Unit::TestCase
                    
   end
 
-  test 'check behaviour of set values with caching and authorize' do
+  test 'check behaviour of set values with caching and oauth_authorize' do
   
      Timecop.freeze(Time.utc(2011, 1, 1)) do
        post '/transactions.xml',
@@ -136,13 +136,13 @@ class SetUserUsageTest < Test::Unit::TestCase
 
        10.times do |cont|
          if cont%2==1
-           get '/transactions/authorize.xml', :provider_key => @provider_key,
+           get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                               :app_id     => @application.id,
                                               :user_id    => "user1",
                                               :usage      => {'hits' => "##{80 + (cont)*2}"}
            Resque.run!
          else
-           get '/transactions/authorize.xml', :provider_key => @provider_key,
+           get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                                :app_id     => @application.id,
                                                :user_id    => "user1",
                                                :usage      => {'hits' => 2}
@@ -160,7 +160,7 @@ class SetUserUsageTest < Test::Unit::TestCase
        end
        
        10.times do |cont|
-         get '/transactions/authorize.xml', :provider_key => @provider_key,
+         get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id,
                                          :user_id    => "user1",
                                          :usage      => {'hits' => 2}
@@ -171,7 +171,7 @@ class SetUserUsageTest < Test::Unit::TestCase
        end
       
        10.times do |cont|
-         get '/transactions/authorize.xml', :provider_key => @provider_key,
+         get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                         :app_id     => @application.id,
                                         :user_id    => "user1",
                                         :usage      => {'hits' => "##{100 + (cont+1)*-2}"}

@@ -248,7 +248,7 @@ module ThreeScale
           ##combination_save(data_combination) unless data_combination.nil? || !caching_allowed
 
         end
-
+        
         ##cache_miss ? report_cache_miss : report_cache_hit
         ##combination_save(data_combination) unless data_combination.nil? || !caching_allowed
         if cache_miss
