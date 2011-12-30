@@ -48,6 +48,8 @@ module ThreeScale
     
       def authorize(provider_key, params, options = {})
         notify(provider_key, 'transactions/authorize' => 1)
+        
+        check_values_of_usage(params[:usage]) unless params[:usage].nil?
 
         status = nil
         status_xml = nil
@@ -133,6 +135,8 @@ module ThreeScale
 
       def oauth_authorize(provider_key, params, options = {})
         notify(provider_key, 'transactions/authorize' => 1)
+
+        check_values_of_usage(params[:usage]) unless params[:usage].nil?  
 
         status = nil
         status_xml = nil
@@ -229,6 +233,8 @@ module ThreeScale
         status_result = nil
         data_combination = nil 
         cache_miss = true
+
+        check_values_of_usage(params[:usage]) unless params[:usage].nil?  
 
         if params[:no_caching].nil?
           ## check is the keys/id combination from params has been seen
@@ -403,6 +409,20 @@ module ThreeScale
       
       private
 
+      ## this is required because values are checked only on creation of the status
+      ## object and this does not happen on cache, no need to do the same for the metrics
+      ## because those are covered by the signature
+      
+      def check_values_of_usage(usage)
+        usage.each do |metric, value|
+          raise UsageValueInvalid.new(metric, value) unless sane_value?(value)
+        end
+      end
+
+      ## duplicated in metric/collection.rb
+      def sane_value?(value)
+        value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/ 
+      end
 
       def run_validators(validators_set, service, application, user, params)
         status = Status.new(:service => service, :application => application).tap do |st|
