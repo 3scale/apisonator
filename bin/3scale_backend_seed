@@ -75,7 +75,7 @@ class Seeder
     user_plan_id = 2002
     user_plan_name = "user_plan_name"
 
-    Service.save(:provider_key => provider_key, :id => service_id, :user_registration_required => false, :default_user_plan_id => user_plan_id, :default_user_plan_name => user_plan_name)
+    Service.save!(:provider_key => provider_key, :id => service_id, :user_registration_required => false, :default_user_plan_id => user_plan_id, :default_user_plan_name => user_plan_name)
 
     ##s = Service.load!(provider_key)
     ##u = User.load!(s,"aaaa")
