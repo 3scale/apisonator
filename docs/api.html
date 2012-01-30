@@ -51,6 +51,7 @@ Read-only operation to authorize an application. It is used to check if a partic
 
 <dl>
   <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
+  <dt><var>service_id</var></dt> <dd>Service id. Required only if as a provider you have multiple services allowed and enabled.</dd>
   <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
   <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd> 
   <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
@@ -213,6 +214,13 @@ GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_ke
 
 Host: su1.3scale.net</pre></code>
 
+<h5>Example Request with usage and service_id</h5>
+
+<code class="http"><pre>
+GET /transactions/authorize.xml?service_id=7812315&amp;app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;usage[hits]=1&amp;usage[transfer]=1024 HTTP/1.1
+
+Host: su1.3scale.net</pre></code>
+
 <h4>OAuth Authorize</h4>
 
 It's a modified version of the authorize call that returns some extra data that is needed to power OAuth APIs. It's only available for users with OAuth enabled APIs.
@@ -223,6 +231,7 @@ It's a modified version of the authorize call that returns some extra data that 
 
 <dl>
   <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
+  <dt><var>service_id</var></dt> <dd>Service id. Required only if as a provider you have multiple services allowed and enabled.</dd>
   <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
   <dt><var>app_key</var></dt> <dd>Application key. Optionl. Will be validated if sent.</dd> 
   <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
@@ -373,7 +382,7 @@ Host: su1.3scale.net</pre></code>
 
 <h4>Authrep</h4>
 
-"One-shot" operation to authorize an application and report traffic. The only difference between this call and the regular authorize call is that metric usage will be reported if the authorization is successful.
+"One-shot" operation to authorize an application and report traffic. The only difference between this call and the regular authorize call is that metric usage will be reported if the authorization is successful. For additional examples of authrep calls you can see the examples or authorize calls, all parameters in authorized are also valid in the authrep case.
 
 <code class="http"><pre>GET /transactions/authrep.xml?app_id={app_id}&amp;provider_key={provider_key}[&amp;app_key={app_key}]&amp;usage[hits]=1</pre></code>
 
@@ -381,11 +390,13 @@ Host: su1.3scale.net</pre></code>
 
 <dl>
   <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
+  <dt><var>service_id</var></dt> <dd>Service id. Required only if as a provider you have multiple services allowed and enabled.</dd>
   <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
   <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd> 
   <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
   <dt><var>no_body</var></dt> <dd>Specify this parameter to remove the HTTP body from the response. Optional. Example: no_body=true</dd>
   <dt><var>usage</var></dt> <dd>Metric usage. If the authorization succeeds and the application is still within the limits with this usage, it's aggregated to the application statistics and usage limits.</dd>
+  <dt><var>log</var></dt> <dd>Log requests. Optional, available only to certain 3scale's plans. If allowed and enabled it let's you log requests/responses/response_codes of your API, such logs will be accessible on your admin portal as a providers as well as on the buyer portal for the users of your API.</dd>
 </dl>
 
 <h5>Usage</h5>
@@ -399,6 +410,34 @@ The usage parameters should be passed along in order to report traffic.
 </ol>
 
 NOTE: <var>usage</var> is an associative array of the form <code>{metric : value}</code>. Please refer to the "Encoding complex data structures in URLs" appendix for more info.
+
+<h5>Log</h5>
+
+The log parameters should be passed along in order to keep a log of your API requests. 
+
+<ol>
+  <li>This parameter is optional and it is only allowed to certain 3scale's plans. If as providers you have log requests allowed and enabled you can send the body of the API requests, responses and status code to 3scale so that you can keep a log of the latest activity of your API. Please refer to the "Log Request" appendix for more info. </li>
+
+  <li>In addition, <var>log</var> is an associative array of the form <code>{request : value, response : value, code : value}</code>. Please refer to the "Encoding complex data structures in URLs" appendix for more info. </li>
+
+  <li>The <var>request</var> in <var>log</var> is required whereas the rest are optional and can be left blank. Additionally, the <var>values</var> for <var>log</var> they have to be url-encoded.</li>
+</ol>
+
+<h5>Example Request with usage</h5>
+
+<code class="http"><pre>
+GET /transactions/authrep.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;usage[hits]=1&amp;usage[storage]=500 HTTP/1.1
+
+Host: su1.3scale.net</pre></code>
+
+
+<h5>Example Request with logs</h5>
+
+<code class="http"><pre>
+GET /transactions/authrep.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;usage[hits]=1&amp;usage[storage]=500&amp;log[request]=%2Fmethod1.xml%3Fkey%3DXXX%26id%3DYYYY%26usage%5Bbla%5D%3D1&amp;log[response]=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%3Cerror+code%3D%22key_invalid%22%3Ekey+%22XXX%22+is+invalid%3C%2F&amp; log[code]=200&amp; HTTP/1.1
+
+Host: su1.3scale.net</pre></code>
+
 
 <h5>Successful Response</h5>
 
@@ -418,6 +457,8 @@ This operation is used to report 3scale system about transactions. Any number of
   
   <dt><var>provider_key</var></dt>
   <dd>Provider key. Required.</dd>
+  <dt><var>service_id</var></dt> 
+  <dd>Service id. Required only if as a provider you have multiple services allowed and enabled.</dd>
 </dl>
 
 <h6>The structure of the transactions parameter</h6>
@@ -437,6 +478,11 @@ specified in two ways: First, in UTC (Greenwich time), second, in any other time
 In the first case, the timestamp has to be in this format: <code>YYYY-MM-DD HH:MM:SS</code>
 for example <code>2009-01-01 17:45:02</code>. In the second case, the format has to be <code>YYYY-MM-DD HH:MM:SS +HH:MM</code> or <code>YYYY-MM-DD HH:MM:SS -HH:MM</code>, where the <code>+HH:MM</code>
 (or <code>-HH:MM</code>) part specifies the time offset from UTC in hours and minutes. For example, for timestamp in PST (Pacific Standard Time), it should look like this: <code>2009-01-01 22:15:31 -08:00</code>. Optional. If not specified, the time when the transaction was received is used.</dd>
+
+  <dt><var>log</var></dt>
+  <dd>This parameter is optional and it is only allowed to certain 3scale's plans. If as providers you have log requests allowed and enabled you can send the body of the API requests, responses and status code to 3scale so that you can keep a log of the latest activity of your API. Please refer to the "Log Request" appendix for more info. In addition, <var>log</var> is an associative array of the form <code>{request : value, response : value, code : value}</code>. Please refer to the "Encoding complex data structures in URLs" appendix for more info. The <var>request</var> in <var>log</var> is required whereas the rest are optional and can be left blank. Additionally, the <var>values</var> for <var>log</var> they have to be url-encoded.</dd>
+  
+	
 </dl>
 
 These parameters have to be encoded in <span class="caps">HTTP</span> <span class="caps">POST</span> request using the <code>application/x-www-form-urlencoded</code> media type. Please reefer to the "Encoding complex data structures in URLs" appendix for more info.
@@ -473,6 +519,9 @@ Errors that can occur in the offline processing are:
 
 Note that transactions from a single batch are reported only if <strong>all of them are valid</strong>. If there is an error in processing of at least one of them, <strong>none is reported</strong>.
 
+Note that a batch can only report transactions to the same service, <var>service_id</var> is at the same level that <var>provider_key</var>. Multiple <em>report</em> calls will have to be issued to report transactions to different services.
+
+
 <h5>Example Request</h5>
 
 <code class="http">
@@ -492,7 +541,76 @@ transactions[1][timestamp]=2009-01-01%2018%3A11%3A59&amp;
 provider_key=pkey</pre>
 </code>
 
-<h3>Appendix: Encoding complex data structures in URLs</h3>
+<h5>Example Request with Service id</h5>
+
+A batch can only report transactions to the same service, <var>service_id</var> has to be
+
+<code class="http">
+<pre>POST /transactions.xml HTTP/1.1
+Host: su1.3scale.net
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 428
+
+transactions[0][app_id]=app_id&amp;
+transactions[0][usage][hits]=1&amp;
+transactions[0][usage][transfer]=4500&amp;
+transactions[0][timestamp]=2009-01-01%2014%3A23%3A08&amp;
+transactions[1][app_id]=app_id&amp;
+transactions[1][usage][hits]=1&amp;
+transactions[1][usage][transfer]=2840&amp;
+transactions[1][timestamp]=2009-01-01%2018%3A11%3A59&amp;
+provider_key=pkey&amp;
+service_id=78910
+</pre>
+</code>
+
+<h5>Example Request with log</h5>
+
+The transactions contain the requests/response/code of the API in <var>log</var>. These will be logged and can be retrieved on the admin and buyer portal.
+
+<code class="http">
+<pre>POST /transactions.xml HTTP/1.1
+Host: su1.3scale.net
+Content-Type: application/x-www-form-urlencoded
+
+transactions[0][app_id]=app_id&amp;
+transactions[0][usage][hits]=1&amp;
+transactions[0][usage][transfer]=4500&amp;
+transactions[0][timestamp]=2009-01-01%2014%3A23%3A08&amp;
+transactions[0][log][request]=%2Fmethod1.xml%3Fkey%3DXXX%26id%3DYYYY%26usage%5Bbla%5D%3D1 &amp;
+transactions[0][log][response]=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%3Cerror+code%3D%22key_invalid%22%3Ekey+%22XXX%22+is+invalid%3C%2F&amp;
+transactions[0][log][code]=200&amp;
+09-01-01%2018%3A11%3A59&amp;
+provider_key=pkey&amp;
+service_id=78910
+</pre>
+</code>
+
+<h3>Appendix: Log requests detail</h3>
+
+To enable the API log requests the provider has to send the information on what needs to be reported 
+on their calls to the Service Management API.
+
+Every log entry contains 
+
+<dl>
+  <dt><var>request</var></dt> <dd>Required. The API request to the provider sent by the user</dd>
+  <dt><var>response</var></dt> <dd>Optional. the API response generated by the provider to be sent to the user</dd>
+  <dt><var>code</var></dt> <dd>Optional. Additional string to denote supplementary information, could be the http_status_code or other semantically relevant string like <em>success</em> or <em>failure</em></dd>
+</dl>
+
+All the strings need to be url encoded, for instance, blank spaces need to be replaced by "+" or by "%20", etc. 
+
+
+Additionally there is a cap to the length of the log data:
+
+<code>
+<li>MAX_LEN_REQUEST = 1024 bytes</li>
+<li>MAX_LEN_RESPONSE = 4096 bytes</li>
+<li>MAX_LEN_CODE = 32 bytes</li>
+</code>
+
+<h3>Appendix (II): Encoding complex data structures in URLs</h3>
 
 The usual way to encode a complex data structure (array, associative array, nested structures) is to "flatten" it. 
 
