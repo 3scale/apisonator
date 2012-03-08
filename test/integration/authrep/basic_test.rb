@@ -420,5 +420,222 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
   end
 
+  test 'regression test for bug on reporting hits and the method of hits at the same time' do
+    # http://3scale.airbrake.io/errors/39117266
+    
+    @child_metric_id = next_id
+
+    m1 = Metric.save(:service_id => @service.id, 
+                     :id => @child_metric_id, 
+                     :name => 'child_hits')
+
+    Metric.save(:service_id => @service.id, 
+                :id => @metric_id, 
+                :name => 'hits',
+                :children => [m1])
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => {'hits' => '1', 'child_hits' => '1'}
+
+    Resque.run!
+
+    assert_equal 200, last_response.status
+
+
+  end
+
+  test 'reporting hits and a child method at once' do
+    ## FIXME: this case should not be allowed since it can lead to 
+    ## WTF cases
+ 
+    @child_metric_id = next_id
+
+    m1 = Metric.save(:service_id => @service.id, 
+                     :id => @child_metric_id, 
+                     :name => 'child_hits')
+
+    Metric.save(:service_id => @service.id, 
+                :id => @metric_id, 
+                :name => 'hits',
+                :children => [m1])
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => @plan_id,
+                    :metric_id  => @metric_id,
+                    :eternity   => 20)
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => @plan_id,
+                    :metric_id  => @child_metric_id,
+                    :eternity   => 10)
+    
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => {'hits' => '1', 'child_hits' => '1'}
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '1', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '1', eternity.at('current_value').content
+
+    Resque.run!
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '2', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '1', eternity.at('current_value').content
+
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => {'hits' => '1', 'child_hits' => '1'}
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '3', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '2', eternity.at('current_value').content
+
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '3', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '2', eternity.at('current_value').content
+
+  end
+
+  test 'reporting hits and a child method at once, not unitary values' do
+    ## FIXME: this case should not be allowed since it can lead to 
+    ## WTF cases
+ 
+    @child_metric_id = next_id
+
+    m1 = Metric.save(:service_id => @service.id, 
+                     :id => @child_metric_id, 
+                     :name => 'child_hits')
+
+    Metric.save(:service_id => @service.id, 
+                :id => @metric_id, 
+                :name => 'hits',
+                :children => [m1])
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => @plan_id,
+                    :metric_id  => @metric_id,
+                    :eternity   => 200)
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => @plan_id,
+                    :metric_id  => @child_metric_id,
+                    :eternity   => 100)
+        
+    # adding both hits and child_hits
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => {'hits' => '2', 'child_hits' => '5'}
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '2', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '5', eternity.at('current_value').content
+
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '7', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '5', eternity.at('current_value').content
+
+    # another try on adding both hits and child_hits
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => {'hits' => '3', 'child_hits' => '2'}
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '10', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '7', eternity.at('current_value').content
+
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '12', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '7', eternity.at('current_value').content
+
+    # now only child_hits
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => {'child_hits' => '50'}
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '12', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '57', eternity.at('current_value').content
+
+    Resque.run!
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_equal 200, last_response.status
+    doc   = Nokogiri::XML(last_response.body)
+
+    eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+    assert_equal '62', eternity.at('current_value').content
+
+    eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
+    assert_equal '57', eternity.at('current_value').content
+
+  end
 
 end

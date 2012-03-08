@@ -52,6 +52,10 @@ module ThreeScale
               val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(memo[id])
               if val.nil?
                 memo[ancestor_id] ||= 0
+                # need to do the to_i here because the value can be a string if the ancestor is passed
+                # explictly on the usage. Can't do on parse_usage coz value might not bea Fixnum but at
+                # '#'Fixnum
+                memo[ancestor_id] = memo[ancestor_id].to_i
                 memo[ancestor_id] += memo[id].to_i
               else
                 memo[ancestor_id] = memo[id]
@@ -63,7 +67,7 @@ module ThreeScale
         end
 
         # FIXME: as of right now the maximum depth of metrics/methods is 1, therefore let's skip the extra query
-        #        by using the ancestor_id method instead
+        # by using the ancestor_id method instead
         def ancestors_ids(id)
           results = []
           while id_of_parent = parent_id(id)
