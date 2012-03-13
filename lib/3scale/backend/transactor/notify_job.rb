@@ -33,7 +33,8 @@ module ThreeScale
         end
 
         def self.secondary_service_id
-          configuration.secondary_service_id
+          value = configuration.secondary_service_id
+          value ? value.to_s : nil
         end
       end
     end
