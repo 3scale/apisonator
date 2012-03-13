@@ -9,11 +9,18 @@ module ThreeScale
 
         def self.perform(provider_key, usage, timestamp)
           application_id = Application.load_id_by_key(master_service_id, provider_key)
-          
-          if application_id && Application.exists?(master_service_id, application_id)
-            master_metrics = Metric.load_all(master_service_id)
 
-            ProcessJob.perform([{:service_id     => master_service_id,
+          if application_id
+            service_id = master_service_id
+          elsif secondary_service_id
+            application_id = Application.load_id_by_key(secondary_service_id, provider_key)
+            service_id = secondary_service_id
+          end
+          
+          if application_id && Application.exists?(service_id, application_id)
+            master_metrics = Metric.load_all(service_id)
+
+            ProcessJob.perform([{:service_id     => service_id,
                                  :application_id => application_id,
                                  :timestamp      => timestamp,
                                  :usage          => master_metrics.process_usage(usage)}])
@@ -23,6 +30,10 @@ module ThreeScale
         def self.master_service_id
           value = configuration.master_service_id
           value ? value.to_s : raise("Can't find master service id. Make sure the \"master_service_id\" configuration value is set correctly")
+        end
+
+        def self.secondary_service_id
+          configuration.secondary_service_id
         end
       end
     end
