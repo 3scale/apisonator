@@ -34,7 +34,7 @@ class ListenerTest < Test::Unit::TestCase
   def test_expected_exception_is_caught
     Transactor.stubs(:report).raises(ExpectedError.new('bang!'))
     assert_nothing_raised do
-      post '/transactions.xml?transactions[0]=foo2', :provider_key => 'foo',
+      post '/transactions.xml?transactions[0]=foo2', :provider_key => 'foo'
     end
   end
 end
