@@ -4,6 +4,71 @@ module ThreeScale
       disable :logging
       disable :raise_errors
       disable :show_exceptions
+      
+      ## ------------ DOCS --------------
+      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ sapi.basePath = "http://su1.3scale.net"
+      ##~ sapi.swagrVersion = "0.1a"
+      ##~ sapi.apiVersion = "1.0"
+      ##
+      ## ------------ DOCS COMMON -------
+      ##~ @parameter_provider_key = {"name" => "provider_key", "dataType" => "string", "required" => true, "paramType" => "query"}
+      ##~ @parameter_provider_key["description"] = "Provider key."
+      ##~ @parameter_provider_key["threescale_name"] = "api_key"
+      ##
+      ##~ @parameter_service_id = {"name" => "service_id", "dataType" => "string", "required" => false, "paramType" => "query"}
+      ##~ @parameter_service_id["description"] = "Service id. Required only if you have more than one service."
+      ##~ @parameter_service_id["threescale_name"] = "service_id"
+      ##
+      ##~ @parameter_app_id = {"name" => "app_id", "dataType" => "string", "required" => true, "paramType" => "query"}
+      ##~ @parameter_app_id["description"] = "Application Id (in the case of app_id/app_key authentication mode)"
+      ##~ @parameter_app_id["threescale_name"] = "app_id"
+      ##
+      ##~ @parameter_client_id = {"name" => "app_id", "dataType" => "string", "required" => true, "paramType" => "query"}
+      ##~ @parameter_client_id["description"] = "Client Id (in the case of oauth authentication mode, client_id == app_id)"
+      ##~ @parameter_client_id["threescale_name"] = "app_id"      
+      ##
+      ##~ @parameter_app_key = {"name" => "app_key", "dataType" => "string", "required" => false, "paramType" => "query"}
+      ##~ @parameter_app_key["description"] = "Application Key (in the case of app_id/app_key authentication mode). App key is required if the application has at least on app key."
+      ##~ @parameter_app_key["threescale_name"] = "app_key"
+      
+      ##~ @parameter_user_key = {"name" => "user_key", "dataType" => "string", "required" => true, "paramType" => "query"}
+      ##~ @parameter_user_key["description"] = "User Key (in the case of user_key authentication mode)."
+      ##~ @parameter_user_key["threescale_name"] = "user_key" 
+      ##  FIXME: THIS IS GOING TO BE A PROBLEM
+      
+      ##~ @parameter_user_id = {"name" => "user_id", "dataType" => "string", "required" => false, "paramType" => "query"}
+      ##~ @parameter_user_id["description"] = "User id. String identifying a end user. Required only when the application is rate limiting end users. The End User plans feature is not available in all 3scale plans."
+      
+      ##~ @parameter_referrer = {"name" => "referrer", "dataType" => "string", "required" => false, "paramType" => "query"}
+      ##~ @parameter_referrer["description"] = "Referrer IP Address or Domain. Required only if referrer filtering is enabled. If special value '*' (wildcard) is passed, the referrer check is bypassed."
+      
+      ##  FIXME: CHECK THIS ONE TOO
+      ##~ @parameter_no_body = {"name" => "no_body", "dataType" => "boolean", "required" => false, "paramType" => "query"}
+      ##~ @parameter_no_body["description"] = "If no_body is passed the response will not include HTTP body."
+      
+      ##~ @parameter_usage = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => true}
+      ##~ @parameter_usage["description"] = "Usage"
+      ##
+      ##~ @parameter_usage_fields = {"name" => "metric", "dataType" => "custom", "required" => true, "paramType" => "query"}
+      ##~ @parameter_usage_fields["description"] = "Metric to be reported"
+      ##~ @parameter_usage_fields["threescale_name"] = "metric"
+      ##
+      ##~ @parameter_usage["parameters"] = [] 
+      ##~ @parameter_usage["parameters"] << @parameter_usage_fields
+      
+      ##~ @parameter_transaction = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
+      ##~ @parameter_transaction["description"] = "Transactions to be reported"
+      ##~ @parameter_transaction["parameters"] = [] 
+      
+      ##~ @parameter_transaction["parameters"] << @parameter_app_id
+      ##~ @timestamp = {"name" => "timestamp", "dataType" => "string", "required" => false, "paramType" => "body"}
+      ##~ @timestamp["description"] = "timestamp"
+      ##~ @parameter_transaction["parameters"] << @timestamp
+      ##~ @parameter_transaction["parameters"] << @parameter_usage
+      
+       
+      ## ------------ DOCS --------------
 
       configure :production do
         disable :dump_errors
@@ -19,6 +84,20 @@ module ThreeScale
         content_type 'application/vnd.3scale-v2.0+xml'
       end
 
+      ## ------------ DOCS --------------
+      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ a = sapi.apis.add 
+      ##~ a.set "path" => "/transactions.xml", "format" => "xml"
+      ##~ op = a.operations.add     
+      ##~ op.set :httpMethod => "POST", :tags => ["report","app_id"], :nickname => "report_nickname", :deprecated => false
+      ##~ op.summary = "Report for app_id/app_key authentication mode"
+      ##~ op.description = "Report the transactions to 3scale backend. This operation typically updates the metrics passed in the usage parameters. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
+      
+      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_transaction
+      
+            
       post '/transactions.xml' do
         ## return error code 400 (Bad request) if the parameters are not there
         ## I put 403 (Forbidden) for consitency however it should be 400 
@@ -33,6 +112,38 @@ module ThreeScale
         empty_response 202
       end
 
+
+      ## ------------ DOCS --------------
+      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ a = sapi.apis.add 
+      ##~ a.set "path" => "/transactions/authorize.xml", "format" => "xml"
+      ##~ op = a.operations.add     
+      ##~ op.set :httpMethod => "GET", :tags => ["authorize","app_id"], :nickname => "authorize_app_id", :deprecated => false
+      ##~ op.summary = "Authorize summary for app_id/app_key authentication mode"
+      ##~ op.description = "Authorize operation for the app_id/app_key authentication mode. This operation is read only, the usage of the metrics need to be updated with the /transactions.xml call."
+      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_app_id
+      ##~ op.parameters.add @parameter_app_key
+      ##~ op.parameters.add @parameter_referrer
+      ##~ op.parameters.add @parameter_user_id
+      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_no_body
+      ## 
+      ##~ a = sapi.apis.add 
+      ##~ a.set "path" => "/transactions/authorize.xml", "format" => "xml"
+      ##~ op = a.operations.add
+      ##~ op.set :httpMethod => "GET", :tags => ["authorize","user_key"], :nickname => "authorize_user_key", :deprecated => false
+      ##~ op.summary = "Authorize summary for user_key authentication mode"
+      ##~ op.description = "Authorize operation for the user_key authentication mode. This operation is read only, the usage of the metrics need to be updated with the /transactions.xml call."      
+      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_user_key
+      ##~ op.parameters.add @parameter_referrer
+      ##~ op.parameters.add @parameter_user_id
+      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_no_body
+      ##
 
       get '/transactions/authorize.xml' do
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
@@ -69,6 +180,22 @@ module ThreeScale
         end
       end
 
+      ## ------------ DOCS --------------
+      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ a = sapi.apis.add 
+      ##~ a.set "path" => "/transactions/oauth_authorize.xml", "format" => "xml"
+      ##~ op = a.operations.add     
+      ##~ op.set :httpMethod => "GET", :tags => ["authorize","user_key"], :nickname => "oauth_authorize", :deprecated => false
+      ##~ op.summary = "Authorize summary for oauth authentication mode"
+      ##~ a.description = "Authorize operation for the oauth authentication mode. This operation is read only, the usage of the metrics need to be updated with the /transactions.xml call."      
+      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_client_id
+      ##~ op.parameters.add @parameter_referrer
+      ##~ op.parameters.add @parameter_user_id
+      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_no_body
+
       get '/transactions/oauth_authorize.xml' do
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
@@ -103,6 +230,38 @@ module ThreeScale
           end
         end
       end
+
+      ## ------------ DOCS --------------
+      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ a = sapi.apis.add 
+      ##~ a.set "path" => "/transactions/authrep.xml", "format" => "xml"
+      ##~ op = a.operations.add     
+      ##~ op.set :httpMethod => "GET", :tags => ["authrep","app_id"], :nickname => "authrep_app_id", :deprecated => false
+      ##~ op.summary = "Authrep summary for app_id/app_key authentication mode"
+      ##~ op.description = "Authorize+Report operation for the app_id/app_key authentication mode. This operation updates the metrics with the values passed on the usage parameter, it basically does the authorize (/transactions/authorize.xml) and the report calls (/transactions.xml) in a single shot."
+      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_app_id
+      ##~ op.parameters.add @parameter_app_key
+      ##~ op.parameters.add @parameter_referrer
+      ##~ op.parameters.add @parameter_user_id
+      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_no_body
+      ## 
+      ##~ a = sapi.apis.add 
+      ##~ a.set "path" => "/transactions/authrep.xml", "format" => "xml"
+      ##~ op = a.operations.add     
+      ##~ op.set :httpMethod => "GET", :tags => ["authrep","user_key"], :nickname => "authrep_user_key", :deprecated => false
+      ##~ op.summary = "Authrep summary for user_key authentication mode"
+      ##~ op.description = "Authorize+Report operation for the user_key authentication mode. This operation updates the metrics with the values passed on the usage parameter, it basically does the authorize (/transactions/authorize.xml) and the report calls (/transactions.xml) in a single shot."
+      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_user_key
+      ##~ op.parameters.add @parameter_referrer
+      ##~ op.parameters.add @parameter_user_id
+      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_no_body
+      ##
 
       get '/transactions/authrep.xml' do
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
