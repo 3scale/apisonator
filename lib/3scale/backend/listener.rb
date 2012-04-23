@@ -19,45 +19,105 @@ module ThreeScale
       ##~ @parameter_service_id["description"] = "Service id. Required only if you have more than one service."
       ##
       ##~ @parameter_app_id = {"name" => "app_id", "dataType" => "string", "required" => true, "paramType" => "query", "threescale_name" => "app_ids"}
-      ##~ @parameter_app_id["description"] = "App Id (identifier of the application if the authentication pattern is App Id)"
+      ##~ @parameter_app_id["description"] = "App Id (identifier of the application if the auth. pattern is App Id)"
+      ##~ @parameter_app_id_inline = @parameter_app_id.clone
+      ##~ @parameter_app_id_inline["description_inline"] = true
       ##
       ##~ @parameter_client_id = {"name" => "app_id", "dataType" => "string", "required" => true, "paramType" => "query", "threescale_name" => "app_ids"}
-      ##~ @parameter_client_id["description"] = "Client Id (identifier of the application if the authentication pattern is Oauth, note that client_id == app_id)"
-      ##
+      ##~ @parameter_client_id["description"] = "Client Id (identifier of the application if the auth. pattern is Oauth, note that client_id == app_id)"
+      ##~ @parameter_client_id_inline = @parameter_client_id.clone
+      ##~ @parameter_client_id_inline["description_inline"] = true
+      
       ##~ @parameter_app_key = {"name" => "app_key", "dataType" => "string", "required" => false, "paramType" => "query", "threescale_name" => "app_keys"}
       ##~ @parameter_app_key["description"] = "App Key (shared secret of the application if the authentication pattern is App Id). The app key is required if the application has one or more keys defined."
       ##
       ##~ @parameter_user_key = {"name" => "user_key", "dataType" => "string", "required" => true, "paramType" => "query", "theescale_name" => "user_keys"}
-      ##~ @parameter_user_key["description"] = "User Key (identifier and shared secret of the application if the authentication patter is Api Key)"
-      ##    
+      ##~ @parameter_user_key["description"] = "User Key (identifier and shared secret of the application if the auth. pattern is Api Key)"
+      ##~ @parameter_user_key_inline = @parameter_user_key.clone
+      ##~ @parameter_user_key_inline["description_inline"]  = true
+          
       ##~ @parameter_user_id = {"name" => "user_id", "dataType" => "string", "paramType" => "query"}
       ##~ @parameter_user_id["description"] = "User id. String identifying an end user. Required only when the application is rate limiting end users. The End User plans feature is not available in all 3scale plans."
+      ##~ @parameter_user_id_inline = @parameter_user_id.clone
+      ##~ @parameter_user_id_inline["description_inline"] = true
       ##
+      
       ##~ @parameter_referrer = {"name" => "referrer", "dataType" => "string", "required" => false, "paramType" => "query"}
       ##~ @parameter_referrer["description"] = "Referrer IP Address or Domain. Required only if referrer filtering is enabled. If special value '*' (wildcard) is passed, the referrer check is bypassed."
+      ##
+      ##~ @parameter_redirect_url = {"name" => "redirect_url", "dataType" => "string", "required" => false, "paramType" => "query"}
+      ##~ @parameter_redirect_url["description"] = "Optional redirect URL for OAuth. Will be validated if sent."
+      ##
       
       ##  FIXME: CHECK THIS ONE TOO
       ##~ @parameter_no_body = {"name" => "no_body", "dataType" => "boolean", "required" => false, "paramType" => "query"}
       ##~ @parameter_no_body["description"] = "If no_body is passed the response will not include HTTP body."
       
       ##~ @parameter_usage = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
-      ##~ @parameter_usage["description"] = "Usage"
+      ##~ @parameter_usage["description"] = "Usage, will increment/set the metrics with the values passed."
       ##
       ##~ @parameter_usage_fields = {"name" => "metric", "dataType" => "custom", "required" => false, "paramType" => "query", "allowMultiple" => true, "threescale_name" => "metric_names"}
       ##~ @parameter_usage_fields["description"] = "Metric to be reported"
       ##
       ##~ @parameter_usage["parameters"] = [] 
       ##~ @parameter_usage["parameters"] << @parameter_usage_fields
-      
-      ##~ @parameter_transaction = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
-      ##~ @parameter_transaction["description"] = "Transactions to be reported"
-      ##~ @parameter_transaction["parameters"] = [] 
-      
-      ##~ @parameter_transaction["parameters"] << @parameter_app_id
+      ##
+      ##~ @parameter_usage_predicted = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
+      ##~ @parameter_usage_predicted["description"] = "Predicted Usage. Actual usage will need to be reported with a report or an authrep."
+      ##
+      ##~ @parameter_usage_predicted["parameters"] = [] 
+      ##~ @parameter_usage_predicted["parameters"] << @parameter_usage_fields
+      ##
       ##~ @timestamp = {"name" => "timestamp", "dataType" => "string", "required" => false, "paramType" => "body"}
-      ##~ @timestamp["description"] = "timestamp"
-      ##~ @parameter_transaction["parameters"] << @timestamp
-      ##~ @parameter_transaction["parameters"] << @parameter_usage
+      ##~ @timestamp["description"] = "If passed, it should be the time when the transaction took place. Format: YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00"
+      ##~ @timestamp["description_inline"] = true
+      ##
+      ##~ @parameter_log = {"name" => "log", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
+      ##~ @parameter_log["description"] = "Request Log allows to log the requests/responses/status_codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans."
+      ##
+      ##~ @parameter_log_field_request = {"name" => "request", "dataType" => "string", "paramType" => "query", "description_inline" => true}
+      ##~ @parameter_log_field_request["description"] = "Body of the request to your API (needs to be URL encoded). Mandatory if log is not empty. Truncated after 1KB."
+      ##~ @parameter_log_field_response = {"name" => "response", "dataType" => "string", "paramType" => "query", "description_inline" => true}
+      ##~ @parameter_log_field_response["description"] = "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
+      ##~ @parameter_log_field_code = {"name" => "code", "dataType" => "string", "paramType" => "query", "description_inline" => true}
+      ##~ @parameter_log_field_code["description"] = "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
+      
+       
+      ##~ @parameter_log["parameters"] = [] 
+      ##~ @parameter_log["parameters"] << @parameter_log_field_request
+      ##~ @parameter_log["parameters"] << @parameter_log_field_response
+      ##~ @parameter_log["parameters"] << @parameter_log_field_code
+      ##
+      ##~ @parameter_transaction_app_id = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
+      ##~ @parameter_transaction_app_id["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
+      ##~ @parameter_transaction_app_id["parameters"] = [] 
+      ##
+      ##~ @parameter_transaction_app_id["parameters"] << @parameter_app_id_inline
+      ##~ @parameter_transaction_app_id["parameters"] << @parameter_user_id_inline
+      ##~ @parameter_transaction_app_id["parameters"] << @timestamp
+      ##~ @parameter_transaction_app_id["parameters"] << @parameter_usage
+      ##~ @parameter_transaction_app_id["parameters"] << @parameter_log
+      
+      ##~ @parameter_transaction_api_key = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
+      ##~ @parameter_transaction_api_key["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
+      ##~ @parameter_transaction_api_key["parameters"] = [] 
+      
+      ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_key_inline
+      ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_id_inline
+      ##~ @parameter_transaction_api_key["parameters"] << @timestamp
+      ##~ @parameter_transaction_api_key["parameters"] << @parameter_usage
+      ##~ @parameter_transaction_api_key["parameters"] << @parameter_log
+      
+      ##~ @parameter_transaction_oauth = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
+      ##~ @parameter_transaction_oauth["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
+      ##~ @parameter_transaction_oauth["parameters"] = [] 
+      
+      ##~ @parameter_transaction_oauth["parameters"] << @parameter_client_id_inline
+      ##~ @parameter_transaction_oauth["parameters"] << @parameter_user_id_inline
+      ##~ @parameter_transaction_oauth["parameters"] << @timestamp
+      ##~ @parameter_transaction_oauth["parameters"] << @parameter_usage
+      ##~ @parameter_transaction_oauth["parameters"] << @parameter_log
+      
       
        
       ## ------------ DOCS --------------
@@ -81,29 +141,41 @@ module ThreeScale
       ##~ a = sapi.apis.add 
       ##~ a.set "path" => "/transactions/authorize.xml", "format" => "xml"
       ##~ op = a.operations.add     
-      ##~ op.set :httpMethod => "GET", :tags => ["authorize","app_id"], :nickname => "authorize_app_id", :deprecated => false
+      ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "Authorize (App Id authentication pattern)"
-      ##~ op.description = "Read-only operation to authorize an application in the App Id authentication pattern. It is used to check if a particular application exists, is active and is within its usage limits. It can be optionally used to authenticate a call using an application key."
-      ##~ op.description = op.description + " It's possible to pass a 'predicted usage' to the authorize call. This can serve two purposes: 1) To make sure an API call won't go over the limits before the call is made, if the usage of the call is known in advance. In this case, the estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit. And, 2)"
-      ##~ op.description = op.description + " To limit the authorization only to a subset of metrics. If usage is passed in, only the metrics listed in it will be checked against the limits. For example: There are two metrics defined: searches and updates. updates are already over limit, but searches are not. In this case, the user should still be allowed to do a search call, but not an update one."
-      ##~ op.description = op.description + " "
+      ##
+      ##~ @authorize_desc = "It is used to check if a particular application exists,"
+      ##~ @authorize_desc = @authorize_desc + " is active and is within its usage limits. It can be optionally used to authenticate a call using an application key."
+      ##~ @authorize_desc = @authorize_desc + " It's possible to pass a 'predicted usage' to the authorize call. This can serve two purposes: 1) To make sure an API"
+      ##~ @authorize_desc = @authorize_desc + " call won't go over the limits before the call is made, if the usage of the call is known in advance. In this case, the"
+      ##~ @authorize_desc = @authorize_desc + " estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit." 
+      ##~ @authorize_desc = @authorize_desc + " And, 2) To limit the authorization only to a subset of metrics. If usage is passed in, only the metrics listed in it will"
+      ##~ @authorize_desc = @authorize_desc + " be checked against the limits. For example: There are two metrics defined: searches and updates. updates are already over" 
+      ##~ @authorize_desc = @authorize_desc + " limit, but searches are not. In this case, the user should still be allowed to do a search call, but not an update one."
+      ##~ @authorize_desc = @authorize_desc + " Note: Even if the predicted usage is passed in, authorize is still a read-only operation. You have to make the report call"
+      ##~ @authorize_desc = @authorize_desc + " to report the usage."
+      ##
+      ##~ @authorize_desc_response = "The response can have an http response code: 200 OK (if authorization is granted), 409 (if it's not granted, typically application over limits or keys missing, check '<reason>'), "
+      ##~ @authorize_desc_response = @authorize_desc_response + " or 403 (for authentication errors, check '<error>') and 404 (for not founds)."
+      
+      ##~ op.description = "Read-only operation to authorize an application in the App Id authentication pattern." + " "+ @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
-      ## op.description = "Authorize operation for the app_id/app_key authentication mode. This operation is read only, the usage of the metrics need to be updated with the /transactions.xml call."
       ##~ op.parameters.add @parameter_provider_key
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_app_id
       ##~ op.parameters.add @parameter_app_key
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
-      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_usage_predicted
       ## 
       ##~ a = sapi.apis.add 
       ##~ a.set "path" => "/transactions/authorize.xml", "format" => "xml"
       ##~ op = a.operations.add
       ##~ op.set :httpMethod => "GET", :tags => ["authorize","user_key"], :nickname => "authorize_user_key", :deprecated => false
       ##~ op.summary = "Authorize (API Key authentication pattern)"
-      ##~ op.description = "Authorize operation for the user_key authentication mode. This operation is read only, the usage of the metrics need to be updated with the /transactions.xml call."      
+      ##
+      ##~ op.description = "Read-only operation to authorize an application in the App Key authentication pattern." + " "+ @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
       ##~ op.parameters.add @parameter_provider_key
@@ -111,7 +183,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_user_key
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
-      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_usage_predicted
       ##
       get '/transactions/authorize.xml' do
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
@@ -155,7 +227,10 @@ module ThreeScale
       ##~ op = a.operations.add     
       ##~ op.set :httpMethod => "GET", :tags => ["authorize","user_key"], :nickname => "oauth_authorize", :deprecated => false
       ##~ op.summary = "Authorize (Oauth authentication mode pattern)"
-      ##~ op.description = "Authorize operation for the oauth authentication mode. This operation is read only, the usage of the metrics need to be updated with the /transactions.xml call."      
+      ##
+      ##~ op.description = "Read-only operation to authorize an application in the Oauth authentication pattern."
+      ##~ op.description = op.description + " This calls returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
+      ##~ op.description = op.description + " " + @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
       ##~ op.parameters.add @parameter_provider_key
@@ -163,7 +238,8 @@ module ThreeScale
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
-      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_usage_predicted
+      ##~ op.parameters.add @parameter_redirect_url
       ##
       get '/transactions/oauth_authorize.xml' do
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
@@ -206,8 +282,12 @@ module ThreeScale
       ##~ a.set "path" => "/transactions/authrep.xml", "format" => "xml"
       ##~ op = a.operations.add     
       ##~ op.set :httpMethod => "GET"
-      ##~ op.summary = "Authorize+Report (App Id authentication pattern)"
-      ##~ op.description = "Authorize+Report operation for the app_id/app_key authentication mode. This operation updates the metrics with the values passed on the usage parameter, it basically does the authorize (/transactions/authorize.xml) and the report calls (/transactions.xml) in a single shot."
+      ##~ op.summary = "AuthRep (Authorize + Report for the App Id authentication pattern)"
+      ##
+      ##~ @authrep_desc = "Authrep is a 'one-shot' operation to authorize an application and report the associated transaction at the same time. The main difference between this call and the regular authorize call is that"
+      ##~ @authrep_desc = @authrep_desc + " usage will be reported if the authorization is successful. Authrep is not a read-only operation and will increment/set the values if the authorization step is a success."
+      ##
+      ##~ op.description = @authrep_desc
       ##~ op.group = "authrep"
       ##
       ##~ op.parameters.add @parameter_provider_key
@@ -217,14 +297,15 @@ module ThreeScale
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_log      
       ## 
       ## 
       ##~ a = sapi.apis.add 
       ##~ a.set "path" => "/transactions/authrep.xml", "format" => "xml"
       ##~ op = a.operations.add     
       ##~ op.set :httpMethod => "GET"
-      ##~ op.summary = "Authorize+Report (API Key authentication pattern)"
-      ##~ op.description = "Authorize+Report operation for the user_key authentication mode. This operation updates the metrics with the values passed on the usage parameter, it basically does the authorize (/transactions/authorize.xml) and the report calls (/transactions.xml) in a single shot."
+      ##~ op.summary = "AuthRep (Authorize + Report for the API Key authentication pattern)"
+      ##~ op.description = @authrep_desc
       ##~ op.group = "authrep"
       ##
       ##~ op.parameters.add @parameter_provider_key
@@ -233,6 +314,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_log 
       ##
       get '/transactions/authrep.xml' do
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
@@ -276,36 +358,44 @@ module ThreeScale
       ##~ op = a.operations.add     
       ##~ op.set :httpMethod => "POST"
       ##~ op.summary = "Report (App Id authentication pattern)"
-      ##~ op.description = "Report the transactions to 3scale backend. This operation typically updates the metrics passed in the usage parameters. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
+      
+      ##~ @report_desc = "Report the transactions to 3scale backend. This operation updates the metrics passed in the usage parameter. You can send up to 1K"
+      ##~ @report_desc = @report_desc + " transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
+      ##~ @report_desc = @report_desc + " Note that transactions from a single batch are reported only if all of them are valid. If there is an error in"
+      ##~ @report_desc = @report_desc + " processing of at least one of them, none is reported. Note that a batch can only report transactions to the same"
+      ##~ @report_desc = @report_desc + " service, service_id is at the same level that provider_key. Multiple report calls will have to be issued to report"
+      ##~ @report_desc = @report_desc + " transactions to different services."
+      ##
+      ##~ op.description = @report_desc
       ##~ op.group = "report"
       #
       ##~ op.parameters.add @parameter_provider_key
       ##~ op.parameters.add @parameter_service_id
-      ##~ op.parameters.add @parameter_transaction
+      ##~ op.parameters.add @parameter_transaction_app_id
       ##
       ##~ a = sapi.apis.add 
       ##~ a.set "path" => "/transactions.xml", "format" => "xml"
       ##~ op = a.operations.add     
       ##~ op.set :httpMethod => "POST"
       ##~ op.summary = "Report (API Key authentication pattern)"
-      ##~ op.description = "Report the transactions to 3scale backend. This operation typically updates the metrics passed in the usage parameters. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
+      ##~ op.description = @report_desc
       ##~ op.group = "report"
       #
       ##~ op.parameters.add @parameter_provider_key
       ##~ op.parameters.add @parameter_service_id
-      ##~ op.parameters.add @parameter_transaction
+      ##~ op.parameters.add @parameter_transaction_api_key
       ##
       ##~ a = sapi.apis.add 
       ##~ a.set "path" => "/transactions.xml", "format" => "xml"
       ##~ op = a.operations.add     
       ##~ op.set :httpMethod => "POST"
       ##~ op.summary = "Report (Oauth authentication pattern)"
-      ##~ op.description = "Report the transactions to 3scale backend. This operation typically updates the metrics passed in the usage parameters. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
+      ##~ op.description = @report_desc
       ##~ op.group = "report"
       #
       ##~ op.parameters.add @parameter_provider_key
       ##~ op.parameters.add @parameter_service_id
-      ##~ op.parameters.add @parameter_transaction
+      ##~ op.parameters.add @parameter_transaction_oauth
       ##
       ##
       post '/transactions.xml' do
