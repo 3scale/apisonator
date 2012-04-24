@@ -54,7 +54,8 @@ module ThreeScale
       ##~ @parameter_no_body["description"] = "If no_body is passed the response will not include HTTP body."
       
       ##~ @parameter_usage = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
-      ##~ @parameter_usage["description"] = "Usage, will increment/set the metrics with the values passed."
+      ##~ @parameter_usage["description"] = "Usage, will increment/set the metrics with the values passed. The value can be either a positive integer (e.g. 1, 50) or a positive integer prefixed with the character '#' (e.g. #1, #50). In the first case, the value will be incremented, on the second, it will be set to the numerical value. Thus, usage[hits]=1 will increment the hits counter by +1, whereas usage[hits]=#1 will set the hits counters to 1. Warning, setting a value can raise concurrency issues since it's not order preserving.."
+       
       ##
       ##~ @parameter_usage_fields = {"name" => "metric", "dataType" => "custom", "required" => false, "paramType" => "query", "allowMultiple" => true, "threescale_name" => "metric_names"}
       ##~ @parameter_usage_fields["description"] = "Metric to be reported"
@@ -144,21 +145,21 @@ module ThreeScale
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "Authorize (App Id authentication pattern)"
       ##
-      ##~ @authorize_desc = "It is used to check if a particular application exists,"
+      ##~ @authorize_desc = "<p>It is used to check if a particular application exists,"
       ##~ @authorize_desc = @authorize_desc + " is active and is within its usage limits. It can be optionally used to authenticate a call using an application key."
-      ##~ @authorize_desc = @authorize_desc + " It's possible to pass a 'predicted usage' to the authorize call. This can serve two purposes: 1) To make sure an API"
+      ##~ @authorize_desc = @authorize_desc + " It's possible to pass a 'predicted usage' to the authorize call. This can serve two purposes:<p>1) To make sure an API"
       ##~ @authorize_desc = @authorize_desc + " call won't go over the limits before the call is made, if the usage of the call is known in advance. In this case, the"
       ##~ @authorize_desc = @authorize_desc + " estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit." 
-      ##~ @authorize_desc = @authorize_desc + " And, 2) To limit the authorization only to a subset of metrics. If usage is passed in, only the metrics listed in it will"
-      ##~ @authorize_desc = @authorize_desc + " be checked against the limits. For example: There are two metrics defined: searches and updates. updates are already over" 
-      ##~ @authorize_desc = @authorize_desc + " limit, but searches are not. In this case, the user should still be allowed to do a search call, but not an update one."
-      ##~ @authorize_desc = @authorize_desc + " Note: Even if the predicted usage is passed in, authorize is still a read-only operation. You have to make the report call"
+      ##~ @authorize_desc = @authorize_desc + " And, <p>2) To limit the authorization only to a subset of metrics. If usage is passed in, only the metrics listed in it will"
+      ##~ @authorize_desc = @authorize_desc + " be checked against the limits. For example: There are two metrics defined: <em>searches</em> and <em>updates</em>. <em>updates</em> are already over" 
+      ##~ @authorize_desc = @authorize_desc + " limit, but <em>searches</em> are not. In this case, the user should still be allowed to do a search call, but not an update one."
+      ##~ @authorize_desc = @authorize_desc + "<p><b>Note:</b> Even if the predicted usage is passed in, authorize is still a <b>read-only</b> operation. You have to make the report call"
       ##~ @authorize_desc = @authorize_desc + " to report the usage."
       ##
-      ##~ @authorize_desc_response = "The response can have an http response code: 200 OK (if authorization is granted), 409 (if it's not granted, typically application over limits or keys missing, check '<reason>'), "
-      ##~ @authorize_desc_response = @authorize_desc_response + " or 403 (for authentication errors, check '<error>') and 404 (for not founds)."
+      ##~ @authorize_desc_response = "<p>The response can have an http response code: <code class='http'>200</code> OK (if authorization is granted), <code class='http'>409</code> (if it's not granted, typically application over limits or keys missing, check <code class='http'>'reason'</<code> tag'), "
+      ##~ @authorize_desc_response = @authorize_desc_response + " or <code class='http'>403</code> (for authentication errors, check <code class='http'>'error'</code> tag) and <code class='http'>404</code> (not found)."
       
-      ##~ op.description = "Read-only operation to authorize an application in the App Id authentication pattern." + " "+ @authorize_desc + " " + @authorize_desc_response
+      ##~ op.description = "<p>Read-only operation to authorize an application in the App Id authentication pattern." + " "+ @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
       ##~ op.parameters.add @parameter_provider_key
@@ -228,8 +229,8 @@ module ThreeScale
       ##~ op.set :httpMethod => "GET", :tags => ["authorize","user_key"], :nickname => "oauth_authorize", :deprecated => false
       ##~ op.summary = "Authorize (Oauth authentication mode pattern)"
       ##
-      ##~ op.description = "Read-only operation to authorize an application in the Oauth authentication pattern."
-      ##~ op.description = op.description + " This calls returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
+      ##~ op.description = "<p>Read-only operation to authorize an application in the Oauth authentication pattern."
+      ##~ op.description = op.description + "<p>This calls returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
       ##~ op.description = op.description + " " + @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
@@ -284,8 +285,12 @@ module ThreeScale
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "AuthRep (Authorize + Report for the App Id authentication pattern)"
       ##
-      ##~ @authrep_desc = "Authrep is a 'one-shot' operation to authorize an application and report the associated transaction at the same time. The main difference between this call and the regular authorize call is that"
-      ##~ @authrep_desc = @authrep_desc + " usage will be reported if the authorization is successful. Authrep is not a read-only operation and will increment/set the values if the authorization step is a success."
+      ##~ @authrep_desc = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time."
+      ##~ @authrep_desc = @authrep_desc + "<p>The main difference between this call and the regular authorize call is that"
+      ##~ @authrep_desc = @authrep_desc + " usage will be reported if the authorization is successful. Authrep is the most convenient way to integrate your API with the"
+      ##~ @authrep_desc = @authrep_desc + " 3scale's Service Manangement API since it does a 1:1 mapping between a request to your API and a request to 3scale's API."
+      ##~ @authrep_desc = @authrep_desc + "<p>If you do not want to do a request to 3scale for each request to your API or batch the reports you should use the Authorize and Report methods instead."
+      ##~ @authrep_desc = @authrep_desc + "<p>Authrep is <b>not a read-only</b> operation and will increment/set the values if the authorization step is a success."
       ##
       ##~ op.description = @authrep_desc
       ##~ op.group = "authrep"
@@ -359,11 +364,11 @@ module ThreeScale
       ##~ op.set :httpMethod => "POST"
       ##~ op.summary = "Report (App Id authentication pattern)"
       
-      ##~ @report_desc = "Report the transactions to 3scale backend. This operation updates the metrics passed in the usage parameter. You can send up to 1K"
+      ##~ @report_desc = "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K"
       ##~ @report_desc = @report_desc + " transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
-      ##~ @report_desc = @report_desc + " Note that transactions from a single batch are reported only if all of them are valid. If there is an error in"
-      ##~ @report_desc = @report_desc + " processing of at least one of them, none is reported. Note that a batch can only report transactions to the same"
-      ##~ @report_desc = @report_desc + " service, service_id is at the same level that provider_key. Multiple report calls will have to be issued to report"
+      ##~ @report_desc = @report_desc + "<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in"
+      ##~ @report_desc = @report_desc + " processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same"
+      ##~ @report_desc = @report_desc + " service, <em>service_id</em> is at the same level that <em>provider_key</em>. Multiple report calls will have to be issued to report"
       ##~ @report_desc = @report_desc + " transactions to different services."
       ##
       ##~ op.description = @report_desc
