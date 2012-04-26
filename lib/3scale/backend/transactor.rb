@@ -458,7 +458,7 @@ module ThreeScale
       end
 
       def notify(provider_key, usage)
-        #Resque.enqueue(NotifyJob, provider_key, usage, encode_time(Time.now.getutc))
+        Resque.enqueue(NotifyJob, provider_key, usage, encode_time(Time.now.getutc))
       end
 
       def encode_time(time)
