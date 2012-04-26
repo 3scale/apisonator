@@ -113,27 +113,4 @@ class OauthBackendHitsTest < Test::Unit::TestCase
                                                    :month, '20100501')).to_i
     end
   end
-
-  test 'archives backend hit' do
-    path = configuration.archiver.path
-    FileUtils.rm_rf(path)
-
-    Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
-      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                               :app_id       => @application.id
-
-      Resque.run!
-
-      content = File.read("#{path}/service-#{@master_service_id}/20100511.xml.part")
-      content = "<transactions>#{content}</transactions>"
-
-      doc = Nokogiri::XML(content)
-      node = doc.at('transaction')
-
-      assert_not_nil node
-      assert_equal '2010-05-11 11:54:00', node.at('timestamp').content
-      assert_equal '1', node.at("values value[metric_id = \"#{@master_hits_id}\"]").content
-      assert_equal '1', node.at("values value[metric_id = \"#{@master_authorizes_id}\"]").content
-    end
-  end
 end

@@ -23,7 +23,7 @@ module ThreeScale
             ProcessJob.perform([{:service_id     => service_id,
                                  :application_id => application_id,
                                  :timestamp      => timestamp,
-                                 :usage          => master_metrics.process_usage(usage)}])
+                                 :usage          => master_metrics.process_usage(usage)}], :master => true)
           end
         end
 

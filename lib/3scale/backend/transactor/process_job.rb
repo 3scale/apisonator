@@ -5,11 +5,11 @@ module ThreeScale
       class ProcessJob
         @queue = :main
 
-        def self.perform(transactions)
+        def self.perform(transactions, options={})
           transactions = preprocess(transactions)
-          TransactionStorage.store_all(transactions)
+          TransactionStorage.store_all(transactions) unless options[:master]
           Aggregator.aggregate_all(transactions)
-          Archiver.add_all(transactions)
+          Archiver.add_all(transactions) unless options[:master]
         end
 
         def self.preprocess(transactions)

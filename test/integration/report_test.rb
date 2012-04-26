@@ -385,32 +385,6 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
-  test 'successful report archives backend hit' do
-    path = configuration.archiver.path
-    FileUtils.rm_rf(path)
-
-    Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
-      post '/transactions.xml',
-        :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                          1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
-      Resque.run!
-
-      content = File.read("#{path}/service-#{@master_service_id}/20100511.xml.part")
-      content = "<transactions>#{content}</transactions>"
-
-      doc = Nokogiri::XML(content)
-      node = doc.at('transaction')
-
-      assert_not_nil node
-      assert_equal '2010-05-11 11:54:00', node.at('timestamp').content
-      assert_equal '1', node.at("values value[metric_id = \"#{@master_hits_id}\"]").content
-      assert_equal '1', node.at("values value[metric_id = \"#{@master_reports_id}\"]").content
-      assert_equal '2', node.at("values value[metric_id = \"#{@master_transactions_id}\"]").content
-    end
-  end
-
   test 'report with invalid provider key does not report backend hit' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
