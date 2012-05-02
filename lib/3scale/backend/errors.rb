@@ -108,7 +108,7 @@ module ThreeScale
 
     class UsageValueInvalid < Error
       def initialize(metric_name, value)
-        if value.blank?
+        if !value.is_a?(String) || value.blank?
           super %(usage value for metric "#{metric_name}" can not be empty)
         else
           super %(usage value "#{value}" for metric "#{metric_name}" is invalid)
