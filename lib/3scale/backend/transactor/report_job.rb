@@ -54,6 +54,7 @@ module ThreeScale
         end
 
         def self.group_by_application_id(service_id, transactions, &block)
+          return [] if transactions.empty?
           transactions = transactions.values if transactions.respond_to?(:values)
           transactions.group_by do |transaction|
             Application.extract_id!(service_id, transaction['app_id'], transaction['user_key'])
