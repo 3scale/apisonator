@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    3scale_backend (1.2.6)
+    3scale_backend (1.2.7)
       3scale_core (~> 0.4.4)
       aws-s3 (~> 0.6)
       builder (~> 2.1)
