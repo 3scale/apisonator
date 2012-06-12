@@ -343,6 +343,79 @@ class LogRequestTest < Test::Unit::TestCase
     assert_equal doc1.to_xml, previous_doc.to_xml
 
   end
+  
+  
+  ## regression test for bug https://3scale.airbrake.io/errors/51189322 
+  ## 
+  test 'check that logs can be properly encoded before storing' do
+    
+    log1 = {'request' => 'shop/caf\xe9'}
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application_id1,
+                                     :usage        => {'foos' => 5},
+                                     :log          => log1
+    assert_equal 200, last_response.status                                 
+    Resque.run!
+
+    get "/services/#{@service_id}/applications/#{@application_id1}/log_requests.xml", :provider_key => @provider_key
+    assert_equal 200, last_response.status
+    doc1   = Nokogiri::XML(last_response.body)
+    assert_equal 1, doc1.search('log_request').size
+    assert_equal log1['request'], doc1.search('request')[0].content
+    
+    ## now with the double quotes should not store the log entry but a warning message
+    
+    log1 = {'request' => "shop/caf\xe9"}
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application_id1,
+                                     :usage        => {'foos' => 6},
+                                     :log          => log1
+    assert_equal 200, last_response.status                                     
+    Resque.run!
+
+    get "/services/#{@service_id}/applications/#{@application_id1}/log_requests.xml", :provider_key => @provider_key
+    assert_equal 200, last_response.status
+    doc1   = Nokogiri::XML(last_response.body)
+    assert_equal 2, doc1.search('log_request').size
+    assert_equal "Error: the log entry could not be stored. Please use UTF8 encoding.", doc1.search('request')[0].content
+    
+    ## building the path as a string
+    
+    path = '/transactions/authrep.xml?provider_key=' + @provider_key + '&'
+    path = path + "app_id=" + @application_id1 + '&'
+    path = path + "log[request]=" + URI.encode('shop/caf\xe9')
+    
+    get path
+    assert_equal 200, last_response.status                                     
+    Resque.run!
+
+    assert_equal 'shop/caf\xe9', URI.decode(URI.encode('shop/caf\xe9'))
+    get "/services/#{@service_id}/applications/#{@application_id1}/log_requests.xml", :provider_key => @provider_key    
+    assert_equal 200, last_response.status
+    doc1   = Nokogiri::XML(last_response.body)
+    assert_equal 3, doc1.search('log_request').size
+    
+    ## building the path as a string playing with quotes
+    
+    path = '/transactions/authrep.xml?provider_key=' + @provider_key + '&'
+    path = path + "app_id=" + @application_id1 + '&'
+    path = path + "log[request]=" + URI.encode('"shop/caf\xe9"')
+    
+    get path
+    assert_equal 200, last_response.status
+    Resque.run!
+
+    assert_equal '"shop/caf\xe9"', URI.decode(URI.encode('"shop/caf\xe9"'))
+    get "/services/#{@service_id}/applications/#{@application_id1}/log_requests.xml", :provider_key => @provider_key
+    assert_equal 200, last_response.status
+    doc1   = Nokogiri::XML(last_response.body)
+    assert_equal 4, doc1.search('log_request').size
+    
+    
+  end
+     
 
 
 
