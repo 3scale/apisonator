@@ -25,9 +25,9 @@ module ThreeScale
         ## a WTF take-away for future generations
         when :eternity then self.class.utc(9999, 12, 31)
         when :year     then self.class.utc(year + 1, 1, 1)
-        when :month    then end_of_month
-        when :week     then end_of_week
-        when :day      then beginning_of_day + ONE_DAY
+        when :month    then end_of_month_hack
+        when :week     then end_of_week_hack
+        when :day      then beginning_of_day_hack + ONE_DAY
         when :hour     then beginning_of_cycle(:hour) + ONE_HOUR
         when :minute   then beginning_of_cycle(:minute) + ONE_MINUTE
         else
@@ -35,7 +35,7 @@ module ThreeScale
         end
       end
 
-      def end_of_month
+      def end_of_month_hack
         if month == 12
           end_of_cycle(:year)
         else
@@ -43,18 +43,18 @@ module ThreeScale
         end
       end
 
-      def beginning_of_week
+      def beginning_of_week_hack
         # This is stolen from active support and slightly modified
         days_to_monday = wday != 0 ? wday - 1 : 6
         (self - days_to_monday * ONE_DAY).beginning_of_day
       end
 
-      def end_of_week
+      def end_of_week_hack
         days_to_next_monday = wday != 0 ? 8 - wday : 1
         (self + days_to_next_monday * ONE_DAY).beginning_of_day
       end
 
-      def beginning_of_day
+      def beginning_of_day_hack
         self.class.utc(year, month, day)
       end
 

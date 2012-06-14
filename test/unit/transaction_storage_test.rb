@@ -37,7 +37,7 @@ class TransactionStorageTest < Test::Unit::TestCase
 
     expected = {'application_id' => application_id_one,
                 'usage'          => {metric_id_one => 1},
-                'timestamp'      => '2010-09-10 17:04:00 UTC'}
+                'timestamp'      => Time.utc(2010, 9, 10, 17, 4)}
 
     assert_equal expected, Yajl::Parser.parse(transactions[0])
     
@@ -47,7 +47,7 @@ class TransactionStorageTest < Test::Unit::TestCase
 
     expected = {'application_id' => application_id_two,
                 'usage'          => {metric_id_two => 2},
-                'timestamp'      => '2010-09-10 17:10:00 UTC'}
+                'timestamp'      => Time.utc(2010, 9, 10, 17, 10)}
 
     assert_equal expected, Yajl::Parser.parse(transactions[0])
   end
