@@ -10,7 +10,12 @@ module ThreeScale
         configuration = ThreeScale::Backend.configuration
 
         server = ::Thin::Server.new(options[:host], options[:port]) do
-          use Rack::Hoptoad, configuration.hoptoad.api_key if configuration.hoptoad.api_key
+          if configuration.hoptoad.api_key
+            Airbrake.configure do |config|
+              config.api_key = configuration.hoptoad.api_key
+            end
+            use Airbrake::Rack
+          end
           use ThreeScale::Backend::Logger if log
 
           run ThreeScale::Backend::Listener.new
