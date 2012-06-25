@@ -4,7 +4,7 @@ module ThreeScale
       disable :logging
       disable :raise_errors
       disable :show_exceptions
-      
+
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
       ##~ sapi.basePath = "http://su1.3scale.net"
@@ -27,7 +27,7 @@ module ThreeScale
       ##~ @parameter_client_id["description"] = "Client Id (identifier of the application if the auth. pattern is Oauth, note that client_id == app_id)"
       ##~ @parameter_client_id_inline = @parameter_client_id.clone
       ##~ @parameter_client_id_inline["description_inline"] = true
-      
+
       ##~ @parameter_app_key = {"name" => "app_key", "dataType" => "string", "required" => false, "paramType" => "query", "threescale_name" => "app_keys"}
       ##~ @parameter_app_key["description"] = "App Key (shared secret of the application if the authentication pattern is App Id). The app key is required if the application has one or more keys defined."
       ##
@@ -35,38 +35,38 @@ module ThreeScale
       ##~ @parameter_user_key["description"] = "User Key (identifier and shared secret of the application if the auth. pattern is Api Key)"
       ##~ @parameter_user_key_inline = @parameter_user_key.clone
       ##~ @parameter_user_key_inline["description_inline"]  = true
-          
+
       ##~ @parameter_user_id = {"name" => "user_id", "dataType" => "string", "paramType" => "query"}
       ##~ @parameter_user_id["description"] = "User id. String identifying an end user. Required only when the application is rate limiting end users. The End User plans feature is not available in all 3scale plans."
       ##~ @parameter_user_id_inline = @parameter_user_id.clone
       ##~ @parameter_user_id_inline["description_inline"] = true
       ##
-      
+
       ##~ @parameter_referrer = {"name" => "referrer", "dataType" => "string", "required" => false, "paramType" => "query"}
       ##~ @parameter_referrer["description"] = "Referrer IP Address or Domain. Required only if referrer filtering is enabled. If special value '*' (wildcard) is passed, the referrer check is bypassed."
       ##
       ##~ @parameter_redirect_url = {"name" => "redirect_url", "dataType" => "string", "required" => false, "paramType" => "query"}
       ##~ @parameter_redirect_url["description"] = "Optional redirect URL for OAuth. Will be validated if sent."
       ##
-      
+
       ##  FIXME: CHECK THIS ONE TOO
       ##~ @parameter_no_body = {"name" => "no_body", "dataType" => "boolean", "required" => false, "paramType" => "query"}
       ##~ @parameter_no_body["description"] = "If no_body is passed the response will not include HTTP body."
-      
+
       ##~ @parameter_usage = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
       ##~ @parameter_usage["description"] = "Usage, will increment/set the metrics with the values passed. The value can be either a positive integer (e.g. 1, 50) or a positive integer prefixed with the character '#' (e.g. #1, #50). In the first case, the value will be incremented, on the second, it will be set to the numerical value. Thus, usage[hits]=1 will increment the hits counter by +1, whereas usage[hits]=#1 will set the hits counters to 1. Warning, setting a value can raise concurrency issues since it's not order preserving.."
-       
+
       ##
       ##~ @parameter_usage_fields = {"name" => "metric", "dataType" => "custom", "required" => false, "paramType" => "query", "allowMultiple" => true, "threescale_name" => "metric_names"}
       ##~ @parameter_usage_fields["description"] = "Metric to be reported"
       ##
-      ##~ @parameter_usage["parameters"] = [] 
+      ##~ @parameter_usage["parameters"] = []
       ##~ @parameter_usage["parameters"] << @parameter_usage_fields
       ##
       ##~ @parameter_usage_predicted = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
       ##~ @parameter_usage_predicted["description"] = "Predicted Usage. Actual usage will need to be reported with a report or an authrep."
       ##
-      ##~ @parameter_usage_predicted["parameters"] = [] 
+      ##~ @parameter_usage_predicted["parameters"] = []
       ##~ @parameter_usage_predicted["parameters"] << @parameter_usage_fields
       ##
       ##~ @timestamp = {"name" => "timestamp", "dataType" => "string", "required" => false, "paramType" => "body"}
@@ -82,45 +82,45 @@ module ThreeScale
       ##~ @parameter_log_field_response["description"] = "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
       ##~ @parameter_log_field_code = {"name" => "code", "dataType" => "string", "paramType" => "query", "description_inline" => true}
       ##~ @parameter_log_field_code["description"] = "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
-      
-       
-      ##~ @parameter_log["parameters"] = [] 
+
+
+      ##~ @parameter_log["parameters"] = []
       ##~ @parameter_log["parameters"] << @parameter_log_field_request
       ##~ @parameter_log["parameters"] << @parameter_log_field_response
       ##~ @parameter_log["parameters"] << @parameter_log_field_code
       ##
       ##~ @parameter_transaction_app_id = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
       ##~ @parameter_transaction_app_id["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
-      ##~ @parameter_transaction_app_id["parameters"] = [] 
+      ##~ @parameter_transaction_app_id["parameters"] = []
       ##
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_app_id_inline
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_app_id["parameters"] << @timestamp
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_usage
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_log
-      
+
       ##~ @parameter_transaction_api_key = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
       ##~ @parameter_transaction_api_key["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
-      ##~ @parameter_transaction_api_key["parameters"] = [] 
-      
+      ##~ @parameter_transaction_api_key["parameters"] = []
+
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_key_inline
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_api_key["parameters"] << @timestamp
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_usage
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_log
-      
+
       ##~ @parameter_transaction_oauth = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
       ##~ @parameter_transaction_oauth["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
-      ##~ @parameter_transaction_oauth["parameters"] = [] 
-      
+      ##~ @parameter_transaction_oauth["parameters"] = []
+
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_client_id_inline
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_oauth["parameters"] << @timestamp
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_usage
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_log
-      
-      
-       
+
+
+
       ## ------------ DOCS --------------
 
       configure :production do
@@ -137,11 +137,12 @@ module ThreeScale
         content_type 'application/vnd.3scale-v2.0+xml'
       end
 
+
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
-      ##~ a = sapi.apis.add 
+      ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/authorize.xml", "format" => "xml"
-      ##~ op = a.operations.add     
+      ##~ op = a.operations.add
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "Authorize (App Id authentication pattern)"
       ##
@@ -149,16 +150,16 @@ module ThreeScale
       ##~ @authorize_desc = @authorize_desc + " is active and is within its usage limits. It can be optionally used to authenticate a call using an application key."
       ##~ @authorize_desc = @authorize_desc + " It's possible to pass a 'predicted usage' to the authorize call. This can serve two purposes:<p>1) To make sure an API"
       ##~ @authorize_desc = @authorize_desc + " call won't go over the limits before the call is made, if the usage of the call is known in advance. In this case, the"
-      ##~ @authorize_desc = @authorize_desc + " estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit." 
+      ##~ @authorize_desc = @authorize_desc + " estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit."
       ##~ @authorize_desc = @authorize_desc + " And, <p>2) To limit the authorization only to a subset of metrics. If usage is passed in, only the metrics listed in it will"
-      ##~ @authorize_desc = @authorize_desc + " be checked against the limits. For example: There are two metrics defined: <em>searches</em> and <em>updates</em>. <em>updates</em> are already over" 
+      ##~ @authorize_desc = @authorize_desc + " be checked against the limits. For example: There are two metrics defined: <em>searches</em> and <em>updates</em>. <em>updates</em> are already over"
       ##~ @authorize_desc = @authorize_desc + " limit, but <em>searches</em> are not. In this case, the user should still be allowed to do a search call, but not an update one."
       ##~ @authorize_desc = @authorize_desc + "<p><b>Note:</b> Even if the predicted usage is passed in, authorize is still a <b>read-only</b> operation. You have to make the report call"
       ##~ @authorize_desc = @authorize_desc + " to report the usage."
       ##
       ##~ @authorize_desc_response = "<p>The response can have an http response code: <code class='http'>200</code> OK (if authorization is granted), <code class='http'>409</code> (if it's not granted, typically application over limits or keys missing, check <code class='http'>'reason'</<code> tag'), "
       ##~ @authorize_desc_response = @authorize_desc_response + " or <code class='http'>403</code> (for authentication errors, check <code class='http'>'error'</code> tag) and <code class='http'>404</code> (not found)."
-      
+
       ##~ op.description = "<p>Read-only operation to authorize an application in the App Id authentication pattern." + " "+ @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
@@ -169,8 +170,8 @@ module ThreeScale
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage_predicted
-      ## 
-      ##~ a = sapi.apis.add 
+      ##
+      ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/authorize.xml", "format" => "xml"
       ##~ op = a.operations.add
       ##~ op.set :httpMethod => "GET", :tags => ["authorize","user_key"], :nickname => "authorize_user_key", :deprecated => false
@@ -191,28 +192,28 @@ module ThreeScale
           empty_response 403
           return
         end
-        
+
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authorize(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
-          response_code = if authorization.authorized?
-            200
+          if authorization.authorized?
+            status(200)
           else
-            409
+            status(409)
           end
-          status response_code
+
           if params[:no_body]
             body nil
           else
             body authorization.to_xml
           end
         else
-          response_code = if cached_authorization_result
-            200
+          if cached_authorization_result
+            status(200)
           else
-            409
+            status(409)
           end
-          status response_code
+
           if params[:no_body]
             body nil
           else
@@ -223,9 +224,9 @@ module ThreeScale
 
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
-      ##~ a = sapi.apis.add 
+      ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/oauth_authorize.xml", "format" => "xml"
-      ##~ op = a.operations.add     
+      ##~ op = a.operations.add
       ##~ op.set :httpMethod => "GET", :tags => ["authorize","user_key"], :nickname => "oauth_authorize", :deprecated => false
       ##~ op.summary = "Authorize (Oauth authentication mode pattern)"
       ##
@@ -279,9 +280,9 @@ module ThreeScale
 
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
-      ##~ a = sapi.apis.add 
+      ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/authrep.xml", "format" => "xml"
-      ##~ op = a.operations.add     
+      ##~ op = a.operations.add
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "AuthRep (Authorize + Report for the App Id authentication pattern)"
       ##
@@ -302,12 +303,12 @@ module ThreeScale
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
-      ##~ op.parameters.add @parameter_log      
-      ## 
-      ## 
-      ##~ a = sapi.apis.add 
+      ##~ op.parameters.add @parameter_log
+      ##
+      ##
+      ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/authrep.xml", "format" => "xml"
-      ##~ op = a.operations.add     
+      ##~ op = a.operations.add
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "AuthRep (Authorize + Report for the API Key authentication pattern)"
       ##~ op.description = @authrep_desc
@@ -319,7 +320,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
-      ##~ op.parameters.add @parameter_log 
+      ##~ op.parameters.add @parameter_log
       ##
       get '/transactions/authrep.xml' do
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
@@ -330,24 +331,24 @@ module ThreeScale
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
-          response_code = if authorization.authorized?
-            200
+          if authorization.authorized?
+            status(200)
           else
-            409
+            status(409)
           end
-          status response_code
+
           if params[:no_body]
             body nil
           else
             body authorization.to_xml(:usage => params[:usage])
           end
         else
-          response_code = if cached_authorization_result
-            200
+          if cached_authorization_result
+            status(200)
           else
-            409
+            status(409)
           end
-          status response_code
+
           if params[:no_body]
             body nil
           else
@@ -355,15 +356,15 @@ module ThreeScale
           end
         end
       end
-      
+
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
-      ##~ a = sapi.apis.add 
+      ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions.xml", "format" => "xml"
-      ##~ op = a.operations.add     
+      ##~ op = a.operations.add
       ##~ op.set :httpMethod => "POST"
       ##~ op.summary = "Report (App Id authentication pattern)"
-      
+
       ##~ @report_desc = "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K"
       ##~ @report_desc = @report_desc + " transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
       ##~ @report_desc = @report_desc + "<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in"
@@ -378,9 +379,9 @@ module ThreeScale
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_transaction_app_id
       ##
-      ##~ a = sapi.apis.add 
+      ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions.xml", "format" => "xml"
-      ##~ op = a.operations.add     
+      ##~ op = a.operations.add
       ##~ op.set :httpMethod => "POST"
       ##~ op.summary = "Report (API Key authentication pattern)"
       ##~ op.description = @report_desc
@@ -390,9 +391,9 @@ module ThreeScale
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_transaction_api_key
       ##
-      ##~ a = sapi.apis.add 
+      ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions.xml", "format" => "xml"
-      ##~ op = a.operations.add     
+      ##~ op = a.operations.add
       ##~ op.set :httpMethod => "POST"
       ##~ op.summary = "Report (Oauth authentication pattern)"
       ##~ op.description = @report_desc
@@ -405,9 +406,9 @@ module ThreeScale
       ##
       post '/transactions.xml' do
         ## return error code 400 (Bad request) if the parameters are not there
-        ## I put 403 (Forbidden) for consitency however it should be 400 
+        ## I put 403 (Forbidden) for consitency however it should be 400
         ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
-        
+
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || params[:transactions].nil? || params[:transactions].is_a?(Array)
           empty_response 403
           return
@@ -416,7 +417,32 @@ module ThreeScale
         Transactor.report(params[:provider_key], params[:service_id], params[:transactions])
         empty_response 202
       end
-      
+
+
+      ## OAUTH ACCESS TOKENS
+
+      post '/services/:service_id/oauth_access_tokens.xml' do
+        empty_response(403) and return unless are_string_params(:provider_key, :service_id)
+
+        if Service.authenticate_service_id(params[:service_id], params[:provider_key])
+          OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token])
+          empty_response
+        else
+          empty_response 403
+        end
+      end
+
+      get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
+        empty_response(403) and return unless are_string_params(:provider_key, :service_id)
+
+        if Service.authenticate_service_id(params[:service_id], params[:provider_key])
+          @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id)
+          builder :oauth_access_tokens
+        else
+          empty_response(403)
+        end
+      end
+
 
       ## TRANSACTIONS & ERRORS
 
@@ -432,7 +458,7 @@ module ThreeScale
       end
 
       get '/transactions/errors/count.xml' do
-        @count = ErrorStorage.count(service_id)		
+        @count = ErrorStorage.count(service_id)
         builder :transaction_error_count
       end
 
@@ -489,7 +515,7 @@ module ThreeScale
 
       ## ALERTS & VIOLATIONS
 
-      get '/services/:service_id/alerts.xml' do  
+      get '/services/:service_id/alerts.xml' do
         @list = Transactor.latest_alerts(service_id)
         builder :latest_alerts
       end
@@ -513,7 +539,7 @@ module ThreeScale
         @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, application.id)
         builder :utilization
       end
-      
+
       get '/applications/:app_id/keys.xml' do
         @keys = application.keys
         builder :application_keys
@@ -594,7 +620,15 @@ module ThreeScale
 
       private
 
-      def application 
+      def are_string_params(*keys)
+        params && keys.all? { |key| is_string_param(key) }
+      end
+
+      def is_string_param(key)
+        params[key] && !params[key].empty?
+      end
+
+      def application
         @application ||= Application.load_by_id_or_user_key!(service_id, params[:app_id], params[:user_key])
       end
 
@@ -603,7 +637,7 @@ module ThreeScale
         if params[:service_id].nil? || params[:service_id].empty?
           @service_id ||= Service.load_id!(params[:provider_key])
         else
-          service = Service.load_by_id(params[:service_id]) 
+          service = Service.load_by_id(params[:service_id])
           raise ProviderKeyInvalid, params[:provider_key] if service.nil? || service.provider_key!=params[:provider_key]
           @service_id ||= params[:service_id]
         end
@@ -625,6 +659,7 @@ module ThreeScale
       def empty_response(code = 200)
         status code
         body nil
+        true
       end
     end
   end

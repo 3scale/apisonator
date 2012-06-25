@@ -16,7 +16,7 @@ module ThreeScale
       def self.load_by_id_or_user_key!(service_id, app_id, user_key)
 
         case
-			
+
         when app_id && user_key
           raise AuthenticationError
         when app_id
@@ -82,7 +82,7 @@ module ThreeScale
         Application.incr_version(service_id,id)
         super(value)
       end
-        
+
 
       def active?
         state == :active
