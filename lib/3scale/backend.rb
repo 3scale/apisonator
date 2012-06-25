@@ -14,6 +14,7 @@ require 'time'
 require 'yajl'
 require 'yaml'
 require 'zlib'
+require 'cassandra-cql'
 
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
@@ -41,6 +42,7 @@ require '3scale/backend/logger'
 require '3scale/backend/server'
 require '3scale/backend/service'
 require '3scale/backend/storage'
+require '3scale/backend/storage_cassandra'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/log_request_storage'
 require '3scale/backend/transactor'
@@ -67,6 +69,7 @@ end
 ThreeScale::Backend.configuration.tap do |config|
   # Add configuration sections
   config.add_section(:redis, :servers, :db, :backup_file)
+  config.add_section(:cassandra, :servers, :keyspace)
   config.add_section(:archiver, :path, :s3_bucket)
   config.add_section(:hoptoad, :api_key)
 

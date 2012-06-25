@@ -42,6 +42,7 @@ class AggregatorTest < Test::Unit::TestCase
     @storage.flushdb
 		seed_data()
   end
+  
 
   test 'aggregate_all increments_all_stats_counters' do
     Aggregator.aggregate_all([{:service_id     => 1001,
@@ -95,4 +96,35 @@ class AggregatorTest < Test::Unit::TestCase
     assert ttl >  0
     assert ttl <= 60
   end
+  
+  test 'aggregate takes into account setting the counter value' do 
+    
+    v = []
+    10.times do
+      v <<   { :service_id     => 1001,
+              :application_id => 2001,
+              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+              :usage          => {'3001' => 1}}
+      
+    end
+    
+    v <<   { :service_id     => 1001,
+             :application_id => 2001,
+             :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+             :usage          => {'3001' => '#665'}}
+    
+    
+    v <<   { :service_id     => 1001,
+             :application_id => 2001,
+             :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+             :usage          => {'3001' => '1'}}
+                                                
+    Aggregator.aggregate_all(v)
+                               
+    assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+        
+  end
+  
+  
+  
 end

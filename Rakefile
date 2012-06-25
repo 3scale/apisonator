@@ -71,6 +71,54 @@ task :restart_worker do
   system "ruby -Ilib bin/3scale_backend_worker restart"
 end
 
+namespace :stats do
+  
+  desc 'number of failed batches on the pending queue'
+  task :failed_size do
+    require '3scale/backend'
+    puts ThreeScale::Backend::Aggregator.failed_batch_cql_size()
+  end
 
-
+  desc 'number of failed batches on the unprocessable queue'
+  task :unprocessable_size do
+    require '3scale/backend'
+    puts ThreeScale::Backend::Aggregator.unprocessable_batch_cql_size()
+  end
+  
+  desc 'delete unprocessable queue (only in panic mode)'
+  task :unprocessable_delete do
+    require '3scale/backend'
+    puts ThreeScale::Backend::Aggregator.delete_unprocessable_batch_cql()
+  end
+  
+  desc 'delete failed queue (only in panic mode)'
+  task :failed_delete do
+    require '3scale/backend'
+    puts ThreeScale::Backend::Aggregator.delete_failed_batch_cql()
+  end
+  
+  desc 'process failed queue (all, if success it removes the queue)'
+  task :failed_process do
+    require '3scale/backend'
+    puts ThreeScale::Backend::Aggregator.process_failed_batch_cql(:all => true)
+  end
+  
+  desc 'disable stats batch processing on cassandra (only in panic mode)'  
+  task :disable_cassandra do
+      require '3scale/backend'
+      puts ThreeScale::Backend::Aggregator.disable_cassandra()
+  end
+  
+  desc 'enable stats batch processing on cassandra (only in panic mode)'  
+  task :enable_cassandra do
+      require '3scale/backend'
+      puts ThreeScale::Backend::Aggregator.enable_cassandra()
+  end
+  
+  desc 'is cassandra batch processing enabled? (only in panic mode)'  
+  task :cassandra_enabled? do
+      require '3scale/backend'
+      puts ThreeScale::Backend::Aggregator.cassandra_enabled?()
+  end
+end
 

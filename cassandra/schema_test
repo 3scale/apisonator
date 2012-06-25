@@ -1,0 +1,17 @@
+
+
+create keyspace backend_test
+    with strategy_options = {replication_factor: 1}
+    and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
+
+use backend_test;
+
+create column family Stats
+  with default_validation_class=CounterColumnType 
+  and key_validation_class=UTF8Type 
+  and comparator=UTF8Type;
+
+create column family Users;
+
+
+

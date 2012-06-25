@@ -9,6 +9,12 @@ class WorkerTest < Test::Unit::TestCase
     assert_equal :main, Worker::QUEUES[1]
   end
 
+  def test_format_of_a_job
+    encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [{'0'=> {:app_id => "app_id with spaces"}}])
+    assert_equal '{"class":"TestJob","args":[{"0":{"app_id":"app_id with spaces"}}]}', encoded_job
+    
+  end
+
   def test_pops_jobs_from_a_queue
     encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [])
 

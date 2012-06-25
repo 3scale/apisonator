@@ -2,6 +2,8 @@ require 'json'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
+require '3scale/backend/aggregator/stats_batcher'
+
 
 module ThreeScale
   module Backend
@@ -9,13 +11,22 @@ module ThreeScale
       include Core::StorageKeyHelpers
       include Backend::Cache
       include Backend::Alerts
+      include StatsBatcher
       extend self
 
       def aggregate_all(transactions)
         applications = Hash.new
         users = Hash.new
-
+        
+        ## this is just a temporary switch to be able to enable disable reporting to cassandra
+        ## you can active it or deactivated: storage.set("cassandra_enabled","1") / storage.del("cassandra_enabled")
+        
+        @cass_enabled = cassandra_enabled?
+        
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
+          
+          @batch_cql = []
+          
           storage.pipelined do
             slice.each do |transaction|
               key = transaction[:application_id]
@@ -32,10 +43,21 @@ module ThreeScale
                 key = transaction[:user_id]
                 users[key] = {:service_id => transaction[:service_id], :user_id => transaction[:user_id]}
               end
-
+    
               aggregate(transaction)
             end
           end
+          
+          ## here the pipelined redis increments have been sent
+          ## now we have to send the cassandra ones
+                
+          if @cass_enabled
+            process_batch_cql(@batch_cql)
+          else
+            ##enqueue_failed_batch_cql(@batch_cql)
+          end
+          
+                    
         end
 
         ## now we have done all incrementes for all the transactions, we
@@ -47,7 +69,9 @@ module ThreeScale
         return nil if value_str.nil? || value_str[0]!="#" 
         return value_str[1..value_str.size].to_i
       end
-
+      
+        
+      
       private
 
       def aggregate(transaction)
@@ -62,6 +86,9 @@ module ThreeScale
         end
 
         timestamp = transaction[:timestamp]
+        
+        ##FIXME, here we have to check that the timestamp is in the current given the time period we are in
+        
 
         transaction[:usage].each do |metric_id, value|
           
@@ -240,8 +267,43 @@ module ThreeScale
 
       def increment_or_set(type, prefix, granularity, timestamp, value, options = {})
         key = counter_key(prefix, granularity, timestamp)
+        ##puts "... #{key}"
         type == :set ?  updated_value = storage.set(key, value) : updated_value = storage.incrby(key, value)
         storage.expire(key, options[:expires_in]) if options[:expires_in]
+        
+        if @cass_enabled
+          row_key, column_key = counter_key_cassandra(prefix, granularity, timestamp)
+          if type == :set
+            ## WARNING: this is terrible, it's a total anti-pattern for cassandra, but counters in cassandra cannot be set :/ 
+            @batch_cql << storage_cassandra.set2cql(:Stats, row_key, value, column_key)
+          else
+            @batch_cql << storage_cassandra.add2cql(:Stats, row_key, value, column_key)
+          end
+        end
+        
+      end
+      
+      ## the common key for redis
+      ## "stats/{service:123}/uinstance:user_id/metric:metric_id/month:20120401"
+      ## is split into row and column key like this:
+      ## "stats/{service:123}/uinstance:user_id/metric:metric_id/month:2012" , "20120401"
+      ## 
+      ## "stats/{service:123}/uinstance:user_id/metric:metric_id/eternity"
+      ## "stats/{service:123}/uinstance:user_id/metric:metric_id/eternity", "eternity"
+      ##
+      ## we need to bucket per year since cassandra cannot have rows with zillions of columns, it's advised to keep it under 10MB
+      ## if we store minutes per year 365 * 24 * 60 * 8 (assuming it's 8 bytes per counter) = 4.2MB so we are ok.
+      ##
+      def counter_key_cassandra(prefix, granularity, timestamp)
+        if granularity == :eternity
+          bucket, row_key = :eternity, :eternity
+        else
+          time = timestamp.beginning_of_cycle(granularity)
+          row_key = time.to_compact_s
+          bucket = "#{granularity}:#{row_key[0..3]}"
+        end
+
+        ["#{prefix}/#{bucket}".to_s, row_key.to_s]
       end
       
       def counter_key(prefix, granularity, timestamp)
@@ -269,6 +331,11 @@ module ThreeScale
       def storage
         Storage.instance
       end
+      
+      def storage_cassandra
+        StorageCassandra.instance
+      end
+      
     end
   end
 end
