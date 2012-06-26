@@ -433,7 +433,10 @@ module ThreeScale
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-        empty_response(403) and return unless are_string_params(:provider_key, :service_id)
+        empty_response(403) and return unless are_string_params(:provider_key, :service_id, :app_id)
+
+        service_id = params[:service_id]
+        app_id = params[:app_id]
 
         if Service.authenticate_service_id(params[:service_id], params[:provider_key])
           @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id)

@@ -1,11 +1,13 @@
 module ThreeScale
   module Backend
 
-    module OAuthAccessToken
-      attr_reader :token, :ttl, :app_id
+    class OAuthAccessToken
+      attr_reader :token
+      attr_accessor :ttl
 
-      def initialize(token, app_id, ttl)
-        @token
+      def initialize(token, ttl)
+        @token = token
+        @ttl = ttl
       end
     end
 
@@ -27,13 +29,22 @@ module ThreeScale
 
       def self.all_by_service_and_app(service_id, app_id)
         tokens = storage.smembers(token_set_key(service_id, app_id))
-        ttls = storage.pipelined do
-          keys.each do |key|
-            storage.ttl(key)
+        keys = tokens.map { |t| token_key(service_id, t) }
+        applications = storage.mget(*keys)
+        set_key = token_set_key(service_id, app_id)
+
+        result = tokens.map.with_index do |token,i|
+          if applications[i].nil?
+            # remove expired tokens from the set
+            storage.srem(set_key, token)
+            nil
+          else
+            ttl = storage.ttl(token_key(service_id, app_id))
+            OAuthAccessToken.new(token, ttl)
           end
         end
 
-        tokens.map { |token| OAuthAccessToken.new(token, app_id, ttl) }
+        result.compact
       end
       
       def self.get_app_id(service_id, token)
