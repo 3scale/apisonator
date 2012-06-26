@@ -15,7 +15,7 @@ class AccessTokenTest < Test::Unit::TestCase
                                     :state      => :active,
                                     :plan_id    => @plan_id,
                                     :plan_name  => @plan_name)
-                                    
+
   end
 
   test 'CR(U)D oauth_access_token' do
@@ -61,9 +61,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_equal 200, last_response.status
 
-    xml  = Nokogiri::XML(last_response.body)
     node = xml.at('oauth_access_tokens/oauth_access_token')
-
     assert_equal 1, node.count
     assert_equal 'VALID-TOKEN', node.content
     assert node.attribute('ttl').value.to_i > 0, "TTL should be positive"
@@ -102,38 +100,38 @@ class AccessTokenTest < Test::Unit::TestCase
       assert xml.at('oauth_access_tokens').element_children.empty?
     end
   end
-  
+
   test 'create oauth access token and retrieve the app_id later on' do
-    
+
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => 'valid-token-666'
     assert_equal 200, last_response.status
-    
+
     get "/services/#{@service.id}/oauth_access_tokens/valid-token-666.xml", :provider_key => @provider_key
-    
+
     assert_equal 200, last_response.status
-    
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal @application.id, doc.at('app_id').content
-        
+
   end
-  
+
   test 'failed retrieve app_id by token' do
-    
+
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => 'valid-token-666'
     assert_equal 200, last_response.status
-    
+
     get "/services/#{@service.id}/oauth_access_tokens/fake-token.xml", :provider_key => @provider_key
-    
+
     assert_error_response :status  => 404,
                           :code    => 'access_token_invalid',
                           :message => 'access_token "fake-token" is invalid: expired or never defined'
-    
+
   end
-  
+
   test 'check that service_id and provider_key match on return app_id by token' do
 
     get "/services/fake-service-id/oauth_access_tokens/fake-token.xml", :provider_key => @provider_key
@@ -141,29 +139,44 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_error_response :status  => 403,
                           :code    => 'provider_key_invalid',
                           :message => "provider key \"#{@provider_key}\" is invalid"
-                          
+
     get "/services/#{@service.id}/oauth_access_tokens/fake-token.xml", :provider_key => "fake-provider-key"
-    
+
     assert_error_response :status  => 403,
                           :code    => 'provider_key_invalid',
-                          :message => 'provider key "fake-provider-key" is invalid'                                                     
-                            
+                          :message => 'provider key "fake-provider-key" is invalid'
 
+
+
+  # TODO: test correct but different service_id with correct but other provider_id
+  test 'CR(-)D with invalid invalid service' do
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => 'INVALID-KEY',
+                                                             :app_id => @application.id,
+                                                             :token => 'TOKEN'
+    assert_equal 403, last_response.status
+
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => 'INVALID-KEY'
+    assert_equal 403, last_response.status
+
+    delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN",
+           :provider_key => 'INVALID-KEY'
+    assert_equal 403, last_response.status
   end
-    
+
 
   test 'check that service_id and provider_key match' do
-    
+
     post "/services/fake-service-id/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                               :app_id => @application.id,
                                                               :token => 'VALID-TOKEN',
                                                               :ttl => 1000
-    
+
     assert_error_response :status  => 403,
                           :code    => 'provider_key_invalid',
-                          :message => "provider key \"#{@provider_key}\" is invalid"                                                     
-             
-  
+                          :message => "provider key \"#{@provider_key}\" is invalid"
+
+
     post "/services/#{@service_id}/oauth_access_tokens.xml", :provider_key => "fake-provider-key",
                                                               :app_id => @application.id,
                                                               :token => 'VALID-TOKEN',
@@ -171,57 +184,57 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_error_response :status  => 403,
                           :code    => 'provider_key_invalid',
-                          :message => 'provider key "fake-provider-key" is invalid'                                                     
-  
-  
-  
+                          :message => 'provider key "fake-provider-key" is invalid'
+
+
+
   end
-  
+
   test 'resuing an access token that is already in use fails, unless it is for a different service' do
-    
+
     application2 = Application.save(:service_id => @service.id,
                                       :id         => next_id,
                                       :state      => :active,
                                       :plan_id    => @plan_id,
                                       :plan_name  => @plan_name)
-                                      
-    
+
+
     service2 = Service.save!(:provider_key => @provider_key, :id => next_id)
-    
+
     application_diff_service = Application.save(:service_id => service2.id,
                                               :id         => next_id,
                                               :state      => :active,
                                               :plan_id    => @plan_id,
-                                              :plan_name  => @plan_name)                                  
-    
-    
+                                              :plan_name  => @plan_name)
+
+
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => 'valid-token-666'
     assert_equal 200, last_response.status
-    
-      
-      
+
+
+
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => application2.id,
                                                              :token => 'valid-token-666'
-                                                             
+
     assert_error_response :status  => 403,
                          :code    => 'access_token_already_exists',
-                         :message => 'access_token "valid-token-666" already exists'                                                             
-                                                             
-                                                             
+                         :message => 'access_token "valid-token-666" already exists'
+
+
     post "/services/#{service2.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                             :app_id => application_diff_service.id,
                                                             :token => 'valid-token-666'
-                                                     
+
     assert_equal 200, last_response.status
-        
-    
+
+
   end
-  
-  
-  
+
+
+
 
   # test create token and delete it
   # test create token and delete it twice, should raise error on the second one (TO BE REMOVED?)
