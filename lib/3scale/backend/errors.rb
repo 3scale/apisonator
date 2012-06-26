@@ -50,6 +50,13 @@ module ThreeScale
         super %(access_token "#{id}" is invalid: expired or never defined)
       end
     end
+
+    class AccessTokenAlreadyExists < Error
+      def initialize(id = nil)
+        super %(access_token "#{id}" already exists)
+      end
+    end
+    
     
     class ApplicationNotActive < Error
       def initialize

@@ -87,4 +87,12 @@ class ErrorsTest < Test::Unit::TestCase
     error = AccessTokenInvalid.new("foo")
     assert_equal 'access_token "foo" is invalid: expired or never defined', error.message 
   end
+  
+  test 'messsage of AccessTokenAlreadyExists' do
+    error = AccessTokenAlreadyExists.new("foo")
+    assert_equal 'access_token "foo" already exists', error.message 
+  end
+  
+  
+  
 end

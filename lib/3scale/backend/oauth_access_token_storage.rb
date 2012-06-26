@@ -22,6 +22,8 @@ module ThreeScale
       def self.create(service_id, app_id, token, ttl = nil)
         return false unless token =~ /\A(\w|-|_)+\Z/
 
+        raise AccessTokenAlreadyExists.new(token) unless storage.get(token_key(service_id, token)).nil?
+
         if ttl.nil?
           storage.set(token_key(service_id, token), app_id)
         else

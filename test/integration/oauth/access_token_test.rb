@@ -15,6 +15,7 @@ class AccessTokenTest < Test::Unit::TestCase
                                     :state      => :active,
                                     :plan_id    => @plan_id,
                                     :plan_name  => @plan_name)
+                                    
   end
 
   test 'CR(U)D oauth_access_token' do
@@ -176,7 +177,48 @@ class AccessTokenTest < Test::Unit::TestCase
   
   end
   
-  
+  test 'resuing an access token that is already in use fails, unless it is for a different service' do
+    
+    application2 = Application.save(:service_id => @service.id,
+                                      :id         => next_id,
+                                      :state      => :active,
+                                      :plan_id    => @plan_id,
+                                      :plan_name  => @plan_name)
+                                      
+    
+    service2 = Service.save!(:provider_key => @provider_key, :id => next_id)
+    
+    application_diff_service = Application.save(:service_id => service2.id,
+                                              :id         => next_id,
+                                              :state      => :active,
+                                              :plan_id    => @plan_id,
+                                              :plan_name  => @plan_name)                                  
+    
+    
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'valid-token-666'
+    assert_equal 200, last_response.status
+    
+      
+      
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => application2.id,
+                                                             :token => 'valid-token-666'
+                                                             
+    assert_error_response :status  => 403,
+                         :code    => 'access_token_already_exists',
+                         :message => 'access_token "valid-token-666" already exists'                                                             
+                                                             
+                                                             
+    post "/services/#{service2.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                            :app_id => application_diff_service.id,
+                                                            :token => 'valid-token-666'
+                                                     
+    assert_equal 200, last_response.status
+        
+    
+  end
   
   
   
