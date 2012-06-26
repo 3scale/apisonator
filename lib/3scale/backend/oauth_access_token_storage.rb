@@ -14,11 +14,10 @@ module ThreeScale
     module OAuthAccessTokenStorage
       extend Backend::StorageHelpers
 
-      # one day
-      DEFAULT_TTL = 24 * 3600
 
       def self.create(service_id, app_id, token)
         storage.set(token_key(service_id, token), app_id)
+        
         storage.sadd(token_set_key(service_id, app_id), token)
       end
 
@@ -49,7 +48,7 @@ module ThreeScale
       
       def self.get_app_id(service_id, token)
         app_id = storage.get(token_key(service_id,token))
-        storage.srem(token_set_key(service_id, app_id), token) if app_nil.nil?
+        storage.srem(token_set_key(service_id, app_id), token) if app_id.nil?
         app_id
       end
 
