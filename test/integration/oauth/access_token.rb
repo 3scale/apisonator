@@ -36,8 +36,79 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal '-1', node.attribute('ttl').value
   end
 
+  test 'create and read oauth_access_token with ttl' do
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'VALID-TOKEN',
+                                                             :ttl => 10
+    assert_equal 200, last_response.status
 
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
 
+    assert_equal 200, last_response.status
+
+    xml  = Nokogiri::XML(last_response.body)
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 1, node.count
+    assert_equal 'VALID-TOKEN', node.content
+    assert node.attribute('ttl').value.to_i >= 1, "ttl should be greater than 1, might not be 2 because of delay"
+  
+  
+  test 'create and read oauth_access_token with malformed ttl' do
+    
+    [-666, nil, '', 'adbc'].each |item|
+      post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                               :app_id => @application.id,
+                                                               :token => 'VALID-TOKEN',
+                                                               :ttl => item
+                                                                                                                       
+      assert_equal 403, last_response.status
+
+      get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+          :provider_key => @provider_key
+
+      assert_equal 200, last_response.status
+
+      xml  = Nokogiri::XML(last_response.body)
+      node = xml.at('oauth_access_tokens/oauth_access_token')
+
+      assert_equal 0, node.count
+    
+    end
+    
+  end
+  
+  test 'malformed request to create and read oauth_access_token' do
+    
+    ['', nil, [], {}, 'foo bar'].each do |item| 
+      post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                               :app_id => @application.id,
+                                                               :token => item
+                                                                                                                       
+      assert_equal 403, last_response.status
+
+      get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+          :provider_key => @provider_key
+
+      assert_equal 200, last_response.status
+
+      xml  = Nokogiri::XML(last_response.body)
+      node = xml.at('oauth_access_tokens/oauth_access_token')
+
+      assert_equal 0, node.count    
+    end
+  end
+  
+  test 'test create and delete' do 
+    
+    
+  end
+  
+  
+
+  
   # TODO: TTL
   # TODO: multiservice
 
