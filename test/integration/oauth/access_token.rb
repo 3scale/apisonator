@@ -23,10 +23,20 @@ class AccessTokenTest < Test::Unit::TestCase
                                                              :token => 'VALID-TOKEN'
     assert_equal 200, last_response.status
 
-    get "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key
-    puts last_response.body
-    # doc   = Nokogiri::XML(last_response.body)
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    xml  = Nokogiri::XML(last_response.body)
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 1, node.count
+    assert_equal 'VALID-TOKEN', node.content
+    assert_equal '-1', node.attribute('ttl').value
   end
+
+
 
   # TODO: TTL
   # TODO: multiservice
