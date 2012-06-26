@@ -106,6 +106,21 @@ class AccessTokenTest < Test::Unit::TestCase
     
   end
   
+  # test create token and delete it
+  # test create token and delete it twice, should raise error on the second one
+  # test create token with ttl, wait for it to expire, and then delete it (should raise error)
+  # test create token with ttl, check that it's on the list of token, wait for it to expire, check that the list is empty, finally delete it (should raise error)
+  # test create 10000 tokens for the single service and get the list of all the tokens. Check that it does not take less than 1 second.
+  
+  # test create token with service_id, app_id_1, then create the same token, same service_id and different app_id. 
+  # It should raise an error that the token is already assigned elsewhere.
+  
+  # test the same as above with a ttl. Wait for the first app_id->token to expire and assign the same token, it should not raise an error because the token is already
+  # taken.
+  
+  
+  
+  
   
 
   
