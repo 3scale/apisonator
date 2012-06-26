@@ -57,7 +57,7 @@ module ThreeScale
           return [] if transactions.empty?
           transactions = transactions.values if transactions.respond_to?(:values)
           transactions.group_by do |transaction|
-            Application.extract_id!(service_id, transaction['app_id'], transaction['user_key'])
+            Application.extract_id!(service_id, transaction['app_id'], transaction['user_key'], transaction['access_token'])
           end.each(&block)
         end
       end

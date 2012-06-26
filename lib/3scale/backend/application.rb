@@ -29,7 +29,7 @@ module ThreeScale
         end
       end
 
-      def self.extract_id!(service_id, app_id, user_key)
+      def self.extract_id!(service_id, app_id, user_key, access_token)
         case
         when app_id && user_key
           raise AuthenticationError
@@ -38,6 +38,9 @@ module ThreeScale
         when user_key
           app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
           exists?(service_id, app_id) and app_id or raise UserKeyInvalid, user_key
+        when access_token
+          app_id = OAuthAccessTokenStorage.get_app_id(service_id, access_token) or raise AccessTokenInvalid, access_token
+          exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
         else
           raise ApplicationNotFound
         end

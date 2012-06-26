@@ -82,4 +82,9 @@ class ErrorsTest < Test::Unit::TestCase
     error = ReferrerNotAllowed.new('foo.example.org')
     assert_equal 'referrer "foo.example.org" is not allowed', error.message
   end
+  
+  test 'messsage of AccessTokenInvalid' do
+    error = AccessTokenInvalid.new("foo")
+    assert_equal 'access_token "foo" is invalid: expired or never defined', error.message 
+  end
 end

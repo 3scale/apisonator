@@ -83,25 +83,25 @@ class ApplicationTest < Test::Unit::TestCase
   test 'extract_id! returns application id if valid application id passed' do
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
 
-    assert_equal '2001', Application.extract_id!('1001', '2001', nil)
+    assert_equal '2001', Application.extract_id!('1001', '2001', nil, nil)
   end
 
   test 'extract_id! returns application id if valid user key passed' do
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
     Application.save_id_by_key('1001', 'foobar', '2001')
 
-    assert_equal '2001', Application.extract_id!('1001', nil, 'foobar')
+    assert_equal '2001', Application.extract_id!('1001', nil, 'foobar', nil)
   end
 
   test 'extract_id! raises an exception if application id is invalid' do
     assert_raise ApplicationNotFound do
-      Application.extract_id!('1001', '2001', nil)
+      Application.extract_id!('1001', '2001', nil, nil)
     end
   end
 
   test 'extract_id! raises an exception if user key is invalid' do
     assert_raise UserKeyInvalid do
-      Application.extract_id!('1001', nil, 'foobar')
+      Application.extract_id!('1001', nil, 'foobar', nil)
     end
   end
 
@@ -109,7 +109,7 @@ class ApplicationTest < Test::Unit::TestCase
     Application.save_id_by_key('1001', 'foobar', '2001')
 
     assert_raise UserKeyInvalid do
-      Application.extract_id!('1001', nil, 'foobar')
+      Application.extract_id!('1001', nil, 'foobar', nil)
     end
   end
 
@@ -118,13 +118,13 @@ class ApplicationTest < Test::Unit::TestCase
     Application.save_id_by_key('1001', 'foobar', '2001')
 
     assert_raise AuthenticationError do
-      Application.extract_id!('1001', '2001', 'foobar')
+      Application.extract_id!('1001', '2001', 'foobar', nil)
     end
   end
 
   test 'extract_id! raises an exception if neither application id, nor user key is passed' do
     assert_raise ApplicationNotFound do
-      Application.extract_id!('1001', nil, nil)
+      Application.extract_id!('1001', nil, nil, nil)
     end
   end
 

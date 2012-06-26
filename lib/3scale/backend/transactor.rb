@@ -161,8 +161,6 @@ module ThreeScale
 
           end
 
-          
-
         end
 
         if cache_miss
@@ -189,9 +187,20 @@ module ThreeScale
 
         raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
 
+        ## if app_id is not defined, check for the access_token and resolve it to the app_id
+        app_id = params[:app_id]
+        if (app_id.nil? || app_id.empty?)
+          if params[:access_token].nil? || params[:access_token].empty?
+            raise ApplicationNotFound.new(app_id) 
+          else
+            app_id = OAuthAccessTokenStorage.get_app_id(service.id, params[:access_token])
+            raise AccessTokenInvalid.new(params[:access_token]) if app_id.nil? || app_id.empty?
+          end
+        end  
+        
         application =  Application.load_by_id_or_user_key!(service.id,
-                                                          params[:app_id],
-                                                          params[:user_key])
+                                                          app_id,
+                                                          nil)
 
         if not (params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String))
           ## user_id on the paramters
