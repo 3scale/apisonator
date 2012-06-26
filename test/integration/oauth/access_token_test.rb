@@ -17,23 +17,35 @@ class AccessTokenTest < Test::Unit::TestCase
                                     :plan_name  => @plan_name)
   end
 
-  test 'create and read oauth_access_token' do
+  test 'CR(U)D oauth_access_token' do
+    # Create
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => 'VALID-TOKEN'
     assert_equal 200, last_response.status
 
+    # Read
     get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
         :provider_key => @provider_key
 
     assert_equal 200, last_response.status
-
-    xml  = Nokogiri::XML(last_response.body)
     node = xml.at('oauth_access_tokens/oauth_access_token')
 
     assert_equal 1, node.count
     assert_equal 'VALID-TOKEN', node.content
     assert_equal '-1', node.attribute('ttl').value
+
+    # Delete
+    delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN",
+           :provider_key => @provider_key
+    assert_equal 200, last_response.status
+
+    # Read again
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+    assert xml.at('oauth_access_tokens').element_children.empty?, 'No tokens should be present'
   end
 
   test 'create and read oauth_access_token with TTL supplied' do
