@@ -436,7 +436,7 @@ module ThreeScale
         end
       end
 
-      delete '/services/:service_id/oauth_access_tokens/:token' do
+      delete '/services/:service_id/oauth_access_tokens/:token.xml' do
         empty_response(422) and return unless are_string_params(:provider_key, :service_id, :token)
 
         # TODO: this should directly respond rather than raise

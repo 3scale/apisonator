@@ -37,7 +37,7 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal '-1', node.attribute('ttl').value
 
     # Delete
-    delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN",
+    delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN.xml",
            :provider_key => @provider_key
     assert_equal 200, last_response.status
 
@@ -160,7 +160,7 @@ class AccessTokenTest < Test::Unit::TestCase
         :provider_key => 'INVALID-KEY'
     assert_equal 403, last_response.status
 
-    delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN",
+    delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN.xml",
            :provider_key => 'INVALID-KEY'
     assert_equal 403, last_response.status
   end
@@ -278,14 +278,78 @@ class AccessTokenTest < Test::Unit::TestCase
       
   end
 
+  test 'checking read operations consistency' do
+    # Create
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'valid-token1',
+                                                             :ttl => '100'
+    assert_equal 200, last_response.status
 
-  # test create token and delete it
-  # test create token and delete it twice, should raise error on the second one (TO BE REMOVED?)
-  # test create token with ttl, wait for it to expire, and then delete it (should raise error)
-  # test create token with ttl, check that it's on the list of token, wait for it to expire, check that the list is empty, finally delete it (should raise error)
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'valid-token2'
+    assert_equal 200, last_response.status
 
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
 
-  # TODO: multiservice
+    assert_equal 200, last_response.status
+    node = xml.search('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 2, node.count
+    assert_equal 'valid-token1', node[0].content
+    assert node[0].attribute('ttl').value.to_i > 0
+    assert_equal 'valid-token2', node[1].content
+    assert_equal '-1', node[1].attribute('ttl').value
+    
+    get "/services/#{@service.id}/oauth_access_tokens/valid-token1.xml", :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal @application.id, doc.at('app_id').content
+    
+    get "/services/#{@service.id}/oauth_access_tokens/valid-token2.xml", :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal @application.id, doc.at('app_id').content
+    
+    delete "/services/#{@service.id}/oauth_access_tokens/valid-token1.xml",
+           :provider_key => @provider_key
+           
+    assert_equal 200, last_response.status
+    
+    get "/services/#{@service.id}/oauth_access_tokens/valid-token1.xml", :provider_key => @provider_key
+
+    assert_error_response :status  => 404,
+                          :code    => 'access_token_invalid',
+                          :message => 'access_token "valid-token1" is invalid: expired or never defined'
+                          
+
+    get "/services/#{@service.id}/oauth_access_tokens/valid-token2.xml", :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal @application.id, doc.at('app_id').content
+                          
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+    node = xml.search('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 1, node.count
+    assert_equal 'valid-token2', node[0].content
+    assert_equal '-1', node[0].attribute('ttl').value
+
+    
+  end
+
+  # TODO: more test covering multiservice cases (there is only one right now)
 
   private
 
