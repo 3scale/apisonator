@@ -143,8 +143,9 @@ module ThreeScale
         status_result = nil   
         cache_miss = true
         data_combination = nil
-
-        if params[:no_caching].nil?
+        
+        ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
+        if false && params[:no_caching].nil? 
           ## check is the keys/id combination from params has been seen
           ## before
 

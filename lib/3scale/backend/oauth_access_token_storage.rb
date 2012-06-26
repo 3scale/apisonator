@@ -35,6 +35,12 @@ module ThreeScale
 
         tokens.map { |token| OAuthAccessToken.new(token, app_id, ttl) }
       end
+      
+      def self.get_app_id(service_id, token)
+        app_id = storage.get(token_key(service_id,token))
+        storage.srem(token_set_key(service_id, app_id), token) if app_nil.nil?
+        app_id
+      end
 
       private
 
