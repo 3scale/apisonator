@@ -14,11 +14,17 @@ module ThreeScale
     module OAuthAccessTokenStorage
       extend Backend::StorageHelpers
 
+      def self.create(service_id, app_id, token, ttl = nil)
+        if ttl.nil?
+          return false
+        elsif ttl = ttl.to_i <= 0
+          storage.setex(token_key(service_id, token), ttl, app_id)
+        else
+          storage.set(token_key(service_id, token), app_id)
+        end
 
-      def self.create(service_id, app_id, token)
-        storage.set(token_key(service_id, token), app_id)
-        
         storage.sadd(token_set_key(service_id, app_id), token)
+        true
       end
 
       def self.delete(service_id, token)
@@ -45,7 +51,7 @@ module ThreeScale
 
         result.compact
       end
-      
+
       def self.get_app_id(service_id, token)
         app_id = storage.get(token_key(service_id,token))
         storage.srem(token_set_key(service_id, app_id), token) if app_id.nil?

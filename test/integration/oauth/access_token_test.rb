@@ -36,7 +36,7 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal '-1', node.attribute('ttl').value
   end
 
-  test 'create and read oauth_access_token with ttl' do
+  test 'create and read oauth_access_token with TTL supplied' do
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => 'VALID-TOKEN',
@@ -53,79 +53,65 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_equal 1, node.count
     assert_equal 'VALID-TOKEN', node.content
-    assert node.attribute('ttl').value.to_i >= 1, "ttl should be greater than 1, might not be 2 because of delay"
-  
-  
-  test 'create and read oauth_access_token with malformed ttl' do
-    
-    [-666, nil, '', 'adbc'].each |item|
+    assert node.attribute('ttl').value.to_i > 0, "TTL should be positive"
+  end
+
+
+  test 'create oauth_access_token with invalid TTL returns 422' do
+    [ -666, nil, '', 'adbc'].each do |ttl|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => 'VALID-TOKEN',
-                                                               :ttl => item
-                                                                                                                       
-      assert_equal 403, last_response.status
+                                                               :ttl => ttl
+
+      assert_equal 422, last_response.status, "TTL '#{ttl}' should be invalid"
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
           :provider_key => @provider_key
 
       assert_equal 200, last_response.status
-
-      xml  = Nokogiri::XML(last_response.body)
-      node = xml.at('oauth_access_tokens/oauth_access_token')
-
-      assert_equal 0, node.count
-    
+      assert_equal 0, xml.at('oauth_access_tokens/oauth_access_token').count
     end
-    
   end
-  
-  test 'malformed request to create and read oauth_access_token' do
-    
-    ['', nil, [], {}, 'foo bar'].each do |item| 
+
+  test 'create oauth_access_token with invalid token returns 422' do
+    ['', nil, [], {}, 'foo bar' ].each do |token|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
-                                                               :token => item
-                                                                                                                       
-      assert_equal 403, last_response.status
+                                                               :token => token
+
+      assert_equal 422, last_response.status, "oauth access token '#{token}' should be invalid"
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
           :provider_key => @provider_key
 
       assert_equal 200, last_response.status
-
-      xml  = Nokogiri::XML(last_response.body)
-      node = xml.at('oauth_access_tokens/oauth_access_token')
-
-      assert_equal 0, node.count    
+      assert_equal 0, xml.at('oauth_access_tokens/oauth_access_token').count
     end
   end
-  
-  test 'test create and delete' do 
-    
-    
+
+  test 'create and delete oauth access token' do
   end
-  
+
   # test create token and delete it
   # test create token and delete it twice, should raise error on the second one
   # test create token with ttl, wait for it to expire, and then delete it (should raise error)
   # test create token with ttl, check that it's on the list of token, wait for it to expire, check that the list is empty, finally delete it (should raise error)
   # test create 10000 tokens for the single service and get the list of all the tokens. Check that it does not take less than 1 second.
-  
-  # test create token with service_id, app_id_1, then create the same token, same service_id and different app_id. 
+
+  # test create token with service_id, app_id_1, then create the same token, same service_id and different app_id.
   # It should raise an error that the token is already assigned elsewhere.
-  
+
   # test the same as above with a ttl. Wait for the first app_id->token to expire and assign the same token, it should not raise an error because the token is already
   # taken.
-  
-  
-  
-  
-  
 
-  
-  # TODO: TTL
   # TODO: multiservice
+
+  private
+
+  def xml
+    Nokogiri::XML(last_response.body)
+  end
 
 end
 
