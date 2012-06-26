@@ -147,6 +147,7 @@ class AccessTokenTest < Test::Unit::TestCase
                           :message => 'provider key "fake-provider-key" is invalid'
 
 
+  end
 
   # TODO: test correct but different service_id with correct but other provider_id
   test 'CR(-)D with invalid invalid service' do
@@ -252,19 +253,37 @@ class AccessTokenTest < Test::Unit::TestCase
     
   end
   
+  
+  test 'perfomance test of setting token' do
+    
+    t = Time.now 
+    
+    500.times do |cont|
+      
+       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                                 :app_id => @application.id,
+                                                                 :token => "token-#{cont}"
 
+    end
+    
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    elapsed = Time.now-t 
+
+    assert_equal 200, last_response.status
+    assert_equal 500, xml.at('oauth_access_tokens').element_children.size
+  
+    assert elapsed < 1.0, "Perfomance test failed, took #{elapsed}s to associate 1000 access tokens"
+      
+  end
 
 
   # test create token and delete it
   # test create token and delete it twice, should raise error on the second one (TO BE REMOVED?)
   # test create token with ttl, wait for it to expire, and then delete it (should raise error)
   # test create token with ttl, check that it's on the list of token, wait for it to expire, check that the list is empty, finally delete it (should raise error)
-  # test create 10000 tokens for the single service and get the list of all the tokens. Check that it does not take less than 1 second.
 
-  # test create token with service_id, app_id_1, then create the same token, same service_id and different app_id.
-
-  # test the same as above with a ttl. Wait for the first app_id->token to expire and assign the same token, it should not raise an error because the token is already
-  # taken.
 
   # TODO: multiservice
 
