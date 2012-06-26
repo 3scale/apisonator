@@ -474,7 +474,7 @@ module ThreeScale
         
         raise AccessTokenInvalid.new(params[:token]) if @token_to_app_id.nil?
         
-        builder :oauth_app_id
+        builder :oauth_app_id_by_token
       end
 
       ## TRANSACTIONS & ERRORS

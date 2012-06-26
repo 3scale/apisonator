@@ -102,8 +102,54 @@ class AccessTokenTest < Test::Unit::TestCase
     end
   end
   
-  test 'create and delete oauth access token' do
+  test 'create oauth access token and retrieve the app_id later on' do
+    
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'valid-token-666'
+    assert_equal 200, last_response.status
+    
+    get "/services/#{@service.id}/oauth_access_tokens/valid-token-666.xml", :provider_key => @provider_key
+    
+    assert_equal 200, last_response.status
+    
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal @application.id, doc.at('app_id').content
+        
   end
+  
+  test 'failed retrieve app_id by token' do
+    
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'valid-token-666'
+    assert_equal 200, last_response.status
+    
+    get "/services/#{@service.id}/oauth_access_tokens/fake-token.xml", :provider_key => @provider_key
+    
+    assert_error_response :status  => 404,
+                          :code    => 'access_token_invalid',
+                          :message => 'access_token "fake-token" is invalid: expired or never defined'
+    
+  end
+  
+  test 'check that service_id and provider_key match on return app_id by token' do
+
+    get "/services/fake-service-id/oauth_access_tokens/fake-token.xml", :provider_key => @provider_key
+
+    assert_error_response :status  => 403,
+                          :code    => 'provider_key_invalid',
+                          :message => "provider key \"#{@provider_key}\" is invalid"
+                          
+    get "/services/#{@service.id}/oauth_access_tokens/fake-token.xml", :provider_key => "fake-provider-key"
+    
+    assert_error_response :status  => 403,
+                          :code    => 'provider_key_invalid',
+                          :message => 'provider key "fake-provider-key" is invalid'                                                     
+                            
+
+  end
+    
 
   test 'check that service_id and provider_key match' do
     
@@ -128,8 +174,8 @@ class AccessTokenTest < Test::Unit::TestCase
   
   
   
-  
   end
+  
   
   
   
