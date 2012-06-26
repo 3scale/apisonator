@@ -1,6 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
-class OauthBasicTest < Test::Unit::TestCase
+class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   include TestHelpers::AuthorizeAssertions
   include TestHelpers::Fixtures
   include TestHelpers::Integration
@@ -94,23 +94,31 @@ class OauthBasicTest < Test::Unit::TestCase
 
   test 'response of successful authorize contains application data' do
 
-    @application = Application.save(:service_id   => @service.id,
+    application = Application.save(:service_id   => @service.id,
                                     :id           => next_id,
                                     :state        => :active,
                                     :plan_id      => @plan_id,
                                     :plan_name    => @plan_name,
                                     :redirect_url => "http://3scale.net")
-    @application.create_key
+    application.create_key
 
+    access_token = "yet_another_access_token"
+    
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => application.id,
+                                                             :token => access_token,
+                                                             :ttl => 60
+    assert_equal 200, last_response.status
+    
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
+                                             :access_token => access_token,
                                              :log          => @apilog
 
     doc = Nokogiri::XML(last_response.body)
-    assert_equal @application.id,           doc.at('application/id').content
-    assert_equal @application.keys.first,   doc.at('application/key').content
-    assert_equal @application.redirect_url, doc.at('application/redirect_url').content
+    assert_equal application.id,           doc.at('application/id').content
+    assert_equal application.keys.first,   doc.at('application/key').content
+    assert_equal application.redirect_url, doc.at('application/redirect_url').content
   end
 
   test 'response of successful authorize contains usage reports if the plan has usage limits' do
@@ -498,7 +506,7 @@ class OauthBasicTest < Test::Unit::TestCase
     
       assert_error_response :status  => 404,
                             :code    => 'access_token_invalid',
-                            :message => 'access_token "boo" is invalid: expired or never defined'
+                            :message => 'access_token "fake" is invalid: expired or never defined'
                             
     end
   end
@@ -516,6 +524,15 @@ class OauthBasicTest < Test::Unit::TestCase
     end
     
     Resque.run!
+  
+    errors = ErrorStorage.list(@service_id)
+    
+    assert_not_nil errors
+    assert_equal 3, errors.size
+    errors.each do |err|
+      assert_equal 'access_token_invalid', err[:code]
+      assert_equal 'access_token "fake" is invalid: expired or never defined', err[:message]      
+    end
     
     ## TODO: check that the errors are reported like a missing app_id
   
@@ -524,7 +541,7 @@ class OauthBasicTest < Test::Unit::TestCase
 
     assert_error_response :status  => 404,
                           :code    => 'access_token_invalid',
-                          :message => 'access_token "boo" is invalid: expired or never defined'
+                          :message => 'access_token "fake" is invalid: expired or never defined'
     
   end
   
