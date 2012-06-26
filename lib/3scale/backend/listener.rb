@@ -422,18 +422,21 @@ module ThreeScale
       ## OAUTH ACCESS TOKENS
 
       post '/services/:service_id/oauth_access_tokens.xml' do
-        empty_response(403) and return unless are_string_params(:provider_key, :service_id, :token)
+        empty_response(422) and return unless are_string_params(:provider_key, :service_id, :token)
 
         if Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token])
-          empty_response
+          if OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token], params[:ttl])
+            empty_response 200
+          else
+            empty_response 422
+          end
         else
-          empty_response 403
+          empty_response 422
         end
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-        empty_response(403) and return unless are_string_params(:provider_key, :service_id, :app_id)
+        empty_response(422) and return unless are_string_params(:provider_key, :service_id, :app_id)
 
         service_id = params[:service_id]
         app_id = params[:app_id]
@@ -442,7 +445,7 @@ module ThreeScale
           @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id)
           builder :oauth_access_tokens
         else
-          empty_response(403)
+          empty_response(422)
         end
       end
 

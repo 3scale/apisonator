@@ -14,13 +14,24 @@ module ThreeScale
     module OAuthAccessTokenStorage
       extend Backend::StorageHelpers
 
+      # Creates OAuth Access Token association with the Application.
+      #
+      # Returns false in case of invalid invalid params (negative TTL
+      # or invalid token).
+      #
       def self.create(service_id, app_id, token, ttl = nil)
+        return false unless token =~ /\A(\w|-|_)+\Z/
+
         if ttl.nil?
-          return false
-        elsif ttl = ttl.to_i <= 0
-          storage.setex(token_key(service_id, token), ttl, app_id)
-        else
           storage.set(token_key(service_id, token), app_id)
+        else
+          ttl = ttl.to_i
+
+          if ttl > 0
+            storage.setex(token_key(service_id, token), ttl, app_id)
+          else
+            return false
+          end
         end
 
         storage.sadd(token_set_key(service_id, app_id), token)
@@ -35,7 +46,7 @@ module ThreeScale
       def self.all_by_service_and_app(service_id, app_id)
         tokens = storage.smembers(token_set_key(service_id, app_id))
         keys = tokens.map { |t| token_key(service_id, t) }
-        applications = storage.mget(*keys)
+        applications = keys.empty? ? [] : storage.mget(*keys)
         set_key = token_set_key(service_id, app_id)
 
         result = tokens.map.with_index do |token,i|
@@ -44,7 +55,7 @@ module ThreeScale
             storage.srem(set_key, token)
             nil
           else
-            ttl = storage.ttl(token_key(service_id, app_id))
+            ttl = storage.ttl(keys[i])
             OAuthAccessToken.new(token, ttl)
           end
         end

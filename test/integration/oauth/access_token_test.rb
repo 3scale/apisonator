@@ -40,7 +40,7 @@ class AccessTokenTest < Test::Unit::TestCase
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => 'VALID-TOKEN',
-                                                             :ttl => 10
+                                                             :ttl => 1000
     assert_equal 200, last_response.status
 
     get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
@@ -58,7 +58,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
 
   test 'create oauth_access_token with invalid TTL returns 422' do
-    [ -666, nil, '', 'adbc'].each do |ttl|
+    [ -666, '', 'adbc'].each do |ttl|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => 'VALID-TOKEN',
@@ -70,7 +70,7 @@ class AccessTokenTest < Test::Unit::TestCase
           :provider_key => @provider_key
 
       assert_equal 200, last_response.status
-      assert_equal 0, xml.at('oauth_access_tokens/oauth_access_token').count
+      assert xml.at('oauth_access_tokens').element_children.empty?
     end
   end
 
@@ -80,13 +80,13 @@ class AccessTokenTest < Test::Unit::TestCase
                                                                :app_id => @application.id,
                                                                :token => token
 
-      assert_equal 422, last_response.status, "oauth access token '#{token}' should be invalid"
+      assert_equal 422, last_response.status, "oauth access token '#{token.inspect}' should be invalid"
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
           :provider_key => @provider_key
 
       assert_equal 200, last_response.status
-      assert_equal 0, xml.at('oauth_access_tokens/oauth_access_token').count
+      assert xml.at('oauth_access_tokens').element_children.empty?
     end
   end
 
