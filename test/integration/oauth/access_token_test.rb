@@ -101,12 +101,42 @@ class AccessTokenTest < Test::Unit::TestCase
       assert xml.at('oauth_access_tokens').element_children.empty?
     end
   end
-
+  
   test 'create and delete oauth access token' do
   end
 
+  test 'check that service_id and provider_key match' do
+    
+    post "/services/fake-service-id/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                              :app_id => @application.id,
+                                                              :token => 'VALID-TOKEN',
+                                                              :ttl => 1000
+    
+    assert_error_response :status  => 403,
+                          :code    => 'provider_key_invalid',
+                          :message => "provider key \"#{@provider_key}\" is invalid"                                                     
+             
+  
+    post "/services/#{@service_id}/oauth_access_tokens.xml", :provider_key => "fake-provider-key",
+                                                              :app_id => @application.id,
+                                                              :token => 'VALID-TOKEN',
+                                                              :ttl => 1000
+
+    assert_error_response :status  => 403,
+                          :code    => 'provider_key_invalid',
+                          :message => 'provider key "fake-provider-key" is invalid'                                                     
+  
+  
+  
+  
+  end
+  
+  
+  
+  
+
   # test create token and delete it
-  # test create token and delete it twice, should raise error on the second one
+  # test create token and delete it twice, should raise error on the second one (TO BE REMOVED?)
   # test create token with ttl, wait for it to expire, and then delete it (should raise error)
   # test create token with ttl, check that it's on the list of token, wait for it to expire, check that the list is empty, finally delete it (should raise error)
   # test create 10000 tokens for the single service and get the list of all the tokens. Check that it does not take less than 1 second.

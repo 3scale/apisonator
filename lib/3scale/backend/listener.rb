@@ -426,7 +426,7 @@ module ThreeScale
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid
+          raise ProviderKeyInvalid, params[:provider_key]
         end
 
         if OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token], params[:ttl])
@@ -441,7 +441,7 @@ module ThreeScale
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid
+          raise ProviderKeyInvalid, params[:provider_key]
         end
 
         OAuthAccessTokenStorage.delete(service_id, params[:token])
@@ -452,7 +452,7 @@ module ThreeScale
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid
+          raise ProviderKeyInvalid, params[:provider_key]
         end
 
         service_id = params[:service_id]
@@ -462,6 +462,20 @@ module ThreeScale
         builder :oauth_access_tokens
       end
 
+      get '/services/:service_id/oauth_access_tokens/:token.xml' do
+        empty_response(422) and return unless are_string_params(:provider_key, :service_id, :token)
+        
+        
+        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
+          raise ProviderKeyInvalid, params[:provider_key]
+        end
+          
+        @token_to_app_id = OAuthAccessTokenStorage.get_app_id(params[:service_id], params[:token])
+        
+        raise AccessTokenInvalid.new(params[:token]) if @token_to_app_id.nil?
+        
+        builder :oauth_app_id
+      end
 
       ## TRANSACTIONS & ERRORS
 
