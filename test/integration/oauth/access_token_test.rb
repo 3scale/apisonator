@@ -69,7 +69,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
 
   test 'create oauth_access_token with invalid TTL returns 422' do
-    [ -666, '', 'adbc'].each do |ttl|
+    [ -666, 0, '', 'adbc'].each do |ttl|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => 'VALID-TOKEN',
@@ -86,7 +86,8 @@ class AccessTokenTest < Test::Unit::TestCase
   end
 
   test 'create oauth_access_token with invalid token returns 422' do
-    ['', nil, [], {}, 'foo bar' ].each do |token|
+    s = (0...256+1).map{65.+(rand(25)).chr}.join
+    ['', nil, [], {}, s].each do |token|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => token
@@ -99,6 +100,58 @@ class AccessTokenTest < Test::Unit::TestCase
       assert_equal 200, last_response.status
       assert xml.at('oauth_access_tokens').element_children.empty?
     end
+  end
+  
+  test 'create oauth_access_token with valid tokens' do
+    s = (0...255).map{65.+(rand(25)).chr}.join
+    ['foo bar', '_*-/9090', '?---$$$$', s, 6666].each do |token|
+      post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                               :app_id => @application.id,
+                                                               :token => token
+
+      assert_equal 200, last_response.status
+    end
+  end
+  
+  test 'handle the access tokens with dots .' do
+    
+    token = "hello.xml.xml"
+    
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => token
+
+    assert_equal 200, last_response.status
+    
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+    assert_equal 1, node.count
+    assert_equal token, node.content
+    assert_equal'-1', node.attribute('ttl').value
+    
+    get "/services/#{@service.id}/oauth_access_tokens/#{token}.xml", :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    doc   = Nokogiri::XML(last_response.body)
+    assert_equal @application.id, doc.at('app_id').content
+    
+    delete "/services/#{@service.id}/oauth_access_tokens/#{token}.xml",
+           :provider_key => @provider_key
+           
+    assert_equal 200, last_response.status
+    
+    get "/services/#{@service.id}/oauth_access_tokens/#{token}.xml", :provider_key => @provider_key
+    
+    assert_error_response :status  => 404,
+                           :code    => 'access_token_invalid',
+                           :message => "access_token \"#{token}\" is invalid: expired or never defined"
+
+    
   end
 
   test 'create oauth access token and retrieve the app_id later on' do
@@ -274,7 +327,7 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
     assert_equal 500, xml.at('oauth_access_tokens').element_children.size
   
-    assert elapsed < 1.0, "Perfomance test failed, took #{elapsed}s to associate 1000 access tokens"
+    assert elapsed < 2.0, "Perfomance test failed, took #{elapsed}s to associate 500 access tokens"
       
   end
 
