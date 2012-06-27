@@ -307,6 +307,57 @@ class AccessTokenTest < Test::Unit::TestCase
   end
   
   
+  test 'test that tokens of different application do not get mixed' do
+    
+    application2 = Application.save(:service_id => @service.id,
+                                      :id         => next_id,
+                                      :state      => :active,
+                                      :plan_id    => @plan_id,
+                                      :plan_name  => @plan_name)
+                                    
+                                    
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 666
+                                                          
+    assert_equal 200, last_response.status                                
+    
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 667
+                                                          
+    assert_equal 200, last_response.status
+    
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => application2.id,
+                                                             :token => 668
+                                                          
+    assert_equal 200, last_response.status
+      
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+    node = xml.search('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 2, node.count
+    assert_equal '666', node[0].content
+    assert_equal '-1', node[1].attribute('ttl').value    
+    assert_equal '667', node[1].content
+    assert_equal '-1', node[1].attribute('ttl').value    
+    
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+    node = xml.search('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 1, node.count
+    assert_equal '668', node[0].content
+    assert_equal '-1', node[0].attribute('ttl').value    
+    
+  end
+  
   test 'perfomance test of setting token' do
     
     t = Time.now 

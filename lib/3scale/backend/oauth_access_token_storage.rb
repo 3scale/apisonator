@@ -81,7 +81,7 @@ module ThreeScale
       end
 
       def self.token_set_key(service_id, app_id)
-        "oauth_access_tokens/service:#{$service_id}/app:$app_id/"
+        "oauth_access_tokens/service:#{service_id}/app:#{app_id}/"
        end
 
     end
