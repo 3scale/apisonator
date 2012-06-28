@@ -167,14 +167,14 @@ class LatestAlertsTest < Test::Unit::TestCase
     assert_equal 1, doc.search('alerts').size
     assert_equal 4, doc.search('alert').size
 
-    v = doc.search('alert')
+    alert = doc.xpath("//alert[@application_id='#{@application_id3}']").first
 
-    assert_equal @service_id, doc.search('alert')[0].attributes["service_id"].content
-    assert_equal @application_id3, doc.search('alert')[0].attributes["application_id"].content
-    assert_equal "80", doc.search('alert')[0].attributes["utilization"].content
-    assert_equal "foos per month: 81/100", doc.search('alert')[0].attributes["limit"].content
-    assert_not_nil doc.search('alert')[0].attributes["timestamp"].content
-    assert_not_nil doc.search('alert')[0].attributes["id"].content
+    assert_equal @service_id, alert.attributes["service_id"].content
+    assert_equal @application_id3, alert.attributes["application_id"].content
+    assert_equal "80", alert.attributes["utilization"].content
+    assert_equal "foos per month: 81/100", alert.attributes["limit"].content
+    assert_not_nil alert.attributes["timestamp"].content
+    assert_not_nil alert.attributes["id"].content
 
   end
 
@@ -281,14 +281,12 @@ class LatestAlertsTest < Test::Unit::TestCase
     assert_equal 1, doc.search('alerts').size
     assert_equal 4, doc.search('alert').size
 
-    assert_equal @service_id, doc.search('alert')[0].attributes["service_id"].content
-    assert_equal @application_id3, doc.search('alert')[0].attributes["application_id"].content
-    assert_equal "100", doc.search('alert')[0].attributes["utilization"].content
-    assert_equal "foos per month: 115/100", doc.search('alert')[0].attributes["limit"].content
-    assert_not_nil doc.search('alert')[0].attributes["timestamp"].content
-    assert_not_nil doc.search('alert')[0].attributes["id"].content
-
+    alert = doc.xpath("//alert[@application_id='#{@application_id3}']").first
+    assert_equal @service_id, alert.attributes["service_id"].content
+    assert_equal @application_id3, alert.attributes["application_id"].content
+    assert_equal "100", alert.attributes["utilization"].content
+    assert_equal "foos per month: 115/100", alert.attributes["limit"].content
+    assert_not_nil alert.attributes["timestamp"].content
+    assert_not_nil alert.attributes["id"].content
   end
-
-
 end

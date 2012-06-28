@@ -156,12 +156,11 @@ class AlertsTest < Test::Unit::TestCase
   
     end
 
-    v = AlertStorage.list(@service_id)
+    v = AlertStorage.list(@service_id).map{|e| e[:utilization]}
 
     assert_equal 3, v.size
-    assert_equal 100, v[0][:utilization]
-    assert_equal 90, v[1][:utilization]
-    assert_equal 90, v[2][:utilization]
+    assert v.include? 100
+    assert v.include? 90
       
   end
 

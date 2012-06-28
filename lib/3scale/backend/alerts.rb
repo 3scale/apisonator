@@ -131,21 +131,16 @@ module ThreeScale
                     :limit => "#{max_record.metric_name} per #{max_record.period}: #{max_record.current_value}/#{max_record.max_value}"}
        
           Backend::AlertStorage::store(alert)
-
         end
-
       end
 
       def stats(service_id, application_id) 
 
         key_stats = "alerts/service_id:#{service_id}/app_id:#{application_id}/stats_utilization"
         list = storage.lrange(key_stats,0,-1)
-       	# format compact address,value
-	      return list
-
+	# format compact address,value
+        return list
       end
-
-
 
       def utilization_discrete(utilization)
         u = utilization * 100.0
@@ -156,8 +151,6 @@ module ThreeScale
         end
         return ALERT_BINS.first
       end
-         
-      
     end
   end
 end
