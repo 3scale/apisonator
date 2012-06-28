@@ -23,6 +23,15 @@ class OauthLegacyTest < Test::Unit::TestCase
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :user_key     => user_key
-    assert_not_authorized
+                                             
+
+    
+    assert_error_response :status  => 404,
+                          :code    => 'application_not_found',
+                          :message => 'application with id="" was not found'
+                                                
+    ## assert_not_authorized
+    ## Using user_key in oauth mode is not longer acceptable. No-one uses it. I maintain the test
+    ## to make sure we handle the case as a not_found
   end
 end

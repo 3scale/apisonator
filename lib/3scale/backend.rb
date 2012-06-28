@@ -32,6 +32,7 @@ require '3scale/backend/configuration'
 require '3scale/backend/extensions'
 require '3scale/backend/aggregator'
 require '3scale/backend/allow_methods'
+require '3scale/backend/oauth_access_token_storage'
 require '3scale/backend/application'
 require '3scale/backend/archiver'
 require '3scale/backend/error_storage'
@@ -54,6 +55,8 @@ require '3scale/backend/alerts'
 require '3scale/backend/version'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
+
+
 
 module ThreeScale
   module Core
