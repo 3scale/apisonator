@@ -1,7 +1,7 @@
 
 
 create keyspace backend_test
-    with strategy_options = {replication_factor: 1}
+    with strategy_options = {replication_factor: 3}
     and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
 
 use backend_test;
