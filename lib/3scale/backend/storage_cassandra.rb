@@ -43,7 +43,7 @@ module ThreeScale
         
         DEFAULT_SERVER = '127.0.0.1:9160'
         DEFAULT_KEYSPACE = 'backend_test'
-        THRIFT_OPTIONS = {:retries => 2, :timeout => 1}
+        THRIFT_OPTIONS = {:retries => 3, :timeout => 3}
         
         ## for no reason cassandra-cql does not allow keyspaces that start with a number (3scale)
 
