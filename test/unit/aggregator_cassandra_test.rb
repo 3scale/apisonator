@@ -2,6 +2,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class AggregatorCassandraTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
+  include TestHelpers::AuthorizeAssertions
+  include TestHelpers::Sequences
   include Backend::StorageHelpers
 
 	def seed_data
@@ -33,7 +35,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
               :id => 2001, :state => :live)
 		
     # Create metrics
-    Metric.save(:service_id => service_id, :id => 3001, :name => 'hits')
+    @metric_hits = Metric.save(:service_id => service_id, :id => 3001, :name => 'hits')
 
 	end
 
@@ -51,6 +53,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 		@storage_cassandra.clear_keyspace!
 		
   end
+  
+  
   
   
   test 'benchmark check, not a real failure' do
@@ -634,7 +638,108 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
       
   end
+
+  test 'applications with end user plans (user_id) get recorded properly' do
+    
+    default_user_plan_id = next_id
+    default_user_plan_name = "user plan mobile"
+    
+    service = Service.save!(:provider_key => @provider_key, :id => next_id)
   
+    service.user_registration_required = false
+    service.default_user_plan_name = default_user_plan_name
+    service.default_user_plan_id = default_user_plan_id
+    service.save!
+
+    application = Application.save(:service_id => service.id,
+                                    :id         => next_id,
+                                    :state      => :active,
+                                    :plan_id    => @plan_id,
+                                    :plan_name  => @plan_name,
+                                    :user_required => true)
+                                    
+    Aggregator.aggregate_all([{:service_id     => service.id,
+                               :application_id => application.id,
+                               :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                               :usage          => {@metric_hits.id => 5},
+                               :user_id        => "user_id_xyz"}])
+                               
+    assert_equal '5', @storage.get(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))                                                                  
+    assert_equal '5', @storage.get(application_key(service.id, application.id, @metric_hits.id, :month,   '20100501'))                                                                  
+    assert_equal '5', @storage.get(application_key(service.id, application.id, @metric_hits.id, :eternity))                                                                  
+    
+    assert_equal '5', @storage.get(service_key(service.id, @metric_hits.id, :hour,   '2010050713'))                                                                  
+    assert_equal '5', @storage.get(service_key(service.id, @metric_hits.id, :month,   '20100501'))                                                                  
+    assert_equal '5', @storage.get(service_key(service.id, @metric_hits.id, :eternity))                                                                  
+    
+    assert_equal '5', @storage.get(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :hour,   '2010050713'))                                                                  
+    assert_equal '5', @storage.get(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :month,   '20100501'))                                                                  
+    assert_equal '5', @storage.get(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :eternity))
+
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :month,   '20100501'))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :eternity))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :hour,   '2010050713'))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :month,   '20100501'))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :eternity))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :hour,   '2010050713'))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :month,   '20100501'))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :eternity))
+    assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    Aggregator.aggregate_all([{:service_id     => service.id,
+                               :application_id => application.id,
+                               :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                               :usage          => {@metric_hits.id => 4},
+                               :user_id        => "another_user_id_xyz"}])
+    
+     assert_equal '9', @storage.get(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))                                                                  
+     assert_equal '9', @storage.get(application_key(service.id, application.id, @metric_hits.id, :month,   '20100501'))                                                                  
+     assert_equal '9', @storage.get(application_key(service.id, application.id, @metric_hits.id, :eternity))                                                                  
+
+     assert_equal '9', @storage.get(service_key(service.id, @metric_hits.id, :hour,   '2010050713'))                                                                  
+     assert_equal '9', @storage.get(service_key(service.id, @metric_hits.id, :month,   '20100501'))                                                                  
+     assert_equal '9', @storage.get(service_key(service.id, @metric_hits.id, :eternity))                                                                  
+
+     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :hour,   '2010050713'))                                                                  
+     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :month,   '20100501'))                                                                  
+     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :eternity))
+    
+    
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))
+     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :month,   '20100501'))
+     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :eternity))
+     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :hour,   '2010050713'))
+     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :month,   '20100501'))
+     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :eternity))
+     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :hour,   '2010050713'))
+     assert_equal 4, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :month,   '20100501'))
+     assert_equal 4, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :eternity))
+     assert_equal 4, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    
+  end
 
 
   test 'aggregate_all updates application set' do
@@ -668,4 +773,5 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert ttl >  0
     assert ttl <= 60
   end
+
 end

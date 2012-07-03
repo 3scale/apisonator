@@ -104,6 +104,7 @@ module ThreeScale
           
           service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
 
+          ## QUESTION: why not increment by :year ?  
           increment_or_set(type, service_metric_prefix, :eternity,   nil,       value)
           increment_or_set(type, service_metric_prefix, :month,      timestamp, value)
           increment_or_set(type, service_metric_prefix, :week,       timestamp, value)
