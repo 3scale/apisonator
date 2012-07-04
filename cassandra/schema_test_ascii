@@ -1,0 +1,34 @@
+
+
+
+create keyspace backend_test2
+    with strategy_options = {replication_factor: 2}
+    and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
+
+use backend_test2;
+
+create column family StatsAscii
+  with default_validation_class=CounterColumnType 
+  and key_validation_class=AsciiType 
+  and comparator=AsciiType;
+
+create column family StatsUTF8
+  with default_validation_class=CounterColumnType
+  and key_validation_class=UTF8Type    
+  and comparator=UTF8Type;
+
+create column family StatsBytes
+  with default_validation_class=CounterColumnType
+  and key_validation_class=BytesType     
+  and comparator=BytesType;
+
+create column family Stats
+  with default_validation_class=CounterColumnType
+  and key_validation_class=UTF8Type     
+  and comparator=UTF8Type;
+
+
+create column family Users;
+
+
+

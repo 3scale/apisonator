@@ -1,10 +1,10 @@
 
 
-create keyspace backend_stats
+create keyspace backend_production
     with strategy_options = {replication_factor: 3}
     and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
 
-use backend_stats;
+use backend_production;
 
 create column family Stats
   with default_validation_class=CounterColumnType 

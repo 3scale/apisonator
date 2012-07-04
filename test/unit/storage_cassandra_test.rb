@@ -106,7 +106,7 @@ class StorageCassandraTest < Test::Unit::TestCase
     
     ## but now it shouldn't because we are reloading.
     
-    assert_raise Errno::ECONNREFUSED do 
+    assert_raise ThriftClient::NoServersAvailable do 
       
       storage = StorageCassandra.instance(true)
     
