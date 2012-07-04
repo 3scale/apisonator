@@ -5,7 +5,7 @@ module ThreeScale
       include Backend::Aggregator::StatsBatcher
 
       DEFAULT_SERVER = '127.0.0.1:9160'
-      DEFAULT_KEYSPACE = 'backend_test'
+      DEFAULT_KEYSPACE = 'backend_testing'
       THRIFT_OPTIONS = {:retries => 3, :timeout => 3}
         
 

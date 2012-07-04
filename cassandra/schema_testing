@@ -11,7 +11,3 @@ create column family Stats
   and key_validation_class=UTF8Type 
   and comparator=UTF8Type;
 
-create column family Users;
-
-
-
