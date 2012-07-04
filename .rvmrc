@@ -1,0 +1,17 @@
+rvm use ruby-1.9.2-p180
+
+# install bundler
+if ! which bundle 1>/dev/null ; then
+  gem install bundle
+fi
+
+# install rake
+if ! which rake 1>/dev/null ; then
+  gem install rake
+fi
+
+bundle check 1>/dev/null
+
+if [ "$?" -ne "0" ]; then
+  bundle install
+fi
