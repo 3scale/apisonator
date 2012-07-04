@@ -4,11 +4,11 @@ module ThreeScale
       module StatsBatcher
       
         def failed_batch_cql_key
-          "failed/batchcql"
+          "cassandra:failed"
         end
       
         def unprocessable_batch_cql_key
-          "unprocessable/batchcql"
+          "cassandra:unprocessable"
         end
         
         def failed_batch_cql_size
@@ -28,15 +28,15 @@ module ThreeScale
         end
         
         def disable_cassandra()
-          storage.del("cassandra_enabled")
+          storage.del("cassandra:enabled")
         end
         
         def enable_cassandra()
-          storage.set("cassandra_enabled","1")
+          storage.set("cassandra:enabled","1")
         end
         
         def cassandra_enabled?
-          storage.get("cassandra_enabled").to_i == 1
+          storage.get("cassandra:enabled").to_i == 1
         end
         
         def enqueue_failed_batch_cql(pending)
