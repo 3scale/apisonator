@@ -55,8 +55,6 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   end
   
   
-  
-  
   test 'benchmark check, not a real failure' do
     
     cont = 1000
@@ -196,7 +194,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :minute, '201005071323'))
     assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
         
-    good_enough = time_with_cassandra < time_without_cassandra * 2.0
+    good_enough = time_with_cassandra < time_without_cassandra * 3
     
     if (!good_enough)
       puts "\nwith    cassandra: #{time_with_cassandra}s"
