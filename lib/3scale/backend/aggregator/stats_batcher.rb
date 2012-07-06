@@ -27,6 +27,14 @@ module ThreeScale
           storage.del(unprocessable_batch_cql_key)
         end
         
+        def changed_keys_bucket_key(bucket)
+          "keys_changed:#{bucket}"
+        end
+
+        def changed_keys_key()
+          "keys_changed_set"
+        end
+        
         def disable_cassandra()
           storage.del("cassandra:enabled")
         end
@@ -38,6 +46,39 @@ module ThreeScale
         def cassandra_enabled?
           storage.get("cassandra:enabled").to_i == 1
         end
+        
+        def get_oldest_bucket_blocking(bucket)
+          
+          buckets = storage.smembers(changed_keys_key).sort
+          return nil if buckets.empty?
+          
+          storage.watch(changed_keys)
+          ## there should be very few elements on the changed_keys_key
+          sorted_buckets = storage.smembers(changed_keys_key).sort
+          
+          if buckets.empty? || sorted_buckets.first > bucket
+            storage.unwatch
+            return nil
+          end
+          
+          key = sorted_buckets.first
+          
+          res = storage.multi do
+            storage.srem(changed_keys,key)
+          end
+          
+          ## this should never happen, it means that the element is not on the set
+          ## but then, the multi should have returned null. Comment it when on production
+          raise Exception, "Something very fishy is happening" if !res.nil? && res.first==0
+          
+          ## returns the bucket that you get the lock on, or nil if there is no
+          ## buckets to be worked on, either because there were none, or because
+          ## there were (!buckets.empty?) but someone has modified the set
+          
+          res.nil? ? return nil : return key
+          
+        end
+        
         
         def enqueue_failed_batch_cql(pending)
         
@@ -163,8 +204,14 @@ module ThreeScale
         ## this is a fake CQL statement that does an set value of a counter
         ## we better store it as string since it might be processed on a delayed matter
         ## is cassandra is down (see Aggregator::process_batch_sql)
-        def set2cql(column_family, row_key, value, col_key)
+        def deprecated_set2cql(column_family, row_key, value, col_key)
           str = "!SET " << column_family.to_s << " " << row_key << " " << col_key << " " << value.to_s
+        end
+        
+        def set2cql(column_family, row_key, col_key, value)
+          str = "UPDATE " << column_family.to_s
+          str << " SET '" << col_key << "'='" << value.to_s 
+          str << " WHERE key = '" << row_key << "';"
         end
       
         def get2cql(column_family, row_key, col_key)

@@ -214,7 +214,7 @@ module Extensions
              
     end
     
-    def test_exception_on_beginning_of_bucke
+    def test_exception_on_beginning_of_bucket
       
       assert_raise Exception do
         assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(0).to_not_compact_s

@@ -23,9 +23,21 @@ module ThreeScale
         
         @cass_enabled = cassandra_enabled?
         
+        if @cass_enabled 
+          bucket = Time.utc.beginning_of_bucket(5).to_not_compact_s
+          if @current_bucket == bucket 
+            schedule_cassandra_job = false
+          else 
+            schedule_cassandra_job = true
+            old_bucket = @current_bucket
+            @current_bucket = bucket
+          end
+        end
+        
+        
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
           
-          @batch_cql = []
+          ##@batch_cql = []
           
           storage.pipelined do
             slice.each do |transaction|
@@ -63,6 +75,15 @@ module ThreeScale
         ## now we have done all incrementes for all the transactions, we
         ## need to update the cached_status for for the transactor
         update_status_cache(applications,users)
+        
+        ## the time bucket has elapsed, trigger a cassandra job
+        if @cass_enabled && schedule_cassandra_job && !old_bucket.nil?
+          ## this will happend every X seconds, N times. Where N is the number of workers
+          ## and X is a configuration parameter
+          storage.sadd(changed_keys_key, @current_bucket)    
+          Resque.enqueue(StatsJob, old_bucket)
+        end
+        
       end
   
       def get_value_of_set_if_exists(value_str) 
@@ -265,21 +286,22 @@ module ThreeScale
       def metric_key_prefix(prefix, metric_id)
         "#{prefix}/metric:#{metric_id}"
       end
-
+      
+     
       def increment_or_set(type, prefix, granularity, timestamp, value, options = {})
         key = counter_key(prefix, granularity, timestamp)
-        ##puts "... #{key}"
+      
         type == :set ?  updated_value = storage.set(key, value) : updated_value = storage.incrby(key, value)
         storage.expire(key, options[:expires_in]) if options[:expires_in]
         
         if @cass_enabled
-          row_key, column_key = counter_key_cassandra(prefix, granularity, timestamp)
-          if type == :set
-            ## WARNING: this is terrible, it's a total anti-pattern for cassandra, but counters in cassandra cannot be set :/ 
-            @batch_cql << storage_cassandra.set2cql(:Stats, row_key, value, column_key)
-          else
-            @batch_cql << storage_cassandra.add2cql(:Stats, row_key, value, column_key)
-          end
+          storage.sadd(changed_keys_bucket_key(@current_time_bucket),key)
+          #row_key, column_key = counter_key_cassandra(prefix, granularity, timestamp)
+          #if type == :set
+          #  @batch_cql << storage_cassandra.set2cql(:Stats, row_key, value, column_key)
+          #else
+          #  @batch_cql << storage_cassandra.add2cql(:Stats, row_key, value, column_key)
+          #end
         end
         
       end
