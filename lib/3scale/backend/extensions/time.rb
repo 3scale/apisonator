@@ -57,6 +57,14 @@ module ThreeScale
       def beginning_of_day_hack
         self.class.utc(year, month, day)
       end
+      
+      def beginning_of_bucket(seconds_in_bucket)
+        if seconds_in_bucket > 30 || seconds_in_bucket < 1 || !seconds_in_bucket.is_a?(Fixnum)
+          raise Exception, "seconds_in_bucket cannot be larger than 30 seconds or smaller than 1"
+        end
+        norm_sec = (sec/seconds_in_bucket)*seconds_in_bucket
+        self.class.utc(year, month, day, hour, min, norm_sec)
+      end
 
       # Formats the time using as little characters as possible, but still keeping
       # readability.
@@ -69,6 +77,10 @@ module ThreeScale
       # Time.utc(2010, 5, 6, 00, 00, 00).to_compact_s # "20100506"
       def to_compact_s
         strftime('%Y%m%d%H%M%S').sub(/0{0,6}$/, '')
+      end
+
+      def to_not_compact_s
+        strftime('%Y%m%d%H%M%S')
       end
 
       private
