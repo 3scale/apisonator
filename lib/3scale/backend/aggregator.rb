@@ -27,12 +27,14 @@ module ThreeScale
         
         if @cass_enabled 
           bucket = Time.now.utc.beginning_of_bucket(5).to_not_compact_s
-          if @current_bucket == bucket 
+          @@current_bucket ||= bucket
+          
+          if @@current_bucket == bucket 
             schedule_cassandra_job = false
           else 
             schedule_cassandra_job = true
-            old_bucket = @current_bucket
-            @current_bucket = bucket
+            old_bucket = @@current_bucket
+            @@current_bucket = bucket
           end
         end
                 
@@ -70,8 +72,8 @@ module ThreeScale
         
         ## the time bucket has elapsed, trigger a cassandra job
         if @cass_enabled
-          storage.sadd(changed_keys_key, @current_bucket)
-          if schedule_cassandra_job && !old_bucket.nil?
+          storage.sadd(changed_keys_key, @@current_bucket)
+          if schedule_cassandra_job
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
             Resque.enqueue(StatsJob, old_bucket)
@@ -294,10 +296,10 @@ module ThreeScale
         storage.expire(key, options[:expires_in]) if options[:expires_in]
         
         if @cass_enabled
-          storage.sadd(changed_keys_bucket_key(@current_bucket),key)
+          storage.sadd(changed_keys_bucket_key(@@current_bucket),key)
           ## need to copy them besides marking, otherwise they could expire or get removed from redis
           ## with lost of data
-          storage.incrby("#{@current_bucket}:#{key}", value)
+          storage.incrby("#{@@current_bucket}:#{key}", value)
         end
         
         

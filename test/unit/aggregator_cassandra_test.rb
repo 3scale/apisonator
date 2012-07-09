@@ -54,6 +54,57 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 		
   end
   
+  test 'Stats jobs get properly enqueued' do 
+    
+    
+    assert_equal 0, Resque.queue(:main).length
+    
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
+      Aggregator.aggregate_all([{:service_id     => 1001,
+                                :application_id => 2001,
+                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                                :usage          => {'3001' => 1}}])
+    end  
+    assert_equal 0, Resque.queue(:main).length
+    
+  
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + 3)) do
+      Aggregator.aggregate_all([{:service_id     => 1001,
+                                :application_id => 2001,
+                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                                :usage          => {'3001' => 1}}])
+    end                   
+    assert_equal 0, Resque.queue(:main).length
+    
+    ## antoher time bucket has elapsed
+    
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + 6)) do
+      Aggregator.aggregate_all([{:service_id     => 1001,
+                                :application_id => 2001,
+                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                                :usage          => {'3001' => 1}}])
+    end                     
+    assert_equal 1, Resque.queue(:main).length
+
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + 9)) do
+      Aggregator.aggregate_all([{:service_id     => 1001,
+                                :application_id => 2001,
+                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                                :usage          => {'3001' => 1}}])
+    end                     
+    assert_equal 1, Resque.queue(:main).length
+  
+    ## antoher time bucket has elapsed
+  
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + 10)) do
+      Aggregator.aggregate_all([{:service_id     => 1001,
+                                :application_id => 2001,
+                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                                :usage          => {'3001' => 1}}])
+    end                     
+    assert_equal 2, Resque.queue(:main).length
+  
+  end
   
   test 'benchmark check, not a real failure if happens' do
     
