@@ -58,6 +58,7 @@ require '3scale/backend/errors'
 
 
 
+
 module ThreeScale
   module Core
     def self.storage
