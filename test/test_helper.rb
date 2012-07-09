@@ -17,8 +17,11 @@ require '3scale/backend'
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
 
 ThreeScale::Backend.configure do |config|
+  raise "test run not allowed when redis is not localhost" unless config.redis.servers.length == 1 && config.redis.servers.first.to_s == "127.0.0.1:6379"
   config.redis.db = 2
 end
+
+ThreeScale::Backend.configuration
 
 class Test::Unit::TestCase
   include ThreeScale
