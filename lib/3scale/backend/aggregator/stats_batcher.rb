@@ -30,15 +30,13 @@ module ThreeScale
         def pending_keys_by_bucket()
           result = {}
           pending_buckets.each do |b| 
-              result[b] = storage.scard(changed_keys_bucket_key(b))
+            result[b] = storage.scard(changed_keys_bucket_key(b))
           end
           result
         end
         
         def stats_bucket_size
-          @@stats_bucket_size ||= begin
-            configuration.stats.bucket_size || 5
-          end
+          @@stats_bucket_size ||= (configuration.stats.bucket_size || 5)
         end
         
         ## returns the array of buckets to process that are < bucket

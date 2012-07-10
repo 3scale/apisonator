@@ -16,7 +16,7 @@ module ThreeScale
       include Configurable
       include StatsBatcher
       extend self
-      
+    
       def aggregate_all(transactions)
         applications = Hash.new
         users = Hash.new
