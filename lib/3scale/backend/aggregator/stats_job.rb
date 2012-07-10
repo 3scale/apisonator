@@ -1,11 +1,9 @@
 module ThreeScale
   module Backend
     module Aggregator
-      
       # Job for writing stats to cassandra 
       class StatsJob
-        extend Configurable
-        
+          
         @queue = :main
 
         def self.perform(bucket)

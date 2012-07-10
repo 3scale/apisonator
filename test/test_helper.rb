@@ -18,6 +18,7 @@ Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file
 
 ThreeScale::Backend.configure do |config|
   config.redis.db = 2
+  config.stats.bucket_size = 5 
 end
 
 class Test::Unit::TestCase

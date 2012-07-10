@@ -6,7 +6,11 @@ module ThreeScale
         def changed_keys_bucket_key(bucket)
           "keys_changed:#{bucket}"
         end
-
+        
+        def changed_keys_bucket_by_set_key(bucket)
+          "keys_changed:by_set:#{bucket}"
+        end
+        
         def changed_keys_key()
           "keys_changed_set"
         end
@@ -25,6 +29,12 @@ module ThreeScale
         
         def pending_buckets_size()
           storage.zcard(changed_keys_key)
+        end
+        
+        def stats_bucket_size
+          @@stats_bucket_size ||= begin
+            configuration.stats.bucket_size || 5
+          end
         end
         
         ## returns the array of buckets to process that are < bucket

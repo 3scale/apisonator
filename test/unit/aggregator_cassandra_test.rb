@@ -71,7 +71,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     
   
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator::STATS_BUCKET_SIZE/2).to_i)) do
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size/2).to_i)) do
       Aggregator.aggregate_all([{:service_id     => 1001,
                                 :application_id => 2001,
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
@@ -81,7 +81,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
     ## antoher time bucket has elapsed
     
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator::STATS_BUCKET_SIZE*1.5).to_i)) do
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size*1.5).to_i)) do
       Aggregator.aggregate_all([{:service_id     => 1001,
                                 :application_id => 2001,
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
@@ -89,7 +89,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     end                     
     assert_equal 1, Resque.queue(:main).length
 
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator::STATS_BUCKET_SIZE*1.9).to_i)) do
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size*1.9).to_i)) do
       Aggregator.aggregate_all([{:service_id     => 1001,
                                 :application_id => 2001,
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
@@ -99,7 +99,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   
     ## antoher time bucket has elapsed
   
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator::STATS_BUCKET_SIZE*2).to_i)) do
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size*2).to_i)) do
       Aggregator.aggregate_all([{:service_id     => 1001,
                                 :application_id => 2001,
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
@@ -122,9 +122,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
                                 :usage          => {'3001' => 1}}])                       
     end
     
-    Aggregator.pending_buckets.size.times do
-      Aggregator.schedule_one_stats_job()
-    end
+    Aggregator.schedule_one_stats_job
     Resque.run!
     
     assert_equal 0, Aggregator.pending_buckets.size
@@ -202,9 +200,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
                                 
     end
     
-    Aggregator.pending_buckets.size.times do
-      Aggregator.schedule_one_stats_job()
-    end
+    
+    Aggregator.schedule_one_stats_job()
     Resque.run!
     
     assert_equal 0, Aggregator.pending_buckets.size
@@ -342,9 +339,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   end
   
   test 'aggregate takes into account setting the counter value' do 
-    ## WIP
-    
-    if false
+   
     v = []
     10.times do
       v <<   { :service_id     => 1001,
@@ -354,24 +349,43 @@ class AggregatorCassandraTest < Test::Unit::TestCase
       
     end
     
-    v <<   { :service_id     => 1001,
+    Aggregator.aggregate_all(v)
+    
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    v = []
+    v  <<   { :service_id     => 1001,
              :application_id => 2001,
              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
              :usage          => {'3001' => '#665'}}
     
-    
+    Aggregator.aggregate_all(v)
+
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 665, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+
+
+    v = []
     v <<   { :service_id     => 1001,
              :application_id => 2001,
              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
              :usage          => {'3001' => '1'}}
                                                 
     Aggregator.aggregate_all(v)
+    
+    Aggregator.schedule_one_stats_job
+    Resque.run!
                                
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 666, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
-      
-    end
-  
+    
   end
   
   test 'direct test of get_old_buckets_to_process' do 
@@ -413,7 +427,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
       
     5.times do |cont|
       
-      bucket_key = timestamp.beginning_of_bucket(Aggregator::STATS_BUCKET_SIZE).to_not_compact_s
+      bucket_key = timestamp.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
       
       Timecop.freeze(timestamp) do 
         Aggregator.aggregate_all([{:service_id     => 1001,
@@ -427,7 +441,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
       assert Aggregator.pending_buckets.member?(bucket_key)
       assert_equal cont, Resque.queue(:main).length  
       
-      timestamp = timestamp + Aggregator::STATS_BUCKET_SIZE
+      timestamp = timestamp + Aggregator.stats_bucket_size
                                     
     end
     
@@ -485,7 +499,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
         
       end
       
-      timestamp = timestamp + Aggregator::STATS_BUCKET_SIZE                              
+      timestamp = timestamp + Aggregator.stats_bucket_size                              
     end
     
     assert_equal 5, Aggregator.pending_buckets.size
@@ -534,8 +548,12 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 
   
   test 'aggregate takes into account setting the counter value in the case of failed batches' do 
-    ## WIP
-    if false
+
+
+    @storage_cassandra.stubs(:execute).raises(Exception.new('bang!'))
+    @storage_cassandra.stubs(:add).raises(Exception.new('bang!'))
+    @storage_cassandra.stubs(:get).raises(Exception.new('bang!'))
+    
     v = []
     10.times do
       v <<   { :service_id     => 1001,
@@ -545,44 +563,46 @@ class AggregatorCassandraTest < Test::Unit::TestCase
       
     end
     
+    Aggregator.aggregate_all(v)
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+    
+    v = []
     v <<   { :service_id     => 1001,
              :application_id => 2001,
              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
              :usage          => {'3001' => '#665'}}
     
+    Aggregator.aggregate_all(v)
+    Aggregator.schedule_one_stats_job
+    Resque.run!
     
+    v = []
     v <<   { :service_id     => 1001,
              :application_id => 2001,
              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
              :usage          => {'3001' => '1'}}
     
-    @storage_cassandra.stubs(:execute).raises(Exception.new('bang!'))
-    @storage_cassandra.stubs(:add).raises(Exception.new('bang!'))
-    @storage_cassandra.stubs(:get).raises(Exception.new('bang!'))
+
                                                            
     Aggregator.aggregate_all(v)
-    
-    @storage_cassandra = StorageCassandra.instance(true)           
+    Aggregator.schedule_one_stats_job
+    Resque.run!
     
     ## it failed for cassandra
-                           
+    
+    @storage_cassandra = StorageCassandra.instance(true)    
+        
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     
-    assert_equal 1, Aggregator.failed_batch_cql_size
-    
-    Aggregator.process_failed_batch_cql(:all => true)
-    
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 666, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
-    
-    assert_equal 0, Aggregator.failed_batch_cql_size
-    
-    assert_equal 0, Aggregator.unprocessable_batch_cql_size
-    
-    end
         
   end
   

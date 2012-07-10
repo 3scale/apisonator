@@ -13,12 +13,9 @@ module ThreeScale
       include Core::StorageKeyHelpers
       include Backend::Cache
       include Backend::Alerts
-      include StatsBatcher
       include Configurable
+      include StatsBatcher
       extend self
-
-      ## WTF!! STATS_BUCKET_SIZE = configuration.stats.bucket_size || 5
-      STATS_BUCKET_SIZE = 5
       
       def aggregate_all(transactions)
         applications = Hash.new
@@ -30,7 +27,7 @@ module ThreeScale
         @cass_enabled = cassandra_enabled?
         
         if @cass_enabled 
-          bucket = Time.now.utc.beginning_of_bucket(Aggregator::STATS_BUCKET_SIZE).to_not_compact_s
+          bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
           @@current_bucket ||= bucket
           
           if @@current_bucket == bucket 
@@ -42,6 +39,8 @@ module ThreeScale
         end
                 
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
+           
+          @keys_doing_set_op = []
            
           val = storage.pipelined do
             slice.each do |transaction|
@@ -66,6 +65,29 @@ module ThreeScale
           
           ## here the pipelined redis increments have been sent
           ## now we have to send the cassandra ones
+          
+          ## FIXME we had set operations :-/ This will only work when the key is on redis, it will not be true in the future
+          ## not live keys (stats only) will only be on cassandra. Will require fix, or limit the usage of #set. In addition,
+          ## set operations cannot coexist on increments on the same metric in the same pipeline. It has to be a check that
+          ## set operations cannot be batched, only one transaction.
+          
+          if @cass_enabled && @keys_doing_set_op.size>0
+            
+            @keys_doing_set_op.each do |item|
+              key, value = item
+              
+              old_value, tmp = storage.pipelined do
+                storage.get(key)
+                storage.set(key, value)
+              end
+                          
+              storage.pipelined do
+                storage.incrby("#{@@current_bucket}:#{key}", -old_value.to_i)
+                storage.incrby("#{@@current_bucket}:#{key}", value)
+              end
+            end
+            
+          end
                   
         end
 
@@ -297,7 +319,11 @@ module ThreeScale
         key = counter_key(prefix, granularity, timestamp)
       
         if (type==:set)
-          storage.set(key, value)
+          if @cass_enabled
+            ## will do later on, otherwise it overwrites the value
+          else
+            storage.set(key, value)
+          end
           ## TODO: when on set, the stats to cassandra are not set
         else
           storage.incrby(key, value)
@@ -309,7 +335,11 @@ module ThreeScale
           storage.sadd(changed_keys_bucket_key(@@current_bucket),key)
           ## need to copy them besides marking, otherwise they could expire or get removed from redis
           ## with lost of data
-          storage.incrby("#{@@current_bucket}:#{key}", value)
+          if type==:set
+            @keys_doing_set_op << [key, value]
+          else
+            storage.incrby("#{@@current_bucket}:#{key}", value)
+          end
         end
         
         
