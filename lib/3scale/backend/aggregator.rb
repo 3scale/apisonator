@@ -98,7 +98,7 @@ module ThreeScale
         ## the time bucket has elapsed, trigger a cassandra job
         if @cass_enabled
           storage.zadd(changed_keys_key, @@current_bucket.to_i, @@current_bucket)
-          if schedule_cassandra_job &&
+          if schedule_cassandra_job
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
             Resque.enqueue(StatsJob, @@current_bucket)
