@@ -7,10 +7,6 @@ module ThreeScale
           "keys_changed:#{bucket}"
         end
         
-        def changed_keys_bucket_by_set_key(bucket)
-          "keys_changed:by_set:#{bucket}"
-        end
-        
         def changed_keys_key()
           "keys_changed_set"
         end
@@ -29,6 +25,14 @@ module ThreeScale
         
         def pending_buckets_size()
           storage.zcard(changed_keys_key)
+        end
+        
+        def pending_keys_by_bucket()
+          result = {}
+          pending_buckets.each do |b| 
+              result[b] = storage.scard(changed_keys_bucket_key(b))
+          end
+          result
         end
         
         def stats_bucket_size
