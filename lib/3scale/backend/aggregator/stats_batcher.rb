@@ -3,28 +3,12 @@ module ThreeScale
     module Aggregator
       module StatsBatcher
       
-        def failed_batch_cql_key
-          "cassandra:failed"
-        end
-      
-        def unprocessable_batch_cql_key
-          "cassandra:unprocessable"
+        def changed_keys_bucket_key(bucket)
+          "keys_changed:#{bucket}"
         end
         
-        def failed_batch_cql_size
-          storage.llen(failed_batch_cql_key)
-        end
-      
-        def unprocessable_batch_cql_size
-          storage.llen(unprocessable_batch_cql_key)
-        end  
-        
-        def delete_failed_batch_cql
-          storage.del(failed_batch_cql_key)
-        end
-        
-        def delete_unprocessable_batch_cql
-          storage.del(unprocessable_batch_cql_key)
+        def changed_keys_key()
+          "keys_changed_set"
         end
         
         def disable_cassandra()
@@ -39,141 +23,105 @@ module ThreeScale
           storage.get("cassandra:enabled").to_i == 1
         end
         
-        def enqueue_failed_batch_cql(pending)
-        
-          return nil if pending.nil? or pending.empty?
-        
-          storage.rpush(failed_batch_cql_key, 
-                         encode(:payload   => pending,
-                                :timestamp => Time.now.getutc)) 
-        
+        def pending_buckets_size()
+          storage.zcard(changed_keys_key)
         end
         
-        def process_failed_batch_cql(options = {})
+        def pending_keys_by_bucket()
+          result = {}
+          pending_buckets.each do |b| 
+            result[b] = storage.scard(changed_keys_bucket_key(b))
+          end
+          result
+        end
+        
+        def stats_bucket_size
+          @@stats_bucket_size ||= (configuration.stats.bucket_size || 5)
+        end
+        
+        ## returns the array of buckets to process that are < bucket
+        def get_old_buckets_to_process(bucket = "inf")
           
-          while item = storage.lpop(failed_batch_cql_key)
-            begin
-              process_batch_cql(decode(item)[:payload], :already_on_pending => true)
-            rescue Exception => e
-              ## if there is an error give an airbreak but
-              ## put the item back to the queue so it's not
-              storage.rpush(unprocessable_batch_cql_key,item)
-              raise e
-            end
-            
-            break if options[:all].nil? || options[:all] != true
+          ## there should be very few elements on the changed_keys_key
+    
+          res = storage.multi do
+            storage.zrevrange(changed_keys_key,0,-1)
+            storage.zremrangebyscore(changed_keys_key,"-inf","(#{bucket}")
+          end
+          
+          if (res[1]>=1)
+            return res[0].reverse.slice(0..res[1]-1)
+          else
+            ## nothing was deleted
+            return []
           end
           
         end
-      
-        def process_batch_cql(batch_cql, options = {}) 
-       
-          return nil if batch_cql.nil? or batch_cql.empty?
         
-          pending = batch_cql.clone()
-        
-          str = "BEGIN BATCH "
-          atleastone = false
-        
-          while statement = batch_cql.shift
-            
-            if (statement[0]=='!') 
-              ## a set operation. We need first to run the current batch.
-            
-              if atleastone
-                ## a set operation. We need first to run the current batch if it already
-                ## have increments to get the proper state from the upcoming read 
-                str << "APPLY BATCH;"
-              
-                begin
-                  storage_cassandra.execute(str)
-                  pending = batch_cql.clone()
-                  str = "BEGIN BATCH "
-                  atleastone = false
-                                
-                rescue Exception => e
-                  ##could now write to cassandra
-                  ## save the pending array to redis if it was not already on pending
-                  if options[:already_on_pending]
-                    raise e
-                  else
-                    enqueue_failed_batch_cql(pending)
-                    return nil
-                  end 
-                end
-              
-              end
-            
-              begin
-                ## this statement is build in StorageCassandra::set2cql
-                foo, col_family, row_key, col_key, value = statement.split(" ")
-            
-                ## this is a total anti-pattern of cassandra
-                old_value = storage_cassandra.get(col_family,row_key,col_key)
-                old_value = 0 if old_value.nil?
-                storage_cassandra.add(col_family,row_key, value.to_i - old_value.to_i ,col_key)
-            
-                pending = batch_cql.clone()
-              
-              rescue Exception => e
-                ## could not write to cassandra
-                if options[:already_on_pending]
-                  raise e
-                else
-                  enqueue_failed_batch_cql(pending) 
-                  return nil
-                end
-              end
-               
-              ##we have done the set, now we can continue with a the sub-batch from this point on
+        def save_to_cassandra(bucket) 
           
-            else
-              ## not a set operation, simple incr/decr
-              str << statement
-              atleastone = true
-            end
-                   
-          end
-          
-          if atleastone
-            str << "APPLY BATCH;"
-            begin
-              storage_cassandra.execute(str);
-              pending = batch_cql.clone()
-            rescue Exception => e
-              ## could not write to cassandra
-              if options[:already_on_pending]
-                raise e
-              else
-                enqueue_failed_batch_cql(pending)
-                return nil
-              end
-            end
-          end  
+          keys_that_changed = storage.smembers(changed_keys_bucket_key(bucket))
 
+          return if keys_that_changed.nil? || keys_that_changed.empty?
+
+          ## need to fetch the values from the copies, not the originals
+          copied_keys_that_changed = keys_that_changed.map {|item| "#{bucket}:#{item}"}  
+
+          values = storage.mget(*copied_keys_that_changed)
+                
+          str = "BEGIN BATCH "
+          keys_that_changed.each_with_index do |key, i|
+            row_key, col_key = redis_key_2_cassandra_key(key)
+            str << add2cql(:Stats, row_key, values[i], col_key) << " "
+          end
+          str << "APPLY BATCH;"
+          
+          
+          begin
+            storage_cassandra.execute(str);
+            
+            ## now we have to clean up the data in redis that has been processed
+            storage.pipelined do
+              copied_keys_that_changed.each do |item|
+                storage.del(item)
+              end
+              storage.del(changed_keys_bucket_key(bucket))
+            end
+            
+          rescue Exception => e
+            ## could not write to cassandra, reschedule
+            storage.zadd(changed_keys_key, bucket.to_i, bucket)        
+          end
+          
         end
-      
-      
+        
+        def schedule_one_stats_job(bucket = "inf")
+          Resque.enqueue(StatsJob, bucket)
+        end
+        
+        def pending_buckets
+          storage.zrange(changed_keys_key,0,-1)    
+        end
+        
         def add2cql(column_family, row_key, value, col_key)
           str = "UPDATE " << column_family.to_s
-          str << " SET '" << col_key << "'='" << col_key << "' + " << value.to_s 
+          str << " SET '" << col_key << "'='" << col_key << "' + " << value.to_s
           str << " WHERE key = '" << row_key << "';"
         end
-      
+
         ## this is a fake CQL statement that does an set value of a counter
         ## we better store it as string since it might be processed on a delayed matter
         ## is cassandra is down (see Aggregator::process_batch_sql)
         def set2cql(column_family, row_key, value, col_key)
           str = "!SET " << column_family.to_s << " " << row_key << " " << col_key << " " << value.to_s
         end
-      
+
         def get2cql(column_family, row_key, col_key)
           str = "SELECT '" << col_key << "'"
-          str << " FROM '" << column_family.to_s << "'" 
+          str << " FROM '" << column_family.to_s << "'"
           str << " WHERE key = '" + row_key + "';"
         end
-      
-      
+        
       end
     end
   end

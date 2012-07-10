@@ -6,6 +6,10 @@ task :default => :test
 desc 'Run unit and integration tests'
 task :test => ['test:unit', 'test:integration']
 
+task :environment do
+  require '3scale/backend'
+end
+
 namespace :test do
   desc 'Run all tests (unit, integration and special)'
   task :all => ['test:unit', 'test:integration', 'test:special']
@@ -73,51 +77,33 @@ end
 
 namespace :stats do
   
-  desc 'number of failed batches on the pending queue'
-  task :failed_size do
-    require '3scale/backend'
-    puts ThreeScale::Backend::Aggregator.failed_batch_cql_size()
-  end
-
-  desc 'number of failed batches on the unprocessable queue'
-  task :unprocessable_size do
-    require '3scale/backend'
-    puts ThreeScale::Backend::Aggregator.unprocessable_batch_cql_size()
+  desc 'Number of stats buckets active in Redis'
+  task :buckets_size => :environment do
+    puts ThreeScale::Backend::Aggregator.pending_buckets_size()
   end
   
-  desc 'delete unprocessable queue (only in panic mode)'
-  task :unprocessable_delete do
-    require '3scale/backend'
-    puts ThreeScale::Backend::Aggregator.delete_unprocessable_batch_cql()
+  desc 'Number of keys in each stats bucket in Redis'
+  task :buckets_info => :environment do
+    puts ThreeScale::Backend::Aggregator.pending_keys_by_bucket().inspect
   end
   
-  desc 'delete failed queue (only in panic mode)'
-  task :failed_delete do
-    require '3scale/backend'
-    puts ThreeScale::Backend::Aggregator.delete_failed_batch_cql()
+  desc 'Schedule a StatsJob, will process all pending buckets including current (only in panic mode)'
+  task :insert_stats_job => :environment do
+    puts ThreeScale::Backend::Aggregator.schedule_one_stats_job
   end
   
-  desc 'process failed queue (all, if success it removes the queue)'
-  task :failed_process do
-    require '3scale/backend'
-    puts ThreeScale::Backend::Aggregator.process_failed_batch_cql(:all => true)
-  end
-  
-  desc 'disable stats batch processing on cassandra (only in panic mode)'  
-  task :disable_cassandra do
-      require '3scale/backend'
+  desc 'Disable stats batch processing on cassandra (only in panic mode)'  
+  task :disable_cassandra => :environment do
       puts ThreeScale::Backend::Aggregator.disable_cassandra()
   end
   
-  desc 'enable stats batch processing on cassandra (only in panic mode)'  
-  task :enable_cassandra do
-      require '3scale/backend'
+  desc 'Enable stats batch processing on cassandra (only in panic mode)'  
+  task :enable_cassandra => :environment do
       puts ThreeScale::Backend::Aggregator.enable_cassandra()
   end
   
-  desc 'is cassandra batch processing enabled? (only in panic mode)'  
-  task :cassandra_enabled? do
-      require '3scale/backend'
+  desc 'Is cassandra batch processing enabled? (only in panic mode)'  
+  task :cassandra_enabled? => :environment do
       puts ThreeScale::Backend::Aggregator.cassandra_enabled?()
   end
 end

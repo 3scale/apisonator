@@ -1,8 +1,10 @@
 require 'json'
+require '3scale/backend'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
 require '3scale/backend/aggregator/stats_batcher'
+require '3scale/backend/aggregator/stats_job'
 
 
 module ThreeScale
@@ -11,9 +13,10 @@ module ThreeScale
       include Core::StorageKeyHelpers
       include Backend::Cache
       include Backend::Alerts
+      include Configurable
       include StatsBatcher
       extend self
-
+    
       def aggregate_all(transactions)
         applications = Hash.new
         users = Hash.new
@@ -23,11 +26,23 @@ module ThreeScale
         
         @cass_enabled = cassandra_enabled?
         
+        if @cass_enabled 
+          bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+          @@current_bucket ||= bucket
+          
+          if @@current_bucket == bucket 
+            schedule_cassandra_job = false
+          else 
+            schedule_cassandra_job = true
+            @@current_bucket = bucket
+          end
+        end
+                
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-          
-          @batch_cql = []
-          
-          storage.pipelined do
+           
+          @keys_doing_set_op = []
+           
+          val = storage.pipelined do
             slice.each do |transaction|
               key = transaction[:application_id]
              
@@ -50,19 +65,46 @@ module ThreeScale
           
           ## here the pipelined redis increments have been sent
           ## now we have to send the cassandra ones
-                
-          if @cass_enabled
-            process_batch_cql(@batch_cql)
-          else
-            ##enqueue_failed_batch_cql(@batch_cql)
-          end
           
-                    
+          ## FIXME we had set operations :-/ This will only work when the key is on redis, it will not be true in the future
+          ## not live keys (stats only) will only be on cassandra. Will require fix, or limit the usage of #set. In addition,
+          ## set operations cannot coexist on increments on the same metric in the same pipeline. It has to be a check that
+          ## set operations cannot be batched, only one transaction.
+          
+          if @cass_enabled && @keys_doing_set_op.size>0
+            
+            @keys_doing_set_op.each do |item|
+              key, value = item
+              
+              old_value, tmp = storage.pipelined do
+                storage.get(key)
+                storage.set(key, value)
+              end
+                          
+              storage.pipelined do
+                storage.incrby("#{@@current_bucket}:#{key}", -old_value.to_i)
+                storage.incrby("#{@@current_bucket}:#{key}", value)
+              end
+            end
+            
+          end
+                  
         end
 
         ## now we have done all incrementes for all the transactions, we
         ## need to update the cached_status for for the transactor
         update_status_cache(applications,users)
+        
+        ## the time bucket has elapsed, trigger a cassandra job
+        if @cass_enabled
+          storage.zadd(changed_keys_key, @@current_bucket.to_i, @@current_bucket)
+          if schedule_cassandra_job &&
+            ## this will happend every X seconds, N times. Where N is the number of workers
+            ## and X is a configuration parameter
+            Resque.enqueue(StatsJob, @@current_bucket)
+          end
+        end
+        
       end
   
       def get_value_of_set_if_exists(value_str) 
@@ -70,8 +112,14 @@ module ThreeScale
         return value_str[1..value_str.size].to_i
       end
       
-        
+      def reset_current_bucket!
+        @@current_bucket = nil
+      end
       
+      def current_bucket
+        @@current_bucket 
+      end
+        
       private
 
       def aggregate(transaction)
@@ -265,22 +313,35 @@ module ThreeScale
       def metric_key_prefix(prefix, metric_id)
         "#{prefix}/metric:#{metric_id}"
       end
-
+      
+     
       def increment_or_set(type, prefix, granularity, timestamp, value, options = {})
         key = counter_key(prefix, granularity, timestamp)
-        ##puts "... #{key}"
-        type == :set ?  updated_value = storage.set(key, value) : updated_value = storage.incrby(key, value)
+      
+        if (type==:set)
+          if @cass_enabled
+            ## will do later on, otherwise it overwrites the value
+          else
+            storage.set(key, value)
+          end
+          ## TODO: when on set, the stats to cassandra are not set
+        else
+          storage.incrby(key, value)
+        end  
+        
         storage.expire(key, options[:expires_in]) if options[:expires_in]
         
         if @cass_enabled
-          row_key, column_key = counter_key_cassandra(prefix, granularity, timestamp)
-          if type == :set
-            ## WARNING: this is terrible, it's a total anti-pattern for cassandra, but counters in cassandra cannot be set :/ 
-            @batch_cql << storage_cassandra.set2cql(:Stats, row_key, value, column_key)
+          storage.sadd(changed_keys_bucket_key(@@current_bucket),key)
+          ## need to copy them besides marking, otherwise they could expire or get removed from redis
+          ## with lost of data
+          if type==:set
+            @keys_doing_set_op << [key, value]
           else
-            @batch_cql << storage_cassandra.add2cql(:Stats, row_key, value, column_key)
+            storage.incrby("#{@@current_bucket}:#{key}", value)
           end
         end
+        
         
       end
       

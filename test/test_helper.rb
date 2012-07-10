@@ -22,6 +22,7 @@ ThreeScale::Backend.configure do |config|
   end
 
   config.redis.db = 2
+  config.stats.bucket_size = 5 
 end
 
 ThreeScale::Backend.configuration

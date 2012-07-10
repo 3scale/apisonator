@@ -30,7 +30,6 @@ require '3scale/backend/validators/state'
 
 require '3scale/backend/configuration'
 require '3scale/backend/extensions'
-require '3scale/backend/aggregator'
 require '3scale/backend/allow_methods'
 require '3scale/backend/oauth_access_token_storage'
 require '3scale/backend/application'
@@ -43,9 +42,10 @@ require '3scale/backend/logger'
 require '3scale/backend/server'
 require '3scale/backend/service'
 require '3scale/backend/storage'
-require '3scale/backend/storage_cassandra'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/log_request_storage'
+require '3scale/backend/aggregator'
+require '3scale/backend/storage_cassandra'
 require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
 require '3scale/backend/user'
@@ -55,8 +55,6 @@ require '3scale/backend/alerts'
 require '3scale/backend/version'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
-
-
 
 module ThreeScale
   module Core
@@ -75,6 +73,7 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:cassandra, :servers, :keyspace)
   config.add_section(:archiver, :path, :s3_bucket)
   config.add_section(:hoptoad, :api_key)
+  config.add_section(:stats, :bucket_size)
 
   # Default config
   config.master_service_id = 1

@@ -163,7 +163,8 @@ module Extensions
       assert_equal '200911031234',   Time.utc(2009, 11,  3, 12, 34,  0).to_compact_s
       assert_equal '2009110312',     Time.utc(2009, 11,  3, 12,  0,  0).to_compact_s
       assert_equal '20091103',       Time.utc(2009, 11,  3,  0,  0,  0).to_compact_s
-      assert_equal '20091110',       Time.utc(2009, 11, 10,  0,  0,  0).to_compact_s
+      assert_equal '20091110',       Time.utc(2009, 11, 10,  0,  0,  0).to_compact_s      
+      assert_equal '21000101',       Time.utc(2100, 1, 1,  0,  0,  0).to_compact_s  
     end
 
     def test_parse_to_utc_with_input_without_offset
@@ -188,5 +189,50 @@ module Extensions
       assert_nil Time.parse_to_utc('2011/18/20')
       assert_nil Time.parse_to_utc('choke on this!')
     end
+    
+    def test_beginning_of_bucket
+      
+      assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(1).to_not_compact_s
+      assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(2).to_not_compact_s
+      assert_equal '20091103123454', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(3).to_not_compact_s
+      assert_equal '20091103123455', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(5).to_not_compact_s
+      assert_equal '20091103123450', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(10).to_not_compact_s
+      assert_equal '20091103123440', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(20).to_not_compact_s
+      assert_equal '20091103123430', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(30).to_not_compact_s
+      
+      assert_equal '20091103123400', Time.utc(2009, 11,  3, 12, 34, 00).beginning_of_bucket(1).to_not_compact_s
+      assert_equal '20091103123400', Time.utc(2009, 11,  3, 12, 34, 00).beginning_of_bucket(2).to_not_compact_s
+      assert_equal '20091103123400', Time.utc(2009, 11,  3, 12, 34, 00).beginning_of_bucket(3).to_not_compact_s
+      assert_equal '20091103123400', Time.utc(2009, 11,  3, 12, 34, 00).beginning_of_bucket(5).to_not_compact_s
+      assert_equal '20091103123400', Time.utc(2009, 11,  3, 12, 34, 00).beginning_of_bucket(10).to_not_compact_s
+      assert_equal '20091103123400', Time.utc(2009, 11,  3, 12, 34, 00).beginning_of_bucket(20).to_not_compact_s
+      assert_equal '20091103123400', Time.utc(2009, 11,  3, 12, 34, 00).beginning_of_bucket(30).to_not_compact_s
+    
+      assert_equal '21000101000000', Time.utc(2100, 01,  01, 0, 0, 1).beginning_of_bucket(30).to_not_compact_s
+      assert_equal '21000101000030', Time.utc(2100, 01,  01, 0, 0, 31).beginning_of_bucket(3).to_not_compact_s
+      assert_equal '21000101000035', Time.utc(2100, 01,  01, 0, 0, 36).beginning_of_bucket(5).to_not_compact_s
+             
+    end
+    
+    def test_exception_on_beginning_of_bucket
+      
+      assert_raise Exception do
+        assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(0).to_not_compact_s
+      end
+      
+      assert_raise Exception do
+        assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(-1).to_not_compact_s
+      end
+      
+      assert_raise Exception do
+        assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(60).to_not_compact_s
+      end
+      
+      assert_raise Exception do
+        assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(3.5).to_not_compact_s
+      end
+    
+    end  
+    
   end
 end
