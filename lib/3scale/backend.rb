@@ -56,9 +56,6 @@ require '3scale/backend/version'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
 
-
-
-
 module ThreeScale
   module Core
     def self.storage
@@ -76,6 +73,7 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:cassandra, :servers, :keyspace)
   config.add_section(:archiver, :path, :s3_bucket)
   config.add_section(:hoptoad, :api_key)
+  config.add_section(:stats, :bucket_size)
 
   # Default config
   config.master_service_id = 1

@@ -24,36 +24,26 @@ module ThreeScale
         end
         
         def pending_buckets_size()
-          storage.scard(changed_keys_key)
+          storage.zcard(changed_keys_key)
         end
         
-        def get_oldest_bucket_blocking(bucket)
+        ## returns the array of buckets to process that are < bucket
+        def get_old_buckets_to_process(bucket = "inf")
           
           ## there should be very few elements on the changed_keys_key
-          
-          sorted_buckets = storage.smembers(changed_keys_key).sort
-          return nil if sorted_buckets.empty? || sorted_buckets.first < bucket
-          
-          storage.watch(changed_keys_key)
-          key = sorted_buckets.first
-          
+    
           res = storage.multi do
-            storage.srem(changed_keys_key,key)
+            storage.zrevrange(changed_keys_key,0,-1)
+            storage.zremrangebyscore(changed_keys_key,"-inf","(#{bucket}")
           end
           
-          ## this should never happen, it means that the element is not on the set
-          ## but then, the multi should have returned null. Comment it when on production
-          raise Exception, "Something very fishy is happening" if !res.nil? && res.first==0
-          
-          ## returns the bucket that you get the lock on, or nil if there is no
-          ## buckets to be worked on, either because there were none, or because
-          ## there were (!buckets.empty?) but someone has modified the set
-          
-          if res.nil? 
-            return nil 
+          if (res[1]>=1)
+            return res[0].reverse.slice(0..res[1]-1)
           else
-            return key
+            ## nothing was deleted
+            return []
           end
+          
         end
         
         def save_to_cassandra(bucket) 
@@ -88,22 +78,17 @@ module ThreeScale
             
           rescue Exception => e
             ## could not write to cassandra, reschedule
-            puts "error in cassandra"
-            puts e
-            storage.sadd(changed_keys_key, bucket)        
+            storage.zadd(changed_keys_key, bucket.to_i, bucket)        
           end
           
         end
         
-        def run_stats_for_tests
-          return unless cassandra_enabled?
-          
-          while (pending_buckets_size()>0)
-            cont = pending_buckets_size()   
-            bucket_to_save = get_oldest_bucket_blocking("")
-            save_to_cassandra(bucket_to_save)          
-            raise "Stuck in an infinite loop: temporal, will blow when cassandra connection fails" if pending_buckets_size() == cont  
-          end
+        def schedule_one_stats_job(bucket = "inf")
+          Resque.enqueue(StatsJob, bucket)
+        end
+        
+        def pending_buckets
+          storage.zrange(changed_keys_key,0,-1)    
         end
         
         def add2cql(column_family, row_key, value, col_key)

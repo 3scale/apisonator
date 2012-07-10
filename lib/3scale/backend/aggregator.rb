@@ -1,4 +1,5 @@
 require 'json'
+require '3scale/backend'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
@@ -13,9 +14,12 @@ module ThreeScale
       include Backend::Cache
       include Backend::Alerts
       include StatsBatcher
-      
+      include Configurable
       extend self
 
+      ## WTF!! STATS_BUCKET_SIZE = configuration.stats.bucket_size || 5
+      STATS_BUCKET_SIZE = 5
+      
       def aggregate_all(transactions)
         applications = Hash.new
         users = Hash.new
@@ -26,14 +30,13 @@ module ThreeScale
         @cass_enabled = cassandra_enabled?
         
         if @cass_enabled 
-          bucket = Time.now.utc.beginning_of_bucket(5).to_not_compact_s
+          bucket = Time.now.utc.beginning_of_bucket(Aggregator::STATS_BUCKET_SIZE).to_not_compact_s
           @@current_bucket ||= bucket
           
           if @@current_bucket == bucket 
             schedule_cassandra_job = false
           else 
             schedule_cassandra_job = true
-            old_bucket = @@current_bucket
             @@current_bucket = bucket
           end
         end
@@ -72,11 +75,11 @@ module ThreeScale
         
         ## the time bucket has elapsed, trigger a cassandra job
         if @cass_enabled
-          storage.sadd(changed_keys_key, @@current_bucket)
-          if schedule_cassandra_job
+          storage.zadd(changed_keys_key, @@current_bucket.to_i, @@current_bucket)
+          if schedule_cassandra_job &&
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
-            Resque.enqueue(StatsJob, old_bucket)
+            Resque.enqueue(StatsJob, @@current_bucket)
           end
         end
         
@@ -87,6 +90,13 @@ module ThreeScale
         return value_str[1..value_str.size].to_i
       end
       
+      def reset_current_bucket!
+        @@current_bucket = nil
+      end
+      
+      def current_bucket
+        @@current_bucket 
+      end
         
       private
 
