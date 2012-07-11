@@ -3,6 +3,10 @@ module ThreeScale
     module Aggregator
       module StatsBatcher
       
+        def temporal_output
+          @@temporal_output ||= File.new("/mnt/3scale_backend/temp_cassandra.log","a")
+        end
+      
         def changed_keys_bucket_key(bucket)
           "keys_changed:#{bucket}"
         end
@@ -90,6 +94,8 @@ module ThreeScale
             
           rescue Exception => e
             ## could not write to cassandra, reschedule
+            temporal_output.puts e 
+            temporal_output.puts str
             storage.zadd(changed_keys_key, bucket.to_i, bucket)        
           end
           
@@ -107,13 +113,6 @@ module ThreeScale
           str = "UPDATE " << column_family.to_s
           str << " SET '" << col_key << "'='" << col_key << "' + " << value.to_s
           str << " WHERE key = '" << row_key << "';"
-        end
-
-        ## this is a fake CQL statement that does an set value of a counter
-        ## we better store it as string since it might be processed on a delayed matter
-        ## is cassandra is down (see Aggregator::process_batch_sql)
-        def set2cql(column_family, row_key, value, col_key)
-          str = "!SET " << column_family.to_s << " " << row_key << " " << col_key << " " << value.to_s
         end
 
         def get2cql(column_family, row_key, col_key)
