@@ -167,7 +167,10 @@ module ThreeScale
           increment_or_set(type, application_metric_prefix, :week,       timestamp, value)
           increment_or_set(type, application_metric_prefix, :day,        timestamp, value)
           increment_or_set(type, application_metric_prefix, :hour,       timestamp, value)
-          increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+          increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
+
+          # increase the TTL from 1 to 3 minutes, only required for checking consistency between cassandra and
+          # redis data. The overhead is not that big, will be at most few thousand extra keys.
 
           unless transaction[:user_id].nil? 
             user_metric_prefix = metric_key_prefix(user_prefix, metric_id)
@@ -177,7 +180,7 @@ module ThreeScale
             increment_or_set(type, user_metric_prefix, :week,       timestamp, value)
             increment_or_set(type, user_metric_prefix, :day,        timestamp, value)
             increment_or_set(type, user_metric_prefix, :hour,       timestamp, value)
-            increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+            increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
           end
         end
 

@@ -922,7 +922,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 
     assert_not_equal -1, ttl
     assert ttl >  0
-    assert ttl <= 60
+    assert ttl <= 180
   end
 
 end
