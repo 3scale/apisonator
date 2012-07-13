@@ -75,6 +75,16 @@ task :restart_worker do
   system "ruby -Ilib bin/3scale_backend_worker restart"
 end
 
+desc 'Reschedule failed jobs'
+task :reschedule_failed_jobs => :environment do
+  count = Resque::Failure.count
+  (Resque::Failure.count-1).downto(0).each { |i| Resque::Failure.requeue(i) }
+  Resque::Failure.clear
+  Resque.redis.llen("queue:resque:queue:priority").times  { Resque.redis.rpoplpush("queue:resque:queue:priority","queue:priority") }
+  Resque.redis.llen("queue:resque:queue:main").times { Resque.redis.rpoplpush("queue:resque:queue:main","queue:main")}
+  puts "resque:failed size: #{Resque::Failure.count} (from #{count})"
+end
+
 namespace :stats do
   
   desc 'Number of stats buckets active in Redis'
