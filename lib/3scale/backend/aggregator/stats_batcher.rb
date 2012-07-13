@@ -6,13 +6,25 @@ module ThreeScale
         def temporal_output
           @@temporal_output ||= File.new("/mnt/3scale_backend/temp_cassandra.log","a")
         end
-      
+        
+        def temporal_output_exceptions
+          @@temporal_output ||= File.new("/mnt/3scale_backend/temp_cassandra_exceptions.log","a")
+        end
+        
         def changed_keys_bucket_key(bucket)
           "keys_changed:#{bucket}"
         end
         
         def changed_keys_key()
           "keys_changed_set"
+        end
+        
+        def failed_save_to_cassandra_key
+          "stats:failed"
+        end
+        
+        def failed_save_to_cassandra_at_least_once_key
+          "stats:failed_at_least_once"
         end
         
         def disable_cassandra()
@@ -39,6 +51,24 @@ module ThreeScale
           result
         end
         
+        def delete_all_buckets_and_keys_only_as_rake!(options = {})
+          disable_cassandra()
+          v = storage.keys("keys_changed:*")
+          v.each do |bucket|
+            tmp, bucket_time = bucket.split(":")
+            keys = storage.smembers(bucket)
+            puts "Deleting bucket: #{bucket}, containing #{keys.size} keys" unless options[:silent]==true
+            keys.each do |key|
+              storage.pipelined do 
+                storage.del("#{bucket_time}:#{key}")
+              end
+            end
+            storage.del(bucket)
+          end
+          storage.del(changed_keys_key);
+          storage.del(failed_save_to_cassandra_key)
+        end
+        
         def stats_bucket_size
           @@stats_bucket_size ||= (configuration.stats.bucket_size || 5)
         end
@@ -62,6 +92,7 @@ module ThreeScale
           
         end
         
+        
         def save_to_cassandra(bucket) 
           
           keys_that_changed = storage.smembers(changed_keys_bucket_key(bucket))
@@ -72,17 +103,29 @@ module ThreeScale
           copied_keys_that_changed = keys_that_changed.map {|item| "#{bucket}:#{item}"}  
 
           values = storage.mget(*copied_keys_that_changed)
-                
-          str = "BEGIN BATCH "
+          
+          single_key_by_batch = Hash.new
+          single_value_by_batch = Hash.new
+          
           keys_that_changed.each_with_index do |key, i|
             row_key, col_key = redis_key_2_cassandra_key(key)
-            str << add2cql(:Stats, row_key, values[i], col_key) << " "
+          
+            single_key_by_batch[row_key] ||= Array.new
+            single_value_by_batch[row_key] ||= Array.new
+            
+            single_key_by_batch[row_key] << col_key
+            single_value_by_batch[row_key] << values[i].to_i
+          end
+          
+          
+          str = "BEGIN BATCH "
+          single_key_by_batch.keys.each do |row_key|
+            str << add2cql(:Stats, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
           end
           str << "APPLY BATCH;"
           
-          
           begin
-            storage_cassandra.execute(str);
+            storage_cassandra.execute(str); 
             
             ## now we have to clean up the data in redis that has been processed
             storage.pipelined do
@@ -90,14 +133,23 @@ module ThreeScale
                 storage.del(item)
               end
               storage.del(changed_keys_bucket_key(bucket))
+              storage.srem(failed_save_to_cassandra_key, bucket)
             end
-            
+
           rescue Exception => e
             ## could not write to cassandra, reschedule
-            temporal_output.puts e 
-            temporal_output.puts str
-            storage.zadd(changed_keys_key, bucket.to_i, bucket)        
+            begin
+              temporal_output_exceptions.puts "Error saving bucket: #{bucket}"
+              temporal_output.puts "Error saving bucket: #{bucket}"
+              temporal_output_exceptions.puts e 
+              temporal_output.puts str
+            rescue Exception => e2
+            end
+            storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
+            storage.sadd(failed_save_to_cassandra_key, bucket)
+            storage.zadd(changed_keys_key, bucket.to_i, bucket)  
           end
+          
           
         end
         
@@ -109,7 +161,31 @@ module ThreeScale
           storage.zrange(changed_keys_key,0,-1)    
         end
         
+        def failed_buckets
+          storage.smembers(failed_save_to_cassandra_key)
+        end
+        
+        def failed_buckets_at_least_once
+          storage.smembers(failed_save_to_cassandra_at_least_once_key)
+        end
+        
         def add2cql(column_family, row_key, value, col_key)
+          if value.is_a?(Array) || col_key.is_a?(Array)
+            if value.size!=col_key.size || value.is_a?(Array)!=col_key.is_a?(Array) || value.size==0
+              raise Exception, "error on parameters of add2cql, value: #{value.inspect}, col_key: #{col_key.inspect}"
+            end
+            str = "UPDATE " << column_family.to_s << " SET "
+            col_key.each_with_index do |ck, i|
+              str << ", " if i>0 
+              str << "'" << ck << "'='" << ck << "' + " << value[i].to_s
+            end
+            str << " WHERE key = '" << row_key << "';"
+          else
+            add2cql_single(column_family, row_key, value, col_key)
+          end
+        end
+        
+        def add2cql_single(column_family, row_key, value, col_key)
           str = "UPDATE " << column_family.to_s
           str << " SET '" << col_key << "'='" << col_key << "' + " << value.to_s
           str << " WHERE key = '" << row_key << "';"

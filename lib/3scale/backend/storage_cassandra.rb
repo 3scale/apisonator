@@ -6,7 +6,7 @@ module ThreeScale
 
       DEFAULT_SERVER = '127.0.0.1:9160'
       DEFAULT_KEYSPACE = 'backend_testing'
-      THRIFT_OPTIONS = {:retries => 3, :timeout => 3}
+      THRIFT_OPTIONS = {:retries => 2, :timeout => 40}
         
 
       def initialize(options)

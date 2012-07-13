@@ -86,10 +86,25 @@ namespace :stats do
   task :buckets_info => :environment do
     puts ThreeScale::Backend::Aggregator.pending_keys_by_bucket().inspect
   end
+
+  desc 'Buckets currently failing to be processed'
+  task :failed_buckets => :environment do
+    puts ThreeScale::Backend::Aggregator.failed_buckets
+  end  
   
+  desc 'All buckets that failed to be processed, even if ok now'
+  task :failed_buckets_once => :environment do
+    puts ThreeScale::Backend::Aggregator.failed_buckets_at_least_once
+  end
+     
   desc 'Schedule a StatsJob, will process all pending buckets including current (only in panic mode)'
   task :insert_stats_job => :environment do
     puts ThreeScale::Backend::Aggregator.schedule_one_stats_job
+  end
+  
+  desc '!Delete all time buckets and keys after disabling cassandra (only in panic mode)'
+  task :delete_all_buckets_and_keys => :environment do
+    puts ThreeScale::Backend::Aggregator.delete_all_buckets_and_keys_only_as_rake!
   end
   
   desc 'Disable stats batch processing on cassandra (only in panic mode)'  
