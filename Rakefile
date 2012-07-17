@@ -131,5 +131,29 @@ namespace :stats do
   task :cassandra_enabled? => :environment do
       puts ThreeScale::Backend::Aggregator.cassandra_enabled?()
   end
+  
+  desc 'check counter values for cassandra and redis, params: service_id, application_id, metric_id, time (optional)'
+  task :check_counters => :environment do
+    
+    ##stats/{service:service_id}/cinstance:app_id/metric:metric_id/eternity
+  
+    service_id = ARGV[1]
+    application_id = ARGV[2]
+    metric_id = ARGV[2]
+    timestamp = Time.parse_to_utc(ARGV[3]) if ARGV[3].nil?
+    timestamp ||= Time.now.utc
+    
+    if service_id.nil? || application_id.nil? || metric_id.nil? || timestamp.nil?
+      raise "Incorrect parameters: you must pass: service_id application_id metric_id timestamp (in full). For instance: service_id app_id metric_id \"2010-05-07 17:28:12'\"" 
+    end
+    
+    results = ThreeScale::Backend::Aggregator.check_counters_only_as_rake(service_id, application_id, metric_id, timestamp)
+    
+    puts results.inspect
+    exit
+      
+  end
+  
 end
+
 
