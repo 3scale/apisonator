@@ -82,8 +82,8 @@ module ThreeScale
               end
                           
               storage.pipelined do
-                storage.incrby("#{@@current_bucket}:#{key}", -old_value.to_i)
-                storage.incrby("#{@@current_bucket}:#{key}", value)
+                storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", -old_value.to_i)
+                storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", value)
               end
             end
             
@@ -341,7 +341,7 @@ module ThreeScale
           if type==:set
             @keys_doing_set_op << [key, value]
           else
-            storage.incrby("#{@@current_bucket}:#{key}", value)
+            storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", value)
           end
         end
         

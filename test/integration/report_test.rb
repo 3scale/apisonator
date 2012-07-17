@@ -28,6 +28,18 @@ class ReportTest < Test::Unit::TestCase
     @apilog_empty = {}
 
   end
+  
+  def cassandra_setup
+    
+    Aggregator.enable_cassandra()
+		
+		@storage_cassandra = StorageCassandra.instance(true)
+		@storage_cassandra.clear_keyspace!
+		
+		Resque.reset!
+		Aggregator.reset_current_bucket!
+		
+	end
 
   test 'options request returns list of allowed methods' do
     request '/transactions.xml', :method => 'OPTIONS'
@@ -571,7 +583,88 @@ class ReportTest < Test::Unit::TestCase
 
   end
 
-  
+  test 'successful report aggregates backend hit with cassandra' do
+    
+    cassandra_setup()
+    
+    application2 = Application.save(:service_id => @service_id,
+                                    :id         => next_id,
+                                    :plan_id    => @plan_id,
+                                    :state      => :active)
+                                      
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      10.times do |i|
+        post '/transactions.xml',
+          :provider_key => @provider_key,
+          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+          
+        post '/transactions.xml',
+            :provider_key => @provider_key,
+            :transactions => {0 => {:app_id => application2.id, :usage => {'hits' => 1}}}  
+
+        Resque.run!
+
+        assert_equal 2*(i+1), @storage.get(application_key(@master_service_id,
+                                                     @provider_application_id,
+                                                     @master_hits_id,
+                                                     :month, '20100501')).to_i
+
+        assert_equal 2*(i+1), @storage.get(application_key(@master_service_id,
+                                                     @provider_application_id,
+                                                     @master_reports_id,
+                                                     :month, '20100501')).to_i
+      end
+                                                                                                        
+    end
+    
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@master_service_id,
+                                                 @provider_application_id,
+                                                 @master_hits_id,
+                                                 :month, '20100501'))
+                                                 
+    
+    assert_equal 2*10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@master_service_id,
+                                                 @provider_application_id,
+                                                 @master_reports_id,
+                                                 :month, '20100501'))
+    
+    assert_equal 2*10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    assert_equal 10, @storage.get(application_key(@service_id,
+                                                 @application.id,
+                                                 @metric_id,
+                                                 :month, '20100501')).to_i
+                                                 
+    
+    assert_equal 10, @storage.get(application_key(@service_id,
+                                                 @application.id,
+                                                 @metric_id,
+                                                 :month, '20100501')).to_i
+                                                 
+                                                                                              
+   cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@service_id,
+                                                  @application.id,
+                                                  @metric_id,
+                                                  :month, '20100501'))
+                                                  
+   assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+   
+   
+   cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@service_id,
+                                                  application2.id,
+                                                  @metric_id,
+                                                  :month, '20100501'))
+                                                  
+   assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)   
+    
+  end
   
 
 

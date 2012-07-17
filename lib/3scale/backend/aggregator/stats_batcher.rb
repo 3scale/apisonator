@@ -15,6 +15,10 @@ module ThreeScale
           "keys_changed:#{bucket}"
         end
         
+        def copied_keys_prefix(bucket)
+          "copied:#{bucket}"
+        end
+        
         def changed_keys_key()
           "keys_changed_set"
         end
@@ -51,6 +55,23 @@ module ThreeScale
           result
         end
         
+        def check_counters_only_as_rake(service_id, application_id, metric_id, timestamp) 
+          results = {:redis => {}, :cassandra => {}}
+          
+          service_prefix     = service_key_prefix(service_id)
+          application_prefix = application_key_prefix(service_prefix, application_id)
+          application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
+        
+          [:eternity, :month, :week, :day, :hour, :minute].each do |gra| 
+            redis_key = counter_key(application_metric_prefix, gra, timestamp)
+            results[:redis][gra] = storage.get(redis_key)
+            cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(redis_key)
+            results[:cassandra][gra] = storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+          end
+          
+          return results  
+        end
+        
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
           disable_cassandra()
           v = storage.keys("keys_changed:*")
@@ -60,7 +81,7 @@ module ThreeScale
             puts "Deleting bucket: #{bucket}, containing #{keys.size} keys" unless options[:silent]==true
             keys.each do |key|
               storage.pipelined do 
-                storage.del("#{bucket_time}:#{key}")
+                storage.del("#{copied_keys_prefix(bucket_time)}:#{key}")
               end
             end
             storage.del(bucket)
@@ -100,7 +121,7 @@ module ThreeScale
           return if keys_that_changed.nil? || keys_that_changed.empty?
 
           ## need to fetch the values from the copies, not the originals
-          copied_keys_that_changed = keys_that_changed.map {|item| "#{bucket}:#{item}"}  
+          copied_keys_that_changed = keys_that_changed.map {|item| "#{copied_keys_prefix(bucket)}:#{item}"}  
 
           values = storage.mget(*copied_keys_that_changed)
           
