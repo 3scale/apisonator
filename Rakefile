@@ -139,8 +139,8 @@ namespace :stats do
   
     service_id = ARGV[1]
     application_id = ARGV[2]
-    metric_id = ARGV[2]
-    timestamp = Time.parse_to_utc(ARGV[3]) if ARGV[3].nil?
+    metric_id = ARGV[3]
+    timestamp = Time.parse_to_utc(ARGV[3]) if ARGV[4].nil?
     timestamp ||= Time.now.utc
     
     puts "Params: service_id: #{service_id}, application_id: #{application_id}, metric_id #{metric_id}, timestamp #{timestamp}"

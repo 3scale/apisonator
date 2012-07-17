@@ -30,11 +30,9 @@ module ThreeScale
           timenow = Time.now.utc
           
           bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
-          @@current_bucket ||= bucket
-          
-          @@prior_bucket ||= (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
-      
-          
+          @@current_bucket ||= bucket    
+          @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+                
           if @@current_bucket == bucket 
             schedule_cassandra_job = false
           else 
