@@ -121,7 +121,7 @@ module ThreeScale
           ## FIXME: this has to go aways, just temporally to check for concurrency issues
           storage.pipelined do 
             storage.rpush("temp_list","#{bucket}-#{Time.now.utc}-#{Thread.current.object_id}")
-            storage.ltrim("temp_list",0,1000)
+            storage.ltrim("temp_list",1000,-1)
           end
           
           keys_that_changed = storage.smembers(changed_keys_bucket_key(bucket))
