@@ -143,6 +143,8 @@ namespace :stats do
     timestamp = Time.parse_to_utc(ARGV[3]) if ARGV[3].nil?
     timestamp ||= Time.now.utc
     
+    puts "Params: service_id: #{service_id}, application_id: #{application_id}, metric_id #{metric_id}, timestamp #{timestamp}"
+    
     if service_id.nil? || application_id.nil? || metric_id.nil? || timestamp.nil?
       raise "Incorrect parameters: you must pass: service_id application_id metric_id timestamp (in full). For instance: service_id app_id metric_id \"2010-05-07 17:28:12'\"" 
     end

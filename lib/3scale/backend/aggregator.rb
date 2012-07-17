@@ -26,9 +26,14 @@ module ThreeScale
         
         @cass_enabled = cassandra_enabled?
         
-        if @cass_enabled 
-          bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+        if @cass_enabled
+          timenow = Time.now.utc
+          
+          bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
           @@current_bucket ||= bucket
+          
+          @@prior_bucket ||= (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+      
           
           if @@current_bucket == bucket 
             schedule_cassandra_job = false
@@ -101,7 +106,7 @@ module ThreeScale
           if schedule_cassandra_job
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
-            Resque.enqueue(StatsJob, @@current_bucket)
+            Resque.enqueue(StatsJob, @@prior_bucket)
           end
         end
         

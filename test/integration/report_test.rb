@@ -663,7 +663,44 @@ class ReportTest < Test::Unit::TestCase
                                                   :month, '20100501'))
                                                   
    assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)   
+  
     
+  end
+
+  test 'check counter rake method' do
+    
+    cassandra_setup()
+    
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      10.times do |i|
+        post '/transactions.xml',
+          :provider_key => @provider_key,
+          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+          
+        Resque.run!
+
+        assert_equal (i+1), @storage.get(application_key(@master_service_id,
+                                                     @provider_application_id,
+                                                     @master_hits_id,
+                                                     :month, '20100501')).to_i
+
+      end
+                                                                                                        
+    end
+    
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+     
+    v = Aggregator.check_counters_only_as_rake(@service_id, @application.id, @metric_id, Time.utc(2010, 5, 12, 13, 33))
+    
+    [:eternity, :month, :week, :day, :hour, :minute].each do |gra|
+      assert_equal 10, v[:redis][gra].to_i
+      assert_equal 10, v[:cassandra][gra]
+    end
+     
+     
   end
   
 

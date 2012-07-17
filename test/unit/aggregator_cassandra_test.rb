@@ -390,6 +390,17 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   
   test 'direct test of get_old_buckets_to_process' do 
     ## this should go as unit test of StatsBatcher
+    
+    @storage.zadd(Aggregator.changed_keys_key,"20121010102100","20121010102100")
+    assert_equal [], Aggregator.get_old_buckets_to_process("20121010102100")
+    
+    assert_equal ["20121010102100"], Aggregator.get_old_buckets_to_process("20121010102120")
+    
+    assert_equal [], Aggregator.get_old_buckets_to_process("20121010102120")
+    
+    
+    @storage.del(Aggregator.changed_keys_key)
+    
     100.times do |i|
       @storage.zadd(Aggregator.changed_keys_key,i,i.to_s)
     end
@@ -418,6 +429,45 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     v = Aggregator.get_old_buckets_to_process
     assert_equal [], v
   end
+  
+  test 'concurrency test on get_old_buckets_to_process' do
+  
+    ## this should go as unit test of StatsBatcher
+    100.times do |i|
+      @storage.zadd(Aggregator.changed_keys_key,i,i.to_s)
+    end
+  
+    10.times do |i|
+      threads = []
+      cont = 0
+      
+      20.times do |j|
+        threads << Thread.new {
+          r = Redis.new(:db => 2)
+          v = Aggregator.get_old_buckets_to_process(((i+1)*10).to_s,r)
+          
+          assert (v.size==0 || v.size==10)
+          
+          cont=cont+1 if v.size==10
+          
+          
+        }
+      end
+      
+      threads.each do |t|
+        t.join
+      end
+      
+      assert_equal 1, cont
+      
+    end
+    
+  
+  
+  end
+  
+  
+  
   
   test 'bucket keys are properly assigned' do 
     

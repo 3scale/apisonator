@@ -95,13 +95,15 @@ module ThreeScale
         end
         
         ## returns the array of buckets to process that are < bucket
-        def get_old_buckets_to_process(bucket = "inf")
+        def get_old_buckets_to_process(bucket = "inf", redis_conn = nil)
           
           ## there should be very few elements on the changed_keys_key
     
-          res = storage.multi do
-            storage.zrevrange(changed_keys_key,0,-1)
-            storage.zremrangebyscore(changed_keys_key,"-inf","(#{bucket}")
+          redis_conn = storage if redis_conn.nil?
+            
+          res = redis_conn.multi do
+            redis_conn.zrevrange(changed_keys_key,0,-1)
+            redis_conn.zremrangebyscore(changed_keys_key,"-inf","(#{bucket}")
           end
           
           if (res[1]>=1)
@@ -115,6 +117,12 @@ module ThreeScale
         
         
         def save_to_cassandra(bucket) 
+          
+          ## FIXME: this has to go aways, just temporally to check for concurrency issues
+          storage.pipelined do 
+            storage.rpush("temp_list","#{bucket}-#{Time.now.utc}-#{Thread.current.object_id}")
+            storage.ltrim("temp_list",0,1000)
+          end
           
           keys_that_changed = storage.smembers(changed_keys_bucket_key(bucket))
 
