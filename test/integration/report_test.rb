@@ -582,6 +582,62 @@ class ReportTest < Test::Unit::TestCase
     end
 
   end
+  
+  test 'regression test for large bulk transactions, more than 1000 and many metrics' do
+    
+    ## this test tries to raise the error, SystemStackError: stack level too deep
+    ## /Users/solso/.rvm/gems/ruby-1.9.2-p180/gems/redis-2.1.1/lib/redis/client.rb:43
+    ## that will be masked by a stack level too deep of Resque in production. 
+    
+    ## the issue seems to be a limit on the items on a redis_pipeline, lowered the 
+    ## PIPELINED_SLICE_SIZE to 400 from 1000
+    
+    N = 2000
+    M = 20
+      
+    applications = []
+    N.times do |i|
+      
+      applications << Application.save(:service_id => @service_id,
+                                    :id         => next_id,
+                                    :plan_id    => @plan_id,
+                                    :state      => :active)
+    end
+    
+    metrics = []
+    M.times do |i|
+      metrics << Metric.save(:service_id => @service_id, :id => next_id, :name => "metric_#{i}")
+    end
+    
+    bulk = {}
+    
+    N.times do |i|
+      bulk[i] = {:app_id => applications[i].id, :usage => {}}
+      M.times do |j|
+        bulk[i][:usage][metrics[j].name] = 1
+      end
+    end   
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => bulk
+        
+      Resque.run!
+    end
+    
+    N.times do |i|
+      M.times do |j|
+    
+        assert_equal 1, @storage.get(application_key(@service_id,
+                                                 applications[i].id,
+                                                 metrics[j].id,
+                                                 :month, '20100501')).to_i
+      end
+    end                                           
+    
+  end
 
   test 'successful report aggregates backend hit with cassandra' do
     
