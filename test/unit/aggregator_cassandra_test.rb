@@ -390,6 +390,17 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   
   test 'direct test of get_old_buckets_to_process' do 
     ## this should go as unit test of StatsBatcher
+    
+    @storage.zadd(Aggregator.changed_keys_key,"20121010102100","20121010102100")
+    assert_equal [], Aggregator.get_old_buckets_to_process("20121010102100")
+    
+    assert_equal ["20121010102100"], Aggregator.get_old_buckets_to_process("20121010102120")
+    
+    assert_equal [], Aggregator.get_old_buckets_to_process("20121010102120")
+    
+    
+    @storage.del(Aggregator.changed_keys_key)
+    
     100.times do |i|
       @storage.zadd(Aggregator.changed_keys_key,i,i.to_s)
     end
@@ -419,6 +430,45 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal [], v
   end
   
+  test 'concurrency test on get_old_buckets_to_process' do
+  
+    ## this should go as unit test of StatsBatcher
+    100.times do |i|
+      @storage.zadd(Aggregator.changed_keys_key,i,i.to_s)
+    end
+  
+    10.times do |i|
+      threads = []
+      cont = 0
+      
+      20.times do |j|
+        threads << Thread.new {
+          r = Redis.new(:db => 2)
+          v = Aggregator.get_old_buckets_to_process(((i+1)*10).to_s,r)
+          
+          assert (v.size==0 || v.size==10)
+          
+          cont=cont+1 if v.size==10
+          
+          
+        }
+      end
+      
+      threads.each do |t|
+        t.join
+      end
+      
+      assert_equal 1, cont
+      
+    end
+    
+  
+  
+  end
+  
+  
+  
+  
   test 'bucket keys are properly assigned' do 
     
     timestamp = Time.now.utc - 1000
@@ -446,6 +496,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     end
     
     assert_equal 5, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator.failed_buckets.size
     
     sorted_set = Aggregator.pending_buckets.sort
     
@@ -474,7 +525,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     Aggregator.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Aggregator.pending_buckets.size  
-    assert_equal 0 , Resque.queue(:main).length
+    assert_equal 0, Resque.queue(:main).length
+    assert_equal 0, Aggregator.failed_buckets.size
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
@@ -501,7 +553,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
       
       timestamp = timestamp + Aggregator.stats_bucket_size                              
     end
-    
+  
+    ## failed_buckets is 0 because nothing has been tried and hence failed yet
+    assert_equal 0, Aggregator.failed_buckets.size
     assert_equal 5, Aggregator.pending_buckets.size
     
     Aggregator.schedule_one_stats_job
@@ -509,7 +563,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     
     ## jobs did not do anything because cassandra connection failed
-    assert_equal 5, Aggregator.pending_buckets.size
+    assert_equal 5, Aggregator.pending_buckets.size 
+    assert_equal 5, Aggregator.failed_buckets.size
+    
                                
     ## remove the stubbing                       
     @storage_cassandra = StorageCassandra.instance(true)
@@ -525,6 +581,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     Resque.run!  
     assert_equal 0, Resque.queue(:main).length
     assert_equal 4, Aggregator.pending_buckets.size
+    assert_equal 4, Aggregator.failed_buckets.size
       
     assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
@@ -537,6 +594,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     Resque.run!
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator.failed_buckets.size
     
     assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
@@ -837,6 +895,58 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
   end
 
+  test 'delete all buckets and keys' do 
+  
+    @storage_cassandra.stubs(:execute).raises(Exception.new('bang!'))
+    @storage_cassandra.stubs(:add).raises(Exception.new('bang!'))
+    @storage_cassandra.stubs(:get).raises(Exception.new('bang!'))
+
+
+    timestamp = Time.now.utc - 1000
+    
+    5.times do 
+            
+      Timecop.freeze(timestamp) do 
+        Aggregator.aggregate_all([{:service_id     => 1001,
+                                  :application_id => 2001,
+                                  :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                                  :usage          => {'3001' => 1}}])
+        
+      end
+      
+      timestamp = timestamp + Aggregator.stats_bucket_size                              
+    end
+  
+    ## failed_buckets is 0 because nothing has been tried and hence failed yet
+    assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 5, Aggregator.pending_buckets.size
+    
+    Aggregator.schedule_one_stats_job
+    Resque.run!  
+    assert_equal 0, Resque.queue(:main).length
+    
+    ## jobs did not do anything because cassandra connection failed
+    assert_equal 5, Aggregator.pending_buckets.size 
+    assert_equal 5, Aggregator.failed_buckets.size
+  
+    v = @storage.keys("keys_changed:*")
+    assert_equal true, v.size > 0
+    
+    v = @storage.keys("copied:*")
+    assert_equal true, v.size > 0
+    
+    Aggregator.delete_all_buckets_and_keys_only_as_rake!({:silent => true})
+    
+    v = @storage.keys("copied:*")
+    assert_equal 0, v.size
+    
+    v = @storage.keys("keys_changed:*")
+    assert_equal 0, v.size 
+    
+    assert_equal 0, Aggregator.pending_buckets.size 
+    assert_equal 0, Aggregator.failed_buckets.size
+    
+  end
 
   test 'aggregate_all updates application set' do
     Aggregator.aggregate_all([{:service_id     => 1001,
@@ -868,7 +978,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 
     assert_not_equal -1, ttl
     assert ttl >  0
-    assert ttl <= 60
+    assert ttl <= 180
   end
 
 end

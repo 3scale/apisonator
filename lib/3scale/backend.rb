@@ -64,7 +64,7 @@ module ThreeScale
   end
 
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
-  PIPELINED_SLICE_SIZE = 1000
+  PIPELINED_SLICE_SIZE = 400
 end
 
 ThreeScale::Backend.configuration.tap do |config|

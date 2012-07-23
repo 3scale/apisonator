@@ -26,10 +26,13 @@ module ThreeScale
         
         @cass_enabled = cassandra_enabled?
         
-        if @cass_enabled 
-          bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
-          @@current_bucket ||= bucket
+        if @cass_enabled
+          timenow = Time.now.utc
           
+          bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+          @@current_bucket ||= bucket    
+          @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+                
           if @@current_bucket == bucket 
             schedule_cassandra_job = false
           else 
@@ -82,8 +85,8 @@ module ThreeScale
               end
                           
               storage.pipelined do
-                storage.incrby("#{@@current_bucket}:#{key}", -old_value.to_i)
-                storage.incrby("#{@@current_bucket}:#{key}", value)
+                storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", -old_value.to_i)
+                storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", value)
               end
             end
             
@@ -98,10 +101,10 @@ module ThreeScale
         ## the time bucket has elapsed, trigger a cassandra job
         if @cass_enabled
           storage.zadd(changed_keys_key, @@current_bucket.to_i, @@current_bucket)
-          if schedule_cassandra_job &&
+          if schedule_cassandra_job
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
-            Resque.enqueue(StatsJob, @@current_bucket)
+            Resque.enqueue(StatsJob, @@prior_bucket)
           end
         end
         
@@ -167,7 +170,10 @@ module ThreeScale
           increment_or_set(type, application_metric_prefix, :week,       timestamp, value)
           increment_or_set(type, application_metric_prefix, :day,        timestamp, value)
           increment_or_set(type, application_metric_prefix, :hour,       timestamp, value)
-          increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+          increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
+
+          # increase the TTL from 1 to 3 minutes, only required for checking consistency between cassandra and
+          # redis data. The overhead is not that big, will be at most few thousand extra keys.
 
           unless transaction[:user_id].nil? 
             user_metric_prefix = metric_key_prefix(user_prefix, metric_id)
@@ -177,7 +183,7 @@ module ThreeScale
             increment_or_set(type, user_metric_prefix, :week,       timestamp, value)
             increment_or_set(type, user_metric_prefix, :day,        timestamp, value)
             increment_or_set(type, user_metric_prefix, :hour,       timestamp, value)
-            increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 60)
+            increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
           end
         end
 
@@ -338,7 +344,7 @@ module ThreeScale
           if type==:set
             @keys_doing_set_op << [key, value]
           else
-            storage.incrby("#{@@current_bucket}:#{key}", value)
+            storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", value)
           end
         end
         

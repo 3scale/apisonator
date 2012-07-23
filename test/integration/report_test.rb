@@ -28,6 +28,18 @@ class ReportTest < Test::Unit::TestCase
     @apilog_empty = {}
 
   end
+  
+  def cassandra_setup
+    
+    Aggregator.enable_cassandra()
+		
+		@storage_cassandra = StorageCassandra.instance(true)
+		@storage_cassandra.clear_keyspace!
+		
+		Resque.reset!
+		Aggregator.reset_current_bucket!
+		
+	end
 
   test 'options request returns list of allowed methods' do
     request '/transactions.xml', :method => 'OPTIONS'
@@ -570,8 +582,182 @@ class ReportTest < Test::Unit::TestCase
     end
 
   end
-
   
+  test 'regression test for large bulk transactions, more than 1000 and many metrics' do
+    
+    ## this test tries to raise the error, SystemStackError: stack level too deep
+    ## /Users/solso/.rvm/gems/ruby-1.9.2-p180/gems/redis-2.1.1/lib/redis/client.rb:43
+    ## that will be masked by a stack level too deep of Resque in production. 
+    
+    ## the issue seems to be a limit on the items on a redis_pipeline, lowered the 
+    ## PIPELINED_SLICE_SIZE to 400 from 1000
+    
+    N = 2000
+    M = 20
+      
+    applications = []
+    N.times do |i|
+      
+      applications << Application.save(:service_id => @service_id,
+                                    :id         => next_id,
+                                    :plan_id    => @plan_id,
+                                    :state      => :active)
+    end
+    
+    metrics = []
+    M.times do |i|
+      metrics << Metric.save(:service_id => @service_id, :id => next_id, :name => "metric_#{i}")
+    end
+    
+    bulk = {}
+    
+    N.times do |i|
+      bulk[i] = {:app_id => applications[i].id, :usage => {}}
+      M.times do |j|
+        bulk[i][:usage][metrics[j].name] = 1
+      end
+    end   
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+        
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => bulk
+        
+      Resque.run!
+    end
+    
+    N.times do |i|
+      M.times do |j|
+    
+        assert_equal 1, @storage.get(application_key(@service_id,
+                                                 applications[i].id,
+                                                 metrics[j].id,
+                                                 :month, '20100501')).to_i
+      end
+    end                                           
+    
+  end
+
+  test 'successful report aggregates backend hit with cassandra' do
+    
+    cassandra_setup()
+    
+    application2 = Application.save(:service_id => @service_id,
+                                    :id         => next_id,
+                                    :plan_id    => @plan_id,
+                                    :state      => :active)
+                                      
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      10.times do |i|
+        post '/transactions.xml',
+          :provider_key => @provider_key,
+          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+          
+        post '/transactions.xml',
+            :provider_key => @provider_key,
+            :transactions => {0 => {:app_id => application2.id, :usage => {'hits' => 1}}}  
+
+        Resque.run!
+
+        assert_equal 2*(i+1), @storage.get(application_key(@master_service_id,
+                                                     @provider_application_id,
+                                                     @master_hits_id,
+                                                     :month, '20100501')).to_i
+
+        assert_equal 2*(i+1), @storage.get(application_key(@master_service_id,
+                                                     @provider_application_id,
+                                                     @master_reports_id,
+                                                     :month, '20100501')).to_i
+      end
+                                                                                                        
+    end
+    
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@master_service_id,
+                                                 @provider_application_id,
+                                                 @master_hits_id,
+                                                 :month, '20100501'))
+                                                 
+    
+    assert_equal 2*10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@master_service_id,
+                                                 @provider_application_id,
+                                                 @master_reports_id,
+                                                 :month, '20100501'))
+    
+    assert_equal 2*10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    assert_equal 10, @storage.get(application_key(@service_id,
+                                                 @application.id,
+                                                 @metric_id,
+                                                 :month, '20100501')).to_i
+                                                 
+    
+    assert_equal 10, @storage.get(application_key(@service_id,
+                                                 @application.id,
+                                                 @metric_id,
+                                                 :month, '20100501')).to_i
+                                                 
+                                                                                              
+   cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@service_id,
+                                                  @application.id,
+                                                  @metric_id,
+                                                  :month, '20100501'))
+                                                  
+   assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+   
+   
+   cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@service_id,
+                                                  application2.id,
+                                                  @metric_id,
+                                                  :month, '20100501'))
+                                                  
+   assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)   
+  
+    
+  end
+
+  test 'check counter rake method' do
+    
+    cassandra_setup()
+    
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      10.times do |i|
+        post '/transactions.xml',
+          :provider_key => @provider_key,
+          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+          
+        Resque.run!
+
+        assert_equal (i+1), @storage.get(application_key(@master_service_id,
+                                                     @provider_application_id,
+                                                     @master_hits_id,
+                                                     :month, '20100501')).to_i
+
+      end
+                                                                                                        
+    end
+    
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+     
+    v = Aggregator.check_counters_only_as_rake(@service_id, @application.id, @metric_id, Time.utc(2010, 5, 12, 13, 33))
+    
+    [:eternity, :month, :week, :day, :hour, :minute].each do |gra|
+      assert_equal 10, v[:redis][gra].to_i
+      assert_equal 10, v[:cassandra][gra]
+    end
+     
+     
+  end
   
 
 

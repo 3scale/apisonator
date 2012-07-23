@@ -1,13 +1,13 @@
 
 
 create keyspace backend_testing
-    with strategy_options = {replication_factor: 3}
+    with strategy_options = {replication_factor: 2}
     and placement_strategy = 'org.apache.cassandra.locator.SimpleStrategy';
 
 use backend_testing;
 
 create column family Stats
   with default_validation_class=CounterColumnType 
-  and key_validation_class=UTF8Type 
-  and comparator=UTF8Type;
+  and key_validation_class=AsciiType 
+  and comparator=AsciiType;
 

@@ -22,13 +22,43 @@ class StorageCassandraTest < Test::Unit::TestCase
     @storage.add(:Stats, "row_key", -2, "column_key")
     assert_equal 13, @storage.get(:Stats, "row_key", "column_key")
     
+    @storage.add(:Stats, "row_key", [-2, 42, 888], ["column_key", "column_key2", "column_key3"])
+    assert_equal 11, @storage.get(:Stats, "row_key", "column_key")
+    assert_equal 42, @storage.get(:Stats, "row_key", "column_key2")
+    assert_equal 888, @storage.get(:Stats, "row_key", "column_key3")
+    
     @storage.clear_keyspace!
     assert_equal nil, @storage.get(:Stats, "row_key", "column_key")
-    
     
     assert_equal nil, @storage.get("Stats", "bullshit", "bullshit")
     
   end
+  
+  def test_addcql
+    
+    s = Aggregator.add2cql(:Stats, "row_key", 10, "column_key")
+    assert_equal "UPDATE Stats SET 'column_key'='column_key' + 10 WHERE key = 'row_key';", s
+    
+    s = Aggregator.add2cql(:Stats, "row_key", [10, 11], ["ck1", "ck2"])
+    assert_equal "UPDATE Stats SET 'ck1'='ck1' + 10, 'ck2'='ck2' + 11 WHERE key = 'row_key';", s
+    
+    s = Aggregator.add2cql(:Stats, "row_key", [10, 11, 12], ["ck1", "ck2", "ck3"])
+    assert_equal "UPDATE Stats SET 'ck1'='ck1' + 10, 'ck2'='ck2' + 11, 'ck3'='ck3' + 12 WHERE key = 'row_key';", s
+    
+    assert_raise Exception do
+      Aggregator.add2cql(:Stats, "row_key", [10, 11, 12], ["ck1"])
+    end
+    
+    assert_raise Exception do
+      Aggregator.add2cql(:Stats, "row_key", [10, 11, 12], "ck1")
+    end
+
+    assert_raise Exception do
+      Aggregator.add2cql(:Stats, "row_key", [], [])
+    end
+    
+  end
+  
   
   def test_behaviour_of_cql_sentences
     
