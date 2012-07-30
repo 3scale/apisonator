@@ -85,6 +85,30 @@ task :reschedule_failed_jobs => :environment do
   puts "resque:failed size: #{Resque::Failure.count} (from #{count})"
 end
 
+namespace :cache do
+  
+  desc 'Statistic of the caching hit ratio'
+  task :hit_ratio => :environment do 
+    puts ThreeScale::Backend::Transactor.hit_ratio_stats().inspect
+  end
+  
+  desc 'Caching enabled?'
+  task :caching_enabled? => :environment do 
+    puts ThreeScale::Backend::Transactor.caching_enabled?
+  end
+  
+  desc 'Disable caching'
+  task :disable_caching => :environment do 
+    puts ThreeScale::Backend::Transactor.caching_disable
+  end
+  
+  desc 'Enable caching'
+  task :enable_caching => :environment do 
+    puts ThreeScale::Backend::Transactor.caching_enable
+  end    
+  
+end
+
 namespace :stats do
   
   desc 'Number of stats buckets active in Redis'
