@@ -123,35 +123,52 @@ module ThreeScale
             storage.rpush("temp_list","#{bucket}-#{Time.now.utc}-#{Thread.current.object_id}")
             storage.ltrim("temp_list",1000,-1)
           end
-          
-          keys_that_changed = storage.smembers(changed_keys_bucket_key(bucket))
 
-          return if keys_that_changed.nil? || keys_that_changed.empty?
-
-          ## need to fetch the values from the copies, not the originals
-          copied_keys_that_changed = keys_that_changed.map {|item| "#{copied_keys_prefix(bucket)}:#{item}"}  
-
-          values = storage.mget(*copied_keys_that_changed)
-          
-          single_key_by_batch = Hash.new
-          single_value_by_batch = Hash.new
-          
-          keys_that_changed.each_with_index do |key, i|
-            row_key, col_key = redis_key_2_cassandra_key(key)
-          
-            single_key_by_batch[row_key] ||= Array.new
-            single_value_by_batch[row_key] ||= Array.new
+          begin 
             
-            single_key_by_batch[row_key] << col_key
-            single_value_by_batch[row_key] << values[i].to_i
-          end
+            keys_that_changed = storage.smembers(changed_keys_bucket_key(bucket))
+
+            return if keys_that_changed.nil? || keys_that_changed.empty?
+
+            ## need to fetch the values from the copies, not the originals
+            copied_keys_that_changed = keys_that_changed.map {|item| "#{copied_keys_prefix(bucket)}:#{item}"}  
+
+            values = storage.mget(*copied_keys_that_changed)
+          
+            single_key_by_batch = Hash.new
+            single_value_by_batch = Hash.new
+          
+            keys_that_changed.each_with_index do |key, i|
+              row_key, col_key = redis_key_2_cassandra_key(key)
+          
+              single_key_by_batch[row_key] ||= Array.new
+              single_value_by_batch[row_key] ||= Array.new
+            
+              single_key_by_batch[row_key] << col_key
+              single_value_by_batch[row_key] << values[i].to_i
+            end
           
           
-          str = "BEGIN BATCH "
-          single_key_by_batch.keys.each do |row_key|
-            str << add2cql(:Stats, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
+            str = "BEGIN BATCH "
+            single_key_by_batch.keys.each do |row_key|
+              str << add2cql(:Stats, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
+            end
+            str << "APPLY BATCH;"
+          
+          rescue Exception => e
+            ## could not create the CQL batch, report issue but not reschedule
+            begin
+              temporal_output_exceptions.puts "Error saving bucket: #{bucket}"
+              temporal_output.puts "Error saving bucket: #{bucket}"
+              temporal_output_exceptions.puts e 
+              temporal_output.puts str
+            rescue Exception => e2
+            end
+            storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
+            storage.sadd(failed_save_to_cassandra_key, bucket)
+            ## do NOT reschedule in this case: potential encoding issue with redis keys
+            ##storage.zadd(changed_keys_key, bucket.to_i, bucket)  
           end
-          str << "APPLY BATCH;"
           
           begin
             storage_cassandra.execute(str); 
