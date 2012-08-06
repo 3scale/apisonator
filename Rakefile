@@ -172,7 +172,7 @@ namespace :stats do
   end
   
   desc 'Process failed buckets (one by one)'
-  task :process_failed_ => :environment do
+  task :process_failed => :environment do
     v = ThreeScale::Backend::Aggregator.failed_buckets
     if v.size==0
       puts "No failed buckets!"
