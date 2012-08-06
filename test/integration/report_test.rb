@@ -32,6 +32,7 @@ class ReportTest < Test::Unit::TestCase
   def cassandra_setup
     
     Aggregator.enable_cassandra()
+    Aggregator.activate_cassandra()
 		
 		@storage_cassandra = StorageCassandra.instance(true)
 		@storage_cassandra.clear_keyspace!

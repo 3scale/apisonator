@@ -31,6 +31,18 @@ module ThreeScale
           "stats:failed_at_least_once"
         end
         
+        def deactivate_cassandra()
+          storage.del("cassandra:active")
+        end
+        
+        def activate_cassandra()
+          storage.set("cassandra:active","1")
+        end
+        
+        def cassandra_active?
+          storage.get("cassandra:active").to_i == 1
+        end
+        
         def disable_cassandra()
           storage.del("cassandra:enabled")
         end
@@ -54,6 +66,7 @@ module ThreeScale
           end
           result
         end
+        
         
         def check_counters_only_as_rake(service_id, application_id, metric_id, timestamp) 
           results = {:redis => {}, :cassandra => {}}
@@ -88,6 +101,7 @@ module ThreeScale
           end
           storage.del(changed_keys_key);
           storage.del(failed_save_to_cassandra_key)
+          storage.del(failed_save_to_cassandra_at_least_once_key)
         end
         
         def stats_bucket_size
@@ -193,7 +207,8 @@ module ThreeScale
             end
             storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
             storage.sadd(failed_save_to_cassandra_key, bucket)
-            storage.zadd(changed_keys_key, bucket.to_i, bucket)  
+            ## do not automatically reschedule. It creates cascades of failures. 
+            ##storage.zadd(changed_keys_key, bucket.to_i, bucket)  
           end
           
           

@@ -48,6 +48,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 		## in theory not needed since we always do flush, if not
 		## @storage.del("cassandra_enabled")
  		Aggregator.enable_cassandra()
+ 		Aggregator.activate_cassandra()
 		
 		@storage_cassandra = StorageCassandra.instance(true)
 		@storage_cassandra.clear_keyspace!
@@ -556,15 +557,18 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
     assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 0, Aggregator.failed_buckets_at_least_once.size
     assert_equal 5, Aggregator.pending_buckets.size
     
     Aggregator.schedule_one_stats_job
     Resque.run!  
     assert_equal 0, Resque.queue(:main).length
     
-    ## jobs did not do anything because cassandra connection failed
-    assert_equal 5, Aggregator.pending_buckets.size 
+    ## buckets went to the failed state
+    assert_equal 0, Aggregator.pending_buckets.size 
     assert_equal 5, Aggregator.failed_buckets.size
+    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    
     
                                
     ## remove the stubbing                       
@@ -576,32 +580,36 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 
     ## now let's process the failed, one by one...
     
-    v = Aggregator.pending_buckets.sort
-    Aggregator.schedule_one_stats_job(v[1])
-    Resque.run!  
+    v = Aggregator.failed_buckets
+    Aggregator.save_to_cassandra(v.first)
+    
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 4, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator.pending_buckets.size
     assert_equal 4, Aggregator.failed_buckets.size
+    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    
       
     assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
     assert_equal 2, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
 
-    
     ## or altogether
+
+    v = Aggregator.failed_buckets
+    v.each do |bucket|
+      Aggregator.save_to_cassandra(bucket)
+    end
   
-    Aggregator.schedule_one_stats_job
-    Resque.run!
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Aggregator.pending_buckets.size
     assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    
     
     assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
     assert_equal 6, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
-
-   
-      
+  
   end
 
   
@@ -655,8 +663,12 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     
-    Aggregator.schedule_one_stats_job
-    Resque.run!
+    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 1, Aggregator.failed_buckets.size
+    assert_equal 1, Aggregator.failed_buckets_at_least_once.size
+    
+    v = Aggregator.failed_buckets
+    Aggregator.save_to_cassandra(v.first)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
@@ -677,6 +689,54 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal false, Aggregator.cassandra_enabled?
     
   end
+  
+  test 'activate and deactive cassandra' do
+    
+    Aggregator.activate_cassandra()
+    assert_equal true, Aggregator.cassandra_active?
+    
+    Aggregator.deactivate_cassandra()
+    assert_equal false, Aggregator.cassandra_active?
+    
+    Storage.instance.flushdb()
+    assert_equal false, Aggregator.cassandra_active?
+    
+  end
+  
+  test 'when cassandra is deactivated buckets are filled but nothing gets saved' do 
+
+     Aggregator.deactivate_cassandra()
+
+     v = []
+     10.times do
+       v <<   { :service_id     => 1001,
+               :application_id => 2001,
+               :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+               :usage          => {'3001' => 1}}
+
+     end
+
+     Aggregator.aggregate_all(v)
+
+     assert_equal 0, Resque.queue(:main).length
+     assert_equal 1, Aggregator.pending_buckets.size
+
+     Aggregator.schedule_one_stats_job
+     Resque.run!
+
+     assert_equal 0, Resque.queue(:main).length
+     assert_equal 1, Aggregator.pending_buckets.size
+
+     Aggregator.activate_cassandra()
+     
+     Aggregator.schedule_one_stats_job
+     Resque.run!
+
+     assert_equal 0, Resque.queue(:main).length
+     assert_equal 0, Aggregator.pending_buckets.size
+
+   end
+  
   
   test 'when cassandra is disabled nothing gets logged' do 
     
@@ -705,7 +765,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   end
   
   
-  test 'when cassandra is disabled cassandra does not have to be up and running' do
+  test 'when cassandra is disabled cassandra does not have to be up and running, but stats get lost during the disabling period' do
        
     v = []
     Timecop.freeze(Time.utc(2010, 5, 7, 13, 23, 33)) do
@@ -771,8 +831,83 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    ## cassandra and redis are out of sync, cassandra has 10 but redis 20 because the first 10 hits cassandra was disabled. 
+    ## disabling cassandra is super dangerous, only in PANIC MODE
       
   end
+
+  test 'when cassandra is deactivated cassandra does not have to be up and running, but stats do NOT get lost during the deactivation period' do
+       
+    v = []
+    Timecop.freeze(Time.utc(2010, 5, 7, 13, 23, 33)) do
+      10.times do  
+        v <<   { :service_id     => 1001,
+                :application_id => 2001,
+                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                :usage          => {'3001' => 1}}
+      end         
+    end
+    
+    bkp_configuration = configuration.clone()
+     
+    configuration.cassandra.servers = ["localhost:9090"]
+    configuration.cassandra.keyspace = StorageCassandra::DEFAULT_KEYSPACE
+    
+    ## we set to nil the connection to cassandra
+    StorageCassandra.reset_to_nil!
+  
+    ## now we disable it cassandra
+    Aggregator.deactivate_cassandra()
+      
+    v.each do |item|
+      Aggregator.aggregate_all([item])
+    end
+    
+    assert_equal 1, Aggregator.pending_buckets.size
+    
+    Aggregator.schedule_one_stats_job
+    Resque.run!
+    
+    ## because cassandra is deactivated nothing blows but it gets logged waiting for cassandra
+    ## to be in place again
+    assert_equal 0, Resque.queue(:main).length
+    assert_equal 1, Aggregator.pending_buckets.size
+    
+    assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    ## now, enabled it cassandra and do the same
+    
+    configuration.cassandra.servers = Array(StorageCassandra::DEFAULT_SERVER)
+    configuration.cassandra.keyspace = StorageCassandra::DEFAULT_KEYSPACE
+    StorageCassandra.reset_to_nil!
+    
+    Aggregator.activate_cassandra()
+    
+    assert_equal 1, Aggregator.pending_buckets.size
+    
+    sleep(Aggregator.stats_bucket_size)
+    
+    v.each do |item|
+      Aggregator.aggregate_all([item])
+    end
+    
+    assert_equal 2, Aggregator.pending_buckets.size
+    
+    Aggregator.schedule_one_stats_job()
+    Resque.run!
+    
+    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Resque.queue(:main).length
+    
+    assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 20, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+      
+  end
+
 
   test 'applications with end user plans (user_id) get recorded properly' do
     
@@ -926,7 +1061,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     
     ## jobs did not do anything because cassandra connection failed
-    assert_equal 5, Aggregator.pending_buckets.size 
+    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 5, Aggregator.failed_buckets_at_least_once.size 
     assert_equal 5, Aggregator.failed_buckets.size
   
     v = @storage.keys("keys_changed:*")
@@ -945,6 +1081,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
     assert_equal 0, Aggregator.pending_buckets.size 
     assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 0, Aggregator.failed_buckets_at_least_once.size
+    
     
   end
 
