@@ -556,15 +556,18 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
     assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 0, Aggregator.failed_buckets_at_least_once.size
     assert_equal 5, Aggregator.pending_buckets.size
     
     Aggregator.schedule_one_stats_job
     Resque.run!  
     assert_equal 0, Resque.queue(:main).length
     
-    ## jobs did not do anything because cassandra connection failed
-    assert_equal 5, Aggregator.pending_buckets.size 
+    ## buckets went to the failed state
+    assert_equal 0, Aggregator.pending_buckets.size 
     assert_equal 5, Aggregator.failed_buckets.size
+    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    
     
                                
     ## remove the stubbing                       
@@ -576,32 +579,36 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 
     ## now let's process the failed, one by one...
     
-    v = Aggregator.pending_buckets.sort
-    Aggregator.schedule_one_stats_job(v[1])
-    Resque.run!  
+    v = Aggregator.failed_buckets
+    Aggregator.save_to_cassandra(v.first)
+    
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 4, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator.pending_buckets.size
     assert_equal 4, Aggregator.failed_buckets.size
+    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    
       
     assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
     assert_equal 2, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
 
-    
     ## or altogether
+
+    v = Aggregator.failed_buckets
+    v.each do |bucket|
+      Aggregator.save_to_cassandra(bucket)
+    end
   
-    Aggregator.schedule_one_stats_job
-    Resque.run!
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Aggregator.pending_buckets.size
     assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    
     
     assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
     assert_equal 6, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
-
-   
-      
+  
   end
 
   
@@ -655,8 +662,12 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     
-    Aggregator.schedule_one_stats_job
-    Resque.run!
+    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 1, Aggregator.failed_buckets.size
+    assert_equal 1, Aggregator.failed_buckets_at_least_once.size
+    
+    v = Aggregator.failed_buckets
+    Aggregator.save_to_cassandra(v.first)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
@@ -926,7 +937,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     
     ## jobs did not do anything because cassandra connection failed
-    assert_equal 5, Aggregator.pending_buckets.size 
+    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 5, Aggregator.failed_buckets_at_least_once.size 
     assert_equal 5, Aggregator.failed_buckets.size
   
     v = @storage.keys("keys_changed:*")
@@ -945,6 +957,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
     assert_equal 0, Aggregator.pending_buckets.size 
     assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 0, Aggregator.failed_buckets_at_least_once.size
+    
     
   end
 
