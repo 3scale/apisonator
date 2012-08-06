@@ -8,7 +8,7 @@ module ThreeScale
 
         def self.perform(bucket)
     
-          return unless Aggregator.cassandra_enabled?
+          return unless Aggregator.cassandra_enabled? && Aggregator.cassandra_active?
        
           buckets_to_save = Aggregator.get_old_buckets_to_process(bucket)
           
@@ -16,8 +16,8 @@ module ThreeScale
           
           buckets_to_save.each do |b|
             ## it will save all the changed keys from the oldest time bucket. If it
-            ## fails it will but the bucket back to the set to that it can be processed
-            ## by another StatsJob
+            ## fails it will put the bucket on the stats:faile so that it can be processed
+            ## one by one via rake task
             Aggregator.save_to_cassandra(b)
           end
           
