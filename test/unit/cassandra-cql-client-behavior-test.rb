@@ -60,11 +60,11 @@ class CassandraCqlClientBehaviorTest < Test::Unit::TestCase
                 :retries => 3, :connect_timeout => 3)
     
     db.schema.column_family_names.each do |cf|
-      db.execute("truncate #{cf}")
+      db.execute_cql_query("truncate #{cf}")
     end
     
     100.times do |cont|
-      db.execute("UPDATE Stats SET c1=c1+1 WHERE key=r1")
+      db.execute_cql_query("UPDATE Stats SET c1=c1+1 WHERE key=r1")
     
       r = db.execute("SELECT c1 FROM Stats WHERE key=r1")
 
@@ -78,7 +78,7 @@ class CassandraCqlClientBehaviorTest < Test::Unit::TestCase
     
     puts "done"
     db.schema.column_family_names.each do |cf|
-      db.execute("truncate #{cf}")
+      db.execute_cql_query("truncate #{cf}")
     end
     
     

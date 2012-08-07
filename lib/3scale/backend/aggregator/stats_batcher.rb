@@ -185,7 +185,7 @@ module ThreeScale
           end
           
           begin
-            storage_cassandra.execute(str); 
+            storage_cassandra.execute_cql_query(str); 
             
             ## now we have to clean up the data in redis that has been processed
             storage.pipelined do

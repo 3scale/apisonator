@@ -36,12 +36,12 @@ module ThreeScale
       
       def clear_keyspace!
         schema.column_family_names.each do |cf|
-          execute("truncate #{cf}")
+          execute_cql_query("truncate #{cf}")
         end
       end
       
       def add(column_family, row_key, value, col_key)
-        execute(add2cql(column_family, row_key, value, col_key))
+        execute_cql_query(add2cql(column_family, row_key, value, col_key))
       end
       
       def get(column_family, row_key, col_key)

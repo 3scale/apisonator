@@ -64,7 +64,7 @@ class StorageCassandraTest < Test::Unit::TestCase
     
     ## single 
     
-    @storage.execute("UPDATE Stats SET col = col + 1 WHERE key = row;")  
+    @storage.execute_cql_query("UPDATE Stats SET col = col + 1 WHERE key = row;")  
     assert_equal 1, @storage.get(:Stats, "row", "col")
     
     # well formed batch
@@ -75,7 +75,7 @@ class StorageCassandraTest < Test::Unit::TestCase
     end
     str << "APPLY BATCH;"
     
-    @storage.execute(str)
+    @storage.execute_cql_query(str)
     assert_equal 11, @storage.get(:Stats, "row", "col")
     
     # not well formed batch, if one fails in the middle, no increment is done
@@ -93,7 +93,7 @@ class StorageCassandraTest < Test::Unit::TestCase
     str << "APPLY BATCH;"
     
     assert_raise CassandraCQL::Error::InvalidRequestException do
-      @storage.execute(str)
+      @storage.execute_cql_query(str)
     end
     
     assert_equal 11, @storage.get(:Stats, "row", "col")
@@ -112,7 +112,7 @@ class StorageCassandraTest < Test::Unit::TestCase
     str << "APPLY BATCH;"
     
     assert_raise CassandraCQL::Error::InvalidRequestException do
-      @storage.execute(str)
+      @storage.execute_cql_query(str)
     end
     
     assert_equal 11, @storage.get(:Stats, "row", "col")

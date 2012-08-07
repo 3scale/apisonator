@@ -536,6 +536,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     ## on the second on we stub the storage_cassandra to simulate a network error or cassandra down
     
     @storage_cassandra.stubs(:execute).raises(Exception.new('bang!'))
+    @storage_cassandra.stubs(:execute_cql_query).raises(Exception.new('bang!'))
     @storage_cassandra.stubs(:add).raises(Exception.new('bang!'))
     @storage_cassandra.stubs(:get).raises(Exception.new('bang!'))
 
@@ -617,6 +618,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 
 
     @storage_cassandra.stubs(:execute).raises(Exception.new('bang!'))
+    @storage_cassandra.stubs(:execute_cql_query).raises(Exception.new('bang!'))
     @storage_cassandra.stubs(:add).raises(Exception.new('bang!'))
     @storage_cassandra.stubs(:get).raises(Exception.new('bang!'))
     
@@ -1033,6 +1035,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   test 'delete all buckets and keys' do 
   
     @storage_cassandra.stubs(:execute).raises(Exception.new('bang!'))
+    @storage_cassandra.stubs(:execute_cql_query).raises(Exception.new('bang!'))
     @storage_cassandra.stubs(:add).raises(Exception.new('bang!'))
     @storage_cassandra.stubs(:get).raises(Exception.new('bang!'))
 
