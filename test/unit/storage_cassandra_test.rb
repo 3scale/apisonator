@@ -9,6 +9,10 @@ class StorageCassandraTest < Test::Unit::TestCase
     
     @storage.clear_keyspace!
     
+    #require 'ruby-debug'
+    #debugger
+    #aaaa
+    
   end
 
   def test_basic_operations

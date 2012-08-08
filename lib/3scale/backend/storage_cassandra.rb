@@ -6,7 +6,11 @@ module ThreeScale
 
       DEFAULT_SERVER = '127.0.0.1:9160'
       DEFAULT_KEYSPACE = 'backend_testing'
-      THRIFT_OPTIONS = {:retries => 0, :timeout => 90}
+      
+      ## WARNING: for the execute_cql_query (insterting batch) we do not want any timeout. If happens, we are 
+      ## quite screwed, since it will raise exception but the data will have been processed by cassandra.
+      ## retries makes it worse since we will be overcouinting x retries times more. 
+      THRIFT_OPTIONS = {:retries => 2, :timeout => 60, :timeout_overrides => {:execute_cql_query => 0}}
         
 
       def initialize(options)
@@ -14,9 +18,19 @@ module ThreeScale
         init_servers = options[:servers] || Array(DEFAULT_SERVER)
         init_keyspace = options[:keyspace] || DEFAULT_KEYSPACE
         
-        super(init_servers,{:keyspace => init_keyspace}, THRIFT_OPTIONS)
-        
+        db = super(init_servers,{:keyspace => init_keyspace}, THRIFT_OPTIONS)
+      
+        #db.connection.add_callback(:on_exception) do |exception, method|
+        #  if method.to_sym==:execute_cql_query && exception.message.match(/Socket: Timed out reading/)
+            ## this should not happen, if so, we need to know
+            ## TODO: launch an airbreak
+        #  end
+        #end
+      
+        db
       end
+      
+      
 
       # Returns a shared instance of the storage. If there is no instance yet,
       # creates one first. If you want to always create a fresh instance, set the

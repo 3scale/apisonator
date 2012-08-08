@@ -36,6 +36,17 @@ class CassandraCqlClientBehaviorTest < Test::Unit::TestCase
     Metric.save(:service_id => service_id, :id => 3001, :name => 'hits')
 
 	end
+	
+	def create_massive_batch(num)
+
+    str = "BEGIN BATCH "
+    num.times do |i|
+      str << "UPDATE Stats SET 'col#{i}'='col#{i}'+1 WHERE key = row#{i}; "
+    end
+    str << "APPLY BATCH;"
+
+  end
+  
 
   def setup
     @storage = Storage.instance(true)
@@ -46,18 +57,92 @@ class CassandraCqlClientBehaviorTest < Test::Unit::TestCase
 		## in theory not needed since we always do flush, if not
 		## @storage.del("cassandra_enabled")
  		Aggregator.enable_cassandra()
+ 		Aggregator.activate_cassandra()
+ 		
 		
 		@storage_cassandra = StorageCassandra.instance(true)
 		@storage_cassandra.clear_keyspace!
 		
   end
   
+   
+  test 'not getting a timeout because the load was too high' do
+  
+    db = CassandraCQL::Database.new([StorageCassandra::DEFAULT_SERVER], 
+              {:keyspace => StorageCassandra::DEFAULT_KEYSPACE},
+              StorageCassandra::THRIFT_OPTIONS)
+              
+    assert_equal nil, @storage_cassandra.get(:Stats, "row1", "col1")
+    sentence = create_massive_batch(20000)
+  
+    db.execute_cql_query(sentence)
+    
+    assert_equal 1, @storage_cassandra.get(:Stats, "row1", "col1")
+    assert_equal 1, @storage_cassandra.get(:Stats, "row1000", "col1000")
+    
+  end
+    
+  test 'getting a timeout because the load was too high' do
+  
+    db = CassandraCQL::Database.new([StorageCassandra::DEFAULT_SERVER], 
+              {:keyspace => StorageCassandra::DEFAULT_KEYSPACE},
+              :timeout => 0.5)
+              
+    assert_equal nil, @storage_cassandra.get(:Stats, "row1", "col1")
+    
+    sentence = create_massive_batch(20000)
+    
+    assert_raise CassandraCQL::Thrift::Client::TransportException do
+      db.execute_cql_query(sentence)
+    end
+    
+    assert_equal nil, @storage_cassandra.get(:Stats, "row1", "col1")
+    
+    ## WARNING: if we wait long enough 
+    sleep 10.0
+    ## the values will magically appear :-/ That's bad. That's why the timeout
+    ## for only execute_cql_query (writes) is removed.
+    assert_equal 1, @storage_cassandra.get(:Stats, "row1", "col1")
+    
+  end
+  
+  test 'retries >= servers - 1 are necessary, the are also used to check for servers availability' do 
+    
+    assert_raise CassandraCQL::Thrift::Client::TransportException do
+    ## beats me why does not raise NoLiveServers    
+
+      10.times do 
+        db = CassandraCQL::Database.new(['127.0.0.1:29160', '127.0.0.1:19160', StorageCassandra::DEFAULT_SERVER], 
+                 {:keyspace => StorageCassandra::DEFAULT_KEYSPACE}, :retries => 1)
+    
+      end
+    
+    end
+    
+    ## because there are 3 servers, and 2 retries + original request. It will not blow. 
+    10.times do 
+      db = CassandraCQL::Database.new(['127.0.0.1:29160', '127.0.0.1:19160', StorageCassandra::DEFAULT_SERVER], 
+                 {:keyspace => StorageCassandra::DEFAULT_KEYSPACE}, :retries => 2)
+    
+    end
+    
+  end
+  
+    
   
   test 'benchmark check, not a real failure' do
     
-    db = CassandraCQL::Database.new(['127.0.0.1:29160', '127.0.0.1:19160', StorageCassandra::DEFAULT_SERVER], 
-                {:keyspace => StorageCassandra::DEFAULT_KEYSPACE}, 
-                :retries => 0, :timeout => 60)
+    db = nil
+    
+    10.times do 
+      
+      db = CassandraCQL::Database.new(['127.0.0.1:29160', '127.0.0.1:19160', StorageCassandra::DEFAULT_SERVER], 
+                  {:keyspace => StorageCassandra::DEFAULT_KEYSPACE}, StorageCassandra::THRIFT_OPTIONS)
+                
+      assert_not_nil db
+      
+    end
+    
     
     db.schema.column_family_names.each do |cf|
       db.execute_cql_query("truncate #{cf}")
