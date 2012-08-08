@@ -57,7 +57,7 @@ class CassandraCqlClientBehaviorTest < Test::Unit::TestCase
     
     db = CassandraCQL::Database.new(['127.0.0.1:29160', '127.0.0.1:19160', StorageCassandra::DEFAULT_SERVER], 
                 {:keyspace => StorageCassandra::DEFAULT_KEYSPACE}, 
-                :retries => 3, :connect_timeout => 3)
+                :retries => 0, :timeout => 60)
     
     db.schema.column_family_names.each do |cf|
       db.execute_cql_query("truncate #{cf}")
