@@ -463,11 +463,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
       
     end
     
-  
-  
   end
-  
-  
   
   
   test 'bucket keys are properly assigned' do 
@@ -611,6 +607,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
     assert_equal 6, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
   
+    assert_equal [], Aggregator.repeated_batches
+    
   end
 
   
@@ -675,6 +673,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 666, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    assert_equal [], Aggregator.repeated_batches
         
   end
   
@@ -764,6 +764,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Aggregator.pending_buckets.size
     
+    assert_equal [], Aggregator.repeated_batches
+    
+    
   end
   
   
@@ -833,6 +836,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    assert_equal [], Aggregator.repeated_batches
     
     ## cassandra and redis are out of sync, cassandra has 10 but redis 20 because the first 10 hits cassandra was disabled. 
     ## disabling cassandra is super dangerous, only in PANIC MODE
@@ -908,6 +913,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 20, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
       
+    assert_equal [], Aggregator.repeated_batches
+    
   end
 
 
@@ -1028,6 +1035,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 4, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :eternity))
     assert_equal 4, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    assert_equal [], Aggregator.repeated_batches
     
     
   end

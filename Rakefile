@@ -111,6 +111,30 @@ end
 
 namespace :stats do
   
+  namespace :panic_mode do 
+    
+    desc '!!! Delete all time buckets and keys after disabling cassandra'
+    task :delete_all_buckets_and_keys => :environment do
+      puts ThreeScale::Backend::Aggregator.delete_all_buckets_and_keys_only_as_rake!
+    end
+    
+    desc 'Disable stats batch processing on cassandra. Stops saving to cassandra and to redis'  
+    task :disable_cassandra => :environment do
+        puts ThreeScale::Backend::Aggregator.disable_cassandra()
+    end
+
+    desc 'Enable stats batch processing on cassandra'  
+    task :enable_cassandra => :environment do
+        puts ThreeScale::Backend::Aggregator.enable_cassandra()
+    end
+    
+    desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
+    task :insert_stats_job => :environment do
+      puts ThreeScale::Backend::Aggregator.schedule_one_stats_job
+    end
+    
+  end
+  
   desc 'Number of stats buckets active in Redis'
   task :buckets_size => :environment do
     puts ThreeScale::Backend::Aggregator.pending_buckets_size()
@@ -126,21 +150,11 @@ namespace :stats do
     puts ThreeScale::Backend::Aggregator.failed_buckets
   end  
   
-  desc 'All buckets that failed to be processed, even if ok now'
+  desc 'All buckets that failed to be processed at least once, even if ok now'
   task :failed_buckets_once => :environment do
     puts ThreeScale::Backend::Aggregator.failed_buckets_at_least_once
   end
      
-  desc 'Schedule a StatsJob, will process all pending buckets including current (ONLY IN PANIC MODE)'
-  task :insert_stats_job => :environment do
-    puts ThreeScale::Backend::Aggregator.schedule_one_stats_job
-  end
-  
-  desc '!Delete all time buckets and keys after disabling cassandra (ONLY IN PANIC MODE)'
-  task :delete_all_buckets_and_keys => :environment do
-    puts ThreeScale::Backend::Aggregator.delete_all_buckets_and_keys_only_as_rake!
-  end
-  
   desc 'Activate saving to cassandra.'  
   task :activate_saving_to_cassandra => :environment do
       puts ThreeScale::Backend::Aggregator.activate_cassandra()
@@ -156,17 +170,7 @@ namespace :stats do
       puts ThreeScale::Backend::Aggregator.cassandra_active?()
   end
   
-  desc 'Disable stats batch processing on cassandra (ONLY IN PANIC MODE). Stops saving to cassandra and to redis.'  
-  task :disable_cassandra => :environment do
-      puts ThreeScale::Backend::Aggregator.disable_cassandra()
-  end
-  
-  desc 'Enable stats batch processing on cassandra (ONLY IN PANIC MODE).'  
-  task :enable_cassandra => :environment do
-      puts ThreeScale::Backend::Aggregator.enable_cassandra()
-  end
-  
-  desc 'Is cassandra batch processing enabled? (ONLY IN PANIC MODE)'  
+  desc 'Is cassandra batch processing enabled?'  
   task :cassandra_enabled? => :environment do
       puts ThreeScale::Backend::Aggregator.cassandra_enabled?()
   end
@@ -178,16 +182,21 @@ namespace :stats do
       puts "No failed buckets!"
     else
       puts "Saving bucket: #{v.first}"
-      Aggregator.save_to_cassandra(v.first)
+      ThreeScale::Backend::Aggregator.save_to_cassandra(v.first)
       puts "Done"
     end
+  end
+  
+  desc 'repeated batches on cassandra: if > 0, critical issue!! we would be over-counting'
+  task :repeated_batches => :environment do
+    v = ThreeScale::Backend::Aggregator.repeated_batches
+    puts v.size
   end
   
   desc 'check counter values for cassandra and redis, params: service_id, application_id, metric_id, time (optional)'
   task :check_counters => :environment do
     
     ##stats/{service:service_id}/cinstance:app_id/metric:metric_id/eternity
-  
     service_id = ARGV[1]
     application_id = ARGV[2]
     metric_id = ARGV[3]
@@ -206,6 +215,8 @@ namespace :stats do
     exit
       
   end
+  
+  
   
 end
 

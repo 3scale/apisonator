@@ -15,6 +15,7 @@ require 'yajl'
 require 'yaml'
 require 'zlib'
 require 'cassandra-cql'
+require 'digest/md5'
 
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
@@ -72,6 +73,7 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:redis, :servers, :db, :backup_file)
   config.add_section(:cassandra, :servers, :keyspace)
   config.add_section(:archiver, :path, :s3_bucket)
+  config.add_section(:cassandra_archiver, :path, :s3_bucket)
   config.add_section(:hoptoad, :api_key)
   config.add_section(:stats, :bucket_size)
 
@@ -79,6 +81,7 @@ ThreeScale::Backend.configuration.tap do |config|
   config.master_service_id = 1
   config.secondary_service_id = 2
   config.archiver.path     = '/tmp/3scale_backend/archive'
+  config.cassandra_archiver.path     = '/tmp/3scale_backend/cassandra_archive'
 
   # Load configuration from a file.
   config.load!

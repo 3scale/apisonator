@@ -108,6 +108,10 @@ module ThreeScale
           @@stats_bucket_size ||= (configuration.stats.bucket_size || 5)
         end
         
+        def repeated_batches
+          storage_cassandra.repeated_batches
+        end
+        
         ## returns the array of buckets to process that are < bucket
         def get_old_buckets_to_process(bucket = "inf", redis_conn = nil)
           
@@ -161,16 +165,15 @@ module ThreeScale
               single_key_by_batch[row_key] << col_key
               single_value_by_batch[row_key] << values[i].to_i
             end
-          
-          
-            str = "BEGIN BATCH "
+                    
+            str = ""
             single_key_by_batch.keys.each do |row_key|
               str << add2cql(:Stats, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
             end
-            str << "APPLY BATCH;"
           
           rescue Exception => e
             ## could not create the CQL batch, report issue but not reschedule
+            
             begin
               temporal_output_exceptions.puts "Error saving bucket: #{bucket}"
               temporal_output.puts "Error saving bucket: #{bucket}"
@@ -181,11 +184,13 @@ module ThreeScale
             storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
             storage.sadd(failed_save_to_cassandra_key, bucket)
             ## do NOT reschedule in this case: potential encoding issue with redis keys
-            ##storage.zadd(changed_keys_key, bucket.to_i, bucket)  
+            ##storage.zadd(changed_keys_key, bucket.to_i, bucket)
+            return  
           end
           
           begin
-            storage_cassandra.execute_cql_query(str); 
+            
+            storage_cassandra.execute_batch(bucket, str); 
             
             ## now we have to clean up the data in redis that has been processed
             storage.pipelined do

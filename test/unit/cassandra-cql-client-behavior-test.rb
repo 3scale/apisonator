@@ -99,7 +99,7 @@ class CassandraCqlClientBehaviorTest < Test::Unit::TestCase
     assert_equal nil, @storage_cassandra.get(:Stats, "row1", "col1")
     
     ## WARNING: if we wait long enough 
-    sleep 10.0
+    sleep 20.0
     ## the values will magically appear :-/ That's bad. That's why the timeout
     ## for only execute_cql_query (writes) is removed.
     assert_equal 1, @storage_cassandra.get(:Stats, "row1", "col1")
@@ -128,6 +128,47 @@ class CassandraCqlClientBehaviorTest < Test::Unit::TestCase
     
   end
   
+  test 'without the timeout on execute_cql_query, the callback is triggered' do
+    
+    db = CassandraCQL::Database.new([StorageCassandra::DEFAULT_SERVER], 
+              {:keyspace => StorageCassandra::DEFAULT_KEYSPACE},
+              :timeout => 0.2)
+    
+    db.connection.add_callback(:on_exception) do |exception, method|
+      if method.to_sym==:execute_cql_query && exception.message.match(/Socket: Timed out reading/)
+        ## this should not happen, if so, we need to know
+        ## this is copied from StorageCassandra#initialize
+        enc = Yajl::Encoder.encode(@storage_cassandra.latest_batch_saved_info)
+        @storage.rpush("stats:timed_out",enc)
+        @was_here = true      
+      end
+    end
+                 
+    assert_equal nil, @storage_cassandra.get(:Stats, "row1", "col1")
+
+    sentence = create_massive_batch(20000)
+
+    @was_here = false
+    
+    assert_raise CassandraCQL::Thrift::Client::TransportException do
+      db.execute_cql_query(sentence)
+    end          
+    
+    assert_equal true, @was_here
+    assert_equal 1, @storage.llen("stats:timed_out")
+    
+    v = Yajl::Parser.parse(@storage.lrange("stats:timed_out",0,-1).first)
+  
+    ## this does contain the actual info because the timeout out is not doable with execute_batch, which
+    ## is the method that fill the info. But with the nils should be enough to check the behavior.
+    
+    assert_equal 3, v.size
+    assert_equal nil, v[0]
+    assert_equal nil, v[1]
+    assert_equal nil, v[2] 
+    
+  end
+     
     
   
   test 'benchmark check, not a real failure' do
