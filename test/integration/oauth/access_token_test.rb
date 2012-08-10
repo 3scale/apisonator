@@ -362,7 +362,7 @@ class AccessTokenTest < Test::Unit::TestCase
     
     t = Time.now 
     
-    500.times do |cont|
+    100.times do |cont|
       
        post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                  :app_id => @application.id,
@@ -376,9 +376,9 @@ class AccessTokenTest < Test::Unit::TestCase
     elapsed = Time.now-t 
 
     assert_equal 200, last_response.status
-    assert_equal 500, xml.at('oauth_access_tokens').element_children.size
+    assert_equal 100, xml.at('oauth_access_tokens').element_children.size
   
-    assert elapsed < 2.0, "Perfomance test failed, took #{elapsed}s to associate 500 access tokens"
+    assert elapsed < 1.0, "Perfomance test failed, took #{elapsed}s to associate 500 access tokens"
       
   end
 
