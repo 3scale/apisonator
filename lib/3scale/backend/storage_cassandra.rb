@@ -15,9 +15,9 @@ module ThreeScale
 
       def initialize(options)
 
-        @@latest_time_bucket = nil
-        @@latest_batch_str = nil
-        @@latest_digest = nil
+        @latest_time_bucket = nil
+        @latest_batch_str = nil
+        @latest_digest = nil
 
         init_servers = options[:servers] || Array(DEFAULT_SERVER)
         init_keyspace = options[:keyspace] || DEFAULT_KEYSPACE
@@ -74,16 +74,13 @@ module ThreeScale
       end
       
       def latest_batch_saved_info
-        return [@@latest_time_bucket, @@latest_digest, @@latest_batch_str]
+        return [@latest_time_bucket, @latest_digest, @latest_batch_str]
       end
       
       ## execute batch should replace all execute_cql_query related to batched
       def execute_batch(time_bucket, batch_str)
 
         digest = Digest::MD5.hexdigest(batch_str)
-        
-        @@latest_time_bucket = time_bucket
-        @@latest_digest = digest
         
         str = "BEGIN BATCH " << batch_str
         
@@ -95,9 +92,9 @@ module ThreeScale
         str << control_counter 
         str << " APPLY BATCH;"
         
-        @@latest_time_bucket = time_bucket
-        @@latest_digest = digest
-        @@latest_batch_str = str
+        @latest_time_bucket = time_bucket
+        @latest_digest = digest
+        @latest_batch_str = str
         
         ## let's save the batch on disk
         root_directory = "#{configuration.cassandra_archiver.path}/#{row_key}/"
