@@ -181,9 +181,13 @@ namespace :stats do
     if v.size==0
       puts "No failed buckets!"
     else
-      puts "Saving bucket: #{v.first}"
-      ThreeScale::Backend::Aggregator.save_to_cassandra(v.first)
-      puts "Done"
+      puts "Saving bucket: #{v.first} ..."
+      if !ThreeScale::Backend::Aggregator.time_bucket_already_inserted?(bucket)
+        ThreeScale::Backend::Aggregator.save_to_cassandra(v.first)
+        puts "Done"
+      else
+        puts "The time bucket was already inserted. Not saving it."
+      end
     end
   end
   
@@ -193,6 +197,14 @@ namespace :stats do
     puts v.size
   end
   
+  desc 'undo a repeated batch (needs the batch file that needs to be undone)'
+  task :undo_repeated_batch => :environment do
+    raise "No filename containing a CQL batch was passed as argument" if ARGV[1].nil?
+    str = File.new(ARGV[1],"r").read
+    raise "Filename #{ARGV[1]} is empty" if str.nil? || str.empty?
+    puts ThreeScale::Backend::Aggregator.undo_repeated_batch(str)
+  end
+
   desc 'check counter values for cassandra and redis, params: service_id, application_id, metric_id, time (optional)'
   task :check_counters => :environment do
     

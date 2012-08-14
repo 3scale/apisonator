@@ -133,14 +133,19 @@ module ThreeScale
           
         end
         
+        def time_bucket_already_inserted?(bucket)
+          storage_cassandra.time_bucket_already_inserted?(bucket)
+        end
         
         def save_to_cassandra(bucket) 
           
           ## FIXME: this has to go aways, just temporally to check for concurrency issues
           storage.pipelined do 
-            storage.rpush("temp_list","#{bucket}-#{Time.now.utc}-#{Thread.current.object_id}")
-            storage.ltrim("temp_list",1000,-1)
+            storage.lpush("temp_list","#{bucket}-#{Time.now.utc}-#{Thread.current.object_id}")
+            storage.ltrim("temp_list",0,1000-1)
           end
+
+          str = ""
 
           begin 
             
@@ -166,21 +171,16 @@ module ThreeScale
               single_value_by_batch[row_key] << values[i].to_i
             end
                     
-            str = ""
             single_key_by_batch.keys.each do |row_key|
-              str << add2cql(:Stats, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
+              str << StorageCassandra.add2cql(:Stats, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
             end
           
           rescue Exception => e
-            ## could not create the CQL batch, report issue but not reschedule
-            
-            begin
-              temporal_output_exceptions.puts "Error saving bucket: #{bucket}"
-              temporal_output.puts "Error saving bucket: #{bucket}"
-              temporal_output_exceptions.puts e 
-              temporal_output.puts str
-            rescue Exception => e2
-            end
+            ## could not create the CQL batch, report issue but not reschedule  
+            Airbrake.notify(
+              :error_class => "StatsBatcher",
+              :error_message => "Error in save_to_cassandra, building batch for bucket: #{bucket} \n #{e.message} \n #{str}"
+            )
             storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
             storage.sadd(failed_save_to_cassandra_key, bucket)
             ## do NOT reschedule in this case: potential encoding issue with redis keys
@@ -203,13 +203,10 @@ module ThreeScale
 
           rescue Exception => e
             ## could not write to cassandra, reschedule
-            begin
-              temporal_output_exceptions.puts "Error saving bucket: #{bucket}"
-              temporal_output.puts "Error saving bucket: #{bucket}"
-              temporal_output_exceptions.puts e 
-              temporal_output.puts str
-            rescue Exception => e2
-            end
+            Airbrake.notify(
+              :error_class => "StatsBatcher",
+              :error_message => "Error in save_to_cassandra, saving batch for bucket: #{bucket} \n #{e.message} \n #{str}"
+            )
             storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
             storage.sadd(failed_save_to_cassandra_key, bucket)
             ## do not automatically reschedule. It creates cascades of failures. 
@@ -233,34 +230,6 @@ module ThreeScale
         
         def failed_buckets_at_least_once
           storage.smembers(failed_save_to_cassandra_at_least_once_key)
-        end
-        
-        def add2cql(column_family, row_key, value, col_key)
-          if value.is_a?(Array) || col_key.is_a?(Array)
-            if value.size!=col_key.size || value.is_a?(Array)!=col_key.is_a?(Array) || value.size==0
-              raise Exception, "error on parameters of add2cql, value: #{value.inspect}, col_key: #{col_key.inspect}"
-            end
-            str = "UPDATE " << column_family.to_s << " SET "
-            col_key.each_with_index do |ck, i|
-              str << ", " if i>0 
-              str << "'" << ck << "'='" << ck << "' + " << value[i].to_s
-            end
-            str << " WHERE key = '" << row_key << "';"
-          else
-            add2cql_single(column_family, row_key, value, col_key)
-          end
-        end
-        
-        def add2cql_single(column_family, row_key, value, col_key)
-          str = "UPDATE " << column_family.to_s
-          str << " SET '" << col_key << "'='" << col_key << "' + " << value.to_s
-          str << " WHERE key = '" << row_key << "';"
-        end
-
-        def get2cql(column_family, row_key, col_key)
-          str = "SELECT '" << col_key << "'"
-          str << " FROM '" << column_family.to_s << "'"
-          str << " WHERE key = '" + row_key + "';"
         end
         
       end

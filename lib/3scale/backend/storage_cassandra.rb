@@ -77,6 +77,35 @@ module ThreeScale
         return [@latest_time_bucket, @latest_digest, @latest_batch_str]
       end
       
+      def time_bucket_already_inserted?(bucket)
+        pre = bucket.to_i - 1
+        post = bucket.to_i + 1
+
+        sentence = "SELECT '#{pre}'..'#{post}' FROM StatsChecker WHERE key='day-#{bucket[0..7]}';"
+
+        r = execute(sentence)
+        r.fetch do |row|
+          h = row.to_hash
+          h.each do |k, v|
+            return true if k!="key" && k.split("-")[0]==bucket && v>0  
+          end
+
+        end
+        return false
+      end
+      
+      def undo_execute_batch(batch_str)
+        
+        ## FIXME
+        ## This assumes that the format of an UPDATE leaves a space before and after the increment value.
+        ## This is the case of CQL sentences build with StorageCassandra.add2cql. There are test to check if 
+        ## the format changes, but be careful. Needs to be refactored to be more robust.
+         
+        complementary = batch_str.gsub(" + "," - ")
+        execute_cql_query(complementary)
+        
+      end
+      
       ## execute batch should replace all execute_cql_query related to batched
       def execute_batch(time_bucket, batch_str)
 
@@ -87,9 +116,9 @@ module ThreeScale
         col_key = "#{time_bucket}-#{digest}"
         row_key = "day-#{time_bucket[0..7]}"
         
-        control_counter = " UPDATE StatsChecker SET '#{col_key}'='#{col_key}'+1 WHERE key = '#{row_key}'; "
+        control_counter = StorageCassandra.add2cql(:StatsChecker,row_key,1,col_key)
         
-        str << control_counter 
+        str << " " << control_counter 
         str << " APPLY BATCH;"
         
         @latest_time_bucket = time_bucket
@@ -102,7 +131,7 @@ module ThreeScale
         filename = col_key
         
         ## this a single line it's empty if not immediately read, probably not flushed yet. Force it with close.
-        f = File.open("#{root_directory}#{filename}","a")
+        f = File.open("#{root_directory}#{filename}","w")
         f.write(str)
         f.close
         
@@ -112,18 +141,47 @@ module ThreeScale
         
       end
       
+      
       def add(column_family, row_key, value, col_key)
-        execute_cql_query(add2cql(column_family, row_key, value, col_key))
+        execute_cql_query(StorageCassandra.add2cql(column_family, row_key, value, col_key))
       end
       
       def get(column_family, row_key, col_key)
-        r = execute(get2cql(column_family, row_key, col_key))
+        r = execute(StorageCassandra.get2cql(column_family, row_key, col_key))
         r.fetch do |row|
           return row.to_hash[col_key]
         end 
         return nil
       end
-        
+      
+      
+      def self.get2cql(column_family, row_key, col_key)
+        str = "SELECT '" << col_key << "'"
+        str << " FROM '" << column_family.to_s << "'"
+        str << " WHERE key='" + row_key + "';"
+      end
+      
+      def self.add2cql(column_family, row_key, value, col_key)
+        if value.is_a?(Array) || col_key.is_a?(Array)
+          if value.size!=col_key.size || value.is_a?(Array)!=col_key.is_a?(Array) || value.size==0
+            raise Exception, "error on parameters of add2cql, value: #{value.inspect}, col_key: #{col_key.inspect}"
+          end
+          str = "UPDATE " << column_family.to_s << " SET "
+          col_key.each_with_index do |ck, i|
+            str << ", " if i>0 
+            str << "'" << ck << "'='" << ck << "' + " << value[i].to_s
+          end
+          str << " WHERE key='" << row_key << "';"
+        else
+          StorageCassandra.add2cql_single(column_family, row_key, value, col_key)
+        end
+      end
+      
+      def self.add2cql_single(column_family, row_key, value, col_key)
+        str = "UPDATE " << column_family.to_s
+        str << " SET '" << col_key << "'='" << col_key << "' + " << value.to_s
+        str << " WHERE key='" << row_key << "';"
+      end  
         
     end
   end

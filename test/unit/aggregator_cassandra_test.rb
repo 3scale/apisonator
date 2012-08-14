@@ -510,6 +510,35 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
   end
   
+  test 'time bucket already inserted' do
+    
+      timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
+    
+      assert_equal false, Aggregator.time_bucket_already_inserted?(timestamp.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s)
+     
+      Timecop.freeze(timestamp) do 
+        Aggregator.aggregate_all([{:service_id     => 1001,
+                                    :application_id => 2001,
+                                    :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                                    :usage          => {'3001' => 1}}])
+
+      end
+
+      Aggregator.schedule_one_stats_job
+      Resque.run! 
+      
+      assert_equal 0, Resque.queue(:main).length
+      assert_equal 0, Aggregator.pending_buckets.size 
+      
+      
+      assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))    
+      cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :eternity))
+      assert_equal 1, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+
+      assert_equal true, Aggregator.time_bucket_already_inserted?(timestamp.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s)
+    
+  end
+  
   test 'failed cql batches get stored into redis and processed properly afterwards' do 
   
     ## first one ok,

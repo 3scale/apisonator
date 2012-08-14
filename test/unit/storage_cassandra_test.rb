@@ -8,9 +8,11 @@ class StorageCassandraTest < Test::Unit::TestCase
     assert_equal @storage.keyspace, StorageCassandra::DEFAULT_KEYSPACE
     
     @storage.clear_keyspace!
-   
+    
+    FileUtils.rm_rf(configuration.cassandra_archiver.path)
+    
   end
-
+  
   
   def test_basic_operations
       
@@ -35,27 +37,45 @@ class StorageCassandraTest < Test::Unit::TestCase
     
   end
   
+  
+  def test_format_execute_batch
+    
+    bucket = "20121010130001"
+    @storage.execute_batch(bucket, StorageCassandra.add2cql(:Stats, "row_key", 10, "column_key"))
+
+    last_time_bucket, last_digest, last_batch = @storage.latest_batch_saved_info
+    col_check = "#{last_time_bucket}-#{last_digest}"
+    
+    ## WARNING: this is the expected format. You are not supposed to write CQL sentences like this, but use the add2cql, get2cql, etc.
+    ## changing the format might affect the undo_execute_batch.
+    expected = "BEGIN BATCH UPDATE Stats SET 'column_key'='column_key' + 10 WHERE key='row_key'; UPDATE StatsChecker SET '#{col_check}'='#{col_check}' + 1 WHERE key='day-#{bucket[0..7]}'; APPLY BATCH;"
+
+    assert_equal expected, last_batch
+    
+  end
+
+  
   def test_addcql
     
-    s = Aggregator.add2cql(:Stats, "row_key", 10, "column_key")
-    assert_equal "UPDATE Stats SET 'column_key'='column_key' + 10 WHERE key = 'row_key';", s
+    s = StorageCassandra.add2cql(:Stats, "row_key", 10, "column_key")
+    assert_equal "UPDATE Stats SET 'column_key'='column_key' + 10 WHERE key='row_key';", s
     
-    s = Aggregator.add2cql(:Stats, "row_key", [10, 11], ["ck1", "ck2"])
-    assert_equal "UPDATE Stats SET 'ck1'='ck1' + 10, 'ck2'='ck2' + 11 WHERE key = 'row_key';", s
+    s = StorageCassandra.add2cql(:Stats, "row_key", [10, 11], ["ck1", "ck2"])
+    assert_equal "UPDATE Stats SET 'ck1'='ck1' + 10, 'ck2'='ck2' + 11 WHERE key='row_key';", s
     
-    s = Aggregator.add2cql(:Stats, "row_key", [10, 11, 12], ["ck1", "ck2", "ck3"])
-    assert_equal "UPDATE Stats SET 'ck1'='ck1' + 10, 'ck2'='ck2' + 11, 'ck3'='ck3' + 12 WHERE key = 'row_key';", s
+    s = StorageCassandra.add2cql(:Stats, "row_key", [10, 11, 12], ["ck1", "ck2", "ck3"])
+    assert_equal "UPDATE Stats SET 'ck1'='ck1' + 10, 'ck2'='ck2' + 11, 'ck3'='ck3' + 12 WHERE key='row_key';", s
     
     assert_raise Exception do
-      Aggregator.add2cql(:Stats, "row_key", [10, 11, 12], ["ck1"])
+      StorageCassandra.add2cql(:Stats, "row_key", [10, 11, 12], ["ck1"])
     end
     
     assert_raise Exception do
-      Aggregator.add2cql(:Stats, "row_key", [10, 11, 12], "ck1")
+      StorageCassandra.add2cql(:Stats, "row_key", [10, 11, 12], "ck1")
     end
 
     assert_raise Exception do
-      Aggregator.add2cql(:Stats, "row_key", [], [])
+      StorageCassandra.add2cql(:Stats, "row_key", [], [])
     end
     
   end
@@ -67,8 +87,12 @@ class StorageCassandraTest < Test::Unit::TestCase
     
     bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
     
-    @storage.execute_batch(bucket, "UPDATE Stats SET col = col + 1 WHERE key = row;")
+    assert_equal false, Aggregator.time_bucket_already_inserted?(bucket)
+    
+    @storage.execute_batch(bucket, StorageCassandra.add2cql(:Stats,"row",1,"col"))
     assert_equal 1, @storage.get(:Stats, "row", "col")
+    
+    assert_equal true, Aggregator.time_bucket_already_inserted?(bucket)
     
     ## this is to check whether the control counter checker is ok
     last_time_bucket, last_digest, last_batch = @storage.latest_batch_saved_info
@@ -84,10 +108,15 @@ class StorageCassandraTest < Test::Unit::TestCase
     
     str = ""
     10.times do 
-      str << "UPDATE Stats SET col = col + 1 WHERE key = row;"
+      str <<  StorageCassandra.add2cql(:Stats,"row",1,"col")
     end
     
+    assert_equal true, Aggregator.time_bucket_already_inserted?(bucket)
+    
     @storage.execute_batch(bucket, str)
+    
+    assert_equal true, Aggregator.time_bucket_already_inserted?(bucket)
+    
     assert_equal 11, @storage.get(:Stats, "row", "col")
     
     last_time_bucket, last_digest, last_batch = @storage.latest_batch_saved_info
@@ -103,9 +132,9 @@ class StorageCassandraTest < Test::Unit::TestCase
     
     10.times do |i|
       if i==6
-        str << "UPDATE FAKE SET col = col + 1 WHERE key = row;"
+        str <<  StorageCassandra.add2cql(:FakeStats,"row",1,"col")
       else  
-        str << "UPDATE Stats SET col = col + 1 WHERE key = row;"
+        str <<  StorageCassandra.add2cql(:Stats,"row",1,"col")
       end
     end
     
@@ -129,7 +158,7 @@ class StorageCassandraTest < Test::Unit::TestCase
       if i==6
         str << "bullshit; "
       else  
-        str << "UPDATE Stats SET col = col + 1 WHERE key = row;"
+        str <<  StorageCassandra.add2cql(:Stats,"row",1,"col")
       end
     end
         
@@ -150,13 +179,118 @@ class StorageCassandraTest < Test::Unit::TestCase
     
   end
   
+  
+  def test_undo_batch
+    
+    bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+    
+    assert_equal false, Aggregator.time_bucket_already_inserted?(bucket)
+    
+    @storage.execute_batch(bucket, StorageCassandra.add2cql(:Stats,"row",1,"col"))
+    
+    assert_equal 1, @storage.get(:Stats, "row", "col")
+    
+    assert_equal true, Aggregator.time_bucket_already_inserted?(bucket)
+    
+    last_time_bucket, last_digest, last_batch = @storage.latest_batch_saved_info
+    assert_equal bucket, last_time_bucket
+    
+    assert_equal 1, @storage.get(:StatsChecker, "day-#{bucket[0..7]}", "#{last_time_bucket}-#{last_digest}")
+    
+    file_content = File.open("#{configuration.cassandra_archiver.path}/day-#{bucket[0..7]}/#{last_time_bucket}-#{last_digest}","r").read
+     
+    assert_equal file_content, last_batch
+    
+    ## we do the undo
+    @storage.undo_execute_batch(file_content)
+    
+    ## the file still exists
+    file_content = File.open("#{configuration.cassandra_archiver.path}/day-#{bucket[0..7]}/#{last_time_bucket}-#{last_digest}","r").read
+    assert_equal file_content, last_batch
+    
+    ## the time bucket is not inserted because we undid a batch that was not repeated, therefore needs to be false
+    assert_equal false, Aggregator.time_bucket_already_inserted?(bucket)
+    
+    ## the counter checker is decremented
+    assert_equal 0, @storage.get(:StatsChecker, "day-#{bucket[0..7]}", "#{last_time_bucket}-#{last_digest}")
+    
+    ## and the counter for the stats too
+    assert_equal 0, @storage.get(:Stats, "row", "col")
+    
+  end
+  
+  def test_undo_batch_with_more_batches
+    
+    bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+    assert_equal false, Aggregator.time_bucket_already_inserted?(bucket)
+    
+    ## for some reason the batch is executed multiple times
+    
+    @storage.execute_batch(bucket, StorageCassandra.add2cql(:Stats,"row",1,"col"))
+    
+    @storage.execute_batch(bucket, StorageCassandra.add2cql(:Stats,"row",1,"col"))
+    @storage.execute_batch(bucket, StorageCassandra.add2cql(:Stats,"row",1,"col"))
+    
+    last_time_bucket, last_digest, last_batch = @storage.latest_batch_saved_info
+    file_content = File.open("#{configuration.cassandra_archiver.path}/day-#{bucket[0..7]}/#{last_time_bucket}-#{last_digest}","r").read
+    
+    ## the file content will contain the last batch only
+    assert_equal last_batch, file_content
+  
+    assert_equal true, Aggregator.time_bucket_already_inserted?(bucket)
+    assert_equal 3, @storage.get(:Stats, "row", "col")
+    
+    
+    @storage.undo_execute_batch(file_content)
+    @storage.undo_execute_batch(file_content)
+    
+    
+    assert_equal 1, @storage.get(:Stats, "row", "col")
+    assert_equal true, Aggregator.time_bucket_already_inserted?(bucket)
+    assert_equal 1, @storage.get(:StatsChecker, "day-#{bucket[0..7]}", "#{last_time_bucket}-#{last_digest}")
+    
+  end
+  
+  
+  def test_time_bucket_already_exists_behaviour
+    
+    assert_equal false, Aggregator.time_bucket_already_inserted?("foo")
+    
+    bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+    assert_equal false, Aggregator.time_bucket_already_inserted?(bucket)
+    
+    str = ""
+    10.times do 
+      str << StorageCassandra.add2cql(:Stats,"row",1,"col")
+    end
+    
+    @storage.execute_batch(bucket, str)
+    assert_equal true, Aggregator.time_bucket_already_inserted?(bucket)
+    
+    ## now a fake one
+    
+    bucket = (Time.now.utc-3600).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+    assert_equal false, Aggregator.time_bucket_already_inserted?(bucket)
+    
+    str = ""
+    10.times do 
+      str << StorageCassandra.add2cql(:FakeStats,"row",1,"col")
+    end
+    
+    assert_raise CassandraCQL::Error::InvalidRequestException do  
+      @storage.execute_batch(bucket, str)
+    end
+    assert_equal false, Aggregator.time_bucket_already_inserted?(bucket)
+    
+  end
+  
   def test_control_checker_behaviour_and_repeated_batches
     
     bucket = Time.now.utc.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
     
     str = ""
     10.times do 
-      str << "UPDATE Stats SET col = col + 1 WHERE key = row;"
+      str << StorageCassandra.add2cql(:Stats,"row",1,"col")
     end
     
     @storage.execute_batch(bucket, str)
@@ -176,6 +310,8 @@ class StorageCassandraTest < Test::Unit::TestCase
     
     bucket = (Time.now.utc+Aggregator.stats_bucket_size*2).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
     
+    assert_equal false, Aggregator.time_bucket_already_inserted?(bucket)
+    
     @storage.execute_batch(bucket, str)
     assert_equal 20, @storage.get(:Stats, "row", "col")
     
@@ -184,6 +320,9 @@ class StorageCassandraTest < Test::Unit::TestCase
     assert_equal Digest::MD5.hexdigest(str), last_digest
     assert_equal 1, @storage.get(:StatsChecker, "day-#{bucket[0..7]}", "#{last_time_bucket}-#{last_digest}")
     
+    assert_equal true, @storage.time_bucket_already_inserted?(bucket)
+    
+    
     @storage.execute_batch(bucket, str)
     assert_equal 30, @storage.get(:Stats, "row", "col")
     
@@ -191,6 +330,8 @@ class StorageCassandraTest < Test::Unit::TestCase
     assert_equal bucket, last_time_bucket
     assert_equal Digest::MD5.hexdigest(str), last_digest
     assert_equal 2, @storage.get(:StatsChecker, "day-#{bucket[0..7]}", "#{last_time_bucket}-#{last_digest}")
+    
+    assert_equal true, @storage.time_bucket_already_inserted?(bucket)
     
     assert_equal ["#{last_time_bucket}-#{last_digest}"], Aggregator.repeated_batches
     
