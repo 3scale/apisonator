@@ -104,6 +104,11 @@ module ThreeScale
           storage_cassandra.repeated_batches
         end
         
+        def undo_repeated_batch(batch_str)
+          storage_cassandra.undo_execute_batch(batch_str)
+        end
+        
+        
         ## returns the array of buckets to process that are < bucket
         def get_old_buckets_to_process(bucket = "inf", redis_conn = nil)
           
