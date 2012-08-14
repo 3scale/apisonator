@@ -169,10 +169,9 @@ module ThreeScale
           
           rescue Exception => e
             ## could not create the CQL batch, report issue but not reschedule  
-            Airbrake.notify(
-              :error_class => "StatsBatcher",
-              :error_message => "Error in save_to_cassandra, building batch for bucket: #{bucket} \n #{e.message} \n #{str}"
-            )
+      
+            Airbrake.notify(e, parameters: { bucket: bucket })
+            
             storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
             storage.sadd(failed_save_to_cassandra_key, bucket)
             ## do NOT reschedule in this case: potential encoding issue with redis keys
@@ -195,10 +194,9 @@ module ThreeScale
 
           rescue Exception => e
             ## could not write to cassandra, reschedule
-            Airbrake.notify(
-              :error_class => "StatsBatcher",
-              :error_message => "Error in save_to_cassandra, saving batch for bucket: #{bucket} \n #{e.message} \n #{str}"
-            )
+            
+            Airbrake.notify(e, parameters: { bucket: bucket })
+            
             storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
             storage.sadd(failed_save_to_cassandra_key, bucket)
             ## do not automatically reschedule. It creates cascades of failures. 
