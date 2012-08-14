@@ -56,6 +56,10 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 		Resque.reset!
 		Aggregator.reset_current_bucket!
 		
+		## stubbing the airbreak, not working on tests
+		Airbrake.stubs(:notify).returns(true)
+		
+		
   end
   
   test 'Stats jobs get properly enqueued' do 

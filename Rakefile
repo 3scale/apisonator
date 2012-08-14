@@ -195,6 +195,9 @@ namespace :stats do
   task :repeated_batches => :environment do
     v = ThreeScale::Backend::Aggregator.repeated_batches
     puts v.size
+    if v.size>0
+      puts v.inspect
+    end
   end
   
   desc 'undo a repeated batch (needs the batch file that needs to be undone)'
@@ -202,7 +205,7 @@ namespace :stats do
     raise "No filename containing a CQL batch was passed as argument" if ARGV[1].nil?
     str = File.new(ARGV[1],"r").read
     raise "Filename #{ARGV[1]} is empty" if str.nil? || str.empty?
-    puts ThreeScale::Backend::Aggregator.undo_repeated_batch(str)
+    ThreeScale::Backend::Aggregator.undo_repeated_batch(str)
   end
 
   desc 'check counter values for cassandra and redis, params: service_id, application_id, metric_id, time (optional)'
