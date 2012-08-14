@@ -2,14 +2,6 @@ module ThreeScale
   module Backend
     module Aggregator
       module StatsBatcher
-      
-        def temporal_output
-          @@temporal_output ||= File.new("/mnt/3scale_backend/temp_cassandra.log","a")
-        end
-        
-        def temporal_output_exceptions
-          @@temporal_output ||= File.new("/mnt/3scale_backend/temp_cassandra_exceptions.log","a")
-        end
         
         def changed_keys_bucket_key(bucket)
           "keys_changed:#{bucket}"
