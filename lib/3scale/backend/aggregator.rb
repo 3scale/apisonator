@@ -40,6 +40,9 @@ module ThreeScale
             @@current_bucket = bucket
           end
         end
+        
+        
+        @touched_apps = Hash.new
                 
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
            
@@ -65,6 +68,8 @@ module ThreeScale
               aggregate(transaction)
             end
           end
+          
+          
           
           ## here the pipelined redis increments have been sent
           ## now we have to send the cassandra ones
@@ -93,7 +98,26 @@ module ThreeScale
           end
                   
         end
-
+        
+        ## the application set needs to be updated on it's own to capture if the app already existed, if not
+        ## the event will be triggered
+        ## fantastic: we can't use pipelining here because:
+        ## > r.pipelined do
+        ##     r.sadd("kkk","e")
+        ##     r.sadd("kkk","f")
+        ##   end
+        ## [1, 1] :-/
+        
+        @touched_apps.keys.each do |key|
+          ser_id, app_id = key.split(" ")
+          is_new = update_application_set(service_key_prefix(ser_id), app_id)
+          if is_new
+            Backend::EventStorage::store(:first_traffic, {:service_id => ser_id, 
+                                                          :application_id => app_id, 
+                                                          :timestamp => Time.now.utc.to_s})
+          end    
+        end
+        
         ## now we have done all incrementes for all the transactions, we
         ## need to update the cached_status for for the transactor
         update_status_cache(applications,users)
@@ -139,7 +163,6 @@ module ThreeScale
         timestamp = transaction[:timestamp]
         
         ##FIXME, here we have to check that the timestamp is in the current given the time period we are in
-        
 
         transaction[:usage].each do |metric_id, value|
           
@@ -187,8 +210,11 @@ module ThreeScale
           end
         end
 
-        update_application_set(service_prefix, transaction[:application_id])
+        ## update_application_set(service_prefix, transaction[:application_id])
+        ## we need to remove the updating the set out of the pipeline to catch whether it's a new app or not
+        @touched_apps["#{transaction[:service_id]} #{transaction[:application_id]}"] = true 
         update_user_set(service_prefix, transaction[:user_id]) unless transaction[:user_id].nil?
+        
       end		
 
 

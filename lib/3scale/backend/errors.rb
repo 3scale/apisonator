@@ -152,7 +152,6 @@ module ThreeScale
       end
     end
 
-
     # Legacy API support
 
     class AuthenticationError < Error

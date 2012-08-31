@@ -546,6 +546,25 @@ module ThreeScale
         empty_response
       end
 
+      ## EVENTS (replacement for alerts and violations)
+      
+      get '/events.xml' do
+        ## this operation is only valid with the provider key of master
+        service_id
+        raise ProviderKeyInvalid, params[:provider_key] if @service_id!=ThreeScale::Backend.configuration.master_service_id
+        @list = Transactor.latest_events
+        builder :latest_events
+      end
+      
+      delete '/events.xml' do
+        ## this operation is only valid with the provider key of master
+        service_id
+        raise ProviderKeyInvalid, params[:provider_key] if @service_id!=ThreeScale::Backend.configuration.master_service_id
+        @num_items_deleted = Transactor.delete_latest_events(params[:last_id])
+        builder :deleted_latest_events
+      end 
+      
+      
       ## ALERTS & VIOLATIONS
 
       get '/services/:service_id/alerts.xml' do
