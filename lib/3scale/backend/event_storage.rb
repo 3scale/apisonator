@@ -6,9 +6,7 @@ module ThreeScale
       extend self
       
       PING_TTL    = 60
-      
       EVENT_TYPES = [:first_traffic, :alert]
-      
       
       
       def store(type, object)
@@ -31,14 +29,27 @@ module ThreeScale
         return res
       end
 
-      def delete(to_id)
-        storage.zremrangebyscore(events_queue_key,0,to_id)
+      def delete_range(to_id)
+        to_id = to_id.to_i
+        if (to_id > 0) 
+          return storage.zremrangebyscore(events_queue_key,0,to_id) 
+        else 
+          return 0
+        end
+      end
+      
+      def delete(id)
+        id = id.to_i
+        if (id > 0)
+          return storage.zremrangebyscore(events_queue_key,id,id)
+        else
+          return 0
+        end
       end
       
       def size
         storage.zcard(events_queue_key)
       end
-
 
       def ping_if_not_empty
         val = storage.pipelined do
@@ -51,8 +62,7 @@ module ThreeScale
         ## the queue is not empty and more than timeout has passed 
         ## since the front-end was notified
         if (val[0] > 0 && val[1].nil?)
-        
-        
+          
           
         end
          

@@ -415,6 +415,19 @@ module ThreeScale
       end
 
 
+      def latest_events
+        EventStorage.list
+      end
+      
+      def delete_event_by_id(id)
+        EventStorage.delete(id)
+      end
+      
+      def delete_events_by_range(to_id)
+        EventStorage.delete_range(to_id)
+      end
+        
+
       ## -------------------
       
       private

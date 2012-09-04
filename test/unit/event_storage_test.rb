@@ -51,10 +51,17 @@ class EventStorageTest < Test::Unit::TestCase
     assert_equal 4, EventStorage.list().size
     
     ## removing nothing
-    assert_equal 0, EventStorage.delete(-1)
+    assert_equal 0, EventStorage.delete_range("foo")
+    
+    ## removing nothing
+    assert_equal 0, EventStorage.delete_range(nil)
+      
+    
+    ## removing nothing
+    assert_equal 0, EventStorage.delete_range(-1)
     
     ## removing the first two
-    assert_equal 2, EventStorage.delete(saved_id)
+    assert_equal 2, EventStorage.delete_range(saved_id)
     
     list = EventStorage.list()
     assert_equal 2, EventStorage.size()
@@ -65,14 +72,75 @@ class EventStorageTest < Test::Unit::TestCase
     end 
      
     ## removing all
-    assert_equal 2, EventStorage.delete(99999999)
+    assert_equal 2, EventStorage.delete_range(99999999)
     list = EventStorage.list()
     assert_equal 0, EventStorage.size()
     assert_equal 0, EventStorage.list().size
      
     ## removing when empty
-    assert_equal 0, EventStorage.delete(99999999) 
+    assert_equal 0, EventStorage.delete_range(99999999) 
     
+  end
+  
+  test 'delete by id' do 
+    
+     timestamp = Time.now.utc
+
+      alerts = []
+      10.times.each do |i|
+        alerts << {:id => next_id, :service_id => i, :application_id => "app1", :utilization => 90, 
+          :max_utilization => 90.0, :limit => "metric X: 90 of 100", :timestamp => timestamp}
+      end
+
+      10.times do |i|
+        EventStorage.store(:alert, alerts[0])
+      end
+
+      EventStorage.store(:first_traffic, {:service_id => 11, 
+                                          :application_id => "app1", 
+                                          :timestamp => timestamp})
+                                                                            
+      list = EventStorage.list()
+      assert_equal 11, EventStorage.size()
+      assert_equal 11, EventStorage.list().size
+      
+      item = list[list.size-2]
+          
+      assert_equal 1, EventStorage.delete(item[:id])
+      assert_equal 10, EventStorage.size()
+      
+      ## no longer exists
+      list = EventStorage.list()
+      list.each do |item2|
+        assert_not_equal item[:id], item2[:id]
+      end  
+      
+      ## nothing happens when removing twice
+      assert_equal 0, EventStorage.delete(item[:id])
+      assert_equal 10, EventStorage.size()
+  
+      
+  
+      ## bad cases
+      assert_equal 0, EventStorage.delete(nil)
+      assert_equal 10, EventStorage.size()  
+      
+      assert_equal 0, EventStorage.delete(-1)
+      assert_equal 10, EventStorage.size()
+      
+      assert_equal 0, EventStorage.delete("foo")
+      assert_equal 10, EventStorage.size()
+  
+      ## bad cases
+      assert_equal 0, EventStorage.delete_range(nil)
+      assert_equal 10, EventStorage.size()  
+      
+      assert_equal 0, EventStorage.delete_range(-1)
+      assert_equal 10, EventStorage.size()
+      
+      assert_equal 0, EventStorage.delete_range("foo")
+      assert_equal 10, EventStorage.size()    
+  
   end
   
   
@@ -88,6 +156,8 @@ class EventStorageTest < Test::Unit::TestCase
   end
   
   test 'ping behavior' do
+    
+    
     
   end
   

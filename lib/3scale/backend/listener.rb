@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Listener < Sinatra::Base
+    class Listener < Sinatra::Base      
       disable :logging
       disable :raise_errors
       disable :show_exceptions
@@ -548,20 +548,43 @@ module ThreeScale
 
       ## EVENTS (replacement for alerts and violations)
       
-      get '/events.xml' do
+      get '/events.json' do
         ## this operation is only valid with the provider key of master
-        service_id
-        raise ProviderKeyInvalid, params[:provider_key] if @service_id!=ThreeScale::Backend.configuration.master_service_id
-        @list = Transactor.latest_events
-        builder :latest_events
+        begin
+          check_if_master()
+          res = Transactor.latest_events
+          content_type 'application/json'
+          status 200
+          body Yajl::Encoder.encode(res)
+        rescue ProviderKeyInvalid => e
+          error_response(e)
+        end  
       end
       
-      delete '/events.xml' do
+      delete '/events/:event_id.json' do
         ## this operation is only valid with the provider key of master
-        service_id
-        raise ProviderKeyInvalid, params[:provider_key] if @service_id!=ThreeScale::Backend.configuration.master_service_id
-        @num_items_deleted = Transactor.delete_latest_events(params[:last_id])
-        builder :deleted_latest_events
+        begin
+          check_if_master()
+          res = Transactor.delete_event_by_id(params[:event_id])
+          content_type 'application/json'
+          status 200
+          body Yajl::Encoder.encode(res)
+        rescue ProviderKeyInvalid => e
+          error_response(e)
+        end  
+      end
+      
+      delete '/events.json' do
+        ## this operation is only valid with the provider key of master
+        begin
+          check_if_master()
+          res = Transactor.delete_events_by_range(params[:to_id])
+          content_type 'application/json'
+          status 200
+          body Yajl::Encoder.encode(res)
+        rescue ProviderKeyInvalid => e
+          error_response(e)
+        end  
       end 
       
       
@@ -713,6 +736,23 @@ module ThreeScale
         body nil
         true
       end
+     
+      def check_if_master()        
+        service_id = Service.load_id!(params[:provider_key])
+        return true if !service_id.nil? && 
+                      (service_id.to_i==ThreeScale::Backend.configuration.master_service_id || 
+                       service_id.to_i==ThreeScale::Backend.configuration.secondary_service_id)
+        raise ProviderKeyInvalid, params[:provider_key]
+      end
+      
+      ## FIXME: this has to be refactored when the api supports json all the way
+      def error_response(e)
+        content_type 'application/json'
+        status 403
+        body Yajl::Encoder.encode({:error => {:code => e.code, :message => e.message}})
+        true
+      end
+      
     end
   end
 end
