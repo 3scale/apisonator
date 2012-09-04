@@ -16,6 +16,7 @@ module TestHelpers
       @master_reports_id      = next_id
       @master_authorizes_id   = next_id
       @master_transactions_id = next_id
+      @master_provider_key    = "master_provider_key_#{next_id}"
 
       Metric.save(
         :service_id => @master_service_id, :id => @master_hits_id, :name => 'hits',
@@ -26,6 +27,8 @@ module TestHelpers
       Metric.save(
         :service_id => @master_service_id, :id => @master_transactions_id,
         :name => 'transactions')
+        
+      Service.save!(:provider_key => @master_provider_key, :id => @master_service_id)  
 
       @master_plan_id = next_id
     end
