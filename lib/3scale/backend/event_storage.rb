@@ -60,13 +60,14 @@ module ThreeScale
         ## since the front-end was notified
         if (val[0] > 0 && val[1].nil? && !ThreeScale::Backend.configuration.events_hook.nil? && !ThreeScale::Backend.configuration.events_hook.empty?)
           begin
-            RestClient.get ThreeScale::Backend.configuration.events_hook
+            RestClient.post ThreeScale::Backend.configuration.events_hook, :secret => ThreeScale::Backend.configuration.events_hook_shared_secret
             storage.pipelined do
               storage.set(events_ping_key,1)
               storage.expire(events_ping_key,PING_TTL)
             end
             return true
           rescue Exception => e
+            Airbrake.notify(e)
             return nil
           end  
         end

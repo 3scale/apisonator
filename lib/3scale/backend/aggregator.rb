@@ -110,8 +110,7 @@ module ThreeScale
         
         @touched_apps.keys.each do |key|
           ser_id, app_id = key.split(" ")
-          is_new = update_application_set(service_key_prefix(ser_id), app_id)
-          if is_new
+          if update_application_set(service_key_prefix(ser_id), app_id)
             Backend::EventStorage::store(:first_traffic, {:service_id => ser_id, 
                                                           :application_id => app_id, 
                                                           :timestamp => Time.now.utc.to_s})

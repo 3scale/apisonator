@@ -517,6 +517,34 @@ class LatestEventsTest < Test::Unit::TestCase
     
     assert_not_equal -1, saved_id
     
-    
   end
+  
+  test 'events_hook is triggered on authrep and report' do
+    
+    saved_ttl = EventStorage::PING_TTL
+    EventStorage.redef_without_warning("PING_TTL", 5)
+    
+    configuration.events_hook = "http://foobar.foobar"
+    
+    post '/transactions.xml',
+      :provider_key => @provider_key,
+      :transactions => {0 => {:app_id => @application_id1, :usage => {'foos' => 115}}}
+      
+    assert_raise NoMethodError do
+      Resque.run!
+    end
+      
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                    :app_id       => @application_id1,
+                                    :usage        => {'foos' => 99}
+
+    assert_raise NoMethodError do 
+      Resque.run!
+    end
+      
+    configuration.events_hook = ""
+    EventStorage.redef_without_warning("PING_TTL", saved_ttl)  
+  
+  end
+  
 end
