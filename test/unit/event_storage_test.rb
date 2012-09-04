@@ -157,10 +157,56 @@ class EventStorageTest < Test::Unit::TestCase
   
   test 'ping behavior' do
     
+    saved_ttl = EventStorage::PING_TTL
     
+    EventStorage.redef_without_warning("PING_TTL", 5)
+     
+    # empty queue
+    assert_equal false, EventStorage.ping_if_not_empty
+    
+    # add an event, false becase not events_hook defined
+    EventStorage.store(:alert, {})
+    assert_equal false, EventStorage.ping_if_not_empty
+    
+    # add an event, false becase not events_hook empty
+    configuration.events_hook = ""
+    assert_equal false, EventStorage.ping_if_not_empty
+    
+    ## add events_hook, nil because it fails to connect
+    configuration.events_hook = "foobar"
+    
+    assert_equal nil, EventStorage.ping_if_not_empty
+    
+    ## add stubbing
+    RestClient.stubs(:get).returns(true)
+    assert_equal true, EventStorage.ping_if_not_empty
+    
+    ## false only report once per TTL
+    10.times.each do 
+      assert_equal false, EventStorage.ping_if_not_empty
+    end
+
+    sleep(EventStorage::PING_TTL+1)
+        
+    ## true because TTL has elapsed
+    assert_equal true, EventStorage.ping_if_not_empty
+    
+    ## false only report once per TTL
+    10.times.each do 
+      assert_equal false, EventStorage.ping_if_not_empty
+    end
+    
+    sleep(EventStorage::PING_TTL+1)
+    
+    EventStorage.delete_range(999999)
+    
+    ## false because no events
+    assert_equal false, EventStorage.ping_if_not_empty
+    
+    ThreeScale::Backend.configuration.events_hook = nil
+    EventStorage.redef_without_warning("PING_TTL", saved_ttl)
+    RestClient.unstub(:get)
     
   end
-  
-  
-  
+
 end

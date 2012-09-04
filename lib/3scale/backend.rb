@@ -15,6 +15,7 @@ require 'yajl'
 require 'yaml'
 require 'zlib'
 require 'cassandra-cql'
+require 'rest-client'
 require 'digest/md5'
 
 require '3scale/backend/has_set'

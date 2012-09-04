@@ -132,6 +132,9 @@ module ThreeScale
           end
         end
         
+        ## Finally, let's ping the frontend if any event is pending for processing
+        EventStorage.ping_if_not_empty
+        
       end
   
       def get_value_of_set_if_exists(value_str) 

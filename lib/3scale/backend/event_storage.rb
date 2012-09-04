@@ -8,7 +8,6 @@ module ThreeScale
       PING_TTL    = 60
       EVENT_TYPES = [:first_traffic, :alert]
       
-      
       def store(type, object)
         raise Exception.new("Event type #{type} is invalid") unless EVENT_TYPES.member?(type)
         new_id = storage.incrby(events_id_key,1)
@@ -55,19 +54,26 @@ module ThreeScale
         val = storage.pipelined do
           storage.zcard(events_queue_key)
           storage.get(events_ping_key)
-          storage.set(events_ping_key)
-          storage.expire(events_ping_key,PING_TTL)
-        end
+        end  
         
         ## the queue is not empty and more than timeout has passed 
         ## since the front-end was notified
-        if (val[0] > 0 && val[1].nil?)
-          
-          
+        if (val[0] > 0 && val[1].nil? && !ThreeScale::Backend.configuration.events_hook.nil? && !ThreeScale::Backend.configuration.events_hook.empty?)
+          begin
+            RestClient.get ThreeScale::Backend.configuration.events_hook
+            storage.pipelined do
+              storage.set(events_ping_key,1)
+              storage.expire(events_ping_key,PING_TTL)
+            end
+            return true
+          rescue Exception => e
+            return nil
+          end  
         end
-         
+        
+        return false
       end
-
+      
       def events_queue_key
         "events/queue"
       end
@@ -78,6 +84,11 @@ module ThreeScale
       
       def events_id_key
         "events/id"
+      end
+      
+      def redef_without_warning(const, value)
+        remove_const(const)
+        const_set(const, value)
       end
       
       

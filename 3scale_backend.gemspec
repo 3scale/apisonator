@@ -29,7 +29,9 @@ Gem::Specification.new do |s|
   s.add_dependency 'thin',                    '~> 1.2'
   s.add_dependency 'yajl-ruby',               '~> 0.7'
   s.add_dependency 'cassandra-cql',           '1.0.4'
-
+  s.add_dependency 'rest-client',             '1.6.7'
+  
+  
   s.add_development_dependency 'fakefs'
   s.add_development_dependency 'mocha'
   s.add_development_dependency 'nokogiri'
