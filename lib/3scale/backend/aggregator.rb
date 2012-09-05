@@ -41,9 +41,7 @@ module ThreeScale
           end
         end
         
-        
-        @touched_apps = Hash.new
-                
+         
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
            
           @keys_doing_set_op = []
@@ -108,8 +106,9 @@ module ThreeScale
         ##   end
         ## [1, 1] :-/
         
-        @touched_apps.keys.each do |key|
-          ser_id, app_id = key.split(" ")
+        applications.each do |appid, values|
+          ser_id = values[:service_id]
+          app_id = values[:application_id]
           if update_application_set(service_key_prefix(ser_id), app_id)
             Backend::EventStorage::store(:first_traffic, {:service_id => ser_id, 
                                                           :application_id => app_id, 
@@ -214,7 +213,6 @@ module ThreeScale
 
         ## update_application_set(service_prefix, transaction[:application_id])
         ## we need to remove the updating the set out of the pipeline to catch whether it's a new app or not
-        @touched_apps["#{transaction[:service_id]} #{transaction[:application_id]}"] = true 
         update_user_set(service_prefix, transaction[:user_id]) unless transaction[:user_id].nil?
         
       end		
