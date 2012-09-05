@@ -10,6 +10,11 @@ create column family Stats
   with default_validation_class=CounterColumnType 
   and key_validation_class=UTF8Type 
   and comparator=UTF8Type;
+  
+create column family StatsInverted
+  with default_validation_class=CounterColumnType 
+  and key_validation_class=UTF8Type 
+  and comparator=UTF8Type;  
 
 create column family StatsChecker
   with default_validation_class=CounterColumnType 

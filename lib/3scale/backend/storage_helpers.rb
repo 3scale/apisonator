@@ -23,6 +23,20 @@ module ThreeScale
           ["#{v[0..v.size-2].join('/')}/#{w[0]}:#{w[1][0..3]}",w[1]]
         end
       end
+      
+      def redis_key_2_cassandra_key_inverted(redis_key)
+        v = redis_key.split("/")
+        last = v[v.size-1]
+        ## only consider hours
+        w = last.split(":")
+        if last!="eternity" && last.split(":")[0]=="hour"
+           row_key = w[1]
+           col_key = nil
+           col_key = v[1..3].join('/') if v[2].match(/^cinstance/)
+           return [row_key, col_key]
+        end
+        return [nil, nil]
+      end
 
       def storage
         Storage.instance
