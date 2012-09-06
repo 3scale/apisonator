@@ -182,7 +182,7 @@ namespace :stats do
       puts "No failed buckets!"
     else
       puts "Saving bucket: #{v.first} ..."
-      if !ThreeScale::Backend::Aggregator.time_bucket_already_inserted?(bucket)
+      if !ThreeScale::Backend::Aggregator.time_bucket_already_inserted?(v.first)
         ThreeScale::Backend::Aggregator.save_to_cassandra(v.first)
         puts "Done"
       else
