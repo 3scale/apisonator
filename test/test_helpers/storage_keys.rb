@@ -22,16 +22,5 @@ module TestHelpers
       end
     end
     
-    def redis_key_2_cassandra_key(redis_key)
-      v = redis_key.split("/")
-      last = v[v.size-1]
-      if last=="eternity"
-        [redis_key, "eternity"]
-      else
-        w = last.split(":")
-        ["#{v[0..v.size-2].join('/')}/#{w[0]}:#{w[1][0..3]}",w[1]]
-      end
-    end
-    
   end
 end

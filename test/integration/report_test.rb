@@ -4,6 +4,8 @@ class ReportTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
   include TestHelpers::StorageKeys
+  include Backend::StorageHelpers
+  
 
   def setup
     @storage = Storage.instance(true)

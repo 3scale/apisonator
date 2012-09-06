@@ -155,7 +155,10 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(1001, 3001, :hour,   '2010050713'))
     assert_equal cont, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     
-    
+    ## it's for the service, so no row/col keys
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(service_key(1001, 3001, :hour,   '2010050713'))
+    assert_equal true, cassandra_row_key.nil? || cassandra_col_key.nil?  
+        
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :eternity))
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :eternity))
     assert_equal cont, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
@@ -176,15 +179,23 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :day,    '20100507'))
     assert_equal cont, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     
+    ## it's for the app, but not hour, so no row/col keys
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :day,    '20100507'))
+    assert_equal true, cassandra_row_key.nil? || cassandra_col_key.nil?  
+    
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal cont, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    ## here it's fine for the StatsInverted, application and hour
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal false, cassandra_row_key.nil? || cassandra_col_key.nil?  
+    assert_equal cont, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
     
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :minute, '201005071323'))
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :minute, '201005071323'))
     assert_equal cont, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
       
-    
     @storage = Storage.instance(true)
     @storage.flushdb
 		seed_data()
@@ -259,6 +270,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal nil, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
     
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :minute, '201005071323'))
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :minute, '201005071323'))
@@ -335,6 +348,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 1, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 1, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
     
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :minute, '201005071323'))
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :minute, '201005071323'))
@@ -361,6 +376,11 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 10, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
+    
+    
     
     v = []
     v  <<   { :service_id     => 1001,
@@ -376,6 +396,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 665, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
 
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 665, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
+
 
     v = []
     v <<   { :service_id     => 1001,
@@ -390,6 +413,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
                                
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 666, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 666, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
     
   end
   
@@ -696,6 +722,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal nil, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)    
+    
     assert_equal 0, Aggregator.pending_buckets.size
     assert_equal 1, Aggregator.failed_buckets.size
     assert_equal 1, Aggregator.failed_buckets_at_least_once.size
@@ -706,6 +735,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 666, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 666, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
     
     assert_equal [], Aggregator.repeated_batches
         
@@ -844,6 +876,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal nil, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)    
+    
     ## now, enabled it cassandra and do the same
     
     configuration.cassandra.servers = Array(StorageCassandra::DEFAULT_SERVER)
@@ -869,6 +904,9 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 10, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)    
     
     assert_equal [], Aggregator.repeated_batches
     
@@ -918,6 +956,10 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal nil, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
+    
+    
     ## now, enabled it cassandra and do the same
     
     configuration.cassandra.servers = Array(StorageCassandra::DEFAULT_SERVER)
@@ -945,7 +987,10 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))                             
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 20, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
-      
+    
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 20, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
+          
     assert_equal [], Aggregator.repeated_batches
     
   end
@@ -1000,6 +1045,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))
     assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))
+    assert_equal 5, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :month,   '20100501'))
     assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :eternity))
@@ -1014,6 +1061,11 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :hour,   '2010050713'))
     assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    ## no StatsInverted for uinstances
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :hour,   '2010050713'))
+    assert_equal true, cassandra_row_key.nil? || cassandra_col_key.nil?
+    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :month,   '20100501'))
     assert_equal 5, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :eternity))
@@ -1049,6 +1101,10 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))
     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))
+    assert_equal 9, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
+    
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :month,   '20100501'))
     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(service.id, application.id, @metric_hits.id, :eternity))
@@ -1057,7 +1113,6 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :hour,   '2010050713'))
     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :month,   '20100501'))
-  
     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(service_key(service.id, @metric_hits.id, :eternity))
     assert_equal 9, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
@@ -1066,6 +1121,11 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 4, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :month,   '20100501'))
     assert_equal 4, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
+    
+    # no StatsInverted for not :hour or uinstance
+    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key_inverted(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :eternity))
+    assert_equal true, cassandra_row_key.nil? || cassandra_col_key.nil?
+        
     cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :eternity))
     assert_equal 4, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
     

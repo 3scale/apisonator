@@ -164,8 +164,32 @@ module Extensions
       assert_equal '2009110312',     Time.utc(2009, 11,  3, 12,  0,  0).to_compact_s
       assert_equal '20091103',       Time.utc(2009, 11,  3,  0,  0,  0).to_compact_s
       assert_equal '20091110',       Time.utc(2009, 11, 10,  0,  0,  0).to_compact_s      
-      assert_equal '21000101',       Time.utc(2100, 1, 1,  0,  0,  0).to_compact_s  
+      assert_equal '21000101',       Time.utc(2100, 1, 1,  0,  0,  0).to_compact_s
+        
     end
+    
+    def test_end_of_cycle_with_to_compact_s
+      ## back zeros are removed,
+      ## instead of  '200910301020' it does '20091030102'
+      assert_equal '20091030102' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:minute).to_compact_s
+      assert_equal '200910301' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:hour).to_compact_s
+      ## WTF the days do not remove the zeros!! :-/
+      assert_equal '20091030' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:day).to_compact_s
+      assert_equal '20091026' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:week).to_compact_s
+      ## and the month does not remove, but places at the beggining of the month
+      assert_equal '20091001' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:month).to_compact_s
+      ## same for year, festival
+      assert_equal '20090101' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:year).to_compact_s
+      
+      assert_equal '20091030102000' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:minute).to_not_compact_s
+      assert_equal '20091030100000' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:hour).to_not_compact_s
+      assert_equal '20091030000000' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:day).to_not_compact_s
+      assert_equal '20091026000000' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:week).to_not_compact_s
+      assert_equal '20091001000000' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:month).to_not_compact_s
+      assert_equal '20090101000000' , Time.utc(2009, 10,  30, 10, 20,  40).beginning_of_cycle(:year).to_not_compact_s
+      
+    end
+    
 
     def test_parse_to_utc_with_input_without_offset
       assert_equal Time.utc(2010, 5, 7, 17, 28, 12), Time.parse_to_utc('2010-05-07 17:28:12')

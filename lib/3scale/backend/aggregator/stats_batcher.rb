@@ -155,21 +155,48 @@ module ThreeScale
 
             values = storage.mget(*copied_keys_that_changed)
           
+            ## this is to fill the Stats, where col_key is timestamp, and row_key is stats/service/cinstance
+      
             single_key_by_batch = Hash.new
             single_value_by_batch = Hash.new
           
             keys_that_changed.each_with_index do |key, i|
+              
               row_key, col_key = redis_key_2_cassandra_key(key)
-          
+              
               single_key_by_batch[row_key] ||= Array.new
               single_value_by_batch[row_key] ||= Array.new
             
               single_key_by_batch[row_key] << col_key
               single_value_by_batch[row_key] << values[i].to_i
             end
-                    
+      
             single_key_by_batch.keys.each do |row_key|
               str << StorageCassandra.add2cql(:Stats, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
+            end
+      
+            ## this is to fill the StatsInverted were row_key is service_id/timestamp, and col_key is cinstance/metric/...
+            
+            single_key_by_batch = Hash.new
+            single_value_by_batch = Hash.new
+            
+            keys_that_changed.each_with_index do |key, i|
+              
+              row_key, col_key = redis_key_2_cassandra_key_inverted(key)
+              
+              if !row_key.nil? && !col_key.nil?
+                        
+                single_key_by_batch[row_key] ||= Array.new
+                single_value_by_batch[row_key] ||= Array.new
+            
+                single_key_by_batch[row_key] << col_key
+                single_value_by_batch[row_key] << values[i].to_i
+              end
+              
+            end
+                    
+            single_key_by_batch.keys.each do |row_key|
+              str << StorageCassandra.add2cql(:StatsInverted, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
             end
           
           rescue Exception => e
