@@ -134,6 +134,7 @@ module ThreeScale
           storage_cassandra.time_bucket_already_inserted?(bucket)
         end
         
+        
         def save_to_cassandra(bucket) 
           
           ## FIXME: this has to go aways, just temporally to check for concurrency issues
@@ -199,19 +200,6 @@ module ThreeScale
               str << StorageCassandra.add2cql(:StatsInverted, row_key, single_value_by_batch[row_key], single_key_by_batch[row_key]) << " "
             end
           
-          rescue Exception => e
-            ## could not create the CQL batch, report issue but not reschedule  
-      
-            Airbrake.notify(e, parameters: { bucket: bucket })
-            
-            storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
-            storage.sadd(failed_save_to_cassandra_key, bucket)
-            ## do NOT reschedule in this case: potential encoding issue with redis keys
-            ##storage.zadd(changed_keys_key, bucket.to_i, bucket)
-            return  
-          end
-          
-          begin
             
             storage_cassandra.execute_batch(bucket, str); 
             
@@ -227,7 +215,13 @@ module ThreeScale
           rescue Exception => e
             ## could not write to cassandra, reschedule
             
-            Airbrake.notify(e, parameters: { bucket: bucket })
+            begin
+              Airbrake.notify(e, parameters: { bucket: bucket, cql: str })
+            rescue Exception => no_airbrake
+              ## this is a bit hackish... this will only happens when save_to_cassandra blows when
+              ## called from a rake task (rake stats:process_failed) 
+              puts "Error: #{e.inspect}"
+            end
             
             storage.sadd(failed_save_to_cassandra_at_least_once_key, bucket)
             storage.sadd(failed_save_to_cassandra_key, bucket)
