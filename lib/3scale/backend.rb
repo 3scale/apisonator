@@ -81,7 +81,6 @@ ThreeScale::Backend.configuration.tap do |config|
 
   # Default config
   config.master_service_id = 1
-  config.secondary_service_id = 2
   config.archiver.path     = '/tmp/3scale_backend/archive'
   config.cassandra_archiver.path     = '/tmp/3scale_backend/cassandra_archive'
 

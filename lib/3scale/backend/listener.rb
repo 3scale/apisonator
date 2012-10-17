@@ -740,9 +740,7 @@ module ThreeScale
       def check_if_master()        
         service_id = Service.load_id!(params[:provider_key])
                 
-        return true if !service_id.nil? && 
-                      (service_id.to_i==ThreeScale::Backend.configuration.master_service_id.to_i || 
-                       service_id.to_i==ThreeScale::Backend.configuration.secondary_service_id.to_i)
+        return true if !service_id.nil? && (service_id.to_i==ThreeScale::Backend.configuration.master_service_id.to_i)
         raise ProviderKeyInvalid, params[:provider_key]
       end
       
