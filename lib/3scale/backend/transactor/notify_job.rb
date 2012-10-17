@@ -10,8 +10,8 @@ module ThreeScale
         def self.perform(provider_key, usage, timestamp)
           application_id = Application.load_id_by_key(master_service_id, provider_key)
 
-          if application_id && Application.exists?(service_id, application_id)
-            master_metrics = Metric.load_all(service_id)
+          if application_id && Application.exists?(master_service_id, application_id)
+            master_metrics = Metric.load_all(master_service_id)
 
             ProcessJob.perform([{:service_id     => master_service_id,
                                  :application_id => application_id,
