@@ -6,7 +6,7 @@ class TransactionStorageTest < Test::Unit::TestCase
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
-    
+
     @service_id     = next_id
     @application_id = next_id
     @metric_id      = next_id
@@ -37,31 +37,31 @@ class TransactionStorageTest < Test::Unit::TestCase
 
     expected = {'application_id' => application_id_one,
                 'usage'          => {metric_id_one => 1},
-                'timestamp'      => Time.utc(2010, 9, 10, 17, 4)}
+                'timestamp'      => '2010-09-10 17:04:00 UTC' }
 
     assert_equal expected, Yajl::Parser.parse(transactions[0])
-    
+
     # Service two
     transactions = @storage.lrange("transactions/service_id:#{service_id_two}", 0, -1)
     assert_equal 1, transactions.size
 
     expected = {'application_id' => application_id_two,
                 'usage'          => {metric_id_two => 2},
-                'timestamp'      => Time.utc(2010, 9, 10, 17, 10)}
+                'timestamp'      => '2010-09-10 17:10:00 UTC' }
 
     assert_equal expected, Yajl::Parser.parse(transactions[0])
   end
-  
+
   test '#list returns transactions from the storage' do
     application_id_one = @application_id
     application_id_two = next_id
 
-    @storage.lpush("transactions/service_id:#{@service_id}", 
+    @storage.lpush("transactions/service_id:#{@service_id}",
                    Yajl::Encoder.encode(:application_id => application_id_one,
                                         :usage          => {@metric_id => 1},
                                         :timestamp      => '2010-09-10 11:00:00 UTC'))
 
-    @storage.lpush("transactions/service_id:#{@service_id}", 
+    @storage.lpush("transactions/service_id:#{@service_id}",
                    Yajl::Encoder.encode(:application_id => application_id_two,
                                         :usage          => {@metric_id => 2},
                                         :timestamp      => '2010-09-10 11:02:00 UTC'))
@@ -91,13 +91,13 @@ class TransactionStorageTest < Test::Unit::TestCase
 
     assert_equal expected, transactions[0]
   end
-  
+
   test 'list returns the transactions in reverse-insertion order' do
     TransactionStorage.store(:service_id     => @service_id,
                              :application_id => @application_id,
                              :usage          => {@metric_id => 1},
                              :timestamp      => Time.utc(2010, 9, 10, 17, 31))
-    
+
     TransactionStorage.store(:service_id     => @service_id,
                              :application_id => @application_id,
                              :usage          => {@metric_id => 2},
@@ -109,7 +109,7 @@ class TransactionStorageTest < Test::Unit::TestCase
   end
 
   test 'keeps at most 100 transactions in the storage' do
-    110.times do 
+    110.times do
       TransactionStorage.store(:service_id     => @service_id,
                                :application_id => @application_id,
                                :usage          => {@metric_id => 1},
