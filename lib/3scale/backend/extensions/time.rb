@@ -4,14 +4,14 @@ module ThreeScale
       ONE_MINUTE = 60
       ONE_HOUR   = 60 * ONE_MINUTE
       ONE_DAY    = 24 * ONE_HOUR
-        
+
       def beginning_of_cycle(cycle)
         case cycle
         when :eternity then self.class.utc(1970, 1, 1)
         when :year     then self.class.utc(year, 1, 1)
         when :month    then self.class.utc(year, month, 1)
-        when :week     then beginning_of_week
-        when :day      then beginning_of_day
+        when :week     then beginning_of_week_hack
+        when :day      then beginning_of_day_hack
         when :hour     then self.class.utc(year, month, day, hour)
         when :minute   then self.class.utc(year, month, day, hour, min)
         when Numeric   then beginning_of_numeric_cycle(cycle)
@@ -46,18 +46,18 @@ module ThreeScale
       def beginning_of_week_hack
         # This is stolen from active support and slightly modified
         days_to_monday = wday != 0 ? wday - 1 : 6
-        (self - days_to_monday * ONE_DAY).beginning_of_day
+        (self - days_to_monday * ONE_DAY).beginning_of_day_hack
       end
 
       def end_of_week_hack
         days_to_next_monday = wday != 0 ? 8 - wday : 1
-        (self + days_to_next_monday * ONE_DAY).beginning_of_day
+        (self + days_to_next_monday * ONE_DAY).beginning_of_day_hack
       end
 
       def beginning_of_day_hack
         self.class.utc(year, month, day)
       end
-      
+
       def beginning_of_bucket(seconds_in_bucket)
         if seconds_in_bucket > 30 || seconds_in_bucket < 1 || !seconds_in_bucket.is_a?(Fixnum)
           raise Exception, "seconds_in_bucket cannot be larger than 30 seconds or smaller than 1"
@@ -84,14 +84,14 @@ module ThreeScale
       end
 
       private
-      
+
       def beginning_of_numeric_cycle(cycle)
         base = cycle_base(cycle)
 
         cycles_count = ((self - base) / cycle).floor
         base + cycles_count * cycle
       end
-      
+
       def cycle_base(cycle)
         case cycle
         when 0..ONE_MINUTE        then ::Time.utc(year, month, day, hour, min)
@@ -100,11 +100,11 @@ module ThreeScale
         else raise ArgumentError, "Argument must be duration from 0 seconds to 1 day."
         end
       end
-      
+
       def raise_invalid_period(period)
-        raise ArgumentError, "Argument must be a number or one of :minute, :hour, :day, :week, :month, or :year, not #{period.inspect}" 
+        raise ArgumentError, "Argument must be a number or one of :minute, :hour, :day, :week, :month, or :year, not #{period.inspect}"
       end
-      
+
       module ClassMethods
         def parse_to_utc(input)
           parts = nil
@@ -114,7 +114,7 @@ module ThreeScale
           rescue TypeError => e
           end
 
-          return if parts.nil? || parts.empty? || !parts.has_key?(:year) || !parts.has_key?(:mon) || !parts.has_key?(:mday) 
+          return if parts.nil? || parts.empty? || !parts.has_key?(:year) || !parts.has_key?(:mon) || !parts.has_key?(:mday)
 
           time = nil
           begin
@@ -126,7 +126,7 @@ module ThreeScale
                             parts[:sec],
                             parts[:sec_fraction])
             time -= parts[:offset] if parts[:offset]
-            
+
           rescue ArgumentError => e
           end
 
