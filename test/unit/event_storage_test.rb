@@ -179,6 +179,8 @@ class EventStorageTest < Test::Unit::TestCase
     
     assert_equal nil, EventStorage.ping_if_not_empty
     
+    sleep(EventStorage::PING_TTL+1)
+    
     ## add stubbing
     RestClient.stubs(:post).returns(true)
     assert_equal true, EventStorage.ping_if_not_empty
