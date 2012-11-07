@@ -4,7 +4,7 @@ module ThreeScale
       include StorageHelpers
       extend self
 
-      LIMIT = 100
+      LIMIT = 50
 
       def store_all(transactions)
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
@@ -19,7 +19,7 @@ module ThreeScale
       def store(transaction)
         key = queue_key(transaction[:service_id])
 
-        storage.lpush(key, 
+        storage.lpush(key,
                       encode(:application_id => transaction[:application_id],
                              :usage          => transaction[:usage],
                              :timestamp      => transaction[:timestamp]))
