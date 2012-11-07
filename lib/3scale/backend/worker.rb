@@ -20,6 +20,12 @@ module ThreeScale
 
         @one_off           = options[:one_off]
         @polling_frequency = options[:polling_frequency] || 5
+        
+        if configuration.hoptoad.api_key
+          Airbrake.configure do |config|
+            config.api_key = configuration.hoptoad.api_key
+          end
+        end
 
       end
       
