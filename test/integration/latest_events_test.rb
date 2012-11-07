@@ -45,6 +45,8 @@ class LatestEventsTest < Test::Unit::TestCase
       add_allowed_limit(@service_id, val)
     end
 
+    
+
   end
   
   def filter_events_by_type(type)
@@ -519,7 +521,7 @@ class LatestEventsTest < Test::Unit::TestCase
     
   end
   
-  test 'events_hook is triggered on authrep and report' do
+  test 'events_hook is triggered on report' do
     
     saved_ttl = EventStorage::PING_TTL
     EventStorage.redef_without_warning("PING_TTL", 5)
@@ -529,10 +531,22 @@ class LatestEventsTest < Test::Unit::TestCase
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => @application_id1, :usage => {'foos' => 115}}}
-      
+    
     assert_raise NoMethodError do
       Resque.run!
     end
+    
+    configuration.events_hook = ""
+    EventStorage.redef_without_warning("PING_TTL", saved_ttl)
+    
+  end
+  
+  test 'events_hook is triggered on authrep' do
+    
+    saved_ttl = EventStorage::PING_TTL
+    EventStorage.redef_without_warning("PING_TTL", 5) 
+    
+    configuration.events_hook = "http://foobar.foobar" 
       
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                     :app_id       => @application_id1,

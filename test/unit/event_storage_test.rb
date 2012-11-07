@@ -161,7 +161,7 @@ class EventStorageTest < Test::Unit::TestCase
     
     saved_ttl = EventStorage::PING_TTL
     
-    EventStorage.redef_without_warning("PING_TTL", 5)
+    EventStorage.redef_without_warning("PING_TTL", 1)
      
     # empty queue
     assert_equal false, EventStorage.ping_if_not_empty
@@ -207,7 +207,9 @@ class EventStorageTest < Test::Unit::TestCase
     ## false because no events
     assert_equal false, EventStorage.ping_if_not_empty
     
+    configuration.events_hook = nil
     ThreeScale::Backend.configuration.events_hook = nil
+    
     EventStorage.redef_without_warning("PING_TTL", saved_ttl)
     RestClient.unstub(:post)
     Airbrake.unstub(:notify)
