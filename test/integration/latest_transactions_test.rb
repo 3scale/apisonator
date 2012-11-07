@@ -62,8 +62,8 @@ class LatestTransactionsTest < Test::Unit::TestCase
     assert_equal '1', nodes[1].at("value[metric_id = \"#{@foos_id}\"]").content
   end
 
-  test 'GET /transactions/latest.xml returns at most 100 transactions' do
-    110.times do
+  test 'GET /transactions/latest.xml returns at most 50 transactions' do
+    60.times do
       Transactor.report(@provider_key, nil, 0 => {'app_id'    => @application_id,
                                              'usage'     => {'bars' => 2}})
     end
@@ -72,6 +72,6 @@ class LatestTransactionsTest < Test::Unit::TestCase
 
     get '/transactions/latest.xml', :provider_key => @provider_key
     assert_equal 200, last_response.status
-    assert_equal 100, Nokogiri::XML(last_response.body).search('transaction').size
+    assert_equal 50, Nokogiri::XML(last_response.body).search('transaction').size
   end
 end
