@@ -16,17 +16,17 @@ Gem::Specification.new do |s|
  
   s.required_rubygems_version = ">= 1.3.7"
     
-  s.add_dependency '3scale_core',             '~> 0.4.4'
+  s.add_dependency '3scale_core',             '~> 0.4'
   s.add_dependency 'aws-s3',                  '~> 0.6'
   s.add_dependency 'builder',                 '~> 2.1'
-  s.add_dependency 'hiredis',                 '0.1.4'
-  s.add_dependency 'redis',                   '2.1.1'
-  s.add_dependency 'resque',                  '~> 1.14.0' # please use this in production/staging -> https://github.com/tmacedo/resque
+  s.add_dependency 'hiredis',                 '0.4.5'
+  s.add_dependency 'redis',                   '3.0.2'
+  s.add_dependency 'resque',                  '~> 1.23.0' # please use this in production/staging -> https://github.com/tmacedo/resque
   s.add_dependency 'rack',                    '~> 1.1'
   s.add_dependency 'rack-rest_api_versioning'
   s.add_dependency 'airbrake',                '~> 3.1.1'
   s.add_dependency 'sinatra',                 '~> 1.2.6'
-  s.add_dependency 'thin',                    '~> 1.2'
+  s.add_dependency 'thin',                    '~> 1.5'
   s.add_dependency 'yajl-ruby',               '~> 0.7'
   s.add_dependency 'cassandra-cql',           '1.0.4'
   s.add_dependency 'rest-client',             '1.6.7'
