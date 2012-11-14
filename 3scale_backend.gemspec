@@ -32,7 +32,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'rest-client',             '1.6.7'
   
   
-  s.add_development_dependency 'fakefs'
+  s.add_development_dependency 'fakefs',      '~> 0.3.0'
   s.add_development_dependency 'mocha'
   s.add_development_dependency 'nokogiri'
   s.add_development_dependency 'rack-test'
