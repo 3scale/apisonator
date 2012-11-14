@@ -12,6 +12,14 @@ class AlertStorageTest < Test::Unit::TestCase
     @metric_id      = next_id
   end
 
+  test 'list operation on alerts deletes the list' do
+    timestamp = Time.now.utc
+    AlertStorage.store(:id => next_id, :service_id => @service_id, :application_id => @application_id, :utilization => 90, :max_utilization => 90.0, :limit => "metric X: 90 of 100", :timestamp => timestamp)
+    AlertStorage.store(:id => next_id, :service_id => @service_id, :application_id => @application_id, :utilization => 100, :max_utilization => 100.0, :limit => "metric X: 100 of 100", :timestamp => timestamp)
+    assert_equal 2, AlertStorage.list(@service_id).size
+    assert_equal 0, AlertStorage.list(@service_id).size
+  end
+
   test 'test addition and retrieval' do
     application_id_one = @application_id
     application_id_two = next_id

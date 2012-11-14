@@ -31,7 +31,7 @@ module ThreeScale
       def utilization(status)
         max_utilization = -1.0
         max_record = nil
-
+        
         status.usage_reports.each do |item|         
           if item.max_value > 0 
             utilization = item.current_value / item.max_value.to_f 
@@ -64,7 +64,6 @@ module ThreeScale
       end
 
       def update_utilization(status, max_utilization, max_record, timestamp)
-
         discrete = utilization_discrete(max_utilization)
         max_utilization_i = (max_utilization * 100.0).round
 
@@ -78,7 +77,6 @@ module ThreeScale
         key_last_time_period = "alerts/service_id:#{status.application.service_id}/app_id:#{status.application.id}/last_time_period"
         key_stats_utilization = "alerts/service_id:#{status.application.service_id}/app_id:#{status.application.id}/stats_utilization"
 
-        
         ## key_notified does not have the period, it reacts to (service_id/app_id/discrete)           
         tmp, already_alerted, allowed, current_max, last_time_period = storage.pipelined do 
           storage.incrby(key,"1")
@@ -88,6 +86,7 @@ module ThreeScale
           storage.get(key_last_time_period)
         end
         ## BUG on redis library, sismember returns false is standalone and 0 if within a pipeline :-/
+        ## this is no longer the case for redis-rb 3.0.2, added  (allowed==1 || allowed==true) just to be double sure
 
         ## update the status of utilization
         if (max_utilization_i > current_max.to_i)
@@ -111,11 +110,9 @@ module ThreeScale
             storage.set(key_current_max,max_utilization_i)
             storage.set(key_last_time_period,period_hour)          
           end
-
         end
 
-        if already_alerted.nil? && allowed==1 && discrete.to_i > 0
-
+        if already_alerted.nil? && allowed && discrete.to_i > 0
           next_id, tmp1, tmp2 = storage.pipelined do 
             storage.incrby("alerts/current_id",1)
             storage.set(key_notified,"1")            

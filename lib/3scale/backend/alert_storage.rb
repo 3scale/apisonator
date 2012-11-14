@@ -24,6 +24,7 @@ module ThreeScale
 
           storage.srem(key_service, storage.smembers(key_service).last) if card + 1 > LIMIT_SERVICE
         end
+        
       end
         
       def list(service_id)
@@ -32,6 +33,7 @@ module ThreeScale
           storage.smembers(key)
           storage.del(key)
         end
+        
         raw_items.map(&method(:decode))
       end
 

@@ -105,15 +105,11 @@ class AlertsTest < Test::Unit::TestCase
     assert_equal 120, v[0][:utilization]
     assert_equal 90, v[1][:utilization]
     assert_equal 90, v[2][:utilization]
-      
-  
-
-
-    
   end
 
-  test 'only one event for each application is stored per alert_ttl' do 
 
+  test 'only one event for each application is stored per alert_ttl' do 
+    
     timestamp = Time.utc(2010, 5, 14, 12, 00, 00)
 
     assert_equal 0, AlertStorage.list(@service_id).size
@@ -160,9 +156,6 @@ class AlertsTest < Test::Unit::TestCase
 
     assert_equal 3, v.size
     assert v.include? 100
-    assert v.include? 90
-      
+    assert v.include? 90 
   end
-
-
 end

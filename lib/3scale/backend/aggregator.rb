@@ -297,7 +297,7 @@ module ThreeScale
         current_timestamp = Time.now.getutc
 
         applications.each do |appid, values|
-
+          
           application = Application.load(values[:service_id],values[:application_id])
           usage = load_current_usage(application)	
           status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
