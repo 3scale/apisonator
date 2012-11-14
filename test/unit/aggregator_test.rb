@@ -21,7 +21,7 @@ class AggregatorTest < Test::Unit::TestCase
       :id         => 200,
       :name       => 'transactions')
 
-		## for the provider    
+		## for the provider
 
 		provider_key = "provider_key"
     service_id   = 1001
@@ -30,7 +30,7 @@ class AggregatorTest < Test::Unit::TestCase
     # Create master cinstance
     Application.save(:service_id => service_id,
               :id => 2001, :state => :live)
-		
+
     # Create metrics
     Metric.save(:service_id => service_id, :id => 3001, :name => 'hits')
 
@@ -42,7 +42,7 @@ class AggregatorTest < Test::Unit::TestCase
     @storage.flushdb
 		seed_data()
   end
-  
+
 
   test 'aggregate_all increments_all_stats_counters' do
     Aggregator.aggregate_all([{:service_id     => 1001,
@@ -70,10 +70,10 @@ class AggregatorTest < Test::Unit::TestCase
                                :application_id => 2001,
                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                :usage          => {'3001' => 1}}])
-    
+
     assert_equal ['2001'], @storage.smembers("stats/{service:1001}/cinstances")
   end
-    
+
   test 'aggregate_all does not update service set' do
     assert_no_change :of => lambda { @storage.smembers('stats/services') } do
       Aggregator.aggregate_all([{:service_id     => '1001',
@@ -82,7 +82,7 @@ class AggregatorTest < Test::Unit::TestCase
                                  :usage          => {'3001' => 1}}])
     end
   end
-    
+
   test 'aggregate_all sets expiration time for volatile keys' do
     Aggregator.aggregate_all([{:service_id     => '1001',
                                :application_id => '2001',
@@ -96,35 +96,35 @@ class AggregatorTest < Test::Unit::TestCase
     assert ttl >  0
     assert ttl <= 180
   end
-  
-  test 'aggregate takes into account setting the counter value' do 
-    
+
+  test 'aggregate takes into account setting the counter value' do
+
     v = []
     10.times do
       v <<   { :service_id     => 1001,
               :application_id => 2001,
               :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
               :usage          => {'3001' => 1}}
-      
+
     end
-    
+
     v <<   { :service_id     => 1001,
              :application_id => 2001,
              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
              :usage          => {'3001' => '#665'}}
-    
-    
+
+
     v <<   { :service_id     => 1001,
              :application_id => 2001,
              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
              :usage          => {'3001' => '1'}}
-                                                
+
     Aggregator.aggregate_all(v)
-                               
+
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-        
+
   end
-  
-  
-  
+
+
+
 end
