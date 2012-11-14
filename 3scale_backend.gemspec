@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
  
   s.required_rubygems_version = ">= 1.3.7"
     
-  s.add_dependency '3scale_core',             '~> 0.5'
+  s.add_dependency '3scale_core',             '~> 0.5.0'
   s.add_dependency 'aws-s3',                  '~> 0.6'
   s.add_dependency 'builder',                 '~> 2.1'
   s.add_dependency 'hiredis',                 '0.4.5'
