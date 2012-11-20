@@ -170,9 +170,7 @@ module ThreeScale
 
         transaction[:usage].each do |metric_id, value|
 
-          puts "trans: #{value}"
           val = get_value_of_set_if_exists(value)
-          puts "value es #{val}"
           if val.nil?
             type = :increment
           else
@@ -185,49 +183,42 @@ module ThreeScale
   timestamps = [ :eternity, :year, :month, :week, :day, :hour, :minute ].map do |granularity|
     counter_key('', granularity, timestamp)
   end
-          puts "----"
-          puts '[type, transaction[:service_id], transaction[:application_id],
-                                       metric_id, transaction[:user_id], value]'
-          puts [type, transaction[:service_id], transaction[:application_id],
-                                       metric_id, transaction[:user_id], value]+ timestamps
-          puts "----"
 
-         # storage.eval(code, :argv => [type, transaction[:service_id], transaction[:application_id],
-         #                               metric_id, transaction[:user_id], value]+ timestamps)
+         storage.eval(code, :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps)
 
 
-        #   service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
+          # service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
 
-        #   ## QUESTION: why not increment by :year ?
-        #   increment_or_set(type, service_metric_prefix, :eternity,   nil,       value)
-        #   increment_or_set(type, service_metric_prefix, :month,      timestamp, value)
-        #   increment_or_set(type, service_metric_prefix, :week,       timestamp, value)
-        #   increment_or_set(type, service_metric_prefix, :day,        timestamp, value)
-        #   increment_or_set(type, service_metric_prefix, :hour,       timestamp, value)
+          # ## QUESTION: why not increment by :year ?
+          # increment_or_set(type, service_metric_prefix, :eternity,   nil,       value)
+          # increment_or_set(type, service_metric_prefix, :month,      timestamp, value)
+          # increment_or_set(type, service_metric_prefix, :week,       timestamp, value)
+          # increment_or_set(type, service_metric_prefix, :day,        timestamp, value)
+          # increment_or_set(type, service_metric_prefix, :hour,       timestamp, value)
 
-        #   application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
+          # application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
 
-        #   increment_or_set(type, application_metric_prefix, :eternity,   nil,       value)
-        #   increment_or_set(type, application_metric_prefix, :year,       timestamp, value)
-        #   increment_or_set(type, application_metric_prefix, :month,      timestamp, value)
-        #   increment_or_set(type, application_metric_prefix, :week,       timestamp, value)
-        #   increment_or_set(type, application_metric_prefix, :day,        timestamp, value)
-        #   increment_or_set(type, application_metric_prefix, :hour,       timestamp, value)
-        #   increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
+          # increment_or_set(type, application_metric_prefix, :eternity,   nil,       value)
+          # increment_or_set(type, application_metric_prefix, :year,       timestamp, value)
+          # increment_or_set(type, application_metric_prefix, :month,      timestamp, value)
+          # increment_or_set(type, application_metric_prefix, :week,       timestamp, value)
+          # increment_or_set(type, application_metric_prefix, :day,        timestamp, value)
+          # increment_or_set(type, application_metric_prefix, :hour,       timestamp, value)
+          # increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
 
-        #   # increase the TTL from 1 to 3 minutes, only required for checking consistency between cassandra and
-        #   # redis data. The overhead is not that big, will be at most few thousand extra keys.
+          # # increase the TTL from 1 to 3 minutes, only required for checking consistency between cassandra and
+          # # redis data. The overhead is not that big, will be at most few thousand extra keys.
 
-        #   unless transaction[:user_id].nil?
-        #     user_metric_prefix = metric_key_prefix(user_prefix, metric_id)
-        #     increment_or_set(type, user_metric_prefix, :eternity,   nil,       value)
-        #     increment_or_set(type, user_metric_prefix, :year,       timestamp, value)
-        #     increment_or_set(type, user_metric_prefix, :month,      timestamp, value)
-        #     increment_or_set(type, user_metric_prefix, :week,       timestamp, value)
-        #     increment_or_set(type, user_metric_prefix, :day,        timestamp, value)
-        #     increment_or_set(type, user_metric_prefix, :hour,       timestamp, value)
-        #     increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
-        #   end
+          # unless transaction[:user_id].nil?
+          #   user_metric_prefix = metric_key_prefix(user_prefix, metric_id)
+          #   increment_or_set(type, user_metric_prefix, :eternity,   nil,       value)
+          #   increment_or_set(type, user_metric_prefix, :year,       timestamp, value)
+          #   increment_or_set(type, user_metric_prefix, :month,      timestamp, value)
+          #   increment_or_set(type, user_metric_prefix, :week,       timestamp, value)
+          #   increment_or_set(type, user_metric_prefix, :day,        timestamp, value)
+          #   increment_or_set(type, user_metric_prefix, :hour,       timestamp, value)
+          #   increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
+          # end
 
         end
 
