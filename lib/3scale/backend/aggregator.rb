@@ -46,7 +46,7 @@ module ThreeScale
 
           @keys_doing_set_op = []
 
-          val = storage.pipelined do
+          val =  storage.pipelined do
             slice.each do |transaction|
               key = transaction[:application_id]
 
@@ -66,7 +66,8 @@ module ThreeScale
               aggregate(transaction)
             end
           end
-
+          puts val.inspect
+#          @keys_changed_set_op << val.compact
 
 
           ## here the pipelined redis increments have been sent
@@ -153,7 +154,7 @@ module ThreeScale
       def aggregate(transaction)
         service_prefix     = service_key_prefix(transaction[:service_id])
 
-        code= File.open("lib/3scale/backend/lua/increment_or_set.lua").read
+        code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
 
         application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
 
@@ -184,7 +185,8 @@ module ThreeScale
     counter_key('', granularity, timestamp)
   end
 
-         storage.eval(code, :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps)
+          storage.eval(code, :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@cass_enabled , @@current_bucket])
+
 
 
           # service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
@@ -361,18 +363,17 @@ module ThreeScale
       def increment_or_set(type, prefix, granularity, timestamp, value, options = {})
         key = counter_key(prefix, granularity, timestamp)
 
-        if (type==:set)
-          if @cass_enabled
-            ## will do later on, otherwise it overwrites the value
-          else
-            storage.set(key, value)
-          end
-          ## TODO: when on set, the stats to cassandra are not set
-        else
-          storage.incrby(key, value)
-        end
-
-        storage.expire(key, options[:expires_in]) if options[:expires_in]
+        # if (type==:set)
+        #   if @cass_enabled
+        #     ## will do later on, otherwise it overwrites the value
+        #   else
+        #     storage.set(key, value)
+        #   end
+        #   ## TODO: when on set, the stats to cassandra are not set
+        # else
+        #   storage.incrby(key, value)
+        # end
+        # storage.expire(key, options[:expires_in]) if options[:expires_in]
 
         if @cass_enabled
           storage.sadd(changed_keys_bucket_key(@@current_bucket),key)
