@@ -49,32 +49,27 @@ local is_blank = function(str)
    return not not tostring(ARGV[1]):find("^%s*$")
 end
 
-local add_to_cass =  function(action, cassandra_bucket, key, value)
+local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
    if not is_blank(cassandra_enabled) then
       redis.call('sadd', ("keys_changed:" .. cassandra_bucket), key)
-      redis.call("set", "debug:cass", action)
-
       if action == 'set' then
-	 -- table.insert(set_keys, {key, value})
-	 redis.call("set", "debug:cass", "key => ".. key  .. " val => " .. value)
 	 return {key, value}
       else
 	 redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
-	 return nil
       end
    end
+      redis.call(action, key, value)
    return nil
 end
 
-
+-- local increment_or_set()
 
 
 for granularity,timestamp in pairs(granularities) do
    for i,prefix in ipairs(prefixes) do
-
       local key = prefix .. timestamp
-       redis.call(action, key, value)
-       table.insert(set_keys, add_to_cass(action, cassandra_bucket, key, value))
+   --   redis.call(action, key, value)
+      table.insert(set_keys, add_to_copied_keys(action, cassandra_bucket, key, value))
       if granularity == 'minute'  then
 	 redis.call('expire', key, 180)
       end
@@ -88,11 +83,11 @@ granularities["minute"] = nil
 for granularity,timestamp in pairs(granularities) do
    local prefix = service_metric_prefix
    local key = prefix .. timestamp
-   table.insert(set_keys, add_to_cass(action, cassandra_bucket, key, value))
-   redis.call(action,key,value)
+--   redis.call(action, key, value)
+   table.insert(set_keys, add_to_copied_keys(action, cassandra_bucket, key, value))
+   -- redis.call(action,key,value)
 end
 
-local lll = #set_keys
 return set_keys
 
 -- redis.call(action,key,value)
