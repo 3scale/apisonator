@@ -94,17 +94,33 @@ class AlertsTest < Test::Unit::TestCase
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 20}})
       Resque.run!
-
-  
-
+      
     end
 
     v = AlertStorage.list(@service_id)
-
     assert_equal 3, v.size
-    assert_equal 120, v[0][:utilization]
-    assert_equal 90, v[1][:utilization]
-    assert_equal 90, v[2][:utilization]
+    
+    ## again redis-2.6 yeilds a different order
+    cont=0
+    v.each do |item|
+      if item[:id]==1
+        assert_equal 90, item[:utilization]
+        cont=cont+1
+      end
+      
+      if item[:id]==2
+        assert_equal 90, item[:utilization]
+        cont=cont+1
+      end
+      
+      if item[:id]==3
+        assert_equal 120, item[:utilization]
+        cont=cont+1
+      end
+    end
+    
+    assert_equal 3, cont
+    
   end
 
 
