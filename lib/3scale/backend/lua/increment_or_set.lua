@@ -18,8 +18,7 @@ local cassandra_bucket =  ARGV[15]
 local service_prefix     = "stats/{service:" .. service_id .. "}"
 local application_prefix = service_prefix .. "/cinstance:" .. application_id
 
-local action
-redis.call("set", "debug:cass", "op_type => ".. op_type)
+local action = ''
 
 if op_type == 'set' then
    action = 'set'
@@ -30,6 +29,7 @@ end
 local service_metric_prefix = service_prefix .. "/metric:" .. metric_id
 local application_metric_prefix = application_prefix .. "/metric:" .. metric_id
 local prefixes = { application_metric_prefix }
+
 
 
 
@@ -50,44 +50,37 @@ local is_blank = function(str)
 end
 
 local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
+
    if not is_blank(cassandra_enabled) then
       redis.call('sadd', ("keys_changed:" .. cassandra_bucket), key)
       if action == 'set' then
-	 return {key, value}
+	 table.insert(set_keys, {key, value})
       else
 	 redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
       end
    end
-      redis.call(action, key, value)
-   return nil
+   redis.call(action, key, value)
 end
-
--- local increment_or_set()
 
 
 for granularity,timestamp in pairs(granularities) do
    for i,prefix in ipairs(prefixes) do
       local key = prefix .. timestamp
-   --   redis.call(action, key, value)
-      table.insert(set_keys, add_to_copied_keys(action, cassandra_bucket, key, value))
+      add_to_copied_keys(action, cassandra_bucket, key, value)
       if granularity == 'minute'  then
 	 redis.call('expire', key, 180)
       end
    end
-
 end
 
+redis.call("lpush","debug:action",action)
 
 granularities["year"] = nil
 granularities["minute"] = nil
 for granularity,timestamp in pairs(granularities) do
    local prefix = service_metric_prefix
    local key = prefix .. timestamp
---   redis.call(action, key, value)
-   table.insert(set_keys, add_to_copied_keys(action, cassandra_bucket, key, value))
-   -- redis.call(action,key,value)
+   add_to_copied_keys(action, cassandra_bucket, key, value)
 end
 
 return set_keys
-
--- redis.call(action,key,value)

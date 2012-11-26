@@ -168,6 +168,9 @@ module ThreeScale
         end
 
         timestamp = transaction[:timestamp]
+        timestamps = [ :eternity, :year, :month, :week, :day, :hour, :minute ].map do |granularity|
+          counter_key('', granularity, timestamp)
+        end
 
         ##FIXME, here we have to check that the timestamp is in the current given the time period we are in
 
@@ -182,10 +185,6 @@ module ThreeScale
           end
 
           value = value.to_i
-
-          timestamps = [ :eternity, :year, :month, :week, :day, :hour, :minute ].map do |granularity|
-            counter_key('', granularity, timestamp)
-          end
 
           storage.eval(code, :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@cass_enabled , @cass_enabled ? current_bucket : ''])
 
