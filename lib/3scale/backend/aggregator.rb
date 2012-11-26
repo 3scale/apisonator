@@ -46,7 +46,7 @@ module ThreeScale
 
           @keys_doing_set_op = []
 
-          val =  storage.pipelined do
+          val = storage.pipelined do
             slice.each do |transaction|
               key = transaction[:application_id]
 
@@ -389,12 +389,12 @@ module ThreeScale
       end
 
       ## the common key for redis
-      ## "stats/{service:123}/uinstance:user_id/metric:metric_id/month:20120401"
+      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/month:20120401"
       ## is split into row and column key like this:
-      ## "stats/{service:123}/uinstance:user_id/metric:metric_id/month:2012" , "20120401"
+      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/month:2012" , "20120401"
       ##
-      ## "stats/{service:123}/uinstance:user_id/metric:metric_id/eternity"
-      ## "stats/{service:123}/uinstance:user_id/metric:metric_id/eternity", "eternity"
+      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/eternity"
+      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/eternity", "eternity"
       ##
       ## we need to bucket per year since cassandra cannot have rows with zillions of columns, it's advised to keep it under 10MB
       ## if we store minutes per year 365 * 24 * 60 * 8 (assuming it's 8 bytes per counter) = 4.2MB so we are ok.
