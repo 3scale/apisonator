@@ -50,18 +50,19 @@ local is_blank = function(str)
 end
 
 local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
-
    if not is_blank(cassandra_enabled) then
       redis.call('sadd', ("keys_changed:" .. cassandra_bucket), key)
       if action == 'set' then
 	 table.insert(set_keys, {key, value})
       else
+	 redis.call(action, key, value)
 	 redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
       end
+   else
+      redis.call(action, key, value)
    end
-   redis.call(action, key, value)
+--   redis.call(action, key, value)
 end
-
 
 for granularity,timestamp in pairs(granularities) do
    for i,prefix in ipairs(prefixes) do
@@ -69,6 +70,7 @@ for granularity,timestamp in pairs(granularities) do
       add_to_copied_keys(action, cassandra_bucket, key, value)
       if granularity == 'minute'  then
 	 redis.call('expire', key, 180)
+
       end
    end
 end
