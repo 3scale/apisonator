@@ -108,6 +108,7 @@ class AggregatorTest < Test::Unit::TestCase
       
     end
     
+  
     v <<   { :service_id     => 1001,
              :application_id => 2001,
              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),

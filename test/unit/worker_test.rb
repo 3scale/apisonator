@@ -12,11 +12,10 @@ class WorkerTest < Test::Unit::TestCase
   def test_format_of_a_job
     encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [{'0'=> {:app_id => "app_id with spaces"}}])
     assert_equal '{"class":"TestJob","args":[{"0":{"app_id":"app_id with spaces"}}]}', encoded_job
-    
   end
 
   def test_pops_jobs_from_a_queue
-    encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [])
+    #encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [{'0'=> {:app_id => "app_id with spaces"}}])
 
     #redis = Redis.any_instance
     #redis.expects(:blpop).with(*Worker::QUEUES.map{|q| "resque:queue:#{q}"}, "60").returns(encoded_job)
@@ -36,6 +35,6 @@ class WorkerTest < Test::Unit::TestCase
 
     Worker.work(:one_off => true)
   end
-
+  
   # TODO: more tests here.
 end
