@@ -279,7 +279,7 @@ class ApplicationTest < Test::Unit::TestCase
     key_bar = application.create_key('bar')
     assert_equal 'bar', key_bar
 
-    assert_equal [key_foo, key_bar], application.keys
+    assert_equal [key_foo, key_bar].sort, application.keys.sort
 
     application.delete_key(key_foo)
     assert_equal [key_bar], application.keys
