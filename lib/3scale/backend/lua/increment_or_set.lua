@@ -19,7 +19,6 @@ local service_prefix     = "stats/{service:" .. service_id .. "}"
 local application_prefix = service_prefix .. "/cinstance:" .. application_id
 
 local action = ''
-
 if op_type == 'set' then
    action = 'set'
 else
@@ -45,12 +44,12 @@ local granularities = { eternity=timestamp_et, year=timestamp_year,
 
 local set_keys = {}
 
-local is_blank = function(str)
-   return not not tostring(ARGV[1]):find("^%s*$")
+local is_true = function(str)
+   return (str == "true" )
 end
 
 local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
-   if not is_blank(cassandra_enabled) then
+   if is_true(cassandra_enabled) then
       redis.call('sadd', ("keys_changed:" .. cassandra_bucket), key)
       if action == 'set' then
 	 table.insert(set_keys, {key, value})
@@ -61,7 +60,6 @@ local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
    else
       redis.call(action, key, value)
    end
---   redis.call(action, key, value)
 end
 
 for granularity,timestamp in pairs(granularities) do
@@ -74,8 +72,6 @@ for granularity,timestamp in pairs(granularities) do
       end
    end
 end
-
-redis.call("lpush","debug:action",action)
 
 granularities["year"] = nil
 granularities["minute"] = nil

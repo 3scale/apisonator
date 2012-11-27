@@ -926,6 +926,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                 :usage          => {'3001' => 1}}
       end
+    end
 
     bkp_configuration = configuration.clone()
 
@@ -992,8 +993,6 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     assert_equal 20, @storage_cassandra.get(:StatsInverted, cassandra_row_key, cassandra_col_key)
 
     assert_equal [], Aggregator.repeated_batches
-    end
-
 
   end
 
