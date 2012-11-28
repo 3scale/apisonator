@@ -28,40 +28,18 @@ module ThreeScale
         end
 
       end
-
+      
       # == Options
       #
       # - :one_off           - if true, will process one job, then quit
-      # - :polling_frequency - when queue is empty, how long to wait (in seconds) before
-      #                        polling it for new jobs. If zero, will process everything
+      # - :polling_frequency - when queue is empty, how long to wait (in seconds) before 
+      #                        polling it for new jobs. If zero, will process everything 
       #                        in the queue and quit.
       def self.work(options = {})
 				new(options).work
       end
 
       def work
-
-unless @aggregator_script_sha1
-
-
-        begin
-
-          code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
-          @aggregator_script_sha1 = redis.script('load',code)
-          puts @aggregator_script_sha1
-
-          require "ruby-debug"
-        debugger
-
-        rescue Exception => e
-          Airbrake.notify(e)
-          raise e
-        end
-end
-
-
-
-
 			  register_worker
 
         loop do
