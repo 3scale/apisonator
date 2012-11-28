@@ -447,10 +447,9 @@ module ThreeScale
 
       def create_aggregate_sha
         code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
-        storage.script('load',code)
+        @aggregator_script_sha1 = storage.script('load',code)
       rescue Exception => e
         # please replace this with a concrete exception
-        require 'pry';        binding.pry
         Airbrake.notify(e)
         raise e
       end
@@ -458,7 +457,6 @@ module ThreeScale
       def lua_aggregate_sha
         @aggregator_script_sha1 ||= create_aggregate_sha
       end
-
     end
   end
 end
