@@ -18,7 +18,9 @@ module ThreeScale
       extend self
 
       def aggregate_all(transactions)
-        lua_code_script unless @aggregator_script_sha1
+        # the function has to be inside redis before the pipeline is issued
+        create_aggregate_sha
+
         applications = Hash.new
         users = Hash.new
 
@@ -167,7 +169,7 @@ module ThreeScale
         end
 
         timestamp = transaction[:timestamp]
-        timestamps = [ :eternity, :year, :month, :week, :day, :hour, :minute ].map do |granularity|
+        timestamp_args = [ :eternity, :year, :month, :week, :day, :hour, :minute ].map do |granularity|
           counter_key('', granularity, timestamp)
         end
 
@@ -175,8 +177,7 @@ module ThreeScale
 
         transaction[:usage].each do |metric_id, value|
 
-          val = get_value_of_set_if_exists(value)
-          if val.nil?
+          if val = get_value_of_set_if_exists(value)
             type = :increment
           else
             type = :set
@@ -185,11 +186,12 @@ module ThreeScale
 
           value = value.to_i
 
-          storage.evalsha( lua_code_script,
-                          :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@cass_enabled , @cass_enabled ? current_bucket : ''])
+          object_args = [ transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]
+          cassandra_args = [@cass_enabled , @cass_enabled ? current_bucket : '']
+
 
           # service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
-
+          #
           # ## QUESTION: why not increment by :year ?
           # increment_or_set(type, service_metric_prefix, :eternity,   nil,       value)
           # increment_or_set(type, service_metric_prefix, :month,      timestamp, value)
@@ -206,10 +208,10 @@ module ThreeScale
           # increment_or_set(type, application_metric_prefix, :day,        timestamp, value)
           # increment_or_set(type, application_metric_prefix, :hour,       timestamp, value)
           # increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
-
+          #
           # # increase the TTL from 1 to 3 minutes, only required for checking consistency between cassandra and
           # # redis data. The overhead is not that big, will be at most few thousand extra keys.
-
+          #
           # unless transaction[:user_id].nil?
           #   user_metric_prefix = metric_key_prefix(user_prefix, metric_id)
           #   increment_or_set(type, user_metric_prefix, :eternity,   nil,       value)
@@ -220,13 +222,16 @@ module ThreeScale
           #   increment_or_set(type, user_metric_prefix, :hour,       timestamp, value)
           #   increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
           # end
+          storage.evalsha( lua_aggregate_sha,
+                           argv: [ type ] + object_args + timestamp_args + cassandra_args)
 
         end
 
         ## update_application_set(service_prefix, transaction[:application_id])
         ## we need to remove the updating the set out of the pipeline to catch whether it's a new app or not
-        update_user_set(service_prefix, transaction[:user_id]) unless transaction[:user_id].nil?
-
+        if transaction[:user_id]
+          update_user_set(service_prefix, transaction[:user_id])
+        end
       end
 
 
@@ -432,7 +437,6 @@ module ThreeScale
         storage.sadd(key, encode_key(user_id))
       end
 
-
       def storage
         Storage.instance
       end
@@ -441,14 +445,18 @@ module ThreeScale
         StorageCassandra.instance
       end
 
-      def lua_code_script
-        @aggregator_script_sha1 ||= begin
-          code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
-          @aggregator_script_sha1 = storage.script('load',code)
-        rescue Exception => e
-          Airbrake.notify(e)
-          raise e
-        end
+      def create_aggregate_sha
+        code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
+        storage.script('load',code)
+      rescue Exception => e
+        # please replace this with a concrete exception
+        require 'pry';        binding.pry
+        Airbrake.notify(e)
+        raise e
+      end
+
+      def lua_aggregate_sha
+        @aggregator_script_sha1 ||= create_aggregate_sha
       end
 
     end
