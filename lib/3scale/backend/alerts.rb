@@ -85,9 +85,7 @@ module ThreeScale
           storage.get(key_current_max)
           storage.get(key_last_time_period)
         end
-        ## BUG on redis library, sismember returns false is standalone and 0 if within a pipeline :-/
-        ## this is no longer the case for redis-rb 3.0.2, added  (allowed==1 || allowed==true) just to be double sure
-
+        
         ## update the status of utilization
         if (max_utilization_i > current_max.to_i)
 
