@@ -26,16 +26,13 @@ module ThreeScale
         [host, port]
       end
 
-      def initialize(options)
-        
+      def initialize(options)     
         @servers      = options[:servers] || []
-        @server_index = 0
         @backup_file  = options[:backup_file] || DEFAULT_BACKUP_FILE
-
-        host, port = host_and_port(@servers.first || DEFAULT_SERVER)
-        super(:host => host, :port => port, :db => options[:db])
         
-        @client = Redis::Client.new(options)
+        host, port = host_and_port(@servers.first || DEFAULT_SERVER)
+        
+        super(:host => host, :port => port, :db => options[:db])
       end
    
     end
