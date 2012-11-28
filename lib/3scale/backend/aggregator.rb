@@ -18,6 +18,7 @@ module ThreeScale
       extend self
 
       def aggregate_all(transactions)
+        lua_code_script unless @aggregator_script_sha1
         applications = Hash.new
         users = Hash.new
 
@@ -156,8 +157,6 @@ module ThreeScale
       def aggregate(transaction)
         service_prefix     = service_key_prefix(transaction[:service_id])
 
-        code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
-
         application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
 
         # this one is for the limits of the users
@@ -186,7 +185,8 @@ module ThreeScale
 
           value = value.to_i
 
-          storage.eval(code, :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@cass_enabled , @cass_enabled ? current_bucket : ''])
+          storage.evalsha( lua_code_script,
+                          :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@cass_enabled , @cass_enabled ? current_bucket : ''])
 
           # service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
 
@@ -439,6 +439,16 @@ module ThreeScale
 
       def storage_cassandra
         StorageCassandra.instance
+      end
+
+      def lua_code_script
+        @aggregator_script_sha1 ||= begin
+          code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
+          @aggregator_script_sha1 = storage.script('load',code)
+        rescue Exception => e
+          Airbrake.notify(e)
+          raise e
+        end
       end
 
     end

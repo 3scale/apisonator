@@ -20,7 +20,7 @@ module ThreeScale
 
         @one_off           = options[:one_off]
         @polling_frequency = options[:polling_frequency] || 5
-        
+
         if configuration.hoptoad.api_key
           Airbrake.configure do |config|
             config.api_key = configuration.hoptoad.api_key
@@ -28,18 +28,40 @@ module ThreeScale
         end
 
       end
-      
+
       # == Options
       #
       # - :one_off           - if true, will process one job, then quit
-      # - :polling_frequency - when queue is empty, how long to wait (in seconds) before 
-      #                        polling it for new jobs. If zero, will process everything 
+      # - :polling_frequency - when queue is empty, how long to wait (in seconds) before
+      #                        polling it for new jobs. If zero, will process everything
       #                        in the queue and quit.
       def self.work(options = {})
 				new(options).work
       end
 
       def work
+
+unless @aggregator_script_sha1
+
+
+        begin
+
+          code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
+          @aggregator_script_sha1 = redis.script('load',code)
+          puts @aggregator_script_sha1
+
+          require "ruby-debug"
+        debugger
+
+        rescue Exception => e
+          Airbrake.notify(e)
+          raise e
+        end
+end
+
+
+
+
 			  register_worker
 
         loop do
@@ -85,7 +107,7 @@ module ThreeScale
         job.fail(e)
         failed!
       end
-      
+
       def register_worker
         redis.sadd(:workers, self)
         started!
@@ -140,10 +162,10 @@ module ThreeScale
         @redis ||= begin
                      server = (configuration.redis.servers || []).first
                      host, port = server ? server.split(':') : [nil, nil]
-                     
+
                      ::Redis::Namespace.new(
                        :resque,
-                       :redis => ::Redis.new(:host => host, 
+                       :redis => ::Redis.new(:host => host,
                                              :port => port,
                                              :db   => configuration.redis.db))
                    end
