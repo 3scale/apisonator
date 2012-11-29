@@ -32,7 +32,7 @@ module ThreeScale
         
         host, port = host_and_port(@servers.first || DEFAULT_SERVER)
         
-        super(:host => host, :port => port, :db => options[:db])
+        super(:host => host, :port => port, :db => options[:db], :driver => :hiredis)
       end
    
     end

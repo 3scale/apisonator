@@ -145,7 +145,8 @@ module ThreeScale
                        :resque,
                        :redis => ::Redis.new(:host => host, 
                                              :port => port,
-                                             :db   => configuration.redis.db))
+                                             :db   => configuration.redis.db,
+                                             :driver => :hiredis))
                    end
       end
     end
