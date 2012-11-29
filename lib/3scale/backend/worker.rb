@@ -20,7 +20,7 @@ module ThreeScale
 
         @one_off           = options[:one_off]
         @polling_frequency = options[:polling_frequency] || 5
-        
+
         if configuration.hoptoad.api_key
           Airbrake.configure do |config|
             config.api_key = configuration.hoptoad.api_key
@@ -85,7 +85,7 @@ module ThreeScale
         job.fail(e)
         failed!
       end
-      
+
       def register_worker
         redis.sadd(:workers, self)
         started!
@@ -140,10 +140,10 @@ module ThreeScale
         @redis ||= begin
                      server = (configuration.redis.servers || []).first
                      host, port = server ? server.split(':') : [nil, nil]
-                     
+
                      ::Redis::Namespace.new(
                        :resque,
-                       :redis => ::Redis.new(:host => host, 
+                       :redis => ::Redis.new(:host => host,
                                              :port => port,
                                              :db   => configuration.redis.db,
                                              :driver => :hiredis))

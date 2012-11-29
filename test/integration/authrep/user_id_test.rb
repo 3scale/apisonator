@@ -58,7 +58,6 @@ class AuthrepUserIdTest < Test::Unit::TestCase
 
   end
 
-   
   test 'application without end user required does not return user usage reports' do
 
 
@@ -257,7 +256,7 @@ class AuthrepUserIdTest < Test::Unit::TestCase
   end
 
   test 'application with users required fails if user_id is not passed or not valid' do
-    
+
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application_with_users.id,
                                      :usage        => {'hits' => 3}
@@ -328,12 +327,12 @@ class AuthrepUserIdTest < Test::Unit::TestCase
 
     assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
-    
+
   end
 
   test 'user plans does not need to have limits' do
 
-    user = User.load_or_create!(@service,"user1") 
+    user = User.load_or_create!(@service,"user1")
     assert_equal @default_user_plan_id, user.plan_id
     assert_equal @default_user_plan_name, user.plan_name
 
@@ -342,7 +341,7 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     user.plan_name = "new name of user plan"
     user.save
 
-    user = User.load_or_create!(@service,"user1") 
+    user = User.load_or_create!(@service,"user1")
     assert_equal new_user_plan_id, user.plan_id
     assert_equal "new name of user plan", user.plan_name
 
@@ -395,5 +394,3 @@ class AuthrepUserIdTest < Test::Unit::TestCase
 
 
 end
-
-
