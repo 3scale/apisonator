@@ -3,10 +3,11 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class ArchiverTest < Test::Unit::TestCase
   def setup
     FakeFS.activate!
-    FileUtils.rm_rf(configuration.archiver.path)
+    FileUtils.mkdir_p(configuration.archiver.path)
   end
 
   def teardown
+    FileUtils.rm_rf(configuration.archiver.path)
     FakeFS.deactivate!
   end
 
@@ -40,7 +41,8 @@ class ArchiverTest < Test::Unit::TestCase
 
   test 'add_all appends to existing partial file' do
     filename = "/tmp/3scale_backend/archive/service-4001/20100412.xml.part"
-
+    FileUtils.mkdir_p("/tmp/3scale_backend/archive/service-4001/")
+    
     # Data already existing in the file
     xml = Builder::XmlMarkup.new
     xml.transaction do
