@@ -19,7 +19,7 @@ module ThreeScale
 
       def aggregate_all(transactions)
         # the function has to be inside redis before the pipeline is issued
-        create_aggregate_sha
+        lua_aggregate_sha
 
         applications = Hash.new
         users = Hash.new
@@ -382,7 +382,7 @@ module ThreeScale
 
       def create_aggregate_sha
         code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
-        @aggregator_script_sha1 = storage.script('load',code)
+        @@aggregator_script_sha1 = storage.script('load',code)
       rescue Exception => e
         # please replace this with a concrete exception
         Airbrake.notify(e)
@@ -390,7 +390,7 @@ module ThreeScale
       end
 
       def lua_aggregate_sha
-        @aggregator_script_sha1 ||= create_aggregate_sha
+        @@aggregator_script_sha1 ||= create_aggregate_sha
       end
     end
   end
