@@ -40,6 +40,9 @@ class LatestTransactionsTest < Test::Unit::TestCase
                                            'usage'     => {'foos' => 1},
                                            'timestamp' => '2010-09-09 11:00:00'})
 
+    Resque.run!
+
+
     Transactor.report(@provider_key, @service_id, 0 => {'app_id'    => @application_id,
                                            'usage'     => {'bars' => 2},
                                            'timestamp' => '2010-09-09 12:00:00'})
