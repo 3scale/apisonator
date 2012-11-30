@@ -21,26 +21,26 @@ Gem::Specification.new do |s|
   s.add_dependency 'builder',                   '2.1.2'
   s.add_dependency 'hiredis',                   '0.4.5'
   s.add_dependency 'redis',                     '3.0.2'
-  s.add_dependency 'resque',                    '1.23.0' # please use this in production/staging -> https://github.com/tmacedo/resque
+  s.add_dependency 'resque',                    '1.23.0'
   s.add_dependency 'rack',                      '1.4.1'
   s.add_dependency 'rack-rest_api_versioning',  '0.0.2'
   s.add_dependency 'airbrake',                  '3.1.6'
   s.add_dependency 'sinatra',                   '1.2.8'
   s.add_dependency 'thin',                      '1.5.0'
-  s.add_dependency 'yajl-ruby',                 '0.8.3'
+  s.add_dependency 'yajl-ruby',                 '1.1.0'
   s.add_dependency 'cassandra-cql',             '1.0.4'
-  s.add_dependency 'thrift_client',		'0.8.2' 
+  s.add_dependency 'thrift_client',		'0.8.3' 
   s.add_dependency 'rest-client',               '1.6.7'
   s.add_dependency 'redis-namespace',           '1.2.1'
   
   
-  s.add_development_dependency 'fakefs',      '~> 0.3.0'
+  s.add_development_dependency 'fakefs',      	'0.4.2'
   s.add_development_dependency 'mocha'
   s.add_development_dependency 'nokogiri'
   s.add_development_dependency 'rack-test'
-  s.add_development_dependency 'resque_unit', '0.4.4'
+  s.add_development_dependency 'resque_unit', 	'0.4.4'
   s.add_development_dependency 'timecop'
-  s.add_development_dependency 'simplecov', '~> 0.4.0'
+  s.add_development_dependency 'simplecov', 	'0.7.1'
  
   s.files = Dir.glob('{lib,bin}/**/*')
   s.files << 'README.rdoc'
