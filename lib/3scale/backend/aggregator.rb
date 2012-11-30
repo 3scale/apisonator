@@ -169,7 +169,7 @@ module ThreeScale
         end
 
         timestamp = transaction[:timestamp]
-        timestamp_args = [ :eternity, :year, :month, :week, :day, :hour, :minute ].map do |granularity|
+        timestamps = [ :eternity, :year, :month, :week, :day, :hour, :minute ].map do |granularity|
           counter_key('', granularity, timestamp)
         end
 
@@ -177,7 +177,8 @@ module ThreeScale
 
         transaction[:usage].each do |metric_id, value|
 
-          if val = get_value_of_set_if_exists(value)
+          val = get_value_of_set_if_exists(value)
+          if val.nil?
             type = :increment
           else
             type = :set
@@ -186,52 +187,15 @@ module ThreeScale
 
           value = value.to_i
 
-          object_args = [ transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]
-          cassandra_args = [@cass_enabled , @cass_enabled ? current_bucket : '']
-
-
-          # service_metric_prefix = metric_key_prefix(service_prefix, metric_id)
-          #
-          # ## QUESTION: why not increment by :year ?
-          # increment_or_set(type, service_metric_prefix, :eternity,   nil,       value)
-          # increment_or_set(type, service_metric_prefix, :month,      timestamp, value)
-          # increment_or_set(type, service_metric_prefix, :week,       timestamp, value)
-          # increment_or_set(type, service_metric_prefix, :day,        timestamp, value)
-          # increment_or_set(type, service_metric_prefix, :hour,       timestamp, value)
-
-          # application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
-
-          # increment_or_set(type, application_metric_prefix, :eternity,   nil,       value)
-          # increment_or_set(type, application_metric_prefix, :year,       timestamp, value)
-          # increment_or_set(type, application_metric_prefix, :month,      timestamp, value)
-          # increment_or_set(type, application_metric_prefix, :week,       timestamp, value)
-          # increment_or_set(type, application_metric_prefix, :day,        timestamp, value)
-          # increment_or_set(type, application_metric_prefix, :hour,       timestamp, value)
-          # increment_or_set(type, application_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
-          #
-          # # increase the TTL from 1 to 3 minutes, only required for checking consistency between cassandra and
-          # # redis data. The overhead is not that big, will be at most few thousand extra keys.
-          #
-          # unless transaction[:user_id].nil?
-          #   user_metric_prefix = metric_key_prefix(user_prefix, metric_id)
-          #   increment_or_set(type, user_metric_prefix, :eternity,   nil,       value)
-          #   increment_or_set(type, user_metric_prefix, :year,       timestamp, value)
-          #   increment_or_set(type, user_metric_prefix, :month,      timestamp, value)
-          #   increment_or_set(type, user_metric_prefix, :week,       timestamp, value)
-          #   increment_or_set(type, user_metric_prefix, :day,        timestamp, value)
-          #   increment_or_set(type, user_metric_prefix, :hour,       timestamp, value)
-          #   increment_or_set(type, user_metric_prefix, :minute,     timestamp, value, :expires_in => 180)
-          # end
           storage.evalsha( lua_aggregate_sha,
-                           argv: [ type ] + object_args + timestamp_args + cassandra_args)
+                          :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@cass_enabled , @cass_enabled ? current_bucket : ''])
 
         end
 
         ## update_application_set(service_prefix, transaction[:application_id])
         ## we need to remove the updating the set out of the pipeline to catch whether it's a new app or not
-        if transaction[:user_id]
-          update_user_set(service_prefix, transaction[:user_id])
-        end
+        update_user_set(service_prefix, transaction[:user_id]) unless transaction[:user_id].nil?
+
       end
 
 
@@ -363,36 +327,6 @@ module ThreeScale
         "#{prefix}/metric:#{metric_id}"
       end
 
-
-      def increment_or_set(type, prefix, granularity, timestamp, value, options = {})
-        key = counter_key(prefix, granularity, timestamp)
-
-        if (type==:set)
-          if @cass_enabled
-            ## will do later on, otherwise it overwrites the value
-          else
-            storage.set(key, value)
-          end
-          ## TODO: when on set, the stats to cassandra are not set
-        else
-          storage.incrby(key, value)
-        end
-        storage.expire(key, options[:expires_in]) if options[:expires_in]
-
-        if @cass_enabled
-          storage.sadd(changed_keys_bucket_key(@@current_bucket),key)
-          ## need to copy them besides marking, otherwise they could expire or get removed from redis
-          ## with lost of data
-          if type==:set
-            @keys_doing_set_op << [key, value]
-          else
-            storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", value)
-          end
-        end
-
-
-      end
-
       ## the common key for redis
       ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/month:20120401"
       ## is split into row and column key like this:
@@ -437,6 +371,7 @@ module ThreeScale
         storage.sadd(key, encode_key(user_id))
       end
 
+
       def storage
         Storage.instance
       end
@@ -447,10 +382,9 @@ module ThreeScale
 
       def create_aggregate_sha
         code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
-        storage.script('load',code)
+        @aggregator_script_sha1 = storage.script('load',code)
       rescue Exception => e
         # please replace this with a concrete exception
-        require 'pry';        binding.pry
         Airbrake.notify(e)
         raise e
       end
@@ -458,7 +392,6 @@ module ThreeScale
       def lua_aggregate_sha
         @aggregator_script_sha1 ||= create_aggregate_sha
       end
-
     end
   end
 end
