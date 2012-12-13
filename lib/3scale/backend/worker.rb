@@ -18,7 +18,8 @@ module ThreeScale
         trap('TERM') { shutdown }
         trap('INT')  { shutdown }
 
-        @one_off           = options[:one_off]
+        @one_off = options[:one_off]
+        @job_info = nil
         
         if configuration.hoptoad.api_key
           Airbrake.configure do |config|
@@ -35,7 +36,7 @@ module ThreeScale
       def self.work(options = {})
 				new(options).work
       end
-
+      
       def work
 			  register_worker
 
@@ -65,7 +66,11 @@ module ThreeScale
       def one_off?
         @one_off
       end
-
+      
+      def job_info
+        @job_info
+      end
+      
       private
 
       def reserve
@@ -88,42 +93,66 @@ module ThreeScale
 
       def unregister_worker
         redis.srem(:workers, self)
-        redis.del("worker:#{self}")
+        ##redis.del("worker:#{self}")
 
         stopped!
 
-        Resque::Stat.clear("processed:#{self}")
-        Resque::Stat.clear("failed:#{self}")
+        ##Resque::Stat.clear("processed:#{self}")
+        ##Resque::Stat.clear("failed:#{self}")
       end
 
       def working_on(job)
-        data = encode(:queue   => job.queue,
-                      :run_at  => Time.now.getutc.to_s,
-                      :payload => job.payload)
-        redis.set("worker:#{self}", data)
+        #data = encode(:queue   => job.queue,
+        #              :run_at  => Time.now.getutc.to_s,
+        #              :payload => job.payload)
+        #redis.set("worker:#{self}", data)
+
+        require 'ruby-debug'
+        debugger
+        
+        @job_info = {:queue => job.queue, 
+                      :run_at => Time.now.getutc, 
+                      :class => job.payload["class"],
+                      :queued_at => nil, 
+                      :finished_at => nil, 
+                      :success => nil}
+        
+
       end
 
       def done_working
         processed!
-        redis.del("worker:#{self}")
+        #redis.del("worker:#{self}")
       end
 
       def started!
-        redis.set("worker:#{self}:started", Time.now.getutc.to_s)
+        #redis.set("worker:#{self}:started", Time.now.getutc.to_s)
       end
 
       def stopped!
-        redis.del("worker:#{self}:started")
+        #redis.del("worker:#{self}:started")
       end
 
       def processed!
-        Resque::Stat << "processed"
-        Resque::Stat << "processed:#{self}"
+        #Resque::Stat << "processed"
+        #Resque::Stat << "processed:#{self}"
+        @job_info[:finished_at] = Time.now.getutc
+        @job_info[:success] = true
+        write_log()
       end
 
       def failed!
-        Resque::Stat << "failed"
-        Resque::Stat << "failed:#{self}"
+        #Resque::Stat << "failed"
+        #Resque::Stat << "failed:#{self}"
+        @job_info[:finished_at] = Time.now.getutc
+        @job_info[:success] = false
+        write_log()
+      end
+
+      def log()
+        puts "-------------------"
+        puts @job_info.inspect
+        puts "-------------------"
       end
 
       def hostname
