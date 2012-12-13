@@ -315,7 +315,7 @@ module ThreeScale
       ## sets all the application by id:app_key      
       def set_status_in_cache_application(service_id, application, status, options ={})
         options[:anchors_for_caching] = true
-        content = status.to_my_xml(options)
+        content = status.to_xml(options)
 
         tmp_keys = []
         keys = []
@@ -363,14 +363,14 @@ module ThreeScale
         options[:anchors_for_caching] = true   
         if status.authorized?
           storage.pipelined do
-            storage.set(key,status.to_my_xml(options))
+            storage.set(key,status.to_xml(options))
             storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
             storage.srem("limit_violations_set",key)
           end
         else
           ## it just violated the Limits, add to the violation set
           storage.pipelined do 
-            storage.set(key,status.to_my_xml(options))
+            storage.set(key,status.to_xml(options))
             storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
             storage.sadd("limit_violations_set",key)
           end 
