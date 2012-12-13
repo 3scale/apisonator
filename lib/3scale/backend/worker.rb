@@ -46,9 +46,9 @@ module ThreeScale
           break if @shutdown
 
           if job = reserve
-            working_on(job)
+            #working_on(job)
             perform(job)
-            done_working
+            #done_working
           end
 
           break if one_off?
@@ -74,8 +74,10 @@ module ThreeScale
       private
 
       def reserve
-        queues = QUEUES.map{|q| "queue:#{q}"} # for some reason having this inline in the blpop is invalid syntax in jruby 1.6.0.RC2
-        stuff = redis.blpop(*queues, :timeout => 60) # first is queue name, second is our class
+        #queues = QUEUES.map{|q| "queue:#{q}"} # for some reason having this inline in the blpop is invalid syntax in jruby 1.6.0.RC2
+        stuff = redis.blpop("queue:priority", "queue:main", :timeout => 60) # first is queue name, second is our class
+        dd = decode(stuff[1])
+        
         !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
       end
 
@@ -111,25 +113,25 @@ module ThreeScale
 
       def done_working
         processed!
-        redis.del("worker:#{self}")
+        #redis.del("worker:#{self}")
       end
 
       def started!
-        redis.set("worker:#{self}:started", Time.now.getutc.to_s)
+        #redis.set("worker:#{self}:started", Time.now.getutc.to_s)
       end
 
       def stopped!
-        redis.del("worker:#{self}:started")
+        #redis.del("worker:#{self}:started")
       end
 
       def processed!
-        Resque::Stat << "processed"
-        Resque::Stat << "processed:#{self}"
+        #Resque::Stat << "processed"
+        #Resque::Stat << "processed:#{self}"
       end
 
       def failed!
-        Resque::Stat << "failed"
-        Resque::Stat << "failed:#{self}"
+        #Resque::Stat << "failed"
+        #Resque::Stat << "failed:#{self}"
       end
 
       def hostname

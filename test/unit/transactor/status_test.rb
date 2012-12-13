@@ -130,6 +130,10 @@ module Transactor
       Timecop.freeze(time) do
         xml = Transactor::Status.new(:application => @application,
                                      :values      => usage).to_xml
+        
+        #puts "---"                             
+        #puts xml
+                                     
         doc = Nokogiri::XML(xml)
 
         root = doc.at('status:root')
