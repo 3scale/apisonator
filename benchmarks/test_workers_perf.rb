@@ -13,7 +13,8 @@ redis = ThreeScale::Backend::Storage.instance
 redis.flushdb
 
 puts "Filling seed..."
-system "rake seed"
+system "rake seed_user"
+puts "done."
 
 def assert_equal(a, b)
   if a!=b
@@ -25,21 +26,18 @@ def add_transaction
   provider_key = "pkey"
   app_id = "app_id"
   service_id = "1001"
-  transactions = {0 => {:app_id => app_id, :usage => {:hits => 5}}}
+  transactions = {0 => {:app_id => app_id, :usage => {:hits => 4, :other => 1, :method2 => 1}, :user_id => "foo"}}
   ThreeScale::Backend::Transactor.report(provider_key,service_id,transactions)  
 end
 
 def process_transaction
-  
   ThreeScale::Backend::Worker.work(:one_off => true)
-  
 end
-
 
 #raise "Assert failed" if redis.llen("resque:queue:main")==0
 #raise "Assert failed" if redis.llen("resque:queue:priority")==0
 
-N = 10000
+N = 1000
 
 puts "Starting test..."
 
@@ -60,6 +58,16 @@ Benchmark.bm do |x|
   assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:8001/eternity"), (N*5).to_s
   assert_equal redis.get("stats/{service:1001}/metric:8001/eternity"), (N*5).to_s
   
+  assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:8002/eternity"), N.to_s
+  assert_equal redis.get("stats/{service:1001}/metric:8002/eternity"), N.to_s
+  
+  assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:80012/eternity"), N.to_s
+  assert_equal redis.get("stats/{service:1001}/metric:80012/eternity"), N.to_s
+
+  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8001/eternity"), (N*5).to_s
+  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8002/eternity"), N.to_s  
+  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:80012/eternity"), N.to_s
+  
   x.report("processing main:     ") { (N).times { @worker.work  }}
 
   assert_equal redis.llen("resque:queue:main"), 0
@@ -68,5 +76,14 @@ Benchmark.bm do |x|
   assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:8001/eternity"), (N*5).to_s
   assert_equal redis.get("stats/{service:1001}/metric:8001/eternity"), (N*5).to_s
   
+  assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:8002/eternity"), N.to_s
+  assert_equal redis.get("stats/{service:1001}/metric:8002/eternity"), N.to_s
+  
+  assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:80012/eternity"), N.to_s
+  assert_equal redis.get("stats/{service:1001}/metric:80012/eternity"), N.to_s
+  
+  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8001/eternity"), (N*5).to_s
+  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8002/eternity"), N.to_s  
+  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:80012/eternity"), N.to_s
     
 end  
