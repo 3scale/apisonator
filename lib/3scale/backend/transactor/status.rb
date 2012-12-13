@@ -135,14 +135,9 @@ module ThreeScale
 
 
         ## WARNING/CAUTION: any change in to_xml must be reflected in cache.rb/clean_cached_xml !!!
-        
-        
-        def to_my_xml(options = {})
-          
+        def to_xml(options = {})
           xml = ""
-          
           xml << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" unless options[:skip_instruct]
-          
           xml << "<status>"
           
           if authorized? 
@@ -153,57 +148,30 @@ module ThreeScale
           
           if options[:oauth]
             xml << "<application>"
-            xml << "<id>" << application.id << "</id>"
-            xml << "<key>" << application.keys.first << "</key>"
-            xml << "<redirect_url>" << application.redirect_url << "</redirect_url>"
+            xml << "<id>" << application.id.to_s << "</id>"
+            xml << "<key>" << application.keys.first.to_s << "</key>"
+            xml << "<redirect_url>" << application.redirect_url.to_s << "</redirect_url>"
             xml << "</application>"
           end
                     
           if @user.nil?
-          
             xml << "<__separator__/>" if options[:anchors_for_caching]
-            xml << "<plan>" << plan_name << "</plan>"
-            
-            unless application_usage_reports.empty?
-              xml << "<usage_reports>"
-              application_usage_reports.each do |report|
-                attributes = "metric=\"#{report.metric_name}\" period=\"#{report.period}\""
-                attributes << " exceeded=\"true\"" if report.exceeded?
-                xml << "<usage_report #{attributes}>"
-                
-                if report.period != :eternity
-                  xml << "<period_start>" << report.period_start.strftime(TIME_FORMAT) << "</period_start>"
-                  xml << "<period_end>" << report.period_end.strftime(TIME_FORMAT) << "</period_end>"
-                end
-                xml << "<max_value>" << report.max_value.to_s << "</max_value>"
-                
-                if not options[:anchors_for_caching]
-                	if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? 
-                	  # this is a authrep request and therefore we should sum the usage
-                	  val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
-                    if val.nil?
-                      xml << "<current_value>" << (report.current_value + options[:usage][report.metric_name].to_i).to_s << "</current_value>"
-                    else
-                      xml << "<current_value>" << val.to_s << "</current_value>"
-                    end
-                	else 
-                    xml << "<current_value>" << report.current_value.to_s << "</current_value>"
-                  end
-                else
-                  ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
-                  ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                  xml << "<current_value>" << "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
-                end
-                
-                xml << "</usage_report>"
-              end
-              xml << "</usage_reports>"
+            xml << "<plan>" << plan_name.to_s << "</plan>"
+            xml << aux_usage_reports_to_xml(application_usage_reports, options)
+          else 
+            if !@application.nil? && !options[:exclude_application]
+              xml << "<__separator__/>" if options[:anchors_for_caching]
+              xml << "<plan>" << plan_name.to_s << "</plan>"
+              xml << aux_usage_reports_to_xml(application_usage_reports, options)
             end
-            
+            if !@user.nil? && !options[:exclude_user]
+              xml << "<__separator__/>" if options[:anchors_for_caching]
+              xml << "<user_plan>" << user_plan_name.to_s << "</user_plan>"
+              xml << aux_user_usage_reports_to_xml(user_usage_reports, options)
+            end
           end
            
           xml << "<__separator__/>" if options[:anchors_for_caching]
-                      
           xml << "</status>"
           
           if options[:anchors_for_caching]
@@ -217,7 +185,10 @@ module ThreeScale
           
         end
         
-        def to_xml(options = {})
+        ## !!!!!!!!!!!!!!
+        ## FIXME: we will leave it here for a while just in case, but it can be remove soon
+        ## 
+        def to_xml_old_builder(options = {})
          
           xml = Builder::XmlMarkup.new
           xml.instruct! unless options[:skip_instruct]
@@ -381,6 +352,86 @@ module ThreeScale
             UsageReport.new(self, usage_limit, :user)
           end
         end
+        
+        def aux_usage_reports_to_xml(application_usage_reports, options)
+          xml = ""
+          unless application_usage_reports.empty?
+            xml << "<usage_reports>"
+            application_usage_reports.each do |report|
+              attributes = "metric=\"#{report.metric_name}\" period=\"#{report.period}\""
+              attributes << " exceeded=\"true\"" if report.exceeded?
+              xml << "<usage_report #{attributes}>"
+            
+              if report.period != :eternity
+                xml << "<period_start>" << report.period_start.strftime(TIME_FORMAT) << "</period_start>"
+                xml << "<period_end>" << report.period_end.strftime(TIME_FORMAT) << "</period_end>"
+              end
+              xml << "<max_value>" << report.max_value.to_s << "</max_value>"
+            
+              if not options[:anchors_for_caching]
+            	  if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? 
+            	    # this is a authrep request and therefore we should sum the usage
+            	    val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
+                  if val.nil?
+                    xml << "<current_value>" << (report.current_value + options[:usage][report.metric_name].to_i).to_s << "</current_value>"
+                  else
+                    xml << "<current_value>" << val.to_s << "</current_value>"
+                  end
+            	  else 
+                  xml << "<current_value>" << report.current_value.to_s << "</current_value>"
+                end
+              else
+                ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
+                ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
+                xml << "<current_value>" << "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
+              end
+            
+              xml << "</usage_report>"
+            end
+            xml << "</usage_reports>"
+          end
+          return xml
+        end
+
+        def aux_user_usage_reports_to_xml(user_usage_reports, options)
+          xml = ""
+          unless user_usage_reports.empty?
+            xml << "<user_usage_reports>"
+            user_usage_reports.each do |report|
+              attributes = "metric=\"#{report.metric_name}\" period=\"#{report.period}\""
+              attributes << " exceeded=\"true\"" if report.exceeded?
+              xml << "<usage_report #{attributes}>"
+            
+              if report.period != :eternity
+                xml << "<period_start>" << report.period_start.strftime(TIME_FORMAT) << "</period_start>"
+                xml << "<period_end>" << report.period_end.strftime(TIME_FORMAT) << "</period_end>"
+              end
+              xml << "<max_value>" << report.max_value.to_s << "</max_value>"
+            
+              if not options[:anchors_for_caching]
+            	  if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? 
+            	    # this is a authrep request and therefore we should sum the usage
+            	    val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
+                  if val.nil?
+                    xml << "<current_value>" << (report.current_value + options[:usage][report.metric_name].to_i).to_s << "</current_value>"
+                  else
+                    xml << "<current_value>" << val.to_s << "</current_value>"
+                  end
+            	  else 
+                  xml << "<current_value>" << report.current_value.to_s << "</current_value>"
+                end
+              else
+                ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
+                ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
+                xml << "<current_value>" << "|.|user,#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
+              end
+            
+              xml << "</usage_report>"
+            end
+            xml << "</user_usage_reports>"
+          end
+          return xml
+        end      
       end
     end
   end
