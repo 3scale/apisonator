@@ -31,7 +31,7 @@ def add_transaction
 end
 
 def process_transaction
-  ThreeScale::Backend::Worker.work(:one_off => true)
+  ThreeScale::Backend::Worker.work(:one_off => true, :log_file => "/tmp/3scale_backend_workers_from_test_workers_perf.log")
 end
 
 #raise "Assert failed" if redis.llen("resque:queue:main")==0
