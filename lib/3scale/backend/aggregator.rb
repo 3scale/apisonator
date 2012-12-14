@@ -126,7 +126,7 @@ module ThreeScale
           if schedule_cassandra_job
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
-            Resque.enqueue(StatsJob, @@prior_bucket)
+            Resque.enqueue(StatsJob, @@prior_bucket, Time.now.getutc.to_f)
           end
         end
         

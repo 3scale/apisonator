@@ -19,7 +19,13 @@ module ThreeScale
         trap('INT')  { shutdown }
 
         @one_off = options[:one_off]
-        @job_info = nil
+        
+        ## there is a Logger class in ThreeScale::Backend already and it's for Rack, cannot
+        ## reuse it
+        @@logger = ::Logger.new(options[:log_file] || configuration.workers_log_file || "/dev/null")
+        @@logger.formatter = proc { |severity, datetime, progname, msg|
+          "#{severity} #{pid} #{datetime.getutc.strftime("%d/%b/%Y %H:%M:%S")} #{msg}\n"
+        } 
         
         if configuration.hoptoad.api_key
           Airbrake.configure do |config|
@@ -54,6 +60,10 @@ module ThreeScale
 
         unregister_worker
       end
+      
+      def pid
+        @pid ||= Process.pid
+      end
 
       def shutdown
         @shutdown = true
@@ -66,16 +76,16 @@ module ThreeScale
       def one_off?
         @one_off
       end
-      
-      def job_info
-        @job_info
+            
+      def self.logger
+        @@logger
       end
       
       private
 
       def reserve
         @queues ||= QUEUES.map{|q| "queue:#{q}"} 
-        stuff = redis.blpop(*@queues, :timeout => 60) # first is queue name, second is our class        
+        stuff = redis.blpop(*@queues, :timeout => 60) # first is queue name, second is our class
         !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
       end
 
@@ -105,19 +115,7 @@ module ThreeScale
         #data = encode(:queue   => job.queue,
         #              :run_at  => Time.now.getutc.to_s,
         #              :payload => job.payload)
-        #redis.set("worker:#{self}", data)
-
-        require 'ruby-debug'
-        debugger
-        
-        @job_info = {:queue => job.queue, 
-                      :run_at => Time.now.getutc, 
-                      :class => job.payload["class"],
-                      :queued_at => nil, 
-                      :finished_at => nil, 
-                      :success => nil}
-        
-
+        #redis.set("worker:#{self}", data)  
       end
 
       def done_working
@@ -136,23 +134,13 @@ module ThreeScale
       def processed!
         #Resque::Stat << "processed"
         #Resque::Stat << "processed:#{self}"
-        @job_info[:finished_at] = Time.now.getutc
-        @job_info[:success] = true
-        write_log()
+        
       end
 
       def failed!
         #Resque::Stat << "failed"
         #Resque::Stat << "failed:#{self}"
-        @job_info[:finished_at] = Time.now.getutc
-        @job_info[:success] = false
-        write_log()
-      end
-
-      def log()
-        puts "-------------------"
-        puts @job_info.inspect
-        puts "-------------------"
+        
       end
 
       def hostname

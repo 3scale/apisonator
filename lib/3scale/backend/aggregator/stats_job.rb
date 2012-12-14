@@ -6,13 +6,13 @@ module ThreeScale
           
         @queue = :main
 
-        def self.perform(bucket)
+        def self.perform(bucket, enqueue_time)
     
           return unless Aggregator.cassandra_enabled? && Aggregator.cassandra_active?
-       
-          buckets_to_save = Aggregator.get_old_buckets_to_process(bucket)
           
-          return if buckets_to_save.nil? || buckets_to_save.empty?
+          start_time = Time.now.getutc
+          
+          buckets_to_save = Aggregator.get_old_buckets_to_process(bucket) || []
           
           buckets_to_save.each do |b|
             ## it will save all the changed keys from the oldest time bucket. If it
@@ -21,8 +21,9 @@ module ThreeScale
             Aggregator.save_to_cassandra(b)
           end
           
+          end_time = Time.now.getutc
+          Worker.logger.info("StatsJob #{bucket} #{buckets_to_save.size} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)}")          
         end
-
       end
     end
   end

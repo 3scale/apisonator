@@ -233,7 +233,7 @@ module ThreeScale
         end
         
         def schedule_one_stats_job(bucket = "inf")
-          Resque.enqueue(StatsJob, bucket)
+          Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
         end
         
         def pending_buckets
