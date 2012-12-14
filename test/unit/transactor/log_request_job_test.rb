@@ -36,7 +36,7 @@ module Transactor
                :user_id        => nil}])
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, Time.now.getutc.to_f)
 
       Transactor::LogRequestJob.expects(:perform).
         with([{:service_id     => @service_id,
@@ -47,7 +47,7 @@ module Transactor
                :user_id        => '666'}])
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'log' => @log1, 'user_id' => '666'})
+        @service_id, {'0' => {'app_id' => @application_id, 'log' => @log1, 'user_id' => '666'}}, Time.now.getutc.to_f)
 
     
 
@@ -58,25 +58,25 @@ module Transactor
       Transactor::LogRequestJob.expects(:perform).never
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f)
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => nil})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => nil}}, Time.now.getutc.to_f)
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => ""})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => ""}}, Time.now.getutc.to_f)
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => "rubbish"})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => "rubbish"}}, Time.now.getutc.to_f)
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => {}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => {}}}, Time.now.getutc.to_f)
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => []})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => []}}, Time.now.getutc.to_f)
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => {'code' => '200', 'response' => 'response_text'}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => {'code' => '200', 'response' => 'response_text'}}},  Time.now.getutc.to_f)
 
     end
 
@@ -84,25 +84,25 @@ module Transactor
     test 'does not raise exceptions on not properly build logs' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f)
 
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => nil})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => nil}}, Time.now.getutc.to_f)
 
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => ""})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => ""}}, Time.now.getutc.to_f)
 
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => "rubbish"})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => "rubbish"}}, Time.now.getutc.to_f)
 
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => {}})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => {}}}, Time.now.getutc.to_f)
 
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => []})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => []}}, Time.now.getutc.to_f)
 
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => {'code' => '200', 'response' => 'response_text'}})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}, 'log' => {'code' => '200', 'response' => 'response_text'}}}, Time.now.getutc.to_f)
 
 
       end
@@ -121,7 +121,7 @@ module Transactor
            :usage          => "hits: 1, other: 6, ",
            :user_id        => nil}])
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log}}, Time.now.getutc.to_f)
 
         @log = {'code' => '200', 'request' => '/request?bla=bla&', 'response' => '<xml>response</xml>'}
         LogRequestStorage.expects(:store_all).with([
@@ -132,7 +132,7 @@ module Transactor
            :usage          => "N/A",
            :user_id        => nil}])
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'log' => @log})
+          @service_id, {'0' => {'app_id' => @application_id, 'log' => @log}}, Time.now.getutc.to_f)
 
 
         @log = {'request' => '/request?bla=bla&'}
@@ -144,7 +144,7 @@ module Transactor
            :usage          => "N/A",
            :user_id        => nil}])
         Transactor::ReportJob.perform(
-         @service_id, '0' => {'app_id' => @application_id, 'log' => @log})
+         @service_id, {'0' => {'app_id' => @application_id, 'log' => @log}}, Time.now.getutc.to_f)
 
       
       end
@@ -158,7 +158,7 @@ module Transactor
          :usage          => "N/A",
          :user_id        => nil}])
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'timestamp' => '2010-01-01 11:11:00', 'log' => @log})
+        @service_id, {'0' => {'app_id' => @application_id, 'timestamp' => '2010-01-01 11:11:00', 'log' => @log}}, Time.now.getutc.to_f)
    
       long_request = (0...LogRequestStorage::ENTRY_MAX_LEN_REQUEST+100).map{ ('a'..'z').to_a[rand(26)] }.join
       long_response = (0...LogRequestStorage::ENTRY_MAX_LEN_RESPONSE+100).map{ ('a'..'z').to_a[rand(26)] }.join
@@ -174,11 +174,8 @@ module Transactor
          :user_id        => nil}])
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'timestamp' => '2010-01-01 11:11:00', 'log' => @log})
+        @service_id, {'0' => {'app_id' => @application_id, 'timestamp' => '2010-01-01 11:11:00', 'log' => @log}}, Time.now.getutc.to_f)
    
-
-
     end
-
   end
 end

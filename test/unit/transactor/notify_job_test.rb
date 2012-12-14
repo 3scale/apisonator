@@ -19,14 +19,16 @@ module Transactor
 
       Transactor::NotifyJob.perform(@provider_key,
                                     {'transactions/authorize' => 1},
-                                    Time.utc(2010, 7, 29, 18, 21))
+                                    Time.utc(2010, 7, 29, 18, 21),
+                                    Time.utc(2010, 7, 29, 18, 21).to_f)
     end
 
     def test_does_not_raise_an_exception_if_provider_key_is_invalid
       assert_nothing_raised do
         Transactor::NotifyJob.perform('foo',
                                       {'transactions/authorize' => 1},
-                                      Time.utc(2010, 7, 29, 18, 21))
+                                      Time.utc(2010, 7, 29, 18, 21),
+                                      Time.utc(2010, 7, 29, 18, 21).to_f)
       end
     end
 
@@ -35,7 +37,8 @@ module Transactor
 
       Transactor::NotifyJob.perform('foo',
                                     {'transactions/authorize' => 1},
-                                    Time.utc(2010, 7, 29, 18, 21))
+                                    Time.utc(2010, 7, 29, 18, 21),
+                                    Time.utc(2010, 7, 29, 18, 21).to_f)
     end
 
     def test_does_not_process_the_transactions_if_provider_key_is_invalid
@@ -43,14 +46,16 @@ module Transactor
 
       Transactor::NotifyJob.perform('foo',
                                     {'transactions/authorize' => 1},
-                                    Time.utc(2010, 7, 29, 18, 21))
+                                    Time.utc(2010, 7, 29, 18, 21),
+                                    Time.utc(2010, 7, 29, 18, 21).to_f)
     end
 
     def test_raises_an_exception_if_metrics_are_invalid
       assert_raises MetricInvalid do
         Transactor::NotifyJob.perform(@provider_key,
                                       {'transactions/mutilate' => 1},
-                                      Time.utc(2010, 7, 29, 18, 21))
+                                      Time.utc(2010, 7, 29, 18, 21),
+                                      Time.utc(2010, 7, 29, 18, 21).to_f)
       end
     end
 
@@ -60,7 +65,8 @@ module Transactor
       begin
         Transactor::NotifyJob.perform(@provider_key,
                                       {'transactions/murder' => 1},
-                                      Time.utc(2010, 7, 29, 18, 21))
+                                      Time.utc(2010, 7, 29, 18, 21),
+                                      Time.utc(2010, 7, 29, 18, 21).to_f)
       rescue MetricInvalid
         # ...
       end

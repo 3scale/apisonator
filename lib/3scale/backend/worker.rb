@@ -26,13 +26,21 @@ module ThreeScale
         @@logger.formatter = proc { |severity, datetime, progname, msg|
           "#{severity} #{pid} #{datetime.getutc.strftime("%d/%b/%Y %H:%M:%S")} #{msg}\n"
         } 
-        
+          
         if configuration.hoptoad.api_key
           Airbrake.configure do |config|
             config.api_key = configuration.hoptoad.api_key
           end
         end
 
+      end
+      
+      def self.logger(options = {})
+        new(options).logger
+      end
+      
+      def logger
+        @@logger
       end
       
       # == Options
@@ -77,10 +85,6 @@ module ThreeScale
         @one_off
       end
             
-      def self.logger
-        @@logger
-      end
-      
       private
 
       def reserve
