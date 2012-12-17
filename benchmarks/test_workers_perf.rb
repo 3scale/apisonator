@@ -3,6 +3,7 @@
 #system "rvm current"
 
 require 'benchmark'
+require 'fileutils'
 require '3scale/backend'
 
 puts "Backend version: #{ThreeScale::Backend::VERSION}"
@@ -30,9 +31,8 @@ def add_transaction
   ThreeScale::Backend::Transactor.report(provider_key,service_id,transactions)  
 end
 
-def process_transaction
-  ThreeScale::Backend::Worker.work(:one_off => true, :log_file => "/tmp/3scale_backend_workers_from_test_workers_perf.log")
-end
+
+FileUtils.remove_file("/tmp/3scale_backend_workers_from_test_workers_perf.log", :force => true)
 
 #raise "Assert failed" if redis.llen("resque:queue:main")==0
 #raise "Assert failed" if redis.llen("resque:queue:priority")==0
@@ -42,13 +42,15 @@ N = 1000
 puts "Starting test..."
 
 Benchmark.bm do |x|
+  
+  
 
   x.report("adding transactions: ") { N.times {add_transaction }}
   
   assert_equal redis.llen("resque:queue:main"), N
   assert_equal redis.llen("resque:queue:priority"), N
   
-  @worker = ThreeScale::Backend::Worker.new(:one_off => true)
+  @worker = ThreeScale::Backend::Worker.new(:one_off => true, :log_file => "/tmp/3scale_backend_workers_from_test_workers_perf.log")
   
   x.report("processing priority: ") { (N).times { @worker.work }}
 
@@ -85,5 +87,9 @@ Benchmark.bm do |x|
   assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8001/eternity"), (N*5).to_s
   assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8002/eternity"), N.to_s  
   assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:80012/eternity"), N.to_s
-    
+
+  system "wc -l /tmp/3scale_backend_workers_from_test_workers_perf.log > /tmp/temp_wc_l.tmp"
+  num_entries_log = File.new("/tmp/temp_wc_l.tmp","r").read.to_i
+  assert_equal (N*2)+1, num_entries_log
 end  
+

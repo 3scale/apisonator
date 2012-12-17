@@ -35,11 +35,7 @@ module ThreeScale
 
       end
       
-      def self.logger(options = {})
-        new(options).logger
-      end
-      
-      def logger
+      def self.logger()
         @@logger
       end
       
@@ -58,9 +54,7 @@ module ThreeScale
           break if @shutdown
 
           if job = reserve
-            working_on(job)
             perform(job)
-            done_working
           end
 
           break if one_off?
@@ -84,7 +78,7 @@ module ThreeScale
       def one_off?
         @one_off
       end
-            
+         
       private
 
       def reserve
@@ -107,45 +101,19 @@ module ThreeScale
 
       def unregister_worker
         redis.srem(:workers, self)
-        ##redis.del("worker:#{self}")
-
         stopped!
-
-        ##Resque::Stat.clear("processed:#{self}")
-        ##Resque::Stat.clear("failed:#{self}")
       end
 
-      def working_on(job)
-        #data = encode(:queue   => job.queue,
-        #              :run_at  => Time.now.getutc.to_s,
-        #              :payload => job.payload)
-        #redis.set("worker:#{self}", data)  
-      end
-
-      def done_working
-        processed!
-        #redis.del("worker:#{self}")
-      end
-
+      ## the next 4 are required for resque, leave them as is
       def started!
-        #redis.set("worker:#{self}:started", Time.now.getutc.to_s)
       end
-
       def stopped!
-        #redis.del("worker:#{self}:started")
       end
-
-      def processed!
-        #Resque::Stat << "processed"
-        #Resque::Stat << "processed:#{self}"
-        
+      def processed!        
       end
-
-      def failed!
-        #Resque::Stat << "failed"
-        #Resque::Stat << "failed:#{self}"
-        
+      def failed!   
       end
+      ## ----
 
       def hostname
         @hostname ||= `hostname`.chomp
