@@ -293,11 +293,9 @@ module ThreeScale
       end
 
       def update_status_cache(applications, users = {}) 
-
         current_timestamp = Time.now.getutc
 
         applications.each do |appid, values|
-          
           application = Application.load(values[:service_id],values[:application_id])
           usage = load_current_usage(application)	
           status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)					
@@ -307,11 +305,9 @@ module ThreeScale
           update_utilization(status,max_utilization, max_record,current_timestamp) if max_utilization>=0.0
           
           set_status_in_cache_application(values[:service_id],application,status,{:exclude_user => true})
-        
         end
 
         users.each do |userid, values|
-
           service ||= Service.load_by_id(values[:service_id])
           raise ServiceLoadInconsistency.new(values[:service_id],service.id) if service.id != values[:service_id] 
           user = User.load_or_create!(service,values[:user_id])
@@ -321,7 +317,6 @@ module ThreeScale
          
           key = caching_key(service.id,:user,user.username)
           set_status_in_cache(key,status,{:exclude_application => true})
-
         end
       end
 
