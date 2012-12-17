@@ -13,14 +13,20 @@ module ThreeScale
 
       # the order is relevant
       QUEUES = [:priority, :main]
-
+      
       def initialize(options = {})
         trap('TERM') { shutdown }
         trap('INT')  { shutdown }
 
-        @one_off           = options[:one_off]
-        @polling_frequency = options[:polling_frequency] || 5
+        @one_off = options[:one_off]
         
+        ## there is a Logger class in ThreeScale::Backend already and it's for Rack, cannot
+        ## reuse it
+        @@logger = ::Logger.new(options[:log_file] || configuration.workers_log_file || "/dev/null")
+        @@logger.formatter = proc { |severity, datetime, progname, msg|
+          "#{severity} #{pid} #{datetime.getutc.strftime("%d/%b/%Y %H:%M:%S")} #{msg}\n"
+        } 
+          
         if configuration.hoptoad.api_key
           Airbrake.configure do |config|
             config.api_key = configuration.hoptoad.api_key
@@ -29,16 +35,18 @@ module ThreeScale
 
       end
       
+      def self.logger()
+        @@logger
+      end
+      
       # == Options
       #
       # - :one_off           - if true, will process one job, then quit
-      # - :polling_frequency - when queue is empty, how long to wait (in seconds) before 
-      #                        polling it for new jobs. If zero, will process everything 
-      #                        in the queue and quit.
+      #
       def self.work(options = {})
 				new(options).work
       end
-
+      
       def work
 			  register_worker
 
@@ -46,15 +54,17 @@ module ThreeScale
           break if @shutdown
 
           if job = reserve
-            working_on(job)
             perform(job)
-            done_working
           end
 
           break if one_off?
         end
 
         unregister_worker
+      end
+      
+      def pid
+        @pid ||= Process.pid
       end
 
       def shutdown
@@ -68,14 +78,12 @@ module ThreeScale
       def one_off?
         @one_off
       end
-
-      attr_reader :polling_frequency
-
+         
       private
 
       def reserve
-        queues = QUEUES.map{|q| "queue:#{q}"} # for some reason having this inline in the blpop is invalid syntax in jruby 1.6.0.RC2
-        stuff = redis.blpop(*queues, :timeout => 60) # first is queue name, second is our class
+        @queues ||= QUEUES.map{|q| "queue:#{q}"} 
+        stuff = redis.blpop(*@queues, :timeout => 60) # first is queue name, second is our class
         !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
       end
 
@@ -93,44 +101,19 @@ module ThreeScale
 
       def unregister_worker
         redis.srem(:workers, self)
-        redis.del("worker:#{self}")
-
         stopped!
-
-        Resque::Stat.clear("processed:#{self}")
-        Resque::Stat.clear("failed:#{self}")
       end
 
-      def working_on(job)
-        data = encode(:queue   => job.queue,
-                      :run_at  => Time.now.getutc.to_s,
-                      :payload => job.payload)
-
-        redis.set("worker:#{self}", data)
-      end
-
-      def done_working
-        processed!
-        redis.del("worker:#{self}")
-      end
-
+      ## the next 4 are required for resque, leave them as is
       def started!
-        redis.set("worker:#{self}:started", Time.now.getutc.to_s)
       end
-
       def stopped!
-        redis.del("worker:#{self}:started")
       end
-
-      def processed!
-        Resque::Stat << "processed"
-        Resque::Stat << "processed:#{self}"
+      def processed!        
       end
-
-      def failed!
-        Resque::Stat << "failed"
-        Resque::Stat << "failed:#{self}"
+      def failed!   
       end
+      ## ----
 
       def hostname
         @hostname ||= `hostname`.chomp
@@ -138,15 +121,9 @@ module ThreeScale
 
       def redis
         @redis ||= begin
-                     server = (configuration.redis.servers || []).first
-                     host, port = server ? server.split(':') : [nil, nil]
-                     
                      ::Redis::Namespace.new(
                        :resque,
-                       :redis => ::Redis.new(:host => host, 
-                                             :port => port,
-                                             :db   => configuration.redis.db,
-                                             :driver => :hiredis))
+                       :redis => Backend::Storage.instance)
                    end
       end
     end

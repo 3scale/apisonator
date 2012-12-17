@@ -40,7 +40,7 @@ module ThreeScale
   end
 end
 
-module Resque
+module Resque  
   module Plugin
     extend(ThreeScale::Backend::ResqueHacks)
     include(ThreeScale::Backend::ResqueHacks)

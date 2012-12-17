@@ -28,27 +28,34 @@ class TransactorTest < Test::Unit::TestCase
   end
 
   test 'report queues transactions to report' do
-    Transactor.report(@provider_key, nil, '0' => {'app_id' => @application_one.id,
-                                             'usage'  => {'hits' => 1}},
-                                          '1' => {'app_id' => @application_two.id,
-                                             'usage'  => {'hits' => 1}})
+    Timecop.freeze(Time.utc(2011, 12, 12, 11, 48)) do
+      Transactor.report(@provider_key, nil, '0' => {'app_id' => @application_one.id,
+                                                'usage'  => {'hits' => 1}},
+                                              '1' => {'app_id' => @application_two.id,
+                                                'usage'  => {'hits' => 1}})
 
-    assert_queued Transactor::ReportJob,
-                  [@service_id,
-                    {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
-                     '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}}]
+      assert_queued Transactor::ReportJob,
+                    [@service_id,
+                      {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
+                      '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
+                      Time.utc(2011, 12, 12, 11, 48).to_f]
+      end
+                    
   end
 
   test 'report queues transactions to report with explicit service id' do
-    Transactor.report(@provider_key, @service_id, '0' => {'app_id' => @application_one.id,
-                                             'usage'  => {'hits' => 1}},
-                                          '1' => {'app_id' => @application_two.id,
-                                             'usage'  => {'hits' => 1}})
+    Timecop.freeze(Time.utc(2011, 12, 12, 11, 48)) do
+      Transactor.report(@provider_key, @service_id, '0' => {'app_id' => @application_one.id,
+                                                'usage'  => {'hits' => 1}},
+                                              '1' => {'app_id' => @application_two.id,
+                                                'usage'  => {'hits' => 1}})
 
-    assert_queued Transactor::ReportJob,
-                  [@service_id,
-                    {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
-                     '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}}]
+      assert_queued Transactor::ReportJob,
+                    [@service_id,
+                      {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
+                      '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
+                      Time.utc(2011, 12, 12, 11, 48).to_f]
+    end                  
   end
 
 
@@ -79,7 +86,8 @@ class TransactorTest < Test::Unit::TestCase
                     [@provider_key,
                      {'transactions/create_multiple' => 1,
                       'transactions'                 => 2},
-                     '2010-07-29 11:48:00 UTC']
+                     '2010-07-29 11:48:00 UTC',
+                     Time.utc(2010, 7, 29, 11, 48).to_f]
     end
   end
 
@@ -94,7 +102,8 @@ class TransactorTest < Test::Unit::TestCase
                     [@provider_key,
                      {'transactions/create_multiple' => 1,
                       'transactions'                 => 2},
-                     '2010-07-29 11:48:00 UTC']
+                     '2010-07-29 11:48:00 UTC',
+                     Time.utc(2010, 7, 29, 11, 48).to_f]
     end
   end
 
@@ -255,7 +264,8 @@ class TransactorTest < Test::Unit::TestCase
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/authorize' => 1},
-                     '2010-07-29 17:09:00 UTC']
+                     '2010-07-29 17:09:00 UTC',
+                     Time.utc(2010, 7, 29, 17, 9).to_f]
     end
   end
 
@@ -329,7 +339,8 @@ class TransactorTest < Test::Unit::TestCase
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/authorize' => 1},
-                     '2010-07-29 17:09:00 UTC']
+                     '2010-07-29 17:09:00 UTC',
+                     Time.utc(2010, 7, 29, 17, 9).to_f]
     end
   end
 
