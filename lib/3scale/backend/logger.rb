@@ -1,5 +1,6 @@
 module ThreeScale
   module Backend
+    
     class Logger < Rack::CommonLogger
       def log(env, status, header, began_at)
         now = Time.now.getutc

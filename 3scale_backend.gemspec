@@ -41,6 +41,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'resque_unit', 	'0.4.4'
   s.add_development_dependency 'timecop'
   s.add_development_dependency 'simplecov', 	'0.7.1'
+  s.add_development_dependency 'ruby-debug19'
  
   s.files = Dir.glob('{lib,bin}/**/*')
   s.files << 'README.rdoc'

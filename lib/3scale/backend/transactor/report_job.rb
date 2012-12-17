@@ -6,13 +6,19 @@ module ThreeScale
       class ReportJob
         @queue = :priority
 
-        def self.perform(service_id, raw_transactions)
+        def self.perform(service_id, raw_transactions, enqueue_time)
+          start_time = Time.now.getutc
+          
           transactions, logs = parse_transactions(service_id, raw_transactions)
           ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0 
           LogRequestJob.perform(logs) if !logs.nil? && logs.size > 0
          
+          end_time = Time.now.getutc
+          
+          Worker.logger.info("ReportJob #{service_id} #{transactions.size} #{logs.size} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)}")
         rescue Error => error
           ErrorStorage.store(service_id, error)
+          Worker.logger.error("ReportJob #{service_id} #{error}")
         end
 
         def self.parse_transactions(service_id, raw_transactions)

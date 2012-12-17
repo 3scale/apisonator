@@ -2,8 +2,11 @@ module ThreeScale
   module Backend
     module Transactor
       # Job to process the api calls between buyer and provider
+      
+      # WARNING: This is not a resque job, the .perform is called by another job, either Report or NotifyJob
+      ## it's meant to be like this in case we want to deatach it further
       class LogRequestJob
-        @queue = :main
+        #@queue = :main
 
         def self.perform(transactions)
           transactions = preprocess(transactions)

@@ -477,11 +477,13 @@ module ThreeScale
       end
 
       def report_enqueue(service_id, data)
-        Resque.enqueue(ReportJob, service_id, data)
+        Resque.enqueue(ReportJob, service_id, data, Time.now.getutc.to_f)
       end
 
       def notify(provider_key, usage)
-        Resque.enqueue(NotifyJob, provider_key, usage, encode_time(Time.now.getutc))
+        tt = Time.now.getutc
+        ## FIXME: this needs a bit of refactoring
+        Resque.enqueue(NotifyJob, provider_key, usage, encode_time(tt), tt.to_f)
       end
 
       def encode_time(time)
