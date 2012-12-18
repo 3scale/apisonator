@@ -273,19 +273,10 @@ module ThreeScale
         end
       end
 
-<<<<<<< HEAD
-      def update_status_cache(applications, users = {})
-
-        current_timestamp = Time.now.getutc
-
-        applications.each do |appid, values|
-
-=======
       def update_status_cache(applications, users = {}) 
         current_timestamp = Time.now.getutc
 
         applications.each do |appid, values|
->>>>>>> stable
           application = Application.load(values[:service_id],values[:application_id])
           usage = load_current_usage(application)
           status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)
@@ -295,10 +286,6 @@ module ThreeScale
           update_utilization(status,max_utilization, max_record,current_timestamp) if max_utilization>=0.0
 
           set_status_in_cache_application(values[:service_id],application,status,{:exclude_user => true})
-<<<<<<< HEAD
-
-=======
->>>>>>> stable
         end
 
         users.each do |userid, values|

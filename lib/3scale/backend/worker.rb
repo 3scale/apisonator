@@ -83,7 +83,7 @@ module ThreeScale
       def reserve
         @queues ||= QUEUES.map{|q| "queue:#{q}"} 
         stuff = redis.blpop(*@queues, :timeout => 60) # first is queue name, second is our class
-        !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], kk)
+        !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
       end
 
       def perform(job)
@@ -120,21 +120,9 @@ module ThreeScale
 
       def redis
         @redis ||= begin
-<<<<<<< HEAD
-                     server = (configuration.redis.servers || []).first
-                     host, port = server ? server.split(':') : [nil, nil]
-
-                     ::Redis::Namespace.new(
-                       :resque,
-                       :redis => ::Redis.new(:host => host,
-                                             :port => port,
-                                             :db   => configuration.redis.db,
-                                             :driver => :hiredis))
-=======
                      ::Redis::Namespace.new(
                        :resque,
                        :redis => Backend::Storage.instance)
->>>>>>> stable
                    end
       end
     end
