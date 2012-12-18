@@ -129,18 +129,18 @@ class ApplicationTest < Test::Unit::TestCase
   end
 
   test 'extract_id! handles access_token' do
-    
+
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
     OAuthAccessTokenStorage.create('1001', '2001', 'token')
     assert_equal '2001', Application.extract_id!('1001', nil, nil, 'token')
-    
+
   end
 
   test 'extract_id! fails when access token is not mapped to an app_id' do
 
      Application.save(:service_id => '1001', :id => '2001', :state => :active)
      OAuthAccessTokenStorage.create('1001', '2001', 'token')
-     
+
      assert_raise AccessTokenInvalid do
        Application.extract_id!('1001', nil, nil, 'fake-token')
      end
@@ -151,24 +151,24 @@ class ApplicationTest < Test::Unit::TestCase
 
      Application.save(:service_id => '1001', :id => '2001', :state => :active)
      OAuthAccessTokenStorage.create('1001', 'fake', 'token')
-     
+
      assert_raise ApplicationNotFound do
        Application.extract_id!('1001', nil, nil, 'token')
      end
 
   end
-  
+
   test 'extract_id! app_id takes precedence to access_token' do
-    
+
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
     Application.save(:service_id => '1001', :id => '3001', :state => :active)
-        
+
     OAuthAccessTokenStorage.create('1001', '3001', 'token')
 
     assert_equal '3001', Application.extract_id!('1001', nil, nil, 'token')
-    
+
     assert_equal '2001', Application.extract_id!('1001', '2001', nil, 'token')
-    
+
   end
 
 
@@ -237,14 +237,14 @@ class ApplicationTest < Test::Unit::TestCase
     application = Application.save(:service_id => '1001',
                                    :id         => '2001',
                                    :state      => :active)
-   
+
     version_app = Application.get_version(application.service_id, application.id)
-    
-    application.create_referrer_filter('192.*') 
+
+    application.create_referrer_filter('192.*')
     assert_equal (version_app.to_i+1).to_s, Application.get_version(application.service_id, application.id)
     assert_equal 1, application.size_referrer_filters
 
-    application.delete_referrer_filter('192.*') 
+    application.delete_referrer_filter('192.*')
     assert_equal (version_app.to_i+2).to_s, Application.get_version(application.service_id, application.id)
     assert_equal 0, application.size_referrer_filters
 
@@ -256,7 +256,7 @@ class ApplicationTest < Test::Unit::TestCase
     application.delete_key(key)
     assert_equal (version_app.to_i+4).to_s, Application.get_version(application.service_id, application.id)
     assert_equal 0, application.size_keys
-    
+
     key = application.create_key('key1')
     assert_equal  'key1', key
     assert_equal (version_app.to_i+5).to_s, Application.get_version(application.service_id, application.id)
@@ -265,7 +265,7 @@ class ApplicationTest < Test::Unit::TestCase
     application.delete_key(key)
     assert_equal (version_app.to_i+6).to_s, Application.get_version(application.service_id, application.id)
     assert_equal 0, application.size_keys
-        
+
   end
 
   test 'remove application keys test' do
@@ -283,7 +283,7 @@ class ApplicationTest < Test::Unit::TestCase
 
     application.delete_key(key_foo)
     assert_equal [key_bar], application.keys
-    
+
   end
 
 end

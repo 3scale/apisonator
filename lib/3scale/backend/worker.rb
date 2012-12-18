@@ -32,7 +32,6 @@ module ThreeScale
             config.api_key = configuration.hoptoad.api_key
           end
         end
-
       end
       
       def self.logger()
@@ -93,7 +92,7 @@ module ThreeScale
         job.fail(e)
         failed!
       end
-      
+
       def register_worker
         redis.sadd(:workers, self)
         started!
@@ -121,9 +120,21 @@ module ThreeScale
 
       def redis
         @redis ||= begin
+<<<<<<< HEAD
+                     server = (configuration.redis.servers || []).first
+                     host, port = server ? server.split(':') : [nil, nil]
+
+                     ::Redis::Namespace.new(
+                       :resque,
+                       :redis => ::Redis.new(:host => host,
+                                             :port => port,
+                                             :db   => configuration.redis.db,
+                                             :driver => :hiredis))
+=======
                      ::Redis::Namespace.new(
                        :resque,
                        :redis => Backend::Storage.instance)
+>>>>>>> stable
                    end
       end
     end
