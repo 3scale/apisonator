@@ -1,4 +1,3 @@
-
 #puts "Using gemset: "
 #system "rvm current"
 
@@ -34,8 +33,8 @@ end
 
 FileUtils.remove_file("/tmp/3scale_backend_workers_from_test_workers_perf.log", :force => true)
 
-#raise "Assert failed" if redis.llen("resque:queue:main")==0
-#raise "Assert failed" if redis.llen("resque:queue:priority")==0
+raise "Assert failed" if redis.llen("resque:queue:main")==0
+raise "Assert failed" if redis.llen("resque:queue:priority")==0
 
 N = 1000
 
@@ -43,8 +42,6 @@ puts "Starting test..."
 
 Benchmark.bm do |x|
   
-  
-
   x.report("adding transactions: ") { N.times {add_transaction }}
   
   assert_equal redis.llen("resque:queue:main"), N
