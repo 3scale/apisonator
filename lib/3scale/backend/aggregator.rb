@@ -376,7 +376,7 @@ module ThreeScale
       end
 
       def create_aggregate_sha
-        code = File.open("lib/3scale/backend/lua/increment_or_set.lua").read
+        code = File.open("#{File.dirname(__FILE__)}/lua/increment_or_set.lua").read
         @@aggregator_script_sha1 = storage.script('load',code)
       rescue Exception => e
         # please replace this with a concrete exception

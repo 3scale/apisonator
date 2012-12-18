@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    3scale_backend (1.6.12)
+    3scale_backend (1.6.21)
       3scale_core (~> 0.5.0)
       airbrake (= 3.1.6)
       aws-s3 (= 0.6.3)
