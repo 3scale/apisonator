@@ -80,8 +80,6 @@ task :reschedule_failed_jobs => :environment do
   count = Resque::Failure.count
   (Resque::Failure.count-1).downto(0).each { |i| Resque::Failure.requeue(i) }
   Resque::Failure.clear
-  Resque.redis.llen("queue:resque:queue:priority").times  { Resque.redis.rpoplpush("queue:resque:queue:priority","queue:priority") }
-  Resque.redis.llen("queue:resque:queue:main").times { Resque.redis.rpoplpush("queue:resque:queue:main","queue:main")}
   puts "resque:failed size: #{Resque::Failure.count} (from #{count})"
 end
 

@@ -7,7 +7,10 @@ module ThreeScale
 
         @queue = :main
 
-        def self.perform(provider_key, usage, timestamp)
+        def self.perform(provider_key, usage, timestamp, enqueue_time)
+          
+          start_time = Time.now.getutc
+          
           application_id = Application.load_id_by_key(master_service_id, provider_key)
 
           if application_id && Application.exists?(master_service_id, application_id)
@@ -18,6 +21,10 @@ module ThreeScale
                                  :timestamp      => timestamp,
                                  :usage          => master_metrics.process_usage(usage)}], :master => true)
           end
+          
+          end_time = Time.now.getutc
+          
+          Worker.logger.info("NotifyJob #{provider_key} #{application_id || "--"} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)}")
         end
 
         def self.master_service_id

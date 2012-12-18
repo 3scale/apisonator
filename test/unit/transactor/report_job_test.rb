@@ -30,59 +30,63 @@ module Transactor
                :user_id        => nil}])
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f)
     end
 
     test 'does not process any transaction if at least one has invalid application id' do
       Transactor::ProcessJob.expects(:perform).never
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
-                     '1' => {'app_id' => 'boo',           'usage' => {'hits' => 1}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
+                     '1' => {'app_id' => 'boo',           'usage' => {'hits' => 1}}},
+                     Time.now.getutc.to_f)
     end
 
     test 'does not process any transaction if at least one has invalid metric' do
       Transactor::ProcessJob.expects(:perform).never
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
-                     '1' => {'app_id' => @application_id, 'usage' => {'foos' => 1}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
+                     '1' => {'app_id' => @application_id, 'usage' => {'foos' => 1}}},
+                     Time.now.getutc.to_f)
     end
 
     test 'does not process any transaction if at least one has invalid usage value' do
       Transactor::ProcessJob.expects(:perform).never
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
-                     '1' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
+                     '1' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}}},
+                     Time.now.getutc.to_f)
     end
 
     test 'does not process any transaction if no usage is defined' do
       Transactor::ProcessJob.expects(:perform).never
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id},
-                     '1' => {'app_id' => @application_id})
+        @service_id, {'0' => {'app_id' => @application_id},
+                     '1' => {'app_id' => @application_id}},
+                     Time.now.getutc.to_f)
     end
 
     test 'does not raise an exception on invalid application id' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}})
+          @service_id, {'0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f)
       end
     end
 
     test 'does not raise an exception on invalid metric' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}}}, Time.now.getutc.to_f)
       end
     end
 
     test 'does not raise an exception on invalid usage value' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
-          @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}})
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}}}, Time.now.getutc.to_f)
       end
     end
 
@@ -90,21 +94,21 @@ module Transactor
       ErrorStorage.expects(:store).with(@service_id, is_a(ApplicationNotFound))
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}})
+        @service_id, {'0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f)
     end
 
     test 'reports error on invalid metric' do
       ErrorStorage.expects(:store).with(@service_id, is_a(MetricInvalid))
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}}}, Time.now.getutc.to_f)
     end
 
     test 'reports error on invalid usage value' do
       ErrorStorage.expects(:store).with(@service_id, is_a(UsageValueInvalid))
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}})
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}}}, Time.now.getutc.to_f)
     end
 
     # Legacy authentication
@@ -121,7 +125,7 @@ module Transactor
                :user_id        => nil}])
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'user_key' => user_key, 'usage' => {'hits' => 1}})
+        @service_id, {'0' => {'user_key' => user_key, 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f)
     end
 
 
@@ -131,7 +135,7 @@ module Transactor
       ErrorStorage.expects(:store).with(@service_id, is_a(UserKeyInvalid))
 
       Transactor::ReportJob.perform(
-        @service_id, '0' => {'user_key' => 'noway', 'usage' => {'hits' => 1}})
+        @service_id, {'0' => {'user_key' => 'noway', 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f)
     end
   end
 end

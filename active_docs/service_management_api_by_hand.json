@@ -1,0 +1,295 @@
+{   "basePath": "http://su1.3scale.net",
+    "apis": [    
+      
+      {
+      "path": "/transactions/authorize.xml",
+      "description": "Read-only operation to authorize an application. It is used to check if a particular application exists, is active and is within usage limits of the service. It can be optionally used to authenticate a call using an application key.",
+      "operations": [{            
+          "parameters": [
+          {
+               "name": "provider_key",
+               "dataType": "string",
+               "defaultValue": "",
+               "description": "Provider key. Required.",               
+               "required": true,
+               "allowMultiple": false,
+               "paramType": "query",
+               "threescale_name": "api_key"
+           },
+          {
+                "name": "service_id",
+                "dataType": "string",
+                "description": "Service id. Required only if as a provider you have multiple services allowed and enabled.",                
+                "defaultValue": "",
+                "required": false,
+                "allowMultiple": false,
+                "paramType": "query"
+           },           
+           {
+                "name": "app_id",
+                "description": "Application ID. Required.",
+                "dataType": "string",
+                "defaultValue": "",
+                "required": true,
+                "allowMultiple": false,
+                "paramType": "query",
+                "threescale_name":"app_id"
+            },
+            {
+                 "name": "app_key",
+                 "description": "Application key. Required only if it is defined for the application.",
+                 "dataType": "string",
+                 "defaultValue": "",
+                 "required": false,
+                 "allowMultiple": false,
+                 "paramType": "query"
+             },
+              {
+                    "description": "Predicted Usage",
+                    "name": "usage",
+                    "dataType": "hash",
+                    "defaultValue": "",
+                    "required": true,
+                    "allowMultiple": false,
+                    "paramType":"query",
+                    "parameters": [
+                     {
+                           "description": "Metric",
+                           "name": "metric",
+                           "dataType": "custom",
+                           "defaultValue": "",
+                           "required": true,
+                           "allowMultiple": false,
+                           "paramType": "query",
+                           "threescale_name":"metric"
+                    }                    
+                ]
+             }                           
+                            
+          ],
+          "httpMethod": "GET",
+          "notes": "This can only be done by an authorized user.",
+          "nickname": "service_authorize",
+          "summary": "Authorize an application",
+          "description": "Read-only operation to authorize an application. It is used to check if a particular application exists, is active and is within usage limits of the service. It can be optionally used to authenticate a call using an application key." 
+       }
+    ]
+    },
+    
+          {
+          "path": "/transactions/authrep.xml",
+          "description": "'One-shot' operation to authorize an application and report traffic. The only difference between this call and the regular authorize call is that metric usage will be reported if the authorization is successful. For additional examples of authrep calls you can see the examples or authorize calls, all parameters in authorized are also valid in the authrep case.",
+          "operations": [{            
+              "parameters": [
+
+
+              {
+                   "name": "provider_key",
+                   "dataType": "string",
+                   "defaultValue": "",
+                   "description": "Provider key. Required.",               
+                   "required": true,
+                   "allowMultiple": false,
+                   "paramType": "query",
+                   "threescale_name": "api_key"
+               },
+              {
+                    "name": "service_id",
+                    "dataType": "string",
+                    "description": "Service id. Required only if as a provider you have multiple services allowed and enabled.",
+                    "defaultValue": "",
+                    "required": false,
+                    "allowMultiple": false,
+                    "paramType": "query"
+               },           
+               {
+                    "name": "app_id",
+                    "description": "Application ID. Required.",
+                    "dataType": "string",
+                    "defaultValue": "",
+                    "required": true,
+                    "allowMultiple": false,
+                    "paramType": "query",
+                    "threescale_name":"app_id"
+                },
+                {
+                     "name": "app_key",
+                     "description": "Application key. Required only if it is defined for the application.",
+                     "dataType": "string",
+                     "defaultValue": "",
+                     "required": false,
+                     "allowMultiple": false,
+                     "paramType": "query"
+                 },
+                 {
+                      "name": "referrer",
+                      "description": "Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value '*' (start) is passed, the referrer check is bypassed.",
+                      "dataType": "string",
+                      "defaultValue": "",
+                      "required": false,
+                      "allowMultiple": false,
+                      "paramType": "query"
+                  },
+                  {
+                       "name": "no_body",
+                       "description": "Specify this parameter to remove the HTTP body from the response. Optional. Example: no_body=true",
+                       "dataType": "string",
+                       "defaultValue": "",
+                       "required": false,
+                       "allowMultiple": false,
+                       "paramType": "query"
+                   }                    
+
+              ],
+              "httpMethod": "GET",
+              "notes": "This can only be done by an authorized user.",
+              "nickname": "service_authrep",
+              "responseClass": "",
+              "summary": "Authrep an application"
+           }
+
+        ]
+      },    
+  
+            {
+            "path": "/transactions.xml",
+            "description": "This operation is used to report 3scale system about transactions. Any number of transactions can be reported in one request.",
+            "operations": [{            
+                "parameters": [
+                {
+                     "description": "Provider Key",
+                     "name": "provider_key",
+                     "dataType": "string",
+                     "defaultValue": "",
+                     "required": true,
+                     "allowMultiple": false,
+                     "paramType": "body",
+                     "threescale_name":"api_key"
+                 },
+                  {
+                       "description": "Service ID",
+                       "name": "service_id",
+                       "dataType": "string",
+                       "defaultValue": "",
+                       "required": false,
+                       "allowMultiple": false,
+                       "paramType": "body"
+                  },
+                  {
+                      "description": "Transaction",
+                      "name": "transactions",
+                      "dataType": "array",
+                      "defaultValue": "",
+                      "required": true,
+                      "allowMultiple": true,
+                      "paramType": "body",
+                      "parameters": [
+                               {
+                                     "description": "App ID",
+                                     "name": "app_id",
+                                     "dataType": "string",
+                                     "defaultValue": "",
+                                     "required": false,
+                                     "allowMultiple": false,
+                                     "paramType": "body",
+                                     "threescale_name":"app_id"
+                                 },
+                                              {
+                                            "description": "App Key",
+                                            "name": "app_key",
+                                            "dataType": "string",
+                                            "defaultValue": "",
+                                            "required": false,
+                                            "allowMultiple": false,
+                                            "paramType": "body",
+                                            "threescale_name":"app_key"
+                                        },
+                          {
+                               "description": "Timestamp",
+                               "name": "timestamp",
+                               "dataType": "string",
+                               "defaultValue": "",
+                               "required": false,
+                               "allowMultiple": false,
+                               "paramType": "body"
+                           } , 
+                           {
+                                "description": "Log",
+                                "name": "log",
+                                "dataType": "array",
+                                "defaultValue": "",
+                                "required": false,
+                                "allowMultiple": false,
+                                "paramType": "query",
+                                "parameters": [
+                                  {
+                                        "description": "Request",
+                                        "name": "requst",
+                                        "dataType": "string",
+                                        "defaultValue": "",
+                                        "required": false,
+                                        "allowMultiple": false,
+                                        "paramType": "body"
+                                    } ,
+                                  {
+                                        "description": "Response",
+                                        "name": "response",
+                                        "dataType": "string",
+                                        "defaultValue": "",
+                                        "required": false,
+                                        "allowMultiple": false,
+                                        "paramType": "body"
+                                    } ,
+                                    {
+                                          "description": "Code",
+                                          "name": "code",
+                                          "dataType": "string",
+                                          "defaultValue": "",
+                                          "required": false,
+                                          "allowMultiple": false,
+                                          "paramType": "body"
+                                    }
+                                
+                                
+                                ]
+                            } ,                                                    
+                          {
+                                "description": "Usage",
+                                "name": "usage",
+                                "dataType": "hash",
+                                "defaultValue": "",
+                                "required": true,
+                                "allowMultiple": false,
+                                "paramType": "body",
+                                "parameters": [
+                                 {
+                                       "description": "Metric",
+                                       "name": "metric",
+                                       "dataType": "custom",
+                                       "defaultValue": "",
+                                       "required": true,
+                                       "allowMultiple": false,
+                                       "paramType": "body",
+                                       "threescale_name":"metric"
+                                }
+                                
+                            ]
+                         }                           
+                      ]
+                    }                  
+                  
+                  
+                ],
+                "httpMethod": "POST",
+                "notes": "This can only be done by an authorized user.",
+                "nickname": "service_authorize",
+                "responseClass": "",
+                "summary": "Authorize an application"
+             }
+
+          ]
+        }   
+    
+            
+  ]
+}

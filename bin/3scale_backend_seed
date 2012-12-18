@@ -107,26 +107,26 @@ class Seeder
       UsageLimit.save(:service_id => service_id,
                       :plan_id    => plan_id,
                       :metric_id  => 8001,
-                      :month      => 1000000,
-                      :day        =>  100000,
-                      :hour       =>   10000,
-                      :minute     =>    1000)
+                      :month      => 10000000,
+                      :day        =>  1000000,
+                      :hour       =>   100000,
+                      :minute     =>    10000)
       UsageLimit.save(:service_id => service_id,
                       :plan_id    => plan_id,
                       :metric_id  => 8002,
-                      :month      =>  200000,
-                      :day        =>   20000,
-                      :hour       =>    2000,
-                      :minute     =>     200)
+                      :month      =>  2000000,
+                      :day        =>   200000,
+                      :hour       =>    20000,
+                      :minute     =>     2000)
     end
 
     if user_limits
       UsageLimit.save(:service_id => service_id,
                       :plan_id    => user_plan_id,
                       :metric_id  => 8004,
-                      :day        => 10000,
-                      :hour       => 100,
-                      :minute     => 10)
+                      :day        => 1000000,
+                      :hour       => 100000,
+                      :minute     => 10000)
     end
 
     [service_id, plan_id, user_plan_id]
