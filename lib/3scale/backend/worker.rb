@@ -84,7 +84,7 @@ module ThreeScale
       def reserve
         @queues ||= QUEUES.map{|q| "queue:#{q}"} 
         stuff = redis.blpop(*@queues, :timeout => 60) # first is queue name, second is our class
-        !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
+        !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], kk)
       end
 
       def perform(job)
