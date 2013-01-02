@@ -7,7 +7,8 @@ class BackendVersionTest < Test::Unit::TestCase
 
   def setup
     Storage.instance(true).flushdb
-
+    Memoizer.reset!
+    
     setup_provider_fixtures
 
     @application = Application.save(:service_id => @service.id,
@@ -61,6 +62,9 @@ class BackendVersionTest < Test::Unit::TestCase
                                        :app_id       => @application.id,
                                        :app_key      => application_key_one
     assert_authorized
+    
+    ## this needs to be done because the server is cached on the memoizer        
+    Memoizer.reset!
 
     Service.save!(
             :id              => @service.id,
@@ -70,9 +74,14 @@ class BackendVersionTest < Test::Unit::TestCase
                                        :user_key       => "user_key_#{@application.id}"              
     assert_authorized
 
+    ## this needs to be done because the server is cached on the memoizer        
+    Memoizer.reset!
+      
     Service.save!(
             :id              => @service.id,
             :backend_version => "2")
+            
+       
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id,

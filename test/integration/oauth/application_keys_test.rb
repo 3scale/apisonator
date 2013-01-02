@@ -7,6 +7,7 @@ class OauthApplicationKeysTest < Test::Unit::TestCase
 
   def setup
     Storage.instance(true).flushdb
+    Memoizer.reset!
 
     setup_oauth_provider_fixtures
 

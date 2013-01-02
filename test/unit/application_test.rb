@@ -7,6 +7,7 @@ class ApplicationTest < Test::Unit::TestCase
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
+    Memoizer.reset!
   end
 
   test 'load! raises an exception if application does not exist' do

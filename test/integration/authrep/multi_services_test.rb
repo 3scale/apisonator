@@ -12,7 +12,8 @@ class MultiServicesTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
-
+    Memoizer.reset!
+    
     setup_provider_fixtures_multiple_services
 
     @application_1 = Application.save(:service_id => @service_1.id,
@@ -212,7 +213,8 @@ class MultiServicesTest < Test::Unit::TestCase
                                                   :month, Time.now.strftime("%Y%m01"))).to_i   
 
     ## now, change the default service id to be the second one
-
+    Memoizer.reset!
+    
     @service_2.make_default_service
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,

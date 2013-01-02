@@ -20,7 +20,7 @@ module ThreeScale
         logger.write FORMAT % [
           env['HTTP_X_FORWARDED_FOR'] || env["REMOTE_ADDR"] || "-",
           env["REMOTE_USER"] || "-",
-          now.strftime("%d/%b/%Y %H:%M:%S"),
+          now.strftime("%d/%b/%Y %H:%M:%S %Z"),
           env["REQUEST_METHOD"],
           env["PATH_INFO"],
           qs.empty? ? "" : "?"+qs,

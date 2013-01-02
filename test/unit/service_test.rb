@@ -3,6 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class ServiceTest < Test::Unit::TestCase
   def setup
     Storage.instance(true).flushdb
+    Memoizer.reset!
   end
 
   test 'load_id! raises an exception if service does not exist' do

@@ -13,7 +13,8 @@ class BackgroundReportTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
-
+    Memoizer.reset!
+    
     setup_provider_fixtures_multiple_services
 
     @application_1 = Application.save(:service_id => @service_1.id,

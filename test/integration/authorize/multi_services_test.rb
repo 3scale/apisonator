@@ -13,6 +13,7 @@ class MultiServicesTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
+    Memoizer.reset!
 
     setup_provider_fixtures_multiple_services
 
@@ -346,6 +347,9 @@ class MultiServicesTest < Test::Unit::TestCase
                                                   :month, Time.now.strftime("%Y%m01"))).to_i   
 
     ## now, change the default service id to be the second one
+    
+    ## the memoizing needs to be reset otherwise the old service id will be cached
+    Memoizer.reset!
 
     @service_2.make_default_service
 

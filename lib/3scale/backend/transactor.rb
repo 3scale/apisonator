@@ -15,8 +15,7 @@ module ThreeScale
       extend self
 
       def report(provider_key, service_id, transactions)
-        ## need to load provider_key anyway, otherwise there is a security hole 
-
+        ## need to load provider_key anyway, otherwise there is a security hole         
         if service_id.nil? || service_id.empty?
           service = Service.load(provider_key)
         else
@@ -29,7 +28,6 @@ module ThreeScale
         notify(provider_key, 'transactions/create_multiple' => 1,
                              'transactions' => transactions.size)
 
-        
       end
 
       VALIDATORS = [Validators::Key,
@@ -86,7 +84,6 @@ module ThreeScale
       end
 
       def authorize_nocache(provider_key, params, options = {})
-        
         if params[:service_id].nil? || params[:service_id].empty?
           service = Service.load!(provider_key)
         else
@@ -178,7 +175,6 @@ module ThreeScale
       end
 
       def oauth_authorize_nocache(provider_key, params, options = {})
-    
         if params[:service_id].nil? || params[:service_id].empty?
           service = Service.load!(provider_key)
         else
@@ -237,7 +233,6 @@ module ThreeScale
 
     
       def authrep(provider_key, params, options ={})
-
         status = nil
         status_xml = nil
         status_result = nil
@@ -364,7 +359,6 @@ module ThreeScale
       end
 
       def utilization(service_id, application_id)
-
         #service = Service.load_by_id!(service_id)
         #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
 
@@ -494,15 +488,19 @@ module ThreeScale
         ## warning, empty method? :-)
       end
 
+      ## copied from transactor.rb
       def load_user_current_usage(user)
-        pairs = user.usage_limits.map do |usage_limit|
-          [usage_limit.metric_id, usage_limit.period]
+        pairs = Array.new
+        metric_ids = Array.new
+        user.usage_limits.each do |usage_limit|
+          pairs << [usage_limit.metric_id, usage_limit.period]
+          metric_ids << usage_limit.metric_id
         end
-        if pairs.nil? or pairs.size==0 
-          return {}
-        end
+        
+        return {} if pairs.nil? or pairs.size==0
+      
         # preloading metric names
-        user.metric_names = ThreeScale::Core::Metric.load_all_names(user.service_id, pairs.map{|e| e.first}.uniq)
+        user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
           user_usage_value_key(user, metric_id, period, now)
@@ -515,31 +513,32 @@ module ThreeScale
         end
         values
       end
-
+      
       def load_current_usage(application)
-        pairs = application.usage_limits.map do |usage_limit|
-          [usage_limit.metric_id, usage_limit.period]
+        pairs = Array.new
+        metric_ids = Array.new
+        application.usage_limits.each do |usage_limit|
+          pairs << [usage_limit.metric_id, usage_limit.period]
+          metric_ids << usage_limit.metric_id
         end
         ## Warning this makes the test transactor_test.rb fail, weird because it didn't happen before
-        if pairs.nil? or pairs.size==0 
-          return {}
-        end
+        return {} if pairs.nil? or pairs.size==0
+        
         # preloading metric names
-        application.metric_names = ThreeScale::Core::Metric.load_all_names(application.service_id, pairs.map{|e| e.first}.uniq)
+        application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
           usage_value_key(application, metric_id, period, now)
         end
-        raw_values = storage.mget(*keys) 
+        raw_values = storage.mget(*keys)
         values     = {}
         pairs.each_with_index do |(metric_id, period), index|
           values[period] ||= {}
           values[period][metric_id] = raw_values[index].to_i
         end
-
         values
       end
-
+      
       def usage_value_key(application, metric_id, period, time)
         if period == :eternity
           encode_key("stats/{service:#{application.service_id}}/" +

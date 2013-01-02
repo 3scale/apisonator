@@ -198,17 +198,19 @@ module ThreeScale
 
       end
 
-
       ## copied from transactor.rb
       def load_user_current_usage(user)
-        pairs = user.usage_limits.map do |usage_limit|
-          [usage_limit.metric_id, usage_limit.period]
+        pairs = Array.new
+        metric_ids = Array.new
+        user.usage_limits.each do |usage_limit|
+          pairs << [usage_limit.metric_id, usage_limit.period]
+          metric_ids << usage_limit.metric_id
         end
-        if pairs.nil? or pairs.size==0
-          return {}
-        end
+        
+        return {} if pairs.nil? or pairs.size==0
+      
         # preloading metric names
-        user.metric_names = ThreeScale::Core::Metric.load_all_names(user.service_id, pairs.map{|e| e.first}.uniq)
+        user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
           user_usage_value_key(user, metric_id, period, now)
@@ -224,15 +226,17 @@ module ThreeScale
 
       ## copied from transactor.rb
       def load_current_usage(application)
-        pairs = application.usage_limits.map do |usage_limit|
-          [usage_limit.metric_id, usage_limit.period]
+        pairs = Array.new
+        metric_ids = Array.new
+        application.usage_limits.each do |usage_limit|
+          pairs << [usage_limit.metric_id, usage_limit.period]
+          metric_ids << usage_limit.metric_id
         end
         ## Warning this makes the test transactor_test.rb fail, weird because it didn't happen before
-        if pairs.nil? or pairs.size==0
-          return {}
-        end
+        return {} if pairs.nil? or pairs.size==0
+        
         # preloading metric names
-        application.metric_names = ThreeScale::Core::Metric.load_all_names(application.service_id, pairs.map{|e| e.first}.uniq)
+        application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
           usage_value_key(application, metric_id, period, now)

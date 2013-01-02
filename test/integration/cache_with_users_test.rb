@@ -11,7 +11,8 @@ class CacheWithUsersTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
-
+    Memoizer.reset!
+    
     setup_provider_fixtures
     
     @default_user_plan_id = next_id

@@ -10,15 +10,45 @@ module ThreeScale
       end
 
       def self.load_id!(provider_key)
-        load_id(provider_key) or raise ProviderKeyInvalid, provider_key
+        key = "Service.load_id!-#{provider_key}"
+        
+        ser = begin
+          if !Memoizer.memoized?(key)
+            Memoizer.memoize(key, load_id(provider_key))
+          else
+            Memoizer.get(key)
+          end
+        end
+        
+        ser or raise ProviderKeyInvalid, provider_key
       end
 
       def self.load!(provider_key)
-        load(provider_key) or raise ProviderKeyInvalid, provider_key
+        key = "Service.load!-#{provider_key}"
+        
+        ser = begin
+          if !Memoizer.memoized?(key)
+            Memoizer.memoize(key, load(provider_key))
+          else
+            Memoizer.get(key)
+          end
+        end
+        
+        ser or raise ProviderKeyInvalid, provider_key
       end
 
       def self.load_by_id!(service_id)
-        load_by_id(service_id) or raise ServiceIdInvalid, service_id
+        key = "Service.load_by_id!-#{service_id}"
+        
+        ser = begin
+          if !Memoizer.memoized?(key)
+            Memoizer.memoize(key, load_by_id(service_id))
+          else
+            Memoizer.get(key)
+          end
+        end
+        
+        ser or raise ServiceIdInvalid, service_id
       end
 
     end

@@ -8,6 +8,7 @@ class AuthorizePredictedUsageTest < Test::Unit::TestCase
   def setup
     Storage.instance(true).flushdb
     Resque.reset!
+    Memoizer.reset!
 
     setup_provider_fixtures
 

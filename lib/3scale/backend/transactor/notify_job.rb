@@ -22,9 +22,9 @@ module ThreeScale
                                  :usage          => master_metrics.process_usage(usage)}], :master => true)
           end
           
+          stats_mem = Memoizer.stats
           end_time = Time.now.getutc
-          
-          Worker.logger.info("NotifyJob #{provider_key} #{application_id || "--"} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)}")
+          Worker.logger.info("NotifyJob #{provider_key} #{application_id || "--"} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)} #{stats_mem[:size]} #{stats_mem[:count]} #{stats_mem[:hits]}")
         end
 
         def self.master_service_id

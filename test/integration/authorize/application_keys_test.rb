@@ -7,6 +7,7 @@ class AuthorizeApplicationKeysTest < Test::Unit::TestCase
 
   def setup
     Storage.instance(true).flushdb
+    Memoizer.reset!
 
     setup_provider_fixtures
 

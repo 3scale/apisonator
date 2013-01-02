@@ -10,7 +10,25 @@ module ThreeScale
       include Sets
 
       def self.load!(service_id, app_id)
-        load(service_id, app_id) or raise ApplicationNotFound, app_id
+        key = "Application.load!-#{service_id}-#{app_id}"
+        app = begin
+          if !Memoizer.memoized?(key)
+            Memoizer.memoize(key, load(service_id, app_id))
+          else
+            Memoizer.get(key)
+          end
+        end
+        
+        app or raise ApplicationNotFound, app_id
+      end
+      
+      def self.load(service_id, app_id)
+        key = "Application.load-#{service_id}-#{app_id}"
+        if !Memoizer.memoized?(key)
+          Memoizer.memoize(key, super(service_id, app_id))
+        else
+          Memoizer.get(key)
+        end
       end
 
       def self.load_by_id_or_user_key!(service_id, app_id, user_key)

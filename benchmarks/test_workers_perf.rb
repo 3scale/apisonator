@@ -33,8 +33,8 @@ end
 
 FileUtils.remove_file("/tmp/3scale_backend_workers_from_test_workers_perf.log", :force => true)
 
-raise "Assert failed" if redis.llen("resque:queue:main")==0
-raise "Assert failed" if redis.llen("resque:queue:priority")==0
+raise "Assert failed" unless redis.llen("resque:queue:main")==0
+raise "Assert failed" unless redis.llen("resque:queue:priority")==0
 
 N = 1000
 
