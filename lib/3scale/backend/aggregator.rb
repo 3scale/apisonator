@@ -27,8 +27,10 @@ module ThreeScale
         ## this is just a temporary switch to be able to enable disable reporting to cassandra
         ## you can active it or deactivated: storage.set("cassandra_enabled","1") / storage.del("cassandra_enabled")
 
-        @cass_enabled = cassandra_enabled?
-
+        Memoizer.memoize_block("cassandra-enabled") do
+          @cass_enabled = cassandra_enabled?
+        end
+        
         if @cass_enabled
           timenow = Time.now.utc
 
@@ -72,8 +74,6 @@ module ThreeScale
 
           @keys_doing_set_op += val
           @keys_doing_set_op.flatten!(1)
-
-
 
           ## here the pipelined redis increments have been sent
           ## now we have to send the cassandra ones

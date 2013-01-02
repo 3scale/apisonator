@@ -11,23 +11,22 @@ module ThreeScale
 
       def self.load!(service_id, app_id)
         key = "Application.load!-#{service_id}-#{app_id}"
-        app = begin
-          if !Memoizer.memoized?(key)
-            Memoizer.memoize(key, load(service_id, app_id))
-          else
-            Memoizer.get(key)
-          end
+        Memoizer.memoize_block(key) do
+          load(service_id, app_id) or raise ApplicationNotFound, app_id
         end
-        
-        app or raise ApplicationNotFound, app_id
       end
       
       def self.load(service_id, app_id)
         key = "Application.load-#{service_id}-#{app_id}"
-        if !Memoizer.memoized?(key)
-          Memoizer.memoize(key, super(service_id, app_id))
-        else
-          Memoizer.get(key)
+        Memoizer.memoize_block(key) do
+          super(service_id, app_id)
+        end
+      end
+      
+      def load_id_by_key(service_id, user_key)
+        key = "Application.load_id_by_key-#{service_id}-#{user_key}"
+        Memoizer.memoize_block(key) do
+          super(service_id, user_key)
         end
       end
 

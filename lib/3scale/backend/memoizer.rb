@@ -63,6 +63,14 @@ module ThreeScale
         {:size => $_memoizer_cache.size, :count => ($_memoizer_stats_count || 0), :hits => ($_memoizer_stats_hits || 0)}
       end
       
+      def self.memoize_block(key, &block)
+        if !memoized?(key)
+          Memoizer.memoize(key, yield)
+        else
+          Memoizer.get(key)
+        end
+      end
+      
     end
   end
 end
