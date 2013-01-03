@@ -54,7 +54,6 @@ module ThreeScale
         
         ##safety, should never reach this unless massive concurrency
         reset! if $_memoizer_cache_expires.size > MAX_ENTRIES
-        
       end
       
       def self.stats
@@ -65,7 +64,8 @@ module ThreeScale
       
       def self.memoize_block(key, &block)
         if !memoized?(key)
-          Memoizer.memoize(key, yield)
+          obj = yield
+          Memoizer.memoize(key, obj)
         else
           Memoizer.get(key)
         end

@@ -40,6 +40,8 @@ N = 1000
 
 puts "Starting test..."
 
+require 'ruby-debug'
+
 Benchmark.bm do |x|
   
   x.report("adding transactions: ") { N.times {add_transaction }}
@@ -49,7 +51,15 @@ Benchmark.bm do |x|
   
   @worker = ThreeScale::Backend::Worker.new(:one_off => true, :log_file => "/tmp/3scale_backend_workers_from_test_workers_perf.log")
   
-  x.report("processing priority: ") { (N).times { @worker.work }}
+  debugger
+  @worker.work
+  debugger
+  @worker.work
+  debugger
+  @worker.work
+  debugger
+  
+  x.report("processing priority: ") { (N-3).times { @worker.work }}
 
   assert_equal redis.llen("resque:queue:main"), N
   assert_equal redis.llen("resque:queue:priority"), 0
@@ -66,7 +76,7 @@ Benchmark.bm do |x|
   assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8001/eternity"), (N*5).to_s
   assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8002/eternity"), N.to_s  
   assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:80012/eternity"), N.to_s
-  
+
   x.report("processing main:     ") { (N).times { @worker.work  }}
 
   assert_equal redis.llen("resque:queue:main"), 0
