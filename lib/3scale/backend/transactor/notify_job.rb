@@ -8,7 +8,6 @@ module ThreeScale
         @queue = :main
 
         def self.perform(provider_key, usage, timestamp, enqueue_time)
-          
           start_time = Time.now.getutc
           
           application_id = Application.load_id_by_key(master_service_id, provider_key)

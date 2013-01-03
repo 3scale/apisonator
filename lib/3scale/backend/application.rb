@@ -23,13 +23,20 @@ module ThreeScale
         end
       end
       
-      def load_id_by_key(service_id, user_key)
+      def self.load_id_by_key(service_id, user_key)
         key = "Application.load_id_by_key-#{service_id}-#{user_key}"
         Memoizer.memoize_block(key) do
           super(service_id, user_key)
         end
       end
-
+      
+      def self.exists?(service_id, app_id)
+        key = "Application.exists?-#{service_id}-#{app_id}"
+        Memoizer.memoize_block(key) do
+          super(service_id, app_id)
+        end
+      end
+      
       def self.load_by_id_or_user_key!(service_id, app_id, user_key)
 
         case
@@ -56,6 +63,7 @@ module ThreeScale
           app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
           exists?(service_id, app_id) and app_id or raise UserKeyInvalid, user_key
         when access_token
+          ## let's not memoize the oauthaccesstoken since this is supposed to change often
           app_id = OAuthAccessTokenStorage.get_app_id(service_id, access_token) or raise AccessTokenInvalid, access_token
           exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
         else

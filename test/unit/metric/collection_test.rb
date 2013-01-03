@@ -4,6 +4,7 @@ module Metric
   class CollectionTest < Test::Unit::TestCase
     def setup
       Storage.instance(true).flushdb
+      Memoizer.reset!
     end
 
     def test_process_usage_maps_metric_names_to_ids

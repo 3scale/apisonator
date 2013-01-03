@@ -67,6 +67,9 @@ class CacheTest < Test::Unit::TestCase
     app_key = @application.create_key("app_key1")
     @application.create_key("app_key2")
     @application.create_key("app_key3")
+    
+    ## we need to scratch the memoizer because we have created keys and referrer filters
+    Memoizer.reset!
 
 
     3.times do

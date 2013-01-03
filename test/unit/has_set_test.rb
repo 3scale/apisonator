@@ -19,6 +19,7 @@ class HasSetTest < Test::Unit::TestCase
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
+    Memoizer.reset!
 
     @ninja = Ninja.new
   end

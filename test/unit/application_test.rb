@@ -209,6 +209,9 @@ class ApplicationTest < Test::Unit::TestCase
                                    :state      => :active)
 
     key = application.create_key('foo')
+    
+    ## need to flush the memoizer because keys have been created
+    Memoizer.reset!
 
     assert_equal 'foo', key
     assert_equal [key], application.keys
@@ -279,10 +282,17 @@ class ApplicationTest < Test::Unit::TestCase
 
     key_bar = application.create_key('bar')
     assert_equal 'bar', key_bar
-
+    
+    ## need to flush the memoizer because keys have been created
+    Memoizer.reset!
+    
     assert_equal [key_foo, key_bar].sort, application.keys.sort
 
     application.delete_key(key_foo)
+    
+    ## need to flush the memoizer because keys have been created
+    Memoizer.reset!
+    
     assert_equal [key_bar], application.keys
 
   end
