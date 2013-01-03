@@ -85,11 +85,6 @@ end
 
 namespace :cache do
   
-  desc 'Statistic of the caching hit ratio'
-  task :hit_ratio => :environment do 
-    puts ThreeScale::Backend::Transactor.hit_ratio_stats().inspect
-  end
-  
   desc 'Caching enabled?'
   task :caching_enabled? => :environment do 
     puts ThreeScale::Backend::Transactor.caching_enabled?

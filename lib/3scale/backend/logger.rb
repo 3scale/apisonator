@@ -27,7 +27,13 @@ module ThreeScale
           env["HTTP_VERSION"],
           status.to_s[0..3],
           length,
-          now - began_at ]
+          now - began_at,
+          ThreeScale::Backend::Cache.stats[:last] || "-",
+          ThreeScale::Backend::Cache.stats[:count] || "-",
+          ThreeScale::Backend::Cache.stats[:hits] || "-",
+          ThreeScale::Backend::Memoizer.stats[:size] || "-",
+          ThreeScale::Backend::Memoizer.stats[:count] || "-",
+          ThreeScale::Backend::Memoizer.stats[:hits] || "-"]
       end
     end
   end

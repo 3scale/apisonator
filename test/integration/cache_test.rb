@@ -38,7 +38,7 @@ class CacheTest < Test::Unit::TestCase
   
     referrer = @application.create_referrer_filter('*.bar.example.org')
 
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
     3.times do
       get '/transactions/authrep.xml',  :provider_key => @provider_key,
@@ -56,11 +56,11 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
     assert_equal '3', day.at('current_value').content
 
-    assert_equal 3, Transactor.stats[:miss]
+    assert_equal 0, Transactor.stats[:hits]
     assert_equal 3, Transactor.stats[:count]
 
 
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
     referrer = @application.create_referrer_filter('another.referral')
     referrer = @application.create_referrer_filter('www.bar.example.org')
 
@@ -89,7 +89,7 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
     assert_equal '6', day.at('current_value').content
 
-    assert_equal 1, Transactor.stats[:miss]
+    assert_equal 2, Transactor.stats[:hits]
     assert_equal 3, Transactor.stats[:count]
 
 
@@ -172,7 +172,6 @@ class CacheTest < Test::Unit::TestCase
     
     @service.referrer_filters_required = false
     @service.save!
-
   end
 
   test 'caching with referrals with authorize' do
@@ -268,7 +267,7 @@ class CacheTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day        => 100)
 
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                         :app_id       => @application.id,
@@ -284,7 +283,7 @@ class CacheTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 403, last_response.status
 
-    assert_equal Transactor.stats[:miss], 2
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 2
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
@@ -302,7 +301,7 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
 
 
-    assert_equal Transactor.stats[:miss], 3
+    assert_equal Transactor.stats[:hits], 1
     assert_equal Transactor.stats[:count], 4
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
@@ -319,7 +318,7 @@ class CacheTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 403, last_response.status
 
-    assert_equal Transactor.stats[:miss], 5
+    assert_equal Transactor.stats[:hits], 1
     assert_equal Transactor.stats[:count], 6
 
 
@@ -336,7 +335,7 @@ class CacheTest < Test::Unit::TestCase
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal '3', day.at('current_value').content
 
-    assert_equal Transactor.stats[:miss], 5
+    assert_equal Transactor.stats[:hits], 2
     assert_equal Transactor.stats[:count], 7
 
 
@@ -357,7 +356,7 @@ class CacheTest < Test::Unit::TestCase
     Transactor.caching_enable
     tmp_last_response = ""
 
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
     5.times do    
 
@@ -384,11 +383,11 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, tmp_last_response.status
     assert_equal '4', day.at('current_value').content
 
-    assert_equal Transactor.stats[:miss], 1
+    assert_equal Transactor.stats[:hits], 4
     assert_equal Transactor.stats[:count], 5
 
 
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
     5.times do    
 
@@ -411,12 +410,12 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, tmp_last_response.status
     assert_equal '10', day.at('current_value').content
 
-    assert_equal Transactor.stats[:miss], 1
+    assert_equal Transactor.stats[:hits], 4
     assert_equal Transactor.stats[:count], 5
 
     Transactor.caching_disable
 
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
     5.times do    
 
@@ -442,10 +441,10 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, tmp_last_response.status
     assert_equal '14', day.at('current_value').content
 
-    assert_equal Transactor.stats[:miss], 5
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 5
 
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
     5.times do    
 
@@ -468,11 +467,11 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, tmp_last_response.status
     assert_equal '20', day.at('current_value').content
 
-    assert_equal Transactor.stats[:miss], 5
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 5
 
     Transactor.caching_enable
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
     5.times do    
 
@@ -500,10 +499,10 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, tmp_last_response.status
     assert_equal '24', day.at('current_value').content
 
-    assert_equal Transactor.stats[:miss], 5
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 5
 
-    Transactor.stats = {:miss => 0, :count => 0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
     5.times do    
 
@@ -527,7 +526,7 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 200, tmp_last_response.status
     assert_equal '30', day.at('current_value').content
 
-    assert_equal Transactor.stats[:miss], 5
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 5
 
     Transactor.caching_enable if current_state
@@ -547,9 +546,9 @@ class CacheTest < Test::Unit::TestCase
 
     keys = [app_key, app_key2, "fake_app_key"]
 
-    Transactor.stats = {:count => 0, :miss =>0}
+    Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
-    assert_equal Transactor.stats[:miss], 0
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
@@ -562,8 +561,9 @@ class CacheTest < Test::Unit::TestCase
         Resque.run!
       end
 
-      assert_equal Transactor.stats[:miss], 10
+      assert_equal Transactor.stats[:hits], 0
       assert_equal Transactor.stats[:count], 10
+      assert_equal Transactor.stats[:last], 0
 
       10.times do |i| 
         get '/transactions/authorize.xml',  :provider_key => @provider_key,
@@ -578,12 +578,13 @@ class CacheTest < Test::Unit::TestCase
 
       end
       
-      assert_equal Transactor.stats[:miss], 11
+      assert_equal Transactor.stats[:hits], 9
       assert_equal Transactor.stats[:count], 20
+      assert_equal Transactor.stats[:last], 1
 
       9.times do |i|
 
-        old_miss = Transactor.stats[:miss]
+        old_hits = Transactor.stats[:hits]
 
         get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
@@ -595,11 +596,11 @@ class CacheTest < Test::Unit::TestCase
         if ((i+1)%3)==0
           assert_equal 'false', doc.at('status:root authorized').content
           assert_equal 409, last_response.status
-          assert_equal Transactor.stats[:miss], old_miss+1
+          assert_equal Transactor.stats[:hits], old_hits
         else
           assert_equal 'true', doc.at('status:root authorized').content
           assert_equal 200, last_response.status
-          assert_equal Transactor.stats[:miss], old_miss
+          assert_equal Transactor.stats[:hits], old_hits+1
         end
         
         if ((i+1)%3)!=0
@@ -629,9 +630,9 @@ class CacheTest < Test::Unit::TestCase
 
     keys = [app_key, app_key2, "fake_app_key"]
 
-    Transactor.stats = {:count => 0, :miss =>0 }
+    Transactor.stats = {:count => 0, :hits => 0, :last => nil}
 
-    assert_equal Transactor.stats[:miss], 0
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
@@ -645,12 +646,12 @@ class CacheTest < Test::Unit::TestCase
         Resque.run!
       end
 
-      assert_equal Transactor.stats[:miss], 2
+      assert_equal Transactor.stats[:hits], 8
       assert_equal Transactor.stats[:count], 10
 
       9.times do |i|
 
-        old_miss = Transactor.stats[:miss]
+        old_hits = Transactor.stats[:hits]
 
         get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
@@ -664,11 +665,11 @@ class CacheTest < Test::Unit::TestCase
         if ((i+1)%3)==0
           assert_equal 'false', doc.at('status:root authorized').content
           assert_equal 409, last_response.status
-          assert_equal Transactor.stats[:miss], old_miss+1
+          assert_equal Transactor.stats[:hits], old_hits
         else
           assert_equal 'true', doc.at('status:root authorized').content
           assert_equal 200, last_response.status
-          assert_equal Transactor.stats[:miss], old_miss
+          assert_equal Transactor.stats[:hits], old_hits+1
         end
 
       end
@@ -685,9 +686,9 @@ class CacheTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day        => 1000)
 
-    Transactor.stats = {:count => 0, :miss =>0}
+    Transactor.stats = {:count => 0, :hits => 0, :last => nil}
 
-    assert_equal Transactor.stats[:miss], 0
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
@@ -709,7 +710,7 @@ class CacheTest < Test::Unit::TestCase
 
       end
       
-      assert_equal Transactor.stats[:miss], 1
+      assert_equal Transactor.stats[:hits], 4
       assert_equal Transactor.stats[:count], 5
 
     end
@@ -723,9 +724,9 @@ class CacheTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day        => 1000)
 
-    Transactor.stats = {:count => 0, :miss =>0 }
+    Transactor.stats = {:count => 0, :hits => 0, :last => nil}
 
-    assert_equal Transactor.stats[:miss], 0
+    assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
@@ -743,7 +744,7 @@ class CacheTest < Test::Unit::TestCase
 
       end
 
-      assert_equal Transactor.stats[:miss], 1
+      assert_equal Transactor.stats[:hits], 4
       assert_equal Transactor.stats[:count], 5
 
     end
@@ -841,12 +842,7 @@ class CacheTest < Test::Unit::TestCase
       assert_equal 'false', doc.at('status:root authorized').content
       assert_equal 409, last_response.status
       assert_equal '21', day.at('current_value').content
-
-
-
     end
-
-
   end
 
   test 'updating values with app_keys with authorize' do 
@@ -1274,10 +1270,6 @@ class CacheTest < Test::Unit::TestCase
         version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
         current_version = "s:#{ver_service}/a:#{ver_application}"
         assert_equal version, current_version
-   
     end 
-
   end
-
-  
 end
