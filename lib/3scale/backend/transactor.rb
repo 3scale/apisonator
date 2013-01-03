@@ -48,7 +48,6 @@ module ThreeScale
         notify(provider_key, 'transactions/authorize' => 1)
         
         check_values_of_usage(params[:usage]) unless params[:usage].nil?
-
         status = nil
         status_xml = nil
         status_result = nil  
@@ -113,7 +112,6 @@ module ThreeScale
         usage = load_current_usage(application)
         user_usage = load_user_current_usage(user) unless user.nil?
 
-        usage  = load_current_usage(application)
         status = Status.new(:service     => service, :application => application, :values => usage, :user => user, :user_values => user_usage).tap do |st|
           VALIDATORS.all? do |validator|
             if validator == Validators::Referrer && !st.service.referrer_filters_required?

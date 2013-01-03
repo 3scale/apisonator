@@ -1,11 +1,10 @@
-#puts "Using gemset: "
-#system "rvm current"
-
 require '3scale/backend'
 require 'benchmark'
 require 'fileutils'
 require 'nokogiri'
 require 'ruby-debug'
+
+N = 1000
 
 puts "Backend version: #{ThreeScale::Backend::VERSION}"
 puts "Resque version: #{Resque::VERSION}"
@@ -57,8 +56,6 @@ FileUtils.remove_file("/tmp/3scale_backend_workers_from_test_workers_perf.log", 
 
 raise "Assert failed" unless redis.llen("resque:queue:main")==0
 raise "Assert failed" unless redis.llen("resque:queue:priority")==0
-
-N = 100
 
 puts "Starting test..."
 
