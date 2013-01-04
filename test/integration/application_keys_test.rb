@@ -9,7 +9,8 @@ class ApplicationKeysTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
-
+    Memoizer.reset!
+    
     @provider_key = 'provider_key'
 
     @service     = Core::Service.save!(:provider_key => @provider_key, :id => next_id)

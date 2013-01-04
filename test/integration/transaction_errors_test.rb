@@ -9,7 +9,8 @@ class TransactionErrorsTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
-
+    Memoizer.reset!
+    
     setup_provider_fixtures
   end
 

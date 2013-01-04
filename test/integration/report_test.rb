@@ -12,6 +12,7 @@ class ReportTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
+    Memoizer.reset!
 
     setup_provider_fixtures
 
@@ -741,6 +742,12 @@ class ReportTest < Test::Unit::TestCase
                                                      @master_hits_id,
                                                      :month, '20100501')).to_i
 
+        
+        assert_equal (i+1), @storage.get(application_key(@service_id,
+                                                     @application.id,
+                                                     @metric_id,
+                                                     :month, '20100501')).to_i
+                                                     
       end
                                                                                                         
     end
@@ -768,11 +775,17 @@ class ReportTest < Test::Unit::TestCase
       ##FIXME: i would like to be able to do @storage.llen("resque:priority")
       ##but resque_unit does not write to redis :-/ want to get rid of resque_unit so badly
     
+      @storage.stubs(:evalsha).raises(Exception.new('bang!'))
+      @storage.stubs(:eval).raises(Exception.new('bang!'))
       @storage.stubs(:incrby).raises(Exception.new('bang!'))
     
       assert_equal 0, Resque.queues[:failed].length
 
-      Resque.enable_hooks!
+      assert_equal 0, @storage.get(application_key(@master_service_id,
+                                                  @provider_application_id,
+                                                  @master_hits_id,
+                                                  :month, '20100501')).to_i
+      
       
       assert_raise Exception do
         Resque.run!
@@ -789,6 +802,8 @@ class ReportTest < Test::Unit::TestCase
       ## FIXME: THIS MOTHERFUCKER or :failed is empty!!!
   
       @storage.unstub(:incrby)
+      @storage.unstub(:eval)
+      @storage.unstub(:evalsha)
     end
   end
 end

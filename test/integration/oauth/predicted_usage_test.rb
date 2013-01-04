@@ -8,6 +8,7 @@ class OauthPredictedUsageTest < Test::Unit::TestCase
   def setup
     Storage.instance(true).flushdb
     Resque.reset!
+    Memoizer.reset!
 
     setup_oauth_provider_fixtures
 

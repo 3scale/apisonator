@@ -8,6 +8,8 @@ class AuthrepApplicationKeysTest < Test::Unit::TestCase
   def setup
     Storage.instance(true).flushdb
 
+    Memoizer.reset!
+
     setup_provider_fixtures
 
     @application = Application.save(:service_id => @service.id,

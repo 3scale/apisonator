@@ -11,6 +11,7 @@ class OauthBackendHitsTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
+    Memoizer.reset!
 
     setup_oauth_provider_fixtures
 

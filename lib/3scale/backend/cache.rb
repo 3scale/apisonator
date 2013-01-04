@@ -35,6 +35,7 @@ module ThreeScale
       end
 
       def stats
+        @@stats ||= {:count => 0, :hits => 0, :last => nil}
         @@stats
       end
 
@@ -42,50 +43,17 @@ module ThreeScale
         @@stats=s
       end
       
-      def stats_cache_key(type, time_bucket)
-        "caching_stats/#{type}/#{time_bucket}"
-      end
-
-      def hit_ratio_stats()
-        
-        timestamp = Time.now.getutc
-        res = []
-        
-        while(!timestamp.nil?) do
-          tt = timestamp.beginning_of_cycle(:day).to_not_compact_s
-          
-          count = storage.get(stats_cache_key("count",tt))
-          misses = storage.get(stats_cache_key("miss",tt))
-          
-          if (!count.nil? && count.to_i >0)
-            res << 1.0 - (misses.to_f / count.to_f)
-            timestamp = timestamp - 24*3600
-          else
-            timestamp = nil
-          end
-        end
-        
-        return res
-      end
-
       def report_cache_hit
-        timestamp = Time.now.getutc.beginning_of_cycle(:day).to_not_compact_s
-        storage.incrby(stats_cache_key("count",timestamp),1)        
-
-        @@stats ||= {:count => 0, :miss => 0}
+        @@stats ||= {:count => 0, :hits => 0, :last => nil}
         @@stats[:count]=@@stats[:count]+1
+        @@stats[:hits]=@@stats[:hits]+1
+        @@stats[:last]=1
       end
 
       def report_cache_miss
-        timestamp = Time.now.getutc.beginning_of_cycle(:day).to_not_compact_s
-        storage.pipelined do 
-          storage.incrby(stats_cache_key("count",timestamp),1)
-          storage.incrby(stats_cache_key("miss",timestamp),1)
-        end
-        
-        @@stats ||= {:count => 0, :miss => 0}
+        @@stats ||= {:count => 0, :hits => 0, :last => nil}
         @@stats[:count]=@@stats[:count]+1
-        @@stats[:miss]=@@stats[:miss]+1
+        @@stats[:last]=0
       end
 
       def caching_enable

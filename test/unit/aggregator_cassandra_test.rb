@@ -48,12 +48,17 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 		## in theory not needed since we always do flush, if not
 		## @storage.del("cassandra_enabled")
  		Aggregator.enable_cassandra()
+    ## the flag to know if cassandra is enabled is memoized
+    Memoizer.reset!
  		Aggregator.activate_cassandra()
+ 		
 
 		@storage_cassandra = StorageCassandra.instance(true)
 		@storage_cassandra.clear_keyspace!
 
 		Resque.reset!
+		Memoizer.reset!
+		
 		Aggregator.reset_current_bucket!
 
 		## stubbing the airbreak, not working on tests
@@ -198,6 +203,7 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 
     @storage = Storage.instance(true)
     @storage.flushdb
+    Memoizer.reset!
 		seed_data()
 
 		@storage_cassandra = StorageCassandra.instance(true)
@@ -748,9 +754,13 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   test 'enable and disable cassandra' do
 
     Aggregator.enable_cassandra()
+    ## the flag to know if cassandra is enabled is memoized
+    Memoizer.reset!
     assert_equal true, Aggregator.cassandra_enabled?
 
     Aggregator.disable_cassandra()
+    ## the flag to know if cassandra is enabled is memoized
+    Memoizer.reset!
     assert_equal false, Aggregator.cassandra_enabled?
 
     Storage.instance.flushdb()
@@ -809,6 +819,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
   test 'when cassandra is disabled nothing gets logged' do
 
     Aggregator.disable_cassandra()
+    ## the flag to know if cassandra is enabled is memoized
+    Memoizer.reset!
 
     v = []
     10.times do
@@ -858,6 +870,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
 
     ## now we disable it cassandra
     Aggregator.disable_cassandra()
+    ## the flag to know if cassandra is enabled is memoized
+    Memoizer.reset!  
 
     v.each do |item|
       Aggregator.aggregate_all([item])
@@ -887,6 +901,8 @@ class AggregatorCassandraTest < Test::Unit::TestCase
     StorageCassandra.reset_to_nil!
 
     Aggregator.enable_cassandra()
+    ## the flag to know if cassandra is enabled is memoized
+    Memoizer.reset!
 
     v.each do |item|
       Aggregator.aggregate_all([item])

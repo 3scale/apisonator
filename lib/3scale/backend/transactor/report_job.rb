@@ -13,9 +13,9 @@ module ThreeScale
           ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0 
           LogRequestJob.perform(logs) if !logs.nil? && logs.size > 0
          
+          stats_mem = Memoizer.stats
           end_time = Time.now.getutc
-          
-          Worker.logger.info("ReportJob #{service_id} #{transactions.size} #{logs.size} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)}")
+          Worker.logger.info("ReportJob #{service_id} #{transactions.size} #{logs.size} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)} #{stats_mem[:size]} #{stats_mem[:count]} #{stats_mem[:hits]}")
         rescue Error => error
           ErrorStorage.store(service_id, error)
           Worker.logger.error("ReportJob #{service_id} #{error}")

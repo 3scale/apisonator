@@ -5,6 +5,13 @@ module ThreeScale
       #def self.load!(service, username)
       #  load(service, username)
       #end
+      
+      def self.load_or_create!(service, user_id)
+        key = "User.load_or_create!-#{service.id}-#{user_id}"
+        Memoizer.memoize_block(key) do 
+          super(service, user_id)
+        end
+      end
 
       def metric_names
         @metric_names ||= {}

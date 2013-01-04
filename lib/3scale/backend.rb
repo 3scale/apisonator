@@ -59,6 +59,7 @@ require '3scale/backend/event_storage'
 require '3scale/backend/version'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
+require '3scale/backend/memoizer'
 
 module ThreeScale
   module Core

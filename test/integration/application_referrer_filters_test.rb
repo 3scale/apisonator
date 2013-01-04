@@ -9,6 +9,7 @@ class ApplicationReferrerFiltersTest < Test::Unit::TestCase
     @storage.flushdb
 
     Resque.reset!
+    Memoizer.reset!
 
     @provider_key = 'provider_key'
     @service_id   = next_id

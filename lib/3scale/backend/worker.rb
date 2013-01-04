@@ -24,7 +24,7 @@ module ThreeScale
         ## reuse it
         @@logger = ::Logger.new(options[:log_file] || configuration.workers_log_file || "/dev/null")
         @@logger.formatter = proc { |severity, datetime, progname, msg|
-          "#{severity} #{pid} #{datetime.getutc.strftime("%d/%b/%Y %H:%M:%S")} #{msg}\n"
+          "#{severity} #{pid} #{datetime.getutc.strftime("[%d/%b/%Y %H:%M:%S %Z]")} #{msg}\n"
         } 
           
         if configuration.hoptoad.api_key

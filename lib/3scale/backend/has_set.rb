@@ -8,7 +8,12 @@ module ThreeScale
       private
 
       def set_items(name)
-        storage.smembers(storage_key(name))
+        ## WARNING: this is super dangerous, since the class must have a service_id and id instance
+        ## vars, which application has but the HasSet has to go
+        key = "#{self.class}-#{name}-#{@service_id}-#{@id}"
+        Memoizer.memoize_block(key) do 
+          storage.smembers(storage_key(name))
+        end
       end
 
       def create_set_item(name, value)

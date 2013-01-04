@@ -87,7 +87,9 @@ module ThreeScale
         end
 
         def load_ancestor_id(id)
-          storage.get(encode_key("metric/service_id:#{@service_id}/id:#{id}/parent_id"))
+          Memoizer.memoize_block("Metric.Collection.load_ancestor_id-#{@service_id}-#{id}") do
+            storage.get(encode_key("metric/service_id:#{@service_id}/id:#{id}/parent_id"))
+          end
         end
 
         def metric_id(name)
@@ -95,7 +97,9 @@ module ThreeScale
         end
 
         def load_metric_id(name)
-          storage.get(encode_key("metric/service_id:#{@service_id}/name:#{name}/id"))
+          Memoizer.memoize_block("Metric.Collection.load_metric_id-#{@service_id}-#{name}") do
+            storage.get(encode_key("metric/service_id:#{@service_id}/name:#{name}/id"))
+          end
         end
 
         def sanitize_name(name)

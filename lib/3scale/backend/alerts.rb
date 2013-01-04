@@ -131,7 +131,6 @@ module ThreeScale
       end
 
       def stats(service_id, application_id) 
-
         key_stats = "alerts/service_id:#{service_id}/app_id:#{application_id}/stats_utilization"
         list = storage.lrange(key_stats,0,-1)
 	      # format compact address,value
