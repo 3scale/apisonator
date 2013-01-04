@@ -2,8 +2,11 @@ module ThreeScale
   module Backend
     
     class Logger < Rack::CommonLogger
+      CUSTOM_FORMAT = "%s - %s [%s] \"%s %s%s %s\" %d %s %s %s %s %s %s %s %s\n"
+      
       def log(env, status, header, began_at)
         now = Time.now.getutc
+     
         length = extract_content_length(header)
         if env["REQUEST_METHOD"].to_s.upcase == "POST"
           provider_key = Rack::Request.new(env).params["provider_key"]
@@ -15,9 +18,10 @@ module ThreeScale
         else
           qs = env["QUERY_STRING"]
         end
+        
 
         logger = @logger || env['rack.errors']
-        logger.write FORMAT % [
+        logger.write CUSTOM_FORMAT % [
           env['HTTP_X_FORWARDED_FOR'] || env["REMOTE_ADDR"] || "-",
           env["REMOTE_USER"] || "-",
           now.strftime("%d/%b/%Y %H:%M:%S %Z"),
