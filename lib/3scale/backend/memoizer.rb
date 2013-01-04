@@ -6,18 +6,22 @@ module ThreeScale
       PURGE = 60
       MAX_ENTRIES = 10000
       ACTIVE = true
-        
+         
       def self.reset!
         @@memoizer_cache = Hash.new
         @@memoizer_cache_expires = Hash.new
         @@memoizer_purge_time = nil
+        @@memoizer_stats_count = 0
+        @@memoizer_stats_hits = 0
       end
       
       def self.memoized?(key)
         return false unless ACTIVE
         @@memoizer_cache ||= Hash.new
         @@memoizer_cache_expires ||= Hash.new
+        
         now = Time.now.getutc.to_i
+        @@memoizer_purge_time ||= now
         
         is_memoized = (@@memoizer_cache.has_key?(key) && @@memoizer_cache_expires.has_key?(key) && (now - @@memoizer_cache_expires[key]) < EXPIRE)
         purge(now) if (@@memoizer_purge_time.nil? || (now - @@memoizer_purge_time) > PURGE)
