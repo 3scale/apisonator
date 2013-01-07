@@ -9,11 +9,17 @@ module ThreeScale
           "notify/aggregator/batch"
         end
         
-        def process_batch(num_elements)
+        def process_batch(num_elements, options = {})
           tt = Time.now
           all = Hash.new
-          list = storage.lrange(key_for_notifications_batch,0,num_elements-1)
-          storage.ltrim(key_for_notifications_batch,num_elements,-1)
+        
+          if options[:all]==true
+            list = storage.lrange(key_for_notifications_batch,0,-1)
+            storage.del(key_for_notifications_batch)
+          else  
+            list = storage.lrange(key_for_notifications_batch,0,num_elements-1)
+            storage.ltrim(key_for_notifications_batch,num_elements,-1)
+          end
           
           list.each do |item|
             obj = decode(item)
@@ -42,13 +48,14 @@ module ThreeScale
           num_elements = storage.rpush(key_for_notifications_batch, encoded)
 
           ## HACK: TO REMOVE, this is so that tests pass right aways, a batch of 1
-          configuration.notification_batch = 1
+          ##configuration.notification_batch = 1
 
           if (num_elements  % configuration.notification_batch) == 0
             ## we have already a full batch, we have to create the NotifyJobs for the backend 
             process_batch(num_elements)
           end
         end
+          
       end
     end
   end

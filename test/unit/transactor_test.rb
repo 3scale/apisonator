@@ -81,7 +81,10 @@ class TransactorTest < Test::Unit::TestCase
                                                'usage'  => {'hits' => 1}},
                                        '1' => {'app_id' => @application_two.id,
                                                'usage'  => {'hits' => 1}})
-
+                                               
+      ## processes all the pending notifyjobs.
+      Transactor.process_batch(0,{:all => true})
+      
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/create_multiple' => 1,
@@ -98,6 +101,9 @@ class TransactorTest < Test::Unit::TestCase
                                        '1' => {'app_id' => @application_two.id,
                                                'usage'  => {'hits' => 1}})
 
+      ## processes all the pending notifyjobs.
+      Transactor.process_batch(0,{:all => true})
+                                               
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/create_multiple' => 1,
@@ -129,12 +135,20 @@ class TransactorTest < Test::Unit::TestCase
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 3}})
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Transactor.process_batch(0,{:all => true})
+      Resque.run!
     end
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       Transactor.report(@provider_key, @service_id,
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 2}})
+      Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Transactor.process_batch(0,{:all => true})
       Resque.run!
     end
 
@@ -261,6 +275,9 @@ class TransactorTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 7, 29, 17, 9)) do
       Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
+      ## processes all the pending notifyjobs.
+      Transactor.process_batch(0,{:all => true})
+
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/authorize' => 1},
@@ -336,6 +353,9 @@ class TransactorTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 7, 29, 17, 9)) do
       Transactor.authrep(@provider_key, :app_id => @application_one.id)
 
+      ## processes all the pending notifyjobs.
+      Transactor.process_batch(0,{:all => true})
+      
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/authorize' => 1},
