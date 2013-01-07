@@ -31,6 +31,11 @@ class OauthBackendHitsTest < Test::Unit::TestCase
                                                :app_id       => @application.id
 
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -50,6 +55,11 @@ class OauthBackendHitsTest < Test::Unit::TestCase
                                                :app_id       => @application.id
 
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -64,7 +74,11 @@ class OauthBackendHitsTest < Test::Unit::TestCase
                                                :app_id       => 'baa'
 
       Resque.run!
-
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_authorizes_id,
@@ -81,7 +95,11 @@ class OauthBackendHitsTest < Test::Unit::TestCase
                                                :app_id       => @application.id
 
       Resque.run!
-
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_authorizes_id,
@@ -99,6 +117,10 @@ class OauthBackendHitsTest < Test::Unit::TestCase
       Transactor.report(@provider_key, nil,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!      
     end
 
 
@@ -106,6 +128,10 @@ class OauthBackendHitsTest < Test::Unit::TestCase
       get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                                :app_id       => @application.id
 
+      Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,

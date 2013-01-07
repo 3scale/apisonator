@@ -31,6 +31,11 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
                                        :app_id       => @application.id
 
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -50,6 +55,11 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
                                        :app_id       => @application.id
 
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -64,6 +74,11 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
                                        :app_id       => 'baa'
 
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -81,6 +96,11 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
                                        :app_id       => @application.id
 
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -99,6 +119,11 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
       Transactor.report(@provider_key, @service_id,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
     end
 
 
@@ -107,6 +132,11 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
                                        :app_id       => @application.id
 
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
+      
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
