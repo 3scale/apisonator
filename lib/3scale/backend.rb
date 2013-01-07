@@ -85,6 +85,10 @@ ThreeScale::Backend.configuration.tap do |config|
   config.master_service_id = 1
   config.archiver.path     = '/tmp/3scale_backend/archive'
   config.cassandra_archiver.path     = '/tmp/3scale_backend/cassandra_archive'
+  
+  ## this means that there will be a NotifyJob for every X notifications (this is 
+  ## the call to master)
+  config.notification_batch = 10000
 
   # Load configuration from a file.
   config.load!
