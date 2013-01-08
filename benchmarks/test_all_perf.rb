@@ -6,9 +6,16 @@ require 'ruby-debug'
 
 N = 1000
 
+configuration = ThreeScale::Backend.configuration
+configuration.notification_batch = 100
+
+raise "N must be multiple of #{configuration.notification_batch}" unless (N % configuration.notification_batch)==0
+
 puts "Backend version: #{ThreeScale::Backend::VERSION}"
 puts "Resque version: #{Resque::VERSION}"
 puts "Redis version: #{Redis::VERSION}"
+puts "Parameters: N=#{N}, NotifyJobBatchSize=#{configuration.notification_batch}"
+
 
 redis = ThreeScale::Backend::Storage.instance
 redis.flushdb
@@ -66,7 +73,7 @@ Benchmark.bm do |x|
   redis_commands << ThreeScale::Backend::Storage.instance.info["total_commands_processed"].to_i  
   x.report("adding transactions: ") { N.times {add_transaction }}
     
-  assert_equal redis.llen("resque:queue:main"), N
+  assert_equal redis.llen("resque:queue:main"), (N / configuration.notification_batch)
   assert_equal redis.llen("resque:queue:priority"), N
   
   @worker = ThreeScale::Backend::Worker.new(:one_off => true, :log_file => "/tmp/3scale_backend_workers_from_test_workers_perf.log")
@@ -75,7 +82,7 @@ Benchmark.bm do |x|
   redis_commands << ThreeScale::Backend::Storage.instance.info["total_commands_processed"].to_i
   x.report("processing priority: ") { (N).times { @worker.work }}
 
-  assert_equal redis.llen("resque:queue:main"), N
+  assert_equal redis.llen("resque:queue:main"), (N / configuration.notification_batch)
   assert_equal redis.llen("resque:queue:priority"), 0
   
   assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:8001/eternity"), (N*5).to_s
@@ -93,23 +100,13 @@ Benchmark.bm do |x|
 
   labels << "processing main: "
   redis_commands << ThreeScale::Backend::Storage.instance.info["total_commands_processed"].to_i
-  x.report("processing main:     ") { (N).times { @worker.work  }}
+  x.report("processing main:     ") { (N / configuration.notification_batch).times { @worker.work  }}
 
   assert_equal redis.llen("resque:queue:main"), 0
   assert_equal redis.llen("resque:queue:priority"), 0
   
-  assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:8001/eternity"), (N*5).to_s
-  assert_equal redis.get("stats/{service:1001}/metric:8001/eternity"), (N*5).to_s
-  
-  assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:8002/eternity"), N.to_s
-  assert_equal redis.get("stats/{service:1001}/metric:8002/eternity"), N.to_s
-  
-  assert_equal redis.get("stats/{service:1001}/cinstance:app_id/metric:80012/eternity"), N.to_s
-  assert_equal redis.get("stats/{service:1001}/metric:80012/eternity"), N.to_s
-  
-  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8001/eternity"), (N*5).to_s
-  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:8002/eternity"), N.to_s  
-  assert_equal redis.get("stats/{service:1001}/uinstance:foo/metric:80012/eternity"), N.to_s
+  assert_equal redis.get("stats/{service:1}/cinstance:1002/metric:100/eternity"), (N).to_s
+  assert_equal redis.get("stats/{service:1}/metric:100/eternity"), (N).to_s
   
   labels << "do authrep with caching: "
   redis_commands << ThreeScale::Backend::Storage.instance.info["total_commands_processed"].to_i
@@ -149,7 +146,7 @@ Benchmark.bm do |x|
   
   system "wc -l /tmp/3scale_backend_workers_from_test_workers_perf.log > /tmp/temp_wc_l.tmp"
   num_entries_log = File.new("/tmp/temp_wc_l.tmp","r").read.to_i
-  assert_equal (N*2)+1, num_entries_log
+  assert_equal (N+(N / configuration.notification_batch)+1), num_entries_log
   
   redis_commands << ThreeScale::Backend::Storage.instance.info["total_commands_processed"].to_i
   puts "\nRedis commands:"
