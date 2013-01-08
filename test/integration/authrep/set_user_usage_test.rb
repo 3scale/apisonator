@@ -108,7 +108,6 @@ class SetUserUsageTest < Test::Unit::TestCase
     
     Timecop.freeze(Time.utc(2011, 1, 1)) do
       
-      $KKK = true
       get '/transactions/authrep.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :user_id    => "user1",
