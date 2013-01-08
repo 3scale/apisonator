@@ -860,4 +860,69 @@ class ReportTest < Test::Unit::TestCase
       @storage.unstub(:evalsha)
     end
   end
+  
+  test 'successful aggregation of notify jobs' do
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      (configuration.notification_batch-1).times do
+      
+        post '/transactions.xml',
+          :provider_key => @provider_key,
+          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                            1 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                            2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+
+        Resque.run!
+      end
+      
+      assert_equal configuration.notification_batch-1, @storage.llen(Transactor.key_for_notifications_batch)
+      assert_equal 0, Resque.queues[:main].size
+
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+
+      Resque.run!
+
+      assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
+      assert_equal 0, Resque.queues[:main].size
+      
+      assert_equal configuration.notification_batch, @storage.get(application_key(@master_service_id,
+                                                  @provider_application_id,
+                                                  @master_hits_id,
+                                                  :month, '20100501')).to_i
+      
+    end
+  end
+  
+  
+  test 'successful aggregation of notify jobs with multiple iterations' do
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      ((configuration.notification_batch*5.5).to_i).times do
+      
+        post '/transactions.xml',
+          :provider_key => @provider_key,
+          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                            1 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                            2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+
+        Resque.run!
+      end
+      
+      assert_equal (configuration.notification_batch*0.5).to_i, @storage.llen(Transactor.key_for_notifications_batch)
+      assert_equal 0, Resque.queues[:main].size
+      
+      assert_equal configuration.notification_batch*5, @storage.get(application_key(@master_service_id,
+                                                  @provider_application_id,
+                                                  @master_hits_id,
+                                                  :month, '20100501')).to_i
+      
+    end
+  end
+  
 end
