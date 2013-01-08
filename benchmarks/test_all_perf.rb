@@ -25,9 +25,7 @@ puts "done."
 @usage = {"hits" => 4, "other" => 1, "method2" => 1}
 
 def assert_equal(a, b)
-  if a!=b
-    raise "Assert failed: #{a} != #{b}" if a!=b
-  end
+  raise "Assert failed: #{a} != #{b}" if a!=b
 end
 
 def add_transaction
