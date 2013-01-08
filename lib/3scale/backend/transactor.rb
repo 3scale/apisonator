@@ -1,3 +1,4 @@
+require '3scale/backend/transactor/notify_batcher'
 require '3scale/backend/transactor/notify_job'
 require '3scale/backend/transactor/process_job'
 require '3scale/backend/transactor/report_job'
@@ -12,6 +13,7 @@ module ThreeScale
     module Transactor
       include Core::StorageKeyHelpers
       include Backend::Cache
+      include NotifyBatcher
       extend self
 
       def report(provider_key, service_id, transactions)
@@ -141,9 +143,7 @@ module ThreeScale
         
         ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
         if false && params[:no_caching].nil? 
-          ## check is the keys/id combination from params has been seen
-          ## before
-
+          ## check is the keys/id combination from params has been seen before
           isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:oauth_authorize,provider_key,params)
 
           if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
@@ -192,9 +192,7 @@ module ThreeScale
           end
         end  
         
-        application =  Application.load_by_id_or_user_key!(service.id,
-                                                          app_id,
-                                                          nil)
+        application =  Application.load_by_id_or_user_key!(service.id, app_id, nil)
 
         if not (params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String))
           ## user_id on the paramters
@@ -245,17 +243,12 @@ module ThreeScale
           isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:authrep,provider_key,params)
 
           if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
-      
             options[:usage] = params[:usage] unless params[:usage].nil?
             options[:add_usage_on_report] = true unless params[:usage].nil?
 
             status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
             cache_miss = false unless status_xml.nil? || status_result.nil? || violation
-          
           end
-
-          ##combination_save(data_combination) unless data_combination.nil? || !caching_allowed
-
         end
         
         ##cache_miss ? report_cache_miss : report_cache_hit
@@ -282,16 +275,11 @@ module ThreeScale
         end
 
         if (!params[:usage].nil? || !params[:log].nil?) && ((!status.nil? && status.authorized?) || (status.nil? && status_result)) 
-          storage.pipelined do
-            report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => params[:usage], "user_id" => username, "log" => params[:log]}}))
-            if params[:usage].nil?
-              val = 0
-            else 
-              val = params[:usage].size
-            end
-            ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
-            notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
-          end
+          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => params[:usage], "user_id" => username, "log" => params[:log]}}))
+          val = 0
+          val = params[:usage].size unless params[:usage].nil?
+          ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
+          notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
         else
           notify(provider_key, 'transactions/authorize' => 1)
         end
@@ -473,11 +461,19 @@ module ThreeScale
       end
 
       def notify(provider_key, usage)
-        tt = Time.now.getutc
-        ## FIXME: this needs a bit of refactoring
-        Resque.enqueue(NotifyJob, provider_key, usage, encode_time(tt), tt.to_f)
+        ## No longer create a job, but for efficiency the notify jobs (incr stats for the master) are
+        ## batched. It used to be like this:
+        ## tt = Time.now.getutc
+        ## Resque.enqueue(NotifyJob, provider_key, usage, encode_time(tt), tt.to_f)
+        ##
+        ## Basically, instead of creating a NotifyJob directly, which would trigger between 10-20 incrby
+        ## we store the data of the job in redis on a list. Once there are configuration.notification_batch
+        ## on the list, the worker will fetch the list, aggregate them in a single NotifyJob will all the 
+        ## sums done in memory and schedule the job as a NotifyJob. The advantage is that instead of having
+        ## 20 jobs doing 10 incrby of +1, you will have a single job doing 10 incrby of +20 
+        notify_batch(provider_key, usage)
       end
-
+      
       def encode_time(time)
         time.to_s
       end

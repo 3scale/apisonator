@@ -24,7 +24,8 @@ ThreeScale::Backend.configure do |config|
     raise "test run not allowed when redis is not localhost"
   end
   config.redis.db = 2
-  config.stats.bucket_size = 5 
+  config.stats.bucket_size = 5
+  config.notification_batch = 5
 end
 
 ThreeScale::Backend.configuration

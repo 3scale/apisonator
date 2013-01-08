@@ -45,14 +45,14 @@ module ThreeScale
       
       def report_cache_hit
         @@stats ||= {:count => 0, :hits => 0, :last => nil}
-        @@stats[:count]=@@stats[:count]+1
-        @@stats[:hits]=@@stats[:hits]+1
+        @@stats[:count]+=1
+        @@stats[:hits]+=1
         @@stats[:last]=1
       end
 
       def report_cache_miss
         @@stats ||= {:count => 0, :hits => 0, :last => nil}
-        @@stats[:count]=@@stats[:count]+1
+        @@stats[:count]+=1
         @@stats[:last]=0
       end
 

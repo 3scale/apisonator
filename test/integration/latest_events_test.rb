@@ -176,6 +176,10 @@ class LatestEventsTest < Test::Unit::TestCase
                                         :app_id       => @application_id1,
                                         :usage        => {'foos' => 1}
       Resque.run!
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## aggregate and another Resque.run! is needed
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!
       
       ## 
       get "/events.json",       :provider_key => @master_provider_key
@@ -281,6 +285,10 @@ class LatestEventsTest < Test::Unit::TestCase
                                       :usage        => {'foos' => 81}
     Resque.run!
 
+    ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+    ## aggregate and another Resque.run! is needed
+    Backend::Transactor.process_batch(0,{:all => true})
+    Resque.run!
       
     get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key
                                    
@@ -475,6 +483,10 @@ class LatestEventsTest < Test::Unit::TestCase
       :transactions => {0 => {:app_id => @application_id3, :usage => {'foos' => 115}}}
     Resque.run!
 
+    ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+    ## aggregate and another Resque.run! is needed
+    Backend::Transactor.process_batch(0,{:all => true})
+    Resque.run!
 
     get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key
                     
