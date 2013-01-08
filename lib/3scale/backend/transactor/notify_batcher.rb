@@ -23,7 +23,8 @@ module ThreeScale
           
           list.each do |item|
             obj = decode(item)
-            bucket_key = "#{obj['provider_key']}-#{tt.to_s}"
+            
+            bucket_key = "#{obj['provider_key']}-#{obj['time']}"
 
             all[bucket_key] = {"provider_key" => obj["provider_key"], "time" => obj["time"], "usage" => {}} if all[bucket_key].nil?
 
@@ -32,6 +33,11 @@ module ThreeScale
               all[bucket_key]["usage"][metric_name] ||= 0
               all[bucket_key]["usage"][metric_name] += value
             end
+          end
+
+          if $KKK==true
+            require 'ruby-debug'
+            debugger
           end
 
           all.each do |k, v|
