@@ -19,12 +19,8 @@ puts "Filling seed..."
 system "rake seed_user"
 puts "done."
 
-
-
-def assert_equal(a, b)
-  if a!=b
-    raise "Assert failed: #{a} != #{b}" if a!=b
-  end
+def assert_equal(a, b)  
+  raise "Assert failed: #{a} != #{b}" if a!=b
 end
 
 def add_transaction
