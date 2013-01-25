@@ -27,7 +27,7 @@ module ThreeScale
           now.strftime("%d/%b/%Y %H:%M:%S %Z"),
           env["REQUEST_METHOD"],
           env["PATH_INFO"],
-          qs.empty? ? "" : "?"+qs,
+          qs.empty? ? "" : "?"+qs.gsub("\n",""),
           env["HTTP_VERSION"],
           status.to_s[0..3],
           length,
