@@ -188,6 +188,8 @@ module ThreeScale
       ##~ op.parameters.add @parameter_usage_predicted
       ##
       get '/transactions/authorize.xml' do
+        normalize_non_empty_keys!(params)
+
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
           return
@@ -244,6 +246,8 @@ module ThreeScale
       ##~ op.parameters.add @parameter_redirect_url
       ##
       get '/transactions/oauth_authorize.xml' do
+        normalize_non_empty_keys!(params)
+        
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
           return
@@ -323,6 +327,8 @@ module ThreeScale
       ##~ op.parameters.add @parameter_log
       ##
       get '/transactions/authrep.xml' do
+        normalize_non_empty_keys!(params)
+        
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
           return
@@ -701,6 +707,16 @@ module ThreeScale
 
       def is_string_param(key)
         params[key] && !params[key].empty?
+      end
+      
+      def normalize_non_empty_keys!(params)
+        ## this is to minimize potential security hazzards with an empty user_key
+        [:service_id, :app_id, :user_key, :provider_key].each do |lab|
+          labs = lab.to_s
+          if !params.nil? && !params[labs].nil?
+            params[labs] = nil if (params[labs]=="" || params[labs].class != String || params[labs].strip.empty?)
+          end
+        end
       end
 
       def application
