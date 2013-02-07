@@ -1,4 +1,4 @@
-rvm use ruby-1.9.2-p180
+rvm use ruby-1.9.3-p327-falcon
 rvm gemset use 3scale_backend
 
 # install bundler
