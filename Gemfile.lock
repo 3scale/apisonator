@@ -1,8 +1,16 @@
+GIT
+  remote: git@github.com:3scale/core.git
+  revision: 6b02390dfb592e00596b995a5fa4fcf0dd8fdfdd
+  tag: 0.6.3
+  specs:
+    3scale_core (0.6.3)
+      hiredis (= 0.4.5)
+      redis (= 3.0.2)
+
 PATH
   remote: .
   specs:
-    3scale_backend (1.6.54)
-      3scale_core (~> 0.6.0)
+    3scale_backend (1.6.56)
       airbrake (= 3.1.6)
       aws-s3 (= 0.6.3)
       builder (= 2.1.2)
@@ -22,9 +30,6 @@ PATH
 GEM
   remote: http://rubygems.org/
   specs:
-    3scale_core (0.6.0)
-      hiredis (= 0.4.5)
-      redis (= 3.0.2)
     airbrake (3.1.6)
       builder
       girl_friday
@@ -57,7 +62,7 @@ GEM
     linecache19 (0.5.12)
       ruby_core_source (>= 0.1.4)
     metaclass (0.0.1)
-    mime-types (1.19)
+    mime-types (1.20.1)
     mocha (0.13.1)
       metaclass (~> 0.0.1)
     multi_json (1.5.0)
@@ -128,6 +133,7 @@ PLATFORMS
 
 DEPENDENCIES
   3scale_backend!
+  3scale_core!
   capistrano
   fakefs (= 0.4.2)
   mocha
