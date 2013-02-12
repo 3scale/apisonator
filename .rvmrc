@@ -1,5 +1,5 @@
 rvm use ruby-1.9.3-p327-falcon
-rvm gemset use 3scale_backend
+rvm gemset use 3scale_backend --create
 
 # install bundler
 if ! which bundle 1>/dev/null ; then
