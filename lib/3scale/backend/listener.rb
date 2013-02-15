@@ -686,8 +686,13 @@ module ThreeScale
         when ThreeScale::Core::Error
           error_code = 405
         else
-          raise exception
+          ## internal errors
+          if exception.class == ArgumentError and exception.message == "invalid byte sequence in UTF-8"
+            error_code = 422
+            exception = NotValidData.new
+          end
         end
+        
         if params[:no_body]
           error error_code, ""
         else
@@ -711,7 +716,7 @@ module ThreeScale
       
       def normalize_non_empty_keys!(params)
         ## this is to minimize potential security hazzards with an empty user_key
-        [:service_id, :app_id, :user_key, :provider_key].each do |lab|
+        [:service_id, :app_id, :app_key, :user_key, :provider_key].each do |lab|
           labs = lab.to_s
           if !params.nil? && !params[labs].nil?
             params[labs] = nil if (params[labs]=="" || params[labs].class != String || params[labs].strip.empty?)

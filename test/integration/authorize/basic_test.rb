@@ -401,6 +401,56 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     assert_equal 403, last_response.status
 
   end
+  
+  
+  test 'regression test for utf8 issues' do
+  
+    get '/transactions/authorize.xml', :provider_key => "\xf0\x90\x28\xbc"
+                                                                                                                   
+    assert_equal 422, last_response.status
+
+    assert_error_response :status  => 422,
+                          :code    => 'not_valid_data',
+                          :message => 'all data must be valid UTF8'
+                          
+    
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                        :app_id => "\xf0\x90\x28\xbc"
+                                                                       
+    assert_equal 422, last_response.status
+
+    assert_error_response :status  => 422,
+                          :code    => 'not_valid_data',
+                          :message => 'all data must be valid UTF8'
+                          
+    
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                        :app_id => @application.id,
+                                        :app_key => "\xf0\x90\x28\xbc"
+                                                                           
+    assert_equal 422, last_response.status
+
+    assert_error_response :status  => 422,
+                          :code    => 'not_valid_data',
+                          :message => 'all data must be valid UTF8'
+                          
+    # FIXME: this one does not work, because the usage is processed by rack before it goes
+    # to the application, so no way to catch it :-/ Must check how
+                              
+    #get '/transactions/authorize.xml',  :provider_key => @provider_key,
+    #                                    :app_id => @application.id,
+    #                                    :usage => {"\xf0\x90\x28\xbc" => 1}
+                                                                           
+    #assert_equal 422, last_response.status
+
+    #assert_error_response :status  => 422,
+    #                      :code    => 'not_valid_data',
+    #                      :message => 'all data must be valid UTF8'
+                          
+                          
+  end
+  
+    
 
 
 end

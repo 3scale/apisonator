@@ -102,6 +102,12 @@ module ThreeScale
 
     class ReferrerFilterInvalid < Invalid
     end
+    
+    class NotValidData < Invalid
+      def initialize
+        super 'all data must be valid UTF8'
+      end
+    end
 
     class ReferrerFiltersMissing < Error
       def initialize
