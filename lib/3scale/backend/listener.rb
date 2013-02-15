@@ -130,9 +130,10 @@ module ThreeScale
       set :views, File.dirname(__FILE__) + '/views'
 
       register AllowMethods
-
+      
+      use Rack::RackExceptionCatcher
       use Rack::RestApiVersioning, :default_version => '2.0'
-
+      
       before do
         content_type 'application/vnd.3scale-v2.0+xml'
       end
@@ -687,12 +688,7 @@ module ThreeScale
           error_code = 405
         else
           ## internal errors
-          if exception.class == ArgumentError && exception.message == "invalid byte sequence in UTF-8"
-            error_code = 422
-            exception = NotValidData.new
-          else 
-            raise exception
-          end
+          raise exception
         end
         
         if params[:no_body]
@@ -705,7 +701,7 @@ module ThreeScale
       error Sinatra::NotFound do
         error 404, ""
       end
-
+      
       private
 
       def are_string_params(*keys)

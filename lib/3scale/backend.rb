@@ -31,6 +31,7 @@ require '3scale/backend/validators/redirect_url'
 require '3scale/backend/validators/referrer'
 require '3scale/backend/validators/state'
 
+require '3scale/backend/rack_exception_catcher'
 require '3scale/backend/configuration'
 require '3scale/backend/extensions'
 require '3scale/backend/allow_methods'

@@ -108,6 +108,12 @@ module ThreeScale
         super 'all data must be valid UTF8'
       end
     end
+    
+    class BadRequest < Invalid
+      def initialize
+        super 'request contains syntanx errors, should not be repeated without modification'
+      end
+    end
 
     class ReferrerFiltersMissing < Error
       def initialize

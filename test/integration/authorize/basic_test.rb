@@ -403,13 +403,13 @@ class AuthorizeBasicTest < Test::Unit::TestCase
   end
   
   
-  test 'regression test for utf8 issues' do
+  test 'regression test for utf8 issues and super malformed request' do
   
     get '/transactions/authorize.xml', :provider_key => "\xf0\x90\x28\xbc"
                                                                                                                    
-    assert_equal 422, last_response.status
+    assert_equal 400, last_response.status
 
-    assert_error_response :status  => 422,
+    assert_error_response :status  => 400,
                           :code    => 'not_valid_data',
                           :message => 'all data must be valid UTF8'
                           
@@ -417,9 +417,9 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                         :app_id => "\xf0\x90\x28\xbc"
                                                                        
-    assert_equal 422, last_response.status
+    assert_equal 400, last_response.status
 
-    assert_error_response :status  => 422,
+    assert_error_response :status  => 400,
                           :code    => 'not_valid_data',
                           :message => 'all data must be valid UTF8'
                           
@@ -428,28 +428,42 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                                         :app_id => @application.id,
                                         :app_key => "\xf0\x90\x28\xbc"
                                                                            
-    assert_equal 422, last_response.status
+    assert_equal 400, last_response.status
 
-    assert_error_response :status  => 422,
+    assert_error_response :status  => 400,
                           :code    => 'not_valid_data',
                           :message => 'all data must be valid UTF8'
-                          
-    # FIXME: this one does not work, because the usage is processed by rack before it goes
-    # to the application, so no way to catch it :-/ Must check how
-                              
-    #get '/transactions/authorize.xml',  :provider_key => @provider_key,
-    #                                    :app_id => @application.id,
-    #                                    :usage => {"\xf0\x90\x28\xbc" => 1}
+                                                        
+    get '/transactions/authorize.xml',  :provider_key => @provider_key,
+                                        :app_id => @application.id,
+                                        :usage => {"\xf0\x90\x28\xbc" => 1}
                                                                            
-    #assert_equal 422, last_response.status
+    assert_equal 400, last_response.status
 
-    #assert_error_response :status  => 422,
-    #                      :code    => 'not_valid_data',
-    #                      :message => 'all data must be valid UTF8'
-                          
+    get '/transactions/authorize.xml',  :provider_key => @provider_key,
+                                        :app_id => @application.id,
+                                        :usage => {"\xf0\x90\x28\xbc" => 1}
+
+    ## FIXME: rack test is doing something fishy here. It does not call the rack middleware rack_exception_catcher like
+    ## the examples above. Could be for the explicit querystring,
+    ## get '/transactions/authorize.xml?provider_key=FAKE&app_id=FAKE&usage%5D%5B%5D=1&%5Busage%5D%5Bkilobytes_out%5D=1'
+    ## will simulate the error to get at least some coverage
+    
+    Transactor.stubs(:authorize).raises(TypeError.new("expected Hash (got Array) for param `usage'"))
+    
+    assert_nothing_raised do
+      
+      get '/transactions/authorize.xml',  :provider_key => "FAKE",
+                                          :app_id => "FAKE"
+                         
+      assert_equal 400, last_response.status
+                                        
+      assert_error_response :status  => 400,
+                            :code    => 'bad_request',
+                            :message => 'request contains syntanx errors, should not be repeated without modification'
+    end                      
                           
   end
-  
     
 
 
