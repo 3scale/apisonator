@@ -687,9 +687,11 @@ module ThreeScale
           error_code = 405
         else
           ## internal errors
-          if exception.class == ArgumentError and exception.message == "invalid byte sequence in UTF-8"
+          if exception.class == ArgumentError && exception.message == "invalid byte sequence in UTF-8"
             error_code = 422
             exception = NotValidData.new
+          else 
+            raise exception
           end
         end
         
