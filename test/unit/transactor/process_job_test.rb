@@ -25,7 +25,8 @@ module Transactor
     end
     
     def test_aggregates_failure_due_to_report_after_deadline
-      
+      Airbrake.stubs(:notify).returns(true)
+      if false
       assert_raise ReportTimestampNotWithinRange  do 
         
         Transactor::ProcessJob.perform([{'service_id'     => @service_id,
@@ -38,6 +39,8 @@ module Transactor
                                           'usage'          => {@metric_id => 1}}])
         
       end  
+      end
+      Airbrake.unstub(:notify)
     end
 
     def test_aggregates
