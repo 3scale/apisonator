@@ -157,6 +157,13 @@ module ThreeScale
         super %(user with user_id="#{user_id}" requires registration to use service with id="#{service_id}")
       end
     end
+    
+    class ServiceCannotUseUserId < Error
+      def initialize(service_id)
+        super %(service with service_id="#{service_id}" does not have access to end user plans, user_id is not allowed)
+      end
+    end
+    
 
     class ServiceLoadInconsistency < Error
       def initialize(service_id, other_service_id)

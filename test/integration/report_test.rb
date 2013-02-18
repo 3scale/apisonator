@@ -925,4 +925,51 @@ class ReportTest < Test::Unit::TestCase
     end
   end
   
+  test 'reporting user_id when not enabled makes failures go to error instead of failed jobs' do
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :user_id => 'user_id'},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+
+      Resque.run!
+      
+      assert_equal 0, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                  :month, '20100501')).to_i
+      
+      assert_equal 0, Resque.queues[:main].size
+      
+      assert_equal 1, ErrorStorage.list(@service_id).count
+      
+      error = ErrorStorage.list(@service_id).last
+      assert_not_nil error
+      assert_equal 'service_cannot_use_user_id', error[:code]
+      assert_equal "service with service_id=\"#{@service_id}\" does not have access to end user plans, user_id is not allowed", error[:message]
+      
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+
+      Resque.run!
+      
+      assert_equal 0, Resque.queues[:main].size
+      
+      assert_equal 3, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                  :month, '20100501')).to_i
+      
+      assert_equal 1, ErrorStorage.list(@service_id).count
+      
+            
+    end
+  end
+  
 end

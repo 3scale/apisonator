@@ -24,10 +24,22 @@ module ThreeScale
         def self.parse_transactions(service_id, raw_transactions)
           transactions = []
           logs = []
-
+          ser = nil
+          
           group_by_application_id(service_id, raw_transactions) do |application_id, group|
             metrics  = Metric.load_all(service_id)
             group.each do |raw_transaction|
+              
+              user_id = raw_transaction['user_id']
+              
+              if !service_id.nil? && !user_id.nil? && !user_id.empty?
+                ser ||= Service.load_by_id(service_id) 
+                if !ser.nil? && ser.user_registration_required? && ser.default_user_plan_id.nil?
+                  ## this means that end_user_plans are not enabled for the service, so passing user_id 
+                  ## should raise an error
+                  raise ServiceCannotUseUserId.new(service_id)
+                end
+              end  
 
               u = raw_transaction['usage']
               if !u.nil? && !u.empty?
