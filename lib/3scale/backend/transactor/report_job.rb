@@ -31,7 +31,6 @@ module ThreeScale
             group.each do |raw_transaction|
               
               user_id = raw_transaction['user_id']
-              
               if !service_id.nil? && !user_id.nil? && !user_id.empty?
                 ser ||= Service.load_by_id(service_id) 
                 if !ser.nil? && ser.user_registration_required? && ser.default_user_plan_id.nil?

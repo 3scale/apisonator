@@ -71,6 +71,7 @@ module ThreeScale
 
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
   PIPELINED_SLICE_SIZE = 400
+  REPORT_DEADLINE      = 24*3600
 end
 
 ThreeScale::Backend.configuration.tap do |config|

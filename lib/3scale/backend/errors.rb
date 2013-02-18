@@ -151,6 +151,11 @@ module ThreeScale
       end
     end
 
+    class ReportTimestampNotWithinRange < Error
+      def initialize
+        super %(report jobs cannot update metrics older than #{REPORT_DEADLINE} seconds)
+      end
+    end
 
     class UserRequiresRegistration < Error
       def initialize(service_id, user_id)
@@ -164,7 +169,6 @@ module ThreeScale
       end
     end
     
-
     class ServiceLoadInconsistency < Error
       def initialize(service_id, other_service_id)
         super %(service.load_by_id with id="#{service}" loaded the service with id="#{other_service_id}")

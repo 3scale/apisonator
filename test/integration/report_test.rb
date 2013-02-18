@@ -101,29 +101,33 @@ class ReportTest < Test::Unit::TestCase
   end
 
   test 'successful report with utc timestamped transactions' do
-    post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:app_id    => @application.id,
-                              :usage     => {'hits' => 1},
-                              :timestamp => '2010-05-11 13:34:42'}}
+    Timecop.freeze(Time.utc(2010, 4, 23, 00, 00)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id    => @application.id,
+                                :usage     => {'hits' => 1},
+                                :timestamp => '2010-05-11 13:34:42'}}
 
-    Resque.run!
+      Resque.run!
 
-    key = service_key(@service_id, @metric_id, :hour, '2010051113')
-    assert_equal 1, @storage.get(key).to_i
+      key = service_key(@service_id, @metric_id, :hour, '2010051113')
+      assert_equal 1, @storage.get(key).to_i
+    end  
   end
 
   test 'successful report with local timestamped transactions' do
-    post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:app_id    => @application.id,
-                              :usage     => {'hits' => 1},
-                              :timestamp => '2010-05-11 11:08:25 -02:00'}}
+    Timecop.freeze(Time.utc(2010, 4, 23, 00, 00)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id    => @application.id,
+                                :usage     => {'hits' => 1},
+                                :timestamp => '2010-05-11 11:08:25 -02:00'}}
 
-    Resque.run!
+      Resque.run!
 
-    key = service_key(@service_id, @metric_id, :hour, '2010051113')
-    assert_equal 1, @storage.get(key).to_i
+      key = service_key(@service_id, @metric_id, :hour, '2010051113')
+      assert_equal 1, @storage.get(key).to_i
+    end
   end
 
   test 'report uses current time if timestamp is blank' do
@@ -583,9 +587,8 @@ class ReportTest < Test::Unit::TestCase
 
   test 'checking correct behavior of timestamps on report' do
 
-
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      ts = Time.utc(2010,4,12,13,33)
+      ts = Time.utc(2010,5,11,13,34)
 
       post '/transactions.xml',
         :provider_key => @provider_key,
@@ -596,31 +599,36 @@ class ReportTest < Test::Unit::TestCase
       assert_equal 0, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
-                                                   :month, '20100501')).to_i
+                                                   :day, '20100512')).to_i
       
       assert_equal 1, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
-                                                   :month, '20100401')).to_i
+                                                   :day, '20100511')).to_i
 
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => "2003/10/01"}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => "2012/10/01"}}
 
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
-                                                   :month, '20031001')).to_i
+                                                   :month, '20121001')).to_i
 
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => "2003"}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => "2012"}}
 
       Resque.run!
-
+      
       assert_equal 1, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                   :month, '20121001')).to_i      
+
+      assert_equal 2, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
                                                    :month, '20100501')).to_i
@@ -966,9 +974,51 @@ class ReportTest < Test::Unit::TestCase
                                                    @metric_id,
                                                   :month, '20100501')).to_i
       
+      assert_equal 1, ErrorStorage.list(@service_id).count     
+    end
+  end
+  
+  test 'report cannot use an explicit timestamp older than 24 hours' do
+     
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:01'},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:02'},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:03'}}
+
+      Resque.run!
+      
+      assert_equal 3, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                  :month, '20100501')).to_i
+                                                  
+                                                  
+      assert_equal 0, ErrorStorage.list(@service_id).count
+
+
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:01'},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:02'},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:03'}}
+
+      Resque.run!
+      
+      assert_equal 3, @storage.get(application_key(@service_id,
+                                                   @application.id,
+                                                   @metric_id,
+                                                  :month, '20100501')).to_i
+                                                  
+                                                  
       assert_equal 1, ErrorStorage.list(@service_id).count
       
-            
+      error = ErrorStorage.list(@service_id).last
+      assert_not_nil error
+      assert_equal 'report_timestamp_not_within_range', error[:code]
+      assert_equal "report jobs cannot update metrics older than #{REPORT_DEADLINE} seconds", error[:message]                                           
     end
   end
   

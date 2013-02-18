@@ -50,22 +50,19 @@ class AlertsTest < Test::Unit::TestCase
     assert_equal 0, AlertStorage.list(@service_id).size
 
     Timecop.freeze(timestamp) do
-      
-      
       Transactor.report(@provider_key, 
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 90}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-
     end
 
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*0.5) do
-      
       Transactor.report(@provider_key, 
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-
     end
 
     
@@ -74,10 +71,10 @@ class AlertsTest < Test::Unit::TestCase
     assert_equal tmp_res, 1
 
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*3.0) do
-     
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       delete_allowed_limit(@service_id, 100) 
@@ -86,16 +83,16 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 10}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       add_allowed_limit(@service_id, 100) 
 
-
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 20}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-      
     end
 
     v = AlertStorage.list(@service_id)
@@ -132,22 +129,19 @@ class AlertsTest < Test::Unit::TestCase
     assert_equal 0, AlertStorage.list(@service_id).size
 
     Timecop.freeze(timestamp) do
-      
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 90}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-
     end
 
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*0.5) do
-      
-      
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-
     end
 
     ## now we are 3.0 days later, this should report a violation again
@@ -155,18 +149,17 @@ class AlertsTest < Test::Unit::TestCase
     assert_equal tmp_res, 1
 
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*3.0) do
-     
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 10}})
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-
-  
     end
 
     v = AlertStorage.list(@service_id).map{|e| e[:utilization]}

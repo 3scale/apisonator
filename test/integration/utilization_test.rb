@@ -78,20 +78,23 @@ class StatusSnapshotTest < Test::Unit::TestCase
 
   test 'basic check of utilization stats' do
 
-    Timecop.freeze(Time.utc(2010, 1, 1, 0, 0, 0)) do
+    Timecop.freeze(Time.utc(2010, 1, 1, 0, 0, 0)) do    
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 30}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 10}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
@@ -101,19 +104,20 @@ class StatusSnapshotTest < Test::Unit::TestCase
       doc   = Nokogiri::XML(last_response.body)
       assert_equal doc.at('max_utilization')[:value], '90'    
     end    
-
+    
     Timecop.freeze(Time.utc(2010, 1, 3, 15, 0 ,0)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 30}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-
-
+       
       get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
        :provider_key => @provider_key
                                                        
@@ -126,13 +130,14 @@ class StatusSnapshotTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 60}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-
 
       get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
        :provider_key => @provider_key                                                       
@@ -145,20 +150,21 @@ class StatusSnapshotTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 100}}}
-      Resque.run!
+      Backend::Transactor.process_batch(0,{:all => true})
+      Resque.run!      
 
       get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
        :provider_key => @provider_key                                                       
       assert_equal 200, last_response.status
       doc   = Nokogiri::XML(last_response.body)
       assert_equal doc.at('max_utilization')[:value], '210'
-      
     end    
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 0}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
       get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
@@ -171,8 +177,9 @@ class StatusSnapshotTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50}}}
+      Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
-
+       
       get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
        :provider_key => @provider_key                                                       
       assert_equal 200, last_response.status
@@ -184,9 +191,7 @@ class StatusSnapshotTest < Test::Unit::TestCase
       expected = "<stats>\n    <data time=\"2010-01-01 00:00:00 UTC\" value=\"90\"/>\n    <data time=\"2010-01-03 15:00:00 UTC\" value=\"80\"/>\n    <data time=\"2010-01-06 15:00:00 UTC\" value=\"210\"/>\n  </stats>"
 
       assert_equal expected, doc.at('stats').to_xml.to_s
-   
-    end    
-
+    end
   end 
 
   test 'test applications with plans without limits' do 
