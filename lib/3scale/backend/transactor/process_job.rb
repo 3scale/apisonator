@@ -34,7 +34,8 @@ module ThreeScale
                 ##test_aggregates_failure_due_to_report_after_deadline(Transactor::ProcessJobTest) [/Users/solso/3scale/backend/test/unit/transactor/process_job_test.rb
                 ##report cannot use an explicit timestamp older than 24 hours(ReportTest) [/Users/solso/3scale/backend/test/integration/report_test.rb
               rescue Error => e
-                Airbrake.notify(e)
+                Airbrake.notify(e,
+                  { :parameters    => {:current_time => current_time, :report_time => transaction[:timestamp], :transactions => transactions} })
               end
             end
             transaction
