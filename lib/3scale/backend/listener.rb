@@ -597,11 +597,6 @@ module ThreeScale
       
       ## ALERTS & VIOLATIONS
 
-      get '/services/:service_id/alerts.xml' do
-        @list = Transactor.latest_alerts(service_id)
-        builder :latest_alerts
-      end
-
       get '/services/:service_id/alert_limits.xml' do
         @list = Transactor.alert_limit(service_id)
         builder :alert_limits

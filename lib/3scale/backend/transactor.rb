@@ -365,13 +365,6 @@ module ThreeScale
 
       end
 
-      def latest_alerts(service_id)
-        #service = Service.load_by_id!(service_id)
-        #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
-        @list = AlertStorage.list(service_id)
-
-      end
-
       def alert_limit(service_id)
         #service = Service.load_by_id!(service_id)
         #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
@@ -379,18 +372,14 @@ module ThreeScale
       end
 
       def add_alert_limit(service_id, limit)
-
         ##service = Service.load_by_id!(service_id)
         ##raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
-
         @list = Alerts.add_allowed_limit(service_id,limit)
       end
 
       def delete_alert_limit(service_id, limit)
-
         #service = Service.load_by_id!(service_id)
         #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
-
         @list = Alerts.delete_allowed_limit(service_id,limit)
       end
 

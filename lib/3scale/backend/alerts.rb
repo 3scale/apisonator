@@ -125,7 +125,6 @@ module ThreeScale
                     :timestamp => timestamp,
                     :limit => "#{max_record.metric_name} per #{max_record.period}: #{max_record.current_value}/#{max_record.max_value}"}
        
-          Backend::AlertStorage::store(alert)
           Backend::EventStorage::store(:alert, alert)
         end
       end
