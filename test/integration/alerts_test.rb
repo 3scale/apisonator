@@ -47,7 +47,7 @@ class AlertsTest < Test::Unit::TestCase
     
     timestamp = Time.utc(2010, 5, 14, 12, 00, 00)
 
-    assert_equal 0, AlertStorage.list(@service_id).size
+    assert_equal 0, EventStorage.list().size
 
     Timecop.freeze(timestamp) do
       Transactor.report(@provider_key, 
@@ -95,24 +95,31 @@ class AlertsTest < Test::Unit::TestCase
       Resque.run!
     end
 
-    v = AlertStorage.list(@service_id)
+    v = []
+    EventStorage.list().each do |event|
+      v << event if event[:type]=="alert"
+    end
+        
     assert_equal 3, v.size
     
     ## again redis-2.6 yeilds a different order
     cont=0
     v.each do |item|
-      if item[:id]==1
-        assert_equal 90, item[:utilization]
+      
+      assert_equal true, [1,2,3].include?(item[:object][:id])
+      
+      if item[:object][:id]==1
+        assert_equal 90, item[:object][:utilization]
         cont=cont+1
       end
       
-      if item[:id]==2
-        assert_equal 90, item[:utilization]
+      if item[:object][:id]==2
+        assert_equal 90, item[:object][:utilization]
         cont=cont+1
       end
       
-      if item[:id]==3
-        assert_equal 120, item[:utilization]
+      if item[:object][:id]==3
+        assert_equal 120, item[:object][:utilization]
         cont=cont+1
       end
     end
@@ -126,7 +133,7 @@ class AlertsTest < Test::Unit::TestCase
     
     timestamp = Time.utc(2010, 5, 14, 12, 00, 00)
 
-    assert_equal 0, AlertStorage.list(@service_id).size
+    assert_equal 0, EventStorage.list().size
 
     Timecop.freeze(timestamp) do
       Transactor.report(@provider_key,
@@ -162,8 +169,13 @@ class AlertsTest < Test::Unit::TestCase
       Resque.run!
     end
 
-    v = AlertStorage.list(@service_id).map{|e| e[:utilization]}
-
+    v=[]
+    EventStorage.list().each do |event|
+      if event[:type]=="alert"
+        v << event[:object][:utilization]
+      end
+    end
+ 
     assert_equal 3, v.size
     assert v.include? 100
     assert v.include? 90 

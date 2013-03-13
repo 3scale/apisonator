@@ -70,12 +70,8 @@ class LatestEventsTest < Test::Unit::TestCase
 
   test 'test empty responses' do 
 
-    get "/services/#{@service_id}/alerts.xml",   :provider_key => @provider_key
-                                
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 0, doc.search('alert').size
+    get "/services/#{@service_id}/alerts.xml",   :provider_key => @provider_key                  
+    assert_equal 404, last_response.status
     
     get "/events.json",   :provider_key => @master_provider_key
     obj = Yajl::Parser.parse(last_response.body)
@@ -87,14 +83,9 @@ class LatestEventsTest < Test::Unit::TestCase
 
   test 'test errors on the parameters' do 
 
-    get "/services/#{@service_id}/alerts.xml", :provider_key => "fake_provider_key"                 
-    doc   = Nokogiri::XML(last_response.body)
-    error = doc.at('error:root')
-    assert_not_nil error
-    assert_equal 'provider_key_invalid', error['code']
-    assert_equal "provider key \"fake_provider_key\" is invalid", error.content
-    assert_equal 403, last_response.status
-    
+    get "/services/#{@service_id}/alerts.xml", :provider_key => "fake_provider_key"    
+    assert_equal 404, last_response.status
+                 
     get "/events.json", :provider_key => "fake_provider_key"
     assert_equal 403, last_response.status
     obj = Yajl::Parser.parse(last_response.body)
@@ -289,23 +280,7 @@ class LatestEventsTest < Test::Unit::TestCase
     ## aggregate and another Resque.run! is needed
     Backend::Transactor.process_batch(0,{:all => true})
     Resque.run!
-      
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key
-                                   
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 4, doc.search('alert').size
-
-    alert = doc.xpath("//alert[@application_id='#{@application_id3}']").first
-
-    assert_equal @service_id, alert.attributes["service_id"].content
-    assert_equal @application_id3, alert.attributes["application_id"].content
-    assert_equal "80", alert.attributes["utilization"].content
-    assert_equal "foos per month: 81/100", alert.attributes["limit"].content
-    assert_not_nil alert.attributes["timestamp"].content
-    assert_not_nil alert.attributes["id"].content
-    
+ 
     get "/events.json",       :provider_key => @master_provider_key
     assert_equal 200, last_response.status
     obj = Yajl::Parser.parse(last_response.body)
@@ -376,24 +351,11 @@ class LatestEventsTest < Test::Unit::TestCase
                                       :usage        => {'foos' => 99}
     Resque.run!
 
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key                            
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 1, doc.search('alert').size
-    
     filter_events_by_type('alert')
     get "/events.json",                             :provider_key => @master_provider_key
     assert_equal 200, last_response.status
     obj = Yajl::Parser.parse(last_response.body)
     assert_equal 1, obj.size
-    
-
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 0, doc.search('alert').size
 
     filter_events_by_type('alert')
     get "/events.json",                             :provider_key => @master_provider_key
@@ -408,23 +370,12 @@ class LatestEventsTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
 
 
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key                               
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 1, doc.search('alert').size
-
     filter_events_by_type('alert')
     get "/events.json",                             :provider_key => @master_provider_key
     assert_equal 200, last_response.status
     obj = Yajl::Parser.parse(last_response.body)
     assert_equal 2, obj.size
 
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 0, doc.search('alert').size
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                       :app_id       => @application_id1,
@@ -432,24 +383,11 @@ class LatestEventsTest < Test::Unit::TestCase
     Resque.run!
     assert_equal 200, last_response.status
 
-
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key                                                                 
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 1, doc.search('alert').size
-    
     filter_events_by_type('alert')
     get "/events.json",                             :provider_key => @master_provider_key
     assert_equal 200, last_response.status
     obj = Yajl::Parser.parse(last_response.body)
     assert_equal 3, obj.size
-
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 0, doc.search('alert').size
 
     filter_events_by_type('alert')
     get "/events.json",                             :provider_key => @master_provider_key
@@ -488,21 +426,6 @@ class LatestEventsTest < Test::Unit::TestCase
     Backend::Transactor.process_batch(0,{:all => true})
     Resque.run!
 
-    get "/services/#{@service_id}/alerts.xml",       :provider_key => @provider_key
-                    
-    assert_equal 200, last_response.status
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal 1, doc.search('alerts').size
-    assert_equal 4, doc.search('alert').size
-
-    alert = doc.xpath("//alert[@application_id='#{@application_id3}']").first
-    assert_equal @service_id, alert.attributes["service_id"].content
-    assert_equal @application_id3, alert.attributes["application_id"].content
-    assert_equal "100", alert.attributes["utilization"].content
-    assert_equal "foos per month: 115/100", alert.attributes["limit"].content
-    assert_not_nil alert.attributes["timestamp"].content
-    assert_not_nil alert.attributes["id"].content
-    
     get "/events.json",                             :provider_key => @master_provider_key
     assert_equal 200, last_response.status
     obj = Yajl::Parser.parse(last_response.body)
@@ -534,6 +457,7 @@ class LatestEventsTest < Test::Unit::TestCase
     
   end
   
+    
   test 'events_hook is triggered on report' do
     
     saved_ttl = EventStorage::PING_TTL
