@@ -489,6 +489,8 @@ class LatestEventsTest < Test::Unit::TestCase
                                     :app_id       => @application_id1,
                                     :usage        => {'foos' => 99}
 
+    assert_equal 200, last_response.status
+
     assert_raise NoMethodError do 
       Resque.run!
     end

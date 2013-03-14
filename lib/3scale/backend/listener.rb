@@ -416,8 +416,13 @@ module ThreeScale
         ## I put 403 (Forbidden) for consitency however it should be 400
         ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
 
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || params[:transactions].nil? || params[:transactions].is_a?(Array)
+        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty?
           empty_response 403
+          return
+        end
+
+        if params[:transactions].nil? || !params[:transactions].is_a?(Hash)
+          empty_response 400
           return
         end
 

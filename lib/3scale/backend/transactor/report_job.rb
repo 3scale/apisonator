@@ -19,6 +19,13 @@ module ThreeScale
         rescue Error => error
           ErrorStorage.store(service_id, error)
           Worker.logger.error("ReportJob #{service_id} #{error}")
+        rescue Exception => error
+          if error.class == ArgumentError && error.message == "invalid byte sequence in UTF-8"
+            ErrorStorage.store(service_id, NotValidData.new)
+            Worker.logger.error("ReportJob #{service_id} #{error}")
+          else
+            raise error
+          end
         end
 
         def self.parse_transactions(service_id, raw_transactions)
