@@ -15,7 +15,7 @@ module Rack
           [400, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, [ ThreeScale::Backend::BadRequest.new().to_xml ]]
         elsif e.class == ArgumentError && e.message == "invalid byte sequence in UTF-8"
           [400, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, [ ThreeScale::Backend::NotValidData.new().to_xml ]]
-        elsif e.class == ArgumentError && e.message ~= /invalid .-encoding/
+        elsif e.class == ArgumentError && e.message =~ /invalid .-encoding/
           [400, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, [ ThreeScale::Backend::NotValidData.new().to_xml ]] 
         else
           raise e
