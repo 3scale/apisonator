@@ -46,17 +46,34 @@ module ThreeScale
 				new(options).work
       end
       
+      def write_to_temp_log(e)
+        begin
+          ## temporal monitor
+          f = ::File.new("/mnt/tmp_rack_weird_exceptions.log","a")
+          f.puts "------"
+          f.puts Time.now.utc.to_s
+           f.puts e
+          f.close
+        rescue Exception => exc
+        end  
+      end
+      
       def work
 			  register_worker
 
+        begin
         loop do
           break if @shutdown
-
+          
           if job = reserve
             perform(job)
           end
 
           break if one_off?
+        end
+        rescue Exception=>e
+          write_to_temp_log(e)
+          raise e
         end
 
         unregister_worker
