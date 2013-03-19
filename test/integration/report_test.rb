@@ -1025,35 +1025,41 @@ class ReportTest < Test::Unit::TestCase
     end
     Airbrake.unstub(:notify)
   end
+  
 
   test 'regression test for parameter encoding issue' do
     post '/transactions.xml',
       :transactions => "\xf0\x90\x28\xbc"
     assert_equal 403, last_response.status
+    assert_equal "", last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :transactions => "\xf0\x90\x28\xbc",
       :provider_key => @provider_key
     assert_equal 400, last_response.status
+    assert_equal "", last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => "blablabla"
     assert_equal 400, last_response.status
+    assert_equal "", last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {"\xf0\x90\x28\xbc" => {:app_id => @application.id}}
     assert_equal 400, last_response.status
+    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body 
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {"0" => {:app_id => @application.id, :usage => {"\xf0\x90\x28\xbc" => 1}}}
     assert_equal 400, last_response.status
+    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!
 
     post '/transactions.xml',
@@ -1061,30 +1067,23 @@ class ReportTest < Test::Unit::TestCase
       :service_id => "\xf0\x90\x28\xbc",
       :transactions => {"0" => {:app_id => @application.id, :usage => {"hits" => 1}}}
     assert_equal 400, last_response.status
+    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => "\xf0\x90\x28\xbc"}}
-    assert_equal 202, last_response.status
+    assert_equal 400, last_response.status
+    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!
-
-    assert_equal 1, ErrorStorage.list(@service_id).count
-    error = ErrorStorage.list(@service_id).last
-    assert_not_nil error
-    assert_equal 'not_valid_data', error[:code]
-    assert_equal "all data must be valid UTF8", error[:message]
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {"0" => {:app_id => @application.id, :usage => {"hits" => "\xf0\x90\x28\xbc"}}}
-    assert_equal 202, last_response.status
+    assert_equal 400, last_response.status
+    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!
 
-    assert_equal 2, ErrorStorage.list(@service_id).count
-    error = ErrorStorage.list(@service_id).last
-    assert_not_nil error
-    assert_equal 'not_valid_data', error[:code]
-    assert_equal "all data must be valid UTF8", error[:message]
+    assert_equal 0, ErrorStorage.list(@service_id).count
   end
 end

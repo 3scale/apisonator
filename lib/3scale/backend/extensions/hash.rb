@@ -8,6 +8,16 @@ module ThreeScale
             memo
           end
         end
+        
+        def valid_encoding?
+          self.each do |k, v|
+            return false if k.is_a?(String) && !k.valid_encoding?
+            if v.is_a?(String) || v.is_a?(Array) || v.is_a?(Hash)
+              return false unless v.valid_encoding?
+            end
+          end
+          return true
+        end
       end
     end
   end
