@@ -1,16 +1,16 @@
 GIT
   remote: git@github.com:3scale/core.git
-  revision: 6b02390dfb592e00596b995a5fa4fcf0dd8fdfdd
-  tag: 0.6.3
+  revision: 252d681c91ab4385eae36c5adfcd051e53bb1a82
+  tag: 0.7.0
   specs:
-    3scale_core (0.6.3)
+    3scale_core (0.7.0)
       hiredis (= 0.4.5)
       redis (= 3.0.2)
 
 PATH
   remote: .
   specs:
-    3scale_backend (1.7.4)
+    3scale_backend (1.8.0)
       airbrake (= 3.1.6)
       aws-s3 (= 0.6.3)
       builder (= 2.1.2)
