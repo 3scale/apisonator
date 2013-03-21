@@ -192,10 +192,6 @@ module ThreeScale
 
         end
 
-        ## update_application_set(service_prefix, transaction[:application_id])
-        ## we need to remove the updating the set out of the pipeline to catch whether it's a new app or not
-        update_user_set(service_prefix, transaction[:user_id]) unless transaction[:user_id].nil?
-
       end
 
       ## copied from transactor.rb
@@ -363,11 +359,6 @@ module ThreeScale
       def update_application_set(prefix, application_id)
         key = encode_key("#{prefix}/cinstances")
         storage.sadd(key, encode_key(application_id))
-      end
-
-      def update_user_set(prefix, user_id)
-        key = encode_key("#{prefix}/uinstances")
-        storage.sadd(key, encode_key(user_id))
       end
 
 
