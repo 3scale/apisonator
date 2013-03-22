@@ -47,6 +47,17 @@ class ErrorStorageTest < Test::Unit::TestCase
     assert_equal expected, ErrorStorage.list(@service_id)
   end
 
+  test '#list stores max of MAX_NUM_ERRORS' do
+    (ErrorStorage::MAX_NUM_ERRORS+10).times do |i|
+      ErrorStorage.store(@service_id, ApplicationNotFound.new("boo_#{i}"))
+    end
+    
+    list = ErrorStorage.list(@service_id, {:page =>1, :per_page => ErrorStorage::MAX_NUM_ERRORS*2})
+    assert_equal ErrorStorage::MAX_NUM_ERRORS, list.size
+    assert_equal "application with id=\"boo_#{ErrorStorage::MAX_NUM_ERRORS+10-1}\" was not found", list.first[:message]
+    assert_equal 'application with id="boo_10" was not found', list.last[:message]
+  end
+
   test '#list returns empty collection if there are no errors' do
     assert_equal [], ErrorStorage.list(@service_id)
   end

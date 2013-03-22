@@ -4,14 +4,16 @@ module ThreeScale
       include StorageHelpers
       extend self
 
+      PER_PAGE = 100
+      MAX_NUM_ERRORS = 1000
+
       def store(service_id, error)
         storage.lpush(queue_key(service_id), 
                       encode(:code      => error.code,
                              :message   => error.message,
                              :timestamp => Time.now.getutc.to_s))
+        storage.ltrim(queue_key(service_id),0,MAX_NUM_ERRORS-1)
       end
-
-      PER_PAGE = 100
 
       # Pages start at 1, same as in will_paginate.
       def list(service_id, options = {})
