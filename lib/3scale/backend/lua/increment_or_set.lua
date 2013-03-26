@@ -30,6 +30,7 @@ local service_prefix     = "stats/{service:" .. service_id .. "}"
 local application_prefix = service_prefix .. "/cinstance:" .. application_id
 local service_metric_prefix = service_prefix .. "/metric:" .. metric_id
 local application_metric_prefix = application_prefix .. "/metric:" .. metric_id
+local service_stats_keys_set = "service:" .. service_id .. "/stats_keys_set"
 
 
 local prefixes = { application_metric_prefix }
@@ -51,28 +52,33 @@ local is_true = function(str)
 end
 
 local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
-   if is_true(cassandra_enabled) then
-      redis.call('sadd', ("keys_changed:" .. cassandra_bucket), key)
-      if action == 'set' then
-	 table.insert(set_keys, {key, value})
-      else
-	 redis.call(action, key, value)
-	 redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
+  if is_true(cassandra_enabled) then
+    redis.call('sadd', ("keys_changed:" .. cassandra_bucket), key)
+    if action == 'set' then
+	    table.insert(set_keys, {key, value})
+    else
+	    local new_value = redis.call(action, key, value)
+	    if new_value == value then
+        redis.call('sadd',service_stats_keys_set,key)
       end
-   else
-      redis.call(action, key, value)
-   end
+	    redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
+    end
+  else
+    local new_value = redis.call(action, key, value)
+    if new_value == value then
+      redis.call('sadd',service_stats_keys_set,key)
+    end
+  end
 end
 
 for granularity,timestamp in pairs(granularities) do
-   for i,prefix in ipairs(prefixes) do
-      local key = prefix .. timestamp
-      add_to_copied_keys(action, cassandra_bucket, key, value)
-      if granularity == 'minute'  then
-	 redis.call('expire', key, 180)
-
-      end
-   end
+  for i,prefix in ipairs(prefixes) do
+    local key = prefix .. timestamp
+    add_to_copied_keys(action, cassandra_bucket, key, value)
+    if granularity == 'minute'  then
+	    redis.call('expire', key, 180)
+    end
+  end
 end
 
 granularities["year"] = nil

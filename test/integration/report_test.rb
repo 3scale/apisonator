@@ -978,6 +978,23 @@ class ReportTest < Test::Unit::TestCase
     end
   end
   
+  test 'new keys are stores in the stats keys set' do
+    
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:01'},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:02'},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:03'}}
+
+      Resque.run!
+    end
+    
+    puts "ei"
+    puts @storage.smembers("service:#{@service_id}/stats_key_set").inspect
+    
+  end
+  
   test 'report cannot use an explicit timestamp older than 24 hours' do
      
     Airbrake.stubs(:notify).returns(true)
