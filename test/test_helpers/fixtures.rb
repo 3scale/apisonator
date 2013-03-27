@@ -90,11 +90,40 @@ module TestHelpers
 
     end
 
-
-
     def setup_oauth_provider_fixtures
       setup_provider_fixtures
       @service = Core::Service.save!(:provider_key => @provider_key, :id => @service_id, :backend_version => 'oauth')
     end
+    
+    def seed_data
+  		#MASTER_SERVICE_ID = 1
+  		## for the master
+  		master_service_id = ThreeScale::Backend.configuration.master_service_id
+  		Metric.save(
+        :service_id => master_service_id,
+        :id         => 100,
+        :name       => 'hits',
+        :children   => [Metric.new(:id => 101, :name => 'transactions/create_multiple'),
+                        Metric.new(:id => 102, :name => 'transactions/authorize')])
+
+      Metric.save(
+        :service_id => master_service_id,
+        :id         => 200,
+        :name       => 'transactions')
+
+  		## for the provider    
+
+  		provider_key = "provider_key"
+      service_id   = 1001
+      Service.save!(:provider_key => provider_key, :id => service_id)
+
+      # Create master cinstance
+      Application.save(:service_id => service_id,
+                :id => 2001, :state => :live)
+
+      # Create metrics
+      @metric_hits = Metric.save(:service_id => service_id, :id => 3001, :name => 'hits')
+  	end
+    
   end
 end

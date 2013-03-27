@@ -30,7 +30,7 @@ local service_prefix     = "stats/{service:" .. service_id .. "}"
 local application_prefix = service_prefix .. "/cinstance:" .. application_id
 local service_metric_prefix = service_prefix .. "/metric:" .. metric_id
 local application_metric_prefix = application_prefix .. "/metric:" .. metric_id
-local service_stats_keys_set = "service:" .. service_id .. "/stats_keys_set"
+local service_stats_keys_list = "service:" .. service_id .. "/stats_keys_list"
 
 
 local prefixes = { application_metric_prefix }
@@ -58,16 +58,20 @@ local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
 	    table.insert(set_keys, {key, value})
     else
 	    local new_value = redis.call(action, key, value)
-	    if new_value == value then
-        redis.call('sadd',service_stats_keys_set,key)
+      if (""..new_value == value) then
+        redis.call('lpush',service_stats_keys_list,key)
       end
 	    redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
     end
   else
-    local new_value = redis.call(action, key, value)
-    if new_value == value then
-      redis.call('sadd',service_stats_keys_set,key)
-    end
+    if action == 'set' then
+      redis.call(action, key, value)
+    else
+      local new_value = redis.call(action, key, value)
+      if (""..new_value == value) then
+        redis.call('lpush',service_stats_keys_list,key)
+      end
+    end  
   end
 end
 

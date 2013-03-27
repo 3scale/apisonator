@@ -990,8 +990,7 @@ class ReportTest < Test::Unit::TestCase
       Resque.run!
     end
     
-    puts "ei"
-    puts @storage.smembers("service:#{@service_id}/stats_key_set").inspect
+    assert_equal 5+7, StatsStorage.stats(@service_id).size
     
   end
   
