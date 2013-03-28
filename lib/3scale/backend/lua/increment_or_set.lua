@@ -59,7 +59,7 @@ local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
     else
 	    local new_value = redis.call(action, key, value)
       if (""..new_value == value) then
-        redis.call('lpush',service_stats_keys_list,key)
+        redis.call('rpush',service_stats_keys_list,key)
       end
 	    redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
     end
@@ -69,7 +69,7 @@ local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
     else
       local new_value = redis.call(action, key, value)
       if (""..new_value == value) then
-        redis.call('lpush',service_stats_keys_list,key)
+        redis.call('rpush',service_stats_keys_list,key)
       end
     end  
   end
