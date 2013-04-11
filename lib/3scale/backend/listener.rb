@@ -69,7 +69,7 @@ module ThreeScale
       ##~ @parameter_usage_predicted["parameters"] = []
       ##~ @parameter_usage_predicted["parameters"] << @parameter_usage_fields
       ##
-      ##~ @timestamp = {"name" => "timestamp", "dataType" => "string", "required" => false, "paramType" => "body"}
+      ##~ @timestamp = {"name" => "timestamp", "dataType" => "string", "required" => false, "paramType" => "query"}
       ##~ @timestamp["description"] = "If passed, it should be the time when the transaction took place. Format: YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00"
       ##~ @timestamp["description_inline"] = true
       ##
@@ -89,7 +89,7 @@ module ThreeScale
       ##~ @parameter_log["parameters"] << @parameter_log_field_response
       ##~ @parameter_log["parameters"] << @parameter_log_field_code
       ##
-      ##~ @parameter_transaction_app_id = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
+      ##~ @parameter_transaction_app_id = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "query", "allowMultiple" => true}
       ##~ @parameter_transaction_app_id["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
       ##~ @parameter_transaction_app_id["parameters"] = []
       ##
@@ -99,7 +99,7 @@ module ThreeScale
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_usage
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_log
 
-      ##~ @parameter_transaction_api_key = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
+      ##~ @parameter_transaction_api_key = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "query", "allowMultiple" => true}
       ##~ @parameter_transaction_api_key["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
       ##~ @parameter_transaction_api_key["parameters"] = []
 
@@ -109,7 +109,7 @@ module ThreeScale
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_usage
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_log
 
-      ##~ @parameter_transaction_oauth = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "body", "allowMultiple" => true}
+      ##~ @parameter_transaction_oauth = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "query", "allowMultiple" => true}
       ##~ @parameter_transaction_oauth["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
       ##~ @parameter_transaction_oauth["parameters"] = []
 
