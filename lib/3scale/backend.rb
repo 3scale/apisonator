@@ -41,6 +41,7 @@ require '3scale/backend/transaction_storage'
 require '3scale/backend/log_request_storage'
 require '3scale/backend/aggregator'
 require '3scale/backend/storage_cassandra'
+require '3scale/backend/storage_mongo'
 require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
 require '3scale/backend/user'
@@ -73,6 +74,7 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:cassandra_archiver, :path, :s3_bucket)
   config.add_section(:hoptoad, :api_key)
   config.add_section(:stats, :bucket_size)
+  config.add_section(:mongo, :servers, :connection_options)
 
   # Default config
   config.master_service_id = 1

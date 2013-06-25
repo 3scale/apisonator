@@ -24,14 +24,14 @@ module ThreeScale
         applications = Hash.new
         users = Hash.new
 
-        ## this is just a temporary switch to be able to enable disable reporting to cassandra
-        ## you can active it or deactivated: storage.set("cassandra_enabled","1") / storage.del("cassandra_enabled")
+        ## this is just a temporary switch to be able to enable disable reporting to mongodb
+        ## you can active it or deactivated: storage.set("mongo_enabled","1") / storage.del("mongo_enabled")
 
-        Memoizer.memoize_block("cassandra-enabled") do
-          @cass_enabled = cassandra_enabled?
+        Memoizer.memoize_block("mongo-enabled") do
+          @mongo_enabled = mongo_enabled?
         end
-        
-        if @cass_enabled
+
+        if @mongo_enabled
           timenow = Time.now.utc
 
           bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
@@ -39,9 +39,9 @@ module ThreeScale
           @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
 
           if @@current_bucket == bucket
-            schedule_cassandra_job = false
+            schedule_mongo_job = false
           else
-            schedule_cassandra_job = true
+            schedule_mongo_job = true
             @@current_bucket = bucket
           end
         end
@@ -76,14 +76,14 @@ module ThreeScale
           @keys_doing_set_op.flatten!(1)
 
           ## here the pipelined redis increments have been sent
-          ## now we have to send the cassandra ones
+          ## now we have to send the mongo ones
 
           ## FIXME we had set operations :-/ This will only work when the key is on redis, it will not be true in the future
-          ## not live keys (stats only) will only be on cassandra. Will require fix, or limit the usage of #set. In addition,
+          ## not live keys (stats only) will only be on mongodb. Will require fix, or limit the usage of #set. In addition,
           ## set operations cannot coexist on increments on the same metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
-          if @cass_enabled && @keys_doing_set_op.size>0
+          if @mongo_enabled && @keys_doing_set_op.size>0
 
             @keys_doing_set_op.each do |item|
               key, value = item
@@ -126,10 +126,10 @@ module ThreeScale
         ## need to update the cached_status for for the transactor
         update_status_cache(applications,users)
 
-        ## the time bucket has elapsed, trigger a cassandra job
-        if @cass_enabled
+        ## the time bucket has elapsed, trigger a mongodb job
+        if @mongo_enabled
           storage.zadd(changed_keys_key, @@current_bucket.to_i, @@current_bucket)
-          if schedule_cassandra_job
+          if schedule_mongo_job
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
             Resque.enqueue(StatsJob, @@prior_bucket, Time.now.getutc.to_f)
@@ -188,7 +188,7 @@ module ThreeScale
           value = value.to_i
 
           storage.evalsha( lua_aggregate_sha,
-                          :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@cass_enabled , @cass_enabled ? current_bucket : ''])
+                          :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@mongo_enabled , @mongo_enabled ? current_bucket : ''])
 
         end
 
@@ -322,29 +322,6 @@ module ThreeScale
         "#{prefix}/metric:#{metric_id}"
       end
 
-      ## the common key for redis
-      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/month:20120401"
-      ## is split into row and column key like this:
-      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/month:2012" , "20120401"
-      ##
-      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/eternity"
-      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/eternity", "eternity"
-      ##
-      ## we need to bucket per year since cassandra cannot have rows with zillions of columns, it's advised to keep it under 10MB
-      ## if we store minutes per year 365 * 24 * 60 * 8 (assuming it's 8 bytes per counter) = 4.2MB so we are ok.
-      ##
-      def counter_key_cassandra(prefix, granularity, timestamp)
-        if granularity == :eternity
-          bucket, row_key = :eternity, :eternity
-        else
-          time = timestamp.beginning_of_cycle(granularity)
-          row_key = time.to_compact_s
-          bucket = "#{granularity}:#{row_key[0..3]}"
-        end
-
-        ["#{prefix}/#{bucket}".to_s, row_key.to_s]
-      end
-
       def counter_key(prefix, granularity, timestamp)
         time_part = if granularity == :eternity
                       :eternity
@@ -366,8 +343,8 @@ module ThreeScale
         Storage.instance
       end
 
-      def storage_cassandra
-        StorageCassandra.instance
+      def storage_mongo
+        StorageMongo.instance
       end
 
       def create_aggregate_sha

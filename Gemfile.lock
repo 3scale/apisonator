@@ -13,9 +13,11 @@ PATH
     3scale_backend (1.11.3)
       airbrake (= 3.1.6)
       aws-s3 (= 0.6.3)
+      bson_ext (= 1.9.0)
       builder (= 2.1.2)
       cassandra-cql (= 1.0.4)
       hiredis (= 0.4.5)
+      mongo (= 1.9.0)
       rack (= 1.5.2)
       rack-rest_api_versioning (= 0.0.2)
       redis (= 3.0.2)
@@ -37,6 +39,9 @@ GEM
       builder
       mime-types
       xml-simple
+    bson (1.9.0)
+    bson_ext (1.9.0)
+      bson (~> 1.9.0)
     builder (2.1.2)
     capistrano (2.14.2)
       highline
@@ -72,6 +77,8 @@ GEM
     mime-types (1.25)
     mocha (0.13.2)
       metaclass (~> 0.0.1)
+    mongo (1.9.0)
+      bson (~> 1.9.0)
     multi_json (1.6.1)
     net-scp (1.1.2)
       net-ssh (>= 2.6.5)
