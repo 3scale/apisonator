@@ -14,8 +14,8 @@ local timestamp_day = ARGV[11]
 local timestamp_hour = ARGV[12]
 local timestamp_minute = ARGV[13]
 -- Ruby: cassandra_args
-local cassandra_enabled = ARGV[14]
-local cassandra_bucket =  ARGV[15]
+local mongo_enabled = ARGV[14]
+local mongo_bucket =  ARGV[15]
 
 
 local action = ''
@@ -49,14 +49,14 @@ local is_true = function(str)
   return (str == "true" )
 end
 
-local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
-  if is_true(cassandra_enabled) then
-    redis.call('sadd', ("keys_changed:" .. cassandra_bucket), key)
+local add_to_copied_keys =  function(action, mongo_bucket, key, value)
+  if is_true(mongo_enabled) then
+    redis.call('sadd', ("keys_changed:" .. mongo_bucket), key)
     if action == 'set' then
       table.insert(set_keys, {key, value})
     else
       redis.call(action, key, value)
-      redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
+      redis.call('incrby', "copied:".. mongo_bucket .. ":" .. key, value)
     end
   else
     redis.call(action, key, value)
@@ -66,7 +66,7 @@ end
 for granularity,timestamp in pairs(granularities) do
   for i,prefix in ipairs(prefixes) do
     local key = prefix .. timestamp
-    add_to_copied_keys(action, cassandra_bucket, key, value)
+    add_to_copied_keys(action, mongo_bucket, key, value)
     if granularity == 'minute' then
       redis.call('expire', key, 180)
     end
@@ -78,7 +78,7 @@ granularities["minute"] = nil
 for granularity,timestamp in pairs(granularities) do
   local prefix = service_metric_prefix
   local key = prefix .. timestamp
-  add_to_copied_keys(action, cassandra_bucket, key, value)
+  add_to_copied_keys(action, mongo_bucket, key, value)
 end
 
 return set_keys

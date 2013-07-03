@@ -14,7 +14,6 @@ require 'time'
 require 'yajl'
 require 'yaml'
 require 'zlib'
-require 'cassandra-cql'
 require 'rest-client'
 require 'digest/md5'
 require 'logger'
@@ -40,7 +39,6 @@ require '3scale/backend/storage'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/log_request_storage'
 require '3scale/backend/aggregator'
-require '3scale/backend/storage_cassandra'
 require '3scale/backend/storage_mongo'
 require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
@@ -69,18 +67,15 @@ end
 ThreeScale::Backend.configuration.tap do |config|
   # Add configuration sections
   config.add_section(:redis, :servers, :db, :backup_file)
-  config.add_section(:cassandra, :servers, :keyspace)
   config.add_section(:archiver, :path, :s3_bucket)
-  config.add_section(:cassandra_archiver, :path, :s3_bucket)
   config.add_section(:hoptoad, :api_key)
   config.add_section(:stats, :bucket_size)
-  config.add_section(:mongo, :servers, :connection_options)
+  config.add_section(:mongo, :servers, :db, :db_options)
 
   # Default config
   config.master_service_id = 1
   config.archiver.path     = '/tmp/3scale_backend/archive'
-  config.cassandra_archiver.path     = '/tmp/3scale_backend/cassandra_archive'
-  
+
   ## this means that there will be a NotifyJob for every X notifications (this is 
   ## the call to master)
   config.notification_batch = 10000
