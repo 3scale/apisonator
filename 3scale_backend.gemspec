@@ -28,8 +28,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'sinatra',                   '1.2.8'
   s.add_dependency 'thin',                      '1.5.0'
   s.add_dependency 'yajl-ruby',                 '1.1.0'
-  s.add_dependency 'cassandra-cql',             '1.0.4'
-  s.add_dependency 'thrift_client',		'0.8.3'
   s.add_dependency 'rest-client',               '1.6.7'
   s.add_dependency 'redis-namespace',           '1.2.1'
   s.add_dependency 'mongo',                     '1.9.0'

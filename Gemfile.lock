@@ -15,7 +15,6 @@ PATH
       aws-s3 (= 0.6.3)
       bson_ext (= 1.9.0)
       builder (= 2.1.2)
-      cassandra-cql (= 1.0.4)
       hiredis (= 0.4.5)
       mongo (= 1.9.0)
       rack (= 1.5.2)
@@ -26,7 +25,6 @@ PATH
       rest-client (= 1.6.7)
       sinatra (= 1.2.8)
       thin (= 1.5.0)
-      thrift_client (= 0.8.3)
       yajl-ruby (= 1.1.0)
 
 GEM
@@ -49,9 +47,6 @@ GEM
       net-sftp (>= 2.0.0)
       net-ssh (>= 2.0.14)
       net-ssh-gateway (>= 1.1.0)
-    cassandra-cql (1.0.4)
-      simple_uuid (>= 0.2.0)
-      thrift_client (>= 0.7.1)
     codeclimate-test-reporter (0.3.0)
       simplecov (>= 0.7.1, < 1.0.0)
     coderay (1.1.0)
@@ -117,7 +112,6 @@ GEM
     rubinius-actor (0.0.2)
       rubinius-core-api
     rubinius-core-api (0.0.1)
-    simple_uuid (0.4.0)
     simplecov (0.7.1)
       multi_json (~> 1.0)
       simplecov-html (~> 0.7.1)
@@ -130,9 +124,6 @@ GEM
       daemons (>= 1.0.9)
       eventmachine (>= 0.12.6)
       rack (>= 1.0.0)
-    thrift (0.8.0)
-    thrift_client (0.8.3)
-      thrift (~> 0.8.0)
     tilt (1.4.1)
     timecop (0.5.9.2)
     vegas (0.1.11)
