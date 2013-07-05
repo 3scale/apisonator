@@ -41,7 +41,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                 :usage          => {'3001' => 1}}])
     end
-    assert_equal 0, Resque.queue(:main).length
+    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size/2).to_i)) do
       Aggregator.aggregate_all([{:service_id     => 1001,
@@ -49,7 +49,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                 :usage          => {'3001' => 1}}])
     end
-    assert_equal 0, Resque.queue(:main).length
+    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     ## antoher time bucket has elapsed
 
@@ -59,7 +59,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                 :usage          => {'3001' => 1}}])
     end
-    assert_equal 1, Resque.queue(:main).length
+    assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size*1.9).to_i)) do
       Aggregator.aggregate_all([{:service_id     => 1001,
@@ -67,7 +67,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                 :usage          => {'3001' => 1}}])
     end
-    assert_equal 1, Resque.queue(:main).length
+    assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
 
     ## antoher time bucket has elapsed
 
@@ -77,7 +77,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                 :usage          => {'3001' => 1}}])
     end
-    assert_equal 2, Resque.queue(:main).length
+    assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
 
   end
 
@@ -213,11 +213,11 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :timestamp      => timestamp,
                                :usage          => {'3001' => 1}}])
 
-    assert_equal 0 , Resque.queue(:main).length
+    assert_equal 0 , Resque.queue(:main).length  + Resque.queue(:stats).length
     Aggregator.schedule_one_stats_job
-    assert_equal 1 , Resque.queue(:main).length
+    assert_equal 1 , Resque.queue(:main).length + Resque.queue(:stats).length
     Resque.run!
-    assert_equal 0 , Resque.queue(:main).length
+    assert_equal 0 , Resque.queue(:main).length + Resque.queue(:stats).length
 
     mongo_conditions = { service: "1001", metric: "3001" }
 
@@ -396,7 +396,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
       assert_equal cont+1, Aggregator.pending_buckets.size
       assert Aggregator.pending_buckets.member?(bucket_key)
-      assert_equal cont, Resque.queue(:main).length
+      assert_equal cont, Resque.queue(:main).length + Resque.queue(:stats).length
 
       timestamp = timestamp + Aggregator.stats_bucket_size
 

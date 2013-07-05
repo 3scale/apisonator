@@ -12,7 +12,7 @@ module ThreeScale
       include Configurable
 
       # the order is relevant
-      QUEUES = [:priority, :main]
+      QUEUES = [:priority, :main, :stats]
       
       def initialize(options = {})
         trap('TERM') { shutdown }

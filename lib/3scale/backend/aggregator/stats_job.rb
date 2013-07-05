@@ -4,9 +4,10 @@ module ThreeScale
 
       # Job for writing stats to mongo
       class StatsJob
-        @queue = :main
+        @queue = :stats
 
         def self.perform(bucket, enqueue_time)
+          
           return unless Aggregator.mongo_enabled? && Aggregator.mongo_active?
 
           start_time = Time.now.getutc
