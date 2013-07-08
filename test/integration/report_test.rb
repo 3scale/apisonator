@@ -732,17 +732,17 @@ class ReportTest < Test::Unit::TestCase
     timestamp = Time.parse_to_utc("20100501")
 
     conditions = {
-      service:     @master_service_id,
-      application: @provider_application_id,
-      metric:      @master_hits_id,
+      s: @master_service_id,
+      a: @provider_application_id,
+      m: @master_hits_id,
     }
 
     assert_equal 2*10, @storage_mongo.get(:month, timestamp, conditions)
 
     conditions = {
-      service:     @master_service_id,
-      application: @provider_application_id,
-      metric:      @master_reports_id,
+      s: @master_service_id,
+      a: @provider_application_id,
+      m: @master_reports_id,
     }
 
     assert_equal 2*10, @storage_mongo.get(:month, timestamp, conditions)
@@ -758,17 +758,17 @@ class ReportTest < Test::Unit::TestCase
                                                  :month, '20100501')).to_i
 
     conditions = {
-      service:     @service_id,
-      application: @application.id,
-      metric:      @metric_id,
+      s: @service_id,
+      a: @application.id,
+      m: @metric_id,
     }
 
    assert_equal 10, @storage_mongo.get(:month, timestamp, conditions)
 
     conditions = {
-      service:     @service_id,
-      application: application2.id,
-      metric:      @metric_id,
+      s: @service_id,
+      a: application2.id,
+      m: @metric_id,
     }
 
     assert_equal 10, @storage_mongo.get(:month, timestamp, conditions)

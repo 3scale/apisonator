@@ -65,20 +65,22 @@ module ThreeScale
                 granularity
               end
 
-        conditions.merge!(timestamp: timestamp.beginning_of_cycle(beg))
-        collection = collection_for_interval(granularity.to_s)
+        conditions.merge!(t: timestamp.beginning_of_cycle(beg))
+        collection = collection_for_interval(granularity)
         doc        = @db.collection(collection).find_one(search_query(conditions))
 
         if doc
+          field = reduce_field_name(granularity).to_s
           case granularity
           when :hour
-            doc[granularity.to_s][("%.2d" % timestamp.hour)]
+            doc[field][("%.2d" % timestamp.hour)]
           when :minute
-            doc[granularity.to_s][("%.2d" % timestamp.hour)][("%.2d" % timestamp.min)]
+            doc[field][("%.2d" % timestamp.hour)][("%.2d" % timestamp.min)]
           when :day
-            doc[granularity.to_s]
+            doc[field]
           else
-            doc["value"]
+            field = reduce_field_name("value").to_s
+            doc[field]
           end
         end
       end
@@ -119,12 +121,7 @@ module ThreeScale
 
       def doc_for_interval(interval_type, collection, key, timestamp, value)
         fields   = extract_doc_fields(key)
-        begin
-          document = batch[collection][key] || initial_doc(timestamp, fields)
-        rescue
-          require 'debugger';debugger
-          2
-        end
+        document = batch[collection][key] || initial_doc(timestamp, fields)
         time_key = key_for_time_field(interval_type, timestamp)
 
         document[:values][time_key] = value
@@ -141,13 +138,13 @@ module ThreeScale
 
       def collection_for_interval(interval_type)
         {
-          "day"      => "daily",
-          "hour"     => "daily",
-          "minute"   => "daily",
-          "year"     => "yearly",
-          "month"    => "monthly",
-          "eternity" => "eternity",
-        }[interval_type]
+          day:      :daily,
+          hour:     :daily,
+          minute:   :daily,
+          year:     :yearly,
+          month:    :monthly,
+          eternity: :eternity,
+        }[interval_type.to_sym]
       end
 
       def key_for_time_field(interval_type, timestamp)
@@ -156,19 +153,19 @@ module ThreeScale
 
         case interval_type
         when "day"
-          "day"
+          reduce_field_name('day')
         when "hour"
-          "hour.%.2d" % hour_key.to_i
+          "#{reduce_field_name('hour')}.%.2d" % hour_key.to_i
         when "minute"
-          "minute.%.2d.%.2d" % [hour_key.to_i, min_key.to_i]
+          "#{reduce_field_name('minute')}.%.2d.%.2d" % [hour_key.to_i, min_key.to_i]
         else
-          "value"
+          reduce_field_name('value')
         end
       end
 
       def search_query(metadata)
         [:application, :end_user, :metric, :service, :timestamp].map do |field|
-          metadata[field] ||= nil
+          metadata[reduce_field_name(field)] ||= nil
         end
         metadata
       end
@@ -185,24 +182,38 @@ module ThreeScale
       def initial_doc(timestamp, fields)
         parsed_timestamp = Time.parse_to_utc(timestamp).beginning_of_cycle(:day)
         doc = {
-          metadata: { timestamp: parsed_timestamp },
+          metadata: { t: parsed_timestamp },
           values:   {},
         }
         fields.inject(doc) do |memo, (key, value)|
-          field = metadata_fields[key.to_sym]
-          memo[:metadata][field] = value if field
+          field = metadata_field(key)
+          memo[:metadata][reduce_field_name(field)] = value if field
 
           memo
         end
       end
 
-      def metadata_fields
+      def reduce_field_name(field)
+        {
+          application: :a,
+          end_user:    :e,
+          metric:      :m,
+          service:     :s,
+          timestamp:   :t,
+          day:         :day,
+          minute:      :min,
+          hour:        :hr,
+          value:       :val,
+        }[field.to_sym]
+      end
+
+      def metadata_field(field)
         {
           cinstance: :application,
           uinstance: :end_user,
           metric:    :metric,
           service:   :service,
-        }
+        }[field.to_sym]
       end
 
       def clean_batch

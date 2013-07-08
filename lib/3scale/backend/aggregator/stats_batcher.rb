@@ -67,9 +67,9 @@ module ThreeScale
           application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
 
           mongo_conditions = {
-            service:     service_id,
-            application: application_id,
-            metric:      metric_id,
+            s: service_id,
+            a: application_id,
+            m: metric_id,
           }
 
           granularities.each do |gra|

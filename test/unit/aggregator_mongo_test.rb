@@ -103,7 +103,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     time_with_mongo = Time.now - t
 
-    mongo_conditions = { service: "1001", metric: "3001" }
+    mongo_conditions = { s: "1001", m: "3001" }
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :eternity))
     assert_equal cont, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
 
@@ -116,7 +116,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
     assert_equal cont, @storage_mongo.get(:hour, timestamp, mongo_conditions)
 
-    mongo_conditions = { service: "1001", application: "2001", metric: "3001" }
+    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :eternity))
     assert_equal cont, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
 
@@ -219,7 +219,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     Resque.run!
     assert_equal 0 , Resque.queue(:main).length + Resque.queue(:stats).length
 
-    mongo_conditions = { service: "1001", metric: "3001" }
+    mongo_conditions = { s: "1001", m: "3001" }
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))
     assert_equal 1, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
@@ -234,7 +234,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 1, @storage_mongo.get(:hour, timestamp, mongo_conditions)
 
 
-    mongo_conditions = { service: "1001", application: "2001", metric: "3001" }
+    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :eternity))
     assert_equal 1, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
@@ -257,7 +257,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
   test 'aggregate takes into account setting the counter value ok' do
     timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
-    mongo_conditions = { service: "1001", application: "2001", metric: "3001" }
+    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
 
     v = []
     10.times do
@@ -437,7 +437,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Aggregator.failed_buckets.size
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))
-    mongo_conditions = { service: "1001", metric: "3001" }
+    mongo_conditions = { s: "1001", m: "3001" }
     assert_equal 1, @storage_mongo.get(:eternity, metrics_timestamp, mongo_conditions)
 
     ## on the second on we stub the storage_mongo to simulate a network error or mongo down
@@ -477,7 +477,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     @storage_mongo = StorageMongo.instance(true)
 
     assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))
-    mongo_conditions = { service: "1001", metric: "3001" }
+    mongo_conditions = { s: "1001", m: "3001" }
     assert_equal 1, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
 
     ## now let's process the failed, one by one...
@@ -556,7 +556,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     @storage_mongo = StorageMongo.instance(true)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    mongo_conditions = { service: "1001", application: "2001", metric: "3001" }
+    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
     assert_equal nil, @storage_mongo.get(:hour, timestamp, mongo_conditions)
 
     assert_equal 0, Aggregator.pending_buckets.size
@@ -722,7 +722,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
-    mongo_conditions = { service: "1001", application: "2001", metric: "3001" }
+    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
     assert_equal 20, @storage_mongo.get(:hour, timestamp, mongo_conditions)
   end
 
@@ -792,7 +792,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    mongo_conditions = { service: "1001", application: "2001", metric: "3001" }
+    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
     assert_equal 20, @storage_mongo.get(:hour, timestamp, mongo_conditions)
   end
 
@@ -844,17 +844,17 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal '5', @storage.get(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :eternity))
 
 
-    mongo_conditions = { service: service.id, application: application.id, metric: @metric_hits.id.to_s }
+    mongo_conditions = { s: service.id, a: application.id, m: @metric_hits.id.to_s }
     assert_equal 5, @storage_mongo.get(:hour, timestamp, mongo_conditions)
     assert_equal 5, @storage_mongo.get(:month, timestamp, mongo_conditions)
     assert_equal 5, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
 
-    mongo_conditions = { service: service.id, metric: @metric_hits.id.to_s }
+    mongo_conditions = { s: service.id, m: @metric_hits.id.to_s }
     assert_equal 5, @storage_mongo.get(:hour, timestamp, mongo_conditions)
     assert_equal 5, @storage_mongo.get(:month, timestamp, mongo_conditions)
     assert_equal 5, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
 
-    mongo_conditions = { service: service.id, end_user: "user_id_xyz", metric: @metric_hits.id.to_s }
+    mongo_conditions = { s: service.id, e: "user_id_xyz", m: @metric_hits.id.to_s }
 
     assert_equal 5, @storage_mongo.get(:hour, timestamp, mongo_conditions)
     assert_equal 5, @storage_mongo.get(:month, timestamp, mongo_conditions)
@@ -887,17 +887,17 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :month,   '20100501'))
     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :eternity))
 
-    mongo_conditions = { service: service.id, application: application.id, metric: @metric_hits.id.to_s }
+    mongo_conditions = { s: service.id, a: application.id, m: @metric_hits.id.to_s }
     assert_equal 9, @storage_mongo.get(:hour, timestamp, mongo_conditions)
     assert_equal 9, @storage_mongo.get(:month, timestamp, mongo_conditions)
     assert_equal 9, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
 
-    mongo_conditions = { service: service.id, metric: @metric_hits.id.to_s }
+    mongo_conditions = { s: service.id, m: @metric_hits.id.to_s }
     assert_equal 9, @storage_mongo.get(:hour, timestamp, mongo_conditions)
     assert_equal 9, @storage_mongo.get(:month, timestamp, mongo_conditions)
     assert_equal 9, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
 
-    mongo_conditions = { service: service.id, end_user: "another_user_id_xyz", metric: @metric_hits.id.to_s }
+    mongo_conditions = { s: service.id, e: "another_user_id_xyz", m: @metric_hits.id.to_s }
     assert_equal 4, @storage_mongo.get(:hour, timestamp, mongo_conditions)
     assert_equal 4, @storage_mongo.get(:month, timestamp, mongo_conditions)
     assert_equal 4, @storage_mongo.get(:eternity, timestamp, mongo_conditions)

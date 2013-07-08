@@ -38,8 +38,8 @@ class StorageMongoTest < Test::Unit::TestCase
   test '#get ' do
     timestamp    = Time.utc(2013, 07,03)
     value        = 20
-    conditions   = { metric: "8001", service: "1001" }
-    expected_doc = { "day" => value, "hour" => nil, "minute" => nil }
+    conditions   = { m: "8001", s: "1001" }
+    expected_doc = { "day" => value, "hr" => nil, "min" => nil }
     Mongo::Collection.any_instance.expects(:find_one).returns(expected_doc).times(1)
 
     assert_equal value, @storage.get(:day, timestamp, conditions)
@@ -50,15 +50,15 @@ class StorageMongoTest < Test::Unit::TestCase
     value = 20
 
     expected_batch = {
-      "daily" => {
+      daily: {
         key => {
           metadata: {
-            timestamp: Time.utc(2013, 07, 03),
-            service:   "1001",
-            metric:   "8001",
+            t: Time.utc(2013, 07, 03),
+            s: "1001",
+            m: "8001",
           },
           values: {
-            "day" => value,
+            day: value,
           }
         }
       }
@@ -71,7 +71,7 @@ class StorageMongoTest < Test::Unit::TestCase
   test '#execute_batch should update mongodb data and clear the batch' do
     collection = mock('collection')
     collection.expects(:update).returns(true).times(1)
-    Mongo::DB.any_instance.expects(:collection).with('daily').returns(collection).times(1)
+    Mongo::DB.any_instance.expects(:collection).with(:daily).returns(collection).times(1)
     key   = "stats/{service:1001}/metric:8001/day:20130703"
     value = 20
 
