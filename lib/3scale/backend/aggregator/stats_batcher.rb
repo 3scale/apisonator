@@ -83,17 +83,13 @@ module ThreeScale
 
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
           disable_mongo
-          v = storage.keys("keys_changed:*")
-          v.each do |bucket|
-            tmp, bucket_time = bucket.split(":")
-            keys = storage.smembers(bucket)
-            puts "Deleting bucket: #{bucket}, containing #{keys.size} keys" unless options[:silent]==true
-            keys.each do |key|
-              storage.pipelined do
-                storage.del("#{copied_keys_prefix(bucket_time)}:#{key}")
-              end
+
+          (failed_buckets + pending_buckets).each do |bucket|
+            keys = storage.smembers(changed_keys_bucket_key(bucket))
+            unless options[:silent] == true
+              puts "Deleting bucket: #{bucket}, containing #{keys.size} keys"
             end
-            storage.del(bucket)
+            storage.del(changed_keys_bucket_key(bucket))
           end
           storage.del(changed_keys_key);
           storage.del(failed_save_to_mongo_key)
