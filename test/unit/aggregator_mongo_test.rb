@@ -940,7 +940,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 5, v.size
 
     v = @storage.keys("copied:*")
-    assert_equal true, v.size > 0
+    assert_equal 0, v.size
 
     Aggregator.delete_all_buckets_and_keys_only_as_rake!(silent: true)
 

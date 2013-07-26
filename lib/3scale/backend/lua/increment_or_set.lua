@@ -49,14 +49,13 @@ local is_true = function(str)
   return (str == "true" )
 end
 
-local add_to_copied_keys =  function(action, mongo_bucket, key, value)
+local add_to_copied_keys = function(action, mongo_bucket, key, value)
   if is_true(mongo_enabled) then
     redis.call('sadd', ("keys_changed:" .. mongo_bucket), key)
     if action == 'set' then
       table.insert(set_keys, {key, value})
     else
       redis.call(action, key, value)
-      redis.call('incrby', "copied:".. mongo_bucket .. ":" .. key, value)
     end
   else
     redis.call(action, key, value)
