@@ -76,8 +76,6 @@ module ThreeScale
             doc[field][("%.2d" % timestamp.hour)]
           when :minute
             doc[field][("%.2d" % timestamp.hour)][("%.2d" % timestamp.min)]
-          when :day
-            doc[field]
           else
             field = reduce_field_name("value").to_s
             doc[field]
@@ -152,8 +150,6 @@ module ThreeScale
         hour_key, min_key = extract_hour_and_min(timestamp, day_timestamp)
 
         case interval_type
-        when "day"
-          reduce_field_name('day')
         when "hour"
           "#{reduce_field_name('hour')}.%.2d" % hour_key.to_i
         when "minute"
@@ -200,7 +196,6 @@ module ThreeScale
           metric:      :m,
           service:     :s,
           timestamp:   :t,
-          day:         :day,
           minute:      :min,
           hour:        :hr,
           value:       :val,

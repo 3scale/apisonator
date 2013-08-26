@@ -39,7 +39,7 @@ class StorageMongoTest < Test::Unit::TestCase
     timestamp    = Time.utc(2013, 07,03)
     value        = 20
     conditions   = { m: "8001", s: "1001" }
-    expected_doc = { "day" => value, "hr" => nil, "min" => nil }
+    expected_doc = { "val" => value, "hr" => nil, "min" => nil }
     Mongo::Collection.any_instance.expects(:find_one).returns(expected_doc).times(1)
 
     assert_equal value, @storage.get(:day, timestamp, conditions)
@@ -58,7 +58,7 @@ class StorageMongoTest < Test::Unit::TestCase
             m: "8001",
           },
           values: {
-            day: value,
+            val: value,
           }
         }
       }
