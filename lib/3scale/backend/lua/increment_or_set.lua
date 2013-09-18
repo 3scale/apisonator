@@ -55,12 +55,11 @@ local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
     if action == 'set' then
       table.insert(set_keys, {key, value})
     else
+      redis.call(action, key, value)
       redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
     end
   else
-    if action == 'set' then
-      redis.call(action, key, value)
-    end  
+    redis.call(action, key, value)
   end
 end
 
