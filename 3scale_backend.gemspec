@@ -1,9 +1,9 @@
 # encoding: UTF-8
 lib = File.expand_path('../lib/', __FILE__)
 $:.unshift lib unless $:.include?(lib)
- 
+
 require '3scale/backend/version'
- 
+
 Gem::Specification.new do |s|
   s.name        = '3scale_backend'
   s.version     = ThreeScale::Backend::VERSION
@@ -13,11 +13,11 @@ Gem::Specification.new do |s|
   s.homepage    = 'http://www.3scale.net'
   s.summary     = '3scale web service management system backend'
   s.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'
- 
+
   s.required_rubygems_version = ">= 1.3.7"
-        
+
   #dependency on 3scale_core is on the Gemfile, so that we can fetch it from our repo in github
-  #no more manual installation, yahoo!      
+  #no more manual installation, yahoo!
   #s.add_dependency '3scale_core',               '~> 0.6.0'
   s.add_dependency 'aws-s3',                    '0.6.3'
   s.add_dependency 'builder',                   '2.1.2'
@@ -31,11 +31,11 @@ Gem::Specification.new do |s|
   s.add_dependency 'thin',                      '1.5.0'
   s.add_dependency 'yajl-ruby',                 '1.1.0'
   s.add_dependency 'cassandra-cql',             '1.0.4'
-  s.add_dependency 'thrift_client',		'0.8.3' 
+  s.add_dependency 'thrift_client',		'0.8.3'
   s.add_dependency 'rest-client',               '1.6.7'
   s.add_dependency 'redis-namespace',           '1.2.1'
-  
-  
+
+
   s.add_development_dependency 'fakefs',      	'0.4.2'
   s.add_development_dependency 'mocha'
   s.add_development_dependency 'nokogiri'
@@ -43,8 +43,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'resque_unit', 	'0.4.4'
   s.add_development_dependency 'timecop'
   s.add_development_dependency 'simplecov', 	'0.7.1'
-  s.add_development_dependency 'ruby-debug19'
- 
+
   s.files = Dir.glob('{lib,bin}/**/*')
   s.files << 'README.rdoc'
   s.files << 'Rakefile'

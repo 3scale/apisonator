@@ -28,12 +28,11 @@ PATH
       yajl-ruby (= 1.1.0)
 
 GEM
-  remote: http://rubygems.org/
+  remote: https://rubygems.org/
   specs:
     airbrake (3.1.6)
       builder
       girl_friday
-    archive-tar-minitar (0.5.2)
     aws-s3 (0.6.3)
       builder
       mime-types
@@ -51,6 +50,12 @@ GEM
     columnize (0.3.6)
     connection_pool (1.0.0)
     daemons (1.1.9)
+    debugger (1.6.0)
+      columnize (>= 0.3.1)
+      debugger-linecache (~> 1.2.0)
+      debugger-ruby_core_source (~> 1.2.1)
+    debugger-linecache (1.2.0)
+    debugger-ruby_core_source (1.2.2)
     eventmachine (1.0.3)
     fakefs (0.4.2)
     girl_friday (0.11.2)
@@ -59,8 +64,6 @@ GEM
     highline (1.6.15)
     hiredis (0.4.5)
     json (1.7.7)
-    linecache19 (0.5.12)
-      ruby_core_source (>= 0.1.4)
     metaclass (0.0.1)
     mime-types (1.22)
     mocha (0.13.2)
@@ -96,16 +99,6 @@ GEM
     rubinius-actor (0.0.2)
       rubinius-core-api
     rubinius-core-api (0.0.1)
-    ruby-debug-base19 (0.11.25)
-      columnize (>= 0.3.1)
-      linecache19 (>= 0.5.11)
-      ruby_core_source (>= 0.1.4)
-    ruby-debug19 (0.11.6)
-      columnize (>= 0.3.1)
-      linecache19 (>= 0.5.11)
-      ruby-debug-base19 (>= 0.11.19)
-    ruby_core_source (0.1.5)
-      archive-tar-minitar (>= 0.5.2)
     simple_uuid (0.3.0)
     simplecov (0.7.1)
       multi_json (~> 1.0)
@@ -135,6 +128,7 @@ DEPENDENCIES
   3scale_backend!
   3scale_core!
   capistrano
+  debugger (~> 1.6.0)
   fakefs (= 0.4.2)
   mocha
   nokogiri
@@ -142,6 +136,5 @@ DEPENDENCIES
   rake
   require_all
   resque_unit (= 0.4.4)
-  ruby-debug19
   simplecov (= 0.7.1)
   timecop
