@@ -30,8 +30,6 @@ local service_prefix     = "stats/{service:" .. service_id .. "}"
 local application_prefix = service_prefix .. "/cinstance:" .. application_id
 local service_metric_prefix = service_prefix .. "/metric:" .. metric_id
 local application_metric_prefix = application_prefix .. "/metric:" .. metric_id
-local service_stats_keys_list = "service:" .. service_id .. "/stats_keys_list"
-
 
 local prefixes = { application_metric_prefix }
 
@@ -48,30 +46,20 @@ local granularities = { eternity=timestamp_et, year=timestamp_year,
 local set_keys = {}
 
 local is_true = function(str)
-   return (str == "true" )
+  return (str == "true" )
 end
 
 local add_to_copied_keys =  function(action, cassandra_bucket, key, value)
   if is_true(cassandra_enabled) then
     redis.call('sadd', ("keys_changed:" .. cassandra_bucket), key)
     if action == 'set' then
-	    table.insert(set_keys, {key, value})
+      table.insert(set_keys, {key, value})
     else
-	    local new_value = redis.call(action, key, value)
-      if (""..new_value == value) then
-        redis.call('rpush',service_stats_keys_list,key)
-      end
-	    redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
+      redis.call(action, key, value)
+      redis.call('incrby', "copied:".. cassandra_bucket .. ":" .. key, value)
     end
   else
-    if action == 'set' then
-      redis.call(action, key, value)
-    else
-      local new_value = redis.call(action, key, value)
-      if (""..new_value == value) then
-        redis.call('rpush',service_stats_keys_list,key)
-      end
-    end  
+    redis.call(action, key, value)
   end
 end
 
@@ -79,8 +67,8 @@ for granularity,timestamp in pairs(granularities) do
   for i,prefix in ipairs(prefixes) do
     local key = prefix .. timestamp
     add_to_copied_keys(action, cassandra_bucket, key, value)
-    if granularity == 'minute'  then
-	    redis.call('expire', key, 180)
+    if granularity == 'minute' then
+      redis.call('expire', key, 180)
     end
   end
 end
@@ -88,9 +76,9 @@ end
 granularities["year"] = nil
 granularities["minute"] = nil
 for granularity,timestamp in pairs(granularities) do
-   local prefix = service_metric_prefix
-   local key = prefix .. timestamp
-   add_to_copied_keys(action, cassandra_bucket, key, value)
+  local prefix = service_metric_prefix
+  local key = prefix .. timestamp
+  add_to_copied_keys(action, cassandra_bucket, key, value)
 end
 
 return set_keys
