@@ -8,20 +8,22 @@ module ThreeScale
 
       DEFAULT_SERVER   = "localhost:27017"
       DEFAULT_DATABASE = "backend_test"
+      DEFAULT_DB_OPTS  = { connect_timeout: 0 }
 
       def initialize(options = {})
         if ENV['MONGODB_URI']
           @client = MongoClient.from_uri
           @db = @client.db
         else
-          servers = options[:servers] || Array(DEFAULT_SERVER)
-          db = options[:db] || DEFAULT_DATABASE
+          servers    = options[:servers] || Array(DEFAULT_SERVER)
+          db         = options[:db] || DEFAULT_DATABASE
+          db_options = options[:db_options] || DEFAULT_DB_OPTS
           if servers.size > 1
-            @client  = MongoShardedClient.new(servers, options[:db_options])
+            @client  = MongoShardedClient.new(servers, db_options)
             @db      = @client.db(db)
           else
             server, port = servers.first.split(":")
-            @client = MongoClient.new(server, port)
+            @client = MongoClient.new(server, port, db_options)
             @db     = @client.db(db)
           end
         end
