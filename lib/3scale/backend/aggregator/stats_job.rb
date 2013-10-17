@@ -7,12 +7,13 @@ module ThreeScale
         @queue = :stats
 
         def self.perform(bucket, enqueue_time)
-          
           return unless Aggregator.mongo_enabled? && Aggregator.mongo_active?
 
           start_time = Time.now.getutc
 
           buckets_to_save = Aggregator.get_old_buckets_to_process(bucket) || []
+
+          return if buckets_to_save.empty?
 
           buckets_to_save.each do |b|
             ## it will save all the changed keys from the oldest time bucket. If it
