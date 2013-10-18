@@ -6,6 +6,13 @@ class ServiceTest < Test::Unit::TestCase
     Memoizer.reset!
   end
 
+  test 'load memoizes the result' do
+    Storage.instance.expects(:get).once
+    assert_nothing_raised do
+      2.times { Service.load('foo') }
+    end
+  end
+
   test 'load_id! raises an exception if service does not exist' do
     assert_raise ProviderKeyInvalid do
       Service.load_id!('foo')
@@ -23,10 +30,9 @@ class ServiceTest < Test::Unit::TestCase
       Service.load!('foo')
     end
   end
-  
+
   test 'load! returns service if it exists' do
     Service.save!(:provider_key => 'foo', :id => '1001')
-    
     assert_not_nil Service.load!('foo')
   end
 end

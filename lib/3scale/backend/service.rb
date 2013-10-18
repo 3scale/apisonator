@@ -19,6 +19,13 @@ module ThreeScale
         end
       end
 
+      def self.load(provider_key)
+        key = "Service.load-#{provider_key}"
+        Memoizer.memoize_block(key) do
+          super(provider_key)
+        end
+      end
+
       def self.load!(provider_key)
         key = "Service.load!-#{provider_key}"
         Memoizer.memoize_block(key) do
@@ -32,8 +39,8 @@ module ThreeScale
           load_by_id(service_id) or raise ServiceIdInvalid, service_id
         end
       end
-      
-      def self.load_by_id(service_id) 
+
+      def self.load_by_id(service_id)
         key = "Service.load_by_id-#{service_id}"
         Memoizer.memoize_block(key) do
           super(service_id)
