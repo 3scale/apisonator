@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Listener < Sinatra::Base      
+    class Listener < Sinatra::Base
       disable :logging
       disable :raise_errors
       disable :show_exceptions
@@ -130,10 +130,10 @@ module ThreeScale
       set :views, File.dirname(__FILE__) + '/views'
 
       register AllowMethods
-      
+
       use Rack::RackExceptionCatcher
       use Rack::RestApiVersioning, :default_version => '2.0'
-      
+
       before do
         content_type 'application/vnd.3scale-v2.0+xml'
       end
@@ -248,7 +248,7 @@ module ThreeScale
       ##
       get '/transactions/oauth_authorize.xml' do
         normalize_non_empty_keys!(params)
-        
+
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
           return
@@ -329,7 +329,7 @@ module ThreeScale
       ##
       get '/transactions/authrep.xml' do
         normalize_non_empty_keys!(params)
-        
+
         if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
           empty_response 403
           return
@@ -425,14 +425,14 @@ module ThreeScale
           empty_response 400
           return
         end
-        
-        ## not very proud of this but... this is to cover for those cases that it does not blow on 
+
+        ## not very proud of this but... this is to cover for those cases that it does not blow on
         ## rack_exception_catcher
         if !params[:transactions].valid_encoding?
           status 400
           body ThreeScale::Backend::NotValidData.new().to_xml
           return
-        end  
+        end
 
         Transactor.report(params[:provider_key], params[:service_id], params[:transactions])
         empty_response 202
@@ -484,16 +484,16 @@ module ThreeScale
 
       get '/services/:service_id/oauth_access_tokens/:token.xml' do
         empty_response(422) and return unless are_string_params(:provider_key, :service_id, :token)
-        
-        
+
+
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
           raise ProviderKeyInvalid, params[:provider_key]
         end
-          
+
         @token_to_app_id = OAuthAccessTokenStorage.get_app_id(params[:service_id], params[:token])
-        
+
         raise AccessTokenInvalid.new(params[:token]) if @token_to_app_id.nil?
-        
+
         builder :oauth_app_id_by_token
       end
 
@@ -567,7 +567,7 @@ module ThreeScale
       end
 
       ## EVENTS (replacement for alerts and violations)
-      
+
       get '/events.json' do
         ## this operation is only valid with the provider key of master
         begin
@@ -578,9 +578,9 @@ module ThreeScale
           body Yajl::Encoder.encode(res)
         rescue ProviderKeyInvalid => e
           error_response(e)
-        end  
+        end
       end
-      
+
       delete '/events/:event_id.json' do
         ## this operation is only valid with the provider key of master
         begin
@@ -591,9 +591,9 @@ module ThreeScale
           body Yajl::Encoder.encode(res)
         rescue ProviderKeyInvalid => e
           error_response(e)
-        end  
+        end
       end
-      
+
       delete '/events.json' do
         ## this operation is only valid with the provider key of master
         begin
@@ -604,10 +604,10 @@ module ThreeScale
           body Yajl::Encoder.encode(res)
         rescue ProviderKeyInvalid => e
           error_response(e)
-        end  
-      end 
-      
-      
+        end
+      end
+
+
       ## ALERTS & VIOLATIONS
 
       get '/services/:service_id/alert_limits.xml' do
@@ -673,8 +673,19 @@ module ThreeScale
         builder :create_application_referrer_filter
       end
 
-      delete '/applications/:app_id/referrer_filters/:id.xml' do
-        application.delete_referrer_filter(params[:id])
+      # We need to be flexible with this url, because we need allow
+      # calls like these:
+      # "/applications/13fasdas2/referrer_filters/chrome-extension://dkmdamal"
+      # A better way to do that could be use a hash of the referrer
+      # filter instead of the value directly. If someday we create a
+      # new api version, we can do this.
+      #
+      # Be careful if we need add a new nested url with
+      # referrer_filters, like:
+      # "/applications/13fasaada/referrer_filters/foo.bar.com/edit"
+      # because we must put it before this route.
+      delete '/applications/:app_id/referrer_filters/*.xml' do
+        application.delete_referrer_filter(params[:splat].join)
         empty_response
       end
 
@@ -698,7 +709,7 @@ module ThreeScale
           ## internal errors
           raise exception
         end
-        
+
         if params[:no_body]
           error error_code, ""
         else
@@ -709,7 +720,7 @@ module ThreeScale
       error Sinatra::NotFound do
         error 404, ""
       end
-      
+
       private
 
       def are_string_params(*keys)
@@ -719,7 +730,7 @@ module ThreeScale
       def is_string_param(key)
         params[key] && !params[key].empty?
       end
-      
+
       def normalize_non_empty_keys!(params)
         ## this is to minimize potential security hazzards with an empty user_key
         [:service_id, :app_id, :app_key, :user_key, :provider_key].each do |lab|
@@ -763,14 +774,14 @@ module ThreeScale
         body nil
         true
       end
-     
-      def check_if_master()        
+
+      def check_if_master()
         service_id = Service.load_id!(params[:provider_key])
-                
+
         return true if !service_id.nil? && (service_id.to_i==ThreeScale::Backend.configuration.master_service_id.to_i)
         raise ProviderKeyInvalid, params[:provider_key]
       end
-      
+
       ## FIXME: this has to be refactored when the api supports json all the way
       def error_response(e)
         content_type 'application/json'
@@ -778,7 +789,7 @@ module ThreeScale
         body Yajl::Encoder.encode({:error => {:code => e.code, :message => e.message}})
         true
       end
-      
+
     end
   end
 end
