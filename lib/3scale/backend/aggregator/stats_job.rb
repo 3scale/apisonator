@@ -28,8 +28,9 @@ module ThreeScale
           Worker.logger.info("PROF: #{object_counts.sort_by { |a, b2| -b2 }[1..15].inspect}")
           Worker.logger.info("PROF: Number of symbols #{Symbol.all_symbols.size}")
 
-          end_time = Time.now.getutc
-          Worker.logger.info("StatsJob #{bucket} #{buckets_to_save.size} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)}")
+          stats_mem = Memoizer.stats
+          end_time  = Time.now.getutc
+          Worker.logger.info("StatsJob #{bucket} #{buckets_to_save.size} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)} #{stats_mem[:size]} #{stats_mem[:count]} #{stats_mem[:hits]}")
         end
       end
     end
