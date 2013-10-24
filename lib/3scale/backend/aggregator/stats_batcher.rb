@@ -146,7 +146,10 @@ module ThreeScale
             storage_mongo.execute_batch
 
             ## now we have to clean up the data in redis that has been processed
-            storage.srem(failed_save_to_mongo_key, bucket)
+            storage.pipelined do
+              storage.del(changed_keys_bucket_key(bucket))
+              storage.srem(failed_save_to_mongo_key, bucket)
+            end
           rescue Exception => e
             ## could not write to mongo, reschedule
 
