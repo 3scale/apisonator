@@ -104,8 +104,9 @@ module ThreeScale
 
       def execute_batch
         batch.map do |collection, documents|
+          col = @db.collection(collection)
           documents.map do |_, doc|
-            @db.collection(collection).update(
+            col.update(
               search_query(doc[:metadata]),
               {
                 "$set" => doc[:values],
