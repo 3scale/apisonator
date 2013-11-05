@@ -103,17 +103,12 @@ module ThreeScale
 
           redis_conn = storage if redis_conn.nil?
           score_bucket_key = bucket.split(":").last
-          res = redis_conn.multi do
-            redis_conn.zrevrange(changed_keys_key,0,-1)
-            redis_conn.zremrangebyscore(changed_keys_key,"-inf","(#{score_bucket_key}")
-          end
 
-          if (res[1]>=1)
-            return res[0].reverse.slice(0..res[1]-1)
-          else
-            ## nothing was deleted
-            return []
-          end
+          redis_conn.eval(
+            buckets_to_process_script,
+            keys: [changed_keys_key],
+            argv: ["(#{score_bucket_key}"]
+          )
         end
 
         def save_to_mongo(bucket)
@@ -177,6 +172,25 @@ module ThreeScale
 
         def failed_buckets_at_least_once
           storage.smembers(failed_save_to_mongo_at_least_once_key)
+        end
+
+        private
+
+        def buckets_to_process_script
+          <<EOF
+  local keys = redis.call('zrevrange', KEYS[1], 0, -1)
+  local num_keys_rem = redis.call('zremrangebyscore', KEYS[1], "-inf", ARGV[1])
+
+  local keys_to_process = {}
+  if num_keys_rem >= 1 then
+    for i=1,num_keys_rem do
+      local reverse_index = #keys - (i-1)
+      table.insert(keys_to_process, keys[reverse_index])
+    end
+  end
+
+  return keys_to_process
+EOF
         end
       end
     end
