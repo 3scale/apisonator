@@ -389,7 +389,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
       20.times do |j|
         threads << Thread.new {
-          r = Redis.new(:db => 2)
+          r = Redis.new(host: '127.0.0.1', port: 22121)
           v = Aggregator.get_old_buckets_to_process(((i+1)*10).to_s,r)
 
           assert (v.size==0 || v.size==10)
