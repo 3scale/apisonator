@@ -6,10 +6,6 @@ module ThreeScale
           "keys_changed:#{bucket}"
         end
 
-        def copied_keys_prefix(bucket)
-          "copied:#{bucket}"
-        end
-
         def changed_keys_key
           "keys_changed_set"
         end

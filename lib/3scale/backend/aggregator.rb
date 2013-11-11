@@ -92,15 +92,8 @@ module ThreeScale
                 storage.get(key)
                 storage.set(key, value)
               end
-
-              storage.pipelined do
-                storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", -old_value.to_i)
-                storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", value)
-              end
             end
-
           end
-
         end
 
         ## the application set needs to be updated on it's own to capture if the app already existed, if not
