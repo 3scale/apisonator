@@ -78,9 +78,12 @@ module ThreeScale
           ## here the pipelined redis increments have been sent
           ## now we have to send the mongo ones
 
-          ## FIXME we had set operations :-/ This will only work when the key is on redis, it will not be true in the future
-          ## not live keys (stats only) will only be on mongodb. Will require fix, or limit the usage of #set. In addition,
-          ## set operations cannot coexist on increments on the same metric in the same pipeline. It has to be a check that
+          ## FIXME we had set operations :-/ This will only work when
+          ## the key is on redis, it will not be true in the future
+          ## not live keys (stats only) will only be on mongodb. Will
+          ## require fix, or limit the usage of #set. In addition,
+          ## set operations cannot coexist on increments on the same
+          ## metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
           if @mongo_enabled && @keys_doing_set_op.size>0
@@ -129,7 +132,8 @@ module ThreeScale
           end
         end
 
-        ## Finally, let's ping the frontend if any event is pending for processing
+        ## Finally, let's ping the frontend if any event is pending
+        ## for processing
         EventStorage.ping_if_not_empty
 
       end
@@ -166,7 +170,8 @@ module ThreeScale
           counter_key('', granularity, timestamp)
         end
 
-        ##FIXME, here we have to check that the timestamp is in the current given the time period we are in
+        ##FIXME, here we have to check that the timestamp is in the
+        ##current given the time period we are in
 
         transaction[:usage].each do |metric_id, value|
 
