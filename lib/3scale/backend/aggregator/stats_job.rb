@@ -11,7 +11,11 @@ module ThreeScale
 
           start_time = Time.now.getutc
 
-          buckets_to_save = Aggregator.get_old_buckets_to_process(bucket) || []
+          if bucket == "inf"
+            buckets_to_save = Aggregator.get_old_buckets_to_process(bucket)
+          else
+            buckets_to_save = [bucket]
+          end
 
           return if buckets_to_save.empty?
 
@@ -19,7 +23,6 @@ module ThreeScale
             ## it will save all the changed keys from the oldest time bucket. If it
             ## fails it will put the bucket on the stats:failed so that it can be processed
             ## one by one via rake task
-
             Aggregator.save_to_mongo(b)
           end
 

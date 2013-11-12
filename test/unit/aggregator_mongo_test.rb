@@ -269,7 +269,6 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
     Aggregator.aggregate_all(v)
-
     Aggregator.schedule_one_stats_job
     Resque.run!
 
@@ -378,16 +377,17 @@ class AggregatorMongoTest < Test::Unit::TestCase
   end
 
   test 'bucket keys are properly assigned' do
-    timestamp = Time.now.utc - 1000
+    timestamp  = Time.now.utc - 1000
+    service_id = 1001
+
     assert_equal 0, Aggregator.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     5.times do |cont|
-
       bucket_key = timestamp.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
 
       Timecop.freeze(timestamp) do
-        Aggregator.aggregate_all([{:service_id     => 1001,
+        Aggregator.aggregate_all([{:service_id    => service_id,
                                   :application_id => 2001,
                                   :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
                                   :usage          => {'3001' => 1}}])
@@ -395,11 +395,11 @@ class AggregatorMongoTest < Test::Unit::TestCase
       end
 
       assert_equal cont+1, Aggregator.pending_buckets.size
-      assert Aggregator.pending_buckets.member?(bucket_key)
+
+      assert Aggregator.pending_buckets.member?("#{service_id}:#{bucket_key}")
       assert_equal cont, Resque.queue(:main).length + Resque.queue(:stats).length
 
       timestamp = timestamp + Aggregator.stats_bucket_size
-
     end
 
     assert_equal 5, Aggregator.pending_buckets.size
@@ -417,7 +417,6 @@ class AggregatorMongoTest < Test::Unit::TestCase
     buckets = Aggregator.get_old_buckets_to_process
     assert_equal 1, buckets.size
     assert_equal sorted_set[4], buckets.first
-
   end
 
   test 'failed cql batches get stored into redis and processed properly afterwards' do

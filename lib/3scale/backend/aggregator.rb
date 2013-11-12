@@ -22,7 +22,7 @@ module ThreeScale
         lua_aggregate_sha
 
         applications = Hash.new
-        users = Hash.new
+        users        = Hash.new
 
         ## this is just a temporary switch to be able to enable disable reporting to mongodb
         ## you can active it or deactivated: storage.set("mongo_enabled","1") / storage.del("mongo_enabled")
@@ -46,26 +46,25 @@ module ThreeScale
           end
         end
 
-
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-
           @keys_doing_set_op = []
 
           val = storage.pipelined do
             slice.each do |transaction|
-              key = transaction[:application_id]
-
-              ## the key must be application+user if users exists since this is the lowest
-              ## granularity.
-              ## applications contains the list of application, or application+users that need to be limit checked
-              applications[key] = {:application_id => transaction[:application_id], :service_id => transaction[:service_id]}
-              ## who puts service_id here? it turns out is the transactor.report_enqueue
+              key        = transaction[:application_id]
+              service_id = transaction[:service_id]
+              ## the key must be application+user if users exists
+              ## since this is the lowest granularity.
+              ## applications contains the list of application, or
+              ## application+users that need to be limit checked
+              applications[key] = { application_id: key, service_id: service_id }
+               ## who puts service_id here? it turns out is the transactor.report_enqueue
               if transaction[:service_id].nil?
               end
 
               unless (transaction[:user_id].nil?)
                 key = transaction[:user_id]
-                users[key] = {:service_id => transaction[:service_id], :user_id => transaction[:user_id]}
+                users[key] = { service_id: service_id, user_id: key }
               end
 
               aggregate(transaction)
@@ -86,12 +85,11 @@ module ThreeScale
           ## metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
-          if @mongo_enabled && @keys_doing_set_op.size>0
-
+          if @mongo_enabled && @keys_doing_set_op.size > 0
             @keys_doing_set_op.each do |item|
               key, value = item
 
-              old_value, tmp = storage.pipelined do
+              storage.pipelined do
                 storage.get(key)
                 storage.set(key, value)
               end
@@ -124,18 +122,27 @@ module ThreeScale
 
         ## the time bucket has elapsed, trigger a mongodb job
         if @mongo_enabled
-          storage.zadd(changed_keys_key, @@current_bucket.to_i, @@current_bucket)
-          if schedule_mongo_job
-            ## this will happend every X seconds, N times. Where N is the number of workers
-            ## and X is a configuration parameter
-            Resque.enqueue(StatsJob, @@prior_bucket, Time.now.getutc.to_f)
-          end
+          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_mongo_job)
         end
 
         ## Finally, let's ping the frontend if any event is pending
         ## for processing
         EventStorage.ping_if_not_empty
+      end
 
+      def store_changed_keys(transactions, bucket, prior_bucket, schedule_stats_job)
+        service_ids = transactions.map { |transaction| transaction[:service_id] }
+        service_ids.each do |id|
+          bucket_key = bucket_with_service_key(bucket, id)
+          storage.zadd(changed_keys_key, bucket.to_i, bucket_key)
+
+          if schedule_stats_job
+            ## this will happend every X seconds, N times. Where N is the number of workers
+            ## and X is a configuration parameter
+            prior_bucket_key = bucket_with_service_key(prior_bucket, id)
+            Resque.enqueue(StatsJob, prior_bucket_key, Time.now.getutc.to_f)
+          end
+        end
       end
 
       def get_value_of_set_if_exists(value_str)
@@ -151,11 +158,14 @@ module ThreeScale
         @@current_bucket
       end
 
+      def bucket_with_service_key(bucket, service)
+        "#{service}:#{bucket}"
+      end
+
       private
 
       def aggregate(transaction)
         service_prefix     = service_key_prefix(transaction[:service_id])
-
         application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
 
         # this one is for the limits of the users
@@ -174,22 +184,36 @@ module ThreeScale
         ##current given the time period we are in
 
         transaction[:usage].each do |metric_id, value|
+          service_id = transaction[:service_id]
+          val        = get_value_of_set_if_exists(value)
 
-          val = get_value_of_set_if_exists(value)
+          if @mongo_enabled
+            bucket_key = bucket_with_service_key(current_bucket, service_id)
+          else
+            bucket_key = ""
+          end
+
           if val.nil?
             type = :increment
           else
             type = :set
             value = val
           end
+          value    = value.to_i
+          lua_args = [
+            type,
+            service_id,
+            transaction[:application_id],
+            metric_id,
+            transaction[:user_id],
+            value,
+            *timestamps,
+            @mongo_enabled,
+            bucket_key,
+          ]
 
-          value = value.to_i
-
-          storage.evalsha( lua_aggregate_sha,
-                          :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@mongo_enabled , @mongo_enabled ? current_bucket : ''])
-
+          storage.evalsha(lua_aggregate_sha, argv: lua_args)
         end
-
       end
 
       ## copied from transactor.rb

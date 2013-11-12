@@ -102,10 +102,10 @@ module ThreeScale
           ## there should be very few elements on the changed_keys_key
 
           redis_conn = storage if redis_conn.nil?
-
+          score_bucket_key = bucket.split(":").last
           res = redis_conn.multi do
             redis_conn.zrevrange(changed_keys_key,0,-1)
-            redis_conn.zremrangebyscore(changed_keys_key,"-inf","(#{bucket}")
+            redis_conn.zremrangebyscore(changed_keys_key,"-inf","(#{score_bucket_key}")
           end
 
           if (res[1]>=1)
