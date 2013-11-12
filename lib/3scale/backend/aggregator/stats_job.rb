@@ -23,11 +23,6 @@ module ThreeScale
             Aggregator.save_to_mongo(b)
           end
 
-          object_counts = Hash.new(0)
-          ObjectSpace.each_object(Object) { |object| object_counts[object.class] += 1}
-          Worker.logger.info("PROF: #{object_counts.sort_by { |a, b2| -b2 }[1..15].inspect}")
-          Worker.logger.info("PROF: Number of symbols #{Symbol.all_symbols.size}")
-
           stats_mem = Memoizer.stats
           end_time  = Time.now.getutc
           Worker.logger.info("StatsJob #{bucket} #{buckets_to_save.size} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)} #{stats_mem[:size]} #{stats_mem[:count]} #{stats_mem[:hits]}")
