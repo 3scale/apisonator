@@ -52,10 +52,10 @@ GEM
     columnize (0.3.6)
     connection_pool (1.1.0)
     daemons (1.1.9)
-    debugger (1.6.0)
+    debugger (1.6.5)
       columnize (>= 0.3.1)
       debugger-linecache (~> 1.2.0)
-      debugger-ruby_core_source (~> 1.2.1)
+      debugger-ruby_core_source (~> 1.3.1)
     debugger-linecache (1.2.0)
     debugger-ruby_core_source (1.3.1)
     eventmachine (1.0.3)
@@ -131,7 +131,7 @@ DEPENDENCIES
   3scale_core!
   capistrano
   codeclimate-test-reporter
-  debugger (~> 1.6.0)
+  debugger (~> 1.6.5)
   fakefs (= 0.4.2)
   mocha
   nokogiri
