@@ -33,7 +33,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
   end
 
   test 'Stats jobs get properly enqueued' do
-    assert_equal 0, Resque.queue(:main).length
+    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
       Aggregator.aggregate_all([{:service_id     => 1001,
@@ -79,6 +79,39 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
     assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
 
+  end
+
+  test 'Distribute stats job per service' do
+    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
+
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
+      Aggregator.aggregate_all([{:service_id     => 1001,
+                                :application_id => 2001,
+                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
+                                :usage          => {'3001' => 1}}])
+    end
+    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size*1.9).to_i)) do
+      Aggregator.aggregate_all(
+        [
+          { service_id: 1001,
+            application_id: 2001,
+            timestamp: Time.utc(2010, 5, 7, 13, 23, 33),
+            usage: {'3001' => 1}
+          },
+          {
+            service_id:     1002,
+            application_id: 2002,
+            timestamp: Time.utc(2010, 5, 7, 13, 23, 33),
+            usage: {'3002' => 1}
+          }
+        ])
+    end
+
+    assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
+    jobs = Resque.queue(:stats).map { |raw_job| decode(raw_job) }
+    assert_equal 1001, jobs[0][:args].first.split(":").first.to_i
+    assert_equal 1002, jobs[1][:args].first.split(":").first.to_i
   end
 
   test 'benchmark check, not a real failure if happens' do
