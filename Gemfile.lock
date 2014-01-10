@@ -69,11 +69,11 @@ GEM
     mocha (0.13.2)
       metaclass (~> 0.0.1)
     multi_json (1.6.1)
-    net-scp (1.1.0)
+    net-scp (1.1.2)
       net-ssh (>= 2.6.5)
     net-sftp (2.1.1)
       net-ssh (>= 2.6.5)
-    net-ssh (2.6.5)
+    net-ssh (2.7.0)
     net-ssh-gateway (1.2.0)
       net-ssh (>= 2.6.5)
     nokogiri (1.5.6)
@@ -127,14 +127,14 @@ PLATFORMS
 DEPENDENCIES
   3scale_backend!
   3scale_core!
-  capistrano
+  capistrano (~> 2.14.2)
   debugger (~> 1.6.0)
   fakefs (= 0.4.2)
-  mocha
-  nokogiri
-  rack-test
-  rake
-  require_all
+  mocha (= 0.13.2)
+  nokogiri (= 1.5.6)
+  rack-test (= 0.6.2)
+  rake (~> 10.0.3)
+  require_all (~> 1.2.1)
   resque_unit (= 0.4.4)
   simplecov (= 0.7.1)
-  timecop
+  timecop (= 0.5.9.2)
