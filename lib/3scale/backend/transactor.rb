@@ -96,17 +96,7 @@ module ThreeScale
           user:        user,
         }
 
-        status = Status.new(status_attrs).tap do |st|
-          VALIDATORS.all? do |validator|
-            if validator == Validators::Referrer && !st.service.referrer_filters_required?
-              true
-            elsif validator == Validators::Key && service.backend_version.to_i == 1
-              true
-            else
-              validator.apply(st, params)
-            end
-          end
-        end
+        status = apply_validators(VALIDATORS, status_attrs, params)
 
         [status, service, application, user]
       end
@@ -179,17 +169,7 @@ module ThreeScale
           user:        user,
         }
 
-        status = Status.new(status_attrs).tap do |st|
-          OAUTH_VALIDATORS.all? do |validator|
-            if validator == Validators::Referrer && !st.service.referrer_filters_required?
-              true
-            elsif validator == Validators::Key && service.backend_version.to_i == 1
-              true
-            else
-              validator.apply(st, params)
-            end
-          end
-        end
+        status = apply_validators(OAUTH_VALIDATORS, status_attrs, params)
 
         [status, service, application, user]
       end
@@ -278,17 +258,7 @@ module ThreeScale
           user:        user,
         }
 
-        status = Status.new(status_attrs).tap do |st|
-          VALIDATORS.all? do |validator|
-            if validator == Validators::Referrer && !st.service.referrer_filters_required?
-              true
-            elsif validator == Validators::Key && service.backend_version.to_i == 1
-              true
-            else
-              validator.apply(st, params)
-            end
-          end
-        end
+        status = apply_validators(VALIDATORS, status_attrs, params)
 
         [status, service, application, user]
       rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
@@ -363,11 +333,11 @@ module ThreeScale
             user = User.load_or_create!(service, user_id)
             raise UserRequiresRegistration, service.id, user_id unless user
           else
-            params[:user_id] = nil
+            user_id = nil
           end
         else
           raise UserNotDefined, application.id if application.user_required?
-          params[:user_id] = nil
+          user_id = nil
         end
 
         user
@@ -388,6 +358,20 @@ module ThreeScale
         service
       end
 
+      def apply_validators(validators, status_attrs, params)
+        Status.new(status_attrs).tap do |st|
+          validators.all? do |validator|
+            if validator == Validators::Referrer && !st.service.referrer_filters_required?
+              true
+            elsif validator == Validators::Key && st.service.backend_version.to_i == 1
+              true
+            else
+              validator.apply(st, params)
+            end
+          end
+        end
+      end
+
       ## this is required because values are checked only on creation of the status
       ## object and this does not happen on cache, no need to do the same for the metrics
       ## because those are covered by the signature
@@ -403,6 +387,9 @@ module ThreeScale
         value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/
       end
 
+      ##
+      # TODO: Check who is calling this method.
+      ##
       def run_validators(validators_set, service, application, user, params)
         status = Status.new(:service => service, :application => application).tap do |st|
           validators_set.all? do |validator|
