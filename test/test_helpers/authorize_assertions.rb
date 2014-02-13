@@ -36,7 +36,6 @@ module TestHelpers
       
       metric = metric.to_s
       period = period.to_s
-
       obj = usage_reports.at("usage_report[metric = \"#{metric}\"][period = \"#{period}\"]")
       assert_not_nil obj
       

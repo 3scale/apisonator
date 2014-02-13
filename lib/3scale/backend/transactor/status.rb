@@ -55,13 +55,13 @@ module ThreeScale
 
         def initialize(attributes = {})
           @service     = attributes[:service]
-          @application = attributes[:application] 
+          @application = attributes[:application]
           @values      = attributes[:values] || {}
           @user        = attributes[:user]
           @user_values = attributes[:user_values]
           @timestamp   = attributes[:timestamp] || Time.now.getutc
 
-          if (@application.nil? and @user.nil?) 
+          if (@application.nil? and @user.nil?)
             raise ':application is required'
           end
 
@@ -73,7 +73,7 @@ module ThreeScale
         attr_accessor :values
         attr_reader :predicted_values
         attr_accessor :user
-        attr_accessor :user_values  
+        attr_accessor :user_values
 
         def reject!(error)
           @authorized = false
@@ -85,7 +85,7 @@ module ThreeScale
         attr_reader :rejection_reason_code
         attr_reader :rejection_reason_text
 
-        def authorized? 
+        def authorized?
           @authorized
         end
 
@@ -94,10 +94,10 @@ module ThreeScale
         end
 
         def application_plan_name
-           plan_name 
+           plan_name
         end
 
-       	def user_plan_name
+        def user_plan_name
           @user.plan_name unless @user.nil?
         end
 
@@ -112,7 +112,7 @@ module ThreeScale
         def user_usage_reports
           @user_usage_report ||= load_user_usage_reports
         end
-          
+
 
         def value_for_usage_limit(usage_limit, type = :application)
           if type==:application
@@ -139,13 +139,13 @@ module ThreeScale
           xml = ""
           xml << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" unless options[:skip_instruct]
           xml << "<status>"
-          
-          if authorized? 
+
+          if authorized?
             xml << "<authorized>true</authorized>"
           else
             xml << "<authorized>false</authorized><reason>" << rejection_reason_text << "</reason>"
           end
-          
+
           if options[:oauth]
             xml << "<application>"
             xml << "<id>" << application.id.to_s << "</id>"
@@ -153,27 +153,27 @@ module ThreeScale
             xml << "<redirect_url>" << application.redirect_url.to_s << "</redirect_url>"
             xml << "</application>"
           end
-                    
+
           if @user.nil?
             xml << "<__separator__/>" if options[:anchors_for_caching]
             xml << "<plan>" << plan_name.to_s << "</plan>"
-            xml << aux_usage_reports_to_xml(application_usage_reports, options)
-          else 
+            xml << aux_reports_to_xml(:application, application_usage_reports, options)
+          else
             if !@application.nil? && !options[:exclude_application]
               xml << "<__separator__/>" if options[:anchors_for_caching]
               xml << "<plan>" << plan_name.to_s << "</plan>"
-              xml << aux_usage_reports_to_xml(application_usage_reports, options)
+              xml << aux_reports_to_xml(:application, application_usage_reports, options)
             end
             if !@user.nil? && !options[:exclude_user]
               xml << "<__separator__/>" if options[:anchors_for_caching]
               xml << "<user_plan>" << user_plan_name.to_s << "</user_plan>"
-              xml << aux_user_usage_reports_to_xml(user_usage_reports, options)
+              xml << aux_reports_to_xml(:user, user_usage_reports, options)
             end
           end
-           
+
           xml << "<__separator__/>" if options[:anchors_for_caching]
           xml << "</status>"
-          
+
           if options[:anchors_for_caching]
             ## little hack to avoid parsing for <authorized> to know the state. Not very nice but leave it like this.
             s = authorized? ? "1<__separator__/>" : "0<__separator__/>"
@@ -182,17 +182,17 @@ module ThreeScale
           else
             return xml
           end
-          
+
         end
-        
+
         ## !!!!!!!!!!!!!!
         ## FIXME: we will leave it here for a while just in case, but it can be remove soon
         ##
         def to_xml_old_builder(options = {})
-         
+
           xml = Builder::XmlMarkup.new
           xml.instruct! unless options[:skip_instruct]
-          
+
           xml.status do
             xml.authorized authorized? ? 'true' : 'false'
             xml.reason     rejection_reason_text unless authorized?
@@ -222,15 +222,15 @@ module ThreeScale
                       xml.max_value     report.max_value
 
                       if not options[:anchors_for_caching]
-                      	if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? 
-                      	  # this is a authrep request and therefore we should sum the usage
-                      	  val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
+                        if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil?
+                          # this is a authrep request and therefore we should sum the usage
+                          val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
                           if val.nil?
                             xml.current_value report.current_value + options[:usage][report.metric_name].to_i
                           else
                             xml.current_value val.to_s
                           end
-                      	else 
+                        else
                           xml.current_value report.current_value
                         end
                       else
@@ -242,13 +242,13 @@ module ThreeScale
                   end
                 end
               end
-              
+
             else
 
-              if !@application.nil? && !options[:exclude_application]  
+              if !@application.nil? && !options[:exclude_application]
                 xml.__separator__ if options[:anchors_for_caching]
                 xml.plan  plan_name unless plan_name.nil?
-                unless application_usage_reports.empty? 
+                unless application_usage_reports.empty?
                   xml.usage_reports do
                     application_usage_reports.each do |report|
                       attributes = {:metric => report.metric_name, :period => report.period}
@@ -259,7 +259,7 @@ module ThreeScale
                         xml.max_value     report.max_value
 
                         if not options[:anchors_for_caching]
-                          if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? 
+                          if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil?
                             # this is a authrep request and therefore we should sum the usage
                             val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
                             if val.nil?
@@ -267,7 +267,7 @@ module ThreeScale
                             else
                               xml.current_value val.to_s
                             end
-                          else 
+                          else
                             xml.current_value report.current_value
                           end
                         else
@@ -297,8 +297,8 @@ module ThreeScale
                         xml.period_end    report.period_end.strftime(TIME_FORMAT) unless report.period == :eternity
                         xml.max_value     report.max_value
 
-                        if not options[:anchors_for_caching] 
-                          if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? 
+                        if not options[:anchors_for_caching]
+                          if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil?
                             # this is a authrep request and therefore we should sum the usage or set it
                             val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
                             if val.nil?
@@ -306,7 +306,7 @@ module ThreeScale
                             else
                               xml.current_value val.to_s
                             end
-                          else 
+                          else
                             xml.current_value report.current_value
                           end
                         else
@@ -326,17 +326,17 @@ module ThreeScale
 
           if options[:anchors_for_caching]
             ## little hack to avoid parsing for <authorized> to know the state. Not very nice but leave it like this.
-            
+
             s = authorized? ? "1<__separator__/>" : "0<__separator__/>"
             s << xml.target!
             return s
           else
             return xml.target!
           end
-          
+
         end
 
-        
+
         private
 
         def load_application_usage_reports
@@ -352,86 +352,50 @@ module ThreeScale
             UsageReport.new(self, usage_limit, :user)
           end
         end
-        
-        def aux_usage_reports_to_xml(application_usage_reports, options)
+
+        def aux_reports_to_xml(report_type, reports, options)
+          xml_node_keys = {
+            application: "usage",
+            user:        "user_usage",
+          }
           xml = ""
-          unless application_usage_reports.empty?
-            xml << "<usage_reports>"
-            application_usage_reports.each do |report|
+          unless reports.empty?
+            xml << "<#{xml_node_keys[report_type]}_reports>"
+            reports.each do |report|
               attributes = "metric=\"#{report.metric_name}\" period=\"#{report.period}\""
               attributes << " exceeded=\"true\"" if report.exceeded?
               xml << "<usage_report #{attributes}>"
-            
+
               if report.period != :eternity
                 xml << "<period_start>" << report.period_start.strftime(TIME_FORMAT) << "</period_start>"
                 xml << "<period_end>" << report.period_end.strftime(TIME_FORMAT) << "</period_end>"
               end
               xml << "<max_value>" << report.max_value.to_s << "</max_value>"
-            
+
               if not options[:anchors_for_caching]
-            	  if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? 
-            	    # this is a authrep request and therefore we should sum the usage
-            	    val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
+                  if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil?
+                    # this is a authrep request and therefore we should sum the usage
+                    val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
                   if val.nil?
                     xml << "<current_value>" << (report.current_value + options[:usage][report.metric_name].to_i).to_s << "</current_value>"
                   else
                     xml << "<current_value>" << val.to_s << "</current_value>"
                   end
-            	  else 
+                  else
                   xml << "<current_value>" << report.current_value.to_s << "</current_value>"
                 end
               else
                 ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
                 ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                xml << "<current_value>" << "|.|application,#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
+                xml << "<current_value>" << "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
               end
-            
+
               xml << "</usage_report>"
             end
-            xml << "</usage_reports>"
+            xml << "</#{xml_node_keys[report_type]}_reports>"
           end
           return xml
         end
-
-        def aux_user_usage_reports_to_xml(user_usage_reports, options)
-          xml = ""
-          unless user_usage_reports.empty?
-            xml << "<user_usage_reports>"
-            user_usage_reports.each do |report|
-              attributes = "metric=\"#{report.metric_name}\" period=\"#{report.period}\""
-              attributes << " exceeded=\"true\"" if report.exceeded?
-              xml << "<usage_report #{attributes}>"
-            
-              if report.period != :eternity
-                xml << "<period_start>" << report.period_start.strftime(TIME_FORMAT) << "</period_start>"
-                xml << "<period_end>" << report.period_end.strftime(TIME_FORMAT) << "</period_end>"
-              end
-              xml << "<max_value>" << report.max_value.to_s << "</max_value>"
-            
-              if not options[:anchors_for_caching]
-            	  if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil? 
-            	    # this is a authrep request and therefore we should sum the usage
-            	    val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
-                  if val.nil?
-                    xml << "<current_value>" << (report.current_value + options[:usage][report.metric_name].to_i).to_s << "</current_value>"
-                  else
-                    xml << "<current_value>" << val.to_s << "</current_value>"
-                  end
-            	  else 
-                  xml << "<current_value>" << report.current_value.to_s << "</current_value>"
-                end
-              else
-                ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
-                ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                xml << "<current_value>" << "|.|user,#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
-              end
-            
-              xml << "</usage_report>"
-            end
-            xml << "</user_usage_reports>"
-          end
-          return xml
-        end      
       end
     end
   end
