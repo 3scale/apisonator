@@ -20,4 +20,6 @@ end
 
 group :development, :test do
   gem 'debugger', '~> 1.6.5'
+  gem 'pry',      '~> 0.9.12.6'
+  gem 'pry-doc',  '~> 0.5.1'
 end
