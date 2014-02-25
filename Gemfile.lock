@@ -130,14 +130,13 @@ DEPENDENCIES
   3scale_backend!
   3scale_core!
   capistrano (~> 2.14.2)
-  codeclimate-test-reporter
+  codeclimate-test-reporter (~> 0.3.0)
   debugger (~> 1.6.5)
-  fakefs (= 0.4.2)
-  mocha (= 0.13.2)
-  nokogiri (= 1.5.6)
-  rack-test (= 0.6.2)
+  fakefs (~> 0.4.2)
+  mocha (~> 0.13.2)
+  nokogiri (~> 1.5.6)
+  rack-test (~> 0.6.2)
   rake (~> 10.0.3)
   require_all (~> 1.2.1)
-  resque_unit (= 0.4.4)
-  simplecov (= 0.7.1)
-  timecop (= 0.5.9.2)
+  resque_unit (~> 0.4.4)
+  timecop (~> 0.5.9.2)
