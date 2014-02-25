@@ -33,15 +33,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'rest-client',               '1.6.7'
   s.add_dependency 'redis-namespace',           '1.2.1'
 
-
-  s.add_development_dependency 'fakefs',      	'0.4.2'
-  s.add_development_dependency 'mocha',         '0.13.2'
-  s.add_development_dependency 'nokogiri',      '1.5.6'
-  s.add_development_dependency 'rack-test',     '0.6.2'
-  s.add_development_dependency 'resque_unit', 	'0.4.4'
-  s.add_development_dependency 'timecop',       '0.5.9.2'
-  s.add_development_dependency 'simplecov', 	'0.7.1'
-
   s.files = Dir.glob('{lib,bin}/**/*')
   s.files << 'README.rdoc'
   s.files << 'Rakefile'

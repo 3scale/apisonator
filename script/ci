@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+if [ -n "$RVM_RUBY" ]
+then
+  export CODECLIMATE_REPO_TOKEN=codeclimate_token
+  export REPORT_CODECLIMATE=1
+  export TO_FILE=1
+
+  export RACK_ENV=test
+  sudo /etc/init.d/cassandra start
+  sleep 10
+  rvm $RVM_RUBY do bash -c 'bundle install --deployment --without development && bundle exec rake test --trace'
+  export RET=$?;
+  sudo /etc/init.d/cassandra stop
+  (($RET == 0))
+else
+  echo "Missing $RVM_RUBY env variable"
+  exit 1
+fi
