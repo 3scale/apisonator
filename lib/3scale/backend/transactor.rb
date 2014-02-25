@@ -6,6 +6,7 @@ require '3scale/backend/transactor/log_request_job'
 require '3scale/backend/transactor/status'
 require '3scale/backend/cache'
 require '3scale/backend/errors'
+require '3scale/backend/validators'
 
 module ThreeScale
   module Backend

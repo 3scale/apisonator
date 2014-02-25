@@ -1,0 +1,8 @@
+require '3scale/backend/validators/base'
+require '3scale/backend/validators/oauth_setting'
+require '3scale/backend/validators/key'
+require '3scale/backend/validators/oauth_key'
+require '3scale/backend/validators/limits'
+require '3scale/backend/validators/redirect_url'
+require '3scale/backend/validators/referrer'
+require '3scale/backend/validators/state'

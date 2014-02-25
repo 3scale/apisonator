@@ -1,3 +1,6 @@
+require 'resque'
+require '3scale/backend/configuration'
+
 module ThreeScale
   module Backend
     module Transactor
