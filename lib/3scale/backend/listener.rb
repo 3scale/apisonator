@@ -553,44 +553,16 @@ module ThreeScale
       ## EVENTS (replacement for alerts and violations)
 
       get '/events.json' do
-        ## this operation is only valid with the provider key of master
-        begin
-          check_if_master()
-          res = Transactor.latest_events
-          content_type 'application/json'
-          status 200
-          body Yajl::Encoder.encode(res)
-        rescue ProviderKeyInvalid => e
-          error_response(e)
-        end
+        only_if_master { Transactor.latest_events }
       end
 
       delete '/events/:event_id.json' do
-        ## this operation is only valid with the provider key of master
-        begin
-          check_if_master()
-          res = Transactor.delete_event_by_id(params[:event_id])
-          content_type 'application/json'
-          status 200
-          body Yajl::Encoder.encode(res)
-        rescue ProviderKeyInvalid => e
-          error_response(e)
-        end
+        only_if_master { Transactor.delete_event_by_id(params[:event_id]) }
       end
 
       delete '/events.json' do
-        ## this operation is only valid with the provider key of master
-        begin
-          check_if_master()
-          res = Transactor.delete_events_by_range(params[:to_id])
-          content_type 'application/json'
-          status 200
-          body Yajl::Encoder.encode(res)
-        rescue ProviderKeyInvalid => e
-          error_response(e)
-        end
+        only_if_master { Transactor.delete_events_by_range(params[:to_id]) }
       end
-
 
       ## ALERTS & VIOLATIONS
 
@@ -713,6 +685,17 @@ module ThreeScale
 
       def valid_key_and_usage_params?
         params && !blank?(params[:provider_key]) && (params[:usage].nil? || params[:usage].is_a?(Hash))
+      end
+
+      def only_if_master
+        begin
+          check_if_master()
+          content_type 'application/json'
+          status 200
+          body Yajl::Encoder.encode(yield)
+        rescue ProviderKeyInvalid => e
+          error_response(e)
+        end
       end
 
       def are_string_params(*keys)
