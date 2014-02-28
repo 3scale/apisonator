@@ -189,12 +189,8 @@ module ThreeScale
       ##~ op.parameters.add @parameter_usage_predicted
       ##
       get '/transactions/authorize.xml' do
-        normalize_non_empty_keys!(params)
-
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
-          empty_response 403
-          return
-        end
+        normalize_non_empty_keys!
+        empty_response(403) and return unless valid_key_and_usage_params?
 
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authorize(params[:provider_key], params)
 
@@ -247,12 +243,8 @@ module ThreeScale
       ##~ op.parameters.add @parameter_redirect_url
       ##
       get '/transactions/oauth_authorize.xml' do
-        normalize_non_empty_keys!(params)
-
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
-          empty_response 403
-          return
-        end
+        normalize_non_empty_keys!
+        empty_response(403) and return unless valid_key_and_usage_params?
 
         authorization, cached_authorization_text, cached_authorization_result = Transactor.oauth_authorize(params[:provider_key], params)
 
@@ -266,7 +258,7 @@ module ThreeScale
           if params[:no_body]
             body nil
           else
-            body authorization.to_xml(:oauth => true)
+            body authorization.to_xml(oauth: true)
           end
         else
           response_code = if cached_authorization_result
@@ -328,12 +320,8 @@ module ThreeScale
       ##~ op.parameters.add @parameter_log
       ##
       get '/transactions/authrep.xml' do
-        normalize_non_empty_keys!(params)
-
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty? || !(params[:usage].nil? || params[:usage].is_a?(Hash))
-          empty_response 403
-          return
-        end
+        normalize_non_empty_keys!
+        empty_response(403) and return unless valid_key_and_usage_params?
 
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
 
@@ -347,7 +335,7 @@ module ThreeScale
           if params[:no_body]
             body nil
           else
-            body authorization.to_xml(:usage => params[:usage])
+            body authorization.to_xml(usage: params[:usage])
           end
         else
           if cached_authorization_result
@@ -416,12 +404,9 @@ module ThreeScale
         ## I put 403 (Forbidden) for consitency however it should be 400
         ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
 
-        if params.nil? || params[:provider_key].nil? || params[:provider_key].empty?
-          empty_response 403
-          return
-        end
+        empty_response(403) and return if params.nil? || blank?(params[:provider_key])
 
-        if params[:transactions].nil? || !params[:transactions].is_a?(Hash)
+        if blank?(params[:transactions]) || !params[:transactions].is_a?(Hash)
           empty_response 400
           return
         end
@@ -437,7 +422,6 @@ module ThreeScale
         Transactor.report(params[:provider_key], params[:service_id], params[:transactions])
         empty_response 202
       end
-
 
       ## OAUTH ACCESS TOKENS
 
@@ -723,15 +707,19 @@ module ThreeScale
 
       private
 
+      def blank?(object)
+        object.respond_to?(:empty?) ? object.empty? : !object
+      end
+
+      def valid_key_and_usage_params?
+        params && !blank?(params[:provider_key]) && (params[:usage].nil? || params[:usage].is_a?(Hash))
+      end
+
       def are_string_params(*keys)
-        params && keys.all? { |key| is_string_param(key) }
+        params && keys.all? { |key| !blank?(params[key]) }
       end
 
-      def is_string_param(key)
-        params[key] && !params[key].empty?
-      end
-
-      def normalize_non_empty_keys!(params)
+      def normalize_non_empty_keys!
         ## this is to minimize potential security hazzards with an empty user_key
         [:service_id, :app_id, :app_key, :user_key, :provider_key].each do |lab|
           labs = lab.to_s
