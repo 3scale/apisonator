@@ -34,7 +34,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'redis-namespace',           '1.2.1'
 
   s.files = Dir.glob('{lib,bin}/**/*')
-  s.files << 'README.rdoc'
+  s.files << 'README.md'
   s.files << 'Rakefile'
 
   s.executables  = ['3scale_backend', '3scale_backend_worker']
