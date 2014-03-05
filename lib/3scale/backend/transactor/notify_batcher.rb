@@ -39,7 +39,7 @@ module ThreeScale
           end
 
           all.each do |k, v|
-            Resque.enqueue(NotifyJob, v["provider_key"], v["usage"], encode_time(v["time"]), tt.to_f)
+            ::Resque.enqueue(NotifyJob, v["provider_key"], v["usage"], encode_time(v["time"]), tt.to_f)
           end
         end
         

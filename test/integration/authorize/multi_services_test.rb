@@ -551,7 +551,7 @@ class MultiServicesTest < Test::Unit::TestCase
       doc = Nokogiri::XML(last_response.body)
       error = doc.at('error:root')
       assert_not_nil error
-      assert_equal 'provider_key_invalid', error['code']
+      assert_equal 'service_id_invalid', error['code']
 
       post '/transactions.xml',
         :provider_key => "fake_provider_key",

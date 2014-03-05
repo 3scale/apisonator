@@ -190,7 +190,7 @@ class TransactorTest < Test::Unit::TestCase
   end
 
   test 'report raises an exception when invalid provider_key and service_id' do
-    assert_raise ProviderKeyInvalid do
+    assert_raise ServiceIdInvalid do
       Transactor.report(@provider_key, "fake_service_id",
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 3}})
@@ -201,12 +201,7 @@ class TransactorTest < Test::Unit::TestCase
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 3}})
     end
-
-
-
   end
-
-
 
   test 'authorize returns status object without usage reports if the plan has no usage limits' do
     status, status_xml, status_result = Transactor.authorize(@provider_key, :app_id => @application_one.id)
