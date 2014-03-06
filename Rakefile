@@ -103,71 +103,68 @@ namespace :cache do
 end
 
 namespace :stats do
-  
-  namespace :panic_mode do 
-    
-    desc '!!! Delete all time buckets and keys after disabling cassandra'
+  namespace :panic_mode do
+    desc '!!! Delete all time buckets and keys after disabling mongo'
     task :delete_all_buckets_and_keys => :environment do
       puts ThreeScale::Backend::Aggregator.delete_all_buckets_and_keys_only_as_rake!
     end
-    
-    desc 'Disable stats batch processing on cassandra. Stops saving to cassandra and to redis'  
-    task :disable_cassandra => :environment do
-        puts ThreeScale::Backend::Aggregator.disable_cassandra()
+
+    desc 'Disable stats batch processing on mongo. Stops saving to mongo and to redis'
+    task :disable_mongo => :environment do
+      puts ThreeScale::Backend::Aggregator.disable_mongo
     end
 
-    desc 'Enable stats batch processing on cassandra'  
-    task :enable_cassandra => :environment do
-        puts ThreeScale::Backend::Aggregator.enable_cassandra()
+    desc 'Enable stats batch processing on mongo'
+    task :enable_mongo => :environment do
+      puts ThreeScale::Backend::Aggregator.enable_mongo
     end
-    
+
     desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
     task :insert_stats_job => :environment do
       puts ThreeScale::Backend::Aggregator.schedule_one_stats_job
     end
-    
   end
-  
+
   desc 'Number of stats buckets active in Redis'
   task :buckets_size => :environment do
-    puts ThreeScale::Backend::Aggregator.pending_buckets_size()
+    puts ThreeScale::Backend::Aggregator.pending_buckets_size
   end
-  
+
   desc 'Number of keys in each stats bucket in Redis'
   task :buckets_info => :environment do
-    puts ThreeScale::Backend::Aggregator.pending_keys_by_bucket().inspect
+    puts ThreeScale::Backend::Aggregator.pending_keys_by_bucket.inspect
   end
 
   desc 'Buckets currently failing to be processed'
   task :failed_buckets => :environment do
     puts ThreeScale::Backend::Aggregator.failed_buckets
-  end  
-  
+  end
+
   desc 'All buckets that failed to be processed at least once, even if ok now'
   task :failed_buckets_once => :environment do
     puts ThreeScale::Backend::Aggregator.failed_buckets_at_least_once
   end
-     
-  desc 'Activate saving to cassandra.'  
-  task :activate_saving_to_cassandra => :environment do
-      puts ThreeScale::Backend::Aggregator.activate_cassandra()
+
+  desc 'Activate saving to mongo.'
+  task :activate_saving_to_mongo => :environment do
+    puts ThreeScale::Backend::Aggregator.activate_mongo
   end
-  
-  desc 'Deactivate saving to cassandra. Do only if cassandra is down or acting funny. Data is still saved in redis.'  
-  task :deactivate_saving_to_cassandra => :environment do
-      puts ThreeScale::Backend::Aggregator.deactivate_cassandra()
+
+  desc 'Deactivate saving to mongo. Do only if mongo is down or acting funny. Data is still saved in redis.'
+  task :deactivate_saving_to_mongo => :environment do
+    puts ThreeScale::Backend::Aggregator.deactivate_mongo
   end
-  
-  desc 'Are stats saving to cassandra or just piling in redis?'  
-  task :cassandra_saving_active? => :environment do
-      puts ThreeScale::Backend::Aggregator.cassandra_active?()
+
+  desc 'Are stats saving to mongo or just piling in redis?'
+  task :mongo_saving_active? => :environment do
+    puts ThreeScale::Backend::Aggregator.mongo_active?
   end
-  
-  desc 'Is cassandra batch processing enabled?'  
-  task :cassandra_enabled? => :environment do
-      puts ThreeScale::Backend::Aggregator.cassandra_enabled?()
+
+  desc 'Is mongo batch processing enabled?'
+  task :mongo_enabled? => :environment do
+    puts ThreeScale::Backend::Aggregator.mongo_enabled?
   end
-  
+
   desc 'Process failed buckets (one by one)'
   task :process_failed => :environment do
     v = ThreeScale::Backend::Aggregator.failed_buckets
@@ -175,57 +172,29 @@ namespace :stats do
       puts "No failed buckets!"
     else
       puts "Saving bucket: #{v.first} ..."
-      if !ThreeScale::Backend::Aggregator.time_bucket_already_inserted?(v.first)
-        ThreeScale::Backend::Aggregator.save_to_cassandra(v.first)
-        puts "Done"
-      else
-        puts "The time bucket was already inserted. Not saving it."
-      end
+      ThreeScale::Backend::Aggregator.save_to_mongo(v.first)
+      puts "Done"
     end
-  end
-  
-  desc 'repeated batches on cassandra: if > 0, critical issue!! we would be over-counting'
-  task :repeated_batches => :environment do
-    v = ThreeScale::Backend::Aggregator.repeated_batches
-    puts v.size
-    if v.size>0
-      puts v.inspect
-    end
-  end
-  
-  desc 'undo a repeated batch (needs the batch file that needs to be undone)'
-  task :undo_repeated_batch => :environment do
-    raise "No filename containing a CQL batch was passed as argument" if ARGV[1].nil?
-    str = File.new(ARGV[1],"r").read
-    raise "Filename #{ARGV[1]} is empty" if str.nil? || str.empty?
-    ThreeScale::Backend::Aggregator.undo_repeated_batch(str)
   end
 
-  desc 'check counter values for cassandra and redis, params: service_id, application_id, metric_id, time (optional)'
+  desc 'check counter values for mongo and redis, params: service_id, application_id, metric_id, time (optional)'
   task :check_counters => :environment do
-    
+
     ##stats/{service:service_id}/cinstance:app_id/metric:metric_id/eternity
     service_id = ARGV[1]
     application_id = ARGV[2]
     metric_id = ARGV[3]
-    timestamp = Time.parse_to_utc(ARGV[3]) if ARGV[4].nil?
-    timestamp ||= Time.now.utc
-    
+    timestamp = Time.parse_to_utc(ARGV[4]) || Time.now.utc
+
     puts "Params: service_id: #{service_id}, application_id: #{application_id}, metric_id #{metric_id}, timestamp #{timestamp}"
-    
+
     if service_id.nil? || application_id.nil? || metric_id.nil? || timestamp.nil?
       raise "Incorrect parameters: you must pass: service_id application_id metric_id timestamp (in full). For instance: service_id app_id metric_id \"2010-05-07 17:28:12'\"" 
     end
-    
+
     results = ThreeScale::Backend::Aggregator.check_counters_only_as_rake(service_id, application_id, metric_id, timestamp)
-    
+
     puts results.inspect
     exit
-      
   end
-  
-  
-  
 end
-
-

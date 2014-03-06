@@ -5,7 +5,6 @@ class ReportTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::StorageKeys
   include Backend::StorageHelpers
-  
 
   def setup
     @storage = Storage.instance(true)
@@ -31,19 +30,18 @@ class ReportTest < Test::Unit::TestCase
     @apilog_empty = {}
 
   end
-  
-  def cassandra_setup
-    
-    Aggregator.enable_cassandra()
-    Aggregator.activate_cassandra()
-		
-		@storage_cassandra = StorageCassandra.instance(true)
-		@storage_cassandra.clear_keyspace!
-		
-		Resque.reset!
-		Aggregator.reset_current_bucket!
-		
-	end
+
+  def mongo_setup
+    Aggregator.enable_mongo
+    Aggregator.activate_mongo
+
+
+    @storage_mongo = StorageMongo.instance(true)
+    @storage_mongo.clear_collections
+
+    Resque.reset!
+    Aggregator.reset_current_bucket!
+  end
 
   test 'options request returns list of allowed methods' do
     request '/transactions.xml', :method => 'OPTIONS'
@@ -692,26 +690,23 @@ class ReportTest < Test::Unit::TestCase
     end                                           
   end
 
-  test 'successful report aggregates backend hit with cassandra' do
-    
-    cassandra_setup()
-    
+  test 'successful report aggregates backend hit with mongo' do
+    mongo_setup
+
     application2 = Application.save(:service_id => @service_id,
                                     :id         => next_id,
                                     :plan_id    => @plan_id,
                                     :state      => :active)
-                                      
-    
+
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      
       10.times do |i|
         post '/transactions.xml',
           :provider_key => @provider_key,
           :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-          
+
         post '/transactions.xml',
             :provider_key => @provider_key,
-            :transactions => {0 => {:app_id => application2.id, :usage => {'hits' => 1}}}  
+            :transactions => {0 => {:app_id => application2.id, :usage => {'hits' => 1}}}
 
         Resque.run!
         ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
@@ -729,66 +724,66 @@ class ReportTest < Test::Unit::TestCase
                                                      @master_reports_id,
                                                      :month, '20100501')).to_i
       end
-                                                                                                        
     end
-    
+
     Aggregator.schedule_one_stats_job
     Resque.run!
-    
-    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@master_service_id,
-                                                 @provider_application_id,
-                                                 @master_hits_id,
-                                                 :month, '20100501'))
-                                                 
-    
-    assert_equal 2*10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
-    
-    cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@master_service_id,
-                                                 @provider_application_id,
-                                                 @master_reports_id,
-                                                 :month, '20100501'))
-    
-    assert_equal 2*10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
-    
+
+    timestamp = Time.parse_to_utc("20100501")
+
+    conditions = {
+      s: @master_service_id,
+      a: @provider_application_id,
+      m: @master_hits_id,
+    }
+
+    assert_equal 2*10, @storage_mongo.get(:month, timestamp, conditions)
+
+    conditions = {
+      s: @master_service_id,
+      a: @provider_application_id,
+      m: @master_reports_id,
+    }
+
+    assert_equal 2*10, @storage_mongo.get(:month, timestamp, conditions)
+
     assert_equal 10, @storage.get(application_key(@service_id,
                                                  @application.id,
                                                  @metric_id,
                                                  :month, '20100501')).to_i
-                                                 
-    
+
     assert_equal 10, @storage.get(application_key(@service_id,
-                                                 @application.id,
+                                                 application2.id,
                                                  @metric_id,
                                                  :month, '20100501')).to_i
-                                                 
-                                                                                              
-   cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@service_id,
-                                                  @application.id,
-                                                  @metric_id,
-                                                  :month, '20100501'))
-                                                  
-   assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)
-   
-   
-   cassandra_row_key, cassandra_col_key = redis_key_2_cassandra_key(application_key(@service_id,
-                                                  application2.id,
-                                                  @metric_id,
-                                                  :month, '20100501'))
-                                                  
-   assert_equal 10, @storage_cassandra.get(:Stats, cassandra_row_key, cassandra_col_key)   
+
+    conditions = {
+      s: @service_id,
+      a: @application.id,
+      m: @metric_id,
+    }
+
+   assert_equal 10, @storage_mongo.get(:month, timestamp, conditions)
+
+    conditions = {
+      s: @service_id,
+      a: application2.id,
+      m: @metric_id,
+    }
+
+    assert_equal 10, @storage_mongo.get(:month, timestamp, conditions)
   end
 
   test 'check counter rake method' do
-    
-    cassandra_setup()
-    
+    mongo_setup
+
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      
+
       10.times do |i|
         post '/transactions.xml',
           :provider_key => @provider_key,
           :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-          
+
         Resque.run!
         ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
         ## aggregate and another Resque.run! is needed
@@ -800,27 +795,30 @@ class ReportTest < Test::Unit::TestCase
                                                      @master_hits_id,
                                                      :month, '20100501')).to_i
 
-        
         assert_equal (i+1), @storage.get(application_key(@service_id,
                                                      @application.id,
                                                      @metric_id,
                                                      :month, '20100501')).to_i
-                                                     
+
       end
-                                                                                                        
     end
-    
+
     Aggregator.schedule_one_stats_job
     Resque.run!
-     
-    v = Aggregator.check_counters_only_as_rake(@service_id, @application.id, @metric_id, Time.utc(2010, 5, 12, 13, 33))
-    
-    [:eternity, :month, :week, :day, :hour, :minute].each do |gra|
-      assert_equal 10, v[:redis][gra].to_i
-      assert_equal 10, v[:cassandra][gra]
+
+    values = Aggregator.check_counters_only_as_rake(
+      @service_id,
+      @application.id,
+      @metric_id,
+      Time.utc(2010, 5, 12, 13, 33)
+    )
+
+    [:eternity, :month, :day, :hour, :minute].each do |gra|
+      assert_equal 10, values[:redis][gra].to_i
+      assert_equal 10, values[:mongo][gra]
     end
   end
-  
+
   ## FIXME: this test in incomplete, should be done properly soon
   test 'when exception raised in worker it goes to resque:failed' do
   

@@ -22,16 +22,16 @@ module ThreeScale
         lua_aggregate_sha
 
         applications = Hash.new
-        users = Hash.new
+        users        = Hash.new
 
-        ## this is just a temporary switch to be able to enable disable reporting to cassandra
-        ## you can active it or deactivated: storage.set("cassandra_enabled","1") / storage.del("cassandra_enabled")
+        ## this is just a temporary switch to be able to enable disable reporting to mongodb
+        ## you can active it or deactivated: storage.set("mongo_enabled","1") / storage.del("mongo_enabled")
 
-        Memoizer.memoize_block("cassandra-enabled") do
-          @cass_enabled = cassandra_enabled?
+        Memoizer.memoize_block("mongo-enabled") do
+          @mongo_enabled = mongo_enabled?
         end
-        
-        if @cass_enabled
+
+        if @mongo_enabled
           timenow = Time.now.utc
 
           bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
@@ -39,33 +39,32 @@ module ThreeScale
           @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
 
           if @@current_bucket == bucket
-            schedule_cassandra_job = false
+            schedule_mongo_job = false
           else
-            schedule_cassandra_job = true
+            schedule_mongo_job = true
             @@current_bucket = bucket
           end
         end
 
-
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-
           @keys_doing_set_op = []
 
           val = storage.pipelined do
             slice.each do |transaction|
-              key = transaction[:application_id]
-
-              ## the key must be application+user if users exists since this is the lowest
-              ## granularity.
-              ## applications contains the list of application, or application+users that need to be limit checked
-              applications[key] = {:application_id => transaction[:application_id], :service_id => transaction[:service_id]}
-              ## who puts service_id here? it turns out is the transactor.report_enqueue
+              key        = transaction[:application_id]
+              service_id = transaction[:service_id]
+              ## the key must be application+user if users exists
+              ## since this is the lowest granularity.
+              ## applications contains the list of application, or
+              ## application+users that need to be limit checked
+              applications[key] = { application_id: key, service_id: service_id }
+               ## who puts service_id here? it turns out is the transactor.report_enqueue
               if transaction[:service_id].nil?
               end
 
               unless (transaction[:user_id].nil?)
                 key = transaction[:user_id]
-                users[key] = {:service_id => transaction[:service_id], :user_id => transaction[:user_id]}
+                users[key] = { service_id: service_id, user_id: key }
               end
 
               aggregate(transaction)
@@ -76,31 +75,26 @@ module ThreeScale
           @keys_doing_set_op.flatten!(1)
 
           ## here the pipelined redis increments have been sent
-          ## now we have to send the cassandra ones
+          ## now we have to send the mongo ones
 
-          ## FIXME we had set operations :-/ This will only work when the key is on redis, it will not be true in the future
-          ## not live keys (stats only) will only be on cassandra. Will require fix, or limit the usage of #set. In addition,
-          ## set operations cannot coexist on increments on the same metric in the same pipeline. It has to be a check that
+          ## FIXME we had set operations :-/ This will only work when
+          ## the key is on redis, it will not be true in the future
+          ## not live keys (stats only) will only be on mongodb. Will
+          ## require fix, or limit the usage of #set. In addition,
+          ## set operations cannot coexist on increments on the same
+          ## metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
-          if @cass_enabled && @keys_doing_set_op.size>0
-
+          if @mongo_enabled && @keys_doing_set_op.size > 0
             @keys_doing_set_op.each do |item|
               key, value = item
 
-              old_value, tmp = storage.pipelined do
+              storage.pipelined do
                 storage.get(key)
                 storage.set(key, value)
               end
-
-              storage.pipelined do
-                storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", -old_value.to_i)
-                storage.incrby("#{copied_keys_prefix(@@current_bucket)}:#{key}", value)
-              end
             end
-
           end
-
         end
 
         ## the application set needs to be updated on it's own to capture if the app already existed, if not
@@ -126,19 +120,29 @@ module ThreeScale
         ## need to update the cached_status for for the transactor
         update_status_cache(applications,users)
 
-        ## the time bucket has elapsed, trigger a cassandra job
-        if @cass_enabled
-          storage.zadd(changed_keys_key, @@current_bucket.to_i, @@current_bucket)
-          if schedule_cassandra_job
-            ## this will happend every X seconds, N times. Where N is the number of workers
-            ## and X is a configuration parameter
-            Resque.enqueue(StatsJob, @@prior_bucket, Time.now.getutc.to_f)
-          end
+        ## the time bucket has elapsed, trigger a mongodb job
+        if @mongo_enabled
+          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_mongo_job)
         end
 
-        ## Finally, let's ping the frontend if any event is pending for processing
+        ## Finally, let's ping the frontend if any event is pending
+        ## for processing
         EventStorage.ping_if_not_empty
+      end
 
+      def store_changed_keys(transactions, bucket, prior_bucket, schedule_stats_job)
+        service_ids = transactions.map { |transaction| transaction[:service_id] }
+        service_ids.each do |id|
+          bucket_key = bucket_with_service_key(bucket, id)
+          storage.zadd(changed_keys_key, bucket.to_i, bucket_key)
+
+          if schedule_stats_job
+            ## this will happend every X seconds, N times. Where N is the number of workers
+            ## and X is a configuration parameter
+            prior_bucket_key = bucket_with_service_key(prior_bucket, id)
+            Resque.enqueue(StatsJob, prior_bucket_key, Time.now.getutc.to_f)
+          end
+        end
       end
 
       def get_value_of_set_if_exists(value_str)
@@ -154,11 +158,14 @@ module ThreeScale
         @@current_bucket
       end
 
+      def bucket_with_service_key(bucket, service)
+        "#{service}:#{bucket}"
+      end
+
       private
 
       def aggregate(transaction)
         service_prefix     = service_key_prefix(transaction[:service_id])
-
         application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
 
         # this one is for the limits of the users
@@ -173,25 +180,40 @@ module ThreeScale
           counter_key('', granularity, timestamp)
         end
 
-        ##FIXME, here we have to check that the timestamp is in the current given the time period we are in
+        ##FIXME, here we have to check that the timestamp is in the
+        ##current given the time period we are in
 
         transaction[:usage].each do |metric_id, value|
+          service_id = transaction[:service_id]
+          val        = get_value_of_set_if_exists(value)
 
-          val = get_value_of_set_if_exists(value)
+          if @mongo_enabled
+            bucket_key = bucket_with_service_key(current_bucket, service_id)
+          else
+            bucket_key = ""
+          end
+
           if val.nil?
             type = :increment
           else
             type = :set
             value = val
           end
+          value    = value.to_i
+          lua_args = [
+            type,
+            service_id,
+            transaction[:application_id],
+            metric_id,
+            transaction[:user_id],
+            value,
+            *timestamps,
+            @mongo_enabled,
+            bucket_key,
+          ]
 
-          value = value.to_i
-
-          storage.evalsha( lua_aggregate_sha,
-                          :argv => [type, transaction[:service_id], transaction[:application_id], metric_id, transaction[:user_id], value]+ timestamps +[@cass_enabled , @cass_enabled ? current_bucket : ''])
-
+          storage.evalsha(lua_aggregate_sha, argv: lua_args)
         end
-
       end
 
       ## copied from transactor.rb
@@ -322,29 +344,6 @@ module ThreeScale
         "#{prefix}/metric:#{metric_id}"
       end
 
-      ## the common key for redis
-      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/month:20120401"
-      ## is split into row and column key like this:
-      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/month:2012" , "20120401"
-      ##
-      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/eternity"
-      ## "stats/{service:394805713}/uinstance:user_id/metric:metric_id/eternity", "eternity"
-      ##
-      ## we need to bucket per year since cassandra cannot have rows with zillions of columns, it's advised to keep it under 10MB
-      ## if we store minutes per year 365 * 24 * 60 * 8 (assuming it's 8 bytes per counter) = 4.2MB so we are ok.
-      ##
-      def counter_key_cassandra(prefix, granularity, timestamp)
-        if granularity == :eternity
-          bucket, row_key = :eternity, :eternity
-        else
-          time = timestamp.beginning_of_cycle(granularity)
-          row_key = time.to_compact_s
-          bucket = "#{granularity}:#{row_key[0..3]}"
-        end
-
-        ["#{prefix}/#{bucket}".to_s, row_key.to_s]
-      end
-
       def counter_key(prefix, granularity, timestamp)
         time_part = if granularity == :eternity
                       :eternity
@@ -366,8 +365,8 @@ module ThreeScale
         Storage.instance
       end
 
-      def storage_cassandra
-        StorageCassandra.instance
+      def storage_mongo
+        StorageMongo.instance
       end
 
       def create_aggregate_sha
