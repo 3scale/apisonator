@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+function start_mongodb {
+  mongod --logpath /tmp/mongod01_backend.log --dbpath /tmp --logappend --fork
+}
+
+function stop_mongodb {
+  mongod --dbpath /tmp --shutdown
+}
+
 if [ -n "$RVM_RUBY" ]
 then
   export CODECLIMATE_REPO_TOKEN=codeclimate_token
@@ -7,11 +15,11 @@ then
   export TO_FILE=1
 
   export RACK_ENV=test
-  sudo /etc/init.d/cassandra start
+  start_mongodb
   sleep 10
   rvm $RVM_RUBY do bash -c 'bundle install --deployment --without development && bundle exec rake test --trace'
   export RET=$?;
-  sudo /etc/init.d/cassandra stop
+  stop_mongodb
   (($RET == 0))
 else
   echo "Missing $RVM_RUBY env variable"
