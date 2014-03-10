@@ -1,0 +1,13 @@
+{
+  "sources": {
+    "apt": {
+      "locked_version": "2.3.4"
+    },
+    "redisio": {
+      "locked_version": "1.7.1"
+    },
+    "ulimit": {
+      "locked_version": "0.3.2"
+    }
+  }
+}
