@@ -1,7 +1,11 @@
 # encoding: utf-8
 require 'rake/testtask'
+require 'rspec/core/rake_task'
 
-task :default => :test
+desc "Run specs"
+RSpec::Core::RakeTask.new
+
+task :default => [:test, :spec]
 
 desc 'Run unit and integration tests'
 task :test => ['test:unit', 'test:integration']
@@ -46,12 +50,12 @@ end
 
 desc 'Seed, put info into redis using data/postfile3, plan :default'
 task :seed do
-	system "ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3"	
+	system "ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3"
 end
 
 desc 'Seed, put info into redis using data/postfile3, plan :user'
 task :seed_user do
-	system "ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3"	
+	system "ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3"
 end
 
 
@@ -84,22 +88,22 @@ task :reschedule_failed_jobs => :environment do
 end
 
 namespace :cache do
-  
+
   desc 'Caching enabled?'
-  task :caching_enabled? => :environment do 
+  task :caching_enabled? => :environment do
     puts ThreeScale::Backend::Transactor.caching_enabled?
   end
-  
+
   desc 'Disable caching'
-  task :disable_caching => :environment do 
+  task :disable_caching => :environment do
     puts ThreeScale::Backend::Transactor.caching_disable
   end
-  
+
   desc 'Enable caching'
-  task :enable_caching => :environment do 
+  task :enable_caching => :environment do
     puts ThreeScale::Backend::Transactor.caching_enable
-  end    
-  
+  end
+
 end
 
 namespace :stats do
@@ -189,7 +193,7 @@ namespace :stats do
     puts "Params: service_id: #{service_id}, application_id: #{application_id}, metric_id #{metric_id}, timestamp #{timestamp}"
 
     if service_id.nil? || application_id.nil? || metric_id.nil? || timestamp.nil?
-      raise "Incorrect parameters: you must pass: service_id application_id metric_id timestamp (in full). For instance: service_id app_id metric_id \"2010-05-07 17:28:12'\"" 
+      raise "Incorrect parameters: you must pass: service_id application_id metric_id timestamp (in full). For instance: service_id app_id metric_id \"2010-05-07 17:28:12'\""
     end
 
     results = ThreeScale::Backend::Aggregator.check_counters_only_as_rake(service_id, application_id, metric_id, timestamp)
