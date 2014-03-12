@@ -18,6 +18,10 @@ module ThreeScale
           end
           use ThreeScale::Backend::Logger if log
 
+          map '/services' do
+            run ThreeScale::Backend::ServicesAPI.new
+          end
+
           run ThreeScale::Backend::Listener.new
         end
 

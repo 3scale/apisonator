@@ -130,7 +130,6 @@ module ThreeScale
       set :views, File.dirname(__FILE__) + '/views'
 
       register AllowMethods
-      register API
 
       use Rack::RackExceptionCatcher
       use Rack::RestApiVersioning, :default_version => '2.0'

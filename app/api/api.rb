@@ -1,11 +1,6 @@
 module ThreeScale
   module Backend
-    module API
-
-      def self.registered(app)
-        app.register InternalAPI
-      end
-
+    class API < Sinatra::Base
     end
   end
 end

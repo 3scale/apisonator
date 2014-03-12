@@ -1,15 +1,9 @@
 module ThreeScale
   module Backend
-    module API
-      module InternalAPI
-        module ServicesAPI
-          def self.registered(app)
+    class ServicesAPI < InternalAPI
 
-            app.get '/foo' do
-              'bar!'
-            end
-          end
-        end
+      get '/foo' do
+        'bar!'
       end
     end
   end

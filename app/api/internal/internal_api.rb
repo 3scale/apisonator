@@ -1,12 +1,6 @@
 module ThreeScale
   module Backend
-    module API
-      module InternalAPI
-
-        def self.registered(app)
-          app.register ServicesAPI
-        end
-      end
+    class InternalAPI < API
     end
   end
 end
