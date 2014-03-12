@@ -2,9 +2,6 @@
 require 'rake/testtask'
 require 'rspec/core/rake_task'
 
-desc "Run specs"
-RSpec::Core::RakeTask.new
-
 task :default => [:test, :spec]
 
 desc 'Run unit and integration tests'
@@ -32,6 +29,15 @@ namespace :test do
     task.test_files = FileList['test/special/**/*_test.rb']
     task.verbose = true
   end
+end
+
+desc 'Run specs'
+RSpec::Core::RakeTask.new
+
+desc 'Generate API request documentation from API specs'
+RSpec::Core::RakeTask.new('docs:generate') do |t|
+  t.pattern = 'spec/acceptance/**/*_spec.rb'
+  t.rspec_opts = ["--format RspecApiDocumentation::ApiFormatter"]
 end
 
 desc 'Tag and push the current version'
