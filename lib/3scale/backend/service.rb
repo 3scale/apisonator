@@ -47,6 +47,13 @@ module ThreeScale
         end
       end
 
+      def self.list(provider_key)
+        key = "Service.list-#{provider_key}"
+        Memoizer.memoize_block(key) do
+          storage.smembers(id_storage_key_set(provider_key)) || []
+        end
+      end
+
     end
   end
 end
