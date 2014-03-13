@@ -1,22 +1,8 @@
-require File.join(File.dirname(__FILE__), '..', 'lib', '3scale', 'backend.rb')
-require 'rack/test'
-require 'rspec_api_documentation'
-require 'rspec_api_documentation/dsl'
+require_relative '../lib/3scale/backend.rb'
 
 RSpec.configure do |config|
-  config.include Rack::Test::Methods
-end
-
-RspecApiDocumentation.configure do |config|
-  config.docs_dir = Pathname.new(__FILE__).dirname.join('..', 'docs', 'internal_api')
-end
-
-def set_app(app)
-  RspecApiDocumentation.configure do |config|
-    config.app = app
+  config.before :each do
+    ThreeScale::Backend::Storage.instance(true).flushdb
+    ThreeScale::Backend::Memoizer.reset!
   end
-end
-
-def response_json
-  JSON.parse(response_body)
 end

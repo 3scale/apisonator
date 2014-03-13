@@ -6,6 +6,10 @@ class ServiceTest < Test::Unit::TestCase
     Memoizer.reset!
   end
 
+  def storage
+    Service.storage
+  end
+
   test 'load memoizes the result' do
     Storage.instance.expects(:get).once
     assert_nothing_raised do

@@ -1,4 +1,4 @@
-require_relative '../../../spec_helper'
+require_relative '../../acceptance_spec_helper'
 
 resource "Services (prefix: /services)" do
   set_app ThreeScale::Backend::ServicesAPI
