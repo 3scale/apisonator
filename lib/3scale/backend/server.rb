@@ -47,7 +47,7 @@ module ThreeScale
       end
 
       def pid_file(port)
-        "/var/run/3scale/3scale_backend_#{port}.pid"
+        "/tmp/3scale/3scale_backend_#{port}.pid"
       end
     end
   end
