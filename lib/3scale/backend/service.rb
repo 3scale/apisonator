@@ -13,11 +13,15 @@ module ThreeScale
           end
         end
 
-        def load_id!(provider_key)
-          key = "Service.load_id!-#{provider_key}"
+        def load_id(provider_key)
+          key = "Service.load_id-#{provider_key}"
           Memoizer.memoize_block(key) do
-            load_id(provider_key) or raise ProviderKeyInvalid, provider_key
+            storage.get(id_storage_key(provider_key))
           end
+        end
+
+        def load_id!(provider_key)
+          load_id(provider_key) or raise ProviderKeyInvalid, provider_key
         end
 
         def load(provider_key)
@@ -28,9 +32,37 @@ module ThreeScale
         end
 
         def load!(provider_key)
-          key = "Service.load!-#{provider_key}"
+          load(provider_key) or raise ProviderKeyInvalid, provider_key
+        end
+
+        def load_by_id(service_id)
+          key = "Service.load_by_id-#{service_id}"
           Memoizer.memoize_block(key) do
-            load(provider_key) or raise ProviderKeyInvalid, provider_key
+            next nil if service_id.nil?
+
+            referrer_filters_required, backend_version, user_registration_required,
+              default_user_plan_id, default_user_plan_name, provider_key, vv =
+                get_service(id = service_id.to_s)
+
+            next nil if provider_key.nil?
+            increment_attr(id, :version) if vv.nil?
+
+            referrer_filters_required = referrer_filters_required.to_i > 0
+            user_registration_required = massage_get_user_registration_required(
+              user_registration_required)
+            default_service_id = load_id(provider_key)
+
+            new(
+              :provider_key               => provider_key,
+              :id                         => id,
+              :referrer_filters_required  => referrer_filters_required,
+              :user_registration_required => user_registration_required,
+              :backend_version            => backend_version,
+              :default_user_plan_id       => default_user_plan_id,
+              :default_user_plan_name     => default_user_plan_name,
+              :default_service            => default_service_id == id,
+              :version                    => get_attr(id, :version)
+            )
           end
         end
 
@@ -38,38 +70,6 @@ module ThreeScale
           key = "Service.load_by_id!-#{service_id}"
           Memoizer.memoize_block(key) do
             load_by_id(service_id) or raise ServiceIdInvalid, service_id
-          end
-        end
-
-        def load_by_id(service_id)
-          key = "Service.load_by_id-#{service_id}"
-          Memoizer.memoize_block(key) do
-            next nil if (id = service_id.to_s).nil?
-
-            values = get_service(id)
-            referrer_filters_required, backend_version, user_registration_required,
-              default_user_plan_id, default_user_plan_name, provider_key, vv = values
-
-            next nil if provider_key.nil?
-            increment_attr(id, :version) if vv.nil?
-
-            referrer_filters_required = referrer_filters_required.to_i > 0
-            user_registration_required = massage_user_registration_required(
-              user_registration_required)
-
-            default_service_id = load_id(provider_key)
-
-            new(
-              :provider_key              => provider_key,
-              :id                        => id,
-              :referrer_filters_required => referrer_filters_required,
-              :user_registration_required => user_registration_required,
-              :backend_version           => backend_version,
-              :default_user_plan_id      => default_user_plan_id,
-              :default_user_plan_name    => default_user_plan_name,
-              :default_service           => default_service_id == id,
-              :version                   => get_attr(id, :version)
-            )
           end
         end
 
@@ -92,11 +92,33 @@ module ThreeScale
           end
         end
 
+        def save!(attributes = {})
+          massage_set_user_registration_required attributes
+
+          service = new(attributes)
+          service.save!
+          service
+        end
+
         private
 
         # nil => true, 1 => true, '1' => true, 0 => false, '0' => false
-        def massage_user_registration_required(value)
+        def massage_get_user_registration_required(value)
           value.nil? ? true : value.to_i > 0
+        end
+
+        def massage_set_user_registration_required(attributes)
+          if attributes[:user_registration_required].nil?
+            val = storage.get(storage_key(attributes[:id], :user_registration_required))
+            if !val.nil? && val.to_i == 0
+              ## the attribute already existed and was set to false, BEWARE of that if a
+              ## service already existed and was set to false, that's somewhat problematic
+              ## on the tests
+              attributes[:user_registration_required] = false
+            else
+              attributes[:user_registration_required] = true
+            end
+          end
         end
 
         def increment_attr(id, attribute)
