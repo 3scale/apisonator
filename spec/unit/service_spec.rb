@@ -21,7 +21,7 @@ module ThreeScale
         let(:result){ Service.load_by_id(service.id) }
 
         it 'returns a Service object' do
-          result.class.should == Service
+          result.should be_a(Service)
         end
 
         it 'returns nil when ID not found' do
@@ -112,6 +112,50 @@ module ThreeScale
         end
       end
 
+      describe '#save!' do
+        let(:service){ Service.new(provider_key: 'foo', id: '7001') }
+
+        it 'returns a Service object' do
+          service.save!.should be_a(Service)
+        end
+
+        it 'persists data' do
+          service.save!
+
+          Service.load_by_id(service.id).provider_key.should == 'foo'
+        end
+
+        it 'sets as default when none exists' do
+          service.save!
+
+          Service.load_id('foo').should == service.id
+        end
+
+        it 'doesn\'t set as default when one exists' do
+          Service.save!(provider_key: 'foo', id: '7002')
+          service.save!
+
+          Service.load_id('foo').should_not == service.id
+        end
+
+        it 'cleans service cache' do
+          Service.load_id('foo')
+          Memoizer.memoized?("Service.load_id-foo").should be_true
+
+          service.save!
+          Memoizer.memoized?("Service.load_id-foo").should be_false
+        end
+
+        it 'validates user_registration_required field' do
+          service.user_registration_required = false
+          expect { service.save! }. to raise_error(ServiceRequiresDefaultUserPlan)
+        end
+      end
+
     end
   end
+end
+
+def storage
+  ThreeScale::Backend::Service.storage
 end
