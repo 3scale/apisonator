@@ -1,6 +1,12 @@
 module ThreeScale
   module Backend
-    class Service < Core::Service
+    class Service
+      include Core::Storable
+
+      attr_accessor :provider_key, :id, :backend_version,
+        :default_user_plan_id, :default_user_plan_name
+      attr_writer :referrer_filters_required, :user_registration_required,
+        :version, :default_service
 
       class << self
         # Returns true if a given service belongs to the provider with
@@ -16,7 +22,7 @@ module ThreeScale
         def load_id(provider_key)
           key = "Service.load_id-#{provider_key}"
           Memoizer.memoize_block(key) do
-            storage.get(id_storage_key(provider_key))
+            storage.get(storage_key_by_provider(provider_key, :id))
           end
         end
 
@@ -27,7 +33,7 @@ module ThreeScale
         def load(provider_key)
           key = "Service.load-#{provider_key}"
           Memoizer.memoize_block(key) do
-            super(provider_key)
+            load_by_id load_id(provider_key)
           end
         end
 
@@ -85,7 +91,7 @@ module ThreeScale
         def list(provider_key)
           key = "Service.list-#{provider_key}"
           Memoizer.memoize_block(key) do
-            storage.smembers(id_storage_key_set(provider_key)) || []
+            storage.smembers(storage_key_by_provider(provider_key, :ids)) || []
           end
         end
 
@@ -93,6 +99,14 @@ module ThreeScale
           massage_set_user_registration_required attributes
 
           new(attributes).save!
+        end
+
+        def storage_key(id, attribute)
+          encode_key("service/id:#{id}/#{attribute}")
+        end
+
+        def storage_key_by_provider(provider_key, attribute)
+          encode_key("service/provider_key:#{provider_key}/#{attribute}")
         end
 
         private
@@ -119,6 +133,18 @@ module ThreeScale
         end
       end
 
+      def default_service?
+        @default_service
+      end
+
+      def referrer_filters_required?
+        @referrer_filters_required
+      end
+
+      def user_registration_required?
+        @user_registration_required
+      end
+
       def save!
         validate_user_registration_required
         set_as_default_if_needed
@@ -129,6 +155,14 @@ module ThreeScale
       end
 
       private
+
+      def storage_key(attribute)
+        self.class.storage_key id, attribute
+      end
+
+      def storage_key_by_provider(attribute)
+        self.class.storage_key_by_provider provider_key, attribute
+      end
 
       def clean_cache
         keys = [
@@ -158,10 +192,10 @@ module ThreeScale
       def persist
         storage.multi do
           # Set as default service
-          storage.set(id_storage_key, id) if default_service?
+          storage.set(storage_key_by_provider(:id), id) if default_service?
 
           # Add to Services list for provider_key
-          storage.sadd(id_storage_key_set, id)
+          storage.sadd(storage_key_by_provider(:ids), id)
 
           storage.set(storage_key(:referrer_filters_required),
             referrer_filters_required? ? 1 : 0)
@@ -176,8 +210,8 @@ module ThreeScale
           storage.set(storage_key(:backend_version), backend_version) if backend_version
           storage.set(storage_key(:provider_key), provider_key)
           storage.incrby(storage_key(:version), 1)
-          storage.sadd(services_set_key, id)
-          storage.sadd(provider_keys_set_key, provider_key)
+          storage.sadd(encode_key("services_set"), id)
+          storage.sadd(encode_key("provider_keys_set"), provider_key)
         end
       end
 

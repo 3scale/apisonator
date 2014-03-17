@@ -344,16 +344,10 @@ module ThreeScale
       end
 
       def load_service!(provider_key, id)
-        if id.nil? || id.empty?
-          service = Service.load!(provider_key)
-        else
-          service = Service.load_by_id(id.split("-").last)
-          service ||= Service.load_by_id!(id)
-        end
+        id = Service.load_id!(provider_key) if id.nil? || id.empty?
+        service = Service.load_by_id(id.split('-').last) || Service.load_by_id!(id)
 
-        if service.nil? || service.provider_key != provider_key
-          raise ProviderKeyInvalid, provider_key
-        end
+        raise ProviderKeyInvalid, provider_key if service.provider_key != provider_key
 
         service
       end

@@ -155,7 +155,3 @@ module ThreeScale
     end
   end
 end
-
-def storage
-  ThreeScale::Backend::Service.storage
-end
