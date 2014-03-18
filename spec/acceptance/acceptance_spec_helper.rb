@@ -9,7 +9,7 @@ RSpec.configure do |config|
 end
 
 RspecApiDocumentation.configure do |config|
-  config.docs_dir = Pathname.new(__FILE__).dirname.join('..', 'docs', 'internal_api')
+  config.docs_dir = Pathname.new(__FILE__).dirname.join('..', '..', 'docs', 'internal_api')
 end
 
 def set_app(app)

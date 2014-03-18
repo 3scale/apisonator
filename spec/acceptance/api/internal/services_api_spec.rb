@@ -5,7 +5,7 @@ resource "Services (prefix: /services)" do
   header "Accept", "application/json"
 
   before do
-    ThreeScale::Backend::Service.save!(:provider_key => 'foo', :id => '1001')
+    ThreeScale::Backend::Service.save!(provider_key: 'foo', id: '1001')
   end
 
   get "/:id" do
@@ -41,6 +41,28 @@ resource "Services (prefix: /services)" do
     end
   end
 
+  delete '/:id' do
+    parameter :id, 'Service ID'
+
+    example_request 'Deleting a default service', id: 1001 do
+      status.should == 400
+      response_json['error'].should =~ /must be removed forcefully/
+    end
+
+    example_request 'Forcing a deletion of a default service', id: 1001, force: true do
+      status.should == 200
+      response_json['status'].should == 'ok'
+    end
+
+    example 'Deleting a non-default service' do
+      ThreeScale::Backend::Service.save!(provider_key: 'foo', id: 1002)
+      do_request id: 1002
+
+      status.should == 200
+      response_json['status'].should == 'ok'
+    end
+  end
+
   get '/list_ids/:provider_key' do
     parameter :provider_key, "Service provider key"
 
@@ -51,4 +73,3 @@ resource "Services (prefix: /services)" do
   end
 
 end
-
