@@ -76,6 +76,34 @@ module ThreeScale
           load_by_id(service_id) or raise ServiceIdInvalid, service_id
         end
 
+        def delete_by_id(service_id, options = {})
+          options[:force] = false unless options[:force] == true
+
+          service = load_by_id(service_id)
+          if service.default_service? && !options[:force]
+            raise ServiceIsDefaultService, service.id
+          end
+
+          storage.multi do
+            storage.del(storage_key(service.id, :referrer_filters_required))
+            storage.del(storage_key(service.id, :user_registration_required))
+            storage.del(storage_key(service.id, :backend_version))
+            storage.del(storage_key(service.id, :default_user_plan_name))
+            storage.del(storage_key(service.id, :default_user_plan_id))
+            storage.del(storage_key(service.id, :provider_key))
+            storage.del(storage_key(service.id, :version))
+            storage.del(storage_key(service.id, :user_set))
+            storage.srem(storage_key_by_provider(service.provider_key, :ids), service.id)
+            storage.srem(encode_key('services_set'), service.id)
+            if service.default_service?
+              storage.del(storage_key_by_provider(service.provider_key, :ids))
+              storage.del(storage_key_by_provider(service.provider_key, :id))
+            end
+          end
+
+          service.clean_cache
+        end
+
         def get_service(id)
           storage.mget(
             storage_key(id, :referrer_filters_required),
@@ -154,16 +182,6 @@ module ThreeScale
         self
       end
 
-      private
-
-      def storage_key(attribute)
-        self.class.storage_key id, attribute
-      end
-
-      def storage_key_by_provider(attribute)
-        self.class.storage_key_by_provider provider_key, attribute
-      end
-
       def clean_cache
         keys = [
           "Service.authenticate_service_id-#{id}-#{provider_key}",
@@ -173,6 +191,16 @@ module ThreeScale
           "Service.list-#{provider_key}"
         ]
         Memoizer.clear keys
+      end
+
+      private
+
+      def storage_key(attribute)
+        self.class.storage_key id, attribute
+      end
+
+      def storage_key_by_provider(attribute)
+        self.class.storage_key_by_provider provider_key, attribute
       end
 
       def validate_user_registration_required

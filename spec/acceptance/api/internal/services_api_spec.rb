@@ -17,6 +17,30 @@ resource "Services (prefix: /services)" do
     end
   end
 
+  put '/:id' do
+    parameter :id, 'Service ID'
+
+    update_data = {
+      provider_key: 'foo',
+      referrer_filters_required: true,
+      backend_version: 'oauth',
+      default_user_plan_name: 'default user plan name',
+      default_user_plan_id: 'plan ID'
+    }
+
+    example_request 'Update Service by ID', id: 7001, service: update_data do
+      status.should == 200
+      response_json['status'].should == 'ok'
+
+      (service = ThreeScale::Backend::Service.load_by_id('7001')).should_not be_nil
+      service.provider_key.should == 'foo'
+      service.referrer_filters_required?.should be_true
+      service.backend_version.should == 'oauth'
+      service.default_user_plan_name.should == 'default user plan name'
+      service.default_user_plan_id.should == 'plan ID'
+    end
+  end
+
   get '/list_ids/:provider_key' do
     parameter :provider_key, "Service provider key"
 

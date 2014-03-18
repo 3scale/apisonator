@@ -181,6 +181,12 @@ module ThreeScale
       end
     end
 
+    class ServiceIsDefaultService < Error
+      def initialize(id = nil)
+        super %(Service id="#{id}" is the default service, must be removed forcefully or make it not default before removal)
+      end
+    end
+
     # Legacy API support
 
     class AuthenticationError < Error

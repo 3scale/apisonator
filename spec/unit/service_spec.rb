@@ -148,7 +148,32 @@ module ThreeScale
 
         it 'validates user_registration_required field' do
           service.user_registration_required = false
-          expect { service.save! }. to raise_error(ServiceRequiresDefaultUserPlan)
+          expect { service.save! }.to raise_error(ServiceRequiresDefaultUserPlan)
+        end
+      end
+
+      describe '.delete_by_id' do
+        let(:service){ Service.save! id: 7001, provider_key: 'foo' }
+
+        it 'deletes a service' do
+          Service.save! id: 7002, provider_key: 'foo', default_service: true
+          Service.delete_by_id service.id
+
+          Service.load_by_id(service.id).should be_nil
+          Service.load_id(service.provider_key).should == '7002'
+        end
+
+        it 'raises an exception if you try to delete a default service' do
+          expect { Service.delete_by_id(service.id) }.to raise_error(ServiceIsDefaultService)
+
+          Service.load_by_id(service.id).should_not be_nil
+        end
+
+        it 'deletes a default service when forced' do
+          Service.delete_by_id service.id, force: true
+
+          Service.load_by_id(service.id).should be_nil
+          Service.load_id(service.provider_key).should be_nil
         end
       end
 
