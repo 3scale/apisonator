@@ -6,25 +6,15 @@ module ThreeScale
         content_type 'application/json'
       end
 
-      get '/' do
-        get_service(params).to_json
+      get '/:id' do
+        Service.load_by_id(params[:id]).to_json
       end
 
-      get '/list_ids' do
+      get '/list_ids/:provider_key' do
         Service.list(params['provider_key']).to_json
       end
 
       private
-
-      def get_service(options)
-        if params['provider_key']
-          Service.load params['provider_key']
-        elsif params['id']
-          Service.load_by_id params['id']
-        else
-          nil
-        end
-      end
 
       def filter_params
         params.reject!{ |k, v| !['provider_key', 'id'].include? k }
