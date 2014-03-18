@@ -4,11 +4,11 @@ module ThreeScale
   module Backend
     describe Service do
 
-      describe '.load_id' do
+      describe '.default_id' do
         before { Service.storage.set('service/provider_key:foo/id', '7001') }
 
         it 'returns an ID' do
-          Service.load_id('foo').should == '7001'
+          Service.default_id('foo').should == '7001'
         end
       end
 
@@ -128,22 +128,22 @@ module ThreeScale
         it 'sets as default when none exists' do
           service.save!
 
-          Service.load_id('foo').should == service.id
+          Service.default_id('foo').should == service.id
         end
 
         it 'doesn\'t set as default when one exists' do
           Service.save!(provider_key: 'foo', id: '7002')
           service.save!
 
-          Service.load_id('foo').should_not == service.id
+          Service.default_id('foo').should_not == service.id
         end
 
         it 'cleans service cache' do
-          Service.load_id('foo')
-          Memoizer.memoized?("Service.load_id-foo").should be_true
+          Service.default_id('foo')
+          Memoizer.memoized?("Service.default_id-foo").should be_true
 
           service.save!
-          Memoizer.memoized?("Service.load_id-foo").should be_false
+          Memoizer.memoized?("Service.default_id-foo").should be_false
         end
 
         it 'validates user_registration_required field' do
@@ -160,7 +160,7 @@ module ThreeScale
           Service.delete_by_id service.id
 
           Service.load_by_id(service.id).should be_nil
-          Service.load_id(service.provider_key).should == '7002'
+          Service.default_id(service.provider_key).should == '7002'
         end
 
         it 'raises an exception if you try to delete a default service' do
@@ -173,7 +173,7 @@ module ThreeScale
           Service.delete_by_id service.id, force: true
 
           Service.load_by_id(service.id).should be_nil
-          Service.load_id(service.provider_key).should be_nil
+          Service.default_id(service.provider_key).should be_nil
         end
       end
 
