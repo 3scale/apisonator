@@ -20,6 +20,7 @@ require 'logger'
 
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
+require '3scale/backend/helpers'
 
 require_relative '../../app/api/api'
 
@@ -53,7 +54,6 @@ require '3scale/backend/version'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
 require '3scale/backend/memoizer'
-
 
 module ThreeScale
   module Core

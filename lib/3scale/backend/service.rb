@@ -2,6 +2,8 @@ module ThreeScale
   module Backend
     class Service
       include Core::Storable
+      include Backend::Helpers
+      extend Backend::Helpers
 
       ATTRIBUTES = %w(referrer_filters_required backend_version
         user_registration_required default_user_plan_id default_user_plan_name
@@ -66,24 +68,12 @@ module ThreeScale
         end
 
         def delete_by_id(service_id, options = {})
-          options[:force] = false unless options[:force] == true
-
           service = load_by_id(service_id)
           if service.default_service? && !options[:force]
             raise ServiceIsDefaultService, service.id
           end
 
-          storage.multi do
-            storage.del(ATTRIBUTES.map{ |attr| service.storage_key(attr) })
-            storage.del(storage_key(service.id, :user_set))
-            storage.srem(storage_key_by_provider(service.provider_key, :ids), service.id)
-            storage.srem(encode_key('services_set'), service.id)
-            if service.default_service?
-              storage.del(storage_key_by_provider(service.provider_key, :ids))
-              storage.del(storage_key_by_provider(service.provider_key, :id))
-            end
-          end
-
+          service.delete_data
           service.clean_cache
         end
 
@@ -122,7 +112,7 @@ module ThreeScale
         private
 
         def massage_service_attrs(id, service_attrs)
-          service_attrs['referrer_filters_required'] = i_to_boolean(
+          service_attrs['referrer_filters_required'] = int_to_bool(
             service_attrs['referrer_filters_required'])
           service_attrs['user_registration_required'] = massage_get_user_registration_required(
             service_attrs['user_registration_required'])
@@ -131,14 +121,9 @@ module ThreeScale
           service_attrs
         end
 
-        # TODO: Move to helpers.
-        def i_to_boolean(int)
-          int.to_i > 0
-        end
-
         # nil => true, 1 => true, '1' => true, 0 => false, '0' => false
         def massage_get_user_registration_required(value)
-          value.nil? ? true : i_to_boolean(value)
+          value.nil? ? true : int_to_bool(value)
         end
 
         def massage_set_user_registration_required(attributes)
@@ -198,12 +183,20 @@ module ThreeScale
         self.class.storage_key id, attribute
       end
 
-      private
-
-      # TODO: Move to helpers.
-      def boolean_to_i(boolean)
-        boolean ? 1 : 0
+      def delete_data
+        storage.multi do
+          storage.del ATTRIBUTES.map{ |attr| storage_key(attr) }
+          storage.del storage_key(:user_set)
+          storage.srem storage_key_by_provider(:ids), id
+          storage.srem encode_key('services_set'), id
+          if default_service?
+            storage.del storage_key_by_provider(:ids)
+            storage.del storage_key_by_provider(:id)
+          end
+        end
       end
+
+      private
 
       def storage_key_by_provider(attribute)
         self.class.storage_key_by_provider provider_key, attribute
@@ -219,46 +212,57 @@ module ThreeScale
       end
 
       def set_as_default_if_needed
-        return if default_service?
-
-        default_service_id = self.class.default_id(provider_key)
-        @default_service = default_service_id.nil?
+        if @default_service.nil?
+          default_service_id = self.class.default_id(provider_key)
+          @default_service = default_service_id.nil?
+        end
       end
 
       def persist
         old_default_id = self.class.default_id(provider_key) if default_service?
 
         storage.multi do
-          persist_as_default(old_default_id) if default_service?
+          persist_default old_default_id
           persist_attributes
-          storage.incr(storage_key(:version))
+          persist_sets
 
-          storage.sadd(storage_key_by_provider(:ids), id)
-          storage.sadd(encode_key("services_set"), id)
-          storage.sadd(encode_key("provider_keys_set"), provider_key)
+          bump_version
         end
       end
 
-      def persist_as_default(old_default_id)
-        storage.set storage_key_by_provider(:id), id
+      def persist_default(old_default_id)
+        if default_service?
+          storage.set storage_key_by_provider(:id), id
 
-        if old_default_id != id
-          storage.incr self.class.storage_key(old_default_id, :version)
+          if old_default_id != id
+            storage.incr self.class.storage_key(old_default_id, :version)
+          end
         end
       end
 
       def persist_attributes
-        storage.set storage_key(:referrer_filters_required),
-          boolean_to_i(referrer_filters_required?)
-        storage.set storage_key(:user_registration_required),
-          boolean_to_i(user_registration_required?)
-        storage.set storage_key(:default_user_plan_id),
-          default_user_plan_id if default_user_plan_id
-        storage.set storage_key(:default_user_plan_name),
-          default_user_plan_name if default_user_plan_name
-        storage.set storage_key(:backend_version),
-          backend_version if backend_version
-        storage.set storage_key(:provider_key), provider_key
+        persist_attribute :referrer_filters_required,
+          bool_to_int(referrer_filters_required?)
+        persist_attribute :user_registration_required,
+          bool_to_int(user_registration_required?)
+        persist_attribute :default_user_plan_id, default_user_plan_id, true
+        persist_attribute :default_user_plan_name, default_user_plan_name, true
+        persist_attribute :backend_version, backend_version, true
+        persist_attribute :provider_key, provider_key
+      end
+
+      def persist_attribute(attribute, value, ignore_nils = false)
+        storage.set storage_key(attribute), value unless ignore_nils && value.nil?
+      end
+
+      def persist_sets
+        storage.sadd storage_key_by_provider(:ids), id
+        storage.sadd encode_key("services_set"), id
+        storage.sadd encode_key("provider_keys_set"), provider_key
+      end
+
+      def bump_version
+        storage.incr storage_key(:version)
       end
 
     end
