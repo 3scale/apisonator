@@ -17,7 +17,12 @@ module ThreeScale
             use Airbrake::Rack
           end
           use ThreeScale::Backend::Logger if log
-          map_urls
+
+          map '/services' do
+            run ThreeScale::Backend::ServicesAPI.new
+          end
+
+          run ThreeScale::Backend::Listener.new
         end
 
         server.pid_file = pid_file(options[:port])
@@ -44,17 +49,6 @@ module ThreeScale
       def pid_file(port)
         "/tmp/3scale/3scale_backend_#{port}.pid"
       end
-
-      private
-
-      def map_urls
-        map '/services' do
-          run ThreeScale::Backend::ServicesAPI.new
-        end
-
-        run ThreeScale::Backend::Listener.new
-      end
-
     end
   end
 end
