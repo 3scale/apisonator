@@ -26,7 +26,8 @@ resource "Services (prefix: /services)" do
       referrer_filters_required: true,
       backend_version: 'oauth',
       default_user_plan_name: 'default user plan name',
-      default_user_plan_id: 'plan ID'
+      default_user_plan_id: 'plan ID',
+      default_service: true
     }
 
     example_request 'Create a Service', service: update_data do
@@ -39,6 +40,7 @@ resource "Services (prefix: /services)" do
       service.backend_version.should == 'oauth'
       service.default_user_plan_name.should == 'default user plan name'
       service.default_user_plan_id.should == 'plan ID'
+      service.default_service?.should be_true
     end
   end
 

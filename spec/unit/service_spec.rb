@@ -84,9 +84,25 @@ module ThreeScale
         end
 
         it 'stores Service data' do
-          Service.save!(provider_key: 'foo', id: 7001)
+          Service.save! provider_key: 'foo', id: 7001
 
           Service.load_by_id(7001).provider_key.should == 'foo'
+        end
+
+        describe 'default service' do
+          before { Service.save! id: 7001, provider_key: 'foo' }
+
+          it 'is updated when requested' do
+            Service.save! id: 7002, provider_key: 'foo', default_service: true
+
+            Service.default_id('foo').should == '7002'
+          end
+
+          it 'isn\'t changed if not set' do
+            Service.save! id: 7002, provider_key: 'foo'
+
+            Service.default_id('foo').should == '7001'
+          end
         end
 
         describe 'user_registration_required massaging' do

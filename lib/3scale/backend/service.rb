@@ -219,34 +219,46 @@ module ThreeScale
       end
 
       def set_as_default_if_needed
+        return if default_service?
+
         default_service_id = self.class.default_id(provider_key)
         @default_service = default_service_id.nil?
       end
 
       def persist
+        old_default_id = self.class.default_id(provider_key) if default_service?
+
         storage.multi do
-          # Set as default service
-          storage.set(storage_key_by_provider(:id), id) if default_service?
-
-          # Add to Services list for provider_key
-          storage.sadd(storage_key_by_provider(:ids), id)
-
-          storage.set(storage_key(:referrer_filters_required),
-            boolean_to_i(referrer_filters_required?))
-
-          storage.set(storage_key(:user_registration_required),
-            boolean_to_i(user_registration_required?))
-          storage.set(storage_key(:default_user_plan_id), default_user_plan_id
-            ) unless default_user_plan_id.nil?
-          storage.set(storage_key(:default_user_plan_name), default_user_plan_name
-            ) unless default_user_plan_name.nil?
-
-          storage.set(storage_key(:backend_version), backend_version) if backend_version
-          storage.set(storage_key(:provider_key), provider_key)
+          persist_as_default(old_default_id) if default_service?
+          persist_attributes
           storage.incr(storage_key(:version))
+
+          storage.sadd(storage_key_by_provider(:ids), id)
           storage.sadd(encode_key("services_set"), id)
           storage.sadd(encode_key("provider_keys_set"), provider_key)
         end
+      end
+
+      def persist_as_default(old_default_id)
+        storage.set storage_key_by_provider(:id), id
+
+        if old_default_id != id
+          storage.incr self.class.storage_key(old_default_id, :version)
+        end
+      end
+
+      def persist_attributes
+        storage.set storage_key(:referrer_filters_required),
+          boolean_to_i(referrer_filters_required?)
+        storage.set storage_key(:user_registration_required),
+          boolean_to_i(user_registration_required?)
+        storage.set storage_key(:default_user_plan_id),
+          default_user_plan_id if default_user_plan_id
+        storage.set storage_key(:default_user_plan_name),
+          default_user_plan_name if default_user_plan_name
+        storage.set storage_key(:backend_version),
+          backend_version if backend_version
+        storage.set storage_key(:provider_key), provider_key
       end
 
     end
