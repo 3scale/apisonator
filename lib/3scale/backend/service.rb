@@ -185,18 +185,24 @@ module ThreeScale
 
       def delete_data
         storage.multi do
-          storage.del ATTRIBUTES.map{ |attr| storage_key(attr) }
-          storage.del storage_key(:user_set)
-          storage.srem storage_key_by_provider(:ids), id
-          storage.srem encode_key('services_set'), id
-          if default_service?
-            storage.del storage_key_by_provider(:ids)
-            storage.del storage_key_by_provider(:id)
-          end
+          delete_attributes
+          delete_from_lists
         end
       end
 
       private
+
+      def delete_attributes
+        storage.del ATTRIBUTES.map{ |attr| storage_key(attr) }
+        storage.del storage_key(:user_set)
+        storage.del storage_key_by_provider(:id) if default_service?
+      end
+
+      def delete_from_lists
+        storage.srem storage_key_by_provider(:ids), id
+        storage.srem encode_key('services_set'), id
+        storage.del storage_key_by_provider(:ids) if default_service?
+      end
 
       def storage_key_by_provider(attribute)
         self.class.storage_key_by_provider provider_key, attribute
@@ -231,12 +237,9 @@ module ThreeScale
       end
 
       def persist_default(old_default_id)
-        if default_service?
+        if default_service? && old_default_id != id
           storage.set storage_key_by_provider(:id), id
-
-          if old_default_id != id
-            storage.incr self.class.storage_key(old_default_id, :version)
-          end
+          storage.incr self.class.storage_key(old_default_id, :version)
         end
       end
 
