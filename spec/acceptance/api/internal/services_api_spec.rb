@@ -9,7 +9,7 @@ resource "Services (prefix: /services)" do
   end
 
   get "/:id" do
-    parameter :id, "Service ID"
+    parameter :id, "Service ID", required: true
 
     example_request "Get Service by ID", :id => 1001 do
       response_json['id'].should == '1001'
@@ -17,8 +17,34 @@ resource "Services (prefix: /services)" do
     end
   end
 
+  post '/' do
+    parameter :service, 'Service attributes', required: true
+
+    update_data = {
+      id: '1002',
+      provider_key: 'foo',
+      referrer_filters_required: true,
+      backend_version: 'oauth',
+      default_user_plan_name: 'default user plan name',
+      default_user_plan_id: 'plan ID'
+    }
+
+    example_request 'Create a Service', service: update_data do
+      status.should == 201
+      response_json['status'].should == 'created'
+
+      (service = ThreeScale::Backend::Service.load_by_id('1002')).should_not be_nil
+      service.provider_key.should == 'foo'
+      service.referrer_filters_required?.should be_true
+      service.backend_version.should == 'oauth'
+      service.default_user_plan_name.should == 'default user plan name'
+      service.default_user_plan_id.should == 'plan ID'
+    end
+  end
+
   put '/:id' do
-    parameter :id, 'Service ID'
+    parameter :id, 'Service ID', required: true
+    parameter :service, 'Service attributes', required: true
 
     update_data = {
       provider_key: 'foo',
@@ -28,11 +54,11 @@ resource "Services (prefix: /services)" do
       default_user_plan_id: 'plan ID'
     }
 
-    example_request 'Update Service by ID', id: 7001, service: update_data do
+    example_request 'Update Service by ID', id: 1001, service: update_data do
       status.should == 200
       response_json['status'].should == 'ok'
 
-      (service = ThreeScale::Backend::Service.load_by_id('7001')).should_not be_nil
+      (service = ThreeScale::Backend::Service.load_by_id('1001')).should_not be_nil
       service.provider_key.should == 'foo'
       service.referrer_filters_required?.should be_true
       service.backend_version.should == 'oauth'
@@ -42,7 +68,8 @@ resource "Services (prefix: /services)" do
   end
 
   delete '/:id' do
-    parameter :id, 'Service ID'
+    parameter :id, 'Service ID', required: true
+    parameter :force, 'Delete even if set as default service'
 
     example_request 'Deleting a default service', id: 1001 do
       status.should == 400
@@ -63,8 +90,8 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  get '/list_ids/:provider_key' do
-    parameter :provider_key, "Service provider key"
+  get '/' do
+    parameter :provider_key, "Service provider key", required: true
 
     example_request "Get ID list by provider_key", :provider_key => 'foo' do
       response_json.should == ['1001']

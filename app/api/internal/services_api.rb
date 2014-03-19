@@ -7,12 +7,26 @@ module ThreeScale
         content_type 'application/json'
       end
 
+      get '/' do
+        Service.list(params['provider_key']).to_json
+      end
+
       get '/:id' do
         Service.load_by_id(params[:id]).to_json
       end
 
+      post '/' do
+        service = Service.save!(params[:service])
+        status 201
+        {service: service, status: :created}.to_json
+      end
+
       put '/:id' do
-        service = Service.save!(params[:service].merge(id: params[:id]))
+        service = Service.load_by_id(params[:id])
+        params[:service].each do |attr, value|
+          service.send "#{attr}=", value
+        end
+        service.save!
         {service: service, status: :ok}.to_json
       end
 
@@ -24,10 +38,6 @@ module ThreeScale
           status 400
           {error: e.message}.to_json
         end
-      end
-
-      get '/list_ids/:provider_key' do
-        Service.list(params['provider_key']).to_json
       end
 
       private
