@@ -33,7 +33,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'mongo',                     '1.9.0'
   s.add_dependency 'bson_ext',                  '1.9.0'
 
-  s.files = Dir.glob('{lib,bin}/**/*')
+  s.files = Dir.glob('{lib,bin,app}/**/*')
   s.files << 'README.md'
   s.files << 'Rakefile'
 
