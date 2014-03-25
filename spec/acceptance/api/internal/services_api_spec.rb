@@ -99,13 +99,4 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  get '/' do
-    parameter :provider_key, "Service provider key", required: true
-
-    example_request "Get ID list by provider_key", :provider_key => 'foo' do
-      response_json.should == ['1001']
-      status.should == 200
-    end
-  end
-
 end

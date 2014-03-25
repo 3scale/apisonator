@@ -9,10 +9,6 @@ module ThreeScale
         filter_params params
       end
 
-      get '/' do
-        Service.list(params['provider_key']).to_json
-      end
-
       get '/:id' do
         Service.load_by_id(params[:id]).to_json
       end

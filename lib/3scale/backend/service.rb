@@ -88,13 +88,6 @@ module ThreeScale
           result
         end
 
-        def list(provider_key)
-          key = "Service.list-#{provider_key}"
-          Memoizer.memoize_block(key) do
-            storage.smembers(storage_key_by_provider(provider_key, :ids)) || []
-          end
-        end
-
         def save!(attributes = {})
           massage_set_user_registration_required attributes
 
@@ -174,7 +167,6 @@ module ThreeScale
           "Service.default_id-#{provider_key}",
           "Service.load-#{provider_key}",
           "Service.load_by_id-#{id}",
-          "Service.list-#{provider_key}"
         ]
         Memoizer.clear keys
       end
