@@ -20,17 +20,20 @@ resource "Services (prefix: /services)" do
   post '/' do
     parameter :service, 'Service attributes', required: true
 
-    update_data = {
-      id: '1002',
-      provider_key: 'foo',
-      referrer_filters_required: true,
-      backend_version: 'oauth',
-      default_user_plan_name: 'default user plan name',
-      default_user_plan_id: 'plan ID',
-      default_service: true
-    }
+    let(:service) do
+      {
+        id: '1002',
+        provider_key: 'foo',
+        referrer_filters_required: true,
+        backend_version: 'oauth',
+        default_user_plan_name: 'default user plan name',
+        default_user_plan_id: 'plan ID',
+        default_service: true
+      }
+    end
+    let(:raw_post){ params.to_json }
 
-    example_request 'Create a Service', service: update_data do
+    example_request 'Create a Service' do
       status.should == 201
       response_json['status'].should == 'created'
 
@@ -48,15 +51,19 @@ resource "Services (prefix: /services)" do
     parameter :id, 'Service ID', required: true
     parameter :service, 'Service attributes', required: true
 
-    update_data = {
-      provider_key: 'foo',
-      referrer_filters_required: true,
-      backend_version: 'oauth',
-      default_user_plan_name: 'default user plan name',
-      default_user_plan_id: 'plan ID'
-    }
+    let(:id){ 1001 }
+    let(:service) do
+      {
+        provider_key: 'foo',
+        referrer_filters_required: true,
+        backend_version: 'oauth',
+        default_user_plan_name: 'default user plan name',
+        default_user_plan_id: 'plan ID'
+      }
+    end
+    let(:raw_post){ params.to_json }
 
-    example_request 'Update Service by ID', id: 1001, service: update_data do
+    example_request 'Update Service by ID' do
       status.should == 200
       response_json['status'].should == 'ok'
 

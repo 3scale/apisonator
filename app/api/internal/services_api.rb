@@ -5,6 +5,8 @@ module ThreeScale
 
       before do
         content_type 'application/json'
+        parse_json_params params
+        filter_params params
       end
 
       get '/' do
@@ -41,6 +43,17 @@ module ThreeScale
       end
 
       private
+
+      def parse_json_params(params)
+        json_params = {}
+        params.each do |key, value|
+          if value.nil?
+            json_params.merge! JSON.parse(key)
+            params.delete key
+          end
+        end
+        params.merge! json_params
+      end
 
       def filter_params(params)
         params.reject!{ |k, v| !ACCEPTED_PARAMS.include? k }
