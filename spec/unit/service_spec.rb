@@ -65,6 +65,19 @@ module ThreeScale
         end
       end
 
+      describe '.list' do
+        it 'returns an array of IDs' do
+          Service.save! provider_key: 'foo', id: '7001'
+          Service.save! provider_key: 'foo', id: '7002'
+
+          Service.list('foo').should == ['7001', '7002']
+        end
+
+        it 'returns an empty array when none found' do
+          Service.list('foo').should == []
+        end
+      end
+
       describe '.save!' do
         it 'returns a Service object' do
           Service.save!(provider_key: 'foo', id: 7001).should be_a(Service)

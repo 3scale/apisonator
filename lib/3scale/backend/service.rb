@@ -74,7 +74,7 @@ module ThreeScale
           end
 
           service.delete_data
-          service.clean_cache
+          service.clear_cache
         end
 
         def get_service(id)
@@ -86,6 +86,13 @@ module ThreeScale
             result[key] = values[idx]
           end
           result
+        end
+
+        def list(provider_key)
+          key = "Service.list-#{provider_key}"
+          Memoizer.memoize_block(key) do
+            storage.smembers(storage_key_by_provider(provider_key, :ids)) || []
+          end
         end
 
         def save!(attributes = {})
@@ -156,17 +163,18 @@ module ThreeScale
         validate_user_registration_required
         set_as_default_if_needed
         persist
-        clean_cache
+        clear_cache
 
         self
       end
 
-      def clean_cache
+      def clear_cache
         keys = [
           "Service.authenticate_service_id-#{id}-#{provider_key}",
           "Service.default_id-#{provider_key}",
           "Service.load-#{provider_key}",
           "Service.load_by_id-#{id}",
+          "Service.list-#{provider_key}"
         ]
         Memoizer.clear keys
       end
