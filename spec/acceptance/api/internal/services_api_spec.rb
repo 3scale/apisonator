@@ -45,6 +45,13 @@ resource "Services (prefix: /services)" do
       service.default_user_plan_id.should == 'plan ID'
       service.default_service?.should be_true
     end
+
+    example 'Try updating Service with invalid data' do
+      do_request service: {user_registration_required: false}
+
+      status.should == 400
+      response_json['error'].should =~ /require a default user plan/
+    end
   end
 
   put '/:id' do
@@ -73,6 +80,13 @@ resource "Services (prefix: /services)" do
       service.backend_version.should == 'oauth'
       service.default_user_plan_name.should == 'default user plan name'
       service.default_user_plan_id.should == 'plan ID'
+    end
+
+    example 'Try updating Service with invalid data' do
+      do_request service: {user_registration_required: false}
+
+      status.should == 400
+      response_json['error'].should =~ /require a default user plan/
     end
   end
 

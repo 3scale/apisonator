@@ -15,18 +15,28 @@ module ThreeScale
       end
 
       post '/' do
-        service = Service.save!(params[:service])
-        status 201
-        {service: service, status: :created}.to_json
+        begin
+          service = Service.save!(params[:service])
+          status 201
+          {service: service, status: :created}.to_json
+        rescue ServiceRequiresDefaultUserPlan => e
+          status 400
+          {error: e.message}.to_json
+        end
       end
 
       put '/:id' do
-        service = Service.load_by_id(params[:id])
-        params[:service].each do |attr, value|
-          service.send "#{attr}=", value
+        begin
+          service = Service.load_by_id(params[:id])
+          params[:service].each do |attr, value|
+            service.send "#{attr}=", value
+          end
+          service.save!
+          {service: service, status: :ok}.to_json
+        rescue ServiceRequiresDefaultUserPlan => e
+          status 400
+          {error: e.message}.to_json
         end
-        service.save!
-        {service: service, status: :ok}.to_json
       end
 
       delete '/:id' do
