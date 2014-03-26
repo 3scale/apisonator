@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     class ServicesAPI < InternalAPI
-      ACCEPTED_PARAMS = %w(id service provider_key force)
+      ACCEPTED_PARAMS = %w(id service provider_key force new_key)
 
       before do
         content_type 'application/json'
@@ -20,8 +20,7 @@ module ThreeScale
           status 201
           {service: service, status: :created}.to_json
         rescue ServiceRequiresDefaultUserPlan => e
-          status 400
-          {error: e.message}.to_json
+          respond_with_400 e
         end
       end
 
@@ -34,8 +33,16 @@ module ThreeScale
           service.save!
           {service: service, status: :ok}.to_json
         rescue ServiceRequiresDefaultUserPlan => e
-          status 400
-          {error: e.message}.to_json
+          respond_with_400 e
+        end
+      end
+
+      put '/change_provider_key/:key' do
+        begin
+          ProviderKeyChangeUseCase.new(params[:key], params[:new_key]).process
+          {status: :ok}.to_json
+        rescue InvalidProviderKeys, ProviderKeyExists, ProviderKeyNotFound => e
+          respond_with_400 e
         end
       end
 
@@ -44,8 +51,7 @@ module ThreeScale
           Service.delete_by_id params[:id], force: (params[:force] == 'true')
           {status: :ok}.to_json
         rescue ServiceIsDefaultService => e
-          status 400
-          {error: e.message}.to_json
+          respond_with_400 e
         end
       end
 
@@ -79,6 +85,11 @@ module ThreeScale
             massage_params params[key]
           end
         end
+      end
+
+      def respond_with_400(exception)
+        status 400
+        {error: exception.message}.to_json
       end
     end
   end

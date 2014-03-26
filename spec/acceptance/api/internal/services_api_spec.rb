@@ -90,6 +90,37 @@ resource "Services (prefix: /services)" do
     end
   end
 
+  put '/change_provider_key/:key' do
+    parameter :key, 'Existing provider key', required: true
+    parameter :new_key, 'New provider key', required: true
+
+    let(:key){ 'foo' }
+    let(:new_key){ 'bar' }
+
+    example_request 'Changing a provider key'do
+      status.should == 200
+      response_json['status'].should == 'ok'
+    end
+
+    example_request 'Trying to change a provider key to empty', new_key: '' do
+      status.should == 400
+      response_json['error'].should =~ /keys are not valid/
+    end
+
+    example 'Trying to change a provider key to an existing one' do
+      ThreeScale::Backend::Service.save! id: 7002, provider_key: 'bar'
+      do_request new_key: 'bar'
+
+      status.should == 400
+      response_json['error'].should =~ /already exists/
+    end
+
+    example_request 'Trying to change a non-existent provider key', key: 'baz' do
+      status.should == 400
+      response_json['error'].should =~ /does not exist/
+    end
+  end
+
   delete '/:id' do
     parameter :id, 'Service ID', required: true
     parameter :force, 'Delete even if set as default service'
