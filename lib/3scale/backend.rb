@@ -6,7 +6,6 @@ require 'redis'
 require 'fiber'
 require 'ostruct'
 require 'airbrake'
-require 'rack/rest_api_versioning'
 require 'resque'
 require 'securerandom'
 require 'sinatra/base'
@@ -20,6 +19,9 @@ require 'logger'
 
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
+require '3scale/backend/helpers'
+
+require_relative '../../app/api/api'
 
 require '3scale/backend/rack_exception_catcher'
 require '3scale/backend/configuration'
@@ -51,6 +53,7 @@ require '3scale/backend/version'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
 require '3scale/backend/memoizer'
+require '3scale/backend/use_cases/provider_key_change_use_case'
 
 module ThreeScale
   module Core
@@ -76,7 +79,7 @@ ThreeScale::Backend.configuration.tap do |config|
   config.master_service_id = 1
   config.archiver.path     = '/tmp/3scale_backend/archive'
 
-  ## this means that there will be a NotifyJob for every X notifications (this is 
+  ## this means that there will be a NotifyJob for every X notifications (this is
   ## the call to master)
   config.notification_batch = 10000
 

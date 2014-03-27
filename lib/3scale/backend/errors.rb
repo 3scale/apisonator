@@ -44,7 +44,7 @@ module ThreeScale
         super %(application with id="#{id}" was not found)
       end
     end
-    
+
     class AccessTokenInvalid < NotFound
       def initialize(id = nil)
         super %(access_token "#{id}" is invalid: expired or never defined)
@@ -56,8 +56,8 @@ module ThreeScale
         super %(access_token "#{id}" already exists)
       end
     end
-    
-    
+
+
     class ApplicationNotActive < Error
       def initialize
         super %(application is not active)
@@ -102,13 +102,13 @@ module ThreeScale
 
     class ReferrerFilterInvalid < Invalid
     end
-    
+
     class NotValidData < Invalid
       def initialize
         super 'all data must be valid UTF8'
       end
     end
-    
+
     class BadRequest < Invalid
       def initialize
         super 'request contains syntanx errors, should not be repeated without modification'
@@ -162,18 +162,49 @@ module ThreeScale
         super %(user with user_id="#{user_id}" requires registration to use service with id="#{service_id}")
       end
     end
-    
+
     class ServiceCannotUseUserId < Error
       def initialize(service_id)
         super %(service with service_id="#{service_id}" does not have access to end user plans, user_id is not allowed)
       end
     end
-    
+
     class ServiceLoadInconsistency < Error
       def initialize(service_id, other_service_id)
         super %(service.load_by_id with id="#{service}" loaded the service with id="#{other_service_id}")
       end
     end
+
+    class ServiceRequiresDefaultUserPlan < Error
+      def initialize
+        super 'Services without the need for registered users require a default user plan'
+      end
+    end
+
+    class ServiceIsDefaultService < Error
+      def initialize(id = nil)
+        super %(Service id="#{id}" is the default service, must be removed forcefully or make it not default before removal)
+      end
+    end
+
+    class InvalidProviderKeys < Error
+      def initialize
+        super %(Provider keys are not valid, must be not nil and different)
+      end
+    end
+
+    class ProviderKeyExists < Error
+      def initialize(key)
+        super %(Provider key="#{key}" already exists)
+      end
+    end
+
+    class ProviderKeyNotFound < Error
+      def initialize(key)
+        super %(Provider key="#{key}" does not exist)
+      end
+    end
+
 
     # Legacy API support
 

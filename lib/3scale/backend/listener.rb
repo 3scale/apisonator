@@ -132,12 +132,10 @@ module ThreeScale
       register AllowMethods
 
       use Rack::RackExceptionCatcher
-      use Rack::RestApiVersioning, :default_version => '2.0'
 
       before do
         content_type 'application/vnd.3scale-v2.0+xml'
       end
-
 
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
@@ -719,7 +717,7 @@ module ThreeScale
       # FIXME: this operations can be done more efficiently, without loading the whole service
       def service_id
         if params[:service_id].nil? || params[:service_id].empty?
-          @service_id ||= Service.load_id!(params[:provider_key])
+          @service_id ||= Service.default_id!(params[:provider_key])
         else
           service = Service.load_by_id(params[:service_id])
           raise ProviderKeyInvalid, params[:provider_key] if service.nil? || service.provider_key!=params[:provider_key]
@@ -747,7 +745,7 @@ module ThreeScale
       end
 
       def check_if_master()
-        service_id = Service.load_id!(params[:provider_key])
+        service_id = Service.default_id!(params[:provider_key])
 
         return true if !service_id.nil? && (service_id.to_i==ThreeScale::Backend.configuration.master_service_id.to_i)
         raise ProviderKeyInvalid, params[:provider_key]

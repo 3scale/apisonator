@@ -18,6 +18,7 @@ module ThreeScale
           end
           use ThreeScale::Backend::Logger if log
 
+          ThreeScale::Backend::Server.mount_internal_api self
           run ThreeScale::Backend::Listener.new
         end
 
@@ -49,6 +50,25 @@ module ThreeScale
           "/var/run/3scale/3scale_backend_#{port}.pid"
         end
       end
+
+      def mount_internal_api(server)
+        server.map '/internal/services' do
+          use Rack::Auth::Basic do |username, password|
+            username == ThreeScale::Backend::Server.auth_username &&
+              password == ThreeScale::Backend::Server.auth_password
+          end
+          run ThreeScale::Backend::ServicesAPI.new
+        end
+      end
+
+      def auth_username
+        ENV['AUTH_USERNAME'] || 'user'
+      end
+
+      def auth_password
+        ENV['AUTH_PASSWORD'] || 'password'
+      end
+
     end
   end
 end

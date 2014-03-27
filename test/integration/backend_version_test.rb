@@ -8,7 +8,7 @@ class BackendVersionTest < Test::Unit::TestCase
   def setup
     Storage.instance(true).flushdb
     Memoizer.reset!
-    
+
     setup_provider_fixtures
 
     @application = Application.save(:service_id => @service.id,
@@ -23,9 +23,7 @@ class BackendVersionTest < Test::Unit::TestCase
 
   test 'test app_id and user_key are exchangeable regardless of the backend_version' do
 
-    Service.save!(
-            :id              => @service.id,
-            :backend_version => "1")
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: "1"
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
@@ -35,9 +33,7 @@ class BackendVersionTest < Test::Unit::TestCase
                                        :user_key     => "user_key_#{@application.id}"
     assert_authorized
 
-    Service.save!(
-            :id              => @service.id,
-            :backend_version => "2")
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: "2"
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
@@ -51,9 +47,7 @@ class BackendVersionTest < Test::Unit::TestCase
 
   test 'service originally on backend_version 2 with apps with app_key does not complain about missing app_key when changed to backend_version 1' do
 
-    Service.save!(
-            :id              => @service.id,
-            :backend_version => "2")
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: "2"
 
     application_key_one = @application.create_key
     application_key_two = @application.create_key
@@ -62,33 +56,27 @@ class BackendVersionTest < Test::Unit::TestCase
                                        :app_id       => @application.id,
                                        :app_key      => application_key_one
     assert_authorized
-    
-    ## this needs to be done because the server is cached on the memoizer        
+
+    ## this needs to be done because the server is cached on the memoizer
     Memoizer.reset!
 
-    Service.save!(
-            :id              => @service.id,
-            :backend_version => "1")
-    
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: "1"
+
     get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key       => "user_key_#{@application.id}"              
+                                       :user_key       => "user_key_#{@application.id}"
     assert_authorized
 
-    ## this needs to be done because the server is cached on the memoizer        
+    ## this needs to be done because the server is cached on the memoizer
     Memoizer.reset!
-      
-    Service.save!(
-            :id              => @service.id,
-            :backend_version => "2")
-            
-       
+
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: "2"
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id,
                                        :app_key      => application_key_two
     assert_authorized
   end
-  
+
   test 'when backend_version is not declared should behave like backend_version two regarding the presence of app_key' do
 
     if @service.backend_version.nil? || @service.backend_version.empty?
@@ -101,7 +89,7 @@ class BackendVersionTest < Test::Unit::TestCase
       assert_authorized
 
       get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :user_key       => "user_key_#{@application.id}"                                
+                                       :user_key       => "user_key_#{@application.id}"
       assert_not_authorized 'application key is missing'
     end
 
