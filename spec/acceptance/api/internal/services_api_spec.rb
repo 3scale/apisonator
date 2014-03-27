@@ -15,6 +15,11 @@ resource "Services (prefix: /services)" do
       response_json['id'].should == '1001'
       status.should == 200
     end
+
+    example_request 'Try to get a Service by non-existent ID', id: 1002 do
+      status.should == 404
+      response_json['error'].should =~ /not_found/
+    end
   end
 
   post '/' do

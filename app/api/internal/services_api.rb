@@ -3,7 +3,12 @@ module ThreeScale
     class ServicesAPI < InternalAPI
 
       get '/:id' do
-        Service.load_by_id(params[:id]).to_json
+        if service = Service.load_by_id(params[:id])
+          service.to_json
+        else
+          status 404
+          {error: :not_found}.to_json
+        end
       end
 
       post '/' do

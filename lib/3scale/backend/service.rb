@@ -190,6 +190,18 @@ module ThreeScale
         end
       end
 
+      def to_json
+        {
+          id: id,
+          provider_key: provider_key,
+          backend_version: backend_version,
+          referrer_filters_required: referrer_filters_required?,
+          user_registration_required: user_registration_required?,
+          default_user_plan_id: default_user_plan_id,
+          default_user_plan_name: default_user_plan_name,
+        }.to_json
+      end
+
       private
 
       def delete_attributes
