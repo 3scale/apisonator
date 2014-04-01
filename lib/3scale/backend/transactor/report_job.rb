@@ -48,6 +48,7 @@ module ThreeScale
               end  
 
               u = raw_transaction['usage']
+
               if !u.nil? && !u.empty?
                 ## makes no sense to process a transaction if no usage is passed
                 transactions << {

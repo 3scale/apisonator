@@ -2,21 +2,19 @@ module ThreeScale
   module Backend
     module Validators
       class Limits < Base
+
         def apply
-          values = process(status.values, params[:usage]) unless status.application.nil?
-          user_values = process(status.user_values, params[:usage]) unless status.user.nil? 
-          
-          check_user = true
-          check_app = true
+          check = true
 
-          check_app = status.application.usage_limits.all? { |limit| limit.validate(values) } unless status.application.nil?
-          check_user =  status.user.usage_limits.all? { |limit| limit.validate(user_values) } unless status.user.nil?
-
-          if check_user && check_app
-            succeed!
-          else
-            fail!(LimitsExceeded.new)
+          if status.application
+            check = valid_limits?(status.values, status.application.usage_limits)
           end
+
+          if status.user
+            check = valid_limits?(status.user_values, status.user.usage_limits)
+          end
+
+          check ? succeed! : fail!(LimitsExceeded.new)
         end
 
         private
@@ -25,13 +23,16 @@ module ThreeScale
           if raw_usage
             metrics = Metric.load_all(status.service.id)
             usage   = metrics.process_usage(raw_usage)
-
-            values = filter_metrics(values, usage.keys)
-            values = increment_or_set(values, usage)
-            values
-          else
-            values
+            values  = filter_metrics(values, usage.keys)
+            values  = increment_or_set(values, usage)
           end
+
+          values
+        end
+
+        def valid_limits?(values, limits)
+          processed_values = process(values, params[:usage])
+          limits.all? { |limit| limit.validate(processed_values) }
         end
 
         def filter_metrics(values, metric_ids)
@@ -65,7 +66,7 @@ module ThreeScale
             memo
           end
         end
-        
+
       end
     end
   end

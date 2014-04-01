@@ -13,7 +13,7 @@ module ThreeScale
 
         attr_reader :status
         attr_reader :params
-        
+
         def service
           status.service
         end
