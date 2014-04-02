@@ -45,8 +45,11 @@ module ThreeScale
       end
 
       def respond_with_400(exception)
-        status 400
-        {error: exception.message}.to_json
+        halt 400, {error: exception.message}.to_json
+      end
+
+      def respond_with_404(message)
+        halt 404, {status: :not_found, error: message}.to_json
       end
     end
   end

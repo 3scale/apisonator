@@ -88,6 +88,7 @@ module ThreeScale
           result
         end
 
+        # TODO: Is it used?
         def list(provider_key)
           key = "Service.list-#{provider_key}"
           Memoizer.memoize_block(key) do
@@ -202,6 +203,10 @@ module ThreeScale
         }.to_json
       end
 
+      def bump_version
+        storage.incr storage_key(:version)
+      end
+
       private
 
       def delete_attributes
@@ -274,10 +279,6 @@ module ThreeScale
         storage.sadd storage_key_by_provider(:ids), id
         storage.sadd encode_key("services_set"), id
         storage.sadd encode_key("provider_keys_set"), provider_key
-      end
-
-      def bump_version
-        storage.incr storage_key(:version)
       end
 
     end
