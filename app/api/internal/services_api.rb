@@ -1,3 +1,6 @@
+require '3scale/backend/use_cases/provider_key_change_use_case'
+require '3scale/backend/use_cases/service_user_management_use_case'
+
 module ThreeScale
   module Backend
     class ServicesAPI < InternalAPI
@@ -53,11 +56,11 @@ module ThreeScale
       end
 
       get '/:id/users' do
-        {count: ServiceUserManagementUseCase.new(get_service).count}.to_json
+        {count: user_use_case.count}.to_json
       end
 
       get '/:id/users/:username/exists' do
-        if ServiceUserManagementUseCase.new(get_service, params[:username]).exists?
+        if user_use_case.exists?
           {exists: true}.to_json
         else
           {exists: false}.to_json
@@ -65,12 +68,13 @@ module ThreeScale
       end
 
       post '/:id/users/:username' do
-        ServiceUserManagementUseCase.new(get_service, params[:username]).add
+        user_use_case.add
         {status: :ok}.to_json
       end
 
       delete '/:id/users/:username' do
-        ServiceUserManagementUseCase.new(get_service, params[:username]).delete
+        user_use_case.delete
+
         {status: :ok}.to_json
       end
 
@@ -79,6 +83,10 @@ module ThreeScale
       def get_service
         service = Service.load_by_id(params[:id])
         service ? service : respond_with_404("Service #{params[:id]} not found")
+      end
+
+      def user_use_case
+        ServiceUserManagementUseCase.new(get_service, params[:username])
       end
 
     end

@@ -53,8 +53,6 @@ require '3scale/backend/version'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
 require '3scale/backend/memoizer'
-require '3scale/backend/use_cases/provider_key_change_use_case'
-require '3scale/backend/use_cases/service_user_management_use_case'
 
 module ThreeScale
   module Core
