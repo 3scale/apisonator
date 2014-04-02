@@ -52,6 +52,35 @@ module ThreeScale
         end
       end
 
+      get '/:id/users' do
+        {count: ServiceUserManagementUseCase.new(get_service).count}.to_json
+      end
+
+      get '/:id/users/:username/exists' do
+        if ServiceUserManagementUseCase.new(get_service, params[:username]).exists?
+          {exists: true}.to_json
+        else
+          {exists: false}.to_json
+        end
+      end
+
+      post '/:id/users/:username' do
+        ServiceUserManagementUseCase.new(get_service, params[:username]).add
+        {status: :ok}.to_json
+      end
+
+      delete '/:id/users/:username' do
+        ServiceUserManagementUseCase.new(get_service, params[:username]).delete
+        {status: :ok}.to_json
+      end
+
+      private
+
+      def get_service
+        service = Service.load_by_id(params[:id])
+        service ? service : respond_with_404("Service #{params[:id]} not found")
+      end
+
     end
   end
 end

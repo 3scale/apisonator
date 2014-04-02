@@ -5,7 +5,7 @@ resource "Services (prefix: /services)" do
   header "Accept", "application/json"
 
   before do
-    ThreeScale::Backend::Service.save!(provider_key: 'foo', id: '1001')
+    @service = ThreeScale::Backend::Service.save!(provider_key: 'foo', id: '1001')
   end
 
   get "/:id" do
@@ -146,6 +146,64 @@ resource "Services (prefix: /services)" do
 
       status.should == 200
       response_json['status'].should == 'ok'
+    end
+  end
+
+  get '/:id/users/:username/exists' do
+    parameter :id, 'Service ID', required: true
+    parameter :username, 'Username to check for', required: true
+
+    example 'Checking for existing user' do
+      ThreeScale::Backend::ServiceUserManagementUseCase.new(@service, 'bar').add
+
+      do_request id: 1001, username: 'bar'
+      expect(status).to eq 200
+      expect(response_json['exists']).to be true
+    end
+
+    example_request 'Checking for a non-existing user', id: 1001, username: 'baz' do
+      expect(status).to eq 200
+      expect(response_json['exists']).to be false
+    end
+
+    example_request 'Checking a non-existing service', id: 1002 do
+      expect(status).to eq 404
+      expect(response_json['error']).to match /Service 1002 not found/
+    end
+  end
+
+  post '/:id/users/:username' do
+    parameter :id, 'Service ID', required: true
+    parameter :username, 'Username to add', required: true
+
+    example_request 'Adding a user to a service', id: 1001, username: 'bar' do
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'ok'
+    end
+  end
+
+  delete '/:id/users/:username' do
+    parameter :id, 'Service ID', required: true
+    parameter :username, 'Username to delete', required: true
+
+    example 'Removing a user from a service' do
+      ThreeScale::Backend::ServiceUserManagementUseCase.new(@service, 'bar').add
+
+      do_request id: 1001, username: 'bar'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'ok'
+    end
+  end
+
+  get '/:id/users' do
+    parameter :id, 'Service ID', required: true
+
+    example 'Get user count for a service' do
+      ThreeScale::Backend::ServiceUserManagementUseCase.new(@service, 'bar').add
+
+      do_request id: 1001
+      expect(status).to eq 200
+      expect(response_json['count']).to eq 1
     end
   end
 
