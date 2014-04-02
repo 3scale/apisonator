@@ -55,19 +55,7 @@ module ThreeScale
         end
       end
 
-      get '/:id/users' do
-        {count: user_use_case.count}.to_json
-      end
-
-      get '/:id/users/:username/exists' do
-        if user_use_case.exists?
-          {exists: true}.to_json
-        else
-          {exists: false}.to_json
-        end
-      end
-
-      post '/:id/users/:username' do
+      post '/:id/users' do
         user_use_case.add
         {status: :ok}.to_json
       end
