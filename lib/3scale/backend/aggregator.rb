@@ -118,7 +118,7 @@ module ThreeScale
 
         ## now we have done all incrementes for all the transactions, we
         ## need to update the cached_status for for the transactor
-        update_status_cache(applications,users)
+        update_status_cache(applications, users)
 
         ## the time bucket has elapsed, trigger a mongodb job
         if @mongo_enabled
@@ -166,7 +166,6 @@ module ThreeScale
 
       def aggregate(transaction)
         service_prefix     = service_key_prefix(transaction[:service_id])
-        application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
 
         # this one is for the limits of the users
         if transaction[:user_id].nil?
@@ -244,6 +243,7 @@ module ThreeScale
 
       ## copied from transactor.rb
       def load_current_usage(application)
+
         pairs = Array.new
         metric_ids = Array.new
         application.usage_limits.each do |usage_limit|
@@ -252,7 +252,7 @@ module ThreeScale
         end
         ## Warning this makes the test transactor_test.rb fail, weird because it didn't happen before
         return {} if pairs.nil? or pairs.size==0
-        
+
         # preloading metric names
         application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
         now = Time.now.getutc

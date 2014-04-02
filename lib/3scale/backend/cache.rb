@@ -70,17 +70,18 @@ module ThreeScale
       end
 
       def signature(action, params)
-          key_version = "cache_combination/#{action}/"
-          VALID_PARAMS_FOR_CACHE.each do |label|
-            if label!=:usage || params[:usage].nil?
-              key_version << "#{label}:#{params[label]}/"
-            else
-              params[:usage].each do |key,value|
-                key_version << "#{label}:#{key}:"
-              end
+        key_version = "cache_combination/#{action}/"
+
+        VALID_PARAMS_FOR_CACHE.each do |label|
+          if label!=:usage || params[:usage].nil?
+            key_version << "#{label}:#{params[label]}/"
+          else
+            params[:usage].each do |key,value|
+              key_version << "#{label}:#{key}:"
             end
           end
-          key_version
+        end
+        key_version
       end
 
       def combination_seen(action, provider_key, params)
@@ -109,13 +110,22 @@ module ThreeScale
           application_id_cached << params[:app_key] unless params[:app_key].nil?
           application_id_cached << ":"
           application_id_cached << params[:referrer] unless params[:referrer].nil?
+
           # FIXME: this needs to be done for redirect_url(??)
 
           if username.nil?
 
             cached_app_key = caching_key(service_id,:application,application_id_cached)
-
-            version, ver_service, ver_application, dirty_app_xml, caching_enabled = storage.mget(key_version,Service.storage_key(service_id, :version),Application.storage_key(service_id,application_id,:version),cached_app_key,"settings/caching_enabled")
+            version,
+            ver_service,
+            ver_application,
+            dirty_app_xml,
+            caching_enabled = storage.mget(
+              key_version,
+              Service.storage_key(service_id, :version),
+              Application.storage_key(service_id,application_id,:version),
+              cached_app_key,
+              "settings/caching_enabled")
 
             current_version = "s:#{ver_service}/a:#{ver_application}"
 
@@ -124,7 +134,20 @@ module ThreeScale
             cached_app_key = caching_key(service_id,:application,application_id_cached)
             cached_user_key = caching_key(service_id,:user,username)
 
-            version, ver_service, ver_application, ver_user, dirty_app_xml, dirty_user_xml, caching_enabled = storage.mget(key_version,Service.storage_key(service_id, :version),Application.storage_key(service_id,application_id,:version),User.storage_key(service_id,username,:version),cached_app_key,cached_user_key,"settings/caching_enabled")
+            version,
+            ver_service,
+            ver_application,
+            ver_user,
+            dirty_app_xml,
+            dirty_user_xml,
+            caching_enabled = storage.mget(
+              key_version,
+              Service.storage_key(service_id, :version),
+              Application.storage_key(service_id,application_id,:version),
+              User.storage_key(service_id,username,:version),
+              cached_app_key,
+              cached_user_key,
+              "settings/caching_enabled")
 
             current_version = "s:#{ver_service}/a:#{ver_application}/u:#{ver_user}"
           end
@@ -275,7 +298,7 @@ module ThreeScale
           violation_just_happened = false
         end
 
-        return [newxmlstr, authorized, violation_just_happened]
+        [newxmlstr, authorized, violation_just_happened]
       end
 
 
@@ -283,7 +306,6 @@ module ThreeScale
       def set_status_in_cache_application(service_id, application, status, options ={})
         options[:anchors_for_caching] = true
         content = status.to_xml(options)
-
         tmp_keys = []
         keys = []
 
@@ -324,7 +346,6 @@ module ThreeScale
         end
 
       end
-
 
       def set_status_in_cache(key, status, options ={})
         options[:anchors_for_caching] = true
