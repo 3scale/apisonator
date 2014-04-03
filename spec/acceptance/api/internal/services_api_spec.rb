@@ -3,12 +3,13 @@ require_relative '../../acceptance_spec_helper'
 resource "Services (prefix: /services)" do
   set_app ThreeScale::Backend::ServicesAPI
   header "Accept", "application/json"
+  header "Content-Type", "application/json"
 
   before do
     @service = ThreeScale::Backend::Service.save!(provider_key: 'foo', id: '1001')
   end
 
-  get "/:id" do
+  get '/:id' do
     parameter :id, "Service ID", required: true
 
     example_request "Get Service by ID", :id => 1001 do
@@ -101,6 +102,7 @@ resource "Services (prefix: /services)" do
 
     let(:key){ 'foo' }
     let(:new_key){ 'bar' }
+    let(:raw_post) { params.to_json }
 
     example_request 'Changing a provider key'do
       status.should == 200
@@ -130,6 +132,8 @@ resource "Services (prefix: /services)" do
     parameter :id, 'Service ID', required: true
     parameter :force, 'Delete even if set as default service'
 
+    let(:raw_post) { params.to_json }
+
     example_request 'Deleting a default service', id: 1001 do
       status.should == 400
       response_json['error'].should =~ /must be removed forcefully/
@@ -150,6 +154,8 @@ resource "Services (prefix: /services)" do
   end
 
   post '/:id/users' do
+    let(:raw_post) { params.to_json }
+
     parameter :id, 'Service ID', required: true
     parameter :username, 'Username to add', required: true
 

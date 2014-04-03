@@ -9,16 +9,14 @@ module ThreeScale
         if service = Service.load_by_id(params[:id])
           service.to_json
         else
-          status 404
-          {error: :not_found}.to_json
+          [404, headers, {error: :not_found}.to_json]
         end
       end
 
       post '/' do
         begin
           service = Service.save!(params[:service])
-          status 201
-          {service: service, status: :created}.to_json
+          [201, headers, {service: service, status: :created}.to_json]
         rescue ServiceRequiresDefaultUserPlan => e
           respond_with_400 e
         end
@@ -48,7 +46,7 @@ module ThreeScale
 
       delete '/:id' do
         begin
-          Service.delete_by_id params[:id], force: (params[:force] == 'true')
+          Service.delete_by_id params[:id], params
           {status: :ok}.to_json
         rescue ServiceIsDefaultService => e
           respond_with_400 e
