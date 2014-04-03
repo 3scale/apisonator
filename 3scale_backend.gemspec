@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.summary     = '3scale web service management system backend'
   s.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'
 
-  s.required_ruby_version     = "~> 1.9.3.484"
+  s.required_ruby_version     = "~> 2.1.1"
   s.required_rubygems_version = ">= 1.3.7"
 
   s.add_dependency 'aws-s3',                    '0.6.3'
