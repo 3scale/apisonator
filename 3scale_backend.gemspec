@@ -24,6 +24,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'resque',                    '1.23.0'
   s.add_dependency 'rack',                      '1.5.2'
   s.add_dependency 'airbrake',                  '3.1.6'
+  s.add_dependency 'tilt',                      '1.4.1'
   s.add_dependency 'sinatra',                   '1.2.8'
   s.add_dependency 'thin',                      '1.5.0'
   s.add_dependency 'yajl-ruby',                 '1.1.0'
