@@ -16,7 +16,6 @@ require 'zlib'
 require 'rest-client'
 require 'digest/md5'
 require 'logger'
-require 'active_support/json'
 
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'

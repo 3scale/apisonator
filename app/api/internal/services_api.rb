@@ -7,7 +7,7 @@ module ThreeScale
 
       get '/:id' do
         if service = Service.load_by_id(params[:id])
-          service.to_json
+          service.to_hash.to_json
         else
           [404, headers, {error: :not_found}.to_json]
         end
@@ -16,7 +16,7 @@ module ThreeScale
       post '/' do
         begin
           service = Service.save!(params[:service])
-          [201, headers, {service: service, status: :created}.to_json]
+          [201, headers, {service: service.to_hash, status: :created}.to_json]
         rescue ServiceRequiresDefaultUserPlan => e
           respond_with_400 e
         end
@@ -29,7 +29,7 @@ module ThreeScale
             service.send "#{attr}=", value
           end
           service.save!
-          {service: service, status: :ok}.to_json
+          {service: service.to_hash, status: :ok}.to_json
         rescue ServiceRequiresDefaultUserPlan => e
           respond_with_400 e
         end
