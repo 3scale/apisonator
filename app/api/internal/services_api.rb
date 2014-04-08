@@ -7,18 +7,16 @@ module ThreeScale
 
       get '/:id' do
         if service = Service.load_by_id(params[:id])
-          service.to_json
+          service.to_hash.to_json
         else
-          status 404
-          {error: :not_found}.to_json
+          [404, headers, {error: :not_found}.to_json]
         end
       end
 
       post '/' do
         begin
           service = Service.save!(params[:service])
-          status 201
-          {service: service, status: :created}.to_json
+          [201, headers, {service: service.to_hash, status: :created}.to_json]
         rescue ServiceRequiresDefaultUserPlan => e
           respond_with_400 e
         end
@@ -31,7 +29,7 @@ module ThreeScale
             service.send "#{attr}=", value
           end
           service.save!
-          {service: service, status: :ok}.to_json
+          {service: service.to_hash, status: :ok}.to_json
         rescue ServiceRequiresDefaultUserPlan => e
           respond_with_400 e
         end
@@ -48,26 +46,14 @@ module ThreeScale
 
       delete '/:id' do
         begin
-          Service.delete_by_id params[:id], force: (params[:force] == 'true')
+          Service.delete_by_id params[:id], params
           {status: :ok}.to_json
         rescue ServiceIsDefaultService => e
           respond_with_400 e
         end
       end
 
-      get '/:id/users' do
-        {count: user_use_case.count}.to_json
-      end
-
-      get '/:id/users/:username/exists' do
-        if user_use_case.exists?
-          {exists: true}.to_json
-        else
-          {exists: false}.to_json
-        end
-      end
-
-      post '/:id/users/:username' do
+      post '/:id/users' do
         user_use_case.add
         {status: :ok}.to_json
       end

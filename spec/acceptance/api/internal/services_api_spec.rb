@@ -3,12 +3,13 @@ require_relative '../../acceptance_spec_helper'
 resource "Services (prefix: /services)" do
   set_app ThreeScale::Backend::ServicesAPI
   header "Accept", "application/json"
+  header "Content-Type", "application/json"
 
   before do
     @service = ThreeScale::Backend::Service.save!(provider_key: 'foo', id: '1001')
   end
 
-  get "/:id" do
+  get '/:id' do
     parameter :id, "Service ID", required: true
 
     example_request "Get Service by ID", :id => 1001 do
@@ -101,6 +102,7 @@ resource "Services (prefix: /services)" do
 
     let(:key){ 'foo' }
     let(:new_key){ 'bar' }
+    let(:raw_post) { params.to_json }
 
     example_request 'Changing a provider key'do
       status.should == 200
@@ -130,6 +132,8 @@ resource "Services (prefix: /services)" do
     parameter :id, 'Service ID', required: true
     parameter :force, 'Delete even if set as default service'
 
+    let(:raw_post) { params.to_json }
+
     example_request 'Deleting a default service', id: 1001 do
       status.should == 400
       response_json['error'].should =~ /must be removed forcefully/
@@ -149,30 +153,9 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  get '/:id/users/:username/exists' do
-    parameter :id, 'Service ID', required: true
-    parameter :username, 'Username to check for', required: true
+  post '/:id/users' do
+    let(:raw_post) { params.to_json }
 
-    example 'Checking for existing user' do
-      ThreeScale::Backend::ServiceUserManagementUseCase.new(@service, 'bar').add
-
-      do_request id: 1001, username: 'bar'
-      expect(status).to eq 200
-      expect(response_json['exists']).to be true
-    end
-
-    example_request 'Checking for a non-existing user', id: 1001, username: 'baz' do
-      expect(status).to eq 200
-      expect(response_json['exists']).to be false
-    end
-
-    example_request 'Checking a non-existing service', id: 1002 do
-      expect(status).to eq 404
-      expect(response_json['error']).to match /Service 1002 not found/
-    end
-  end
-
-  post '/:id/users/:username' do
     parameter :id, 'Service ID', required: true
     parameter :username, 'Username to add', required: true
 
@@ -192,18 +175,6 @@ resource "Services (prefix: /services)" do
       do_request id: 1001, username: 'bar'
       expect(status).to eq 200
       expect(response_json['status']).to eq 'ok'
-    end
-  end
-
-  get '/:id/users' do
-    parameter :id, 'Service ID', required: true
-
-    example 'Get user count for a service' do
-      ThreeScale::Backend::ServiceUserManagementUseCase.new(@service, 'bar').add
-
-      do_request id: 1001
-      expect(status).to eq 200
-      expect(response_json['count']).to eq 1
     end
   end
 

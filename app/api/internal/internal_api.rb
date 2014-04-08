@@ -15,14 +15,8 @@ module ThreeScale
       private
 
       def parse_json_params(params)
-        json_params = {}
-        params.each do |key, value|
-          if value.nil?
-            json_params.merge! JSON.parse(key)
-            params.delete key
-          end
-        end
-        params.merge! json_params
+        body = request.body.read
+        params.merge! JSON.parse(body) unless body.empty?
       end
 
       def filter_params(params)

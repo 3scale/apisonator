@@ -25,10 +25,6 @@ module ThreeScale
         deleted
       end
 
-      def count
-        storage.scard @service.storage_key("user_set")
-      end
-
       private
 
       def storage
