@@ -46,7 +46,7 @@ module ThreeScale
 
       delete '/:id' do
         begin
-          Service.delete_by_id params[:id], params
+          Service.delete_by_id params[:id]
           {status: :ok}.to_json
         rescue ServiceIsDefaultService => e
           respond_with_400 e

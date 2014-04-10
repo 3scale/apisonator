@@ -67,9 +67,9 @@ module ThreeScale
           load_by_id(service_id) or raise ServiceIdInvalid, service_id
         end
 
-        def delete_by_id(service_id, options = {})
+        def delete_by_id(service_id)
           service = load_by_id(service_id)
-          if service.default_service? && !options[:force]
+          if service.default_service?
             raise ServiceIsDefaultService, service.id
           end
 

@@ -130,18 +130,12 @@ resource "Services (prefix: /services)" do
 
   delete '/:id' do
     parameter :id, 'Service ID', required: true
-    parameter :force, 'Delete even if set as default service'
 
     let(:raw_post) { params.to_json }
 
     example_request 'Deleting a default service', id: 1001 do
       status.should == 400
-      response_json['error'].should =~ /must be removed forcefully/
-    end
-
-    example_request 'Forcing a deletion of a default service', id: 1001, force: true do
-      status.should == 200
-      response_json['status'].should == 'ok'
+      response_json['error'].should =~ /cannot be removed/
     end
 
     example 'Deleting a non-default service' do

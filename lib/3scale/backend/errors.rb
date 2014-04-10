@@ -183,7 +183,7 @@ module ThreeScale
 
     class ServiceIsDefaultService < Error
       def initialize(id = nil)
-        super %(Service id="#{id}" is the default service, must be removed forcefully or make it not default before removal)
+        super %(Service id="#{id}" is the default service, cannot be removed)
       end
     end
 

@@ -184,13 +184,6 @@ module ThreeScale
 
           Service.load_by_id(service.id).should_not be_nil
         end
-
-        it 'deletes a default service when forced' do
-          Service.delete_by_id service.id, force: true
-
-          Service.load_by_id(service.id).should be_nil
-          Service.default_id(service.provider_key).should be_nil
-        end
       end
 
     end
