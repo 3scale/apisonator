@@ -1,88 +1,94 @@
 # encoding: utf-8
-require 'rake/testtask'
-require 'rspec/core/rake_task'
-
-task :default => [:test, :spec]
-
-desc 'Run unit and integration tests'
-task :test => ['test:unit', 'test:integration']
 
 task :environment do
   require '3scale/backend'
 end
 
-namespace :test do
-  desc 'Run all tests (unit, integration and special)'
-  task :all => ['test:unit', 'test:integration', 'test:special']
+def testable_environment?
+  !%w(preview production).include?(ENV['RACK_ENV'])
+end
 
-  Rake::TestTask.new(:unit) do |task|
-    task.test_files = FileList['test/unit/**/*_test.rb']
-    task.verbose = true
+if testable_environment?
+  require 'rake/testtask'
+
+  task :default => [:test, :spec]
+
+  desc 'Run unit and integration tests'
+  task :test => ['test:unit', 'test:integration']
+
+  namespace :test do
+    desc 'Run all tests (unit, integration and special)'
+    task :all => ['test:unit', 'test:integration', 'test:special']
+
+    Rake::TestTask.new(:unit) do |task|
+      task.test_files = FileList['test/unit/**/*_test.rb']
+      task.verbose = true
+    end
+
+    Rake::TestTask.new(:integration) do |task|
+      task.test_files = FileList['test/integration/**/*_test.rb']
+      task.verbose = true
+    end
+
+    Rake::TestTask.new(:special) do |task|
+      task.test_files = FileList['test/special/**/*_test.rb']
+      task.verbose = true
+    end
   end
 
-  Rake::TestTask.new(:integration) do |task|
-    task.test_files = FileList['test/integration/**/*_test.rb']
-    task.verbose = true
+  require 'rspec/core/rake_task'
+  desc 'Run specs'
+  RSpec::Core::RakeTask.new
+
+  desc 'Generate API request documentation from API specs'
+  RSpec::Core::RakeTask.new('docs:generate') do |t|
+    t.pattern = 'spec/acceptance/**/*_spec.rb'
+    t.rspec_opts = ["--format RspecApiDocumentation::ApiFormatter"]
   end
 
-  Rake::TestTask.new(:special) do |task|
-    task.test_files = FileList['test/special/**/*_test.rb']
-    task.verbose = true
-  end
-end
+  desc 'Tag and push the current version'
+  task :release => ['release:tag', 'release:push']
 
-desc 'Run specs'
-RSpec::Core::RakeTask.new
+  namespace :release do
+    task :tag do
+      require File.dirname(__FILE__) + '/lib/3scale/backend/version'
+      system "git tag v#{ThreeScale::Backend::VERSION}"
+    end
 
-desc 'Generate API request documentation from API specs'
-RSpec::Core::RakeTask.new('docs:generate') do |t|
-  t.pattern = 'spec/acceptance/**/*_spec.rb'
-  t.rspec_opts = ["--format RspecApiDocumentation::ApiFormatter"]
-end
-
-desc 'Tag and push the current version'
-task :release => ['release:tag', 'release:push']
-
-namespace :release do
-  task :tag do
-    require File.dirname(__FILE__) + '/lib/3scale/backend/version'
-    system "git tag v#{ThreeScale::Backend::VERSION}"
+    task :push do
+      system "git push --tags"
+    end
   end
 
-  task :push do
-    system "git push --tags"
+  desc 'Seed, put info into redis using data/postfile3, plan :default'
+  task :seed do
+    system "ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3"
   end
-end
 
-desc 'Seed, put info into redis using data/postfile3, plan :default'
-task :seed do
-	system "ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3"
-end
+  desc 'Seed, put info into redis using data/postfile3, plan :user'
+  task :seed_user do
+    system "ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3"
+  end
 
-desc 'Seed, put info into redis using data/postfile3, plan :user'
-task :seed_user do
-	system "ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3"
-end
+  desc 'Start the backend server in development'
+  task :start do
+    system "ruby -Ilib bin/3scale_backend -p #{ENV['PORT'] || 3001} start"
+  end
 
+  desc 'Start a backend_worker in development'
+  task :start_worker do
+    system "ruby -Ilib bin/3scale_backend_worker_no_daemon"
+  end
 
-desc 'Start the backend server in development'
-task :start do
-  system "ruby -Ilib bin/3scale_backend -p #{ENV['PORT'] || 3001} start"
-end
+  desc 'Stop a backend_worker in development'
+  task :stop_worker do
+    system "ruby -Ilib bin/3scale_backend_worker stop"
+  end
 
-desc 'Start a backend_worker in development'
-task :start_worker do
-  system "ruby -Ilib bin/3scale_backend_worker_no_daemon"
-end
-
-desc 'Stop a backend_worker in development'
-task :stop_worker do
-  system "ruby -Ilib bin/3scale_backend_worker stop"
-end
-
-desc 'Restart a backend_worker in development'
-task :restart_worker do
-  system "ruby -Ilib bin/3scale_backend_worker restart"
+  desc 'Restart a backend_worker in development'
+  task :restart_worker do
+    system "ruby -Ilib bin/3scale_backend_worker restart"
+  end
 end
 
 desc 'Reschedule failed jobs'
@@ -94,7 +100,6 @@ task :reschedule_failed_jobs => :environment do
 end
 
 namespace :cache do
-
   desc 'Caching enabled?'
   task :caching_enabled? => :environment do
     puts ThreeScale::Backend::Transactor.caching_enabled?
@@ -109,7 +114,6 @@ namespace :cache do
   task :enable_caching => :environment do
     puts ThreeScale::Backend::Transactor.caching_enable
   end
-
 end
 
 namespace :stats do
