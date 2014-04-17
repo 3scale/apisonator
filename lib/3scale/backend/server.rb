@@ -14,7 +14,7 @@ module ThreeScale
             Airbrake.configure do |config|
               config.api_key = configuration.hoptoad.api_key
             end
-            use Airbrake::Rack
+            use Airbrake::Sinatra
           end
           use ThreeScale::Backend::Logger if log
 
