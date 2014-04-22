@@ -663,6 +663,7 @@ module ThreeScale
           ## internal errors
           raise exception
         end
+        delete_sinatra_error!
 
         if params[:no_body]
           error error_code, ""
@@ -672,10 +673,21 @@ module ThreeScale
       end
 
       error Sinatra::NotFound do
+        delete_sinatra_error!
         error 404, ""
       end
 
       private
+
+
+      # Deletes 'sinatra.error' key in Rack's env hash.
+      # Newer version of airbrake gem is reporting 'sinatra.error' and we don't
+      # want it when the error is rescued and managed by us with the error handler.
+      # @return [nil]
+      def delete_sinatra_error!
+        # clean sinatra.error
+        env['sinatra.error'] = nil
+      end
 
       def blank?(object)
         object.respond_to?(:empty?) ? object.empty? : !object
