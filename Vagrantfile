@@ -9,7 +9,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "precise32"
   config.berkshelf.enabled = true
 
-  config.vm.network :forwarded_port, guest: 3000, host: 8080
+  config.vm.network :forwarded_port, guest: 3000, host: 8081
 
   config.vm.provision :chef_solo do |chef|
     chef.add_recipe 'apt'

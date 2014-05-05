@@ -1,13 +1,9 @@
-{
-  "sources": {
-    "apt": {
-      "locked_version": "2.3.4"
-    },
-    "redisio": {
-      "locked_version": "1.7.1"
-    },
-    "ulimit": {
-      "locked_version": "0.3.2"
-    }
-  }
-}
+DEPENDENCIES
+  apt
+  redisio
+
+GRAPH
+  apt (2.3.10)
+  redisio (1.7.1)
+    ulimit (>= 0.1.2)
+  ulimit (0.3.2)
