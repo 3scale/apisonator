@@ -62,11 +62,11 @@ module ThreeScale
       end
 
       def auth_username
-        ENV['AUTH_USERNAME'] || 'user'
+        ENV['DONBOT_AUTH_USERNAME'] || 'user'
       end
 
       def auth_password
-        ENV['AUTH_PASSWORD'] || 'password'
+        ENV['DONBOT_AUTH_PASSWORD'] || 'password'
       end
 
     end
