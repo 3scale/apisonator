@@ -1,3 +1,5 @@
+require 'rspec'
+
 require_relative '../lib/3scale/backend.rb'
 
 RSpec.configure do |config|

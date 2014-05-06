@@ -35,6 +35,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'mongo',                     '1.9.0'
   s.add_dependency 'bson_ext',                  '1.9.0'
   s.add_dependency '3scale_core',               '1.0.3'
+  s.add_dependency 'redis-sentinel',            '1.4.4'
 
   s.files = Dir.glob('{lib,bin,app}/**/*')
   s.files << 'README.md'
