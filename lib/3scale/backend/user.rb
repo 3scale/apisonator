@@ -2,14 +2,10 @@ module ThreeScale
   module Backend
     class User < Core::User
 
-      #def self.load!(service, username)
-      #  load(service, username)
-      #end
-      
       def self.load_or_create!(service, user_id)
         key = "User.load_or_create!-#{service.id}-#{user_id}"
-        Memoizer.memoize_block(key) do 
-          super(service, user_id)
+        Memoizer.memoize_block(key) do
+          super service, user_id
         end
       end
 
@@ -27,7 +23,30 @@ module ThreeScale
 
       def usage_limits
         @usage_limits ||= UsageLimit.load_all(service_id, plan_id)
-      end      
+      end
+
+      # Copy-pasted from Core
+      def save
+        service = Service.load_by_id(service_id)
+        ServiceUserManagementUseCase.new(service, username).add
+
+        storage.multi do
+          storage.hset key, "state", state.to_s if state
+          storage.hset key, "plan_id", plan_id if plan_id
+          storage.hset key, "plan_name", plan_name if plan_name
+          storage.hset key, "username", username if username
+          storage.hset key, "service_id", service_id if service_id
+          storage.hincrby key, "version", 1
+        end
+
+      end
+
+      private
+
+      # Username is used as a unique user ID
+      def user_id
+        username
+      end
 
     end
   end

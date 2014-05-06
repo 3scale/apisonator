@@ -62,17 +62,17 @@ class MultiServicesTest < Test::Unit::TestCase
 
   end
 
-  test 'right place to declare service_id' do 
+  test 'right place to declare service_id' do
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :service_id   => @service_3.id,  
+      :service_id   => @service_3.id,
       :transactions => {0 => {:service_id => @service_2.id, :app_id => @application_3.id, :usage => {'hits' => 3}}}
     assert_equal 202, last_response.status
     Resque.run!
 
-   
-   
+
+
     assert_equal 3, @storage.get(application_key(@service_3.id,
                                                  @application_3.id,
                                                  @metric_id_3,
@@ -92,7 +92,7 @@ class MultiServicesTest < Test::Unit::TestCase
 
   end
 
-  test 'sending an application that does not belong to the default service' do 
+  test 'sending an application that does not belong to the default service' do
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -137,7 +137,7 @@ class MultiServicesTest < Test::Unit::TestCase
 
   end
 
-  test 'check scoping of the applications by service' do 
+  test 'check scoping of the applications by service' do
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_1.id,
@@ -150,7 +150,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                        :service_id   => @service_1.id
     Resque.run!
     assert_equal 404, last_response.status
-   
+
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_3.id
     Resque.run!
@@ -159,14 +159,14 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_not_errors_in_transactions
 
 
-  end  
+  end
 
   test 'provider key with multiple services with authorize/report works with explicit/implicit service ids' do
 
-   
+
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :service_id   => @service_3.id,  
+      :service_id   => @service_3.id,
       :transactions => {0 => {:app_id => @application_3.id, :usage => {'hits' => 3}}}
     assert_equal 202, last_response.status
     Resque.run!
@@ -191,7 +191,7 @@ class MultiServicesTest < Test::Unit::TestCase
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :service_id   => @service_2.id,  
+      :service_id   => @service_2.id,
       :transactions => {0 => {:app_id => @application_2.id, :usage => {'hits' => 2}}}
     assert_equal 202, last_response.status
     Resque.run!
@@ -201,7 +201,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                      :service_id   => @service_2.id,
                                      :usage        => {'hits' => 2}
 
-    assert_equal 200, last_response.status    
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -216,7 +216,7 @@ class MultiServicesTest < Test::Unit::TestCase
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :service_id   => @service_1.id,  
+      :service_id   => @service_1.id,
       :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 1}}}
     assert_equal 202, last_response.status
     Resque.run!
@@ -226,7 +226,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                      :app_id       => @application_1.id,
                                      :service_id   => @service_1.id
 
-    assert_equal 200, last_response.status    
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -237,8 +237,8 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime("%Y%m01"))).to_i    
-    
+                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+
 
     ## now without explicit service_id
 
@@ -262,19 +262,19 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
-                                                  :month, Time.now.strftime("%Y%m01"))).to_i   
+                                                  :month, Time.now.strftime("%Y%m01"))).to_i
 
 
     assert_not_errors_in_transactions
 
-  
+
   end
 
   test 'provider key with multiple services, check that call to authorize works with explicit/implicit service ids while changing the default service' do
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :service_id   => @service_2.id,  
+      :service_id   => @service_2.id,
       :transactions => {0 => {:app_id => @application_2.id, :usage => {'hits' => 2}}}
     assert_equal 202, last_response.status
     Resque.run!
@@ -284,7 +284,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                        :app_id       => @application_2.id,
                                        :service_id   => @service_2.id
 
-    assert_equal 200, last_response.status    
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -299,7 +299,7 @@ class MultiServicesTest < Test::Unit::TestCase
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :service_id   => @service_1.id,  
+      :service_id   => @service_1.id,
       :transactions => {0 => {:app_id => @application_1.id, :usage => {'hits' => 1}}}
     assert_equal 202, last_response.status
     Resque.run!
@@ -309,7 +309,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                        :app_id       => @application_1.id,
                                        :service_id   => @service_1.id
 
-    assert_equal 200, last_response.status    
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -320,8 +320,8 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime("%Y%m01"))).to_i    
-    
+                                                 :month, Time.now.strftime("%Y%m01"))).to_i
+
     ## now without explicit service_id
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -333,7 +333,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                        :app_id       => @application_1.id,
                                        :usage        => {'hits' => 10}
 
-    assert_equal 200, last_response.status    
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -344,14 +344,15 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
-                                                  :month, Time.now.strftime("%Y%m01"))).to_i   
+                                                  :month, Time.now.strftime("%Y%m01"))).to_i
 
     ## now, change the default service id to be the second one
-    
+
     ## the memoizing needs to be reset otherwise the old service id will be cached
     Memoizer.reset!
 
-    @service_2.make_default_service
+    @service_2.default_service = true
+    @service_2.save!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -363,7 +364,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                      :app_id       => @application_2.id,
                                      :usage        => {'hits' => 10}
 
-    assert_equal 200, last_response.status    
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -374,13 +375,13 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 12, @storage.get(application_key(@service_2.id,
                                                   @application_2.id,
                                                   @metric_id_2,
-                                                  :month, Time.now.strftime("%Y%m01"))).to_i   
-    
+                                                  :month, Time.now.strftime("%Y%m01"))).to_i
+
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
                                                   :month, Time.now.strftime("%Y%m01"))).to_i
-    
+
 
     ## more calls
     post '/transactions.xml',
@@ -394,7 +395,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                      :app_id       => @application_1.id,
                                      :service_id   => @service_1.id
 
-    assert_equal 200, last_response.status    
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -405,7 +406,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 31, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime("%Y%m01"))).to_i    
+                                                 :month, Time.now.strftime("%Y%m01"))).to_i
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -419,7 +420,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                      :service_id   => @service_2.id,
                                      :usage        => {'hits' => 20}
 
-    assert_equal 200, last_response.status    
+    assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
@@ -430,7 +431,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 32, @storage.get(application_key(@service_2.id,
                                                  @application_2.id,
                                                  @metric_id_2,
-                                                 :month, Time.now.strftime("%Y%m01"))).to_i    
+                                                 :month, Time.now.strftime("%Y%m01"))).to_i
 
     assert_not_errors_in_transactions
 
@@ -461,7 +462,7 @@ class MultiServicesTest < Test::Unit::TestCase
     error = doc.at('error:root')
     assert_not_nil error
     assert_equal 'provider_key_invalid', error['code']
-   
+
 
     get '/transactions/authorize.xml', :provider_key => 'fakeproviderkey',
                                        :service_id   => @service_2.id,
@@ -476,11 +477,11 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 'provider_key_invalid', error['code']
 
     assert_not_errors_in_transactions
-  
+
   end
 
   test 'testing that the app_id matches the service that is default service with authorize' do
-  
+
     ## user want to access the service_2 but forget to add service_id, and app_id == @application_2.id does not
     ## exists for the service_1
 
@@ -494,7 +495,7 @@ class MultiServicesTest < Test::Unit::TestCase
     error = doc.at('error:root')
     assert_not_nil error
     assert_equal 'application_not_found', error['code']
-    
+
     assert_not_errors_in_transactions
 
   end
@@ -531,7 +532,7 @@ class MultiServicesTest < Test::Unit::TestCase
 
   test 'failed report on invalid provider_key and service_id' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      
+
       post '/transactions.xml',
         :provider_key => @provider_key,
         :service_id => @service_1.id,
@@ -539,7 +540,7 @@ class MultiServicesTest < Test::Unit::TestCase
 
       Resque.run!
       assert_equal 202, last_response.status
-      
+
       post '/transactions.xml',
         :provider_key => @provider_key,
         :service_id => "fake_service_id",
@@ -566,9 +567,9 @@ class MultiServicesTest < Test::Unit::TestCase
       assert_not_nil error
       assert_equal 'provider_key_invalid', error['code']
 
-                  
+
     end
-  
+
   end
 
 end

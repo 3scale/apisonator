@@ -27,3 +27,6 @@ apt-get install -y mongodb-10gen
 
 # Application setup
 gem install bundler rake
+
+su vagrant
+echo "export LC_ALL=en_US.UTF8" >> ~/.bashrc
