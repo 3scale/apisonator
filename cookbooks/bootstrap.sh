@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-export $LC_ALL=en_US.UTF8
 
 # Extra repositories
 apt-get install -y python-software-properties
