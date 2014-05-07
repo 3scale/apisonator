@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 gemspec
 gem 'require_all', '~> 1.2.1'
 gem 'rake',        '~> 10.0.3'
-gem '3scale_core', require: '3scale/core', git: 'git@github.com:3scale/core.git', tag: 'v1.0.1'
+gem '3scale_core', require: '3scale/core', git: 'git@github.com:3scale/core.git', tag: 'v1.0.2'
 
 group :test do
   gem 'fakefs',      '~> 0.4.2'

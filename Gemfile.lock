@@ -1,16 +1,16 @@
 GIT
   remote: git@github.com:3scale/core.git
-  revision: a5b5b5d171937914fe2524844499a890490119a2
-  tag: v1.0.1
+  revision: 79c7132db42dcde938650c36cdc774472eb41467
+  tag: v1.0.2
   specs:
-    3scale_core (1.0.1)
+    3scale_core (1.0.2)
       faraday (~> 0.8.9)
       json (~> 1.8.1)
 
 PATH
   remote: .
   specs:
-    3scale_backend (1.13.3)
+    3scale_backend (1.13.4)
       airbrake (= 3.1.16)
       aws-s3 (= 0.6.3)
       bson_ext (= 1.9.0)
