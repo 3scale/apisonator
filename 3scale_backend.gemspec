@@ -13,6 +13,7 @@ Gem::Specification.new do |s|
   s.homepage    = 'http://www.3scale.net'
   s.summary     = '3scale web service management system backend'
   s.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'
+  s.license     = 'Propietary'
 
   s.required_ruby_version     = "~> 2.1.1"
   s.required_rubygems_version = ">= 1.3.7"
@@ -33,6 +34,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'redis-namespace',           '1.2.1'
   s.add_dependency 'mongo',                     '1.9.0'
   s.add_dependency 'bson_ext',                  '1.9.0'
+  s.add_dependency '3scale_core',               '1.0.2'
 
   s.files = Dir.glob('{lib,bin,app}/**/*')
   s.files << 'README.md'
