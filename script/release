@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+GEMINABOX=$(gem sources --list | grep "geminabox")
+
+if [ -z $GEMINABOX ]
+then
+   gem sources --add 'https://geminabox'
+fi
+
+GEM=$(gem build 3scale_backend.gemspec | grep "File: " | awk '{ print $2 }')
+gem inabox $GEM
