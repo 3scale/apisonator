@@ -52,13 +52,33 @@ module ThreeScale
       end
 
       def mount_internal_api(server)
+        mount_services_api server
+        mount_toplevel_api server
+      end
+
+      def mount_services_api(server)
         server.map '/internal/services' do
           use Rack::Auth::Basic do |username, password|
-            username == ThreeScale::Backend::Server.auth_username &&
-              password == ThreeScale::Backend::Server.auth_password
+            ThreeScale::Backend::Server.check_password username, password
           end
+
           run ThreeScale::Backend::ServicesAPI.new
         end
+      end
+
+      def mount_toplevel_api(server)
+        server.map '/internal' do
+          use Rack::Auth::Basic do |username, password|
+            ThreeScale::Backend::Server.check_password username, password
+          end
+
+          run ThreeScale::Backend::InternalAPI.new
+        end
+      end
+
+      def check_password(username, password)
+        username == ThreeScale::Backend::Server.auth_username &&
+          password == ThreeScale::Backend::Server.auth_password
       end
 
       def auth_username

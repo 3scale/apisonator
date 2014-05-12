@@ -8,7 +8,7 @@ module ThreeScale
         massage_params params
       end
 
-      get '/check' do
+      get '/check.json' do
         {status: :ok}.to_json
       end
 
