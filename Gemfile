@@ -15,10 +15,6 @@ group :test do
   gem 'geminabox', require: false
 end
 
-group :development do
-  gem 'capistrano',  '~> 2.14.2'
-end
-
 group :development, :test do
   gem 'pry',      '~> 0.9.12.6'
   gem 'pry-doc',  '~> 0.5.1'
