@@ -68,10 +68,6 @@ module ThreeScale
 
       def mount_toplevel_api(server)
         server.map '/internal' do
-          use Rack::Auth::Basic do |username, password|
-            ThreeScale::Backend::Server.check_password username, password
-          end
-
           run ThreeScale::Backend::InternalAPI.new
         end
       end
