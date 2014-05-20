@@ -87,3 +87,9 @@ ThreeScale::Backend.configuration.tap do |config|
 end
 
 Resque.redis = ThreeScale::Backend::Storage.instance
+ThreeScale::Core.donbot_url =
+  if ENV['RACK_ENV'] == 'production'
+    'http://host:8080/internal/'
+  else
+    'http://localhost:3000/internal'
+  end
