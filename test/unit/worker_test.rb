@@ -38,7 +38,7 @@ class WorkerTest < Test::Unit::TestCase
   end
 
   def test_no_jobs_in_the_queue
-    redis = Backend::Storage.any_instance
+    redis = Redis.any_instance
     redis.expects(:blpop).with(*Worker::QUEUES.map{|q| "resque:queue:#{q}"}, {:timeout => 60}).returns(nil)
 
     Worker.work(:one_off => true)

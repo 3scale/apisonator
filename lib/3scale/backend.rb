@@ -3,6 +3,7 @@ require 'aws/s3'
 require 'builder'
 require 'hiredis'
 require 'redis'
+require 'redis-sentinel'
 require 'fiber'
 require 'ostruct'
 require 'airbrake'
@@ -38,6 +39,7 @@ require '3scale/backend/logger'
 require '3scale/backend/server'
 require '3scale/backend/service'
 require '3scale/backend/storage'
+require '3scale/backend/queue_storage'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/log_request_storage'
 require '3scale/backend/aggregator'
@@ -68,6 +70,7 @@ end
 
 ThreeScale::Backend.configuration.tap do |config|
   # Add configuration sections
+  config.add_section(:queues, :master_name, :sentinels)
   config.add_section(:redis, :servers, :db, :backup_file)
   config.add_section(:archiver, :path, :s3_bucket)
   config.add_section(:hoptoad, :api_key)
@@ -75,8 +78,8 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:mongo, :servers, :db, :db_options)
 
   # Default config
-  config.master_service_id = 1
-  config.archiver.path     = '/tmp/3scale_backend/archive'
+  config.master_service_id  = 1
+  config.archiver.path      = '/tmp/3scale_backend/archive'
 
   ## this means that there will be a NotifyJob for every X notifications (this is
   ## the call to master)
@@ -86,9 +89,13 @@ ThreeScale::Backend.configuration.tap do |config|
   config.load!
 end
 
-Resque.redis = ThreeScale::Backend::Storage.instance
+environment  = ENV["RACK_ENV"] || "development"
+Resque.redis = ThreeScale::Backend::QueueStorage.connection(
+  environment,
+  ThreeScale::Backend.configuration,
+)
 ThreeScale::Core.donbot_url =
-  if ENV['RACK_ENV'] == 'production'
+  if environment == 'production'
     'http://host:8080/internal/'
   else
     'http://localhost:3000/internal'
