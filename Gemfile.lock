@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     3scale_backend (1.14.0)
-      3scale_core (= 1.0.3)
+      3scale_core (= 1.1.0)
       airbrake (= 3.1.16)
       aws-s3 (= 0.6.3)
       bson_ext (= 1.9.0)
@@ -24,7 +24,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    3scale_core (1.0.3)
+    3scale_core (1.1.0)
       faraday (~> 0.8.9)
       json (~> 1.8.1)
     activesupport (4.0.4)
@@ -70,7 +70,7 @@ GEM
     json (1.8.1)
     metaclass (0.0.4)
     method_source (0.8.2)
-    mime-types (2.2)
+    mime-types (2.3)
     minitest (4.7.5)
     mocha (0.13.3)
       metaclass (~> 0.0.1)
