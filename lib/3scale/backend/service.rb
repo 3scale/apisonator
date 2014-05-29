@@ -185,10 +185,8 @@ module ThreeScale
       end
 
       def delete_data
-        storage.multi do
-          delete_attributes
-          delete_from_lists
-        end
+        delete_from_lists
+        delete_attributes
       end
 
       def bump_version
@@ -244,13 +242,11 @@ module ThreeScale
       def persist
         old_default_id = self.class.default_id(provider_key) if default_service?
 
-        storage.multi do
-          persist_default old_default_id
-          persist_attributes
-          persist_sets
+        persist_default old_default_id
+        persist_attributes
+        persist_sets
 
-          bump_version
-        end
+        bump_version
       end
 
       def persist_default(old_default_id)

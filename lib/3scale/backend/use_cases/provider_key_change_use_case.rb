@@ -12,18 +12,16 @@ module ThreeScale
       def process
         default_service_id = Service.default_id(@old_key)
 
-        storage.multi do
-          service_ids.each do |service_id|
-            storage.sadd Service.storage_key_by_provider(@new_key, :ids), service_id
-            storage.set Service.storage_key(service_id, :provider_key), @new_key
-            storage.incr Service.storage_key(service_id, :version)
-          end
-
-          storage.set Service.storage_key_by_provider(@new_key, :id), default_service_id
-
-          storage.del Service.storage_key_by_provider(@old_key, :id)
-          storage.del Service.storage_key_by_provider(@old_key, :ids)
+        service_ids.each do |service_id|
+          storage.set Service.storage_key(service_id, :provider_key), @new_key
+          storage.sadd Service.storage_key_by_provider(@new_key, :ids), service_id
+          storage.incr Service.storage_key(service_id, :version)
         end
+
+        storage.set Service.storage_key_by_provider(@new_key, :id), default_service_id
+
+        storage.del Service.storage_key_by_provider(@old_key, :id)
+        storage.del Service.storage_key_by_provider(@old_key, :ids)
 
         clear_cache service_ids
       end

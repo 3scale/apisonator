@@ -30,14 +30,12 @@ module ThreeScale
         service = Service.load_by_id(service_id)
         ServiceUserManagementUseCase.new(service, username).add
 
-        storage.multi do
-          storage.hset key, "state", state.to_s if state
-          storage.hset key, "plan_id", plan_id if plan_id
-          storage.hset key, "plan_name", plan_name if plan_name
-          storage.hset key, "username", username if username
-          storage.hset key, "service_id", service_id if service_id
-          storage.hincrby key, "version", 1
-        end
+        storage.hset key, "state", state.to_s if state
+        storage.hset key, "plan_id", plan_id if plan_id
+        storage.hset key, "plan_name", plan_name if plan_name
+        storage.hset key, "username", username if username
+        storage.hset key, "service_id", service_id if service_id
+        storage.hincrby key, "version", 1
 
       end
 
