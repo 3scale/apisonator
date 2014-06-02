@@ -1,0 +1,53 @@
+#!/bin/bash
+
+redis_ports=(7379 7380 6379)
+twemproxy_pidfile="/tmp/twemproxy_backend_tests.pid"
+
+function start_mongodb {
+  mongod --dbpath /tmp --nojournal --noprealloc > /dev/null &
+}
+
+function start_redis {
+    if [ -e /usr/local/bin/redis-server ]; then
+	cmd="/usr/local/bin/redis-server"
+    else
+	cmd="/opt/redis/bin/redis-server"
+    fi
+    for port in "${redis_ports[@]}"
+    do
+	$cmd --port "$port" --daemonize yes &
+    done
+}
+
+function stop_redis {
+    for port in "${redis_ports[@]}"
+    do
+	kill -9 `ps aux | grep redis-server | grep "$port" | awk '{ print $2 }'`
+    done
+}
+
+function start_twemproxy {
+    /opt/twemproxy/sbin/nutcracker -p "$twemproxy_pidfile" -d -c "$PWD"/config/twemproxy.yml
+}
+
+function stop_twemproxy {
+    kill -9 `cat "$twemproxy_pidfile"`
+}
+
+function stop_mongodb {
+    mongod --dbpath /tmp --shutdown
+}
+
+export RACK_ENV=test
+
+start_redis
+start_twemproxy
+start_mongodb
+
+bundle exec rake test
+
+if [ -z "$CI" ]; then
+    stop_redis
+    stop_twemproxy
+    stop_mongodb
+fi

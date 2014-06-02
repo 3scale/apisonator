@@ -24,8 +24,8 @@ Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file
 ThreeScale::Backend.configure do |config|
   config.redis.proxy = "127.0.0.1:22121"
   config.redis.nodes = [
-    "127.0.0.1:6379",
-    "127.0.0.1:6380",
+    "127.0.0.1:7379",
+    "127.0.0.1:7380",
   ]
 
   config.stats.bucket_size  = 5
