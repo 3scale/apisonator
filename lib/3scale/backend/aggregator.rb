@@ -18,14 +18,13 @@ module ThreeScale
       extend self
 
       def aggregate_all(transactions)
-        # the function has to be inside redis before the pipeline is issued
-        lua_aggregate_sha
-
         applications = Hash.new
         users        = Hash.new
 
-        ## this is just a temporary switch to be able to enable disable reporting to mongodb
-        ## you can active it or deactivated: storage.set("mongo_enabled","1") / storage.del("mongo_enabled")
+        ## this is just a temporary switch to be able to enable
+        ## disable reporting to mongodb you can active it or
+        ## deactivated:
+        ## storage.set("mongo_enabled","1") / storage.del("mongo_enabled")
 
         Memoizer.memoize_block("mongo-enabled") do
           @mongo_enabled = mongo_enabled?
@@ -49,8 +48,8 @@ module ThreeScale
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
           @keys_doing_set_op = []
 
-          val = storage.pipelined do
-            slice.each do |transaction|
+          storage.pipelined do
+            @keys_doing_set_op = slice.map do |transaction|
               key        = transaction[:application_id]
               service_id = transaction[:service_id]
               ## the key must be application+user if users exists
@@ -58,11 +57,12 @@ module ThreeScale
               ## applications contains the list of application, or
               ## application+users that need to be limit checked
               applications[key] = { application_id: key, service_id: service_id }
-               ## who puts service_id here? it turns out is the transactor.report_enqueue
+              ## who puts service_id here? it turns out is
+              ## the transactor.report_enqueue
               if transaction[:service_id].nil?
               end
 
-              unless (transaction[:user_id].nil?)
+              if transaction[:user_id]
                 key = transaction[:user_id]
                 users[key] = { service_id: service_id, user_id: key }
               end
@@ -71,7 +71,6 @@ module ThreeScale
             end
           end
 
-          @keys_doing_set_op += val
           @keys_doing_set_op.flatten!(1)
 
           ## here the pipelined redis increments have been sent
@@ -165,26 +164,21 @@ module ThreeScale
       private
 
       def aggregate(transaction)
-        service_prefix     = service_key_prefix(transaction[:service_id])
-
-        # this one is for the limits of the users
-        if transaction[:user_id].nil?
-          user_prefix = nil
-        else
-          user_prefix = user_key_prefix(service_prefix,transaction[:user_id])
-        end
-
-        timestamp = transaction[:timestamp]
-        timestamps = [ :eternity, :year, :month, :week, :day, :hour, :minute ].map do |granularity|
-          counter_key('', granularity, timestamp)
-        end
-
         ##FIXME, here we have to check that the timestamp is in the
         ##current given the time period we are in
 
-        transaction[:usage].each do |metric_id, value|
+        values = transaction[:usage].map do |metric_id, value|
           service_id = transaction[:service_id]
           val        = get_value_of_set_if_exists(value)
+
+          if val.nil?
+            cmd = :incrby
+          else
+            cmd   = :set
+            value = val
+          end
+
+          value  = value.to_i
 
           if @mongo_enabled
             bucket_key = bucket_with_service_key(current_bucket, service_id)
@@ -192,27 +186,58 @@ module ThreeScale
             bucket_key = ""
           end
 
-          if val.nil?
-            type = :increment
-          else
-            type = :set
-            value = val
-          end
-          value    = value.to_i
-          lua_args = [
-            type,
-            service_id,
-            transaction[:application_id],
-            metric_id,
-            transaction[:user_id],
-            value,
-            *timestamps,
-            @mongo_enabled,
-            bucket_key,
-          ]
-
-          storage.evalsha(lua_aggregate_sha, argv: lua_args)
+          aggregate_values(cmd, metric_id, value, transaction, bucket_key)
         end
+
+        values.flatten(1)
+      end
+
+      def aggregate_values(cmd, metric_id, value, transaction, bucket)
+        service_prefix = service_key_prefix(transaction[:service_id])
+        application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
+
+        metrics = {
+          service: metric_key_prefix(service_prefix, metric_id),
+          application: metric_key_prefix(application_prefix, metric_id),
+        }
+
+        # this one is for the limits of the users
+        if user_id = transaction[:user_id]
+          user_prefix = user_key_prefix(service_prefix, user_id)
+          metrics.merge!(user: metric_key_prefix(user_prefix, metric_id))
+        end
+
+        granularities = [:eternity, :month, :week, :day, :hour]
+        values = metrics.map do |metric_type, prefix|
+          granularities += [:year, :minute] unless metric_type == :service
+
+          granularities.map do |granularity|
+            key = counter_key(prefix, granularity, transaction[:timestamp])
+            keys = add_to_copied_keys(cmd, bucket, key, value)
+            storage.expire(key, 180) if granularity == :minute
+
+            keys
+          end
+        end
+
+        values.flatten(1).reject(&:empty?)
+      end
+
+      def add_to_copied_keys(cmd, mongo_bucket, key, value)
+        set_keys = []
+        if @mongo_enabled
+          storage.sadd("keys_changed:#{mongo_bucket}", key)
+          if cmd == :set
+            @keys_doing_set_op << [key, value]
+            set_keys += [key, value]
+          else
+            storage.send(cmd, key, value)
+          end
+        else
+          storage.send(cmd, key, value)
+        end
+
+        set_keys
       end
 
       ## copied from transactor.rb
@@ -223,9 +248,9 @@ module ThreeScale
           pairs << [usage_limit.metric_id, usage_limit.period]
           metric_ids << usage_limit.metric_id
         end
-        
+
         return {} if pairs.nil? or pairs.size==0
-      
+
         # preloading metric names
         user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
         now = Time.now.getutc
@@ -367,19 +392,6 @@ module ThreeScale
 
       def storage_mongo
         StorageMongo.instance
-      end
-
-      def create_aggregate_sha
-        code = File.open("#{File.dirname(__FILE__)}/lua/increment_or_set.lua").read
-        @@aggregator_script_sha1 = storage.script('load',code)
-      rescue Exception => e
-        # please replace this with a concrete exception
-        Airbrake.notify(e)
-        raise e
-      end
-
-      def lua_aggregate_sha
-        @@aggregator_script_sha1 ||= create_aggregate_sha
       end
     end
   end
