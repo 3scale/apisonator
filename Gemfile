@@ -2,7 +2,6 @@ source 'https://rubygems.org'
 
 gemspec
 gem 'require_all', '~> 1.2.1'
-gem 'rake',        '~> 10.0.3'
 
 group :test do
   gem 'fakefs',      '~> 0.4.2'
