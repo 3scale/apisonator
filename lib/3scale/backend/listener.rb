@@ -2,7 +2,7 @@ module ThreeScale
   module Backend
     class Listener < Sinatra::Base
       disable :logging
-      disable :raise_errors
+      enable :raise_errors
       disable :show_exceptions
 
       ## ------------ DOCS --------------
@@ -649,46 +649,7 @@ module ThreeScale
         body 'ok'
       end
 
-      error do
-        error_code = 0
-        case exception = env['sinatra.error']
-        when ThreeScale::Backend::Invalid
-          error_code = 422
-        when ThreeScale::Backend::NotFound
-          error_code = 404
-        when ThreeScale::Backend::Error
-          error_code = 403
-        when ThreeScale::Core::Error
-          error_code = 405
-        else
-          ## internal errors
-          raise exception
-        end
-        delete_sinatra_error!
-
-        if params[:no_body]
-          error error_code, ""
-        else
-          error error_code, exception.to_xml
-        end
-      end
-
-      error Sinatra::NotFound do
-        delete_sinatra_error!
-        error 404, ""
-      end
-
       private
-
-
-      # Deletes 'sinatra.error' key in Rack's env hash.
-      # Newer version of airbrake gem is reporting 'sinatra.error' and we don't
-      # want it when the error is rescued and managed by us with the error handler.
-      # @return [nil]
-      def delete_sinatra_error!
-        # clean sinatra.error
-        env['sinatra.error'] = nil
-      end
 
       def blank?(object)
         object.respond_to?(:empty?) ? object.empty? : !object

@@ -28,6 +28,8 @@ class AccessTokenTest < Test::Unit::TestCase
 
     # Read
     get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+
+
         :provider_key => @provider_key
 
     assert_equal 200, last_response.status
@@ -204,7 +206,7 @@ class AccessTokenTest < Test::Unit::TestCase
   end
 
   # TODO: test correct but different service_id with correct but other provider_id
-  test 'CR(-)D with invalid invalid service' do
+  test 'CR(-)D with invalid service' do
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => 'INVALID-KEY',
                                                              :app_id => @application.id,
                                                              :token => 'TOKEN'
@@ -245,7 +247,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
   end
 
-  test 'resuing an access token that is already in use fails, unless it is for a different service' do
+  test 'reusing an access token that is already in use fails, unless it is for a different service' do
 
     application2 = Application.save(:service_id => @service.id,
                                       :id         => next_id,
@@ -288,7 +290,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
   end
 
-  test 'resuing an expired access token is fine' do
+  test 'reusing an expired access token is fine' do
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
@@ -459,8 +461,6 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal 1, node.count
     assert_equal 'valid-token2', node[0].content
     assert_equal '-1', node[0].attribute('ttl').value
-
-
   end
 
   # TODO: more test covering multiservice cases (there is only one right now)
