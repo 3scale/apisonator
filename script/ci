@@ -1,27 +1,14 @@
 #!/usr/bin/env bash
 
-function start_mongodb {
-  mongod --logpath /tmp/mongod01_backend.log --dbpath /tmp --logappend --fork
-}
+set -e
 
-function stop_mongodb {
-  mongod --dbpath /tmp --shutdown
-}
+export CODECLIMATE_REPO_TOKEN=codeclimate_token
+export REPORT_CODECLIMATE=1
+export TO_FILE=1
 
-if [ -n "$RVM_RUBY" ]
-then
-  export CODECLIMATE_REPO_TOKEN=codeclimate_token
-  export REPORT_CODECLIMATE=1
-  export TO_FILE=1
-
-  export RACK_ENV=test
-  start_mongodb
-  sleep 10
-  rvm $RVM_RUBY do bash -c 'bundle install --deployment --without development && bundle exec rake test --trace'
-  export RET=$?;
-  stop_mongodb
-  (($RET == 0))
-else
-  echo "Missing $RVM_RUBY env variable"
-  exit 1
-fi
+export RACK_ENV=test
+redis-server > /dev/null &
+mkdir -p /data/db
+mongod  --nojournal --noprealloc > /dev/null &
+sleep 10
+exec bundle exec rake --trace
