@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 export CODECLIMATE_REPO_TOKEN=codeclimate_token
 export REPORT_CODECLIMATE=1
 export TO_FILE=1
