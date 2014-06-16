@@ -10,6 +10,8 @@ function start_mongodb {
 function start_redis {
     if [ -e /usr/local/bin/redis-server ]; then
 	cmd="/usr/local/bin/redis-server"
+    elif [ -e /usr/bin/redis-server ]; then
+	cmd="/usr/bin/redis-server"
     else
 	cmd="/opt/redis/bin/redis-server"
     fi
