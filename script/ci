@@ -8,6 +8,7 @@ export TO_FILE=1
 
 export RACK_ENV=test
 redis-server > /dev/null &
-mongod --logpath /tmp/mongod01_backend.log --dbpath /tmp --logappend --fork
+mkdir -p /data/db
+mongod &
 sleep 10
 exec bundle exec rake --trace
