@@ -447,6 +447,7 @@ module ThreeScale
         end
 
         OAuthAccessTokenStorage.delete(service_id, params[:token])
+        empty_response 200
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
