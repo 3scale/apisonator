@@ -46,7 +46,7 @@ start_redis
 start_twemproxy
 start_mongodb
 
-bundle exec rake test
+bundle exec rake
 
 if [ -z "$CI" ]; then
     stop_redis
