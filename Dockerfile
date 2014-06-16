@@ -4,9 +4,11 @@ MAINTAINER Toni Reina <toni@3scale> # 2014-06-16
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 136221EE520DDFAF0A905689B9316A7BC7917B12 \
  && echo 'deb http://ppa.launchpad.net/chris-lea/redis-server/ubuntu precise main' > /etc/apt/sources.list.d/redis-server.list \
  && apt-get -y -q update \
- && apt-get -y -q install redis-server mongodb \
+ && apt-get -y -q install redis-server mongodb wget autoconf libtool autopoint \
  && echo 'Europe/Madrid' > /etc/timezone \
  && dpkg-reconfigure --frontend noninteractive tzdata
+
+RUN wget https://codeload.github.com/twitter/twemproxy/tar.gz/v0.3.0 && tar xvzf v0.3.0 && cd twemproxy-0.3.0 && autoreconf -fvi && ./configure --prefix=/opt/twemproxy && make && make install
 
 WORKDIR /tmp/backend/
 
