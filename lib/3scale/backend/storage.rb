@@ -27,6 +27,30 @@ module ThreeScale
 
         super(host: host, port: port, driver: :hiredis)
       end
+
+      def non_proxied_instances
+        if ENV['RACK_ENV'] != 'test'
+          raise "You only can use this method in a TEST environment."
+        end
+
+        @non_proxied_instances ||= configuration.redis.nodes.map do |server|
+          host, port = host_and_port(server)
+
+          Redis.new(host: host, port: port, driver: :hiredis)
+        end
+      end
+
+      def keys(*keys)
+        non_proxied_instances.map { |instance| instance.keys(*keys) }.flatten(1)
+      end
+
+      def flushdb
+        non_proxied_instances.map(&:flushdb)
+      end
+
+      def flushall
+        non_proxied_instances.map(&:flushall)
+      end
     end
   end
 end
