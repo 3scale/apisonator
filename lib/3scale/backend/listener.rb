@@ -649,6 +649,10 @@ module ThreeScale
         body 'ok'
       end
 
+      not_found do
+        [404, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, ['']]
+      end
+
       private
 
       def blank?(object)
