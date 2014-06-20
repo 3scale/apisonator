@@ -12,7 +12,6 @@ module ThreeScale
           transactions = preprocess(transactions)
           TransactionStorage.store_all(transactions) unless options[:master]
           Aggregator.aggregate_all(transactions)
-          Archiver.add_all(transactions) unless options[:master]
         end
 
         def self.preprocess(transactions)

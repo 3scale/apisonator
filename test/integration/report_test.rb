@@ -75,29 +75,6 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
-  test 'successful report archives the transactions' do
-    path = configuration.archiver.path
-    FileUtils.rm_rf(path)
-
-    Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
-      post '/transactions.xml',
-        :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
-
-      Resque.run!
-
-      content = File.read("#{path}/service-#{@service_id}/20100511.xml.part")
-      content = "<transactions>#{content}</transactions>"
-
-      doc = Nokogiri::XML(content)
-      node = doc.at('transaction')
-
-      assert_not_nil node
-      assert_equal '2010-05-11 11:54:00', node.at('timestamp').content
-      assert_equal '1', node.at("values value[metric_id = \"#{@metric_id}\"]").content
-    end
-  end
-
   test 'successful report with utc timestamped transactions' do
     Timecop.freeze(Time.utc(2010, 4, 23, 00, 00)) do
       post '/transactions.xml',
@@ -230,22 +207,6 @@ class ReportTest < Test::Unit::TestCase
     key = application_key(@service_id, @application.id, @metric_id,
                           :month, Time.now.getutc.strftime('%Y%m01'))
     assert_nil @storage.get(key)
-  end
-
-  test 'report does not archive anything when at least one transaction is invalid' do
-    path = configuration.archiver.path
-    FileUtils.rm_rf(path)
-
-    Timecop.freeze(Time.utc(2010, 5, 11, 11, 54)) do
-      post '/transactions.xml',
-        :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                          1 => {:app_id => 'foo',     :usage => {'hits' => 1}}}
-
-      Resque.run!
-
-      assert !File.exists?("#{path}/service-#{@service_id}/20100511.xml.part")
-    end
   end
 
   test 'report succeeds when application is not active' do

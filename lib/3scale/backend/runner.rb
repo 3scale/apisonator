@@ -6,7 +6,7 @@ module ThreeScale
       extend self
 
       DEFAULT_OPTIONS = {:host => '0.0.0.0', :port => 3000}
-      COMMANDS = [:start, :stop, :restart, :restore_backup, :archive]
+      COMMANDS = [:start, :stop, :restart, :restore_backup]
 
       def run
         send(*parse!(ARGV))
@@ -30,11 +30,6 @@ module ThreeScale
         puts ">> Done."
       end
 
-      def archive(options)
-        Archiver.store(:tag => `hostname`.strip)
-        Archiver.cleanup
-      end
-      
       private
 
       def parse!(argv)
