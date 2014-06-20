@@ -10,7 +10,7 @@ module Rack
     def call(env)
       @app.call(env)
     rescue TypeError => e
-        respond_with 400, prepare_body(ThreeScale::Backend::BadRequest.new.to_xml, env)
+      respond_with 400, prepare_body(ThreeScale::Backend::BadRequest.new.to_xml, env)
     rescue ThreeScale::Backend::Invalid => e
       delete_sinatra_error! env
       respond_with 422, prepare_body(e.to_xml, env)
@@ -23,9 +23,6 @@ module Rack
     rescue ThreeScale::Core::Error => e
       delete_sinatra_error! env
       respond_with 405, prepare_body(e.to_xml, env)
-    rescue Sinatra::NotFound => e
-      delete_sinatra_error! env
-      respond_with 404, ''
     rescue Exception => e
       if e.class == ArgumentError && (
           e.message == "invalid byte sequence in UTF-8" ||
@@ -60,11 +57,12 @@ module Rack
     #
     # Returns String.
     def prepare_body(body, env)
+      env['rack.request.query_hash'] ||= {}
       env['rack.request.query_hash']['no_body'] == 'true' ? '' : body
     end
 
     def respond_with(code, body)
-      [code, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, [ body ]]
+      [code, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, [body]]
     end
   end
 
