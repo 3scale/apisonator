@@ -6,9 +6,5 @@ export CODECLIMATE_REPO_TOKEN=codeclimate_token
 export REPORT_CODECLIMATE=1
 export TO_FILE=1
 
-export RACK_ENV=test
-redis-server > /dev/null &
-mkdir -p /data/db
-mongod  --nojournal --noprealloc > /dev/null &
-sleep 10
-exec bundle exec rake --trace
+export CI=jenkins
+exec script/test

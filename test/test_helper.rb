@@ -22,11 +22,12 @@ require 'timecop'
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
 
 ThreeScale::Backend.configure do |config|
-  unless config.redis.servers.nil? || (config.redis.servers.length == 1 && config.redis.servers.first.to_s == "127.0.0.1:6379")
-    raise "test run not allowed when redis is not localhost"
-  end
-  config.redis.db = 2
-  config.stats.bucket_size = 5
+  config.redis.nodes = [
+    "127.0.0.1:7379",
+    "127.0.0.1:7380",
+  ]
+
+  config.stats.bucket_size  = 5
   config.notification_batch = 5
 end
 

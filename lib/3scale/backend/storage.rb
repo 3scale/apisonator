@@ -3,15 +3,15 @@ module ThreeScale
     class Storage < ::Redis
       include Configurable
 
-      DEFAULT_SERVER = '127.0.0.1:6379'
+      DEFAULT_SERVER = '127.0.0.1:22121'
 
       # Returns a shared instance of the storage. If there is no instance yet,
       # creates one first. If you want to always create a fresh instance, set the
       # +reset+ parameter to true.
       def self.instance(reset = false)
         @@instance = nil if reset
-        @@instance ||= new(servers: configuration.redis.servers,
-                           db:      configuration.redis.db)
+        @@instance ||= new(server: configuration.redis.proxy)
+
         @@instance
       end
 
@@ -23,11 +23,33 @@ module ThreeScale
       end
 
       def initialize(options)
-        @servers = options[:servers] || []
+        host, port = host_and_port(options[:server] || DEFAULT_SERVER)
 
-        host, port = host_and_port(@servers.first || DEFAULT_SERVER)
+        super(host: host, port: port, driver: :hiredis)
+      end
 
-        super(host: host, port: port, db: options[:db], driver: :hiredis)
+      def non_proxied_instances
+        if ENV['RACK_ENV'] != 'test'
+          raise "You only can use this method in a TEST environment."
+        end
+
+        @non_proxied_instances ||= configuration.redis.nodes.map do |server|
+          host, port = host_and_port(server)
+
+          Redis.new(host: host, port: port, driver: :hiredis)
+        end
+      end
+
+      def keys(*keys)
+        non_proxied_instances.map { |instance| instance.keys(*keys) }.flatten(1)
+      end
+
+      def flushdb
+        non_proxied_instances.map(&:flushdb)
+      end
+
+      def flushall
+        non_proxied_instances.map(&:flushall)
       end
     end
   end
