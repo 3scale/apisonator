@@ -650,6 +650,7 @@ module ThreeScale
       end
 
       not_found do
+        env['sinatra.error'] = nil
         [404, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, ['']]
       end
 
