@@ -30,5 +30,4 @@ wget https://codeload.github.com/twitter/twemproxy/tar.gz/v0.3.0 && tar xvzf v0.
 # Application setup
 gem install bundler rake
 
-su vagrant
-echo "export LC_ALL=en_US.UTF8" >> ~/.bashrc
+su - vagrant -c "echo export LC_ALL=en_US.UTF8 >> ~/.bashrc"
