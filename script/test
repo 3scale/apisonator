@@ -29,7 +29,7 @@ function stop_redis {
 }
 
 function start_twemproxy {
-    /opt/twemproxy/sbin/nutcracker -p "$twemproxy_pidfile" -d -c "$PWD"/config/twemproxy.yml
+    /opt/twemproxy/sbin/nutcracker -m 512 -o /tmp/nutcracker.log -p "$twemproxy_pidfile" -d -c "$PWD"/config/twemproxy.yml
 }
 
 function stop_twemproxy {

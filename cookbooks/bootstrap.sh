@@ -23,9 +23,11 @@ ruby-switch --set ruby2.1
 # Dependencies
 apt-get install -y libxslt-dev libxml2-dev
 apt-get install -y mongodb-10gen
+service mongodb stop
+apt-get install -y autoconf libtool autopoint
+wget https://codeload.github.com/twitter/twemproxy/tar.gz/v0.3.0 && tar xvzf v0.3.0 && cd twemproxy-0.3.0 && autoreconf -fvi && ./configure --prefix=/opt/twemproxy && make && make install
 
 # Application setup
 gem install bundler rake
 
-su vagrant
-echo "export LC_ALL=en_US.UTF8" >> ~/.bashrc
+su - vagrant -c "echo export LC_ALL=en_US.UTF8 >> ~/.bashrc"
