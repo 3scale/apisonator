@@ -9,7 +9,7 @@ all: clean build test
 test:
 	$(RUN) --name $(NAME) $(PROJECT)
 pull:
-	docker pull quay.io/3scale/ruby:2.1
+	- docker pull quay.io/3scale/ruby:2.1
 
 bash:
 	$(RUN) -t -i $(PROJECT) bash
