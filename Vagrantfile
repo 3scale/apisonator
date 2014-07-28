@@ -9,6 +9,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
     v.cpus = 2
+    v.customize ["modifyvm", :id, "--ioapic", "on"]
   end
 
   config.vm.box = "ubuntu/precise32"
