@@ -1,4 +1,4 @@
-PROJECT = backend
+PROJECT := $(subst @,,$(notdir $(shell pwd)))
 RUN = docker run --rm
 NAME = $(PROJECT)-build
 
