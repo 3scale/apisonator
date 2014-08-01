@@ -1,5 +1,4 @@
 require '3scale/core'
-require 'aws/s3'
 require 'builder'
 require 'hiredis'
 require 'redis'
@@ -30,7 +29,6 @@ require '3scale/backend/extensions'
 require '3scale/backend/allow_methods'
 require '3scale/backend/oauth_access_token_storage'
 require '3scale/backend/application'
-require '3scale/backend/archiver'
 require '3scale/backend/error_storage'
 require '3scale/backend/listener'
 require '3scale/backend/metric'
@@ -71,14 +69,12 @@ ThreeScale::Backend.configuration.tap do |config|
   # Add configuration sections
   config.add_section(:queues, :master_name, :sentinels)
   config.add_section(:redis, :proxy, :nodes, :backup_file)
-  config.add_section(:archiver, :path, :s3_bucket)
   config.add_section(:hoptoad, :api_key)
   config.add_section(:stats, :bucket_size)
   config.add_section(:mongo, :servers, :db, :db_options)
 
   # Default config
   config.master_service_id  = 1
-  config.archiver.path      = '/tmp/3scale_backend/archive'
 
   ## this means that there will be a NotifyJob for every X notifications (this is
   ## the call to master)
