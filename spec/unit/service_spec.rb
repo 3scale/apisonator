@@ -184,6 +184,13 @@ module ThreeScale
 
           Service.load_by_id(service.id).should_not be_nil
         end
+
+        it 'raises an exception if you try to delete an invalid service' do
+          invalid_id = service.id + 1
+          expect { Service.delete_by_id(invalid_id) }.to raise_error(ServiceIdInvalid)
+
+          Service.load_by_id(invalid_id).should be_nil
+        end
       end
 
     end

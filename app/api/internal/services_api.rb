@@ -50,6 +50,8 @@ module ThreeScale
           {status: :ok}.to_json
         rescue ServiceIsDefaultService => e
           respond_with_400 e
+        rescue ServiceIdInvalid => e
+          respond_with_404 e
         end
       end
 

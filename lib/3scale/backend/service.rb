@@ -68,10 +68,8 @@ module ThreeScale
         end
 
         def delete_by_id(service_id)
-          service = load_by_id(service_id)
-          if service.default_service?
-            raise ServiceIsDefaultService, service.id
-          end
+          service = load_by_id!(service_id)
+          raise ServiceIsDefaultService, service.id if service.default_service?
 
           service.delete_data
           service.clear_cache
