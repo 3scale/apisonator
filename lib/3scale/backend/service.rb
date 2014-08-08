@@ -15,53 +15,47 @@ module ThreeScale
         :version, :default_service
 
       class << self
+        include Memoizer::Decorator
+
         # Returns true if a given service belongs to the provider with
         # that key without loading the whole object.
         #
         def authenticate_service_id(service_id, provider_key)
-          key = "Service.authenticate_service_id-#{service_id}-#{provider_key}"
-          Memoizer.memoize_block(key) do
-            provider_key == storage.get(storage_key(service_id, 'provider_key'))
-          end
+          provider_key == storage.get(storage_key(service_id, 'provider_key'))
         end
+        memoize :authenticate_service_id
 
         def default_id(provider_key)
-          key = "Service.default_id-#{provider_key}"
-          Memoizer.memoize_block(key) do
-            storage.get(storage_key_by_provider(provider_key, :id))
-          end
+          storage.get(storage_key_by_provider(provider_key, :id))
         end
+        memoize :default_id
 
         def default_id!(provider_key)
           default_id(provider_key) or raise ProviderKeyInvalid, provider_key
         end
 
         def load(provider_key)
-          key = "Service.load-#{provider_key}"
-          Memoizer.memoize_block(key) do
-            load_by_id default_id(provider_key)
-          end
+          load_by_id default_id(provider_key)
         end
+        memoize :load
 
         def load!(provider_key)
           load(provider_key) or raise ProviderKeyInvalid, provider_key
         end
 
         def load_by_id(service_id)
-          key = "Service.load_by_id-#{service_id}"
-          Memoizer.memoize_block(key) do
-            next if service_id.nil?
+          return if service_id.nil?
 
-            service_attrs = get_service(id = service_id.to_s)
-            massage_service_attrs id, service_attrs
+          service_attrs = get_service(id = service_id.to_s)
+          massage_service_attrs id, service_attrs
 
-            next if service_attrs['provider_key'].nil?
+          return if service_attrs['provider_key'].nil?
 
-            new(service_attrs.merge(id: id,
-              default_service: default_service?(service_attrs['provider_key'], id)
-            ))
-          end
+          new(service_attrs.merge(id: id,
+            default_service: default_service?(service_attrs['provider_key'], id)
+          ))
         end
+        memoize :load_by_id
 
         def load_by_id!(service_id)
           load_by_id(service_id) or raise ServiceIdInvalid, service_id
@@ -88,11 +82,9 @@ module ThreeScale
 
         # TODO: Is it used?
         def list(provider_key)
-          key = "Service.list-#{provider_key}"
-          Memoizer.memoize_block(key) do
-            storage.smembers(storage_key_by_provider(provider_key, :ids)) || []
-          end
+          storage.smembers(storage_key_by_provider(provider_key, :ids)) || []
         end
+        memoize :list
 
         def save!(attributes = {})
           massage_set_user_registration_required attributes
