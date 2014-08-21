@@ -47,9 +47,12 @@ start_twemproxy
 start_mongodb
 
 bundle exec rake
+EXITVAL=$?
 
 if [ -z "$CI" ]; then
     stop_redis
     stop_twemproxy
     stop_mongodb
 fi
+
+exit ${EXITVAL}
