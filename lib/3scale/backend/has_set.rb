@@ -10,8 +10,8 @@ module ThreeScale
       def set_items(name)
         ## WARNING: this is super dangerous, since the class must have a service_id and id instance
         ## vars, which application has but the HasSet has to go
-        key = "#{self.class}-#{name}-#{@service_id}-#{@id}"
-        Memoizer.memoize_block(key) do 
+        key = Memoizer.build_key(self, name, @service_id, @id)
+        Memoizer.memoize_block(key) do
           storage.smembers(storage_key(name))
         end
       end
@@ -20,7 +20,7 @@ module ThreeScale
         storage.sadd(storage_key(name), value)
         value
       end
-      
+
       def delete_set_item(name, value)
         storage.srem(storage_key(name), value)
       end
@@ -28,7 +28,7 @@ module ThreeScale
       def has_set_items?(name)
         storage.scard(storage_key(name)).to_i > 0
       end
-      
+
       def has_set_item?(name, value)
         storage.sismember(storage_key(name), value)
       end
