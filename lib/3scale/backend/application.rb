@@ -8,35 +8,28 @@ module ThreeScale
       end
 
       include Sets
+      include Memoizer::Decorator
 
       def self.load!(service_id, app_id)
-        key = "Application.load!-#{service_id}-#{app_id}"
-        Memoizer.memoize_block(key) do
-          load(service_id, app_id) or raise ApplicationNotFound, app_id
-        end
+        load(service_id, app_id) or raise ApplicationNotFound, app_id
       end
-      
+      memoize :load!
+
       def self.load(service_id, app_id)
-        key = "Application.load-#{service_id}-#{app_id}"
-        Memoizer.memoize_block(key) do
-          super(service_id, app_id)
-        end
+        super(service_id, app_id)
       end
-      
+      memoize :load
+
       def self.load_id_by_key(service_id, user_key)
-        key = "Application.load_id_by_key-#{service_id}-#{user_key}"
-        Memoizer.memoize_block(key) do
-          super(service_id, user_key)
-        end
+        super(service_id, user_key)
       end
-      
+      memoize :load_id_by_key
+
       def self.exists?(service_id, app_id)
-        key = "Application.exists?-#{service_id}-#{app_id}"
-        Memoizer.memoize_block(key) do
-          super(service_id, app_id)
-        end
+        super(service_id, app_id)
       end
-      
+      memoize :exists?
+
       def self.load_by_id_or_user_key!(service_id, app_id, user_key)
 
         case
