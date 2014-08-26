@@ -7,6 +7,15 @@ module ThreeScale
       MAX_ENTRIES = 10000
       ACTIVE = true
 
+      # Initialize the class variables
+      # XXX Note: using class variables is generally bad practice,
+      # we might want to clean this up in the future
+      @@memoizer_cache = Hash.new
+      @@memoizer_cache_expires = Hash.new
+      @@memoizer_purge_time = nil
+      @@memoizer_stats_count = 0
+      @@memoizer_stats_hits = 0
+
       def self.reset!
         @@memoizer_cache = Hash.new
         @@memoizer_cache_expires = Hash.new
