@@ -16,6 +16,61 @@ module ThreeScale
       @@memoizer_stats_count = 0
       @@memoizer_stats_hits = 0
 
+      # Key management:
+      #
+      # When automatically memoizing using the decorator, you should
+      # NEVER assume a specific key format. Here are some helpers to
+      # let you build keys to clear or getting them.
+      #
+      # You should only use build_keys_for_class and build_key
+      #
+
+      private
+
+      def self.build_class_key(klass)
+        classkey = klass.to_s
+        if klass.singleton_class?
+          # obtain class from Ruby's metaclass notation
+          classkey = classkey.split(':').delete_if do |k|
+            k[0] == '#'
+          end.join(':').split('>').first
+        else
+          classkey
+        end
+      end
+
+      def self.build_method_key(classkey, methodname)
+        classkey + '.' + methodname
+      end
+
+      def self.build_args_key(methodkey, *args)
+        if args.empty?
+          methodkey
+        else
+          methodkey + '-' + args.join('-')
+        end
+      end
+
+      public
+
+      # Generate a key for the given class, method and args
+      def self.build_key(klass, method, *args)
+        key = build_class_key klass
+        key = build_method_key key, method.to_s
+        build_args_key key, *args
+      end
+
+      # Pass in the class or object that receives the memoized
+      # methods, and a hash containing the methods as keys and
+      # an array of their arguments in order.
+      def self.build_keys_for_class(klass, methods_n_args)
+        classkey = build_class_key klass
+        methods_n_args.map do |method, args|
+          key = build_method_key(classkey, method.to_s)
+          build_args_key key, *args
+        end
+      end
+
       def self.reset!
         @@memoizer_cache = Hash.new
         @@memoizer_cache_expires = Hash.new
