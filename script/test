@@ -2,9 +2,14 @@
 
 redis_ports=(7379 7380 6379)
 twemproxy_pidfile="/tmp/twemproxy_backend_tests.pid"
+influxdb_pidfile="/tmp/influxdb_backend_tests.pid"
 
 function start_mongodb {
   mongod --dbpath /tmp --nojournal --noprealloc > /dev/null &
+}
+
+function start_influxdb {
+    /usr/bin/influxdb -config=/opt/influxdb/shared/config.toml -pidfile="$influxdb_pidfile" &
 }
 
 function start_redis {
@@ -15,7 +20,7 @@ function start_redis {
     else
 	cmd="/opt/redis/bin/redis-server"
     fi
-    for port in "${redis_ports[@]}"
+     for port in "${redis_ports[@]}"
     do
 	$cmd --port "$port" --daemonize yes &
     done
@@ -40,11 +45,16 @@ function stop_mongodb {
     mongod --dbpath /tmp --shutdown
 }
 
+function stop_influxdb {
+    kill -9 `cat "$influxdb_pidfile"`
+}
+
 export RACK_ENV=test
 
 start_redis
 start_twemproxy
 start_mongodb
+start_influxdb
 
 bundle exec rake
 EXITVAL=$?
@@ -53,6 +63,7 @@ if [ -z "$CI" ]; then
     stop_redis
     stop_twemproxy
     stop_mongodb
+    stop_influxdb
 fi
 
 exit ${EXITVAL}
