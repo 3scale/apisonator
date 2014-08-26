@@ -3,13 +3,13 @@ module ThreeScale
     class Metric < ThreeScale::Core::Metric
       class Collection
         include Core::Storable
-      
+
         def initialize(service_id)
           @service_id = service_id
           @metric_ids = {}
           @parent_ids = {}
         end
-      
+
         # Accepts usage as {'metric_name' => value, ...} and converts it into
         # {metric_id => value, ...}, evaluating also metric hierarchy.
         #
@@ -47,7 +47,7 @@ module ThreeScale
         def process_ancestors(usage)
           usage.keys.inject(usage.dup) do |memo, id|
             ancestor_id(id).each do |ancestor_id|
-             
+
               val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(memo[id])
               if val.nil?
                 memo[ancestor_id] ||= 0
@@ -86,7 +86,8 @@ module ThreeScale
         end
 
         def load_ancestor_id(id)
-          Memoizer.memoize_block("Metric.Collection.load_ancestor_id-#{@service_id}-#{id}") do
+          Memoizer.memoize_block(Memoizer.build_key(self,
+                                        :load_ancestor_id, @service_id, id)) do
             storage.get(encode_key("metric/service_id:#{@service_id}/id:#{id}/parent_id"))
           end
         end
@@ -96,7 +97,8 @@ module ThreeScale
         end
 
         def load_metric_id(name)
-          Memoizer.memoize_block("Metric.Collection.load_metric_id-#{@service_id}-#{name}") do
+          Memoizer.memoize_block(Memoizer.build_key(self,
+                                        :load_metric_id, @service_id, name)) do
             storage.get(encode_key("metric/service_id:#{@service_id}/name:#{name}/id"))
           end
         end
@@ -107,7 +109,7 @@ module ThreeScale
 
         ## accepts postive integers or positive integers preffixed with # (for sets)
         def sane_value?(value)
-          value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/ 
+          value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/
         end
       end
     end
