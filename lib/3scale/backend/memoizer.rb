@@ -29,7 +29,9 @@ module ThreeScale
 
       def self.build_class_key(klass)
         classkey = klass.to_s
-        if klass.singleton_class?
+        # This can receive both objects and classes, so check if we can
+        # call singleton_class? before actually doing so.
+        if klass.respond_to? :singleton_class? and klass.singleton_class?
           # obtain class from Ruby's metaclass notation
           classkey = classkey.split(':').delete_if do |k|
             k[0] == '#'
@@ -149,6 +151,108 @@ module ThreeScale
         end
       end
 
+      # Decorator allows a class or module to include it and get
+      #   memoize :method1, :method2, ...
+      # using keys "#{classname}.#{methodname}-#{arg1}-#{arg2}-..."
+      module Decorator
+        def self.included(base)
+          base.extend(ClassMethods)
+        end
+
+        module ClassMethods
+          def memoize_instance_method(m)
+            method_name = m.name
+            define_method(method_name) do |*args|
+              key = Memoizer.build_method_key self.to_s, method_name.to_s
+              key = Memoizer.build_args_key key, *args
+              Memoizer.memoize_block(key) do
+                m.bind(self).call(*args)
+              end
+            end
+          end
+          private :memoize_instance_method
+
+          def memoize_bindable_class_method(m, partialkey)
+            define_method(m.name) do |*args|
+              key = Memoizer.build_args_key partialkey, *args
+              Memoizer.memoize_block(key) do
+                m.bind(self).call(*args)
+              end
+            end
+          end
+          private :memoize_bindable_class_method
+
+          def memoize_class_method(m, partialkey)
+            define_singleton_method(m.name) do |*args|
+              key = Memoizer.build_args_key partialkey, *args
+              Memoizer.memoize_block(key) do
+                m.call(*args)
+              end
+            end
+          end
+          private :memoize_class_method
+
+          # memoize :method, :other_method, ...
+          #
+          # Decorate the methods passed in memoizing their results based
+          # on the parameters they receive using a key with the form:
+          # (ClassName|Instance).methodname[-param1[-param2[-...]]]
+          #
+          # You can call this from a class on instance or class methods, and
+          # from a metaclass on instance methods, which actually are class
+          # methods.
+          #
+          # CAVEAT: if you have an instance method named exactly as an existing
+          # class method you either memoize the instance method BEFORE defining
+          # the class method or use memoize_i on the instance method.
+          #
+          def memoize(*methods)
+            classkey = Memoizer.build_class_key self
+            methods.each do |m|
+              # For each method, first search for a class method, which is the
+              # common case. If not found, then look for an instance method.
+              #
+              begin
+                key = Memoizer.build_method_key(classkey, m.to_s)
+                if singleton_class?
+                  original_method = instance_method m
+                  raise NameError unless original_method.owner == self
+                  memoize_bindable_class_method original_method, key
+                else
+                  original_method = method m
+                  raise NameError unless original_method.owner == self.singleton_class
+                  memoize_class_method original_method, key
+                end
+              rescue NameError
+                # If we cannot find a class method, try an instance method
+                # before bailing out.
+                memoize_i m
+              end
+            end
+          end
+
+          # memoize_i :method, :other_method
+          #
+          # Forces memoization of methods which are instance methods in
+          # the current context level. This can be used to, for example,
+          # override the default look up when we have two methods, class
+          # and instance, which are named the same and we want to memoize
+          # both or only the instance level one.
+          def memoize_i(*methods)
+            methods.each do |m|
+              # We don't support calling this from a metaclass, because
+              # we have not built a correct key. The user should use memoize
+              # instead of this, which will already work with the instance
+              # methods within a metaclass, that is, the class' class methods.
+              raise NameError if singleton_class?
+              original_method = instance_method m
+              raise NameError unless original_method.owner == self
+              memoize_instance_method original_method
+            end
+          end
+        end
+
+      end
     end
   end
 end
