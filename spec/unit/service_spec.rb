@@ -156,10 +156,10 @@ module ThreeScale
 
         it 'cleans service cache' do
           Service.default_id('foo')
-          Memoizer.memoized?("Service.default_id-foo").should be_true
+          Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo')).should be_true
 
           service.save!
-          Memoizer.memoized?("Service.default_id-foo").should be_false
+          Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo')).should be_false
         end
 
         it 'validates user_registration_required field' do
