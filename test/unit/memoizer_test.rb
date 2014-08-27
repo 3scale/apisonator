@@ -175,12 +175,14 @@ class MemoizerTest < Test::Unit::TestCase
       end
     end
     obj = MemoizerDecoratorTest.new
-    assert !Memoizer.memoized?("#{obj}.foo")
+    okey = Memoizer.build_key(obj, :foo)
+    pokey = Memoizer.build_key(obj, :foo, 'some', 'params')
+    assert !Memoizer.memoized?(okey)
     assert_equal :bar, obj.foo
-    assert_equal :bar, Memoizer.get("#{obj}.foo")
-    assert !Memoizer.memoized?("#{obj}.foo-some-params")
+    assert_equal :bar, Memoizer.get(okey)
+    assert !Memoizer.memoized?(pokey)
     assert_equal :bar, obj.foo('some', 'params')
-    assert_equal :bar, Memoizer.get("#{obj}.foo-some-params")
+    assert_equal :bar, Memoizer.get(pokey)
     self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
@@ -196,12 +198,14 @@ class MemoizerTest < Test::Unit::TestCase
         memoize :foo
       end
     end
-    assert !Memoizer.memoized?('MemoizerDecoratorTest.foo')
+    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
+    pkey = Memoizer.build_key(MemoizerDecoratorTest, :foo, 'some', 'params')
+    assert !Memoizer.memoized?(key)
     assert_equal :bar, MemoizerDecoratorTest.foo
-    assert_equal :bar, Memoizer.get("#{self.class}::MemoizerDecoratorTest.foo")
-    assert !Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo-some-params")
+    assert_equal :bar, Memoizer.get(key)
+    assert !Memoizer.memoized?(pkey)
     assert_equal :bar, MemoizerDecoratorTest.foo('some', 'params')
-    assert_equal :bar, Memoizer.get("#{self.class}::MemoizerDecoratorTest.foo-some-params")
+    assert_equal :bar, Memoizer.get(pkey)
     self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
@@ -219,12 +223,14 @@ class MemoizerTest < Test::Unit::TestCase
         end
       end
     end
-    assert !Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo")
+    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
+    pkey = Memoizer.build_key(MemoizerDecoratorTest, :foo, 'some', 'params')
+    assert !Memoizer.memoized?(key)
     assert_equal :bar, MemoizerDecoratorTest.foo
-    assert_equal :bar, Memoizer.get("#{self.class}::MemoizerDecoratorTest.foo")
-    assert !Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo-some-params")
+    assert_equal :bar, Memoizer.get(key)
+    assert !Memoizer.memoized?(pkey)
     assert_equal :bar, MemoizerDecoratorTest.foo('some', 'params')
-    assert_equal :bar, Memoizer.get("#{self.class}::MemoizerDecoratorTest.foo-some-params")
+    assert_equal :bar, Memoizer.get(pkey)
     self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
@@ -240,12 +246,14 @@ class MemoizerTest < Test::Unit::TestCase
         memoize :foo
       end
     end
-    assert !Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo")
+    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
+    pkey = Memoizer.build_key(MemoizerDecoratorTest, :foo, 'some', 'params')
+    assert !Memoizer.memoized?(key)
     assert_equal :bar, MemoizerDecoratorTest.foo
-    assert_equal :bar, Memoizer.get("#{self.class}::MemoizerDecoratorTest.foo")
-    assert !Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo-some-params")
+    assert_equal :bar, Memoizer.get(key)
+    assert !Memoizer.memoized?(pkey)
     assert_equal :bar, MemoizerDecoratorTest.foo('some', 'params')
-    assert_equal :bar, Memoizer.get("#{self.class}::MemoizerDecoratorTest.foo-some-params")
+    assert_equal :bar, Memoizer.get(pkey)
     self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
@@ -265,12 +273,14 @@ class MemoizerTest < Test::Unit::TestCase
       end
     end
     obj = MemoizerDecoratorTest.new
-    assert !Memoizer.memoized?("#{obj}.foo")
-    assert !Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo")
+    okey = Memoizer.build_key(obj, :foo)
+    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
+    assert !Memoizer.memoized?(okey)
+    assert !Memoizer.memoized?(key)
     assert_equal :instance, obj.foo
     assert_equal :class, MemoizerDecoratorTest.foo
-    assert !Memoizer.memoized?("#{obj}.foo")
-    assert Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo")
+    assert !Memoizer.memoized?(okey)
+    assert Memoizer.memoized?(key)
     self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
@@ -295,12 +305,14 @@ class MemoizerTest < Test::Unit::TestCase
       end
     end
     obj = MemoizerDecoratorTest.new
-    assert !Memoizer.memoized?("#{obj}.foo")
-    assert !Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo")
+    okey = Memoizer.build_key(obj, :foo)
+    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
+    assert !Memoizer.memoized?(okey)
+    assert !Memoizer.memoized?(key)
     assert_equal :instance, obj.foo
     assert_equal :class, MemoizerDecoratorTest.foo
-    assert Memoizer.memoized?("#{obj}.foo")
-    assert !Memoizer.memoized?("#{self.class}::MemoizerDecoratorTest.foo")
+    assert Memoizer.memoized?(okey)
+    assert !Memoizer.memoized?(key)
     self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
