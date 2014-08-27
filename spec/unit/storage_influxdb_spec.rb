@@ -1,5 +1,5 @@
 require_relative '../spec_helper'
-require_relative '../../lib/3scale/storage_influxdb'
+require_relative '../../lib/3scale/backend/storage_influxdb'
 
 module ThreeScale
   module Backend
