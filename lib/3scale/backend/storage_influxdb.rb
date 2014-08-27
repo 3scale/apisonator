@@ -99,7 +99,16 @@ module ThreeScale
         where_query = compose_where(conditions)
         serie       = serie_name(service_id, period)
         query       = "select * from #{serie} #{where_query} limit 1"
-        events      = @client.query(query)[serie]
+
+        begin
+          events = @client.query(query)[serie]
+        rescue InfluxDB::Error => exception
+          if exception.message =~ /Couldn't look up columns/
+            events = nil
+          else
+            raise exception
+          end
+        end
 
         events.first if events
       end
