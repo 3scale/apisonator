@@ -91,9 +91,9 @@ class MemoizerTest < Test::Unit::TestCase
     assert !Memoizer.memoized?(key)
     Memoizer.memoize key, value
     Memoizer.memoize another_key, another_value
-    5.times { Memoizer.get key }
-    3.times { Memoizer.get another_key }
-    7.times { Memoizer.get yet_another_key }
+    5.times { Memoizer.memoized? key }
+    3.times { Memoizer.memoized? another_key }
+    7.times { Memoizer.memoized? yet_another_key }
     Memoizer.reset!
     assert_equal 0, Memoizer.stats[:hits]
     assert_equal 0, Memoizer.stats[:count]
