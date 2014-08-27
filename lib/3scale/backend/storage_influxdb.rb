@@ -120,11 +120,11 @@ module ThreeScale
       # @note: In the future, maybe they will add builtin support for this.
       # https://github.com/influxdb/influxdb/issues/448
       def drop_series
-        series = @client.query "select time from /#{SERIES_PREFIX}.*/ limit 1"
+        list_query = "list series /#{SERIES_PREFIX}.*/"
+        series     = @client.query(list_query)["list_series_result"]
 
         series.each do |serie|
-          name = serie.first
-          @client.query "drop series #{name}"
+          @client.query "drop series #{serie['name']}"
         end
 
         true
