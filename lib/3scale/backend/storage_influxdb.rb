@@ -7,12 +7,21 @@ module ThreeScale
 
       SERIES_PREFIX = "service_"
 
+      # @note There are plans to use a binary protocol to communicate
+      #       with InfluxDB. We should track this and modify this class
+      #       if needed. We should consider to extend the current
+      #       InfluxDB::Client that consumes the HTTP API to allow persistent
+      #       connections.
       def initialize(database, options = {})
         @client = InfluxDB::Client.new database, options
         @client.create_database(database) rescue nil
         @grouped_events = {}
       end
 
+      # @note Now the influxdb is consuming the HTTP API and there is no problem
+      #       unreferencing the client, but if we change this to a persistent
+      #       connection, we should close the connection before unreference
+      #       the var.
       def self.instance(reset = false)
         @instance = nil if reset
         @instance ||= new(
