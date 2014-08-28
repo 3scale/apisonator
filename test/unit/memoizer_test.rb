@@ -141,6 +141,19 @@ class MemoizerTest < Test::Unit::TestCase
     assert_equal 0, Memoizer.stats[:size]
   end
 
+  def with_a_class(parent = Object)
+    # Test the decoration of methods
+    # first create a class and give it a name to refer to
+    # (we need to const_set it before using memoize, since otherwise
+    # the class would have no name by the time memoize executes).
+    mysym = (parent.to_s.split(':').last + "Child").to_sym
+    self.class.send :remove_const, mysym rescue nil
+    klass = self.class.const_set(mysym, Class.new(parent))
+    yield klass
+  ensure
+    self.class.send :remove_const, mysym
+  end
+
   def test_memoizer_build_key
     # it is probably debatable whether a key should have a specific type
     assert Memoizer.build_key(self, :some_method, :some, :args).kind_of?(String)
