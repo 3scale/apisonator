@@ -202,162 +202,151 @@ class MemoizerTest < Test::Unit::TestCase
   end
 
   def test_memoizer_decorator_instance_method
-    # Test the decoration of methods
-    # first create a class and give it a name to refer to
-    # (we need to const_set it before using memoize, since otherwise
-    # the class would have no name by the time memoize executes).
-    # and then declare :foo as memoized and run assertions.
-    self.class.send :remove_const, :MemoizerDecoratorTest rescue nil
-    self.class.const_set(:MemoizerDecoratorTest, Class.new)
-    assert_nothing_raised do
-      MemoizerDecoratorTest.class_eval do
-        include Memoizer::Decorator
-        def foo(*args)
-          :bar
-        end
-        memoize :foo
-      end
-    end
-    obj = MemoizerDecoratorTest.new
-    okey = Memoizer.build_key(obj, :foo)
-    pokey = Memoizer.build_key(obj, :foo, 'some', 'params')
-    assert !Memoizer.memoized?(okey)
-    assert_equal :bar, obj.foo
-    assert_equal :bar, Memoizer.get(okey)
-    assert !Memoizer.memoized?(pokey)
-    assert_equal :bar, obj.foo('some', 'params')
-    assert_equal :bar, Memoizer.get(pokey)
-    self.class.send :remove_const, :MemoizerDecoratorTest
-  end
-
-  def test_memoizer_decorator_class_method_from_instance_eval
-    self.class.send :remove_const, :MemoizerDecoratorTest rescue nil
-    self.class.const_set(:MemoizerDecoratorTest, Class.new)
-    assert_nothing_raised do
-      MemoizerDecoratorTest.instance_eval do
-        include Memoizer::Decorator
-        def foo(*args)
-          :bar
-        end
-        memoize :foo
-      end
-    end
-    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
-    pkey = Memoizer.build_key(MemoizerDecoratorTest, :foo, 'some', 'params')
-    assert !Memoizer.memoized?(key)
-    assert_equal :bar, MemoizerDecoratorTest.foo
-    assert_equal :bar, Memoizer.get(key)
-    assert !Memoizer.memoized?(pkey)
-    assert_equal :bar, MemoizerDecoratorTest.foo('some', 'params')
-    assert_equal :bar, Memoizer.get(pkey)
-    self.class.send :remove_const, :MemoizerDecoratorTest
-  end
-
-  def test_memoizer_decorator_class_method_from_metaclass
-    self.class.send :remove_const, :MemoizerDecoratorTest rescue nil
-    self.class.const_set(:MemoizerDecoratorTest, Class.new)
-    assert_nothing_raised do
-      MemoizerDecoratorTest.instance_eval do
-        class << self
-          include ThreeScale::Backend::Memoizer::Decorator
+    with_a_class do |klass|
+      assert_nothing_raised do
+        klass.class_eval do
+          include Memoizer::Decorator
           def foo(*args)
             :bar
           end
           memoize :foo
         end
       end
+      obj = klass.new
+      okey = Memoizer.build_key(obj, :foo)
+      pokey = Memoizer.build_key(obj, :foo, 'some', 'params')
+      assert !Memoizer.memoized?(okey)
+      assert_equal :bar, obj.foo
+      assert_equal :bar, Memoizer.get(okey)
+      assert !Memoizer.memoized?(pokey)
+      assert_equal :bar, obj.foo('some', 'params')
+      assert_equal :bar, Memoizer.get(pokey)
     end
-    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
-    pkey = Memoizer.build_key(MemoizerDecoratorTest, :foo, 'some', 'params')
-    assert !Memoizer.memoized?(key)
-    assert_equal :bar, MemoizerDecoratorTest.foo
-    assert_equal :bar, Memoizer.get(key)
-    assert !Memoizer.memoized?(pkey)
-    assert_equal :bar, MemoizerDecoratorTest.foo('some', 'params')
-    assert_equal :bar, Memoizer.get(pkey)
-    self.class.send :remove_const, :MemoizerDecoratorTest
+  end
+
+  def test_memoizer_decorator_class_method_from_instance_eval
+    with_a_class do |klass|
+      assert_nothing_raised do
+        klass.instance_eval do
+          include Memoizer::Decorator
+          def foo(*args)
+            :bar
+          end
+          memoize :foo
+        end
+      end
+      key = Memoizer.build_key(klass, :foo)
+      pkey = Memoizer.build_key(klass, :foo, 'some', 'params')
+      assert !Memoizer.memoized?(key)
+      assert_equal :bar, klass.foo
+      assert_equal :bar, Memoizer.get(key)
+      assert !Memoizer.memoized?(pkey)
+      assert_equal :bar, klass.foo('some', 'params')
+      assert_equal :bar, Memoizer.get(pkey)
+    end
+  end
+
+  def test_memoizer_decorator_class_method_from_metaclass
+    with_a_class do |klass|
+      assert_nothing_raised do
+        klass.instance_eval do
+          class << self
+            include ThreeScale::Backend::Memoizer::Decorator
+            def foo(*args)
+              :bar
+            end
+            memoize :foo
+          end
+        end
+      end
+      key = Memoizer.build_key(klass, :foo)
+      pkey = Memoizer.build_key(klass, :foo, 'some', 'params')
+      assert !Memoizer.memoized?(key)
+      assert_equal :bar, klass.foo
+      assert_equal :bar, Memoizer.get(key)
+      assert !Memoizer.memoized?(pkey)
+      assert_equal :bar, klass.foo('some', 'params')
+      assert_equal :bar, Memoizer.get(pkey)
+    end
   end
 
   def test_memoizer_decorator_class_method_from_class_eval
-    self.class.send :remove_const, :MemoizerDecoratorTest rescue nil
-    self.class.const_set(:MemoizerDecoratorTest, Class.new)
-    assert_nothing_raised do
-      MemoizerDecoratorTest.class_eval do
-        include Memoizer::Decorator
-        def self.foo(*args)
-          :bar
+    with_a_class do |klass|
+      assert_nothing_raised do
+        klass.class_eval do
+          include Memoizer::Decorator
+          def self.foo(*args)
+            :bar
+          end
+          memoize :foo
         end
-        memoize :foo
       end
+      key = Memoizer.build_key(klass, :foo)
+      pkey = Memoizer.build_key(klass, :foo, 'some', 'params')
+      assert !Memoizer.memoized?(key)
+      assert_equal :bar, klass.foo
+      assert_equal :bar, Memoizer.get(key)
+      assert !Memoizer.memoized?(pkey)
+      assert_equal :bar, klass.foo('some', 'params')
+      assert_equal :bar, Memoizer.get(pkey)
     end
-    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
-    pkey = Memoizer.build_key(MemoizerDecoratorTest, :foo, 'some', 'params')
-    assert !Memoizer.memoized?(key)
-    assert_equal :bar, MemoizerDecoratorTest.foo
-    assert_equal :bar, Memoizer.get(key)
-    assert !Memoizer.memoized?(pkey)
-    assert_equal :bar, MemoizerDecoratorTest.foo('some', 'params')
-    assert_equal :bar, Memoizer.get(pkey)
-    self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
   def test_memoizer_decorator_decorates_class_instead_of_instance_method
-    self.class.send :remove_const, :MemoizerDecoratorTest rescue nil
-    self.class.const_set(:MemoizerDecoratorTest, Class.new)
-    assert_nothing_raised do
-      MemoizerDecoratorTest.class_eval do
-        include Memoizer::Decorator
-        def self.foo(*args)
-          :class
+    with_a_class do |klass|
+      assert_nothing_raised do
+        klass.class_eval do
+          include Memoizer::Decorator
+          def self.foo(*args)
+            :class
+          end
+          def foo(*args)
+            :instance
+          end
+          memoize :foo
         end
-        def foo(*args)
-          :instance
-        end
-        memoize :foo
       end
+      obj = klass.new
+      okey = Memoizer.build_key(obj, :foo)
+      key = Memoizer.build_key(klass, :foo)
+      assert !Memoizer.memoized?(okey)
+      assert !Memoizer.memoized?(key)
+      assert_equal :instance, obj.foo
+      assert_equal :class, klass.foo
+      assert !Memoizer.memoized?(okey)
+      assert Memoizer.memoized?(key)
     end
-    obj = MemoizerDecoratorTest.new
-    okey = Memoizer.build_key(obj, :foo)
-    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
-    assert !Memoizer.memoized?(okey)
-    assert !Memoizer.memoized?(key)
-    assert_equal :instance, obj.foo
-    assert_equal :class, MemoizerDecoratorTest.foo
-    assert !Memoizer.memoized?(okey)
-    assert Memoizer.memoized?(key)
-    self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
   def test_memoizer_decorator_memoize_i_decorates_instance_instead_of_class_method
-    self.class.send :remove_const, :MemoizerDecoratorTest rescue nil
-    self.class.const_set(:MemoizerDecoratorTest, Class.new)
-    assert_raise NameError do
-      MemoizerDecoratorTest.class_eval do
-        include Memoizer::Decorator
-        def self.foo(*args)
-          :class
+    with_a_class do |klass|
+      assert_raise NameError do
+        klass.class_eval do
+          include Memoizer::Decorator
+          def self.foo(*args)
+            :class
+          end
+          memoize_i :foo
         end
-        memoize_i :foo
       end
-    end
-    assert_nothing_raised do
-      MemoizerDecoratorTest.class_eval do
-        def foo(*args)
-          :instance
+      assert_nothing_raised do
+        klass.class_eval do
+          def foo(*args)
+            :instance
+          end
+          memoize_i :foo
         end
-        memoize_i :foo
       end
+      obj = klass.new
+      okey = Memoizer.build_key(obj, :foo)
+      key = Memoizer.build_key(klass, :foo)
+      assert !Memoizer.memoized?(okey)
+      assert !Memoizer.memoized?(key)
+      assert_equal :instance, obj.foo
+      assert_equal :class, klass.foo
+      assert Memoizer.memoized?(okey)
+      assert !Memoizer.memoized?(key)
     end
-    obj = MemoizerDecoratorTest.new
-    okey = Memoizer.build_key(obj, :foo)
-    key = Memoizer.build_key(MemoizerDecoratorTest, :foo)
-    assert !Memoizer.memoized?(okey)
-    assert !Memoizer.memoized?(key)
-    assert_equal :instance, obj.foo
-    assert_equal :class, MemoizerDecoratorTest.foo
-    assert Memoizer.memoized?(okey)
-    assert !Memoizer.memoized?(key)
-    self.class.send :remove_const, :MemoizerDecoratorTest
   end
 
   def test_memoizer_decorator_does_not_decorate_non_local_methods
