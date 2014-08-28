@@ -206,6 +206,11 @@ module ThreeScale
           # class method you either memoize the instance method BEFORE defining
           # the class method or use memoize_i on the instance method.
           #
+          # WARNING: do NOT memoize instance methods of a class or call memoize
+          # from a metaclass context if the methods are going to be called a
+          # huge number of times, because you will be incurring in a binding
+          # overhead that is noticeable for highly called methods.
+          #
           def memoize(*methods)
             classkey = Memoizer.build_class_key self
             methods.each do |m|
