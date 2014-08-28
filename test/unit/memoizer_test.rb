@@ -154,19 +154,50 @@ class MemoizerTest < Test::Unit::TestCase
     self.class.send :remove_const, mysym
   end
 
+  # build_key.* returns an OPAQUE object. Should only test functionality.
   def test_memoizer_build_key
-    # it is probably debatable whether a key should have a specific type
-    assert Memoizer.build_key(self, :some_method, :some, :args).kind_of?(String)
+    with_a_class do |klass|
+      key = Memoizer.build_key(klass, :some_method, :some, :args)
+      assert !Memoizer.memoized?(key)
+      klass.instance_eval do
+        include Memoizer::Decorator
+        def some_method(*args)
+          :some_result
+        end
+        memoize :some_method
+      end
+      assert_equal :some_result, klass.some_method(:some, :args)
+      assert Memoizer.memoized?(key)
+      assert_equal :some_result, Memoizer.get(key)
+    end
   end
 
   def test_memoized_build_keys_for_class
-    keys = Memoizer.build_keys_for_class(self,
-                                         some_method: [:some, :args],
-                                         another_method: [:arg],
-                                         yet_another: [])
-    assert_equal 3, keys.size
-    keys.each do |k|
-      assert k.kind_of?(String)
+    methods_n_args = {
+      some_method: [:some, :args],
+      another_method: [:arg],
+      yet_another: []
+    }
+    with_a_class do |klass|
+      keys = Memoizer.build_keys_for_class(klass, methods_n_args)
+      assert_equal 3, keys.size
+      keys.each do |k|
+        assert !Memoizer.memoized?(k)
+      end
+      klass.class_eval do
+        include Memoizer::Decorator
+        methods_n_args.keys.each do |m|
+          define_singleton_method m do |*args|
+            :some_result
+          end
+          memoize m
+        end
+      end
+      methods_n_args.each_with_index do |(m, args), idx|
+        assert_equal :some_result, klass.send(m, *args)
+        assert Memoizer.memoized?(keys[idx])
+        assert_equal :some_result, Memoizer.get(keys[idx])
+      end
     end
   end
 
