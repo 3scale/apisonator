@@ -350,45 +350,64 @@ class MemoizerTest < Test::Unit::TestCase
   end
 
   def test_memoizer_decorator_does_not_decorate_non_local_methods
-    self.class.send :remove_const, :MemoizerDecoratorTest rescue nil
-    self.class.const_set(:MemoizerDecoratorTest, Class.new)
-    self.class.const_set(:MemoizerDecoratorTestModule, Module.new)
-    MemoizerDecoratorTestModule.module_eval do
-      def self.foo(*args)
-        :class_from_module
-      end
-      def foo(*args)
-        :instance_from_module
-      end
-    end
-    [MemoizerDecoratorTest, MemoizerDecoratorTest.singleton_class].each do |k|
-      k.include MemoizerDecoratorTestModule
-      k.extend MemoizerDecoratorTestModule
-      k.prepend MemoizerDecoratorTestModule
-      k.class_eval do
+    with_a_class do |klass|
+      self.class.const_set(:MemoizerDecoratorTestModule, Module.new)
+      MemoizerDecoratorTestModule.module_eval do
         def self.foo(*args)
-          :class_from_parent
+          :class_from_module
         end
         def foo(*args)
-          :instance_from_parent
+          :instance_from_module
         end
       end
-    end
-    self.class.const_set(:MemoizerDecoratorTestChild, Class.new(MemoizerDecoratorTest))
-    assert_raise NameError do
-      MemoizerDecoratorTestChild.class_eval do
-        include Memoizer::Decorator
-        memoize :foo
+      [klass, klass.singleton_class].each do |k|
+        k.include MemoizerDecoratorTestModule
+        k.extend MemoizerDecoratorTestModule
+        k.prepend MemoizerDecoratorTestModule
+        # test that no module can interfere with memoize
+        assert_raise NameError do
+          k.class_eval do
+            include Memoizer::Decorator
+            memoize :foo
+          end
+        end
+        assert_raise NameError do
+          k.instance_eval do
+            include Memoizer::Decorator
+            memoize :foo
+          end
+        end
       end
-    end
-    assert_raise NameError do
-      MemoizerDecoratorTestChild.instance_eval do
-        include Memoizer::Decorator
-        memoize :foo
+      # add class and instance methods
+      [klass, klass.singleton_class].each do |k|
+        k.class_eval do
+          def self.foo(*args)
+            :class_from_parent
+          end
+          def foo(*args)
+            :instance_from_parent
+          end
+        end
       end
+      # test a derived class
+      with_a_class klass do |child|
+        [child, child.singleton_class].each do |k|
+          assert_raise NameError do
+            k.class_eval do
+              include Memoizer::Decorator
+              memoize :foo
+            end
+          end
+          assert_raise NameError do
+            k.instance_eval do
+              include Memoizer::Decorator
+              memoize :foo
+            end
+          end
+        end
+      end
+      self.class.send :remove_const, :MemoizerDecoratorTestModule
     end
-    self.class.send :remove_const, :MemoizerDecoratorTestModule
-    self.class.send :remove_const, :MemoizerDecoratorTest
   end
 end
 
