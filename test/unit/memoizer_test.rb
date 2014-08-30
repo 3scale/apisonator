@@ -133,10 +133,14 @@ class MemoizerTest < Test::Unit::TestCase
   end
 
   def test_memoizer_purge_max_entries
+    Memoizer.reset!
     max_entries = Memoizer.const_get :MAX_ENTRIES
-    (max_entries+1).times do |i|
+    max_entries.times do |i|
       Memoizer.memoize i.to_s, value
     end
+    Memoizer.purge(Time.now.utc.to_i)
+    assert_equal max_entries, Memoizer.stats[:size]
+    Memoizer.memoize (max_entries+1).to_s, value
     Memoizer.purge(Time.now.utc.to_i)
     assert_equal 0, Memoizer.stats[:size]
   end
