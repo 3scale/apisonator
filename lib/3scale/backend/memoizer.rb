@@ -192,6 +192,20 @@ module ThreeScale
           end
           private :memoize_class_method
 
+          # helper to go down one level from the current class context
+          # ie. the reverse of singleton_class: from metaclass to class
+          def memoize_get_instance_class
+            return self unless singleton_class?
+            # workaround Ruby's lack of the inverse of singleton_class
+            base_s = to_s.split(':').delete_if { |k| k.start_with? '#' }.
+              join(':').split('>').first
+            klass = Kernel.const_get(base_s)
+            # got the root class, now go up a level shy of self
+            klass = klass.singleton_class while klass.singleton_class != self
+            klass
+          end
+          private :memoize_get_instance_class
+
           # memoize :method, :other_method, ...
           #
           # Decorate the methods passed in memoizing their results based
