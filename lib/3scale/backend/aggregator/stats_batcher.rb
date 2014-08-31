@@ -3,30 +3,6 @@ module ThreeScale
     module Aggregator
       module StatsBatcher
 
-        def deactivate_mongo
-          storage.del("mongo:active")
-        end
-
-        def activate_mongo
-          storage.set("mongo:active","1")
-        end
-
-        def mongo_active?
-          storage.get("mongo:active").to_i == 1
-        end
-
-        def disable_mongo
-          storage.del("mongo:enabled")
-        end
-
-        def enable_mongo
-          storage.set("mongo:enabled", "1")
-        end
-
-        def mongo_enabled?
-          storage.get("mongo:enabled").to_i == 1
-        end
-
         def pending_buckets_size
           storage.zcard(changed_keys_key)
         end
@@ -64,7 +40,7 @@ module ThreeScale
         end
 
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
-          disable_mongo
+          StorageStats.disable!
 
           (failed_buckets + pending_buckets).each do |bucket|
             keys = storage.smembers(changed_keys_bucket_key(bucket))

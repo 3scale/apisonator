@@ -4,6 +4,7 @@ require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
 require '3scale/backend/aggregator/stats_batcher'
+require '3scale/backend/storage_stats'
 require '3scale/backend/aggregator/stats_keys'
 require '3scale/backend/aggregator/stats_job'
 
@@ -27,11 +28,11 @@ module ThreeScale
         ## deactivated:
         ## storage.set("mongo_enabled","1") / storage.del("mongo_enabled")
 
-        Memoizer.memoize_block("mongo-enabled") do
-          @mongo_enabled = mongo_enabled?
+        Memoizer.memoize_block("stats-enabled") do
+          @stats_enabled = StorageStats.enabled?
         end
 
-        if @mongo_enabled
+        if @stats_enabled
           timenow = Time.now.utc
 
           bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
@@ -39,9 +40,9 @@ module ThreeScale
           @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
 
           if @@current_bucket == bucket
-            schedule_mongo_job = false
+            schedule_stats_job = false
           else
-            schedule_mongo_job = true
+            schedule_stats_job = true
             @@current_bucket = bucket
           end
         end
@@ -85,7 +86,7 @@ module ThreeScale
           ## metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
-          if @mongo_enabled && @keys_doing_set_op.size > 0
+          if @stats_enabled && @keys_doing_set_op.size > 0
             @keys_doing_set_op.each do |item|
               key, value = item
 
@@ -120,9 +121,9 @@ module ThreeScale
         ## need to update the cached_status for for the transactor
         update_status_cache(applications, users)
 
-        ## the time bucket has elapsed, trigger a mongodb job
-        if @mongo_enabled
-          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_mongo_job)
+        ## the time bucket has elapsed, trigger a stats job
+        if @stats_enabled
+          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_stats_job)
         end
 
         ## Finally, let's ping the frontend if any event is pending
@@ -177,7 +178,7 @@ module ThreeScale
 
           value  = value.to_i
 
-          if @mongo_enabled
+          if @stats_enabled
             bucket_key = bucket_with_service_key(current_bucket, service_id)
           else
             bucket_key = ""
@@ -222,7 +223,7 @@ module ThreeScale
 
       def add_to_copied_keys(cmd, mongo_bucket, key, value)
         set_keys = []
-        if @mongo_enabled
+        if @stats_enabled
           storage.sadd("keys_changed:#{mongo_bucket}", key)
           if cmd == :set
             @keys_doing_set_op << [key, value]

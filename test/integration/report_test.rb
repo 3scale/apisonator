@@ -32,8 +32,8 @@ class ReportTest < Test::Unit::TestCase
   end
 
   def mongo_setup
-    Aggregator.enable_mongo
-    Aggregator.activate_mongo
+    StorageStats.enable!
+    StorageStats.activate!
 
 
     @storage_mongo = StorageMongo.instance(true)

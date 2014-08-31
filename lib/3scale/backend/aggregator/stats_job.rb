@@ -1,3 +1,5 @@
+require_relative '../storage_stats'
+
 module ThreeScale
   module Backend
     module Aggregator
@@ -7,7 +9,7 @@ module ThreeScale
         @queue = :stats
 
         def self.perform(bucket, enqueue_time)
-          return unless Aggregator.mongo_enabled? && Aggregator.mongo_active?
+          return unless StorageStats.enabled? && StorageStats.active?
 
           start_time = Time.now.getutc
 

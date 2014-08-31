@@ -125,13 +125,13 @@ namespace :stats do
     end
 
     desc 'Disable stats batch processing on mongo. Stops saving to mongo and to redis'
-    task :disable_mongo => :environment do
-      puts ThreeScale::Backend::Aggregator.disable_mongo
+    task :disable_storage_stats => :environment do
+      puts ThreeScale::Backend::StorageStats.disable!
     end
 
     desc 'Enable stats batch processing on mongo'
-    task :enable_mongo => :environment do
-      puts ThreeScale::Backend::Aggregator.enable_mongo
+    task :enable_storage_stats => :environment do
+      puts ThreeScale::Backend::StorageStats.enable!
     end
 
     desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
@@ -161,23 +161,23 @@ namespace :stats do
   end
 
   desc 'Activate saving to mongo.'
-  task :activate_saving_to_mongo => :environment do
-    puts ThreeScale::Backend::Aggregator.activate_mongo
+  task :activate_saving_to_storage_stats => :environment do
+    puts ThreeScale::Backend::StorageStats.activate!
   end
 
-  desc 'Deactivate saving to mongo. Do only if mongo is down or acting funny. Data is still saved in redis.'
-  task :deactivate_saving_to_mongo => :environment do
-    puts ThreeScale::Backend::Aggregator.deactivate_mongo
+  desc 'Deactivate saving to storage stats. Do only if the storage stats is down or acting funny. Data is still saved in redis.'
+  task :deactivate_saving_to_storage_stats => :environment do
+    puts ThreeScale::Backend::StorageStats.deactivate!
   end
 
-  desc 'Are stats saving to mongo or just piling in redis?'
-  task :mongo_saving_active? => :environment do
-    puts ThreeScale::Backend::Aggregator.mongo_active?
+  desc 'Are stats saving to storage stats or just piling in redis?'
+  task :storage_stats_saving_active? => :environment do
+    puts ThreeScale::Backend::StorageStats.active?
   end
 
-  desc 'Is mongo batch processing enabled?'
-  task :mongo_enabled? => :environment do
-    puts ThreeScale::Backend::Aggregator.mongo_enabled?
+  desc 'Is storage stats batch processing enabled?'
+  task :storage_stats_enabled? => :environment do
+    puts ThreeScale::Backend::StorageStats.enabled?
   end
 
   desc 'Process failed buckets (one by one)'

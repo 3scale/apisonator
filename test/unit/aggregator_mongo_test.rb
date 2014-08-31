@@ -15,10 +15,10 @@ class AggregatorMongoTest < Test::Unit::TestCase
     # all the test will have to disable the flag before finishing,
     ## in theory not needed since we always do flush, if not
     ## @storage.del("mongo_enabled")
-    Aggregator.enable_mongo
+    StorageStats.enable!
     ## the flag to know if mongo is enabled is memoized
     Memoizer.reset!
-    Aggregator.activate_mongo
+    StorageStats.activate!
 
     @storage_mongo = StorageMongo.instance(true)
     @storage_mongo.clear_collections
@@ -601,34 +601,8 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 666, @storage_mongo.get(:hour, timestamp, mongo_conditions)
   end
 
-  test 'enable and disable mongo' do
-    Aggregator.enable_mongo
-    ## the flag to know if mongo is enabled is memoized
-    Memoizer.reset!
-    assert_equal true, Aggregator.mongo_enabled?
-
-    Aggregator.disable_mongo
-    ## the flag to know if mongo is enabled is memoized
-    Memoizer.reset!
-    assert_equal false, Aggregator.mongo_enabled?
-
-    Storage.instance.flushdb()
-    assert_equal false, Aggregator.mongo_enabled?
-  end
-
-  test 'activate and deactive mongodb' do
-    Aggregator.activate_mongo
-    assert_equal true, Aggregator.mongo_active?
-
-    Aggregator.deactivate_mongo
-    assert_equal false, Aggregator.mongo_active?
-
-    Storage.instance.flushdb()
-    assert_equal false, Aggregator.mongo_active?
-  end
-
   test 'when mongodb is deactivated buckets are filled but nothing gets saved' do
-    Aggregator.deactivate_mongo
+    StorageStats.deactivate!
 
     v = []
     10.times do
@@ -650,7 +624,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     assert_equal 1, Aggregator.pending_buckets.size
 
-    Aggregator.activate_mongo
+    StorageStats.activate!
 
     Aggregator.schedule_one_stats_job
     Resque.run!
@@ -660,7 +634,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
   end
 
   test 'when mongodb is disabled nothing gets logged' do
-    Aggregator.disable_mongo
+    StorageStats.disable!
     ## the flag to know if mongo is enabled is memoized
     Memoizer.reset!
 
@@ -706,7 +680,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     StorageMongo.reset_to_nil!
 
     ## now we disable it mongo
-    Aggregator.disable_mongo
+    StorageStats.disable!
     ## the flag to know if mongo is enabled is memoized
     Memoizer.reset!
 
@@ -734,7 +708,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     configuration.mongo.db = StorageMongo::DEFAULT_DATABASE
     StorageMongo.reset_to_nil!
 
-    Aggregator.enable_mongo
+    StorageStats.enable!
     ## the flag to know if mongo is enabled is memoized
     Memoizer.reset!
 
@@ -778,7 +752,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     StorageMongo.reset_to_nil!
 
     ## now we disable it mongo
-    Aggregator.deactivate_mongo
+    StorageStats.deactivate!
 
     v.each do |item|
       Aggregator.aggregate_all([item])
@@ -804,7 +778,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     configuration.mongo.db = StorageMongo::DEFAULT_DATABASE
     StorageMongo.reset_to_nil!
 
-    Aggregator.activate_mongo
+    StorageStats.activate!
 
     assert_equal 1, Aggregator.pending_buckets.size
 
