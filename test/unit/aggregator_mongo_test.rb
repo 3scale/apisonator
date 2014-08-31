@@ -1,4 +1,4 @@
-  require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class AggregatorMongoTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
@@ -336,8 +336,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
   test 'direct test of get_old_buckets_to_process' do
     ## this should go as unit test of StatsBatcher
-
-    @storage.zadd(Aggregator.changed_keys_key,"20121010102100","20121010102100")
+    @storage.zadd(Aggregator::StatsKeys.changed_keys_key,"20121010102100","20121010102100")
     assert_equal [], Aggregator.get_old_buckets_to_process("20121010102100")
 
     assert_equal ["20121010102100"], Aggregator.get_old_buckets_to_process("20121010102120")
@@ -345,10 +344,10 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal [], Aggregator.get_old_buckets_to_process("20121010102120")
 
 
-    @storage.del(Aggregator.changed_keys_key)
+    @storage.del(Aggregator::StatsKeys.changed_keys_key)
 
     100.times do |i|
-      @storage.zadd(Aggregator.changed_keys_key,i,i.to_s)
+      @storage.zadd(Aggregator::StatsKeys.changed_keys_key,i,i.to_s)
     end
 
     assert_equal [], Aggregator.get_old_buckets_to_process("0")
@@ -380,7 +379,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     ## this should go as unit test of StatsBatcher
     100.times do |i|
-      @storage.zadd(Aggregator.changed_keys_key,i,i.to_s)
+      @storage.zadd(Aggregator::StatsKeys.changed_keys_key,i,i.to_s)
     end
 
     10.times do |i|

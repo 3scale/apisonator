@@ -2,21 +2,6 @@ module ThreeScale
   module Backend
     module Aggregator
       module StatsBatcher
-        def changed_keys_bucket_key(bucket)
-          "keys_changed:#{bucket}"
-        end
-
-        def changed_keys_key
-          "keys_changed_set"
-        end
-
-        def failed_save_to_mongo_key
-          "stats:failed"
-        end
-
-        def failed_save_to_mongo_at_least_once_key
-          "stats:failed_at_least_once"
-        end
 
         def deactivate_mongo
           storage.del("mongo:active")
@@ -89,8 +74,8 @@ module ThreeScale
             storage.del(changed_keys_bucket_key(bucket))
           end
           storage.del(changed_keys_key);
-          storage.del(failed_save_to_mongo_key)
-          storage.del(failed_save_to_mongo_at_least_once_key)
+          storage.del(failed_save_to_storage_stats_key)
+          storage.del(failed_save_to_storage_stats_at_least_once_key)
         end
 
         def stats_bucket_size
@@ -140,7 +125,7 @@ module ThreeScale
             ## now we have to clean up the data in redis that has been processed
             storage.pipelined do
               storage.del(changed_keys_bucket_key(bucket))
-              storage.srem(failed_save_to_mongo_key, bucket)
+              storage.srem(failed_save_to_storage_stats_key, bucket)
             end
           rescue Exception => e
             ## could not write to mongo, reschedule
@@ -152,8 +137,8 @@ module ThreeScale
               ## called from a rake task (rake stats:process_failed)
               puts "Error: #{e.inspect}"
             end
-            storage.sadd(failed_save_to_mongo_at_least_once_key, bucket)
-            storage.sadd(failed_save_to_mongo_key, bucket)
+            storage.sadd(failed_save_to_storage_stats_at_least_once_key, bucket)
+            storage.sadd(failed_save_to_storage_stats_key, bucket)
             ## do not automatically reschedule. It creates cascades of failures.
             ##storage.zadd(changed_keys_key, bucket.to_i, bucket)
           end
@@ -168,11 +153,11 @@ module ThreeScale
         end
 
         def failed_buckets
-          storage.smembers(failed_save_to_mongo_key)
+          storage.smembers(failed_save_to_storage_stats_key)
         end
 
         def failed_buckets_at_least_once
-          storage.smembers(failed_save_to_mongo_at_least_once_key)
+          storage.smembers(failed_save_to_storage_stats_at_least_once_key)
         end
 
         private
