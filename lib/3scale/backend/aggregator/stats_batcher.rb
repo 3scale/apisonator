@@ -1,19 +1,9 @@
+require_relative 'stats_info'
+
 module ThreeScale
   module Backend
     module Aggregator
       module StatsBatcher
-
-        def pending_buckets_size
-          storage.zcard(changed_keys_key)
-        end
-
-        def pending_keys_by_bucket
-          result = {}
-          pending_buckets.each do |b|
-            result[b] = storage.scard(changed_keys_bucket_key(b))
-          end
-          result
-        end
 
         # TODO: Remove this method after remove mongo dependency.
         def check_counters_only_as_rake(service_id, application_id, metric_id, timestamp)
@@ -42,7 +32,7 @@ module ThreeScale
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
           StorageStats.disable!
 
-          (failed_buckets + pending_buckets).each do |bucket|
+          (StatsInfo.failed_buckets + StatsInfo.pending_buckets).each do |bucket|
             keys = storage.smembers(changed_keys_bucket_key(bucket))
             unless options[:silent] == true
               puts "Deleting bucket: #{bucket}, containing #{keys.size} keys"
@@ -118,18 +108,6 @@ module ThreeScale
 
         def schedule_one_stats_job(bucket = "inf")
           Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
-        end
-
-        def pending_buckets
-          storage.zrange(changed_keys_key,0,-1)
-        end
-
-        def failed_buckets
-          storage.smembers(failed_save_to_storage_stats_key)
-        end
-
-        def failed_buckets_at_least_once
-          storage.smembers(failed_save_to_storage_stats_at_least_once_key)
         end
 
         private

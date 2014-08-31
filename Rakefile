@@ -142,22 +142,22 @@ namespace :stats do
 
   desc 'Number of stats buckets active in Redis'
   task :buckets_size => :environment do
-    puts ThreeScale::Backend::Aggregator.pending_buckets_size
+    puts ThreeScale::Backend::Aggregator::StatsInfo.pending_buckets_size
   end
 
   desc 'Number of keys in each stats bucket in Redis'
   task :buckets_info => :environment do
-    puts ThreeScale::Backend::Aggregator.pending_keys_by_bucket.inspect
+    puts ThreeScale::Backend::Aggregator::StatsInfo.pending_keys_by_bucket.inspect
   end
 
   desc 'Buckets currently failing to be processed'
   task :failed_buckets => :environment do
-    puts ThreeScale::Backend::Aggregator.failed_buckets
+    puts ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets
   end
 
   desc 'All buckets that failed to be processed at least once, even if ok now'
   task :failed_buckets_once => :environment do
-    puts ThreeScale::Backend::Aggregator.failed_buckets_at_least_once
+    puts ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets_at_least_once
   end
 
   desc 'Activate saving to mongo.'
@@ -182,7 +182,7 @@ namespace :stats do
 
   desc 'Process failed buckets (one by one)'
   task :process_failed => :environment do
-    v = ThreeScale::Backend::Aggregator.failed_buckets
+    v = ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets
     if v.size==0
       puts "No failed buckets!"
     else
