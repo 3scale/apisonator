@@ -54,10 +54,6 @@ module ThreeScale
           storage.del(failed_save_to_storage_stats_at_least_once_key)
         end
 
-        def stats_bucket_size
-          @@stats_bucket_size ||= (configuration.stats.bucket_size || 5)
-        end
-
         ## returns the array of buckets to process that are < bucket
         def get_old_buckets_to_process(bucket = "inf", redis_conn = nil)
 

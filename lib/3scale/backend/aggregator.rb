@@ -159,6 +159,10 @@ module ThreeScale
         @@current_bucket
       end
 
+      def stats_bucket_size
+        @@stats_bucket_size ||= (configuration.stats.bucket_size || 5)
+      end
+
       private
 
       def aggregate(transaction)
