@@ -413,5 +413,30 @@ class MemoizerTest < Test::Unit::TestCase
       self.class.send :remove_const, :MemoizerDecoratorTestModule
     end
   end
+
+  def test_memoizer_decorator_memoizes_class_method_without_binding
+    with_a_class do |klass|
+      mocked_method = Object.new
+      { bind:  lambda { raise 'Error, bind called on memoized class method!' },
+        owner: lambda { klass.singleton_class },
+        name:  lambda { :foo },
+        call:  lambda { :bar }
+      }.each do |m, b|
+        mocked_method.define_singleton_method(m) { b.call }
+      end
+      klass.define_singleton_method :method do |*args|
+        mocked_method
+      end
+      assert_nothing_raised do
+        klass.singleton_class.class_eval do
+          include Memoizer::Decorator
+          def foo
+            :bar
+          end
+          memoize :foo
+        end
+      end
+    end
+  end
 end
 
