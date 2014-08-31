@@ -5,30 +5,6 @@ module ThreeScale
     module Aggregator
       module StatsBatcher
 
-        # TODO: Remove this method after remove mongo dependency.
-        def check_counters_only_as_rake(service_id, application_id, metric_id, timestamp)
-          granularities = [:eternity, :month, :day, :hour, :minute]
-          results = { redis: {}, mongo: {} }
-
-          service_prefix     = service_key_prefix(service_id)
-          application_prefix = application_key_prefix(service_prefix, application_id)
-          application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
-
-          mongo_conditions = {
-            s: service_id,
-            a: application_id,
-            m: metric_id,
-          }
-
-          granularities.each do |gra|
-            redis_key = counter_key(application_metric_prefix, gra, timestamp)
-            results[:redis][gra] = storage.get(redis_key)
-            results[:mongo][gra] = storage_mongo.get(gra, timestamp, mongo_conditions)
-          end
-
-          results
-        end
-
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
           StorageStats.disable!
 

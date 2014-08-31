@@ -767,12 +767,10 @@ class ReportTest < Test::Unit::TestCase
     Aggregator.schedule_one_stats_job
     Resque.run!
 
-    values = Aggregator.check_counters_only_as_rake(
-      @service_id,
-      @application.id,
-      @metric_id,
-      Time.utc(2010, 5, 12, 13, 33)
-    )
+    checker = Aggregator::StatsChecker.new(@service_id,
+                                           @application.id,
+                                           @metric_id)
+    values  = checker.check(Time.utc(2010, 5, 12, 13, 33))
 
     [:eternity, :month, :day, :hour, :minute].each do |gra|
       assert_equal 10, values[:redis][gra].to_i
