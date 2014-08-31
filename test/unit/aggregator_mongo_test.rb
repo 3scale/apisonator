@@ -337,11 +337,11 @@ class AggregatorMongoTest < Test::Unit::TestCase
   test 'direct test of get_old_buckets_to_process' do
     ## this should go as unit test of StatsBatcher
     @storage.zadd(Aggregator::StatsKeys.changed_keys_key,"20121010102100","20121010102100")
-    assert_equal [], Aggregator.get_old_buckets_to_process("20121010102100")
+    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102100")
 
-    assert_equal ["20121010102100"], Aggregator.get_old_buckets_to_process("20121010102120")
+    assert_equal ["20121010102100"], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102120")
 
-    assert_equal [], Aggregator.get_old_buckets_to_process("20121010102120")
+    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102120")
 
 
     @storage.del(Aggregator::StatsKeys.changed_keys_key)
@@ -350,28 +350,28 @@ class AggregatorMongoTest < Test::Unit::TestCase
       @storage.zadd(Aggregator::StatsKeys.changed_keys_key,i,i.to_s)
     end
 
-    assert_equal [], Aggregator.get_old_buckets_to_process("0")
+    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("0")
 
-    v = Aggregator.get_old_buckets_to_process("1")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("1")
     assert_equal v, ["0"]
 
-    v = Aggregator.get_old_buckets_to_process("1")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("1")
     assert_equal [], v
 
-    v = Aggregator.get_old_buckets_to_process("2")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("2")
     assert_equal v, ["1"]
 
-    v = Aggregator.get_old_buckets_to_process("2")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("2")
     assert_equal [], v
 
-    v = Aggregator.get_old_buckets_to_process("11")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("11")
     assert_equal 9, v.size
     assert_equal ["2", "3", "4", "5", "6", "7", "8", "9", "10"], v
 
-    v = Aggregator.get_old_buckets_to_process
+    v = Aggregator::StatsInfo.get_old_buckets_to_process
     assert_equal 89, v.size
 
-    v = Aggregator.get_old_buckets_to_process
+    v = Aggregator::StatsInfo.get_old_buckets_to_process
     assert_equal [], v
   end
 
@@ -389,7 +389,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
       20.times do |j|
         threads << Thread.new {
           r = Redis.new(host: '127.0.0.1', port: 22121)
-          v = Aggregator.get_old_buckets_to_process(((i+1)*10).to_s,r)
+          v = Aggregator::StatsInfo.get_old_buckets_to_process(((i+1)*10).to_s,r)
 
           assert (v.size==0 || v.size==10)
 
@@ -440,13 +440,13 @@ class AggregatorMongoTest < Test::Unit::TestCase
     sorted_set = Aggregator::StatsInfo.pending_buckets.sort
 
     4.times do |i|
-      buckets = Aggregator.get_old_buckets_to_process(sorted_set[i+1])
+      buckets = Aggregator::StatsInfo.get_old_buckets_to_process(sorted_set[i+1])
       assert_equal 1, buckets.size
       assert_equal sorted_set[i], buckets.first
     end
 
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
-    buckets = Aggregator.get_old_buckets_to_process
+    buckets = Aggregator::StatsInfo.get_old_buckets_to_process
     assert_equal 1, buckets.size
     assert_equal sorted_set[4], buckets.first
   end

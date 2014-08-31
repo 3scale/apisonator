@@ -44,21 +44,6 @@ module ThreeScale
           storage.del(failed_save_to_storage_stats_at_least_once_key)
         end
 
-        ## returns the array of buckets to process that are < bucket
-        def get_old_buckets_to_process(bucket = "inf", redis_conn = nil)
-
-          ## there should be very few elements on the changed_keys_key
-
-          redis_conn = storage if redis_conn.nil?
-          score_bucket_key = bucket.split(":").last
-
-          redis_conn.eval(
-            buckets_to_process_script,
-            keys: [changed_keys_key],
-            argv: ["(#{score_bucket_key}"]
-          )
-        end
-
         def save_to_mongo(bucket)
           ## FIXME: this has to go aways, just temporally to check for concurrency issues
           storage.pipelined do
@@ -108,25 +93,6 @@ module ThreeScale
 
         def schedule_one_stats_job(bucket = "inf")
           Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
-        end
-
-        private
-
-        def buckets_to_process_script
-          <<EOF
-  local keys = redis.call('zrevrange', KEYS[1], 0, -1)
-  local num_keys_rem = redis.call('zremrangebyscore', KEYS[1], "-inf", ARGV[1])
-
-  local keys_to_process = {}
-  if num_keys_rem >= 1 then
-    for i=1,num_keys_rem do
-      local reverse_index = #keys - (i-1)
-      table.insert(keys_to_process, keys[reverse_index])
-    end
-  end
-
-  return keys_to_process
-EOF
         end
       end
     end

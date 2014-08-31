@@ -1,10 +1,11 @@
 require_relative '../storage_stats'
+require_relative 'stats_info'
 
 module ThreeScale
   module Backend
     module Aggregator
 
-      # Job for writing stats to mongo
+      # Job for writing stats
       class StatsJob
         @queue = :stats
 
@@ -14,7 +15,7 @@ module ThreeScale
           start_time = Time.now.getutc
 
           if bucket == "inf"
-            buckets_to_save = Aggregator.get_old_buckets_to_process(bucket)
+            buckets_to_save = StatsInfo.get_old_buckets_to_process(bucket)
           else
             buckets_to_save = [bucket]
           end
