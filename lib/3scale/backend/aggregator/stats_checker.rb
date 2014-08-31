@@ -1,3 +1,6 @@
+require_relative '../storage'
+require_relative '../storage_influxdb'
+
 module ThreeScale
   module Backend
     module Aggregator
