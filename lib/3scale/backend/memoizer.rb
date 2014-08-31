@@ -172,18 +172,8 @@ module ThreeScale
           end
           private :memoize_instance_method
 
-          def memoize_bindable_class_method(m, partialkey)
-            define_method(m.name) do |*args|
-              key = Memoizer.build_args_key partialkey, *args
-              Memoizer.memoize_block(key) do
-                m.bind(self).call(*args)
-              end
-            end
-          end
-          private :memoize_bindable_class_method
-
-          def memoize_class_method(m, partialkey)
-            define_singleton_method(m.name) do |*args|
+          def memoize_class_method(m, partialkey, klass)
+            klass.define_singleton_method(m.name) do |*args|
               key = Memoizer.build_args_key partialkey, *args
               Memoizer.memoize_block(key) do
                 m.call(*args)
@@ -220,28 +210,25 @@ module ThreeScale
           # class method you either memoize the instance method BEFORE defining
           # the class method or use memoize_i on the instance method.
           #
-          # WARNING: do NOT memoize instance methods of a class or call memoize
-          # from a metaclass context if the methods are going to be called a
-          # huge number of times, because you will be incurring in a binding
-          # overhead that is noticeable for highly called methods.
+          # WARNING: do NOT use this memoize method on frequently called instance
+          # methods since you'll have a noticeable overhead from the necessity
+          # to bind the method to the object.
           #
           def memoize(*methods)
             classkey = Memoizer.build_class_key self
+            # get the base class of self so that we get rid of metaclasses
+            klass = memoize_get_instance_class
+            # make sure klass points to the klass that self is a metaclass of
+            # in case we're being invoked from a metaclass
             methods.each do |m|
               # For each method, first search for a class method, which is the
               # common case. If not found, then look for an instance method.
               #
               begin
                 key = Memoizer.build_method_key(classkey, m.to_s)
-                if singleton_class?
-                  original_method = instance_method m
-                  raise NameError unless original_method.owner == self
-                  memoize_bindable_class_method original_method, key
-                else
-                  original_method = method m
-                  raise NameError unless original_method.owner == self.singleton_class
-                  memoize_class_method original_method, key
-                end
+                original_method = klass.method m
+                raise NameError unless original_method.owner == klass.singleton_class
+                memoize_class_method original_method, key, klass
               rescue NameError
                 # If we cannot find a class method, try an instance method
                 # before bailing out.
