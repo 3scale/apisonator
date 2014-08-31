@@ -160,41 +160,46 @@ module ThreeScale
         end
 
         module ClassMethods
-          def memoize_instance_method(m)
-            method_name = m.name
-            define_method(method_name) do |*args|
-              key = Memoizer.build_method_key self.to_s, method_name.to_s
-              key = Memoizer.build_args_key key, *args
-              Memoizer.memoize_block(key) do
-                m.bind(self).call(*args)
+          module Helpers
+            module_function
+
+            def memoize_instance_method(m, klass)
+              method_name = m.name
+              method_s = method_name.to_s
+              klass.send :define_method, method_name do |*args|
+                key = Memoizer.build_method_key self.to_s, method_s
+                key = Memoizer.build_args_key key, *args
+                Memoizer.memoize_block(key) do
+                  m.bind(self).call(*args)
+                end
               end
             end
-          end
-          private :memoize_instance_method
+            private :memoize_instance_method
 
-          def memoize_class_method(m, partialkey, klass)
-            klass.define_singleton_method(m.name) do |*args|
-              key = Memoizer.build_args_key partialkey, *args
-              Memoizer.memoize_block(key) do
-                m.call(*args)
+            def memoize_class_method(m, partialkey, klass)
+              klass.define_singleton_method(m.name) do |*args|
+                key = Memoizer.build_args_key partialkey, *args
+                Memoizer.memoize_block(key) do
+                  m.call(*args)
+                end
               end
             end
-          end
-          private :memoize_class_method
+            private :memoize_class_method
 
-          # helper to go down one level from the current class context
-          # ie. the reverse of singleton_class: from metaclass to class
-          def memoize_get_instance_class
-            return self unless singleton_class?
-            # workaround Ruby's lack of the inverse of singleton_class
-            base_s = to_s.split(':').delete_if { |k| k.start_with? '#' }.
-              join(':').split('>').first
-            klass = Kernel.const_get(base_s)
-            # got the root class, now go up a level shy of self
-            klass = klass.singleton_class while klass.singleton_class != self
-            klass
+            # helper to go down one level from the current class context
+            # ie. the reverse of singleton_class: from metaclass to class
+            def get_instance_class(klass)
+              return klass unless klass.singleton_class?
+              # workaround Ruby's lack of the inverse of singleton_class
+              base_s = klass.to_s.split(':').delete_if { |k| k.start_with? '#' }.
+                join(':').split('>').first
+              iklass = Kernel.const_get(base_s)
+              # got the root class, now go up a level shy of self
+              iklass = iklass.singleton_class while iklass.singleton_class != klass
+              iklass
+            end
+            private :get_instance_class
           end
-          private :memoize_get_instance_class
 
           # memoize :method, :other_method, ...
           #
@@ -217,7 +222,7 @@ module ThreeScale
           def memoize(*methods)
             classkey = Memoizer.build_class_key self
             # get the base class of self so that we get rid of metaclasses
-            klass = memoize_get_instance_class
+            klass = Helpers.get_instance_class self
             # make sure klass points to the klass that self is a metaclass of
             # in case we're being invoked from a metaclass
             methods.each do |m|
@@ -228,7 +233,7 @@ module ThreeScale
                 key = Memoizer.build_method_key(classkey, m.to_s)
                 original_method = klass.method m
                 raise NameError unless original_method.owner == klass.singleton_class
-                memoize_class_method original_method, key, klass
+                Helpers.memoize_class_method original_method, key, klass
               rescue NameError
                 # If we cannot find a class method, try an instance method
                 # before bailing out.
@@ -253,7 +258,7 @@ module ThreeScale
               raise NameError if singleton_class?
               original_method = instance_method m
               raise NameError unless original_method.owner == self
-              memoize_instance_method original_method
+              Helpers.memoize_instance_method original_method, self
             end
           end
         end
