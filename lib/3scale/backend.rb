@@ -84,6 +84,7 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:hoptoad, :api_key)
   config.add_section(:stats, :bucket_size)
   config.add_section(:mongo, :servers, :db, :db_options)
+  config.add_section(:influxdb, :hosts, :database, :username, :password)
 
   # Default config
   config.master_service_id  = 1
