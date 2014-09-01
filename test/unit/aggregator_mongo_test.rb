@@ -129,7 +129,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                 :usage          => {'3001' => 1}}])
     end
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
@@ -190,7 +190,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
 
-    Aggregator.schedule_one_stats_job()
+    Aggregator::StatsTasks.schedule_one_stats_job()
     Resque.run!
 
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
@@ -248,7 +248,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :usage          => {'3001' => 1}}])
 
     assert_equal 0 , Resque.queue(:main).length  + Resque.queue(:stats).length
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     assert_equal 1 , Resque.queue(:main).length + Resque.queue(:stats).length
     Resque.run!
     assert_equal 0 , Resque.queue(:main).length + Resque.queue(:stats).length
@@ -303,7 +303,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
     Aggregator.aggregate_all(v)
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 10, @storage_mongo.get(:hour, timestamp, mongo_conditions)
@@ -316,7 +316,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     Aggregator.aggregate_all(v)
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 665, @storage_mongo.get(:hour, timestamp, mongo_conditions)
@@ -329,7 +329,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     Aggregator.aggregate_all(v)
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 666, @storage_mongo.get(:hour, timestamp, mongo_conditions)
@@ -462,7 +462,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :usage          => {'3001' => 1}}])
 
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
@@ -496,7 +496,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Aggregator::StatsInfo.failed_buckets_at_least_once.size
     assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Resque.queue(:main).length
 
@@ -558,7 +558,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
     Aggregator.aggregate_all(v)
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     v = []
@@ -568,7 +568,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
              :usage          => {'3001' => '#665'}}
 
     Aggregator.aggregate_all(v)
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     v = []
@@ -580,7 +580,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
 
     Aggregator.aggregate_all(v)
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     ## it failed for mongodb
@@ -619,7 +619,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
@@ -627,7 +627,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     StorageStats.activate!
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
@@ -653,7 +653,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
@@ -690,7 +690,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
     Aggregator::StatsInfo.pending_buckets.size.times do
-      Aggregator.schedule_one_stats_job
+      Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
@@ -720,7 +720,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
     Aggregator::StatsInfo.pending_buckets.size.times do
-      Aggregator.schedule_one_stats_job
+      Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
@@ -761,7 +761,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     ## because mongo is deactivated nothing blows but it gets logged waiting for mongo
@@ -791,7 +791,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     assert_equal 2, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job()
+    Aggregator::StatsTasks.schedule_one_stats_job()
     Resque.run!
 
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
@@ -833,7 +833,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :user_id        => "user_id_xyz"}])
 
     Aggregator::StatsInfo.pending_buckets.size.times do |cont|
-      Aggregator.schedule_one_stats_job
+      Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
@@ -877,7 +877,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :user_id        => "another_user_id_xyz"}])
 
     Aggregator::StatsInfo.pending_buckets.size.times do
-      Aggregator.schedule_one_stats_job
+      Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
@@ -936,7 +936,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
     assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Resque.queue(:main).length
 

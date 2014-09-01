@@ -688,7 +688,7 @@ class ReportTest < Test::Unit::TestCase
       end
     end
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     timestamp = Time.parse_to_utc("20100501")
@@ -765,7 +765,7 @@ class ReportTest < Test::Unit::TestCase
       end
     end
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     checker = Aggregator::StatsChecker.new(@service_id,

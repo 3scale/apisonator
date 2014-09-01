@@ -3,7 +3,6 @@ require '3scale/backend'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
-require '3scale/backend/aggregator/stats_batcher'
 require '3scale/backend/storage_stats'
 require '3scale/backend/aggregator/stats_keys'
 require '3scale/backend/aggregator/stats_job'
@@ -15,7 +14,6 @@ module ThreeScale
       include Backend::Cache
       include Backend::Alerts
       include Configurable
-      include StatsBatcher
       include StatsKeys
       extend self
 

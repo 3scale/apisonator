@@ -136,7 +136,7 @@ namespace :stats do
 
     desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
     task :insert_stats_job => :environment do
-      puts ThreeScale::Backend::Aggregator.schedule_one_stats_job
+      puts ThreeScale::Backend::Aggregator::StatsTasks.schedule_one_stats_job
     end
   end
 

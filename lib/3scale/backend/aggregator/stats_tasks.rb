@@ -11,6 +11,10 @@ module ThreeScale
 
         module_function
 
+        def schedule_one_stats_job(bucket = "inf")
+          Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
+        end
+
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
           StorageStats.disable!
 
