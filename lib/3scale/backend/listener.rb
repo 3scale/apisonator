@@ -54,8 +54,7 @@ module ThreeScale
       ##~ @parameter_no_body["description"] = "If no_body is passed the response will not include HTTP body."
 
       ##~ @parameter_usage = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
-      ##~ @parameter_usage["description"] = "Usage, will increment/set the metrics with the values passed. The value can be either a positive integer (e.g. 1, 50) or a positive integer prefixed with the character '#' (e.g. #1, #50). In the first case, the value will be incremented, on the second, it will be set to the numerical value. Thus, usage[hits]=1 will increment the hits counter by +1, whereas usage[hits]=#1 will set the hits counters to 1. Warning, setting a value can raise concurrency issues since it's not order preserving.."
-
+      ##~ @parameter_usage["description"] = "Usage, will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1."
       ##
       ##~ @parameter_usage_fields = {"name" => "metric", "dataType" => "custom", "required" => false, "paramType" => "query", "allowMultiple" => true, "threescale_name" => "metric_names"}
       ##~ @parameter_usage_fields["description"] = "Metric to be reported"
@@ -286,7 +285,7 @@ module ThreeScale
       ##~ @authrep_desc = @authrep_desc + " usage will be reported if the authorization is successful. Authrep is the most convenient way to integrate your API with the"
       ##~ @authrep_desc = @authrep_desc + " 3scale's Service Manangement API since it does a 1:1 mapping between a request to your API and a request to 3scale's API."
       ##~ @authrep_desc = @authrep_desc + "<p>If you do not want to do a request to 3scale for each request to your API or batch the reports you should use the Authorize and Report methods instead."
-      ##~ @authrep_desc = @authrep_desc + "<p>Authrep is <b>not a read-only</b> operation and will increment/set the values if the authorization step is a success."
+      ##~ @authrep_desc = @authrep_desc + "<p>Authrep is <b>not a read-only</b> operation and will increment the values if the authorization step is a success."
       ##
       ##~ op.description = @authrep_desc
       ##~ op.group = "authrep"
