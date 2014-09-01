@@ -4,8 +4,8 @@ require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
 require '3scale/backend/aggregator/stats_batcher'
+require '3scale/backend/aggregator/stats_keys'
 require '3scale/backend/aggregator/stats_job'
-
 
 module ThreeScale
   module Backend
@@ -15,6 +15,7 @@ module ThreeScale
       include Backend::Alerts
       include Configurable
       include StatsBatcher
+      include StatsKeys
       extend self
 
       def aggregate_all(transactions)
@@ -157,10 +158,6 @@ module ThreeScale
         @@current_bucket
       end
 
-      def bucket_with_service_key(bucket, service)
-        "#{service}:#{bucket}"
-      end
-
       private
 
       def aggregate(transaction)
@@ -268,7 +265,6 @@ module ThreeScale
 
       ## copied from transactor.rb
       def load_current_usage(application)
-
         pairs = Array.new
         metric_ids = Array.new
         application.usage_limits.each do |usage_limit|
@@ -293,34 +289,7 @@ module ThreeScale
         values
       end
 
-      ## copied from transactor.rb
-      def usage_value_key(application, metric_id, period, time)
-        if period == :eternity
-          encode_key("stats/{service:#{application.service_id}}/" +
-                   "cinstance:#{application.id}/metric:#{metric_id}/" +
-                   "#{period}")
-        else
-          encode_key("stats/{service:#{application.service_id}}/" +
-                   "cinstance:#{application.id}/metric:#{metric_id}/" +
-                   "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
-        end
-
-      end
-
-      ## copied from transactor.rb
-      def user_usage_value_key(user, metric_id, period, time)
-        if period == :eternity
-          encode_key("stats/{service:#{user.service_id}}/" +
-                   "uinstance:#{user.username}/metric:#{metric_id}/" +
-                   "#{period}")
-        else
-          encode_key("stats/{service:#{user.service_id}}/" +
-                   "uinstance:#{user.username}/metric:#{metric_id}/" +
-                   "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
-        end
-      end
-
-      def update_status_cache(applications, users = {}) 
+      def update_status_cache(applications, users = {})
         current_timestamp = Time.now.getutc
 
         applications.each do |appid, values|
@@ -348,43 +317,10 @@ module ThreeScale
         end
       end
 
-      def service_key_prefix(service_id)
-        # The { ... } is the key tag. See redis docs for more info about key tags.
-        "stats/{service:#{service_id}}"
-      end
-
-      def application_key_prefix(prefix, application_id)
-        # XXX: For backwards compatibility, this is called cinstance. It will be eventually
-        # renamed to application...
-        "#{prefix}/cinstance:#{application_id}"
-      end
-
-      def user_key_prefix(prefix, user_id)
-        # XXX: For backwards compatibility, this is called cinstance. It will be eventually
-        # renamed to application...
-        "#{prefix}/uinstance:#{user_id}"
-      end
-
-      def metric_key_prefix(prefix, metric_id)
-        "#{prefix}/metric:#{metric_id}"
-      end
-
-      def counter_key(prefix, granularity, timestamp)
-        time_part = if granularity == :eternity
-                      :eternity
-                    else
-                      time = timestamp.beginning_of_cycle(granularity)
-                      "#{granularity}:#{time.to_compact_s}"
-                    end
-
-        "#{prefix}/#{time_part}"
-      end
-
       def update_application_set(prefix, application_id)
-        key = encode_key("#{prefix}/cinstances")
+        key = applications_key_prefix(prefix)
         storage.sadd(key, encode_key(application_id))
       end
-
 
       def storage
         Storage.instance

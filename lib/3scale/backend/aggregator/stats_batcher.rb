@@ -54,6 +54,7 @@ module ThreeScale
           result
         end
 
+        # TODO: Remove this method after remove mongo dependency.
         def check_counters_only_as_rake(service_id, application_id, metric_id, timestamp)
           granularities = [:eternity, :month, :day, :hour, :minute]
           results = { redis: {}, mongo: {} }

@@ -2,6 +2,7 @@
 
 task :environment do
   require '3scale/backend'
+  require '3scale/backend/aggregator/stats_checker'
 end
 
 def testable_environment?
@@ -191,24 +192,27 @@ namespace :stats do
     end
   end
 
-  desc 'check counter values for mongo and redis, params: service_id, application_id, metric_id, time (optional)'
-  task :check_counters => :environment do
+  desc 'check counter values for influxdb and redis, params: service_id, application_id, metric_id, time (optional)'
+  task :check_counters, [:service_id, :app_id, :metric_id, :timestamp] => :environment do |t, args|
+    timestamp    = Time.parse_to_utc(args[:timestamp]) || Time.now.utc
+    info_message = "Params: service_id: #{args[:service_id]}, " +
+                   "application_id: #{args[:application_id]}, " +
+                   "metric_id #{args[:metric_id]}, timestamp #{timestamp}"
 
-    ##stats/{service:service_id}/cinstance:app_id/metric:metric_id/eternity
-    service_id = ARGV[1]
-    application_id = ARGV[2]
-    metric_id = ARGV[3]
-    timestamp = Time.parse_to_utc(ARGV[4]) || Time.now.utc
+    puts info_message
 
-    puts "Params: service_id: #{service_id}, application_id: #{application_id}, metric_id #{metric_id}, timestamp #{timestamp}"
+    if args[:service_id].nil? || args[:app_id].nil? || args[:metric_id].nil? || timestamp.nil?
+      ex_message = "Incorrect parameters: you must pass:" +
+                   "service_id application_id metric_id timestamp (in full)." +
+                   "For instance: service_id app_id metric_id \"2010-05-07 17:28:12'\""
 
-    if service_id.nil? || application_id.nil? || metric_id.nil? || timestamp.nil?
-      raise "Incorrect parameters: you must pass: service_id application_id metric_id timestamp (in full). For instance: service_id app_id metric_id \"2010-05-07 17:28:12'\""
+      raise ArgumentError.new(ex_message)
     end
 
-    results = ThreeScale::Backend::Aggregator.check_counters_only_as_rake(service_id, application_id, metric_id, timestamp)
+    checker = ThreeScale::Backend::Aggregator::StatsChecker.new(args[:service_id],
+                                                                args[:app_id],
+                                                                args[:metric_id])
 
-    puts results.inspect
-    exit
+    puts checker.check(timestamp).inspect
   end
 end
