@@ -26,7 +26,7 @@ module ThreeScale
             ## it will save all the changed keys from the oldest time bucket. If it
             ## fails it will put the bucket on the stats:failed so that it can be processed
             ## one by one via rake task
-            Aggregator.save_to_mongo(b)
+            StorageStats.save_changed_keys(b)
           end
 
           stats_mem = Memoizer.stats

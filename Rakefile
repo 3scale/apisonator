@@ -187,7 +187,7 @@ namespace :stats do
       puts "No failed buckets!"
     else
       puts "Saving bucket: #{v.first} ..."
-      ThreeScale::Backend::Aggregator.save_to_mongo(v.first)
+      ThreeScale::Backend::StorageStats.save_changed_keys(v.first)
       puts "Done"
     end
   end
