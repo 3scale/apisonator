@@ -7,6 +7,7 @@ require '3scale/backend/transactor/status'
 require '3scale/backend/cache'
 require '3scale/backend/errors'
 require '3scale/backend/validators'
+require '3scale/backend/aggregator/stats_keys'
 
 module ThreeScale
   module Backend
@@ -454,7 +455,7 @@ module ThreeScale
         user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
-          user_usage_value_key(user, metric_id, period, now)
+          Aggregator::StatsKeys.user_usage_value_key(user, metric_id, period, now)
         end
         raw_values = storage.mget(*keys)
         values     = {}
@@ -479,7 +480,7 @@ module ThreeScale
         application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
-          usage_value_key(application, metric_id, period, now)
+          Aggregator::StatsKeys.usage_value_key(application, metric_id, period, now)
         end
         raw_values = storage.mget(*keys)
         values     = {}
@@ -490,35 +491,9 @@ module ThreeScale
         values
       end
 
-      def usage_value_key(application, metric_id, period, time)
-        if period == :eternity
-          encode_key("stats/{service:#{application.service_id}}/" +
-                   "cinstance:#{application.id}/metric:#{metric_id}/" +
-                   "#{period}")
-        else
-          encode_key("stats/{service:#{application.service_id}}/" +
-                   "cinstance:#{application.id}/metric:#{metric_id}/" +
-                   "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
-        end
-
-      end
-
-      def user_usage_value_key(user, metric_id, period, time)
-        if period == :eternity
-          encode_key("stats/{service:#{user.service_id}}/" +
-                   "uinstance:#{user.username}/metric:#{metric_id}/" +
-                   "#{period}")
-        else
-          encode_key("stats/{service:#{user.service_id}}/" +
-                   "uinstance:#{user.username}/metric:#{metric_id}/" +
-                   "#{period}:#{time.beginning_of_cycle(period).to_compact_s}")
-        end
-      end
-
       def storage
         Storage.instance
       end
-
     end
   end
 end

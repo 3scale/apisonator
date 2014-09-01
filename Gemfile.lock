@@ -7,6 +7,7 @@ PATH
       bson_ext (= 1.9.0)
       builder (= 2.1.2)
       hiredis (= 0.4.5)
+      influxdb (= 0.1.8)
       mongo (= 1.9.0)
       rack (= 1.5.2)
       rake (= 10.1.0)
@@ -62,6 +63,8 @@ GEM
     hiredis (0.4.5)
     httpclient (2.3.4.1)
     i18n (0.6.9)
+    influxdb (0.1.8)
+      json
     json (1.8.1)
     metaclass (0.0.4)
     method_source (0.8.2)
