@@ -54,7 +54,7 @@ module ThreeScale
       ##~ @parameter_no_body["description"] = "If no_body is passed the response will not include HTTP body."
 
       ##~ @parameter_usage = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
-      ##~ @parameter_usage["description"] = "Usage, will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1."
+      ##~ @parameter_usage["description"] = "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1."
       ##
       ##~ @parameter_usage_fields = {"name" => "metric", "dataType" => "custom", "required" => false, "paramType" => "query", "allowMultiple" => true, "threescale_name" => "metric_names"}
       ##~ @parameter_usage_fields["description"] = "Metric to be reported"
