@@ -24,7 +24,7 @@ the "vboxsf" file system is not available.` you need to execute some extra steps
 8. Now, you have the VM ready to hack. `vagrant ssh`
 9. By default, your project is available in: /vagrant. `cd /vagrant`
 10. Install bundle dependencies: `bundle install`.
-11. Yay! That's all. You can for example, execute the tests: `bundle exec rake`.
+11. Yay! That's all. You can for example, execute the tests: `bundle exec script/test`.
 
 ## Deploy
 
