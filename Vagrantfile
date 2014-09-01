@@ -12,7 +12,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     v.customize ["modifyvm", :id, "--ioapic", "on"]
   end
 
-  config.vm.box = "ubuntu/precise32"
+  config.vm.box = "ubuntu/precise64"
   config.berkshelf.enabled = true
   config.omnibus.chef_version = :latest
 

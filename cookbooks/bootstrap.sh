@@ -24,8 +24,8 @@ ruby-switch --set ruby2.1
 
 apt-get install -y mongodb-10gen
 service mongodb stop
-wget http://s3.amazonaws.com/influxdb/influxdb_latest_i386.deb
-dpkg -i influxdb_latest_i386.deb
+wget http://s3.amazonaws.com/influxdb/influxdb_0.8.0_amd64.deb
+dpkg -i influxdb_0.8.0_amd64.deb
 chown -R vagrant:vagrant /opt/influxdb
 
 # Dependencies
