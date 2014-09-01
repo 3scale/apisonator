@@ -3,7 +3,7 @@ module ThreeScale
     class User < Core::User
 
       def self.load_or_create!(service, user_id)
-        key = "User.load_or_create!-#{service.id}-#{user_id}"
+        key = Memoizer.build_key(self, :load_or_create!, service.id, user_id)
         Memoizer.memoize_block(key) do
           super service, user_id
         end
