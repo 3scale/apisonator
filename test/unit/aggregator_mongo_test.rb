@@ -1,4 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require_relative '../../lib/3scale/backend/aggregator/stats_tasks'
 
 class AggregatorMongoTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
@@ -951,7 +952,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     v = @storage.keys("copied:*")
     assert_equal 0, v.size
 
-    Aggregator.delete_all_buckets_and_keys_only_as_rake!(silent: true)
+    Aggregator::StatsTasks.delete_all_buckets_and_keys_only_as_rake!(silent: true)
 
     v = @storage.keys("copied:*")
     assert_equal 0, v.size

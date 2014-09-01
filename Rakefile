@@ -121,7 +121,7 @@ namespace :stats do
   namespace :panic_mode do
     desc '!!! Delete all time buckets and keys after disabling mongo'
     task :delete_all_buckets_and_keys => :environment do
-      puts ThreeScale::Backend::Aggregator.delete_all_buckets_and_keys_only_as_rake!
+      puts ThreeScale::Backend::Aggregator::StatsTasks.delete_all_buckets_and_keys_only_as_rake!
     end
 
     desc 'Disable stats batch processing on mongo. Stops saving to mongo and to redis'
