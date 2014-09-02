@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
-require_relative '../../lib/3scale/backend/aggregator/stats_checker'
 require_relative '../../lib/3scale/backend/aggregator/stats_tasks'
 
 class ReportTest < Test::Unit::TestCase
@@ -769,10 +768,11 @@ class ReportTest < Test::Unit::TestCase
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    checker = Aggregator::StatsChecker.new(@service_id,
-                                           @application.id,
-                                           @metric_id)
-    values  = checker.check(Time.utc(2010, 5, 12, 13, 33))
+    values = Aggregator::StatsTasks.check_values(@service_id,
+                                                 @application.id,
+                                                 @metric_id,
+                                                 Time.utc(2010, 5, 12, 13, 33),
+                                                )
 
     [:month, :day, :hour, :week].each do |gra|
       assert_equal 10, values[:redis][gra].to_i

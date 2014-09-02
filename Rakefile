@@ -2,7 +2,7 @@
 
 task :environment do
   require '3scale/backend'
-  require '3scale/backend/aggregator/stats_checker'
+  require '3scale/backend/aggregator/stats_tasks'
 end
 
 def testable_environment?
@@ -209,10 +209,11 @@ namespace :stats do
       raise ArgumentError.new(ex_message)
     end
 
-    checker = ThreeScale::Backend::Aggregator::StatsChecker.new(args[:service_id],
-                                                                args[:app_id],
-                                                                args[:metric_id])
+    values = ThreeScale::Backend::Aggregator::StatsTasks.check_values(args[:service_id],
+                                                                      args[:app_id],
+                                                                      args[:metric_id],
+                                                                      timestamp)
 
-    puts checker.check(timestamp).inspect
+    puts values.inspect
   end
 end
