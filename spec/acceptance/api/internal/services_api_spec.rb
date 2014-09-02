@@ -1,7 +1,7 @@
 require_relative '../../acceptance_spec_helper'
 
 resource "Services (prefix: /services)" do
-  set_app ThreeScale::Backend::ServicesAPI
+  set_app ThreeScale::Backend::API::ServicesAPI
   header "Accept", "application/json"
   header "Content-Type", "application/json"
 

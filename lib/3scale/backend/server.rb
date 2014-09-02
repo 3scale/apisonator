@@ -62,13 +62,13 @@ module ThreeScale
             ThreeScale::Backend::Server.check_password username, password
           end
 
-          run ThreeScale::Backend::ServicesAPI.new
+          run ThreeScale::Backend::API::ServicesAPI.new
         end
       end
 
       def mount_toplevel_api(server)
         server.map '/internal' do
-          run ThreeScale::Backend::InternalAPI.new
+          run ThreeScale::Backend::API::InternalAPI.new
         end
       end
 
