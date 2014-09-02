@@ -21,11 +21,6 @@ module ThreeScale
         applications = Hash.new
         users        = Hash.new
 
-        ## this is just a temporary switch to be able to enable
-        ## disable reporting to mongodb you can active it or
-        ## deactivated:
-        ## storage.set("mongo_enabled","1") / storage.del("mongo_enabled")
-
         Memoizer.memoize_block("stats-enabled") do
           @stats_enabled = StorageStats.enabled?
         end
@@ -223,10 +218,10 @@ module ThreeScale
         values.flatten(1).reject(&:empty?)
       end
 
-      def add_to_copied_keys(cmd, mongo_bucket, key, value)
+      def add_to_copied_keys(cmd, bucket, key, value)
         set_keys = []
         if @stats_enabled
-          storage.sadd("keys_changed:#{mongo_bucket}", key)
+          storage.sadd("keys_changed:#{bucket}", key)
           if cmd == :set
             @keys_doing_set_op << [key, value]
             set_keys += [key, value]
