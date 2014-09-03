@@ -35,4 +35,3 @@ module ThreeScale
   end
 end
 
-require_relative 'services_api'
