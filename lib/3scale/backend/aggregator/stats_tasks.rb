@@ -23,12 +23,10 @@ module ThreeScale
           stats_conditions = {
             application: application_id,
             metric:      metric_id,
+            time:        timestamp,
           }
 
           granularities.each do |gra|
-            time = timestamp.beginning_of_cycle(gra).to_i
-            stats_conditions.merge!(time: time)
-
             redis_key               = counter_key(application_metric_prefix, gra, timestamp)
             results[:redis][gra]    = storage.get(redis_key).to_i
             results[:influxdb][gra] = storage_stats.get(service_id, gra, stats_conditions).to_i
