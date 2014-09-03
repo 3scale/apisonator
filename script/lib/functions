@@ -8,6 +8,7 @@ function start_mongodb {
 
 function start_influxdb {
     /usr/bin/influxdb -config=/opt/influxdb/shared/config.toml -pidfile="${INFLUXDB_PIDFILE}" &
+    sleep 5
 }
 
 function start_redis {
