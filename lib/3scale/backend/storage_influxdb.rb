@@ -85,7 +85,7 @@ module ThreeScale
       # @return [Integer, nil] the event value or nil.
       def get(service_id, period, conditions = {})
         event = find_event(service_id, period, conditions)
-        event["value"] if event
+        event[:value] if event
       end
 
       # Finds an event with specific `conditions`.
@@ -110,7 +110,7 @@ module ThreeScale
           end
         end
 
-        events.first if events
+        events.first.symbolize_keys if events
       end
 
       # Drop all series (service events).
@@ -153,7 +153,7 @@ module ThreeScale
         event             = find_event(service_id, period, conditions)
 
         if event
-          event.merge("value" => value, name: serie_name(service_id, period))
+          event.merge(value: value, name: serie_name(service_id, period))
         else
           conditions.merge(value: value, name: serie_name(service_id, period))
         end
