@@ -46,7 +46,8 @@ module ThreeScale
       # @return [Array] the batch of events.
       def add_event(key, value)
         event = event_for_interval(key, value)
-        name  = event.delete(:name)
+        sufix = event[:sequence_number] ? "existing" : "new"
+        name  = [event.delete(:name), sufix].join("__")
 
         grouped_events[name] ||= []
         grouped_events[name] << event
@@ -67,6 +68,7 @@ module ThreeScale
       #        Instead, we could have an events array.
       def write_events
         grouped_events.each do |serie, events|
+          serie, _ = serie.split('__')
           @client.write_point(serie, events)
         end
 
