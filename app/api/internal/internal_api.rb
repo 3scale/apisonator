@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     module API
-      class InternalAPI < Sinatra::Base
+      class Internal < Sinatra::Base
 
         before do
           content_type 'application/json'

@@ -4,7 +4,7 @@ require '3scale/backend/use_cases/service_user_management_use_case'
 module ThreeScale
   module Backend
     module API
-      class ServicesAPI < InternalAPI
+      class Services < Internal
 
         get '/:id' do
           if service = Service.load_by_id(params[:id])

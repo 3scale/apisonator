@@ -6,7 +6,7 @@ module ThreeScale
       extend self
 
       INTERNAL_APIS = {
-        ServicesAPI: :services
+        Services: :services
       }
 
       def start(options)
@@ -67,7 +67,7 @@ module ThreeScale
         end
 
         server.map '/internal' do
-          run ThreeScale::Backend::API::InternalAPI.new
+          run ThreeScale::Backend::API::Internal.new
         end
       end
 
