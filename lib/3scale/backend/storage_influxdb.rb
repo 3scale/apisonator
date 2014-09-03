@@ -138,8 +138,6 @@ module ThreeScale
         query = conditions.map do |key, value|
           if key == :time
             "#{key} > #{value}s and #{key} < #{value}s"
-          elsif value.kind_of? Numeric
-            "#{key} = #{value}"
           else
             "#{key} = '#{value}'"
           end
@@ -166,7 +164,7 @@ module ThreeScale
 
         fields.inject({}) do |memo, (field, val)|
           if normalized_field = normalize_field(field)
-            memo[normalized_field] = val.to_i
+            memo[normalized_field] = val.to_s
           end
 
           memo
