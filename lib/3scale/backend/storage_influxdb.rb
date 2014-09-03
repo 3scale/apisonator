@@ -96,6 +96,13 @@ module ThreeScale
       # @param [Hash] conditions the conditions to find an event.
       # @return [Hash, nil] the hash with the event properties or nil.
       def find_event(service_id, period, conditions = {})
+        conditions = optional_values.merge(conditions)
+
+        if conditions[:time]
+          time_on_period = conditions[:time].beginning_of_cycle(period.to_sym)
+          conditions     = conditions.merge(time: time_on_period.to_i)
+        end
+
         where_query = compose_where(conditions)
         serie       = serie_name(service_id, period)
         query       = "select * from #{serie} #{where_query} limit 1"
@@ -148,27 +155,32 @@ module ThreeScale
 
       def event_for_interval(key, value)
         period, timestamp = extract_timestamp(key)
-        conditions        = event_metadata(key).merge(time: timestamp.to_i)
+        time_on_period    = timestamp.beginning_of_cycle(period.to_sym)
+        conditions        = event_metadata(key).merge(time: time_on_period)
         service_id        = conditions.delete(:service)
         event             = find_event(service_id, period, conditions)
+        event           ||= conditions.merge(time: time_on_period.to_i)
 
-        if event
-          event.merge(value: value, name: serie_name(service_id, period))
-        else
-          conditions.merge(value: value, name: serie_name(service_id, period))
-        end
+        event.merge(value: value, name: serie_name(service_id, period))
       end
 
       def event_metadata(key)
         fields = extract_event_fields(key)
 
-        fields.inject({}) do |memo, (field, val)|
+        fields.inject(optional_values) do |memo, (field, val)|
           if normalized_field = normalize_field(field)
             memo[normalized_field] = val.to_s
           end
 
           memo
         end
+      end
+
+      def optional_values
+        {
+          application: "0",
+          user:        "0",
+        }
       end
 
       def extract_timestamp(key)
