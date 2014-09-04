@@ -1,8 +1,2 @@
-module ThreeScale
-  module Backend
-    class API < Sinatra::Base
-    end
-  end
-end
-
-require_relative 'internal/internal_api'
+require_relative 'internal/internal'
+require_relative 'internal/services'
