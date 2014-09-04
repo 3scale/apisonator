@@ -18,7 +18,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     StorageStats.activate!
 
     @storage_stats = StorageStats.instance(true)
-    @storage_stats.drop_series
+    @storage_stats.drop_all_series
 
     Resque.reset!
     Memoizer.reset!
@@ -164,7 +164,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     seed_data()
 
     @storage_stats = StorageStats.instance(true)
-    @storage_stats.drop_series
+    @storage_stats.drop_all_series
 
     stats_conditions = { metric: 3001, time: timestamp }
     assert_equal nil, @storage_stats.get(1001, :month, stats_conditions)

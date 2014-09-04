@@ -38,7 +38,7 @@ class ReportTest < Test::Unit::TestCase
 
 
     @storage_stats = StorageStats.instance(true)
-    @storage_stats.drop_series
+    @storage_stats.drop_all_series
 
     Resque.reset!
     Aggregator.reset_current_bucket!

@@ -122,14 +122,14 @@ module ThreeScale
         events.first.symbolize_keys if events
       end
 
-      # Drop all series (service events).
+      # Drop all series.
       #
       # @return [Boolean] True or raise an exception.
       #
       # @note: In the future, maybe they will add builtin support for this.
       # https://github.com/influxdb/influxdb/issues/448
-      def drop_series
-        list_query = "list series /#{SERIES_PREFIX}.*/"
+      def drop_all_series
+        list_query = "list series"
         series     = @client.query(list_query)["list_series_result"]
 
         series.each do |serie|

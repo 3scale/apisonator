@@ -17,7 +17,7 @@ module ThreeScale
         ]
       end
 
-      before { storage_influxdb.drop_series }
+      before { storage_influxdb.drop_all_series }
 
       let(:storage_influxdb) { StorageInfluxDB.new('backend_test') }
       let(:time)             { Time.utc(2013, 7, 3) }
@@ -127,16 +127,16 @@ module ThreeScale
         end
       end
 
-      describe '#drop_series' do
+      describe '#drop_all_series' do
         before { write_event(value) }
 
         it "returns true" do
-          expect(storage_influxdb.drop_series).to be_true
+          expect(storage_influxdb.drop_all_series).to be_true
         end
 
         it "deletes event series" do
           expect(storage_influxdb.find_event(service_id, period, {})).not_to be_nil
-          storage_influxdb.drop_series
+          storage_influxdb.drop_all_series
           expect(storage_influxdb.find_event(service_id, period, {})).to be_nil
         end
       end
