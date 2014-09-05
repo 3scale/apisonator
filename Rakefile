@@ -119,17 +119,17 @@ end
 
 namespace :stats do
   namespace :panic_mode do
-    desc '!!! Delete all time buckets and keys after disabling mongo'
+    desc '!!! Delete all time buckets and keys after disabling storage stats'
     task :delete_all_buckets_and_keys => :environment do
       puts ThreeScale::Backend::Aggregator::StatsTasks.delete_all_buckets_and_keys_only_as_rake!
     end
 
-    desc 'Disable stats batch processing on mongo. Stops saving to mongo and to redis'
+    desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
     task :disable_storage_stats => :environment do
       puts ThreeScale::Backend::StorageStats.disable!
     end
 
-    desc 'Enable stats batch processing on mongo'
+    desc 'Enable stats batch processing on storage stats'
     task :enable_storage_stats => :environment do
       puts ThreeScale::Backend::StorageStats.enable!
     end
@@ -160,7 +160,7 @@ namespace :stats do
     puts ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets_at_least_once
   end
 
-  desc 'Activate saving to mongo.'
+  desc 'Activate saving to storage stats.'
   task :activate_saving_to_storage_stats => :environment do
     puts ThreeScale::Backend::StorageStats.activate!
   end

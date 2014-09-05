@@ -652,7 +652,7 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
-  test 'successful report aggregates backend hit with mongo' do
+  test 'successful report aggregates backend hit with storage stats' do
     storage_stats_setup
 
     application2 = Application.save(:service_id => @service_id,

@@ -69,11 +69,11 @@ module ThreeScale
           @keys_doing_set_op.flatten!(1)
 
           ## here the pipelined redis increments have been sent
-          ## now we have to send the mongo ones
+          ## now we have to send the storage stats ones
 
           ## FIXME we had set operations :-/ This will only work when
           ## the key is on redis, it will not be true in the future
-          ## not live keys (stats only) will only be on mongodb. Will
+          ## not live keys (stats only) will only be on storage stats. Will
           ## require fix, or limit the usage of #set. In addition,
           ## set operations cannot coexist on increments on the same
           ## metric in the same pipeline. It has to be a check that

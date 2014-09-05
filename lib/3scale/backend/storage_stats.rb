@@ -52,8 +52,9 @@ module ThreeScale
         begin
           Airbrake.notify(exception, parameters: { bucket: bucket })
         rescue Exception => no_airbrake
-          ## this is a bit hackish... this will only happens when save_to_mongo blows when
-          ## called from a rake task (rake stats:process_failed)
+          ## this is a bit hackish... this will only happens when
+          ## save_changed_keys blows when called from a rake task
+          ## (rake stats:process_failed)
           puts "Error: #{exception.inspect}. #{no_airbrake}"
         end
         register_failed_bucket(bucket)
