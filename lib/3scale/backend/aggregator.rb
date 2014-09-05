@@ -323,10 +323,6 @@ module ThreeScale
       def storage
         Storage.instance
       end
-
-      def storage_mongo
-        StorageMongo.instance
-      end
     end
   end
 end

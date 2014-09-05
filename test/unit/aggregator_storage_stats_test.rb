@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 require_relative '../../lib/3scale/backend/aggregator/stats_tasks'
 
-class AggregatorMongoTest < Test::Unit::TestCase
+class AggregatorStorageStatsTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
   include TestHelpers::AuthorizeAssertions
   include TestHelpers::Sequences
