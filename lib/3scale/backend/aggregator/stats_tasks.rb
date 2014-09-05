@@ -20,16 +20,10 @@ module ThreeScale
           application_prefix        = application_key_prefix(service_prefix, application_id)
           application_metric_prefix = metric_key_prefix(application_prefix, metric_id)
 
-          stats_conditions = {
-            application: application_id,
-            metric:      metric_id,
-            time:        timestamp,
-          }
-
           granularities.each do |gra|
             redis_key               = counter_key(application_metric_prefix, gra, timestamp)
             results[:redis][gra]    = storage.get(redis_key).to_i
-            results[:influxdb][gra] = storage_stats.get(service_id, gra, stats_conditions).to_i
+            results[:influxdb][gra] = storage_stats.get(service_id, metric_id, gra, timestamp, application: application_id).to_i
           end
 
           results
