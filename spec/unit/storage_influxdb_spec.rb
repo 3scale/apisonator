@@ -25,16 +25,10 @@ module ThreeScale
       let(:service_id)       { 1001 }
       let(:metric_id)        { 8001 }
       let(:value)            { 20 }
-      let(:event_conditions) {
-        {
-            time:    time.to_i,
-            metric:  metric_id,
-        }
-      }
 
       describe '#get' do
         let(:event_value) do
-          storage_influxdb.get(service_id, period, event_conditions)
+          storage_influxdb.get(service_id, metric_id, period, time)
         end
 
         context "when it finds an event" do
@@ -54,16 +48,16 @@ module ThreeScale
 
       describe "#find_event" do
         let(:event) do
-          storage_influxdb.find_event(service_id, period, event_conditions)
+          storage_influxdb.find_event(service_id, metric_id, period, time)
         end
 
         context "when it finds an event" do
           before { write_event(value) }
 
           it "returns the event" do
-            expect(event).to have_key("sequence_number")
-            expect(event).to have_key("time")
-            expect(event).to have_key("value")
+            expect(event).to have_key(:sequence_number)
+            expect(event).to have_key(:time)
+            expect(event).to have_key(:value)
           end
         end
 
@@ -75,11 +69,12 @@ module ThreeScale
       end
 
       describe '#add_event' do
-        let(:data)  { storage_influxdb.add_event(stats_key, value) }
-        let(:event) { event_conditions.merge(value: value) }
+        let(:event) { storage_influxdb.add_event(stats_key, value) }
 
-        it "returns an array with data points" do
-          expect(data).to eq([event])
+        it "returns a new event" do
+          expect(event).not_to have_key(:sequence_number)
+          expect(event).to have_key(:time)
+          expect(event).to have_key(:value)
         end
       end
 
@@ -97,15 +92,14 @@ module ThreeScale
           end
         end
 
-
         context "with new event point" do
           it "creates the point" do
             storage_influxdb.add_event(stats_key, value)
             storage_influxdb.write_events
-            event = storage_influxdb.find_event(service_id, period, event_conditions)
+            event = storage_influxdb.find_event(service_id, metric_id, period, time)
 
-            expect(event["value"]).to be(value)
-            expect(event["sequence_number"]).not_to be_nil
+            expect(event[:value]).to be(value)
+            expect(event[:sequence_number]).not_to be_nil
           end
         end
 
@@ -114,15 +108,15 @@ module ThreeScale
 
           let(:new_value)      { 50 }
           let(:original_event) {
-            storage_influxdb.find_event(service_id, period, event_conditions)
+            storage_influxdb.find_event(service_id, metric_id, period, time)
           }
 
           it "updates the point" do
             write_event(new_value)
-            event = storage_influxdb.find_event(service_id, period, event_conditions)
+            event = storage_influxdb.find_event(service_id, metric_id, period, time)
 
-            expect(event["sequence_number"]).to eq(original_event["sequence_number"])
-            expect(event["value"]).to be(new_value)
+            expect(event[:sequence_number]).to eq(original_event[:sequence_number])
+            expect(event[:value]).to be(new_value)
           end
         end
       end
@@ -135,9 +129,9 @@ module ThreeScale
         end
 
         it "deletes event series" do
-          expect(storage_influxdb.find_event(service_id, period, {})).not_to be_nil
+          expect(storage_influxdb.find_event(service_id, metric_id, period, time)).not_to be_nil
           storage_influxdb.drop_all_series
-          expect(storage_influxdb.find_event(service_id, period, {})).to be_nil
+          expect(storage_influxdb.find_event(service_id, metric_id, period, time)).to be_nil
         end
       end
     end

@@ -133,30 +133,26 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     time_with_storage_stats = Time.now - t
 
-    stats_conditions = { metric: 3001, time: timestamp }
-
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :month,  '20100501'))
-    assert_equal cont, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :month, timestamp)
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :day,    '20100507'))
-    assert_equal cont, @storage_stats.get(1001, :day, stats_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :day, timestamp)
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
-    assert_equal cont, @storage_stats.get(1001, :hour, stats_conditions)
-
-    stats_conditions = { application: 2001, metric: 3001, time: timestamp }
+    assert_equal cont, @storage_stats.get(1001, 3001, :hour, timestamp)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
-    assert_equal cont, @storage_stats.get(1001, :year, stats_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal cont, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
 
-    assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal cont, @storage_stats.get(1001, :day, stats_conditions)
+    assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :day,  '20100507'))
+    assert_equal cont, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal cont, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -166,8 +162,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     @storage_stats = StorageStats.instance(true)
     @storage_stats.drop_all_series
 
-    stats_conditions = { metric: 3001, time: timestamp }
-    assert_equal nil, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp)
 
     t = Time.now
 
@@ -187,28 +182,26 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     time_without_storage_stats = Time.now - t
 
-    stats_conditions = { service: "1001", metric: "3001", time: timestamp }
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :month,  '20100501'))
-    assert_equal nil, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp)
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :day,    '20100507'))
-    assert_equal nil, @storage_stats.get(1001, :day, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :day, timestamp)
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
-    assert_equal nil, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp)
 
-    stats_conditions = { application: 2001, metric: 3001, time: timestamp }
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
-    assert_equal nil, @storage_stats.get(1001, :year, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal nil, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
-    assert_equal nil, @storage_stats.get(1001, :day, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal nil, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     good_enough = time_with_storage_stats < time_without_storage_stats * 1.5
 
@@ -233,36 +226,30 @@ class AggregatorMongoTest < Test::Unit::TestCase
     Resque.run!
     assert_equal 0 , Resque.queue(:main).length + Resque.queue(:stats).length
 
-    stats_conditions = { metric: 3001, time: timestamp }
-
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
-    assert_equal 1, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp)
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :day,    '20100507'))
-    assert_equal 1, @storage_stats.get(1001, :day, stats_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :day, timestamp)
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
-    assert_equal 1, @storage_stats.get(1001, :hour, stats_conditions)
-
-
-    stats_conditions = { application: 2001, metric: 3001, time: timestamp }
+    assert_equal 1, @storage_stats.get(1001, 3001, :hour, timestamp)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
-    assert_equal 1, @storage_stats.get(1001, :year, stats_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal 1, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
-    assert_equal 1, @storage_stats.get(1001, :day, stats_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal 1, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
   test 'aggregate takes into account setting the counter value ok' do
     timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
-    stats_conditions = { application: 2001, metric: 3001 }
 
     v = []
     10.times do
@@ -277,7 +264,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 10, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal 10, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     v = []
     v  <<   { :service_id     => 1001,
@@ -290,7 +277,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 665, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal 665, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     v = []
     v <<   { :service_id     => 1001,
@@ -303,7 +290,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 666, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal 666, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
   test 'direct test of get_old_buckets_to_process' do
@@ -440,8 +427,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :month, '20100501'))
-    stats_conditions = { metric: 3001, time: metrics_timestamp }
-    assert_equal 1, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
 
     ## on the second on we stub the storage_stats to simulate a network error or storage stats down
 
@@ -480,8 +466,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     @storage_stats = StorageStats.instance(true)
 
     assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
-    stats_conditions = { metric: 3001, time: metrics_timestamp }
-    assert_equal 1, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
 
     ## now let's process the failed, one by one...
 
@@ -495,7 +480,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
 
     assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
-    assert_equal 6, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal 6, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
 
     ## or altogether
 
@@ -511,7 +496,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
 
     assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
-    assert_equal 6, @storage_stats.get(1001, :month, stats_conditions)
+    assert_equal 6, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
   end
 
   test 'aggregate takes into account setting the counter value in the case of failed batches' do
@@ -559,8 +544,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     @storage_stats = StorageStats.instance(true)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    stats_conditions = { application: 2001, metric: 3001, time: timestamp }
-    assert_equal nil, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 1, Aggregator::StatsInfo.failed_buckets.size
@@ -570,7 +554,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     StorageStats.save_changed_keys(v.first)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal 666, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal 666, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
   test 'when storage stats is deactivated buckets are filled but nothing gets saved' do
@@ -662,8 +646,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
 
     assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
-    stats_conditions = { application: 2001, metric: 3001, time: timestamp }
-    assert_equal nil, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     StorageStats.enable!
     ## the flag to know if storage stats is enabled is memoized
@@ -684,8 +667,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
-    stats_conditions = { application: 2001, metric: 3001, time: timestamp }
-    assert_equal 20, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal 20, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
   test 'when storage stats is deactivated, storage stats does not have to be up and running, but stats do NOT get lost during the deactivation period' do
@@ -717,8 +699,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
     assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    stats_conditions = { application: 2001, metric: 3001, time: timestamp }
-    assert_equal nil, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     StorageStats.activate!
 
@@ -739,8 +720,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    stats_conditions = { application: 2001, metric: 3001 }
-    assert_equal 20, @storage_stats.get(1001, :hour, stats_conditions)
+    assert_equal 20, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
   test 'applications with end user plans (user_id) get recorded properly' do
@@ -793,20 +773,14 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal '5', @storage.get(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :month,   '20100501'))
     assert_equal '5', @storage.get(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :eternity))
 
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, application: application.id)
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, application: application.id)
 
-    stats_conditions = { application: application.id, metric: @metric_hits.id }
-    assert_equal 5, @storage_stats.get(service.id, :hour, stats_conditions)
-    assert_equal 5, @storage_stats.get(service.id, :month, stats_conditions)
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp)
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp)
 
-    stats_conditions = { metric: @metric_hits.id, time: timestamp }
-    assert_equal 5, @storage_stats.get(service.id, :hour, stats_conditions)
-    assert_equal 5, @storage_stats.get(service.id, :month, stats_conditions)
-
-    stats_conditions = { user: "user_id_xyz", metric: @metric_hits.id, time: timestamp }
-    assert_equal 5, @storage_stats.get(service.id, :hour, stats_conditions)
-    assert_equal 5, @storage_stats.get(service.id, :month, stats_conditions)
-
-
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, user: "user_id_xyz")
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, user: "user_id_xyz")
 
     Aggregator.aggregate_all([{:service_id     => service.id,
                                :application_id => application.id,
@@ -837,18 +811,14 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :month,   '20100501'))
     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :eternity))
 
-    stats_conditions = { application: application.id, metric: @metric_hits.id, time: timestamp }
+    assert_equal 9, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, application: application.id)
+    assert_equal 9, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, application: application.id)
 
-    assert_equal 9, @storage_stats.get(service.id, :hour, stats_conditions)
-    assert_equal 9, @storage_stats.get(service.id, :month, stats_conditions)
+    assert_equal 9, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp)
+    assert_equal 9, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp)
 
-    stats_conditions = { metric: @metric_hits.id, time: timestamp }
-    assert_equal 9, @storage_stats.get(service.id, :hour, stats_conditions)
-    assert_equal 9, @storage_stats.get(service.id, :month, stats_conditions)
-
-    stats_conditions = { user: "another_user_id_xyz", metric: @metric_hits.id, time: timestamp }
-    assert_equal 4, @storage_stats.get(service.id, :hour, stats_conditions)
-    assert_equal 4, @storage_stats.get(service.id, :month, stats_conditions)
+    assert_equal 4, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, user: "another_user_id_xyz")
+    assert_equal 4, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, user: "another_user_id_xyz")
   end
 
   test 'delete all buckets and keys' do

@@ -699,15 +699,17 @@ class ReportTest < Test::Unit::TestCase
       time:        timestamp,
     }
 
-    assert_equal 2*10, @storage_stats.get(@master_service_id, :month, conditions)
+    assert_equal 2*10, @storage_stats.get(@master_service_id,
+                                          @master_hits_id,
+                                          :month, timestamp,
+                                          application: @provider_application_id)
 
-    conditions = {
-      application: @provider_application_id,
-      metric:      @master_reports_id,
-      time:        timestamp,
-    }
 
-    assert_equal 2*10, @storage_stats.get(@master_service_id, :month, conditions)
+    assert_equal 2*10, @storage_stats.get(@master_service_id,
+                                          @master_reports_id,
+                                          :month,
+                                          timestamp,
+                                          application: @provider_application_id)
 
     assert_equal 10, @storage.get(application_key(@service_id,
                                                  @application.id,
@@ -719,21 +721,8 @@ class ReportTest < Test::Unit::TestCase
                                                  @metric_id,
                                                  :month, '20100501')).to_i
 
-    conditions = {
-      application: @application.id,
-      metric:      @metric_id,
-      time:        timestamp,
-    }
-
-    assert_equal 10, @storage_stats.get(@service_id, :month, conditions)
-
-    conditions = {
-      application: application2.id,
-      metric:      @metric_id,
-      time:        timestamp,
-    }
-
-    assert_equal 10, @storage_stats.get(@service_id, :month, conditions)
+    assert_equal 10, @storage_stats.get(@service_id, @metric_id, :month, timestamp, application: @application.id)
+    assert_equal 10, @storage_stats.get(@service_id, @metric_id, :month, timestamp, application: application2.id)
   end
 
   test 'check counter rake method' do
