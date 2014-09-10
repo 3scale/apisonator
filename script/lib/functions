@@ -1,0 +1,73 @@
+REDIS_PORTS=(7379 7380 6379)
+TWEMPROXY_PIDFILE="/tmp/twemproxy_backend_tests.pid"
+INFLUXDB_PIDFILE="/tmp/influxdb_backend_tests.pid"
+
+function start_mongodb {
+  mongod --dbpath /tmp --nojournal --noprealloc > /dev/null &
+}
+
+function start_influxdb {
+    /usr/bin/influxdb -config=/opt/influxdb/shared/config.toml -pidfile="${INFLUXDB_PIDFILE}" &
+}
+
+function start_redis {
+    if [ -e /usr/local/bin/redis-server ]; then
+	cmd="/usr/local/bin/redis-server"
+    elif [ -e /usr/bin/redis-server ]; then
+	cmd="/usr/bin/redis-server"
+    else
+	cmd="/opt/redis/bin/redis-server"
+    fi
+     for port in "${REDIS_PORTS[@]}"
+    do
+	$cmd --port "$port" --daemonize yes &
+    done
+}
+
+function stop_redis {
+    for port in "${REDIS_PORTS[@]}"
+    do
+	kill -9 `ps aux | grep redis-server | grep "$port" | awk '{ print $2 }'`
+    done
+}
+
+function start_twemproxy {
+    # try to locate the config dir
+    local configdir
+    local basedir="${SCRIPT_DIR:-$(pwd -P)}"
+    if [ -r ${basedir}/../config/twemproxy.yml ]; then
+        configdir="${basedir}/../config"
+    elif [ -r ${basedir}/config/twemproxy.yml ]; then
+        configdir="${basedir}/config"
+    else
+        configdir="/vagrant/config"
+    fi
+    /opt/twemproxy/sbin/nutcracker -m 512 -o /tmp/nutcracker.log -p "${TWEMPROXY_PIDFILE}" -d -c ${configdir}/twemproxy.yml
+}
+
+function stop_twemproxy {
+    kill -9 `cat "${TWEMPROXY_PIDFILE}"`
+}
+
+function stop_mongodb {
+    mongod --dbpath /tmp --shutdown
+}
+
+function stop_influxdb {
+    kill -9 `cat "${INFLUXDB_PIDFILE}"`
+}
+
+function start_services {
+    start_redis
+    start_twemproxy
+    start_mongodb
+    start_influxdb
+}
+
+function stop_services {
+    stop_redis
+    stop_twemproxy
+    stop_mongodb
+    stop_influxdb
+}
+
