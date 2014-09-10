@@ -31,7 +31,7 @@ module ThreeScale
 
         # Hack to set process name (so it looks nicer in a process list).
         def server.name
-          "3scale_backend listening on #{host}:#{port}"
+          "3scale_backend #{ThreeScale::Backend::VERSION} listening on #{host}:#{port}"
         end
 
         puts ">> Starting #{server.name}. Let's roll!"
