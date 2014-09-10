@@ -1,69 +1,17 @@
 #!/bin/bash
 
-redis_ports=(7379 7380 6379)
-twemproxy_pidfile="/tmp/twemproxy_backend_tests.pid"
-influxdb_pidfile="/tmp/influxdb_backend_tests.pid"
-
-function start_mongodb {
-  mongod --dbpath /tmp --nojournal --noprealloc > /dev/null &
-}
-
-function start_influxdb {
-    /usr/bin/influxdb -config=/opt/influxdb/shared/config.toml -pidfile="$influxdb_pidfile" &
-}
-
-function start_redis {
-    if [ -e /usr/local/bin/redis-server ]; then
-	cmd="/usr/local/bin/redis-server"
-    elif [ -e /usr/bin/redis-server ]; then
-	cmd="/usr/bin/redis-server"
-    else
-	cmd="/opt/redis/bin/redis-server"
-    fi
-     for port in "${redis_ports[@]}"
-    do
-	$cmd --port "$port" --daemonize yes &
-    done
-}
-
-function stop_redis {
-    for port in "${redis_ports[@]}"
-    do
-	kill -9 `ps aux | grep redis-server | grep "$port" | awk '{ print $2 }'`
-    done
-}
-
-function start_twemproxy {
-    /opt/twemproxy/sbin/nutcracker -m 512 -o /tmp/nutcracker.log -p "$twemproxy_pidfile" -d -c "$PWD"/config/twemproxy.yml
-}
-
-function stop_twemproxy {
-    kill -9 `cat "$twemproxy_pidfile"`
-}
-
-function stop_mongodb {
-    mongod --dbpath /tmp --shutdown
-}
-
-function stop_influxdb {
-    kill -9 `cat "$influxdb_pidfile"`
-}
+SCRIPT_DIR=$(dirname "$(readlink -f $0)")
+. ${SCRIPT_DIR}/lib/functions
 
 export RACK_ENV=test
 
-start_redis
-start_twemproxy
-start_mongodb
-start_influxdb
+start_services
 
 bundle exec rake
 EXITVAL=$?
 
 if [ -z "$CI" ]; then
-    stop_redis
-    stop_twemproxy
-    stop_mongodb
-    stop_influxdb
+    stop_services
 fi
 
 exit ${EXITVAL}
