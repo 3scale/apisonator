@@ -150,6 +150,19 @@ module ThreeScale
       attr_accessor :service_id, :id, :state, :plan_id, :plan_name,
         :user_required, :redirect_url, :version
 
+      def to_hash
+        {
+          service_id: service_id,
+          id: id,
+          state: state,
+          plan_id: plan_id,
+          plan_name: plan_name,
+          user_required: user_required,
+          redirect_url: redirect_url,
+          version: version
+        }
+      end
+
       def self.load!(service_id, app_id)
         load(service_id, app_id) or raise ApplicationNotFound, app_id
       end
