@@ -68,7 +68,7 @@ module ThreeScale
       #        Instead, we could have an events array.
       def write_events
         grouped_events.each do |serie, events|
-          events.each do |_, evts|
+          events.each_value do |evts|
             @client.write_point(serie, evts) unless evts.empty?
           end
         end
