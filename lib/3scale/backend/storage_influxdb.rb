@@ -28,6 +28,7 @@ module ThreeScale
             host:     configuration.influxdb.hosts,
             username: configuration.influxdb.username,
             password: configuration.influxdb.password,
+            retry:    0,
           }
         )
 
