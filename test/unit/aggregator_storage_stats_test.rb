@@ -457,7 +457,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Resque.queue(:stats).length
 
-    ## buckets wento to the failed state
+    ## buckets went to the failed state
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 5, Aggregator::StatsInfo.failed_buckets.size
     assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
