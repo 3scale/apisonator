@@ -26,6 +26,33 @@ the "vboxsf" file system is not available.` you need to execute some extra steps
 10. Install bundle dependencies: `bundle install`.
 11. Yay! That's all. You can for example, execute the tests: `bundle exec script/test`.
 
+### Testing API users / backend from outside
+
+You can test users of backend API services by starting its dependencies and then backend itself:
+```
+$ script/services start
+$ bundle exec bin/3scale_backend -p 3000 -d start
+```
+You could now ie. launch core testing against this backend instance.
+
+Using stop in reverse order applies to stop testing:
+```
+$ bundle exec bin/3scale_backend stop
+$ script/services stop
+```
+
+Alternatively you can do this without daemonizing backend using a single command:
+```
+$ script/test_external
+```
+Or you can perform a finer-grained process by invoking smaller steps:
+```
+$ . script/lib/functions
+$ start_redis
+$ start_twemproxy
+...
+```
+
 ## Deploy
 
 1. Update the version.
