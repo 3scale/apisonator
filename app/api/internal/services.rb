@@ -25,7 +25,7 @@ module ThreeScale
 
         put '/:id' do
           begin
-            service = Service.load_by_id(params[:id])
+            service = Service.load_by_id!(params[:id])
             params[:service].each do |attr, value|
               service.send "#{attr}=", value
             end
@@ -33,6 +33,8 @@ module ThreeScale
             {service: service.to_hash, status: :ok}.to_json
           rescue ServiceRequiresDefaultUserPlan => e
             respond_with_400 e
+          rescue ServiceIdInvalid => e
+            respond_with_404 e
           end
         end
 
