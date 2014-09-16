@@ -163,6 +163,13 @@ module ThreeScale
         }
       end
 
+      def update(attributes)
+        attributes.each do |attr, val|
+          public_send("#{attr}=", val)
+        end
+        self
+      end
+
       def self.load!(service_id, app_id)
         load(service_id, app_id) or raise ApplicationNotFound, app_id
       end
