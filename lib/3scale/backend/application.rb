@@ -43,18 +43,21 @@ module ThreeScale
                                 storage_key(service_id, id, :version))
           state, plan_id, plan_name, user_required, redirect_url, vv = values
 
+          # save a network call by just checking state here for existence
+          return nil unless state
+
           ## the default value is false
           user_required = user_required.to_i > 0
           self.incr_version(service_id, id) unless vv
 
-          state and new(service_id: service_id,
-                        id: id,
-                        state: state.to_sym,
-                        plan_id: plan_id,
-                        plan_name: plan_name,
-                        user_required: user_required,
-                        redirect_url: redirect_url,
-                        version: self.get_version(service_id, id))
+          new(service_id: service_id,
+              id: id,
+              state: state.to_sym,
+              plan_id: plan_id,
+              plan_name: plan_name,
+              user_required: user_required,
+              redirect_url: redirect_url,
+              version: self.get_version(service_id, id))
         end
 
         def load_id_by_key(service_id, key)
