@@ -28,9 +28,9 @@ module ThreeScale
             host:          configuration.influxdb.hosts,
             username:      configuration.influxdb.username,
             password:      configuration.influxdb.password,
-            retry:         0,
-            write_timeout: 0.5,
-            read_timeout:  1,
+            retry:         configuration.influxdb.retry,
+            write_timeout: configuration.influxdb.write_timeout,
+            read_timeout:  configuration.influxdb.read_timeout,
           }
         )
 
