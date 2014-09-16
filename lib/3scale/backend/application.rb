@@ -19,7 +19,8 @@ module ThreeScale
           storage.set(storage_key(:redirect_url), redirect_url) if redirect_url
 
           storage.sadd(applications_set_key(service_id), id)
-          storage.incrby(storage_key(:version), 1)
+          self.version = self.class.incr_version(service_id, id).to_s
+          self.class.clear_cache(service_id, id)
           Memoizer.memoize(Memoizer.build_key(self.class, :exists?, service_id, id), state)
         end
 
