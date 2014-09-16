@@ -25,10 +25,12 @@ module ThreeScale
         @instance ||= new(
           configuration.influxdb.database,
           {
-            host:     configuration.influxdb.hosts,
-            username: configuration.influxdb.username,
-            password: configuration.influxdb.password,
-            retry:    0,
+            host:          configuration.influxdb.hosts,
+            username:      configuration.influxdb.username,
+            password:      configuration.influxdb.password,
+            retry:         0,
+            write_timeout: 0.5,
+            read_timeout:  1,
           }
         )
 
