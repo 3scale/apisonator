@@ -82,6 +82,12 @@ module ThreeScale
         end
 
         def delete(service_id, id)
+          raise ApplicationNotFound, id unless exists?(service_id, id)
+          delete_data service_id, id
+          clear_cache service_id, id
+        end
+
+        def delete_data(service_id, id)
           storage.srem(applications_set_key(service_id), id)
 
           storage.del(storage_key(service_id, id, :state))
@@ -90,6 +96,14 @@ module ThreeScale
           storage.del(storage_key(service_id, id, :user_required))
           storage.del(storage_key(service_id, id, :redirect_url))
           storage.del(storage_key(service_id, id, :version))
+        end
+
+        def clear_cache(service_id, id)
+          keys = Memoizer.build_keys_for_class(self,
+                    load: [service_id, id],
+                    load!: [service_id, id],
+                    exists?: [service_id, id])
+          Memoizer.clear keys
         end
 
         def applications_set_key(service_id)
