@@ -65,6 +65,18 @@ module ThreeScale
   REPORT_DEADLINE      = 24*3600
 end
 
+ThreeScale::Backend.define_singleton_method :environment do
+  ENV["RACK_ENV"] || 'development'
+end
+
+ThreeScale::Backend.define_singleton_method :production? do
+  environment == 'production'
+end
+
+ThreeScale::Backend.define_singleton_method :development? do
+  environment == 'development'
+end
+
 ThreeScale::Backend.configuration.tap do |config|
   # Add configuration sections
   config.add_section(:queues, :master_name, :sentinels)
@@ -84,13 +96,12 @@ ThreeScale::Backend.configuration.tap do |config|
   config.load!
 end
 
-environment  = ENV["RACK_ENV"] || "development"
 Resque.redis = ThreeScale::Backend::QueueStorage.connection(
-  environment,
+  ThreeScale::Backend.environment,
   ThreeScale::Backend.configuration,
 )
 ThreeScale::Core.donbot_url =
-  if environment == 'production'
+  if ThreeScale::Backend.production?
     'http://host:8080/internal/'
   else
     'http://localhost:3000/internal'
