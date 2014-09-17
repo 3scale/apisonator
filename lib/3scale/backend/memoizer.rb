@@ -53,6 +53,12 @@ module ThreeScale
         end
       end
 
+      # A method to inspect in debugging mode the contents of the cache
+      def self.cache
+        raise 'Memoizer.cache only in development!' unless ThreeScale::Backend.development?
+        @@memoizer_cache
+      end
+
       public
 
       # Generate a key for the given class, method and args
