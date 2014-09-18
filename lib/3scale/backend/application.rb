@@ -20,6 +20,7 @@ module ThreeScale
 
           storage.sadd(applications_set_key(service_id), id)
           storage.incrby(storage_key(:version), 1)
+          Memoizer.memoize(Memoizer.build_key(self.class, :exists?, service_id, id), state)
         end
 
         def storage_key(attribute)
