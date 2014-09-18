@@ -10,6 +10,58 @@ class ApplicationTest < Test::Unit::TestCase
     Memoizer.reset!
   end
 
+  test '.save correctly saves an application' do
+    Application.save(service_id: '2001', id: '8010',
+                     state: :active, plan_id: '3001',
+                     plan_name: 'awesome', redirect_url: 'bla',
+                     version: '666')
+    application = Application.load('2001', '8010')
+    assert application.kind_of?(Application)
+    assert_equal '2001', application.service_id
+    assert_equal '8010', application.id
+    assert_equal :active, application.state
+    assert_equal '3001', application.plan_id
+    assert_equal 'awesome', application.plan_name
+    assert_equal 'bla', application.redirect_url
+    assert_equal '1', application.version
+  end
+
+  test '#save correctly saves an Application instance data' do
+    application = Application.new(service_id: '2001', id: '8011',
+                     state: :active, plan_id: '3001',
+                     plan_name: 'awesome', redirect_url: 'bla',
+                     version: '666')
+    application.save
+    assert_equal '2001', application.service_id
+    assert_equal '8011', application.id
+    assert_equal :active, application.state
+    assert_equal '3001', application.plan_id
+    assert_equal 'awesome', application.plan_name
+    assert_equal 'bla', application.redirect_url
+    assert_equal '1', application.version
+    # test for change and version increment
+    application.plan_name = 'almost_awesome'
+    application.save
+    newapp = Application.load('2001', '8011')
+    assert_equal 'almost_awesome', newapp.plan_name
+    assert_equal '2', newapp.version
+  end
+
+  test '.load correctly creates an Application instance' do
+    Application.save(service_id: '2001', id: '8012',
+                     state: :active, redirect_url: 'bla',
+                     version: '666')
+    application = Application.load('2001', '8012')
+    assert application.kind_of?(Application)
+    assert_equal '2001', application.service_id
+    assert_equal '8012', application.id
+    assert_equal :active, application.state
+    assert_equal nil, application.plan_id
+    assert_equal nil, application.plan_name
+    assert_equal 'bla', application.redirect_url
+    assert_equal '1', application.version
+  end
+
   test 'load! raises an exception if application does not exist' do
     assert_raise ApplicationNotFound do
       Application.load!('1001', '2001')
@@ -209,7 +261,7 @@ class ApplicationTest < Test::Unit::TestCase
                                    :state      => :active)
 
     key = application.create_key('foo')
-    
+
     ## need to flush the memoizer because keys have been created
     Memoizer.reset!
 
@@ -282,17 +334,17 @@ class ApplicationTest < Test::Unit::TestCase
 
     key_bar = application.create_key('bar')
     assert_equal 'bar', key_bar
-    
+
     ## need to flush the memoizer because keys have been created
     Memoizer.reset!
-    
+
     assert_equal [key_foo, key_bar].sort, application.keys.sort
 
     application.delete_key(key_foo)
-    
+
     ## need to flush the memoizer because keys have been created
     Memoizer.reset!
-    
+
     assert_equal [key_bar], application.keys
 
   end
