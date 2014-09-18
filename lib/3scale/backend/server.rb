@@ -5,10 +5,6 @@ module ThreeScale
     module Server
       extend self
 
-      INTERNAL_APIS = {
-        Services: :services
-      }
-
       def start(options)
         log = !options[:daemonize] || options[:log_file]
         configuration = ThreeScale::Backend.configuration
@@ -22,7 +18,7 @@ module ThreeScale
           end
           use ThreeScale::Backend::Logger if log
 
-          ThreeScale::Backend::Server.mount_internal_api self, INTERNAL_APIS
+          ThreeScale::Backend::Server.mount_internal_api self
           run ThreeScale::Backend::Listener.new
         end
 
@@ -55,18 +51,12 @@ module ThreeScale
         end
       end
 
-      def mount_internal_api(server, apis)
-        apis.each do |klass, url|
-          server.map "/internal/#{url}" do
-            use Rack::Auth::Basic do |username, password|
-              ThreeScale::Backend::Server.check_password username, password
-            end
-
-            run ThreeScale::Backend::API.const_get(klass).new
+      def mount_internal_api(server)
+        server.map "/internal" do
+          use Rack::Auth::Basic do |username, password|
+            ThreeScale::Backend::Server.check_password username, password
           end
-        end
 
-        server.map '/internal' do
           run ThreeScale::Backend::API::Internal.new
         end
       end
