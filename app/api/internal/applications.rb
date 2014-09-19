@@ -3,12 +3,7 @@ module ThreeScale
     module API
       class Applications < Internal
 
-        def self.body_attributes
-          [:service_id, :id, :state, :plan_id, :plan_name, :user_required, :redirect_url]
-        end
-
         get '/' do
-          filter_body_params params, :application => Hash[[[:service_id, :value], [:id, :value]]]
           attributes = params[:application]
           halt 400, {error: 'invalid parameter \'application\''}.to_json unless attributes
           app = Application.load(attributes[:service_id], attributes[:id])
@@ -20,8 +15,6 @@ module ThreeScale
         end
 
         post '/' do
-          filter_body_params params,
-                  :application => Hash[Applications.body_attributes.product([:value])]
           attributes = params[:application]
           halt 400, {error: 'invalid parameter \'application\''}.to_json unless attributes
           if Application.exists?(attributes[:service_id], attributes[:id])
@@ -32,8 +25,6 @@ module ThreeScale
         end
 
         put '/' do
-          filter_body_params params,
-                  :application => Hash[Applications.body_attributes.product([:value])]
           attributes = params[:application]
           halt 400, {error: 'invalid parameter \'application\''}.to_json unless attributes
           app = Application.load(attributes[:service_id], attributes[:id])
@@ -46,7 +37,6 @@ module ThreeScale
         end
 
         delete '/' do
-          filter_body_params params, :application => Hash[[[:service_id, :value], [:id, :value]]]
           attributes = params[:application]
           halt 400, {error: 'invalid parameter \'application\''}.to_json unless attributes
           begin
