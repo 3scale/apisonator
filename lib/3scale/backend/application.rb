@@ -66,7 +66,7 @@ module ThreeScale
         end
 
         def save_id_by_key(service_id, key, id)
-          raise Core::ApplicationHasInconsistentData.new(id, key) if (service_id.nil? || id.nil? || key.nil? || service_id=='' || id=='' || key=='')
+          raise Core::ApplicationHasInconsistentData.new(id, key) if [service_id, id, key].any?(&:blank?)
           storage.set(id_by_key_storage_key(service_id, key), id)
         end
 
