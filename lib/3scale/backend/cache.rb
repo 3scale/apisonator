@@ -204,46 +204,12 @@ module ThreeScale
       ## (benchmarked)
 
       def clean_cached_xml(app_xml_str, user_xml_str, options = {})
+        split_app_xml  = split_xml(app_xml_str)
+        split_user_xml = split_xml(user_xml_str)
+        authorized     = xml_authorized?(split_app_xml, split_user_xml)
+        merged_xml     = merge_xmls(authorized, split_app_xml, split_user_xml)
 
-        if user_xml_str.nil?
-          v = app_xml_str.split("<__separator__/>")
-          newxmlstr = ""
-          v[0]=="0" ? app_authorized = false : app_authorized = true
-          ## better that v.join()
-          for i in 1..v.size-1 do
-            newxmlstr << v[i].to_s
-          end
-          xmlstr = newxmlstr
-          authorized = app_authorized
-        else
-          v = app_xml_str.split("<__separator__/>")
-          v[0]=="0" ? app_authorized = false : app_authorized = true
-
-          w = user_xml_str.split("<__separator__/>")
-          w[0]=="0" ? user_authorized = false : user_authorized = true
-
-          ## add the user usage_report segment
-          v = v.insert(3,w[2])
-          ## change the <status>autho <> segment if the user did not get authorized
-          ## if the application was not authorized no problem because it's the default
-          ## both need to be authorized, other not authorized. This might produce a collision
-          ## on the reasons, but let's assume app has precedence
-
-          v[1]=w[1] if !user_authorized && app_authorized
-
-          newxmlstr = ""
-          for i in 1..v.size-1 do
-            newxmlstr << v[i].to_s
-          end
-          xmlstr = newxmlstr
-
-          authorized = app_authorized && user_authorized
-        end
-
-        ## now xmlstr should have the merged status xmls, and authorize should contain whether
-        ## of not it will be authrorized
-
-        v = xmlstr.split("|.|")
+        v = merged_xml.split("|.|")
         newxmlstr = ""
         limit_violation_without_usage = false
         limit_violation_with_usage = false
@@ -375,6 +341,47 @@ module ThreeScale
         "cache/service:#{service_id}/#{type.to_s}:#{id}"
       end
 
+      private
+
+      def split_xml(xml_str = nil)
+        xml_str.split("<__separator__/>") if xml_str
+      end
+
+      def xml_authorized?(split_app_xml, split_user_xml = nil)
+        if split_user_xml
+          app_authorized  = node_authorized?(split_app_xml.first)
+          user_authorized = node_authorized?(split_user_xml.first)
+
+          app_authorized && user_authorized
+        else
+          node_authorized?(split_app_xml.first)
+        end
+      end
+
+      def node_authorized?(node)
+        node != "0"
+      end
+
+      def merge_xmls(authorized, split_app_xml, split_user_xml = nil)
+        if split_user_xml
+          ## add the user usage_report segment
+          split_app_xml    = split_app_xml.insert(3, split_user_xml[2])
+          ## change the <status>autho <> segment if the user did not get
+          ## authorized if the application was not authorized no problem
+          ## because it's the default both need to be authorized, other
+          ## not authorized. This might produce a collision on the reasons,
+          ## but let's assume app has precedence
+          split_app_xml[1] = split_user_xml[1]
+        end
+
+        ## better that v.join()
+        result = ""
+        for i in 1..(split_app_xml.size - 1) do
+          result << split_app_xml[i].to_s
+        end
+
+        result
+      end
     end
   end
 end
