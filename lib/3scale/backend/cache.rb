@@ -262,10 +262,12 @@ module ThreeScale
 
             limit_violation_without_usage = (curr_value > max_value) unless limit_violation_without_usage
 
-            if val.nil?
-              limit_violation_with_usage = (curr_value + inc > max_value) unless limit_violation_with_usage
-            else
-              limit_violation_with_usage = (val.to_i > max_value) unless limit_violation_with_usage
+            unless limit_violation_with_usage
+              if val
+                limit_violation_with_usage = (val.to_i > max_value)
+              elsif inc > 0
+                limit_violation_with_usage = (curr_value + inc > max_value)
+              end
             end
 
             if authorized && options[:add_usage_on_report]
