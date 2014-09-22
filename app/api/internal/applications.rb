@@ -3,8 +3,8 @@ module ThreeScale
     module API
       class Applications < Internal
 
-        get '/:service_id/applications/:id' do
-          app = Application.load(params[:service_id], params[:id])
+        get '/:service_id/applications/:id' do |service_id, id|
+          app = Application.load(service_id, id)
           if app
             { status: :found, application: app.to_hash }.to_json
           else
@@ -12,10 +12,9 @@ module ThreeScale
           end
         end
 
-        post '/:service_id/applications/:id' do
+        post '/:service_id/applications/:id' do |service_id, id|
           attributes = params[:application]
           halt 400, { status: :error, error: 'invalid parameter \'application\'' }.to_json unless attributes
-          service_id, id = params[:service_id], params[:id]
           if Application.exists?(service_id, id)
             halt 405, { status: :exists, error: 'application cannot be created, exists already' }.to_json
           end
@@ -24,10 +23,10 @@ module ThreeScale
           [201, headers, { status: :created, application: app.to_hash }.to_json]
         end
 
-        put '/:service_id/applications/:id' do
+        put '/:service_id/applications/:id' do |service_id, id|
           attributes = params[:application]
           halt 400, { status: :error, error: 'invalid parameter \'application\'' }.to_json unless attributes
-          app = Application.load(params[:service_id], params[:id])
+          app = Application.load(service_id, id)
           if app
             app.update(attributes).save
             { status: :modified, application: app.to_hash }.to_json
@@ -36,16 +35,15 @@ module ThreeScale
           end
         end
 
-        delete '/:service_id/applications/:id' do
-          attributes = params[:application]
-          halt 400, { status: :error, error: 'invalid parameter \'application\'' }.to_json unless attributes
+        delete '/:service_id/applications/:id' do |service_id, id|
           begin
-            Application.delete(params[:service_id], params[:id])
+            Application.delete(service_id, id)
             { status: :deleted }.to_json
           rescue ApplicationNotFound
             [404, headers, { status: :not_found, error: 'application not found' }.to_json]
           end
         end
+
       end
     end
   end
