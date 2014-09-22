@@ -1,7 +1,7 @@
 require_relative '../../acceptance_spec_helper'
 
 resource "Services (prefix: /services)" do
-  set_app ThreeScale::Backend::API::Services
+  set_app ThreeScale::Backend::API::Internal
   header "Accept", "application/json"
   header "Content-Type", "application/json"
 
@@ -9,7 +9,7 @@ resource "Services (prefix: /services)" do
     @service = ThreeScale::Backend::Service.save!(provider_key: 'foo', id: '1001')
   end
 
-  get '/:id' do
+  get '/services/:id' do
     parameter :id, "Service ID", required: true
 
     example_request "Get Service by ID", :id => 1001 do
@@ -23,7 +23,7 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  post '/' do
+  post '/services/' do
     parameter :service, 'Service attributes', required: true
 
     let(:service) do
@@ -60,7 +60,7 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  put '/:id' do
+  put '/services/:id' do
     parameter :id, 'Service ID', required: true
     parameter :service, 'Service attributes', required: true
 
@@ -96,7 +96,7 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  put '/change_provider_key/:key' do
+  put '/services/change_provider_key/:key' do
     parameter :key, 'Existing provider key', required: true
     parameter :new_key, 'New provider key', required: true
 
@@ -128,7 +128,7 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  delete '/:id' do
+  delete '/services/:id' do
     parameter :id, 'Service ID', required: true
 
     let(:raw_post) { params.to_json }
@@ -147,7 +147,7 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  post '/:id/users' do
+  post '/services/:id/users' do
     let(:raw_post) { params.to_json }
 
     parameter :id, 'Service ID', required: true
@@ -159,7 +159,7 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  delete '/:id/users/:username' do
+  delete '/services/:id/users/:username' do
     parameter :id, 'Service ID', required: true
     parameter :username, 'Username to delete', required: true
 
