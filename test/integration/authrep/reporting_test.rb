@@ -83,6 +83,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
                                                  @metric_id,
                                                  :month, Time.now.getutc.strftime("%Y%m01"))).to_i
 
+    # There is no cache available for this request. It uses authrep_nocache method internally.
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
                                      :usage        => {'hits' => 1}
@@ -101,6 +102,21 @@ class AuthrepReportingTest < Test::Unit::TestCase
                                                  @metric_id,
                                                  :month, Time.now.getutc.strftime("%Y%m01"))).to_i
 
+    assert_authorized
+
+    # Second time, there is cache available for this request. It doesn't use authrep_nocache.
+    # It uses the pregenerated xml but it detects that a violation just happened and
+    # executes the validations, ignoring the status on xml.
+    # Related with: https://github.com/3scale/backend/issues/64
+
+    get '/transactions/authrep.xml', :provider_key => @provider_key,
+                                     :app_id       => @application.id,
+                                     :usage        => {'hits' => 1}
+
+    doc = Nokogiri::XML(last_response.body)
+    usage_reports = doc.at('usage_reports')
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
+    assert_equal '4', day.at('current_value').content
     assert_authorized
   end
 
