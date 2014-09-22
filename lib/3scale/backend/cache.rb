@@ -251,16 +251,20 @@ module ThreeScale
         i=0
         v.each do |str|
           if (i%2==1)
-            type, metric, curr_value, max_value = str.split(",")
+            _, metric, curr_value, max_value = str.split(",")
             curr_value = curr_value.to_i
             max_value = max_value.to_i
             inc = 0
             val = nil
 
-            inc = options[:usage][metric].to_i unless options[:usage].nil?
-            val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][metric]) unless options[:usage].nil?
+            if options[:usage]
+              inc = options[:usage][metric].to_i
+              val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][metric])
+            end
 
-            limit_violation_without_usage = (curr_value > max_value) unless limit_violation_without_usage
+            unless limit_violation_without_usage
+              limit_violation_without_usage = (curr_value > max_value)
+            end
 
             unless limit_violation_with_usage
               if val
