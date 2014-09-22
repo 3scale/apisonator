@@ -1,7 +1,7 @@
 require_relative '../../acceptance_spec_helper'
 
-resource 'Applications (prefix: /services)' do
-  set_app ThreeScale::Backend::API::Applications
+resource 'Applications (prefix: /services/:service_id/applications)' do
+  set_app ThreeScale::Backend::API::Internal
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
@@ -13,7 +13,7 @@ resource 'Applications (prefix: /services)' do
                                                  redirect_url: 'https://3scale.net')
   end
 
-  get '/:service_id/applications/:id' do
+  get '/services/:service_id/applications/:id' do
     parameter :service_id, 'Service ID', required: true
     parameter :id, 'Application ID', required: true
 
@@ -41,7 +41,7 @@ resource 'Applications (prefix: /services)' do
     end
   end
 
-  post '/:service_id/applications/:id' do
+  post '/services/:service_id/applications/:id' do
     parameter :service_id, 'Service ID', required: true
     parameter :id, 'Application ID', required: true
     parameter :application, 'Application attributes', required: true
@@ -80,7 +80,7 @@ resource 'Applications (prefix: /services)' do
 
   end
 
-  put '/:service_id/applications/:id' do
+  put '/services/:service_id/applications/:id' do
     parameter :service_id, 'Service ID', required: true
     parameter :id, 'Application ID', required: true
     parameter :application, 'Application attributes', required: true
@@ -120,7 +120,7 @@ resource 'Applications (prefix: /services)' do
 
   end
 
-  delete '/:service_id/applications/:id' do
+  delete '/services/:service_id/applications/:id' do
     parameter :service_id, 'Service ID', required: true
     parameter :id, 'Application ID', required: true
 
