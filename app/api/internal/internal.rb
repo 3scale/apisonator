@@ -1,7 +1,14 @@
+require 'sinatra/namespace'
+
 module ThreeScale
   module Backend
     module API
+      def self.internal_api(ns, &blk)
+        Internal.class_eval { namespace ns, &blk }
+      end
+
       class Internal < Sinatra::Base
+        register Sinatra::Namespace
 
         before do
           content_type 'application/json'
