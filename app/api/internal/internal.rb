@@ -30,18 +30,6 @@ module ThreeScale
           params.reject!{ |k, v| !ACCEPTED_PARAMS.include? k }
         end
 
-        def filter_body_params(params, accepted)
-          params.select! do |k, v|
-            next true unless k.is_a? Symbol
-            next false unless accepted.include? k
-            if accepted[k].is_a? Hash
-              next false if not v.is_a? Hash
-              filter_body_params(v, accepted[k])
-            end
-            true
-          end
-        end
-
         def respond_with_400(exception)
           halt 400, {error: exception.message}.to_json
         end
