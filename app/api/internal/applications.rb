@@ -43,6 +43,28 @@ module ThreeScale
           end
         end
 
+        # XXX Old API. DEPRECATED.
+        #
+        # We will NOT be loading the whole app for the key requested, which we
+        # would probably do otherwise, since users are only marginal, do not
+        # need it anyway, and are to be removed in the future.
+        #
+        get '/key/:user_key' do |service_id, user_key|
+          id = Application.load_id_by_key(service_id, user_key)
+          halt 404, { status: :not_found, error: 'application key not found' }.to_json unless id
+          { status: :found, application: { id: id } }.to_json
+        end
+
+        put '/:id/key/:user_key' do |service_id, id, user_key|
+          Application.save_id_by_key(service_id, user_key, id)
+          { status: :modified, application: { id: id } }.to_json
+        end
+
+        delete '/key/:user_key' do |service_id, user_key|
+          Application.delete_id_by_key(service_id, user_key)
+          { status: :deleted }.to_json
+        end
+
       end
     end
   end
