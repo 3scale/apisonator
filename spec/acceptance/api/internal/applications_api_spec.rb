@@ -133,4 +133,66 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
 
   end
 
+  # XXX Old API. DEPRECATED.
+  get '/services/:service_id/applications/key/:user_key' do
+    parameter :service_id, 'Service ID', required: true
+    parameter :user_key, 'User key for this Application', required: true
+
+    let(:service_id) { '7575' }
+    let(:id) { '100' }
+    let(:user_key) { 'some_key' }
+    let(:nonexistent_key) { 'nonexistent' }
+
+    example 'Get existing ID of Application with service and key' do
+      ThreeScale::Backend::Application.save_id_by_key(service_id, user_key, id)
+      do_request
+      status.should == 200
+      response_json['application']['id'].should == id
+    end
+
+    example 'Try to get an Application ID from a non-existing key' do
+      ThreeScale::Backend::Application.delete_id_by_key(service_id, nonexistent_key)
+      do_request user_key: nonexistent_key
+      status.should == 404
+      response_json['error'].should =~ /not found/i
+    end
+  end
+
+  put '/services/:service_id/applications/:id/key/:user_key' do
+    parameter :service_id, 'Service ID', required: true
+    parameter :id, 'Application ID', required: true
+    parameter :user_key, 'User key for this Application', required: true
+
+    let(:service_id) { '7575' }
+    let(:id) { '100' }
+    let(:user_key) { 'some_key' }
+    let(:another_key) { 'another_key' }
+
+    example 'Change the key for an Application' do
+      ThreeScale::Backend::Application.save_id_by_key(service_id, user_key, id)
+      do_request user_key: another_key
+      status.should == 200
+      response_json['status'].should == 'modified'
+      ThreeScale::Backend::Application.
+        load_id_by_key(service_id, another_key).should == id
+    end
+  end
+
+  delete '/services/:service_id/applications/key/:user_key' do
+    parameter :service_id, 'Service ID', required: true
+    parameter :user_key, 'User key for this Application', required: true
+
+    let(:service_id) { '7575' }
+    let(:id) { '100' }
+    let(:user_key) { 'some_key' }
+
+    example 'Delete an Application\'s user key' do
+      ThreeScale::Backend::Application.save_id_by_key(service_id, user_key, id)
+      do_request
+      status.should == 200
+      response_json['status'].should == 'deleted'
+      ThreeScale::Backend::Application.
+        load_id_by_key(service_id, user_key).should be_nil
+    end
+  end
 end
