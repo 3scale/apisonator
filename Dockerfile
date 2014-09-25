@@ -1,7 +1,7 @@
 FROM quay.io/3scale/ruby:2.1
 MAINTAINER Toni Reina <toni@3scale> # 2014-06-16
 
-ADD http://s3.amazonaws.com/influxdb/influxdb_0.8.0_amd64.deb /influxdb_0.8.0_amd64.deb
+ADD http://s3.amazonaws.com/influxdb/influxdb_0.8.3_amd64.deb /influxdb_0.8.3_amd64.deb
 
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 136221EE520DDFAF0A905689B9316A7BC7917B12 \
  && echo 'deb http://ppa.launchpad.net/chris-lea/redis-server/ubuntu precise main' > /etc/apt/sources.list.d/redis-server.list \
@@ -9,7 +9,7 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 136221EE52
  && apt-get -y -q install redis-server mongodb wget autoconf libtool autopoint \
  && echo 'Europe/Madrid' > /etc/timezone \
  && dpkg-reconfigure --frontend noninteractive tzdata \
- && dpkg -i /influxdb_0.8.0_amd64.deb
+ && dpkg -i /influxdb_0.8.3_amd64.deb
 
 RUN wget https://codeload.github.com/twitter/twemproxy/tar.gz/v0.3.0 && tar xvzf v0.3.0 && cd twemproxy-0.3.0 && autoreconf -fvi && ./configure --prefix=/opt/twemproxy && make && make install
 
