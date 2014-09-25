@@ -79,6 +79,54 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal :active, application.state
   end
 
+  test '.exists? returns true if an Application exists' do
+    Application.save(service_id: '4088', id: '5088', state: :suspended)
+    assert Application.exists?('4088', '5088')
+  end
+
+  test '.exists? returns false if an Application does not exist' do
+    Application.delete('4088', '5088') rescue nil
+    assert !Application.exists?('4088', '5088')
+  end
+
+  test 'save_id_by_key and load_id_by_key returns the correct Application ID' do
+    Application.save_id_by_key('1001', 'some_key', '2001')
+    assert_equal '2001', Application.load_id_by_key('1001', 'some_key')
+  end
+
+  test 'save_id_by_key raises if it receives blank parameters' do
+    assert_raise Core::ApplicationHasInconsistentData do
+      Application.save_id_by_key('', 'some_key', '2001')
+    end
+
+    assert_raise Core::ApplicationHasInconsistentData do
+      Application.save_id_by_key(nil, 'some_key', '2001')
+    end
+
+    assert_raise Core::ApplicationHasInconsistentData do
+      Application.save_id_by_key('1001', '', '2001')
+    end
+
+    assert_raise Core::ApplicationHasInconsistentData do
+      Application.save_id_by_key('1001', nil, '2001')
+    end
+
+    assert_raise Core::ApplicationHasInconsistentData do
+      Application.save_id_by_key('1001', 'some_key', '')
+    end
+
+    assert_raise Core::ApplicationHasInconsistentData do
+      Application.save_id_by_key('1001', 'some_key', nil)
+    end
+  end
+
+  test 'delete_id_by_key deletes correctly a key' do
+    Application.save_id_by_key('1001', 'some_key', '2001')
+    assert_equal '2001', Application.load_id_by_key('1001', 'some_key')
+    Application.delete_id_by_key('1001', 'some_key')
+    assert_nil Application.load_id_by_key('1001', 'some_key')
+  end
+
   test 'load_by_id_or_user_key! returns application by id if it exists' do
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
 
