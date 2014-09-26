@@ -24,6 +24,10 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal 'awesome', application.plan_name
     assert_equal 'bla', application.redirect_url
     assert_equal '1', application.version
+    # test that memoization of load is invalidated
+    Application.save(service_id: '2001', id: '8010', state: :suspended)
+    changed_app = Application.load('2001', '8010')
+    assert_not_equal application.state, changed_app.state
   end
 
   test '#save correctly saves an Application instance data' do
@@ -87,6 +91,14 @@ class ApplicationTest < Test::Unit::TestCase
   test '.exists? returns false if an Application does not exist' do
     Application.delete('4088', '5088') rescue nil
     assert !Application.exists?('4088', '5088')
+  end
+
+  test '.delete deletes an Application correctly' do
+    Application.save(service_id: '8010', id: '2011', state: :active)
+    # load used to memoize the app so that invalidation is tested
+    assert_not_nil Application.load('8010', '2011')
+    Application.delete('8010', '2011')
+    assert_nil Application.load('8010', '2011')
   end
 
   test 'save_id_by_key and load_id_by_key returns the correct Application ID' do
