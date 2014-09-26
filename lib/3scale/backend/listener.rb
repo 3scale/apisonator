@@ -430,6 +430,11 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
+        unless Application.exists?(params[:service_id], params[:app_id])
+          empty_response 404
+          return
+        end
+
         if OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token], params[:ttl])
           empty_response 200
         else
@@ -459,6 +464,11 @@ module ThreeScale
 
         service_id = params[:service_id]
         app_id = params[:app_id]
+
+        unless Application.exists?(service_id, app_id)
+          empty_response 404
+          return
+        end
 
         @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id)
         builder :oauth_access_tokens
