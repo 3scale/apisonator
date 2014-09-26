@@ -95,27 +95,27 @@ class ApplicationTest < Test::Unit::TestCase
   end
 
   test 'save_id_by_key raises if it receives blank parameters' do
-    assert_raise Core::ApplicationHasInconsistentData do
+    assert_raise ApplicationHasInconsistentData do
       Application.save_id_by_key('', 'some_key', '2001')
     end
 
-    assert_raise Core::ApplicationHasInconsistentData do
+    assert_raise ApplicationHasInconsistentData do
       Application.save_id_by_key(nil, 'some_key', '2001')
     end
 
-    assert_raise Core::ApplicationHasInconsistentData do
+    assert_raise ApplicationHasInconsistentData do
       Application.save_id_by_key('1001', '', '2001')
     end
 
-    assert_raise Core::ApplicationHasInconsistentData do
+    assert_raise ApplicationHasInconsistentData do
       Application.save_id_by_key('1001', nil, '2001')
     end
 
-    assert_raise Core::ApplicationHasInconsistentData do
+    assert_raise ApplicationHasInconsistentData do
       Application.save_id_by_key('1001', 'some_key', '')
     end
 
-    assert_raise Core::ApplicationHasInconsistentData do
+    assert_raise ApplicationHasInconsistentData do
       Application.save_id_by_key('1001', 'some_key', nil)
     end
   end
