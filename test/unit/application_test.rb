@@ -92,6 +92,9 @@ class ApplicationTest < Test::Unit::TestCase
   test 'save_id_by_key and load_id_by_key returns the correct Application ID' do
     Application.save_id_by_key('1001', 'some_key', '2001')
     assert_equal '2001', Application.load_id_by_key('1001', 'some_key')
+    # test that memoization of load_id_by_key is invalidated
+    Application.save_id_by_key('1001', 'some_key', '2002')
+    assert_equal '2002', Application.load_id_by_key('1001', 'some_key')
   end
 
   test 'save_id_by_key raises if it receives blank parameters' do
