@@ -67,11 +67,15 @@ module ThreeScale
 
         def save_id_by_key(service_id, key, id)
           raise Core::ApplicationHasInconsistentData.new(id, key) if [service_id, id, key].any?(&:blank?)
-          storage.set(id_by_key_storage_key(service_id, key), id)
+          storage.set(id_by_key_storage_key(service_id, key), id).tap do
+            Memoizer.memoize(Memoizer.build_key(self, :load_id_by_key, service_id, key), id)
+          end
         end
 
         def delete_id_by_key(service_id, key)
-          storage.del(id_by_key_storage_key(service_id, key))
+          storage.del(id_by_key_storage_key(service_id, key)).tap do
+            Memoizer.clear(Memoizer.build_key(self, :load_id_by_key, service_id, key))
+          end
         end
 
         def exists?(service_id, id)
