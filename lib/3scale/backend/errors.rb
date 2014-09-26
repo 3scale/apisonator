@@ -39,6 +39,12 @@ module ThreeScale
       end
     end
 
+    class ApplicationHasInconsistentData < Error
+      def initialize(id, user_key)
+        super %(Application id="#{id}" with user_key="#{user_key}" has inconsistent data and could not be saved)
+      end
+    end
+
     class ApplicationNotFound < NotFound
       def initialize(id = nil)
         super %(application with id="#{id}" was not found)
