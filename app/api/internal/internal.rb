@@ -19,6 +19,10 @@ module ThreeScale
           {status: :ok}.to_json
         end
 
+        get '/version' do
+          { status: :ok, version: { backend: ThreeScale::Backend::VERSION } }.to_json
+        end
+
         private
 
         def parse_json_params(params)
