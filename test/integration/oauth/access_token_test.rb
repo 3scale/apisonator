@@ -28,8 +28,6 @@ class AccessTokenTest < Test::Unit::TestCase
 
     # Read
     get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
-
-
         :provider_key => @provider_key
 
     assert_equal 200, last_response.status
@@ -38,6 +36,12 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal 1, node.count
     assert_equal 'VALID-TOKEN', node.content
     assert_equal '-1', node.attribute('ttl').value
+
+    # Read an invalid app id
+    get "/services/#{@service.id}/applications/#{@application.id.succ}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 404, last_response.status
 
     # Delete
     delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN.xml",
@@ -50,6 +54,12 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_equal 200, last_response.status
     assert xml.at('oauth_access_tokens').element_children.empty?, 'No tokens should be present'
+
+    # Create using an invalid app id
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id.succ,
+                                                             :token => 'VALID-TOKEN'
+    assert_equal 404, last_response.status
   end
 
   test 'create and read oauth_access_token with TTL supplied' do
