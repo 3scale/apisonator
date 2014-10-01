@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Metric < ThreeScale::Core::Metric
+    class Metric
       class Collection
         include Core::Storable
 

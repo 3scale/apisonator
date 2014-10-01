@@ -1,5 +1,3 @@
-require '3scale/backend/metric/collection'
-
 module ThreeScale
   module Backend
     module CoreMetric
@@ -143,3 +141,8 @@ module ThreeScale
     end
   end
 end
+
+# this is required by our code, but it is nested inside class Metric
+# require'ing it here ensures we always reopen the class instead of
+# defining it.
+require '3scale/backend/metric/collection'
