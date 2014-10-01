@@ -17,6 +17,10 @@ module ThreeScale
       class << self
         include Memoizer::Decorator
 
+        def incr_version(id)
+          storage.incr storage_key(id, :version)
+        end
+
         # Returns true if a given service belongs to the provider with
         # that key without loading the whole object.
         #
