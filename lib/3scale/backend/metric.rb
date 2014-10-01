@@ -118,6 +118,13 @@ module ThreeScale
         }
       end
 
+      def update(attributes)
+        attributes.each do |attr, val|
+          public_send("#{attr}=", val)
+        end
+        self
+      end
+
       def self.load_all(service_id)
         Collection.new(service_id)
       end
