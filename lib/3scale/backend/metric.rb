@@ -107,6 +107,8 @@ module ThreeScale
       include Core::Storable
       include CoreMetric
 
+      attr_accessor :service_id, :id, :parent_id, :name
+
       def self.load_all(service_id)
         Collection.new(service_id)
       end
