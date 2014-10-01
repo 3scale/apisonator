@@ -109,6 +109,15 @@ module ThreeScale
 
       attr_accessor :service_id, :id, :parent_id, :name
 
+      def to_hash
+        {
+          service_id: service_id,
+          id: id,
+          parent_id: parent_id,
+          name: name
+        }
+      end
+
       def self.load_all(service_id)
         Collection.new(service_id)
       end
