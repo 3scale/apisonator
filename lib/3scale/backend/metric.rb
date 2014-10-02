@@ -88,6 +88,7 @@ module ThreeScale
 
         def delete(service_id, id)
           name = load_name(service_id, id)
+          return false unless name and not name.empty?
 
           storage.srem(id_set_key(service_id), id)
 
@@ -96,6 +97,7 @@ module ThreeScale
           storage.del(id_key(service_id, name))
 
           Service.incr_version(service_id)
+          true
         end
       end
     end
