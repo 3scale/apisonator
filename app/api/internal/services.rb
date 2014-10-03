@@ -4,7 +4,13 @@ require '3scale/backend/use_cases/service_user_management_use_case'
 module ThreeScale
   module Backend
     module API
-      class Services < Internal
+      internal_api '/services' do
+        module ServiceHelpers
+          def self.user_use_case(id, username)
+            service = Service.load_by_id(id)
+            ServiceUserManagementUseCase.new(service, username) if service
+          end
+        end
 
         get '/:id' do
           if service = Service.load_by_id(params[:id])
@@ -59,25 +65,19 @@ module ThreeScale
         end
 
         post '/:id/users' do
-          user_use_case.add
+          use_case = ServiceHelpers.user_use_case(params[:id], params[:username])
+          respond_with_404("Service #{params[:id]} not found") unless use_case
+
+          use_case.add
           {status: :ok}.to_json
         end
 
         delete '/:id/users/:username' do
-          user_use_case.delete
+          use_case = ServiceHelpers.user_use_case(params[:id], params[:username])
+          respond_with_404("Service #{params[:id]} not found") unless use_case
 
+          use_case.delete
           {status: :ok}.to_json
-        end
-
-        private
-
-        def get_service
-          service = Service.load_by_id(params[:id])
-          service ? service : respond_with_404("Service #{params[:id]} not found")
-        end
-
-        def user_use_case
-          ServiceUserManagementUseCase.new(get_service, params[:username])
         end
 
       end
