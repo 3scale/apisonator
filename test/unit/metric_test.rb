@@ -52,6 +52,9 @@ class MetricTest < Test::Unit::TestCase
     Metric.save(:service_id => 1002, :id => 2003, :name => 'bazs')
 
     assert_equal ['2001', '2002'], Metric.load_all_ids(1001)
+
+    Metric.save(:service_id => 1001, :id => 2003, :name => 'barf')
+    assert_equal ['2001', '2002', '2003'], Metric.load_all_ids(1001)
   end
 
   def test_load_all_ids_returns_empty_array_if_no_ids_found
@@ -61,6 +64,8 @@ class MetricTest < Test::Unit::TestCase
   def test_load_name
     Metric.save(:service_id => 1001, :id => 2001, :name => 'bananas')
     assert_equal 'bananas', Metric.load_name(1001, 2001)
+    Metric.save(:service_id => 1001, :id => 2001, :name => 'monkeys')
+    assert_equal 'monkeys', Metric.load_name(1001, 2001)
   end
 
   def test_all_names
@@ -69,6 +74,9 @@ class MetricTest < Test::Unit::TestCase
     name_hash = Metric.load_all_names(1001, [2001,2002])
     assert_equal 'bananas', name_hash[2001]
     assert_equal 'bananas2', name_hash[2002]
+    Metric.save(:service_id => 1001, :id => 2001, :name => 'monkeys')
+    name_hash = Metric.load_all_names(1001, [2001, 2002])
+    assert_equal 'monkeys', name_hash[2001]
   end
 
   def test_load_id
@@ -83,5 +91,8 @@ class MetricTest < Test::Unit::TestCase
     assert_nil Metric.load(1001, 2003)
     assert_nil Metric.load_id(1001, 'donkeys')
     assert !Metric.load_all_ids(1001).include?('2003')
+    Metric.save(:service_id => 1001, :id => 2003, :name => 'donkeys')
+    assert_not_nil Metric.load(1001, 2003)
+    assert Metric.load_all_ids(1001).include?('2003')
   end
 end
