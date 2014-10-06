@@ -35,6 +35,9 @@ module ThreeScale
           storage.sadd(id_set_key(service_id), id)
 
           save_children
+
+          self.class.clear_cache(service_id, id)
+
           Service.incr_version(service_id)
         end
 
@@ -87,8 +90,9 @@ module ThreeScale
         end
 
         def delete(service_id, id)
-          name = load_name(service_id, id)
+          name = storage.get(key(service_id, id, :name))
           return false unless name and not name.empty?
+          clear_cache(service_id, id)
 
           storage.srem(id_set_key(service_id), id)
 
@@ -98,6 +102,14 @@ module ThreeScale
 
           Service.incr_version(service_id)
           true
+        end
+
+        def clear_cache(service_id, id)
+          metric_ids = load_all_ids(service_id)
+          Memoizer.clear(Memoizer.build_keys_for_class(self,
+                                        load_all: [service_id],
+                                        load_all_names: [service_id, metric_ids],
+                                        load_name: [service_id, id]))
         end
       end
     end
