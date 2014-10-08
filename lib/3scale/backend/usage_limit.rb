@@ -47,11 +47,13 @@ module ThreeScale
                             period),
                         attributes[period])
           end
+          clear_cache(attributes[:service_id], attributes[:plan_id])
           Service.incr_version(attributes[:service_id])
         end
 
         def delete(service_id, plan_id, metric_id, period)
           storage.del(key(service_id, plan_id, metric_id, period))
+          clear_cache(service_id, plan_id)
           Service.incr_version(service_id)
         end
 
@@ -78,6 +80,10 @@ module ThreeScale
           pairs.map do |metric_id, period|
             encode_key("#{key_prefix}/metric_id:#{metric_id}/#{period}")
           end
+        end
+
+        def clear_cache(service_id, plan_id)
+          Memoizer.clear(Memoizer.build_key(self, :load_all, service_id, plan_id))
         end
       end
     end
