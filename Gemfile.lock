@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    3scale_backend (2.4.0)
+    3scale_backend (2.5.0)
       3scale_core (= 1.1.0)
       airbrake (= 3.1.16)
       bson_ext (= 1.9.0)
@@ -39,7 +39,7 @@ GEM
       builder
       multi_json
     atomic (1.1.16)
-    backports (3.6.1)
+    backports (3.6.3)
     bson (1.9.2)
     bson_ext (1.9.0)
       bson (~> 1.9.0)
@@ -76,7 +76,7 @@ GEM
     json (1.8.1)
     metaclass (0.0.4)
     method_source (0.8.2)
-    mime-types (2.3)
+    mime-types (2.4.1)
     mini_portile (0.6.0)
     minitest (4.7.5)
     mocha (0.13.3)
