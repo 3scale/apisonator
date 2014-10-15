@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    3scale_backend (2.5.0)
+    3scale_backend (2.5.1)
       3scale_core (= 1.1.0)
       airbrake (= 3.1.16)
       bson_ext (= 1.9.0)
