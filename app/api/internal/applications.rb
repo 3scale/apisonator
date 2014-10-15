@@ -25,13 +25,10 @@ module ThreeScale
         put '/:id' do |service_id, id|
           attributes = params[:application]
           halt 400, { status: :error, error: 'invalid parameter \'application\'' }.to_json unless attributes
-          app = Application.load(service_id, id)
-          if app
-            app.update(attributes).save
-            { status: :modified, application: app.to_hash }.to_json
-          else
-            [404, headers, { status: :not_found, error: 'application not found' }.to_json]
-          end
+          modified = Application.exists?(service_id, id)
+          attributes.merge!({service_id: service_id, id: id})
+          app = Application.save(attributes)
+          { status: modified ? :modified : :created, application: app.to_hash }.to_json
         end
 
         delete '/:id' do |service_id, id|
