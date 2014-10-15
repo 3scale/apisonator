@@ -12,7 +12,7 @@ resource 'Internal API (prefix: /internal)' do
     end
   end
 
-  get '/version' do
+  get '/status' do
     example_request 'Get Backend\'s version' do
       status.should == 200
       response_json['version']['backend'].should == ThreeScale::Backend::VERSION

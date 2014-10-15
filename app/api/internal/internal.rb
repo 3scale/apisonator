@@ -19,7 +19,7 @@ module ThreeScale
           {status: :ok}.to_json
         end
 
-        get '/version' do
+        get '/status' do
           { status: :ok, version: { backend: ThreeScale::Backend::VERSION } }.to_json
         end
 
