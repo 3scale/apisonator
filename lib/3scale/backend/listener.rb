@@ -658,6 +658,11 @@ module ThreeScale
         body 'ok'
       end
 
+      get '/status' do
+        content_type 'application/json'
+        { status: :ok, version: { backend: ThreeScale::Backend::VERSION } }.to_json
+      end
+
       not_found do
         env['sinatra.error'] = nil
         [404, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, ['']]
