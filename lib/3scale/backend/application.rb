@@ -1,11 +1,41 @@
 module ThreeScale
   module Backend
-    module CoreApplication
-      def self.included(base)
-        base.extend ClassMethods
+    class Application
+      module Sets
+        include ThreeScale::Backend::HasSet
+        has_set :referrer_filters
+        has_set :keys
       end
 
-      module ClassMethods
+      include Sets
+      include Core::Storable
+
+      attr_accessor :service_id, :id, :state, :plan_id, :plan_name,
+        :user_required, :redirect_url, :version
+
+      def to_hash
+        {
+          service_id: service_id,
+          id: id,
+          state: state,
+          plan_id: plan_id,
+          plan_name: plan_name,
+          user_required: user_required,
+          redirect_url: redirect_url,
+          version: version
+        }
+      end
+
+      def update(attributes)
+        attributes.each do |attr, val|
+          public_send("#{attr}=", val)
+        end
+        self
+      end
+
+      class << self
+        include Memoizer::Decorator
+
         def load(service_id, id)
           return nil unless service_id and id
           values = storage.mget(storage_key(service_id, id, :state),
@@ -32,10 +62,17 @@ module ThreeScale
               redirect_url: redirect_url,
               version: self.get_version(service_id, id))
         end
+        memoize :load
+
+        def load!(service_id, app_id)
+          load(service_id, app_id) or raise ApplicationNotFound, app_id
+        end
+        memoize :load!
 
         def load_id_by_key(service_id, key)
           storage.get(id_by_key_storage_key(service_id, key))
         end
+        memoize :load_id_by_key
 
         def save_id_by_key(service_id, key, id)
           raise ApplicationHasInconsistentData.new(id, key) if [service_id, id, key].any?(&:blank?)
@@ -53,6 +90,7 @@ module ThreeScale
         def exists?(service_id, id)
           storage.exists(storage_key(service_id, id, :state))
         end
+        memoize :exists?
 
         def get_version(service_id, id)
           storage.get(storage_key(service_id, id, :version))
@@ -108,63 +146,6 @@ module ThreeScale
         end
 
       end
-
-    end
-
-    class Application
-      module Sets
-        include ThreeScale::Backend::HasSet
-        has_set :referrer_filters
-        has_set :keys
-      end
-
-      include Sets
-      include Core::Storable
-      include Memoizer::Decorator
-      include CoreApplication
-
-      attr_accessor :service_id, :id, :state, :plan_id, :plan_name,
-        :user_required, :redirect_url, :version
-
-      def to_hash
-        {
-          service_id: service_id,
-          id: id,
-          state: state,
-          plan_id: plan_id,
-          plan_name: plan_name,
-          user_required: user_required,
-          redirect_url: redirect_url,
-          version: version
-        }
-      end
-
-      def update(attributes)
-        attributes.each do |attr, val|
-          public_send("#{attr}=", val)
-        end
-        self
-      end
-
-      def self.load!(service_id, app_id)
-        load(service_id, app_id) or raise ApplicationNotFound, app_id
-      end
-      memoize :load!
-
-      def self.load(service_id, app_id)
-        super(service_id, app_id)
-      end
-      memoize :load
-
-      def self.load_id_by_key(service_id, user_key)
-        super(service_id, user_key)
-      end
-      memoize :load_id_by_key
-
-      def self.exists?(service_id, app_id)
-        super(service_id, app_id)
-      end
-      memoize :exists?
 
       def self.load_by_id_or_user_key!(service_id, app_id, user_key)
 
