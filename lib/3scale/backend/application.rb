@@ -2,35 +2,7 @@ module ThreeScale
   module Backend
     module CoreApplication
       def self.included(base)
-        base.include InstanceMethods
         base.extend ClassMethods
-      end
-
-      module InstanceMethods
-        def user_required?
-          @user_required
-        end
-
-        def save
-          storage.set(storage_key(:state), state.to_s) if state
-          storage.set(storage_key(:plan_id), plan_id) if plan_id
-          storage.set(storage_key(:plan_name), plan_name) if plan_name
-          storage.set(storage_key(:user_required), user_required? ? 1 : 0)
-          storage.set(storage_key(:redirect_url), redirect_url) if redirect_url
-
-          storage.sadd(applications_set_key(service_id), id)
-          self.version = self.class.incr_version(service_id, id).to_s
-          self.class.clear_cache(service_id, id)
-          Memoizer.memoize(Memoizer.build_key(self.class, :exists?, service_id, id), state)
-        end
-
-        def storage_key(attribute)
-          self.class.storage_key(service_id, id, attribute)
-        end
-
-        def applications_set_key(service_id)
-          self.class.applications_set_key(service_id)
-        end
       end
 
       module ClassMethods
@@ -226,6 +198,31 @@ module ThreeScale
         else
           raise ApplicationNotFound
         end
+      end
+
+      def user_required?
+        @user_required
+      end
+
+      def save
+        storage.set(storage_key(:state), state.to_s) if state
+        storage.set(storage_key(:plan_id), plan_id) if plan_id
+        storage.set(storage_key(:plan_name), plan_name) if plan_name
+        storage.set(storage_key(:user_required), user_required? ? 1 : 0)
+        storage.set(storage_key(:redirect_url), redirect_url) if redirect_url
+
+        storage.sadd(applications_set_key(service_id), id)
+        self.version = self.class.incr_version(service_id, id).to_s
+        self.class.clear_cache(service_id, id)
+        Memoizer.memoize(Memoizer.build_key(self.class, :exists?, service_id, id), state)
+      end
+
+      def storage_key(attribute)
+        self.class.storage_key(service_id, id, attribute)
+      end
+
+      def applications_set_key(service_id)
+        self.class.applications_set_key(service_id)
       end
 
       def metric_names
