@@ -87,6 +87,38 @@ module ThreeScale
           end
         end
 
+        def load_by_id_or_user_key!(service_id, app_id, user_key)
+          case
+          when app_id && user_key
+            raise AuthenticationError
+          when app_id
+            load!(service_id, app_id)
+          when user_key
+            app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
+            load(service_id, app_id) or raise UserKeyInvalid, user_key
+          else
+            raise ApplicationNotFound
+          end
+        end
+
+        def extract_id!(service_id, app_id, user_key, access_token)
+          case
+          when app_id && user_key
+            raise AuthenticationError
+          when app_id
+            exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
+          when user_key
+            app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
+            exists?(service_id, app_id) and app_id or raise UserKeyInvalid, user_key
+          when access_token
+            ## let's not memoize the oauthaccesstoken since this is supposed to change often
+            app_id = OAuthAccessTokenStorage.get_app_id(service_id, access_token) or raise AccessTokenInvalid, access_token
+            exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
+          else
+            raise ApplicationNotFound
+          end
+        end
+
         def exists?(service_id, id)
           storage.exists(storage_key(service_id, id, :state))
         end
@@ -145,40 +177,6 @@ module ThreeScale
           encode_key("application/service_id:#{service_id}/key:#{key}/id")
         end
 
-      end
-
-      def self.load_by_id_or_user_key!(service_id, app_id, user_key)
-
-        case
-
-        when app_id && user_key
-          raise AuthenticationError
-        when app_id
-          load!(service_id, app_id)
-        when user_key
-          app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
-          load(service_id, app_id) or raise UserKeyInvalid, user_key
-        else
-          raise ApplicationNotFound
-        end
-      end
-
-      def self.extract_id!(service_id, app_id, user_key, access_token)
-        case
-        when app_id && user_key
-          raise AuthenticationError
-        when app_id
-          exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
-        when user_key
-          app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
-          exists?(service_id, app_id) and app_id or raise UserKeyInvalid, user_key
-        when access_token
-          ## let's not memoize the oauthaccesstoken since this is supposed to change often
-          app_id = OAuthAccessTokenStorage.get_app_id(service_id, access_token) or raise AccessTokenInvalid, access_token
-          exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
-        else
-          raise ApplicationNotFound
-        end
       end
 
       def user_required?
