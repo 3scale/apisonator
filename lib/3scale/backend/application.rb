@@ -176,7 +176,6 @@ module ThreeScale
         def id_by_key_storage_key(service_id, key)
           encode_key("application/service_id:#{service_id}/key:#{key}/id")
         end
-
       end
 
       def user_required?
@@ -243,7 +242,6 @@ module ThreeScale
         Application.incr_version(service_id,id)
         super(value)
       end
-
 
       def active?
         state == :active
