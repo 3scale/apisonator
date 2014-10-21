@@ -12,6 +12,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     v.has_ssh = true
   end
 
+  config.vm.network :forwarded_port, guest: 3000, host: 8081
+
   config.ssh.username = "root"
   config.ssh.private_key_path = "docker/ssh/docker_key"
 
