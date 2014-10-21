@@ -42,7 +42,6 @@ require '3scale/backend/queue_storage'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/log_request_storage'
 require '3scale/backend/aggregator'
-require '3scale/backend/storage_mongo'
 require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
 require '3scale/backend/user'
@@ -83,7 +82,10 @@ ThreeScale::Backend.configuration.tap do |config|
   config.add_section(:redis, :proxy, :nodes, :backup_file)
   config.add_section(:hoptoad, :api_key)
   config.add_section(:stats, :bucket_size)
-  config.add_section(:mongo, :servers, :db, :db_options)
+  config.add_section(:influxdb, :hosts, :database,
+                     :username, :password, :retry,
+                     :write_timeout, :read_timeout
+                    )
 
   # Default config
   config.master_service_id  = 1

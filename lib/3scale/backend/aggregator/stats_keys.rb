@@ -60,6 +60,22 @@ module ThreeScale
 
           key
         end
+
+        def changed_keys_bucket_key(bucket)
+          "keys_changed:#{bucket}"
+        end
+
+        def changed_keys_key
+          "keys_changed_set"
+        end
+
+        def failed_save_to_storage_stats_key
+          "stats:failed"
+        end
+
+        def failed_save_to_storage_stats_at_least_once_key
+          "stats:failed_at_least_once"
+        end
       end
     end
   end

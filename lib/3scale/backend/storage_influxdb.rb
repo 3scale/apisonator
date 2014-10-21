@@ -5,8 +5,6 @@ module ThreeScale
     class StorageInfluxDB
       include Configurable
 
-      SERIES_PREFIX = "service_"
-
       # @note There are plans to use a binary protocol to communicate
       #       with InfluxDB. We should track this and modify this class
       #       if needed. We should consider to extend the current
@@ -27,9 +25,12 @@ module ThreeScale
         @instance ||= new(
           configuration.influxdb.database,
           {
-            host:     configuration.influxdb.hosts,
-            username: configuration.influxdb.username,
-            password: configuration.influxdb.password,
+            host:          configuration.influxdb.hosts,
+            username:      configuration.influxdb.username,
+            password:      configuration.influxdb.password,
+            retry:         configuration.influxdb.retry,
+            write_timeout: configuration.influxdb.write_timeout,
+            read_timeout:  configuration.influxdb.read_timeout,
           }
         )
 
@@ -45,11 +46,14 @@ module ThreeScale
       # @param [String] value the value.
       # @return [Array] the batch of events.
       def add_event(key, value)
-        event = event_for_interval(key, value)
-        name  = event.delete(:name)
+        event  = event_for_interval(key, value)
+        status = event[:sequence_number] ? :new : :existing
+        name   = event.delete(:serie_name)
 
-        grouped_events[name] ||= []
-        grouped_events[name] << event
+        grouped_events[name] ||= { new: [], existing: [] }
+        grouped_events[name][status] << event
+
+        event
       end
 
       attr_reader :grouped_events
@@ -67,7 +71,9 @@ module ThreeScale
       #        Instead, we could have an events array.
       def write_events
         grouped_events.each do |serie, events|
-          @client.write_point(serie, events)
+          events.each_value do |evts|
+            @client.write_point(serie, evts) unless evts.empty?
+          end
         end
 
         @grouped_events = {}
@@ -75,52 +81,44 @@ module ThreeScale
         true
       end
 
-      # Finds an event for a service with service_id and
-      # specific `conditions` and returns its value.
+      # Finds an event and returns its value.
       #
       # @param [String, Integer] service_id the service id.
+      # @param [String, Integer] metric_id the metric id.
       # @param [String] period the period of time where find the event
       #                        (hour,day,week,month,year).
+      # @param [Time] time the timestamp of the event.
       # @param [Hash] conditions the conditions to find an event.
       # @return [Integer, nil] the event value or nil.
-      def get(service_id, period, conditions = {})
-        event = find_event(service_id, period, conditions)
-        event["value"] if event
+      def get(service_id, metric_id, period, time, conditions = {})
+        event = find_event(service_id, metric_id, period, time, conditions)
+        event[:value] if event
       end
 
-      # Finds an event with specific `conditions`.
+      # Finds an event.
       #
       # @param [String, Integer] service_id the service id.
+      # @param [String, Integer] metric_id the metric id.
       # @param [String] period the period of time where find the event
       #                        (hour,day,week,month,year).
+      # @param [Time] time the timestamp of the event.
       # @param [Hash] conditions the conditions to find an event.
       # @return [Hash, nil] the hash with the event properties or nil.
-      def find_event(service_id, period, conditions = {})
-        where_query = compose_where(conditions)
-        serie       = serie_name(service_id, period)
-        query       = "select * from #{serie} #{where_query} limit 1"
+      def find_event(service_id, metric_id, period, time, conditions = {})
+        time_on_period = time.beginning_of_cycle(period.to_sym).to_i
+        serie          = serie_name(service_id, metric_id, period, conditions)
 
-        begin
-          events = @client.query(query)[serie]
-        rescue InfluxDB::Error => exception
-          if exception.message =~ /Couldn't look up columns/
-            events = nil
-          else
-            raise exception
-          end
-        end
-
-        events.first if events
+        find_event_by_serie_name(serie, time_on_period)
       end
 
-      # Drop all series (service events).
+      # Drop all series.
       #
       # @return [Boolean] True or raise an exception.
       #
       # @note: In the future, maybe they will add builtin support for this.
       # https://github.com/influxdb/influxdb/issues/448
-      def drop_series
-        list_query = "list series /#{SERIES_PREFIX}.*/"
+      def drop_all_series
+        list_query = "list series"
         series     = @client.query(list_query)["list_series_result"]
 
         series.each do |serie|
@@ -132,33 +130,46 @@ module ThreeScale
 
       private
 
-      def compose_where(conditions)
-        return if conditions.empty?
-
-        query = conditions.map do |key, value|
-          if key == :time
-            "#{key} > #{value}s and #{key} < #{value}s"
-          elsif value.kind_of? Numeric
-            "#{key} = #{value}"
-          else
-            "#{key} = '#{value}'"
+      def serie_name(service_id, metric_id, period, conditions)
+        attrs  = attrs_for_serie_name(service_id, metric_id, period, conditions)
+        suffix = period_name(period)
+        prefix = attrs.inject("") do |acc, (k,v)|
+          acc.tap do |obj|
+            obj << "_" unless obj.empty?
+            obj << [k,v].join("_")
           end
-        end.join(' and ')
+        end
 
-        "where #{query}"
+        "#{prefix}.#{suffix}"
+      end
+
+      def attrs_for_serie_name(service_id, metric_id, period, conditions)
+        attributes = {
+          service: service_id,
+          metric:  metric_id,
+        }
+        conditions.each { |k,v| attributes[k] ||= v }
+
+        attributes
       end
 
       def event_for_interval(key, value)
         period, timestamp = extract_timestamp(key)
-        conditions        = event_metadata(key).merge(time: timestamp.to_i)
-        service_id        = conditions.delete(:service)
-        event             = find_event(service_id, period, conditions)
+        metadata          = event_metadata(key)
+        service_id        = metadata.delete(:service)
+        metric_id         = metadata.delete(:metric)
 
-        if event
-          event.merge("value" => value, name: serie_name(service_id, period))
-        else
-          conditions.merge(value: value, name: serie_name(service_id, period))
-        end
+        event             = find_event(service_id, metric_id, period, timestamp, metadata)
+        event           ||= new_event(service_id, metric_id, period, timestamp, metadata)
+
+        event.merge(value: value)
+      end
+
+      def new_event(service_id, metric_id, period, time, conditions)
+        time_on_period = time.beginning_of_cycle(period.to_sym).to_i
+        serie          = serie_name(service_id, metric_id, period, conditions)
+
+        { time: time_on_period, serie_name: serie }
       end
 
       def event_metadata(key)
@@ -166,10 +177,35 @@ module ThreeScale
 
         fields.inject({}) do |memo, (field, val)|
           if normalized_field = normalize_field(field)
-            memo[normalized_field] = val.to_i
+            memo[normalized_field] = val.to_s
           end
 
           memo
+        end
+      end
+
+      def query(serie_name, query)
+        @client.query(query)[serie_name]
+      rescue InfluxDB::Error => exception
+        if exception.message =~ /Couldn't look up columns/
+          []
+        else
+          raise exception
+        end
+      end
+
+      def compose_query(serie_name, time, limit = nil)
+        where = "WHERE time > #{time}s and time < #{time}s"
+        limit_statement = limit ? "LIMIT #{limit}" : ""
+        "SELECT * FROM #{serie_name} #{where} #{limit_statement}"
+      end
+
+      def find_event_by_serie_name(serie_name, time)
+        query_str = compose_query(serie_name, time, 1)
+        event     = query(serie_name, query_str).first
+
+        if event
+          event.symbolize_keys.merge(serie_name: serie_name)
         end
       end
 
@@ -191,10 +227,6 @@ module ThreeScale
           metric:    :metric,
           service:   :service,
         }[field.to_sym]
-      end
-
-      def serie_name(service_id, period)
-        "#{SERIES_PREFIX}#{service_id}.#{period_name(period)}"
       end
 
       def period_name(period)

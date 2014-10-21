@@ -1,6 +1,7 @@
-  require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require_relative '../../lib/3scale/backend/aggregator/stats_tasks'
 
-class AggregatorMongoTest < Test::Unit::TestCase
+class AggregatorStorageStatsTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
   include TestHelpers::AuthorizeAssertions
   include TestHelpers::Sequences
@@ -12,16 +13,12 @@ class AggregatorMongoTest < Test::Unit::TestCase
     @storage.flushdb
     seed_data
 
-    # all the test will have to disable the flag before finishing,
-    ## in theory not needed since we always do flush, if not
-    ## @storage.del("mongo_enabled")
-    Aggregator.enable_mongo
-    ## the flag to know if mongo is enabled is memoized
+    StorageStats.enable!
     Memoizer.reset!
-    Aggregator.activate_mongo
+    StorageStats.activate!
 
-    @storage_mongo = StorageMongo.instance(true)
-    @storage_mongo.clear_collections
+    @storage_stats = StorageStats.instance(true)
+    @storage_stats.drop_all_series
 
     Resque.reset!
     Memoizer.reset!
@@ -128,56 +125,44 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                 :usage          => {'3001' => 1}}])
     end
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
-    time_with_mongo = Time.now - t
-
-    mongo_conditions = { s: "1001", m: "3001" }
-    assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :eternity))
-    assert_equal cont, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    time_with_storage_stats = Time.now - t
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :month,  '20100501'))
-    assert_equal cont, @storage_mongo.get(:month, timestamp, mongo_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :month, timestamp)
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :day,    '20100507'))
-    assert_equal cont, @storage_mongo.get(:day, timestamp, mongo_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :day, timestamp)
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
-    assert_equal cont, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-
-    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
-    assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :eternity))
-    assert_equal cont, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :hour, timestamp)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
-    assert_equal cont, @storage_mongo.get(:year, timestamp, mongo_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal cont, @storage_mongo.get(:month, timestamp, mongo_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
 
-    assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal cont, @storage_mongo.get(:day, timestamp, mongo_conditions)
+    assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :day,  '20100507'))
+    assert_equal cont, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal cont, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-
-    assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :minute, '201005071323'))
-    assert_equal cont, @storage_mongo.get(:minute, timestamp, mongo_conditions)
+    assert_equal cont, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     @storage = Storage.instance(true)
     @storage.flushdb
     Memoizer.reset!
     seed_data()
 
-    @storage_mongo = StorageMongo.instance(true)
-    @storage_mongo.clear_collections
+    @storage_stats = StorageStats.instance(true)
+    @storage_stats.drop_all_series
 
-    mongo_conditions = { service: 1001, metric: 3001 }
-    assert_equal nil, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp)
 
     t = Time.now
 
@@ -189,51 +174,40 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
 
-    Aggregator.schedule_one_stats_job()
+    Aggregator::StatsTasks.schedule_one_stats_job()
     Resque.run!
 
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
-    time_without_mongo = Time.now - t
-
-    mongo_conditions = { service: "1001", metric: "3001" }
-    assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :eternity))
-    assert_equal nil, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    time_without_storage_stats = Time.now - t
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :month,  '20100501'))
-    assert_equal nil, @storage_mongo.get(:month, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp)
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :day,    '20100507'))
-    assert_equal nil, @storage_mongo.get(:day, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :day, timestamp)
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
-    assert_equal nil, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-
-    mongo_conditions = { service: "1001", application: "2001", metric: "3001" }
-    assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :eternity))
-    assert_equal nil, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
-    assert_equal nil, @storage_mongo.get(:year, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal nil, @storage_mongo.get(:month, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
-    assert_equal nil, @storage_mongo.get(:day, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
 
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal nil, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :minute, '201005071323'))
-    assert_equal nil, @storage_mongo.get(:minute, timestamp, mongo_conditions)
-
-    good_enough = time_with_mongo < time_without_mongo * 1.5
+    good_enough = time_with_storage_stats < time_without_storage_stats * 1.5
 
     if (!good_enough)
-      puts "\nwith    mongodb: #{time_with_mongo}s"
-      puts "without mongodb: #{time_without_mongo}s\n"
+      puts "\nwith    storage stats: #{time_with_storage_stats}s"
+      puts "without storage stats: #{time_without_storage_stats}s\n"
     end
 
     assert_equal true, good_enough
@@ -247,50 +221,35 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :usage          => {'3001' => 1}}])
 
     assert_equal 0 , Resque.queue(:main).length  + Resque.queue(:stats).length
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     assert_equal 1 , Resque.queue(:main).length + Resque.queue(:stats).length
     Resque.run!
     assert_equal 0 , Resque.queue(:main).length + Resque.queue(:stats).length
 
-    mongo_conditions = { s: "1001", m: "3001" }
-
-    assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))
-    assert_equal 1, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
-
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
-    assert_equal 1, @storage_mongo.get(:month, timestamp, mongo_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp)
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :day,    '20100507'))
-    assert_equal 1, @storage_mongo.get(:day, timestamp, mongo_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :day, timestamp)
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
-    assert_equal 1, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-
-
-    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
-
-    assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :eternity))
-    assert_equal 1, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :hour, timestamp)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
-    assert_equal 1, @storage_mongo.get(:year, timestamp, mongo_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal 1, @storage_mongo.get(:month, timestamp, mongo_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
-    assert_equal 1, @storage_mongo.get(:day, timestamp, mongo_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal 1, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-
-    assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :minute, '201005071323'))
-    assert_equal 1, @storage_mongo.get(:minute, timestamp, mongo_conditions)
+    assert_equal 1, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
   test 'aggregate takes into account setting the counter value ok' do
     timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
-    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
 
     v = []
     10.times do
@@ -302,10 +261,10 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
     Aggregator.aggregate_all(v)
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 10, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal 10, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     v = []
     v  <<   { :service_id     => 1001,
@@ -315,10 +274,10 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     Aggregator.aggregate_all(v)
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 665, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal 665, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     v = []
     v <<   { :service_id     => 1001,
@@ -328,51 +287,50 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     Aggregator.aggregate_all(v)
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 666, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal 666, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
   test 'direct test of get_old_buckets_to_process' do
     ## this should go as unit test of StatsBatcher
+    @storage.zadd(Aggregator::StatsKeys.changed_keys_key,"20121010102100","20121010102100")
+    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102100")
 
-    @storage.zadd(Aggregator.changed_keys_key,"20121010102100","20121010102100")
-    assert_equal [], Aggregator.get_old_buckets_to_process("20121010102100")
+    assert_equal ["20121010102100"], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102120")
 
-    assert_equal ["20121010102100"], Aggregator.get_old_buckets_to_process("20121010102120")
-
-    assert_equal [], Aggregator.get_old_buckets_to_process("20121010102120")
+    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102120")
 
 
-    @storage.del(Aggregator.changed_keys_key)
+    @storage.del(Aggregator::StatsKeys.changed_keys_key)
 
     100.times do |i|
-      @storage.zadd(Aggregator.changed_keys_key,i,i.to_s)
+      @storage.zadd(Aggregator::StatsKeys.changed_keys_key,i,i.to_s)
     end
 
-    assert_equal [], Aggregator.get_old_buckets_to_process("0")
+    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("0")
 
-    v = Aggregator.get_old_buckets_to_process("1")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("1")
     assert_equal v, ["0"]
 
-    v = Aggregator.get_old_buckets_to_process("1")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("1")
     assert_equal [], v
 
-    v = Aggregator.get_old_buckets_to_process("2")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("2")
     assert_equal v, ["1"]
 
-    v = Aggregator.get_old_buckets_to_process("2")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("2")
     assert_equal [], v
 
-    v = Aggregator.get_old_buckets_to_process("11")
+    v = Aggregator::StatsInfo.get_old_buckets_to_process("11")
     assert_equal 9, v.size
     assert_equal ["2", "3", "4", "5", "6", "7", "8", "9", "10"], v
 
-    v = Aggregator.get_old_buckets_to_process
+    v = Aggregator::StatsInfo.get_old_buckets_to_process
     assert_equal 89, v.size
 
-    v = Aggregator.get_old_buckets_to_process
+    v = Aggregator::StatsInfo.get_old_buckets_to_process
     assert_equal [], v
   end
 
@@ -380,7 +338,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
     ## this should go as unit test of StatsBatcher
     100.times do |i|
-      @storage.zadd(Aggregator.changed_keys_key,i,i.to_s)
+      @storage.zadd(Aggregator::StatsKeys.changed_keys_key,i,i.to_s)
     end
 
     10.times do |i|
@@ -390,7 +348,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
       20.times do |j|
         threads << Thread.new {
           r = Redis.new(host: '127.0.0.1', port: 22121)
-          v = Aggregator.get_old_buckets_to_process(((i+1)*10).to_s,r)
+          v = Aggregator::StatsInfo.get_old_buckets_to_process(((i+1)*10).to_s,r)
 
           assert (v.size==0 || v.size==10)
 
@@ -413,7 +371,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     timestamp  = Time.now.utc - 1000
     service_id = 1001
 
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     5.times do |cont|
@@ -427,27 +385,27 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
       end
 
-      assert_equal cont+1, Aggregator.pending_buckets.size
+      assert_equal cont+1, Aggregator::StatsInfo.pending_buckets.size
 
-      assert Aggregator.pending_buckets.member?("#{service_id}:#{bucket_key}")
+      assert Aggregator::StatsInfo.pending_buckets.member?("#{service_id}:#{bucket_key}")
       assert_equal cont, Resque.queue(:main).length + Resque.queue(:stats).length
 
       timestamp = timestamp + Aggregator.stats_bucket_size
     end
 
-    assert_equal 5, Aggregator.pending_buckets.size
-    assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
 
-    sorted_set = Aggregator.pending_buckets.sort
+    sorted_set = Aggregator::StatsInfo.pending_buckets.sort
 
     4.times do |i|
-      buckets = Aggregator.get_old_buckets_to_process(sorted_set[i+1])
+      buckets = Aggregator::StatsInfo.get_old_buckets_to_process(sorted_set[i+1])
       assert_equal 1, buckets.size
       assert_equal sorted_set[i], buckets.first
     end
 
-    assert_equal 1, Aggregator.pending_buckets.size
-    buckets = Aggregator.get_old_buckets_to_process
+    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    buckets = Aggregator::StatsInfo.get_old_buckets_to_process
     assert_equal 1, buckets.size
     assert_equal sorted_set[4], buckets.first
   end
@@ -461,21 +419,19 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :timestamp      => metrics_timestamp,
                                :usage          => {'3001' => 1}}])
 
-    assert_equal 1, Aggregator.pending_buckets.size
-    Aggregator.schedule_one_stats_job
+    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator.failed_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
 
-    assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))
-    mongo_conditions = { s: "1001", m: "3001" }
-    assert_equal 1, @storage_mongo.get(:eternity, metrics_timestamp, mongo_conditions)
+    assert_equal '1', @storage.get(service_key(1001, 3001, :month, '20100501'))
+    assert_equal 1, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
 
-    ## on the second on we stub the storage_mongo to simulate a network error or mongo down
+    ## on the second on we stub the storage_stats to simulate a network error or storage stats down
 
-    @storage_mongo.stubs(:execute_batch).raises(Exception.new('bang!'))
-    @storage_mongo.stubs(:get).raises(Exception.new('bang!'))
+    @storage_stats.stubs(:write_events).raises(Exception.new('bang!'))
 
     timestamp = Time.now.utc - 1000
 
@@ -492,60 +448,60 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
-    assert_equal 0, Aggregator.failed_buckets.size
-    assert_equal 0, Aggregator.failed_buckets_at_least_once.size
-    assert_equal 5, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.failed_buckets_at_least_once.size
+    assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Resque.queue(:main).length
+    assert_equal 0, Resque.queue(:stats).length
 
     ## buckets went to the failed state
-    assert_equal 0, Aggregator.pending_buckets.size
-    assert_equal 5, Aggregator.failed_buckets.size
-    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 5, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
 
     ## remove the stubbing
-    @storage_mongo = StorageMongo.instance(true)
+    @storage_stats = StorageStats.instance(true)
 
-    assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))
-    mongo_conditions = { s: "1001", m: "3001" }
-    assert_equal 1, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
+    assert_equal 1, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
 
     ## now let's process the failed, one by one...
 
-    v = Aggregator.failed_buckets
-    Aggregator.save_to_mongo(v.first)
+    v = Aggregator::StatsInfo.failed_buckets
+    StorageStats.save_changed_keys(v.first)
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator.pending_buckets.size
-    assert_equal 4, Aggregator.failed_buckets.size
-    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 4, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
 
 
-    assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))
-    assert_equal 6, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
+    assert_equal 6, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
 
     ## or altogether
 
-    v = Aggregator.failed_buckets
+    v = Aggregator::StatsInfo.failed_buckets
     v.each do |bucket|
-      Aggregator.save_to_mongo(bucket)
+      StorageStats.save_changed_keys(bucket)
     end
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator.pending_buckets.size
-    assert_equal 0, Aggregator.failed_buckets.size
-    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
 
 
-    assert_equal '6', @storage.get(service_key(1001, 3001, :eternity))
-    assert_equal 6, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
+    assert_equal 6, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
   end
 
   test 'aggregate takes into account setting the counter value in the case of failed batches' do
-    @storage_mongo.stubs(:execute_batch).raises(Exception.new('bang!'))
-    @storage_mongo.stubs(:get).raises(Exception.new('bang!'))
+    @storage_stats.stubs(:write_events).raises(Exception.new('bang!'))
+    @storage_stats.stubs(:get).raises(Exception.new('bang!'))
 
     timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
     v = []
@@ -558,7 +514,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
     Aggregator.aggregate_all(v)
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     v = []
@@ -568,7 +524,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
              :usage          => {'3001' => '#665'}}
 
     Aggregator.aggregate_all(v)
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     v = []
@@ -580,56 +536,29 @@ class AggregatorMongoTest < Test::Unit::TestCase
 
 
     Aggregator.aggregate_all(v)
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    ## it failed for mongodb
+    ## it failed for storage stats
 
-    @storage_mongo = StorageMongo.instance(true)
-
-    assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
-    assert_equal nil, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-
-    assert_equal 0, Aggregator.pending_buckets.size
-    assert_equal 1, Aggregator.failed_buckets.size
-    assert_equal 1, Aggregator.failed_buckets_at_least_once.size
-
-    v = Aggregator.failed_buckets
-    Aggregator.save_to_mongo(v.first)
+    @storage_stats = StorageStats.instance(true)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal 666, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
+
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 1, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 1, Aggregator::StatsInfo.failed_buckets_at_least_once.size
+
+    v = Aggregator::StatsInfo.failed_buckets
+    StorageStats.save_changed_keys(v.first)
+
+    assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal 666, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
-  test 'enable and disable mongo' do
-    Aggregator.enable_mongo
-    ## the flag to know if mongo is enabled is memoized
-    Memoizer.reset!
-    assert_equal true, Aggregator.mongo_enabled?
-
-    Aggregator.disable_mongo
-    ## the flag to know if mongo is enabled is memoized
-    Memoizer.reset!
-    assert_equal false, Aggregator.mongo_enabled?
-
-    Storage.instance.flushdb()
-    assert_equal false, Aggregator.mongo_enabled?
-  end
-
-  test 'activate and deactive mongodb' do
-    Aggregator.activate_mongo
-    assert_equal true, Aggregator.mongo_active?
-
-    Aggregator.deactivate_mongo
-    assert_equal false, Aggregator.mongo_active?
-
-    Storage.instance.flushdb()
-    assert_equal false, Aggregator.mongo_active?
-  end
-
-  test 'when mongodb is deactivated buckets are filled but nothing gets saved' do
-    Aggregator.deactivate_mongo
+  test 'when storage stats is deactivated buckets are filled but nothing gets saved' do
+    StorageStats.deactivate!
 
     v = []
     10.times do
@@ -643,26 +572,26 @@ class AggregatorMongoTest < Test::Unit::TestCase
     Aggregator.aggregate_all(v)
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 1, Aggregator.pending_buckets.size
+    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 1, Aggregator.pending_buckets.size
+    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.activate_mongo
+    StorageStats.activate!
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
   end
 
-  test 'when mongodb is disabled nothing gets logged' do
-    Aggregator.disable_mongo
-    ## the flag to know if mongo is enabled is memoized
+  test 'when storage stats is disabled nothing gets logged' do
+    StorageStats.disable!
+    ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
 
     v = []
@@ -677,16 +606,16 @@ class AggregatorMongoTest < Test::Unit::TestCase
     Aggregator.aggregate_all(v)
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
   end
 
-  test 'when mongo is disabled mongo does not have to be up and running, but stats get lost during the disabling period' do
+  test 'when storage stats is disabled, storage stats does not have to be up and running, but stats get lost during the disabling period' do
     timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
     v = []
     Timecop.freeze(Time.utc(2010, 5, 7, 13, 23, 33)) do
@@ -698,67 +627,50 @@ class AggregatorMongoTest < Test::Unit::TestCase
       end
     end
 
-    bkp_configuration = configuration.clone()
-
-    configuration.mongo.servers = ["localhost:9090"]
-    configuration.mongo.db = StorageMongo::DEFAULT_DATABASE
-
-    # we set to nil the connection to mongo
-    StorageMongo.reset_to_nil!
-
-    ## now we disable it mongo
-    Aggregator.disable_mongo
-    ## the flag to know if mongo is enabled is memoized
+    StorageStats.disable!
+    ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
 
     v.each do |item|
       Aggregator.aggregate_all([item])
     end
 
-    Aggregator.pending_buckets.size.times do
-      Aggregator.schedule_one_stats_job
+    Aggregator::StatsInfo.pending_buckets.size.times do
+      Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
-    ## because mongo is disabled nothing blows and nothing get logged, it's
-    ## like the mongo code never existed
+    ## because storage stats is disabled nothing blows and nothing get logged, it's
+    ## like the storage stats code never existed
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
 
-    assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    mongo_conditions = { service: "1001", application: "2001", metric: "3001" }
-    assert_equal nil, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    ## now, enabled it mongo and do the same
-
-    configuration.mongo.servers = StorageMongo::DEFAULT_SERVER
-    configuration.mongo.db = StorageMongo::DEFAULT_DATABASE
-    StorageMongo.reset_to_nil!
-
-    Aggregator.enable_mongo
-    ## the flag to know if mongo is enabled is memoized
+    StorageStats.enable!
+    ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
 
     v.each do |item|
       Aggregator.aggregate_all([item])
     end
 
-    assert_equal 1, Aggregator.pending_buckets.size
+    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.pending_buckets.size.times do
-      Aggregator.schedule_one_stats_job
+    Aggregator::StatsInfo.pending_buckets.size.times do
+      Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
-    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
-    assert_equal 20, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal 20, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
-  test 'when mongodb is deactivated mongo does not have to be up and running, but stats do NOT get lost during the deactivation period' do
+  test 'when storage stats is deactivated, storage stats does not have to be up and running, but stats do NOT get lost during the deactivation period' do
     timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
     v = []
     Timecop.freeze(timestamp) do
@@ -770,44 +682,28 @@ class AggregatorMongoTest < Test::Unit::TestCase
       end
     end
 
-    bkp_configuration = configuration.clone()
-
-    configuration.mongo.servers = ["localhost:9090"]
-    configuration.mongo.db = StorageMongo::DEFAULT_DATABASE
-
-    ## we set to nil the connection to mongo
-    StorageMongo.reset_to_nil!
-
-    ## now we disable it mongo
-    Aggregator.deactivate_mongo
+    StorageStats.deactivate!
 
     v.each do |item|
       Aggregator.aggregate_all([item])
     end
 
-    assert_equal 1, Aggregator.pending_buckets.size
+    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    ## because mongo is deactivated nothing blows but it gets logged waiting for mongo
+    ## because storage stats is deactivated nothing blows but it gets logged waiting for storage stats
     ## to be in place again
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 1, Aggregator.pending_buckets.size
+    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
     assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    mongo_conditions = { service: 1001, application: 2001, metric: 3001 }
-    assert_equal nil, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    ## now, enabled it mongo and do the same
+    StorageStats.activate!
 
-    configuration.mongo.servers = StorageMongo::DEFAULT_SERVER
-    configuration.mongo.db = StorageMongo::DEFAULT_DATABASE
-    StorageMongo.reset_to_nil!
-
-    Aggregator.activate_mongo
-
-    assert_equal 1, Aggregator.pending_buckets.size
+    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
     sleep(Aggregator.stats_bucket_size)
 
@@ -815,19 +711,17 @@ class AggregatorMongoTest < Test::Unit::TestCase
       Aggregator.aggregate_all([item])
     end
 
-    assert_equal 2, Aggregator.pending_buckets.size
+    assert_equal 2, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job()
+    Aggregator::StatsTasks.schedule_one_stats_job()
     Resque.run!
 
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    mongo_conditions = { s: "1001", a: "2001", m: "3001" }
-    assert_equal 20, @storage_mongo.get(:hour, timestamp, mongo_conditions)
+    assert_equal 20, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
-
 
   test 'applications with end user plans (user_id) get recorded properly' do
     default_user_plan_id = next_id
@@ -858,12 +752,12 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :usage          => {@metric_hits.id => 5},
                                :user_id        => "user_id_xyz"}])
 
-    Aggregator.pending_buckets.size.times do |cont|
-      Aggregator.schedule_one_stats_job
+    Aggregator::StatsInfo.pending_buckets.size.times do |cont|
+      Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
-    assert_equal 0, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
 
@@ -879,22 +773,14 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal '5', @storage.get(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :month,   '20100501'))
     assert_equal '5', @storage.get(end_user_key(service.id, "user_id_xyz", @metric_hits.id, :eternity))
 
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, application: application.id)
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, application: application.id)
 
-    mongo_conditions = { s: service.id, a: application.id, m: @metric_hits.id.to_s }
-    assert_equal 5, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-    assert_equal 5, @storage_mongo.get(:month, timestamp, mongo_conditions)
-    assert_equal 5, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp)
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp)
 
-    mongo_conditions = { s: service.id, m: @metric_hits.id.to_s }
-    assert_equal 5, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-    assert_equal 5, @storage_mongo.get(:month, timestamp, mongo_conditions)
-    assert_equal 5, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
-
-    mongo_conditions = { s: service.id, e: "user_id_xyz", m: @metric_hits.id.to_s }
-
-    assert_equal 5, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-    assert_equal 5, @storage_mongo.get(:month, timestamp, mongo_conditions)
-    assert_equal 5, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, user: "user_id_xyz")
+    assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, user: "user_id_xyz")
 
     Aggregator.aggregate_all([{:service_id     => service.id,
                                :application_id => application.id,
@@ -902,12 +788,14 @@ class AggregatorMongoTest < Test::Unit::TestCase
                                :usage          => {@metric_hits.id => 4},
                                :user_id        => "another_user_id_xyz"}])
 
-    Aggregator.pending_buckets.size.times do
-      Aggregator.schedule_one_stats_job
+    Aggregator::StatsInfo.pending_buckets.size.times do
+      Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
-    assert_equal 0, Aggregator.pending_buckets.size
+
+
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
 
@@ -923,25 +811,19 @@ class AggregatorMongoTest < Test::Unit::TestCase
     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :month,   '20100501'))
     assert_equal '4', @storage.get(end_user_key(service.id, "another_user_id_xyz", @metric_hits.id, :eternity))
 
-    mongo_conditions = { s: service.id, a: application.id, m: @metric_hits.id.to_s }
-    assert_equal 9, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-    assert_equal 9, @storage_mongo.get(:month, timestamp, mongo_conditions)
-    assert_equal 9, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal 9, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, application: application.id)
+    assert_equal 9, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, application: application.id)
 
-    mongo_conditions = { s: service.id, m: @metric_hits.id.to_s }
-    assert_equal 9, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-    assert_equal 9, @storage_mongo.get(:month, timestamp, mongo_conditions)
-    assert_equal 9, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal 9, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp)
+    assert_equal 9, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp)
 
-    mongo_conditions = { s: service.id, e: "another_user_id_xyz", m: @metric_hits.id.to_s }
-    assert_equal 4, @storage_mongo.get(:hour, timestamp, mongo_conditions)
-    assert_equal 4, @storage_mongo.get(:month, timestamp, mongo_conditions)
-    assert_equal 4, @storage_mongo.get(:eternity, timestamp, mongo_conditions)
+    assert_equal 4, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, user: "another_user_id_xyz")
+    assert_equal 4, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, user: "another_user_id_xyz")
   end
 
   test 'delete all buckets and keys' do
-    @storage_mongo.stubs(:execute_batch).raises(Exception.new('bang!'))
-    @storage_mongo.stubs(:get).raises(Exception.new('bang!'))
+    @storage_stats.stubs(:write_events).raises(Exception.new('bang!'))
+    @storage_stats.stubs(:get).raises(Exception.new('bang!'))
 
     timestamp = Time.now.utc - 1000
 
@@ -959,17 +841,17 @@ class AggregatorMongoTest < Test::Unit::TestCase
     end
 
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
-    assert_equal 0, Aggregator.failed_buckets.size
-    assert_equal 5, Aggregator.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
 
-    Aggregator.schedule_one_stats_job
+    Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Resque.queue(:main).length
 
-    ## jobs did not do anything because mongo connection failed
-    assert_equal 0, Aggregator.pending_buckets.size
-    assert_equal 5, Aggregator.failed_buckets_at_least_once.size
-    assert_equal 5, Aggregator.failed_buckets.size
+    ## jobs did not do anything because storage stats connection failed
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
+    assert_equal 5, Aggregator::StatsInfo.failed_buckets.size
 
     v = @storage.keys("keys_changed:*")
     assert_equal true, v.size > 0
@@ -978,7 +860,7 @@ class AggregatorMongoTest < Test::Unit::TestCase
     v = @storage.keys("copied:*")
     assert_equal 0, v.size
 
-    Aggregator.delete_all_buckets_and_keys_only_as_rake!(silent: true)
+    Aggregator::StatsTasks.delete_all_buckets_and_keys_only_as_rake!(silent: true)
 
     v = @storage.keys("copied:*")
     assert_equal 0, v.size
@@ -986,9 +868,9 @@ class AggregatorMongoTest < Test::Unit::TestCase
     v = @storage.keys("keys_changed:*")
     assert_equal 0, v.size
 
-    assert_equal 0, Aggregator.pending_buckets.size
-    assert_equal 0, Aggregator.failed_buckets.size
-    assert_equal 0, Aggregator.failed_buckets_at_least_once.size
+    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 0, Aggregator::StatsInfo.failed_buckets_at_least_once.size
   end
 
   test 'aggregate_all updates application set' do

@@ -1,18 +1,21 @@
+require_relative '../storage_stats'
+require_relative 'stats_info'
+
 module ThreeScale
   module Backend
     module Aggregator
 
-      # Job for writing stats to mongo
+      # Job for writing stats
       class StatsJob
         @queue = :stats
 
         def self.perform(bucket, enqueue_time)
-          return unless Aggregator.mongo_enabled? && Aggregator.mongo_active?
+          return unless StorageStats.enabled? && StorageStats.active?
 
           start_time = Time.now.getutc
 
           if bucket == "inf"
-            buckets_to_save = Aggregator.get_old_buckets_to_process(bucket)
+            buckets_to_save = StatsInfo.get_old_buckets_to_process(bucket)
           else
             buckets_to_save = [bucket]
           end
@@ -23,7 +26,7 @@ module ThreeScale
             ## it will save all the changed keys from the oldest time bucket. If it
             ## fails it will put the bucket on the stats:failed so that it can be processed
             ## one by one via rake task
-            Aggregator.save_to_mongo(b)
+            StorageStats.save_changed_keys(b)
           end
 
           stats_mem = Memoizer.stats

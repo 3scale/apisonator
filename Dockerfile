@@ -6,7 +6,7 @@ ADD http://s3.amazonaws.com/influxdb/influxdb_0.8.3_amd64.deb /influxdb_0.8.3_am
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 136221EE520DDFAF0A905689B9316A7BC7917B12 \
  && echo 'deb http://ppa.launchpad.net/chris-lea/redis-server/ubuntu precise main' > /etc/apt/sources.list.d/redis-server.list \
  && apt-get -y -q update \
- && apt-get -y -q install redis-server mongodb wget autoconf libtool autopoint \
+ && apt-get -y -q install redis-server wget autoconf libtool autopoint \
  && echo 'Europe/Madrid' > /etc/timezone \
  && dpkg-reconfigure --frontend noninteractive tzdata \
  && dpkg -i /influxdb_0.8.3_amd64.deb

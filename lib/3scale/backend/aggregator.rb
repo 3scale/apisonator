@@ -3,7 +3,7 @@ require '3scale/backend'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
-require '3scale/backend/aggregator/stats_batcher'
+require '3scale/backend/storage_stats'
 require '3scale/backend/aggregator/stats_keys'
 require '3scale/backend/aggregator/stats_job'
 
@@ -14,7 +14,6 @@ module ThreeScale
       include Backend::Cache
       include Backend::Alerts
       include Configurable
-      include StatsBatcher
       include StatsKeys
       extend self
 
@@ -22,16 +21,11 @@ module ThreeScale
         applications = Hash.new
         users        = Hash.new
 
-        ## this is just a temporary switch to be able to enable
-        ## disable reporting to mongodb you can active it or
-        ## deactivated:
-        ## storage.set("mongo_enabled","1") / storage.del("mongo_enabled")
-
-        Memoizer.memoize_block("mongo-enabled") do
-          @mongo_enabled = mongo_enabled?
+        Memoizer.memoize_block("stats-enabled") do
+          @stats_enabled = StorageStats.enabled?
         end
 
-        if @mongo_enabled
+        if @stats_enabled
           timenow = Time.now.utc
 
           bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
@@ -39,9 +33,9 @@ module ThreeScale
           @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
 
           if @@current_bucket == bucket
-            schedule_mongo_job = false
+            schedule_stats_job = false
           else
-            schedule_mongo_job = true
+            schedule_stats_job = true
             @@current_bucket = bucket
           end
         end
@@ -75,17 +69,17 @@ module ThreeScale
           @keys_doing_set_op.flatten!(1)
 
           ## here the pipelined redis increments have been sent
-          ## now we have to send the mongo ones
+          ## now we have to send the storage stats ones
 
           ## FIXME we had set operations :-/ This will only work when
           ## the key is on redis, it will not be true in the future
-          ## not live keys (stats only) will only be on mongodb. Will
+          ## not live keys (stats only) will only be on storage stats. Will
           ## require fix, or limit the usage of #set. In addition,
           ## set operations cannot coexist on increments on the same
           ## metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
-          if @mongo_enabled && @keys_doing_set_op.size > 0
+          if @stats_enabled && @keys_doing_set_op.size > 0
             @keys_doing_set_op.each do |item|
               key, value = item
 
@@ -120,9 +114,9 @@ module ThreeScale
         ## need to update the cached_status for for the transactor
         update_status_cache(applications, users)
 
-        ## the time bucket has elapsed, trigger a mongodb job
-        if @mongo_enabled
-          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_mongo_job)
+        ## the time bucket has elapsed, trigger a stats job
+        if @stats_enabled
+          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_stats_job)
         end
 
         ## Finally, let's ping the frontend if any event is pending
@@ -158,6 +152,10 @@ module ThreeScale
         @@current_bucket
       end
 
+      def stats_bucket_size
+        @@stats_bucket_size ||= (configuration.stats.bucket_size || 5)
+      end
+
       private
 
       def aggregate(transaction)
@@ -177,7 +175,7 @@ module ThreeScale
 
           value  = value.to_i
 
-          if @mongo_enabled
+          if @stats_enabled
             bucket_key = bucket_with_service_key(current_bucket, service_id)
           else
             bucket_key = ""
@@ -220,10 +218,10 @@ module ThreeScale
         values.flatten(1).reject(&:empty?)
       end
 
-      def add_to_copied_keys(cmd, mongo_bucket, key, value)
+      def add_to_copied_keys(cmd, bucket, key, value)
         set_keys = []
-        if @mongo_enabled
-          storage.sadd("keys_changed:#{mongo_bucket}", key)
+        if @stats_enabled
+          storage.sadd("keys_changed:#{bucket}", key)
           if cmd == :set
             @keys_doing_set_op << [key, value]
             set_keys += [key, value]
@@ -324,10 +322,6 @@ module ThreeScale
 
       def storage
         Storage.instance
-      end
-
-      def storage_mongo
-        StorageMongo.instance
       end
     end
   end

@@ -2,7 +2,7 @@
 
 task :environment do
   require '3scale/backend'
-  require '3scale/backend/aggregator/stats_checker'
+  require '3scale/backend/aggregator/stats_tasks'
 end
 
 def testable_environment?
@@ -119,75 +119,75 @@ end
 
 namespace :stats do
   namespace :panic_mode do
-    desc '!!! Delete all time buckets and keys after disabling mongo'
+    desc '!!! Delete all time buckets and keys after disabling storage stats'
     task :delete_all_buckets_and_keys => :environment do
-      puts ThreeScale::Backend::Aggregator.delete_all_buckets_and_keys_only_as_rake!
+      puts ThreeScale::Backend::Aggregator::StatsTasks.delete_all_buckets_and_keys_only_as_rake!
     end
 
-    desc 'Disable stats batch processing on mongo. Stops saving to mongo and to redis'
-    task :disable_mongo => :environment do
-      puts ThreeScale::Backend::Aggregator.disable_mongo
+    desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
+    task :disable_storage_stats => :environment do
+      puts ThreeScale::Backend::StorageStats.disable!
     end
 
-    desc 'Enable stats batch processing on mongo'
-    task :enable_mongo => :environment do
-      puts ThreeScale::Backend::Aggregator.enable_mongo
+    desc 'Enable stats batch processing on storage stats'
+    task :enable_storage_stats => :environment do
+      puts ThreeScale::Backend::StorageStats.enable!
     end
 
     desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
     task :insert_stats_job => :environment do
-      puts ThreeScale::Backend::Aggregator.schedule_one_stats_job
+      puts ThreeScale::Backend::Aggregator::StatsTasks.schedule_one_stats_job
     end
   end
 
   desc 'Number of stats buckets active in Redis'
   task :buckets_size => :environment do
-    puts ThreeScale::Backend::Aggregator.pending_buckets_size
+    puts ThreeScale::Backend::Aggregator::StatsInfo.pending_buckets_size
   end
 
   desc 'Number of keys in each stats bucket in Redis'
   task :buckets_info => :environment do
-    puts ThreeScale::Backend::Aggregator.pending_keys_by_bucket.inspect
+    puts ThreeScale::Backend::Aggregator::StatsInfo.pending_keys_by_bucket.inspect
   end
 
   desc 'Buckets currently failing to be processed'
   task :failed_buckets => :environment do
-    puts ThreeScale::Backend::Aggregator.failed_buckets
+    puts ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets
   end
 
   desc 'All buckets that failed to be processed at least once, even if ok now'
   task :failed_buckets_once => :environment do
-    puts ThreeScale::Backend::Aggregator.failed_buckets_at_least_once
+    puts ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets_at_least_once
   end
 
-  desc 'Activate saving to mongo.'
-  task :activate_saving_to_mongo => :environment do
-    puts ThreeScale::Backend::Aggregator.activate_mongo
+  desc 'Activate saving to storage stats.'
+  task :activate_saving_to_storage_stats => :environment do
+    puts ThreeScale::Backend::StorageStats.activate!
   end
 
-  desc 'Deactivate saving to mongo. Do only if mongo is down or acting funny. Data is still saved in redis.'
-  task :deactivate_saving_to_mongo => :environment do
-    puts ThreeScale::Backend::Aggregator.deactivate_mongo
+  desc 'Deactivate saving to storage stats. Do only if the storage stats is down or acting funny. Data is still saved in redis.'
+  task :deactivate_saving_to_storage_stats => :environment do
+    puts ThreeScale::Backend::StorageStats.deactivate!
   end
 
-  desc 'Are stats saving to mongo or just piling in redis?'
-  task :mongo_saving_active? => :environment do
-    puts ThreeScale::Backend::Aggregator.mongo_active?
+  desc 'Are stats saving to storage stats or just piling in redis?'
+  task :storage_stats_saving_active? => :environment do
+    puts ThreeScale::Backend::StorageStats.active?
   end
 
-  desc 'Is mongo batch processing enabled?'
-  task :mongo_enabled? => :environment do
-    puts ThreeScale::Backend::Aggregator.mongo_enabled?
+  desc 'Is storage stats batch processing enabled?'
+  task :storage_stats_enabled? => :environment do
+    puts ThreeScale::Backend::StorageStats.enabled?
   end
 
   desc 'Process failed buckets (one by one)'
   task :process_failed => :environment do
-    v = ThreeScale::Backend::Aggregator.failed_buckets
+    v = ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets
     if v.size==0
       puts "No failed buckets!"
     else
       puts "Saving bucket: #{v.first} ..."
-      ThreeScale::Backend::Aggregator.save_to_mongo(v.first)
+      ThreeScale::Backend::StorageStats.save_changed_keys(v.first)
       puts "Done"
     end
   end
@@ -209,10 +209,11 @@ namespace :stats do
       raise ArgumentError.new(ex_message)
     end
 
-    checker = ThreeScale::Backend::Aggregator::StatsChecker.new(args[:service_id],
-                                                                args[:app_id],
-                                                                args[:metric_id])
+    values = ThreeScale::Backend::Aggregator::StatsTasks.check_values(args[:service_id],
+                                                                      args[:app_id],
+                                                                      args[:metric_id],
+                                                                      timestamp)
 
-    puts checker.check(timestamp).inspect
+    puts values.inspect
   end
 end

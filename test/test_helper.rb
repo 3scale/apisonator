@@ -29,6 +29,8 @@ ThreeScale::Backend.configure do |config|
 
   config.stats.bucket_size  = 5
   config.notification_batch = 5
+
+  config.influxdb.database = "backend_test"
 end
 
 ThreeScale::Backend.configuration

@@ -4,7 +4,6 @@
 apt-get install -y python-software-properties
 apt-add-repository ppa:brightbox/ruby-ng
 apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10
-echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | tee -a /etc/apt/sources.list.d/10gen.list
 apt-get update
 
 # Basic config
@@ -22,8 +21,6 @@ ruby-switch --set ruby2.1
 
 # influxdb
 
-apt-get install -y mongodb-10gen
-service mongodb stop
 wget http://s3.amazonaws.com/influxdb/influxdb_0.8.3_amd64.deb
 dpkg -i influxdb_0.8.3_amd64.deb
 chown -R vagrant:vagrant /opt/influxdb
