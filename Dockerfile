@@ -28,4 +28,9 @@ ADD . /opt/backend
 
 RUN bundle config --local without development
 
+RUN apt-get -y -q install openssh-server \
+     && mkdir /var/run/sshd
+
+ADD docker/ssh /root/.ssh
+
 CMD script/ci

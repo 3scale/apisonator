@@ -1,9 +1,0 @@
-DEPENDENCIES
-  apt
-  redisio
-
-GRAPH
-  apt (2.3.10)
-  redisio (1.7.1)
-    ulimit (>= 0.1.2)
-  ulimit (0.3.2)
