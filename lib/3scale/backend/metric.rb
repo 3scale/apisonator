@@ -90,7 +90,7 @@ module ThreeScale
         end
 
         def delete(service_id, id)
-          name = storage.get(key(service_id, id, :name))
+          name = load_name(service_id, id)
           return false unless name and not name.empty?
           clear_cache(service_id, id)
 
