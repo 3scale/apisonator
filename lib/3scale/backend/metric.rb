@@ -28,11 +28,8 @@ module ThreeScale
         attr_writer :children
 
         def save
-          storage.set(id_key(service_id, name), id)
-          storage.set(key(service_id, id, :name), name)
-          storage.set(key(service_id, id, :parent_id), parent_id) if parent_id
-
-          storage.sadd(id_set_key(service_id), id)
+          save_attributes
+          save_to_list
 
           save_children
 
@@ -46,6 +43,16 @@ module ThreeScale
         end
 
         private
+
+        def save_attributes
+          storage.set(id_key(service_id, name), id)
+          storage.set(key(service_id, id, :name), name)
+          storage.set(key(service_id, id, :parent_id), parent_id) if parent_id
+        end
+
+        def save_to_list
+          storage.sadd(id_set_key(service_id), id)
+        end
 
         def save_children
           children.each do |child|
