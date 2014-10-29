@@ -139,14 +139,8 @@ module ThreeScale
         end
 
         def delete_data(service_id, id)
-          storage.srem(applications_set_key(service_id), id)
-
-          storage.del(storage_key(service_id, id, :state))
-          storage.del(storage_key(service_id, id, :plan_id))
-          storage.del(storage_key(service_id, id, :plan_name))
-          storage.del(storage_key(service_id, id, :user_required))
-          storage.del(storage_key(service_id, id, :redirect_url))
-          storage.del(storage_key(service_id, id, :version))
+          delete_set(service_id, id)
+          delete_attributes(service_id, id)
         end
 
         def clear_cache(service_id, id)
@@ -175,6 +169,19 @@ module ThreeScale
 
         def id_by_key_storage_key(service_id, key)
           encode_key("application/service_id:#{service_id}/key:#{key}/id")
+        end
+
+        def delete_set(service_id, id)
+          storage.srem(applications_set_key(service_id), id)
+        end
+
+        def delete_attributes(service_id, id)
+          storage.del(storage_key(service_id, id, :state))
+          storage.del(storage_key(service_id, id, :plan_id))
+          storage.del(storage_key(service_id, id, :plan_name))
+          storage.del(storage_key(service_id, id, :user_required))
+          storage.del(storage_key(service_id, id, :redirect_url))
+          storage.del(storage_key(service_id, id, :version))
         end
       end
 
