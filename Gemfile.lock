@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    3scale_backend (2.7.0)
+    3scale_backend (2.8.0)
       3scale_core (= 1.1.0)
       airbrake (= 3.1.16)
       builder (= 2.1.2)
@@ -71,7 +71,7 @@ GEM
     json (1.8.1)
     metaclass (0.0.4)
     method_source (0.8.2)
-    mime-types (2.4.1)
+    mime-types (2.4.3)
     mini_portile (0.6.0)
     minitest (4.7.5)
     mocha (0.13.3)
