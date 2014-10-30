@@ -42,7 +42,32 @@ $ start_twemproxy
 ...
 ```
 
-## Deploy
+## Integration flow
+
+This is our basic integration flow:
+
+1. Create a topic branch and add your changes there.
+2. Create a Pull Request. To accept a PR, we require:
+  1. Build in jenkins should be green.
+  2. Team should review and approve it.
+  3. Test the branch in preview environment. It should work correctly.
+3. Merge to master.
+4. Deploy to production.
+
+Our preferred way to proceed is merge & deploy, only one feature/fix per deploy. This way has a lot of benefits for us.
+But, there are no unbreakable rules, so if you have a good reason to deploy multiple things, go ahead.
+
+### Deploy in preview
+
+1. Update the version with ".pre" suffix.
+  1. Modify `lib/3scale/backend/version.rb`.
+  2. Execute `bundle install`.
+  3. GIT commit is not needed. This version is something provisional and it can be done locally.
+2. Package the project as a gem and upload it to our private gem server.
+You can do it executing: `script/release`
+3. Follow the steps described in deploy project.
+
+### Deploy in production
 
 1. Update the version.
   1. Modify `lib/3scale/backend/version.rb`.
@@ -51,3 +76,5 @@ $ start_twemproxy
 2. Package the project as a gem and upload it to our private gem server.
 You can do it executing: `script/release`
 3. Follow the steps described in deploy project.
+
+__Note:__ As you can see, here we have a process that we can automatize. This note is an invitation for bold developers. 
