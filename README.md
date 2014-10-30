@@ -7,24 +7,13 @@ This is 3scale's kick-ass ultra-scalable API management system backend.
 ### With vagrant
 
 1. Clone the project in your development workspace and cd to the directory.
-2. Install VirtualBox
-3. Install Vagrant (tested with v1.6.2 and v1.5.4).
-4. Add vagrant plugins:
-  1. omnibus plugin: `vagrant plugin install vagrant-omnibus`
-  2. berkshelf plugin: `vagrant plugin install vagrant-berkshelf --plugin-version 2.0.1`
-5. wait, joder: http://xkcd.com/303/
-6. Add ubuntu precise32 box: `vagrant box add https://vagrantcloud.com/ubuntu/precise32`
-7. Run vagrant up: `vagrant up`
-  - If you get an error in this step similar to: `Failed to mount folders in Linux guest. This is usually because
-the "vboxsf" file system is not available.` you need to execute some extra steps. If not, you can avoid them.
-  1. Enter to the VM: `vagrant ssh`
-  2. Symlink VboxGuestAdditions: `sudo ln -s /opt/VBoxGuestAdditions-4.3.10/lib/VBoxGuestAdditions /usr/lib/VBoxGuestAdditions`
-  3. Exit ssh.
-  4. Finish the provisioning: `vagrant reload --provision`
-8. Now, you have the VM ready to hack. `vagrant ssh`
-9. By default, your project is available in: /vagrant. `cd /vagrant`
-10. Install bundle dependencies: `bundle install`.
-11. Yay! That's all. You can for example, execute the tests: `bundle exec script/test`.
+2. Install Vagrant (tested with v1.6.2 and v1.5.4).
+3. Run vagrant up: `vagrant up --provider=docker`
+4. Now, you have a container ready to hack. `vagrant ssh`
+5. By default, your project is available in: /vagrant. `cd /vagrant`
+6. Yay! That's all. You can for example, execute the tests: `script/test`.
+
+We recommend developing locally and execute tests in container.
 
 ### Testing API users / backend from outside
 
@@ -53,7 +42,32 @@ $ start_twemproxy
 ...
 ```
 
-## Deploy
+## Integration flow
+
+This is our basic integration flow:
+
+1. Create a topic branch and add your changes there.
+2. Create a Pull Request. To accept a PR, we require:
+  1. Build in jenkins should be green.
+  2. Team should review and approve it.
+  3. Test the branch in preview environment. It should work correctly.
+3. Merge to master.
+4. Deploy to production.
+
+Our preferred way to proceed is merge & deploy, only one feature/fix per deploy. This way has a lot of benefits for us.
+But, there are no unbreakable rules, so if you have a good reason to deploy multiple things, go ahead.
+
+### Deploy in preview
+
+1. Update the version with ".pre" suffix.
+  1. Modify `lib/3scale/backend/version.rb`.
+  2. Execute `bundle install`.
+  3. GIT commit is not needed. This version is something provisional and it can be done locally.
+2. Package the project as a gem and upload it to our private gem server.
+You can do it executing: `script/release`
+3. Follow the steps described in deploy project.
+
+### Deploy in production
 
 1. Update the version.
   1. Modify `lib/3scale/backend/version.rb`.
@@ -62,3 +76,5 @@ $ start_twemproxy
 2. Package the project as a gem and upload it to our private gem server.
 You can do it executing: `script/release`
 3. Follow the steps described in deploy project.
+
+__Note:__ As you can see, here we have a process that we can automatize. This note is an invitation for bold developers. 
