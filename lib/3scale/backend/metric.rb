@@ -2,26 +2,8 @@ module ThreeScale
   module Backend
     module CoreMetric
       def self.included(base)
-        base.include InstanceMethods, KeyHelpers
-        base.extend ClassMethods, KeyHelpers
-      end
-
-      module KeyHelpers
-        def key(service_id, id, attribute)
-          encode_key("metric/service_id:#{service_id}/id:#{id}/#{attribute}")
-        end
-
-        def id_key(service_id, name)
-          encode_key("metric/service_id:#{service_id}/name:#{name}/id")
-        end
-
-        def id_set_key(service_id)
-          encode_key("metrics/service_id:#{service_id}/ids")
-        end
-
-        def metric_names_key(service_id)
-          encode_key("metrics/service_id:#{service_id}/metric_names")
-        end
+        base.include InstanceMethods
+        base.extend ClassMethods
       end
 
       module InstanceMethods
@@ -125,6 +107,27 @@ module ThreeScale
       include Memoizer::Decorator
       include Core::Storable
       include CoreMetric
+
+      module KeyHelpers
+        def key(service_id, id, attribute)
+          encode_key("metric/service_id:#{service_id}/id:#{id}/#{attribute}")
+        end
+
+        def id_key(service_id, name)
+          encode_key("metric/service_id:#{service_id}/name:#{name}/id")
+        end
+
+        def id_set_key(service_id)
+          encode_key("metrics/service_id:#{service_id}/ids")
+        end
+
+        def metric_names_key(service_id)
+          encode_key("metrics/service_id:#{service_id}/metric_names")
+        end
+      end
+
+      include KeyHelpers
+      extend KeyHelpers
 
       attr_accessor :service_id, :id, :parent_id, :name
 
