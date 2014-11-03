@@ -2,47 +2,7 @@ module ThreeScale
   module Backend
     module CoreMetric
       def self.included(base)
-        base.include InstanceMethods
         base.extend ClassMethods
-      end
-
-      module InstanceMethods
-        attr_writer :children
-
-        def save
-          save_attributes
-          save_to_list
-
-          save_children
-
-          self.class.clear_cache(service_id, id)
-
-          Service.incr_version(service_id)
-        end
-
-        def children
-          @children ||= []
-        end
-
-        private
-
-        def save_attributes
-          storage.set(id_key(service_id, name), id)
-          storage.set(key(service_id, id, :name), name)
-          storage.set(key(service_id, id, :parent_id), parent_id) if parent_id
-        end
-
-        def save_to_list
-          storage.sadd(id_set_key(service_id), id)
-        end
-
-        def save_children
-          children.each do |child|
-            child.service_id = service_id
-            child.parent_id = id
-            child.save
-          end
-        end
       end
 
       module ClassMethods
@@ -130,6 +90,22 @@ module ThreeScale
       extend KeyHelpers
 
       attr_accessor :service_id, :id, :parent_id, :name
+      attr_writer :children
+
+      def save
+        save_attributes
+        save_to_list
+
+        save_children
+
+        self.class.clear_cache(service_id, id)
+
+        Service.incr_version(service_id)
+      end
+
+      def children
+        @children ||= []
+      end
 
       def to_hash
         {
@@ -161,6 +137,26 @@ module ThreeScale
         super(service_id, metric_id)
       end
       memoize :load_name
+
+      private
+
+      def save_attributes
+        storage.set(id_key(service_id, name), id)
+        storage.set(key(service_id, id, :name), name)
+        storage.set(key(service_id, id, :parent_id), parent_id) if parent_id
+      end
+
+      def save_to_list
+        storage.sadd(id_set_key(service_id), id)
+      end
+
+      def save_children
+        children.each do |child|
+          child.service_id = service_id
+          child.parent_id = id
+          child.save
+        end
+      end
 
     end
   end
