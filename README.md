@@ -8,7 +8,7 @@ This is 3scale's kick-ass ultra-scalable API management system backend.
 
 1. Clone the project in your development workspace and cd to the directory.
 2. Install Vagrant (tested with v1.6.2 and v1.5.4).
-3. Run vagrant up: `vagrant up --provider=docker`
+3. Run vagrant up: `vagrant up`
 4. Now, you have a container ready to hack. `vagrant ssh`
 5. By default, your project is available in: /vagrant. `cd /vagrant`
 6. Yay! That's all. You can for example, execute the tests: `script/test`.
