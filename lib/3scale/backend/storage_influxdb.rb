@@ -108,7 +108,7 @@ module ThreeScale
         time_on_period = time.beginning_of_cycle(period.to_sym).to_i
         serie          = serie_name(service_id, metric_id, period, conditions)
 
-        find_event_by_serie_name(serie, time_on_period)
+        find_event_by_serie_name(serie, time_on_period, conditions)
       end
 
       # Drop all series.
@@ -130,8 +130,8 @@ module ThreeScale
 
       private
 
-      def serie_name(service_id, metric_id, period, conditions)
-        attrs  = attrs_for_serie_name(service_id, metric_id, period, conditions)
+      def serie_name(service_id, metric_id, period, metadata)
+        attrs  = attrs_for_serie_name(service_id, metric_id)
         suffix = period_name(period)
         prefix = attrs.inject("") do |acc, (k,v)|
           acc.tap do |obj|
@@ -139,18 +139,17 @@ module ThreeScale
             obj << [k,v].join("_")
           end
         end
+        prefix << "_applications" if metadata[:application]
+        prefix << "_end_users" if metadata[:user]
 
         "#{prefix}.#{suffix}"
       end
 
-      def attrs_for_serie_name(service_id, metric_id, period, conditions)
-        attributes = {
+      def attrs_for_serie_name(service_id, metric_id)
+        {
           service: service_id,
           metric:  metric_id,
         }
-        conditions.each { |k,v| attributes[k] ||= v }
-
-        attributes
       end
 
       def event_for_interval(key, value)
@@ -162,14 +161,16 @@ module ThreeScale
         event             = find_event(service_id, metric_id, period, timestamp, metadata)
         event           ||= new_event(service_id, metric_id, period, timestamp, metadata)
 
-        event.merge(value: value)
+        event.merge!(value: value)
       end
 
-      def new_event(service_id, metric_id, period, time, conditions)
-        time_on_period = time.beginning_of_cycle(period.to_sym).to_i
-        serie          = serie_name(service_id, metric_id, period, conditions)
+      # TODO: Add a method to filter/validate metadata?
 
-        { time: time_on_period, serie_name: serie }
+      def new_event(service_id, metric_id, period, time, metadata)
+        time_on_period = time.beginning_of_cycle(period.to_sym).to_i
+        serie          = serie_name(service_id, metric_id, period, metadata)
+
+        { time: time_on_period, serie_name: serie }.merge!(metadata)
       end
 
       def event_metadata(key)
@@ -185,7 +186,7 @@ module ThreeScale
       end
 
       def query(serie_name, query)
-        @client.query(query)[serie_name]
+        @client.query(query)[serie_name] || []
       rescue InfluxDB::Error => exception
         if exception.message =~ /Couldn\'t find series/
           []
@@ -194,18 +195,24 @@ module ThreeScale
         end
       end
 
-      def compose_query(serie_name, time, limit = nil)
+      def compose_query(serie_name, time, metadata, limit = nil)
         where = "WHERE time > #{time}s and time < #{time}s"
+        where = metadata.inject(where) do |acc, (field, val)|
+          acc << " AND "
+          acc << "#{field} = '#{val}'"
+
+          acc
+        end
         limit_statement = limit ? "LIMIT #{limit}" : ""
         "SELECT * FROM #{serie_name} #{where} #{limit_statement}"
       end
 
-      def find_event_by_serie_name(serie_name, time)
-        query_str = compose_query(serie_name, time, 1)
+      def find_event_by_serie_name(serie_name, time, metadata)
+        query_str = compose_query(serie_name, time, metadata, 1)
         event     = query(serie_name, query_str).first
 
         if event
-          event.symbolize_keys.merge(serie_name: serie_name)
+          event.symbolize_keys.merge!(serie_name: serie_name)
         end
       end
 

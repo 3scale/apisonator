@@ -183,25 +183,12 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     time_without_storage_stats = Time.now - t
 
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :month,  '20100501'))
-    assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp)
-
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :day,    '20100507'))
-    assert_equal nil, @storage_stats.get(1001, 3001, :day, timestamp)
-
     assert_equal cont.to_s, @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
-    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp)
-
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
-    assert_equal nil, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
-
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
-    assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
-
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
-    assert_equal nil, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
-
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
-    assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     good_enough = time_with_storage_stats < time_without_storage_stats * 1.5
 
