@@ -187,7 +187,7 @@ module ThreeScale
       def query(serie_name, query)
         @client.query(query)[serie_name]
       rescue InfluxDB::Error => exception
-        if exception.message =~ /Couldn't look up columns/
+        if exception.message =~ /Couldn\'t find series/
           []
         else
           raise exception
