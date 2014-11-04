@@ -5,12 +5,9 @@ module ThreeScale
     describe BackgroundJob do
       class FooJob < BackgroundJob
 
-        def self.perform_logged
+        def self.perform_logged(*args)
           sleep 0.15
-        end
-
-        def self.success_log_message
-          'job was successful'
+          @success_log_message = 'job was successful'
         end
       end
 

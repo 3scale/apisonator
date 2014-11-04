@@ -8,7 +8,7 @@ module ThreeScale
         def perform(*args)
           @args = args || []
           with_logging do
-            perform_logged
+            perform_logged(*args)
           end
         end
 
@@ -36,7 +36,7 @@ module ThreeScale
         end
 
         def success_log_message
-          "OVERLOAD THIS "
+          @success_log_message || "OVERLOAD THIS "
         end
 
         def log_class_name

@@ -3,21 +3,20 @@ module ThreeScale
     module Transactor
 
       # Job for reporting transactions.
-      class ReportJob
+      class ReportJob < BackgroundJob
         @queue = :priority
 
-        def self.perform(service_id, raw_transactions, enqueue_time)
-          start_time = Time.now.getutc
+        def self.perform_logged(service_id, raw_transactions, enqueue_time)
           transactions, logs = parse_transactions(service_id, raw_transactions)
           ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
           LogRequestJob.perform(logs) if !logs.nil? && logs.size > 0
 
-          stats_mem = Memoizer.stats
-          end_time = Time.now.getutc
-          Worker.logger.info("ReportJob #{service_id} #{transactions.size} #{logs.size} #{(end_time-start_time).round(5)} #{(end_time.to_f-enqueue_time).round(5)} #{stats_mem[:size]} #{stats_mem[:count]} #{stats_mem[:hits]}")
+          @success_log_message = "#{transactions.size} #{logs.size} "
+
         rescue ThreeScale::Core::Error, Error => error
           ErrorStorage.store(service_id, error)
           Worker.logger.error("ReportJob #{service_id} #{error}")
+
         rescue Exception => error
           if error.class == ArgumentError && error.message == "invalid byte sequence in UTF-8"
             ErrorStorage.store(service_id, NotValidData.new)
