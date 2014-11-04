@@ -39,7 +39,7 @@ GEM
     atomic (1.1.16)
     backports (3.6.3)
     builder (2.1.2)
-    byebug (3.4.0)
+    byebug (3.5.1)
       columnize (~> 0.8)
       debugger-linecache (~> 1.2)
       slop (~> 3.6)
