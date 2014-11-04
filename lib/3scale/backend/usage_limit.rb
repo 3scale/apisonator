@@ -57,12 +57,12 @@ module ThreeScale
           Service.incr_version(service_id)
         end
 
+        private
+
         def key(service_id, plan_id, metric_id, period)
           encode_key("usage_limit/service_id:#{service_id}/plan_id:#{plan_id}" +
                      "/metric_id:#{metric_id}/#{period}")
         end
-
-        private
 
         def pairs_of_metric_id_and_period(metric_ids)
           pairs = []
