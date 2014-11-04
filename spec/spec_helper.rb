@@ -12,6 +12,8 @@ RSpec.configure do |config|
     end
   end
 
+  config.mock_with :rspec
+
   config.before :each do
     ThreeScale::Backend::Storage.instance(true).flushdb
     ThreeScale::Backend::Memoizer.reset!
