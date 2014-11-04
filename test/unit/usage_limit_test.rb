@@ -55,6 +55,15 @@ class UsageLimitTest < Test::Unit::TestCase
 
     usage_limits = UsageLimit.load_all(2001, 3001)
     assert_equal 3, usage_limits.count
+    # test memoization is cleared when deleting and saving
+    someul = usage_limits.sample
+    UsageLimit.delete(someul.service_id, someul.plan_id, someul.metric_id, someul.period)
+    usage_limits = UsageLimit.load_all(2001, 3001)
+    assert_equal 2, usage_limits.count
+    # take care not to overwrite metric/period combination by using year
+    UsageLimit.save(service_id: 2001, plan_id: 3001, metric_id: 4002, year: 10000)
+    usage_limits = UsageLimit.load_all(2001, 3001)
+    assert_equal 3, usage_limits.count
   end
 
   def test_load_all_returns_empty_array_if_there_are_no_metrics
