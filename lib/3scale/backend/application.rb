@@ -1,39 +1,41 @@
 module ThreeScale
   module Backend
-    module CoreApplication
-      def self.included(base)
-        base.include InstanceMethods
-        base.extend ClassMethods
+    class Application
+      module Sets
+        include ThreeScale::Backend::HasSet
+        has_set :referrer_filters
+        has_set :keys
       end
 
-      module InstanceMethods
-        def user_required?
-          @user_required
-        end
+      include Sets
+      include Core::Storable
 
-        def save
-          storage.set(storage_key(:state), state.to_s) if state
-          storage.set(storage_key(:plan_id), plan_id) if plan_id
-          storage.set(storage_key(:plan_name), plan_name) if plan_name
-          storage.set(storage_key(:user_required), user_required? ? 1 : 0)
-          storage.set(storage_key(:redirect_url), redirect_url) if redirect_url
+      attr_accessor :service_id, :id, :state, :plan_id, :plan_name,
+        :user_required, :redirect_url, :version
 
-          storage.sadd(applications_set_key(service_id), id)
-          self.version = self.class.incr_version(service_id, id).to_s
-          self.class.clear_cache(service_id, id)
-          Memoizer.memoize(Memoizer.build_key(self.class, :exists?, service_id, id), state)
-        end
-
-        def storage_key(attribute)
-          self.class.storage_key(service_id, id, attribute)
-        end
-
-        def applications_set_key(service_id)
-          self.class.applications_set_key(service_id)
-        end
+      def to_hash
+        {
+          service_id: service_id,
+          id: id,
+          state: state,
+          plan_id: plan_id,
+          plan_name: plan_name,
+          user_required: user_required,
+          redirect_url: redirect_url,
+          version: version
+        }
       end
 
-      module ClassMethods
+      def update(attributes)
+        attributes.each do |attr, val|
+          public_send("#{attr}=", val)
+        end
+        self
+      end
+
+      class << self
+        include Memoizer::Decorator
+
         def load(service_id, id)
           return nil unless service_id and id
           values = storage.mget(storage_key(service_id, id, :state),
@@ -60,10 +62,17 @@ module ThreeScale
               redirect_url: redirect_url,
               version: self.get_version(service_id, id))
         end
+        memoize :load
+
+        def load!(service_id, app_id)
+          load(service_id, app_id) or raise ApplicationNotFound, app_id
+        end
+        memoize :load!
 
         def load_id_by_key(service_id, key)
           storage.get(id_by_key_storage_key(service_id, key))
         end
+        memoize :load_id_by_key
 
         def save_id_by_key(service_id, key, id)
           raise ApplicationHasInconsistentData.new(id, key) if [service_id, id, key].any?(&:blank?)
@@ -78,9 +87,42 @@ module ThreeScale
           end
         end
 
+        def load_by_id_or_user_key!(service_id, app_id, user_key)
+          case
+          when app_id && user_key
+            raise AuthenticationError
+          when app_id
+            load!(service_id, app_id)
+          when user_key
+            app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
+            load(service_id, app_id) or raise UserKeyInvalid, user_key
+          else
+            raise ApplicationNotFound
+          end
+        end
+
+        def extract_id!(service_id, app_id, user_key, access_token)
+          case
+          when app_id && user_key
+            raise AuthenticationError
+          when app_id
+            exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
+          when user_key
+            app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
+            exists?(service_id, app_id) and app_id or raise UserKeyInvalid, user_key
+          when access_token
+            ## let's not memoize the oauthaccesstoken since this is supposed to change often
+            app_id = OAuthAccessTokenStorage.get_app_id(service_id, access_token) or raise AccessTokenInvalid, access_token
+            exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
+          else
+            raise ApplicationNotFound
+          end
+        end
+
         def exists?(service_id, id)
           storage.exists(storage_key(service_id, id, :state))
         end
+        memoize :exists?
 
         def get_version(service_id, id)
           storage.get(storage_key(service_id, id, :version))
@@ -97,14 +139,8 @@ module ThreeScale
         end
 
         def delete_data(service_id, id)
-          storage.srem(applications_set_key(service_id), id)
-
-          storage.del(storage_key(service_id, id, :state))
-          storage.del(storage_key(service_id, id, :plan_id))
-          storage.del(storage_key(service_id, id, :plan_name))
-          storage.del(storage_key(service_id, id, :user_required))
-          storage.del(storage_key(service_id, id, :redirect_url))
-          storage.del(storage_key(service_id, id, :version))
+          delete_set(service_id, id)
+          delete_attributes(service_id, id)
         end
 
         def clear_cache(service_id, id)
@@ -135,97 +171,40 @@ module ThreeScale
           encode_key("application/service_id:#{service_id}/key:#{key}/id")
         end
 
-      end
-
-    end
-
-    class Application
-      module Sets
-        include ThreeScale::Backend::HasSet
-        has_set :referrer_filters
-        has_set :keys
-      end
-
-      include Sets
-      include Core::Storable
-      include Memoizer::Decorator
-      include CoreApplication
-
-      attr_accessor :service_id, :id, :state, :plan_id, :plan_name,
-        :user_required, :redirect_url, :version
-
-      def to_hash
-        {
-          service_id: service_id,
-          id: id,
-          state: state,
-          plan_id: plan_id,
-          plan_name: plan_name,
-          user_required: user_required,
-          redirect_url: redirect_url,
-          version: version
-        }
-      end
-
-      def update(attributes)
-        attributes.each do |attr, val|
-          public_send("#{attr}=", val)
+        def delete_set(service_id, id)
+          storage.srem(applications_set_key(service_id), id)
         end
-        self
-      end
 
-      def self.load!(service_id, app_id)
-        load(service_id, app_id) or raise ApplicationNotFound, app_id
-      end
-      memoize :load!
-
-      def self.load(service_id, app_id)
-        super(service_id, app_id)
-      end
-      memoize :load
-
-      def self.load_id_by_key(service_id, user_key)
-        super(service_id, user_key)
-      end
-      memoize :load_id_by_key
-
-      def self.exists?(service_id, app_id)
-        super(service_id, app_id)
-      end
-      memoize :exists?
-
-      def self.load_by_id_or_user_key!(service_id, app_id, user_key)
-
-        case
-
-        when app_id && user_key
-          raise AuthenticationError
-        when app_id
-          load!(service_id, app_id)
-        when user_key
-          app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
-          load(service_id, app_id) or raise UserKeyInvalid, user_key
-        else
-          raise ApplicationNotFound
+        def delete_attributes(service_id, id)
+          storage.del(storage_key(service_id, id, :state))
+          storage.del(storage_key(service_id, id, :plan_id))
+          storage.del(storage_key(service_id, id, :plan_name))
+          storage.del(storage_key(service_id, id, :user_required))
+          storage.del(storage_key(service_id, id, :redirect_url))
+          storage.del(storage_key(service_id, id, :version))
         end
       end
 
-      def self.extract_id!(service_id, app_id, user_key, access_token)
-        case
-        when app_id && user_key
-          raise AuthenticationError
-        when app_id
-          exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
-        when user_key
-          app_id = load_id_by_key(service_id, user_key) or raise UserKeyInvalid, user_key
-          exists?(service_id, app_id) and app_id or raise UserKeyInvalid, user_key
-        when access_token
-          ## let's not memoize the oauthaccesstoken since this is supposed to change often
-          app_id = OAuthAccessTokenStorage.get_app_id(service_id, access_token) or raise AccessTokenInvalid, access_token
-          exists?(service_id, app_id) and app_id or raise ApplicationNotFound, app_id
-        else
-          raise ApplicationNotFound
-        end
+      def user_required?
+        @user_required
+      end
+
+      def save
+        persist_attributes
+        persist_set
+
+        self.version = self.class.incr_version(service_id, id).to_s
+        self.class.clear_cache(service_id, id)
+
+        Memoizer.memoize(Memoizer.build_key(self.class, :exists?, service_id, id), state)
+      end
+
+      def storage_key(attribute)
+        self.class.storage_key(service_id, id, attribute)
+      end
+
+      def applications_set_key(service_id)
+        self.class.applications_set_key(service_id)
       end
 
       def metric_names
@@ -268,9 +247,22 @@ module ThreeScale
         super(value)
       end
 
-
       def active?
         state == :active
+      end
+
+      private
+
+      def persist_attributes
+        storage.set(storage_key(:state), state.to_s) if state
+        storage.set(storage_key(:plan_id), plan_id) if plan_id
+        storage.set(storage_key(:plan_name), plan_name) if plan_name
+        storage.set(storage_key(:user_required), user_required? ? 1 : 0)
+        storage.set(storage_key(:redirect_url), redirect_url) if redirect_url
+      end
+
+      def persist_set
+        storage.sadd(applications_set_key(service_id), id)
       end
     end
   end
