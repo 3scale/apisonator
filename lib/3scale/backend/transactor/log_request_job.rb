@@ -9,6 +9,7 @@ module ThreeScale
         def self.perform_logged(transactions, enqueue_time)
           transactions = preprocess(transactions)
           LogRequestStorage.store_all(transactions)
+          @success_log_message = "#{transactions.size} "
         end
 
         private
