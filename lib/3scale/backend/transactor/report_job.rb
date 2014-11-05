@@ -9,7 +9,9 @@ module ThreeScale
         def self.perform_logged(service_id, raw_transactions, enqueue_time)
           transactions, logs = parse_transactions(service_id, raw_transactions)
           ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
-          LogRequestJob.perform(logs) if !logs.nil? && logs.size > 0
+          unless logs.nil? || logs.empty?
+            Resque.enqueue(LogRequestJob, logs, Time.now.getutc.to_f)
+          end
 
           @success_log_message = "#{transactions.size} #{logs.size} "
 

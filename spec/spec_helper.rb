@@ -1,6 +1,8 @@
 require 'rspec'
+require 'resque_spec'
 
 require_relative '../lib/3scale/backend.rb'
+require_relative '../test/test_helpers/sequences.rb'
 
 RSpec.configure do |config|
   config.before :suite do

@@ -40,7 +40,7 @@ class TransactorTest < Test::Unit::TestCase
                       '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
                       Time.utc(2011, 12, 12, 11, 48).to_f]
       end
-                    
+
   end
 
   test 'report queues transactions to report with explicit service id' do
@@ -55,7 +55,7 @@ class TransactorTest < Test::Unit::TestCase
                       {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
                       '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
                       Time.utc(2011, 12, 12, 11, 48).to_f]
-    end                  
+    end
   end
 
 
@@ -81,10 +81,10 @@ class TransactorTest < Test::Unit::TestCase
                                                'usage'  => {'hits' => 1}},
                                        '1' => {'app_id' => @application_two.id,
                                                'usage'  => {'hits' => 1}})
-                                               
+
       ## processes all the pending notifyjobs.
       Transactor.process_batch(0,{:all => true})
-      
+
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/create_multiple' => 1,
@@ -103,7 +103,7 @@ class TransactorTest < Test::Unit::TestCase
 
       ## processes all the pending notifyjobs.
       Transactor.process_batch(0,{:all => true})
-                                               
+
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/create_multiple' => 1,
@@ -135,7 +135,7 @@ class TransactorTest < Test::Unit::TestCase
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 3}})
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
       Transactor.process_batch(0,{:all => true})
       Resque.run!
@@ -146,7 +146,7 @@ class TransactorTest < Test::Unit::TestCase
                         0 => {'app_id' => @application_one.id,
                               'usage'  => {'hits' => 2}})
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
       Transactor.process_batch(0,{:all => true})
       Resque.run!
@@ -155,7 +155,7 @@ class TransactorTest < Test::Unit::TestCase
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       status, status_xml, status_result = Transactor.authorize(@provider_key, :app_id => @application_one.id)
-      
+
       if not status.nil?
         assert_equal 2, status.usage_reports.count
 
@@ -172,7 +172,7 @@ class TransactorTest < Test::Unit::TestCase
         assert_equal 200,    report_day.max_value
       else
 
-        ## this means it comes from the cache, 
+        ## this means it comes from the cache,
         ## warning: need to reproduce the above asserts for xml
         assert_not_nil status_xml
         assert_not_nil status_result
@@ -183,7 +183,7 @@ class TransactorTest < Test::Unit::TestCase
         assert_equal  tmp1, nil
         assert_equal  tmp2, nil
 
-        assert_equal status_xml, status.to_xml                
+        assert_equal status_xml, status.to_xml
 
       end
     end
@@ -217,7 +217,7 @@ class TransactorTest < Test::Unit::TestCase
       assert_equal  tmp1, nil
       assert_equal  tmp2, nil
 
-      assert_equal status_xml, status.to_xml   
+      assert_equal status_xml, status.to_xml
 
       ## warning: need to reproduce the above asserts for xml
     end
@@ -295,7 +295,7 @@ class TransactorTest < Test::Unit::TestCase
       assert_equal  tmp1, nil
       assert_equal  tmp2, nil
 
-      assert_equal status_xml, status.to_xml   
+      assert_equal status_xml, status.to_xml
 
       ## warning: need to reproduce the above asserts for xml
     end
@@ -350,7 +350,7 @@ class TransactorTest < Test::Unit::TestCase
 
       ## processes all the pending notifyjobs.
       Transactor.process_batch(0,{:all => true})
-      
+
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
                      {'transactions/authorize' => 1},
