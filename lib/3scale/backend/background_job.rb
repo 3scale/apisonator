@@ -2,7 +2,6 @@ module ThreeScale
   module Backend
 
     class BackgroundJob
-      @queue = :main
 
       class << self
         def perform(*args)

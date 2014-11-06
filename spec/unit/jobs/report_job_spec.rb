@@ -1,4 +1,4 @@
-require_relative '../spec_helper'
+require_relative '../../spec_helper'
 
 module ThreeScale
   module Backend
@@ -9,7 +9,7 @@ module ThreeScale
         before { ThreeScale::Backend::Worker.new }
 
         describe '.perform' do
-          let(:service_id)       { 6 }
+          let(:service_id)       { 1000 }
           let(:raw_transactions) { [{}] }
           let(:enqueue_time)     { Time.now.to_f }
 
