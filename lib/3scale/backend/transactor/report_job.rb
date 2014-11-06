@@ -10,10 +10,10 @@ module ThreeScale
           transactions, logs = parse_transactions(service_id, raw_transactions)
           ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
           unless logs.nil? || logs.empty?
-            Resque.enqueue(LogRequestJob, logs, Time.now.getutc.to_f)
+            Resque.enqueue(LogRequestJob, service_id, logs, Time.now.getutc.to_f)
           end
 
-          @success_log_message = "#{transactions.size} #{logs.size} "
+          @success_log_message = "#{service_id} #{transactions.size} #{logs.size} "
 
         rescue ThreeScale::Core::Error, Error => error
           ErrorStorage.store(service_id, error)

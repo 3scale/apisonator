@@ -6,21 +6,21 @@ module ThreeScale
       class LogRequestJob < BackgroundJob
         @queue = :main
 
-        def self.perform_logged(transactions, enqueue_time)
-          transactions = preprocess(transactions)
-          LogRequestStorage.store_all(transactions)
-          @success_log_message = "#{transactions.size} "
+        def self.perform_logged(service_id, logs, enqueue_time)
+          logs = preprocess(logs)
+          LogRequestStorage.store_all(logs)
+          @success_log_message = "#{service_id} #{logs.size} "
         end
 
         private
 
-        def self.preprocess(transactions)
-          transactions.map do |transaction|
-            transaction = transaction.symbolize_keys
-            transaction[:timestamp] = parse_timestamp(transaction[:timestamp])
-            transaction[:log] = clean_entry_log(transaction[:log])
-            transaction[:usage] = clean_entry_usage(transaction[:usage])
-            transaction
+        def self.preprocess(logs)
+          logs.map do |log|
+            log = log.symbolize_keys
+            log[:timestamp] = parse_timestamp(log[:timestamp])
+            log[:log] = clean_entry_log(log[:log])
+            log[:usage] = clean_entry_usage(log[:usage])
+            log
           end
         end
 

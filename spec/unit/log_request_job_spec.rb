@@ -14,7 +14,7 @@ module ThreeScale
               args.first[:usage].should == "hits: 1, other: 6, "
             end
 
-            LogRequestJob.perform([usage: {'hits' => 1, 'other' => 6}, log: {}],
+            LogRequestJob.perform(1, [usage: {'hits' => 1, 'other' => 6}, log: {}],
               Time.now.getutc.to_f)
           end
 
@@ -26,7 +26,7 @@ module ThreeScale
               args.first[:log]['response'].should == "N/A"
             end
 
-            LogRequestJob.perform([log: {}], Time.now.getutc.to_f)
+            LogRequestJob.perform(1, [log: {}], Time.now.getutc.to_f)
           end
 
           it 'passes non-empty data' do
@@ -37,7 +37,7 @@ module ThreeScale
               args.first[:log]['response'].should == "<xml>response</xml>"
             end
 
-            LogRequestJob.perform([log: {'request' => '/request?bla=bla&',
+            LogRequestJob.perform(1, [log: {'request' => '/request?bla=bla&',
               'code' => '200', 'response' => '<xml>response</xml>'}],
               Time.now.getutc.to_f)
           end
@@ -59,7 +59,7 @@ module ThreeScale
               args.first[:log]['response'].length.should be < long_response.length
             end
 
-            LogRequestJob.perform([log: {'request' => long_request,
+            LogRequestJob.perform(1, [log: {'request' => long_request,
               'code' => long_code, 'response' => long_response}],
               Time.now.getutc.to_f)
           end
