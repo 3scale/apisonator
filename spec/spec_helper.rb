@@ -1,6 +1,8 @@
 require 'rspec'
+require 'resque_spec'
 
 require_relative '../lib/3scale/backend.rb'
+require_relative '../test/test_helpers/sequences.rb'
 
 RSpec.configure do |config|
   config.before :suite do
@@ -11,6 +13,8 @@ RSpec.configure do |config|
       ]
     end
   end
+
+  config.mock_with :rspec
 
   config.before :each do
     ThreeScale::Backend::Storage.instance(true).flushdb

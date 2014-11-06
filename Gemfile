@@ -9,6 +9,7 @@ group :test do
   gem 'nokogiri',    '~> 1.6.2'
   gem 'rack-test',   '~> 0.6.2'
   gem 'resque_unit', '~> 0.4.4'
+  gem 'resque_spec', '~> 0.15.0'
   gem 'timecop',     '~> 0.5.9.2'
   gem 'codeclimate-test-reporter', '~> 0.3.0', require: nil
   gem 'geminabox', require: false

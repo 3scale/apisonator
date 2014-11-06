@@ -7,14 +7,8 @@ module Transactor
     def setup
       Storage.instance(true).flushdb
 
-      @service_id = next_id
-
-      @metric_id = next_id
+      @service_id, @metric_id, @plan_id, @application_id = (1..4).map{ next_id }
       Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
-
-      @plan_id = next_id
-
-      @application_id = next_id
       Application.save(:id         => @application_id,
                        :service_id => @service_id,
                        :state      => :active,

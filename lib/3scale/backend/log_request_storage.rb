@@ -27,26 +27,25 @@ module ThreeScale
       def store(transaction)
         key_service = queue_key_service(transaction[:service_id])
         key_app = queue_key_application(transaction[:service_id], transaction[:application_id])
-  
-        begin 
+
+        begin
           value = encode(:application_id => transaction[:application_id],
-                        :service_id     => transaction[:service_id],   
+                        :service_id     => transaction[:service_id],
                         :log            => transaction[:log],
                         :usage          => transaction[:usage],
                         :timestamp      => transaction[:timestamp])
           decode(value)
-          
-        rescue Yajl::ParseError => e
+
+        rescue Yajl::ParseError
           log = {'request' => 'Error: the log entry could not be stored. Please use UTF8 encoding.',
                  'response' => 'N/A',
                  'code' => 'N/A'}
           value = encode(:application_id => transaction[:application_id],
-                        :service_id     => transaction[:service_id],   
+                        :service_id     => transaction[:service_id],
                         :log            => log,
                         :usage          => transaction[:usage],
                         :timestamp      => transaction[:timestamp])
         end
-                       
 
         storage.lpush(key_service,value)
         storage.ltrim(key_service, 0, LIMIT_PER_SERVICE - 1)
@@ -55,7 +54,6 @@ module ThreeScale
         storage.lpush(key_app,value)
         storage.ltrim(key_app, 0, LIMIT_PER_APP - 1)
         storage.expire(key_app,REQUEST_TTL)
-
       end
 
       def list_by_service(service_id)
@@ -84,8 +82,6 @@ module ThreeScale
         storage.del(queue_key_application(service_id, application_id))
       end
 
-      
-
       private
 
       def queue_key_service(service_id)
@@ -95,7 +91,6 @@ module ThreeScale
       def queue_key_application(service_id, application_id)
         "logs/service_id:#{service_id}/app_id:#{application_id}"
       end
-
     end
   end
 end
