@@ -17,12 +17,13 @@ module ThreeScale
 
         rescue ThreeScale::Core::Error, Error => error
           ErrorStorage.store(service_id, error)
-          Worker.logger.error("ReportJob #{service_id} #{error}")
-
+          @error_log_message = "#{service_id} #{error}"
         rescue Exception => error
-          if error.class == ArgumentError && error.message == "invalid byte sequence in UTF-8"
+          if error.class == ArgumentError &&
+              error.message == "invalid byte sequence in UTF-8"
+
             ErrorStorage.store(service_id, NotValidData.new)
-            Worker.logger.error("ReportJob #{service_id} #{error}")
+            @error_log_message = "#{service_id} #{error}"
           else
             raise error
           end
@@ -41,8 +42,8 @@ module ThreeScale
               if !service_id.nil? && !user_id.nil? && !user_id.empty?
                 ser ||= Service.load_by_id(service_id)
                 if !ser.nil? && ser.user_registration_required? && ser.default_user_plan_id.nil?
-                  ## this means that end_user_plans are not enabled for the service, so passing user_id
-                  ## should raise an error
+                  # this means that end_user_plans are not enabled for the service, so passing user_id
+                  # should raise an error
                   raise ServiceCannotUseUserId.new(service_id)
                 end
               end
@@ -50,7 +51,7 @@ module ThreeScale
               u = raw_transaction['usage']
 
               if !u.nil? && !u.empty?
-                ## makes no sense to process a transaction if no usage is passed
+                # makes no sense to process a transaction if no usage is passed
                 transactions << {
                   :service_id     => service_id,
                   :application_id => application_id,
@@ -61,7 +62,7 @@ module ThreeScale
 
               r = raw_transaction['log']
               if !r.nil? && !r.empty? && !r['request'].nil?
-                ## here we don't care about the usage, but log needs to be passed
+                # here we don't care about the usage, but log needs to be passed
                 logs << {
                   :service_id     => service_id,
                   :application_id => application_id,
