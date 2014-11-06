@@ -30,12 +30,13 @@ module ThreeScale
           end_time = Time.now.getutc
 
           Worker.logger.info("#{log_class_name} " + success_log_message +
-            "#{(end_time - start_time).round(5)} #{(end_time.to_f - enqueue_time).round(5)} "+
+            "#{(end_time - start_time).round(5)} " +
+            "#{(end_time.to_f - enqueue_time).round(5)} "+
             "#{stats_mem[:size]} #{stats_mem[:count]} #{stats_mem[:hits]}")
         end
 
         def success_log_message
-          @success_log_message || "OVERLOAD THIS "
+          @success_log_message or raise("This should be overloaded.")
         end
 
         def log_class_name

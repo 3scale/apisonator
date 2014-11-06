@@ -11,7 +11,11 @@ module ThreeScale
         end
       end
 
-      describe 'logging' do
+      class BarJob < BackgroundJob
+        def self.perform_logged(*args); end
+      end
+
+      describe 'logging a proper Job' do
         before do
           allow(Worker).to receive(:logger).and_return(
             ::Logger.new(@log = StringIO.new))
@@ -29,6 +33,15 @@ module ThreeScale
 
         it 'logs execution time' do
           @log.read.should =~ /0\.15/
+        end
+      end
+
+      describe 'invalid Job' do
+        before { ThreeScale::Backend::Worker.new }
+
+        it 'complains when you don\'t set a log message' do
+          expect { BarJob.perform() }.to raise_error(
+            RuntimeError, "This should be overloaded.")
         end
       end
     end
