@@ -9,7 +9,10 @@ module ThreeScale
         @queue = :stats
 
         def self.perform_logged(bucket, enqueue_time)
-          return unless StorageStats.enabled? && StorageStats.active?
+          unless StorageStats.enabled? && StorageStats.active?
+            @success_log_message = "#{bucket} StorageStats-not-active "
+            return
+          end
 
           buckets_to_save = if bucket == "inf"
             StatsInfo.get_old_buckets_to_process(bucket)
