@@ -22,10 +22,10 @@ module ThreeScale
         end
 
         def with_logging
+          @success_log_message = @error_log_message = nil
+
           start_time = Time.now.getutc
-
           yield
-
           stats_mem = Memoizer.stats
           end_time = Time.now.getutc
 
