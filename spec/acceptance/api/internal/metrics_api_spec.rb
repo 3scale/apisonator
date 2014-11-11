@@ -110,21 +110,4 @@ resource 'Metrics (prefix: /services/:service_id/metrics)' do
 
   end
 
-  # XXX This API should go away once UsageLimit is ported to Internal API
-  get '/services/:service_id/metrics/all' do
-    parameter :service_id, 'Service ID', required: true
-
-    let(:service_id) { '7575' }
-    let(:id) { '100' }
-    let(:another_id) { '101' }
-
-    example 'Get all Metric IDs for a Service' do
-      ThreeScale::Backend::Metric.save(service_id: service_id, id: another_id,
-                                       name: 'another_name')
-      do_request
-      status.should == 200
-      response_json['metric']['ids'].should == [id, another_id]
-    end
-  end
-
 end
