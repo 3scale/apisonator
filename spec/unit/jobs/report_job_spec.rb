@@ -30,7 +30,7 @@ module ThreeScale
           context 'when a core exception is raised' do
             before do
               ReportJob.should_receive(:parse_transactions) {
-                raise ThreeScale::Core::ServiceRequiresRegisteredUser.new(service_id)
+                raise ThreeScale::Backend::ServiceRequiresRegisteredUser.new(service_id)
               }
             end
 
