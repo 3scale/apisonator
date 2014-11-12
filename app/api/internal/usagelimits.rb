@@ -1,6 +1,23 @@
 module ThreeScale
   module Backend
     module API
+      # Note: ideally this URL should NOT look like this.
+      #
+      # We have it this way because the entities don't fit a hierarchical
+      # scheme since their relations are complex:
+      #
+      # * We don't have UsageLimit ID's per se
+      # * Plan is a denormalized entity in backend
+      # * Metrics need to be loaded from a given Service
+      # * But neither Plan nor Metric are nested wrt each other
+      # * And Service has no other use than being able to load a Metric
+      #
+      # In the end no single URL shape is pleasing enough: specifying some
+      # needed IDs as parameters feels wrong because of the reasons above, but
+      # adding them to the URL makes for really long URLs with no clear
+      # hierarchy for nesting. We chose the latter, but could have chosen almost
+      # any workable form.
+      #
       internal_api '/services/:service_id/plans/:plan_id/usagelimits' do
         module UsageLimitsHelper
           def self.to_hash(service_id, plan_id, metric_id, period, value)
