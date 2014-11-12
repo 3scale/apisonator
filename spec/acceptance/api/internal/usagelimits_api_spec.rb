@@ -5,14 +5,15 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
+  let(:service_id) { '7575' }
+  let(:plan_id) { '100' }
+
   before do
-    @service_id = '7575'
-    @plan_id = '100'
-    ThreeScale::Backend::Metric.delete(@service_id, '100')
-    ThreeScale::Backend::Metric.delete(@service_id, '101')
-    metric = ThreeScale::Backend::Metric.save(service_id: @service_id, id: '100',
+    ThreeScale::Backend::Metric.delete(service_id, '100')
+    ThreeScale::Backend::Metric.delete(service_id, '101')
+    metric = ThreeScale::Backend::Metric.save(service_id: service_id, id: '100',
                                                  name: 'hits')
-    metric_alt = ThreeScale::Backend::Metric.save(service_id: @service_id, id: '101',
+    metric_alt = ThreeScale::Backend::Metric.save(service_id: service_id, id: '101',
                                                    name: 'ads')
     @metric_h = { metric => { year: 1000, month: 200 },
                   metric_alt => { month: 100, day: 10 } }
@@ -26,9 +27,6 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
     parameter :plan_id, 'Plan ID', required: true
     parameter :metric_id, 'Metric ID', required: true
     parameter :period, 'Period', required: true
-
-    let(:service_id) { @service_id }
-    let(:plan_id) { @plan_id }
 
     example 'Get UsageLimits' do
       @metric_h.each do |m, periods|
@@ -51,8 +49,6 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
     parameter :period, 'Period', required: true
     parameter :usagelimit, 'UsageLimit attributes', required: true
 
-    let(:service_id) { @service_id }
-    let(:plan_id) { @plan_id }
     # need this to _not_ be memoized but eval'ed each time, see below
     define_method :raw_post do
       params.to_json
@@ -81,9 +77,6 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
     parameter :plan_id, 'Plan ID', required: true
     parameter :metric_id, 'Metric ID', required: true
     parameter :period, 'Period', required: true
-
-    let(:service_id) { @service_id }
-    let(:plan_id) { @plan_id }
 
     example 'Delete UsageLimits' do
       @metric_h.each do |m, periods|
