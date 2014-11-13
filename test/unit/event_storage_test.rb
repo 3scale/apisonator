@@ -44,42 +44,6 @@ class EventStorageTest < Test::Unit::TestCase
       assert_equal encode(alerts[i]), encode(list[i][:object])
       assert_equal "alert", list[i][:type]
     end
-
-    ## a repeated gets counted
-    EventStorage.store(:alert, alerts[0])
-    assert_equal 4, EventStorage.size()
-    assert_equal 4, EventStorage.list().size
-
-    ## removing nothing
-    assert_equal 0, EventStorage.delete_range("foo")
-
-    ## removing nothing
-    assert_equal 0, EventStorage.delete_range(nil)
-
-
-    ## removing nothing
-    assert_equal 0, EventStorage.delete_range(-1)
-
-    ## removing the first two
-    assert_equal 2, EventStorage.delete_range(saved_id)
-
-    list = EventStorage.list()
-    assert_equal 2, EventStorage.size()
-    assert_equal 2, EventStorage.list().size
-
-    list.each_with_index do |item, i|
-      assert_equal saved_id + 1 + i, item[:id]
-    end
-
-    ## removing all
-    assert_equal 2, EventStorage.delete_range(99999999)
-    list = EventStorage.list()
-    assert_equal 0, EventStorage.size()
-    assert_equal 0, EventStorage.list().size
-
-    ## removing when empty
-    assert_equal 0, EventStorage.delete_range(99999999)
-
   end
 
   test 'ping behavior' do

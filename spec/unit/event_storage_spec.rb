@@ -7,6 +7,22 @@ module ThreeScale
             expect(EventStorage.store(:alert, {})).to be_true
             expect(EventStorage.store(:first_traffic, {})).to be_true
           end
+
+          context 'when event already exists' do
+            let(:event) { { id: 3, service_id: 10, timestamp: Time.now.utc} }
+
+            before { EventStorage.store(:alert, event) }
+
+            it 'returns ok' do
+              expect(EventStorage.store(:alert, event)).to be_true
+            end
+
+            it 'modifies the size of events set' do
+              current_size = EventStorage.size
+              EventStorage.store(:alert, event)
+              expect(EventStorage.size).to be(current_size + 1)
+            end
+          end
         end
 
         context 'with invalid event type' do
