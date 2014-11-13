@@ -143,18 +143,6 @@ class EventStorageTest < Test::Unit::TestCase
 
   end
 
-
-  test 'type is defined' do
-
-    EventStorage.store(:alert, {})
-    EventStorage.store(:first_traffic, {})
-
-    assert_raise Exception do
-      EventStorage.store(:foo, {})
-    end
-
-  end
-
   test 'ping behavior' do
 
     Airbrake.stubs(:notify).returns(true)
