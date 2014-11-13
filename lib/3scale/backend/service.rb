@@ -104,6 +104,17 @@ module ThreeScale
           encode_key("service/provider_key:#{provider_key}/#{attribute}")
         end
 
+        def clear_cache(provider_key, id)
+          keys = Memoizer.build_keys_for_class(self,
+                    authenticate_service_id: [id, provider_key],
+                    default_id: [provider_key],
+                    load: [provider_key],
+                    load_by_id: [id],
+                    list: [provider_key]
+                                              )
+          Memoizer.clear keys
+        end
+
         private
 
         def massage_service_attrs(id, service_attrs)
@@ -164,14 +175,7 @@ module ThreeScale
       end
 
       def clear_cache
-        keys = Memoizer.build_keys_for_class(self.class,
-                  authenticate_service_id: [id, provider_key],
-                  default_id: [provider_key],
-                  load: [provider_key],
-                  load_by_id: [id],
-                  list: [provider_key]
-                                            )
-        Memoizer.clear keys
+        self.class.clear_cache(provider_key, id)
       end
 
       def storage_key(attribute)
@@ -247,6 +251,8 @@ module ThreeScale
         if old_default_id.to_i != id.to_i
           storage.set storage_key_by_provider(:id), id
           storage.incr self.class.storage_key(old_default_id, :version)
+          # we should now clear memoizations of the previous default service
+          self.class.clear_cache(provider_key, old_default_id)
         end
       end
 
