@@ -235,9 +235,7 @@ module ThreeScale
       end
 
       def persist
-        old_default_id = self.class.default_id(provider_key) if default_service?
-
-        persist_default old_default_id
+        persist_default(self.class.default_id(provider_key)) if default_service?
         persist_attributes
         persist_sets
 
@@ -245,7 +243,8 @@ module ThreeScale
       end
 
       def persist_default(old_default_id)
-        if default_service? && old_default_id != id
+        # we get all sorts of combinations of Strings and Fixnums here. Convert'em.
+        if old_default_id.to_i != id.to_i
           storage.set storage_key_by_provider(:id), id
           storage.incr self.class.storage_key(old_default_id, :version)
         end
