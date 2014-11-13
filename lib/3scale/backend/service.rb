@@ -196,6 +196,7 @@ module ThreeScale
           user_registration_required: user_registration_required?,
           default_user_plan_id: default_user_plan_id,
           default_user_plan_name: default_user_plan_name,
+          default_service: default_service?
         }
       end
 
