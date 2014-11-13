@@ -13,39 +13,6 @@ class EventStorageTest < Test::Unit::TestCase
     @metric_id      = next_id
   end
 
-  test 'test addition and retrieval' do
-
-    timestamp = Time.now.utc
-
-    alerts = []
-    10.times.each do |i|
-      alerts << {:id => next_id, :service_id => i, :application_id => "app1", :utilization => 90,
-        :max_utilization => 90.0, :limit => "metric X: 90 of 100", :timestamp => timestamp}
-    end
-
-    assert_equal 0, EventStorage.size()
-    assert_equal 0, EventStorage.list().size
-
-    EventStorage.store(:alert, alerts[0])
-    EventStorage.store(:alert, alerts[1])
-
-    list = EventStorage.list()
-    saved_id = list.last[:id]
-
-
-    EventStorage.store(:alert, alerts[2])
-
-    assert_equal 3, EventStorage.size()
-    assert_equal 3, EventStorage.list().size
-
-    list = EventStorage.list()
-
-    list.size.times.each do |i|
-      assert_equal encode(alerts[i]), encode(list[i][:object])
-      assert_equal "alert", list[i][:type]
-    end
-  end
-
   test 'ping behavior' do
 
     Airbrake.stubs(:notify).returns(true)

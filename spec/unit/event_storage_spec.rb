@@ -32,6 +32,41 @@ module ThreeScale
         end
       end
 
+      describe '.list' do
+        context 'with events in set' do
+          let(:num_events) { 3 }
+          let(:event_type) { :alert }
+          before do
+            num_events.times do
+              EventStorage.store(event_type, { timestamp: Time.now })
+            end
+          end
+
+          it 'returns all stored events' do
+            expect(EventStorage.list.size).to be(num_events)
+          end
+
+          it 'returns events ordered by id' do
+            expect(EventStorage.list.map { |event| event[:id] }).to eq([1,2,3])
+          end
+
+          it 'decodes events' do
+            event = EventStorage.list.first
+            event.keys.map { |key| expect(key).to be_a(Symbol) }
+            event[:object].keys.map { |key| expect(key).to be_a(Symbol) }
+
+            expect(event[:type]).to eq(event_type.to_s)
+            expect(event[:object][:timestamp]).to be_a(Time)
+          end
+        end
+
+        context 'without events in set' do
+          subject { EventStorage.list }
+
+          it { expect(subject).to be_empty }
+        end
+      end
+
       describe '.size' do
         subject { EventStorage.size }
 
