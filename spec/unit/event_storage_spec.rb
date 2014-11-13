@@ -172,6 +172,64 @@ module ThreeScale
           end
         end
       end
+
+      describe '.ping_if_not_empty' do
+        before do
+          ThreeScale::Backend.configuration.stub(:events_hook).and_return("foo")
+          RestClient.stub(:post).and_return(true)
+        end
+
+        context 'with events in set' do
+          subject { EventStorage.ping_if_not_empty }
+
+          before do
+            3.times { EventStorage.store(:alert, {}) }
+          end
+
+          context 'when a ping was executed previously' do
+            context 'and ping TTL is expired' do
+              before do
+                stub_const("ThreeScale::Backend::EventStorage::PING_TTL", 0)
+                EventStorage.ping_if_not_empty
+              end
+
+              it { expect(subject).to be_true }
+            end
+
+            context 'and ping TTL is not expired' do
+              before do
+                stub_const("ThreeScale::Backend::EventStorage::PING_TTL", 1000)
+                EventStorage.ping_if_not_empty
+              end
+
+              it { expect(subject).to be_false }
+            end
+          end
+
+          context 'when there is no configuration for events_hook' do
+            before do
+              ThreeScale::Backend.configuration.stub(:events_hook).and_return(nil)
+            end
+            it { expect(subject).to be_false }
+          end
+
+          context 'when hook notification fails' do
+            before do
+              RestClient.stub(:post).and_raise(:BOOOM)
+              Airbrake.stub(:notify)
+            end
+
+            subject { EventStorage.ping_if_not_empty }
+
+            it { expect(subject).to be_nil }
+          end
+        end
+
+        context 'without events in set' do
+          subject { EventStorage.ping_if_not_empty }
+          it { expect(subject).to be_false }
+        end
+      end
     end
   end
 end
