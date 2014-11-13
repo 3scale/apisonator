@@ -107,29 +107,6 @@ class EventStorageTest < Test::Unit::TestCase
       item = list[list.size-2]
 
       assert_equal 1, EventStorage.delete(item[:id])
-      assert_equal 10, EventStorage.size()
-
-      ## no longer exists
-      list = EventStorage.list()
-      list.each do |item2|
-        assert_not_equal item[:id], item2[:id]
-      end
-
-      ## nothing happens when removing twice
-      assert_equal 0, EventStorage.delete(item[:id])
-      assert_equal 10, EventStorage.size()
-
-
-
-      ## bad cases
-      assert_equal 0, EventStorage.delete(nil)
-      assert_equal 10, EventStorage.size()
-
-      assert_equal 0, EventStorage.delete(-1)
-      assert_equal 10, EventStorage.size()
-
-      assert_equal 0, EventStorage.delete("foo")
-      assert_equal 10, EventStorage.size()
 
       ## bad cases
       assert_equal 0, EventStorage.delete_range(nil)

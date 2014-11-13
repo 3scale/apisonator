@@ -32,6 +32,53 @@ module ThreeScale
           it { expect(subject).to be(0) }
         end
       end
+
+      describe '.delete' do
+        before do
+          3.times { EventStorage.store(:alert, {}) }
+        end
+        let(:event) { EventStorage.list.first }
+
+        context 'with valid id' do
+          subject { EventStorage.delete(event[:id]) }
+
+          it { expect(subject).to be(1) }
+          it 'modifies the size of events set' do
+            expect(EventStorage.size).to be(3)
+            EventStorage.delete(event[:id])
+            expect(EventStorage.size).to be(2)
+          end
+
+          it 'is not in events set' do
+            existing_ids = EventStorage.list.map { |e| e[:id] }
+            expect(existing_ids).to include(event[:id])
+            subject
+            existing_ids = EventStorage.list.map { |e| e[:id] }
+            expect(existing_ids).to_not include(event[:id])
+          end
+
+          context 'when the event was previously deleted' do
+            before do
+              EventStorage.delete(event[:id])
+            end
+
+            it { expect(subject).to be(0) }
+            it 'not modify the size of events set' do
+              expect(EventStorage.size).to be(2)
+              EventStorage.delete(event[:id])
+              expect(EventStorage.size).to be(2)
+            end
+          end
+        end
+
+        context 'with invalid id' do
+          let(:ids) { [nil, -1, "foo"] }
+
+          it 'returns the number of events removed' do
+            ids.map { |id| expect(EventStorage.delete(id)).to be(0) }
+          end
+        end
+      end
     end
   end
 end
