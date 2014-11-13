@@ -82,44 +82,6 @@ class EventStorageTest < Test::Unit::TestCase
 
   end
 
-  test 'delete by id' do
-
-     timestamp = Time.now.utc
-
-      alerts = []
-      10.times.each do |i|
-        alerts << {:id => next_id, :service_id => i, :application_id => "app1", :utilization => 90,
-          :max_utilization => 90.0, :limit => "metric X: 90 of 100", :timestamp => timestamp}
-      end
-
-      10.times do |i|
-        EventStorage.store(:alert, alerts[0])
-      end
-
-      EventStorage.store(:first_traffic, {:service_id => 11,
-                                          :application_id => "app1",
-                                          :timestamp => timestamp})
-
-      list = EventStorage.list()
-      assert_equal 11, EventStorage.size()
-      assert_equal 11, EventStorage.list().size
-
-      item = list[list.size-2]
-
-      assert_equal 1, EventStorage.delete(item[:id])
-
-      ## bad cases
-      assert_equal 0, EventStorage.delete_range(nil)
-      assert_equal 10, EventStorage.size()
-
-      assert_equal 0, EventStorage.delete_range(-1)
-      assert_equal 10, EventStorage.size()
-
-      assert_equal 0, EventStorage.delete_range("foo")
-      assert_equal 10, EventStorage.size()
-
-  end
-
   test 'ping behavior' do
 
     Airbrake.stubs(:notify).returns(true)

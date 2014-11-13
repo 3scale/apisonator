@@ -79,6 +79,48 @@ module ThreeScale
           end
         end
       end
+
+      describe '.delete_range' do
+        before do
+          3.times { EventStorage.store(:alert, {}) }
+        end
+
+        context 'with the id of last event in set' do
+          let(:id) { EventStorage.list.last[:id] }
+
+          it 'returns the number of events removed' do
+            expect(EventStorage.delete_range(id)).to be(3)
+          end
+
+          it 'removes all events' do
+            EventStorage.delete_range(id)
+            expect(EventStorage.size).to be(0)
+          end
+        end
+
+        context 'with the id of first event in set' do
+          let(:id) { EventStorage.list.first[:id] }
+
+          it 'returns the number of events removed' do
+            expect(EventStorage.delete_range(id)).to be(1)
+          end
+
+          it 'removes just first event' do
+            EventStorage.delete_range(id)
+            expect(EventStorage.size).to be(2)
+          end
+        end
+
+        context 'with invalid range' do
+          let(:ranges) { [nil, -1, "foo"] }
+
+          it 'returns the number of events removed' do
+            ranges.map do |range_limit|
+              expect(EventStorage.delete_range(range_limit)).to be(0)
+            end
+          end
+        end
+      end
     end
   end
 end
