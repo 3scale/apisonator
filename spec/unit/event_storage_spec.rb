@@ -15,6 +15,23 @@ module ThreeScale
           end
         end
       end
+
+      describe '.size' do
+        subject { EventStorage.size }
+
+        context 'with events' do
+          let(:num_events) { 3 }
+          before do
+            num_events.times { EventStorage.store(:alert, {}) }
+          end
+
+          it { expect(subject).to be(num_events) }
+        end
+
+        context 'with no events' do
+          it { expect(subject).to be(0) }
+        end
+      end
     end
   end
 end
