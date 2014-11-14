@@ -9,8 +9,8 @@ module ThreeScale
 
       def store(type, object)
         raise Exception.new("Event type #{type} is invalid") unless EVENT_TYPES.member?(type)
-        new_id = storage.incrby(events_id_key,1)
-        event = {:id => new_id, :type => type, :timestamp => Time.now.utc, :object => object}
+        new_id = storage.incrby(events_id_key, 1)
+        event  = { id: new_id, type: type, timestamp: Time.now.utc, object: object }
         storage.zadd(events_queue_key, event[:id], encode(event))
       end
 
@@ -22,7 +22,7 @@ module ThreeScale
       def delete_range(to_id)
         to_id = to_id.to_i
         if (to_id > 0)
-          return storage.zremrangebyscore(events_queue_key,0,to_id)
+          return storage.zremrangebyscore(events_queue_key, 0, to_id)
         else
           return 0
         end
@@ -30,11 +30,7 @@ module ThreeScale
 
       def delete(id)
         id = id.to_i
-        if (id > 0)
-          return storage.zremrangebyscore(events_queue_key,id,id)
-        else
-          return 0
-        end
+        (id > 0) ? storage.zremrangebyscore(events_queue_key, id, id) : 0
       end
 
       def size
