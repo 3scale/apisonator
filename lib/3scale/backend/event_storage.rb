@@ -78,6 +78,10 @@ module ThreeScale
         "events/id"
       end
 
+      private
+
+      # TODO: Remove this method. It's used only in tests and there it's
+      # possible to mock a constant.
       def redef_without_warning(const, value)
         remove_const(const)
         const_set(const, value)
