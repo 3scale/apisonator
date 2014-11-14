@@ -15,16 +15,8 @@ module ThreeScale
       end
 
       def list
-        raw_items = storage.zrevrange(events_queue_key,0,-1)
-        res = raw_items.map(&method(:decode)).reverse
-
-        ## the decode does not symbolize keys and convert timestamps recursively...
-        res.each do |item|
-          item[:object] = item[:object].symbolize_keys if item[:object]
-          item[:object][:timestamp] =  Time.parse_to_utc(item[:object][:timestamp]) if item[:object] && item[:object][:timestamp]
-        end
-
-        return res
+        raw_events = storage.zrevrange(events_queue_key, 0, -1)
+        raw_events.map { |raw_event| decode_event(raw_event) }.reverse
       end
 
       def delete_range(to_id)
@@ -91,7 +83,20 @@ module ThreeScale
         const_set(const, value)
       end
 
+      def decode_event(raw_event)
+        event = decode(raw_event)
 
+        # decode only symbolizes keys and parse timestamp for first level
+        if event[:object]
+          event[:object] = event[:object].symbolize_keys
+
+          if event[:object][:timestamp]
+            event[:object][:timestamp] = Time.parse_to_utc(event[:object][:timestamp])
+          end
+        end
+
+        event
+      end
     end
   end
 end
