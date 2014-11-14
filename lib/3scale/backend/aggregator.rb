@@ -6,6 +6,7 @@ require '3scale/backend/errors'
 require '3scale/backend/storage_stats'
 require '3scale/backend/aggregator/stats_keys'
 require '3scale/backend/aggregator/stats_job'
+require '3scale/backend/application_events'
 
 module ThreeScale
   module Backend
@@ -91,24 +92,7 @@ module ThreeScale
           end
         end
 
-        ## the application set needs to be updated on it's own to capture if the app already existed, if not
-        ## the event will be triggered
-        ## fantastic: we can't use pipelining here because:
-        ## > r.pipelined do
-        ##     r.sadd("kkk","e")
-        ##     r.sadd("kkk","f")
-        ##   end
-        ## [1, 1] :-/
-
-        applications.each do |appid, values|
-          ser_id = values[:service_id]
-          app_id = values[:application_id]
-          if update_application_set(service_key_prefix(ser_id), app_id)
-            Backend::EventStorage::store(:first_traffic, {:service_id => ser_id,
-                                                          :application_id => app_id,
-                                                          :timestamp => Time.now.utc.to_s})
-          end
-        end
+        ApplicationEvents.generate(applications.values)
 
         ## now we have done all incrementes for all the transactions, we
         ## need to update the cached_status for for the transactor
@@ -119,9 +103,7 @@ module ThreeScale
           store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_stats_job)
         end
 
-        ## Finally, let's ping the frontend if any event is pending
-        ## for processing
-        EventStorage.ping_if_not_empty
+        ApplicationEvents.ping
       end
 
       def store_changed_keys(transactions, bucket, prior_bucket, schedule_stats_job)
@@ -313,11 +295,6 @@ module ThreeScale
           key = caching_key(service.id,:user,user.username)
           set_status_in_cache(key,status,{:exclude_application => true})
         end
-      end
-
-      def update_application_set(prefix, application_id)
-        key = applications_key_prefix(prefix)
-        storage.sadd(key, encode_key(application_id))
       end
 
       def storage
