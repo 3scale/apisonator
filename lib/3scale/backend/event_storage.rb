@@ -66,6 +66,8 @@ module ThreeScale
         return false
       end
 
+      private
+
       def events_queue_key
         "events/queue"
       end
@@ -77,8 +79,6 @@ module ThreeScale
       def events_id_key
         "events/id"
       end
-
-      private
 
       # TODO: Remove this method. It's used only in tests and there it's
       # possible to mock a constant.
