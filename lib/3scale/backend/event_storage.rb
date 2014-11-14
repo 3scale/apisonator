@@ -38,20 +38,10 @@ module ThreeScale
       end
 
       def ping_if_not_empty
-        val = storage.pipelined do
-          storage.zcard(events_queue_key)
-          storage.get(events_ping_key)
-        end
-
-        ## the queue is not empty and more than timeout has passed
-        ## since the front-end was notified
-        if (val[0] > 0 && val[1].nil? && !ThreeScale::Backend.configuration.events_hook.nil? && !ThreeScale::Backend.configuration.events_hook.empty?)
+        if pending_ping? && events_hook_configured?
           begin
-            storage.pipelined do
-              storage.set(events_ping_key,1)
-              storage.expire(events_ping_key,PING_TTL)
-            end
-            RestClient.post ThreeScale::Backend.configuration.events_hook, :secret => ThreeScale::Backend.configuration.events_hook_shared_secret
+            store_last_ping
+            request_to_events_hook
             return true
           rescue Exception => e
             Airbrake.notify(e)
@@ -74,6 +64,37 @@ module ThreeScale
 
       def events_id_key
         "events/id"
+      end
+
+      def events_hook_configured?
+        !ThreeScale::Backend.configuration.events_hook.nil? &&
+          !ThreeScale::Backend.configuration.events_hook.empty?
+      end
+
+      def request_to_events_hook
+        params = {
+          secret: ThreeScale::Backend.configuration.events_hook_shared_secret,
+        }
+        RestClient.post(ThreeScale::Backend.configuration.events_hook, params)
+      end
+
+      def store_last_ping
+        storage.pipelined do
+          storage.set(events_ping_key, 1)
+          storage.expire(events_ping_key, PING_TTL)
+        end
+      end
+
+      def pending_ping?
+        ## the queue is not empty and more than timeout has passed
+        ## since the front-end was notified
+
+        events_set_size, ping_key_value = storage.pipelined do
+          storage.zcard(events_queue_key)
+          storage.get(events_ping_key)
+        end
+
+        events_set_size > 0 && ping_key_value.nil?
       end
 
       # TODO: Remove this method. It's used only in tests and there it's
