@@ -185,20 +185,5 @@ class LogRequestStorageTest < Test::Unit::TestCase
     list = LogRequestStorage.list_by_service(service_id_one)
     assert_equal 0, list.size
   end
-
-  test 'respects the limits of the lists' do
-    log1 = {:service_id     => @service_id,
-            :application_id => @application_id,
-            :usage          => {"metric_id_one" => 1},
-            :timestamp      => Time.utc(2010, 9, 10, 17, 4),
-            :log            => {'request' => 'req', 'response' => 'resp', 'code' => 200}}
-
-    (LogRequestStorage::LIMIT_PER_SERVICE+LogRequestStorage::LIMIT_PER_APP).times do
-      LogRequestStorage.store(log1)
-    end
-
-    assert_equal LogRequestStorage::LIMIT_PER_SERVICE, @storage.llen("logs/service_id:#{@service_id}")
-    assert_equal LogRequestStorage::LIMIT_PER_APP, @storage.llen("logs/service_id:#{@service_id}/app_id:#{@application_id}")
-  end
 end
 
