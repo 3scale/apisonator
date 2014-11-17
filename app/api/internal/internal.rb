@@ -10,6 +10,11 @@ module ThreeScale
       class Internal < Sinatra::Base
         register Sinatra::Namespace
 
+        # using a class variable instead of settings because we want this to be
+        # as fast as possible when responding, since we hit /status a lot.
+        @@status = { status: :ok,
+                     version: { backend: ThreeScale::Backend::VERSION } }.to_json
+
         before do
           content_type 'application/json'
           parse_json_params params
@@ -20,7 +25,7 @@ module ThreeScale
         end
 
         get '/status' do
-          { status: :ok, version: { backend: ThreeScale::Backend::VERSION } }.to_json
+          @@status
         end
 
         private
