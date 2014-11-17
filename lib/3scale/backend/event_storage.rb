@@ -67,8 +67,8 @@ module ThreeScale
       end
 
       def events_hook_configured?
-        !ThreeScale::Backend.configuration.events_hook.nil? &&
-          !ThreeScale::Backend.configuration.events_hook.empty?
+        events_hook = ThreeScale::Backend.configuration.events_hook
+        events_hook && !events_hook.empty?
       end
 
       def request_to_events_hook
