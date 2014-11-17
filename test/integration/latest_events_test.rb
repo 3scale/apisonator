@@ -481,7 +481,7 @@ class LatestEventsTest < Test::Unit::TestCase
   test 'events_hook is triggered on authrep' do
 
     saved_ttl = EventStorage::PING_TTL
-    EventStorage.send(:redef_without_warning, "PING_TTL", saved_ttl)
+    EventStorage.send(:redef_without_warning, "PING_TTL", 5)
 
     configuration.events_hook = "http://foobar.foobar"
 
