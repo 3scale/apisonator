@@ -38,6 +38,15 @@ module ThreeScale
           it { expect(subject) }
         end
 
+        context 'when application has traffic for first time in the day' do
+          let(:applications) { }
+          let(:event_type)   { :first_daily_traffic }
+          let(:event)        { { } }
+
+          before do
+            expect(EventStorage).to receive(:store).with(event_type, event)
+          end
+        end
       end
 
       describe '.ping' do

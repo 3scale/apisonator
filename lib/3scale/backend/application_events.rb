@@ -10,6 +10,8 @@ module ThreeScale
         include Core::StorageKeyHelpers
       end
 
+      DAILY_KEY_TTL = 172_800
+
       ## Finally, let's ping the frontend if any event is pending
       ## for processing
       def self.ping
@@ -23,6 +25,7 @@ module ThreeScale
           application_id = application[:application_id]
 
           first_traffic(service_id, application_id)
+          first_daily_traffic(service_id, application_id)
         end
       end
 
@@ -37,6 +40,23 @@ module ThreeScale
                              { service_id:     service_id,
                                application_id: application_id,
                                timestamp:      Time.now.utc.to_s })
+        end
+      end
+
+      def self.first_daily_traffic(service_id, application_id)
+        timestamp = Time.now.utc
+        day_key   = timestamp.beginning_of_cycle(:day).to_compact_s
+        daily_key = "daily_traffic/service:#{service_id}/" \
+                    "cinstance:#{application_id}/#{day_key}"
+
+        Memoizer.memoize_block(daily_key) do
+          if storage.incr(daily_key) == 1
+            storage.expire(daily_key, DAILY_KEY_TTL)
+            EventStorage.store(:first_daily_traffic,
+                               { service_id:     service_id,
+                                 application_id: application_id,
+                                 timestamp:      timestamp.to_s })
+          end
         end
       end
 
