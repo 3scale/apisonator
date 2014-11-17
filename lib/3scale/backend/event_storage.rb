@@ -108,11 +108,11 @@ module ThreeScale
         event = decode(raw_event)
 
         # decode only symbolizes keys and parse timestamp for first level
-        if event[:object]
-          event[:object] = event[:object].symbolize_keys
+        if obj = event[:object]
+          event[:object] = obj.symbolize_keys
 
-          if event[:object][:timestamp]
-            event[:object][:timestamp] = Time.parse_to_utc(event[:object][:timestamp])
+          if ts = event[:object][:timestamp]
+            event[:object][:timestamp] = Time.parse_to_utc(ts)
           end
         end
 
