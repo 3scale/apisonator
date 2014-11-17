@@ -51,7 +51,7 @@ function stop_influxdb {
 }
 
 function start_cubert {
-    /vagrant/script/launch_cubert &
+    ${SCRIPT_DIR}/launch_cubert &
     sleep 5
 }
 
