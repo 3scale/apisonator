@@ -55,6 +55,8 @@ module ThreeScale
             before do
               expect(EventStorage).to_not receive(:store).with(:first_traffic, event)
               expect(EventStorage).to receive(:store).with(:first_daily_traffic, event)
+              # ensure correct memoizer behaviour
+              expect_any_instance_of(Storage).to receive(:incr).and_call_original
             end
 
             it { expect(subject) }
@@ -64,6 +66,8 @@ module ThreeScale
             before do
               ApplicationEvents.generate([application])
               expect(EventStorage).to_not receive(:store)
+              # ensure correct memoizer behaviour
+              expect_any_instance_of(Storage).to_not receive(:incr)
             end
 
             it { expect(subject) }
