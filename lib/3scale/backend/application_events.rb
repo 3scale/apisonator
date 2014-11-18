@@ -20,6 +20,7 @@ module ThreeScale
       end
 
       def self.generate(applications)
+        return if applications.nil? || applications.empty?
         applications.each do |application|
           service_id     = application[:service_id]
           application_id = application[:application_id]
