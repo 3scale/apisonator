@@ -3,76 +3,77 @@ require_relative '../spec_helper'
 module ThreeScale
   module Backend
     describe LogRequestStorage do
-      include TestHelpers::Sequences
-
-      before do
-        @storage = Storage.instance(true)
-        @storage.flushdb
-        @service_id, @application_id, @metric_id = (1..3).map{ next_id }
-      end
+      let(:service_id) { 1 }
+      let(:app_id) { 2 }
 
       describe 'complete transactions' do
-        before do
-          @app_id_two = next_id
-          @log1 = example_log
-          @log2 = example_log({ application_id: @app_id_two })
-          LogRequestStorage.store_all([@log1, @log2])
-        end
+        let(:app_id_two){ 4 }
+        let(:log1) { example_log }
+        let(:log2) { example_log({ application_id: app_id_two }) }
+        let(:list_service) { LogRequestStorage.list_by_service(service_id) }
+        let(:list_app) { LogRequestStorage.list_by_application(service_id, app_id) }
+
+        before { LogRequestStorage.store_all([log1, log2]) }
 
         describe 'getting logs' do
           it 'returns proper transactions given the service ID' do
-            LogRequestStorage.count_by_service(@service_id).should == 2
-            list = LogRequestStorage.list_by_service(@service_id)
-            list.size.should == 2
-            list[1].should == @log1
-            list[0].should == @log2
+            expect(LogRequestStorage.count_by_service(service_id)).to eq(2)
+            expect(list_service.size).to eq(2)
+            expect(list_service[1]).to eq(log1)
+            expect(list_service[0]).to eq(log2)
           end
 
           it 'returns empty list given a different service ID' do
-            LogRequestStorage.count_by_service(next_id).should == 0
-            LogRequestStorage.list_by_service(next_id).size.should == 0
+            expect(LogRequestStorage.count_by_service(5)).to eq(0)
+            expect(LogRequestStorage.list_by_service(5).size).to eq(0)
           end
 
           it 'filters out transactions by the service and app IDs' do
-            LogRequestStorage.count_by_application(@service_id, @application_id).
-              should == 1
-            list = LogRequestStorage.list_by_application(@service_id, @application_id)
-            list.size.should == 1
-            list[0].should == @log1
+            expect(LogRequestStorage.count_by_application(service_id, app_id)).
+              to eq(1)
+            expect(list_app.size).to eq(1)
+            expect(list_app[0]).to eq(log1)
           end
         end
 
         describe 'deleting logs' do
           it 'given application IDs deletes only from per-app list' do
-            LogRequestStorage.delete_by_application(@service_id, @app_id_two)
-            LogRequestStorage.list_by_application(@service_id, @app_id_two).size.
-              should == 0
-            LogRequestStorage.list_by_service(@service_id).size.should == 2
+            LogRequestStorage.delete_by_application(service_id, app_id_two)
+
+            expect(LogRequestStorage.list_by_application(service_id, app_id_two).
+              size).to eq(0)
+            expect(LogRequestStorage.list_by_service(service_id).size).to eq(2)
           end
 
           it 'given another service ID doesn\'t delete anything' do
-            LogRequestStorage.delete_by_service(next_id)
-            LogRequestStorage.list_by_service(@service_id).size.should == 2
+            LogRequestStorage.delete_by_service(5)
+
+            expect(LogRequestStorage.list_by_service(service_id).size).to eq(2)
           end
 
           it 'given the service ID deletes only from per-service list' do
-            LogRequestStorage.delete_by_service(@service_id)
-            LogRequestStorage.list_by_service(@service_id).size.should == 0
-            LogRequestStorage.list_by_application(@service_id, @app_id_two).size.
-              should == 1
+            LogRequestStorage.delete_by_service(service_id)
+
+            expect(LogRequestStorage.list_by_service(service_id).size).to eq(0)
+            expect(LogRequestStorage.list_by_application(service_id, app_id).
+              size).to eq(1)
           end
         end
       end
 
       describe 'storing logs' do
-        it 'respects the limits of the lists' do
+        before do
+          stub_const("LogRequestStorage::LIMIT_PER_SERVICE", 2)
+          stub_const("LogRequestStorage::LIMIT_PER_APP", 1)
           (LogRequestStorage::LIMIT_PER_SERVICE + LogRequestStorage::LIMIT_PER_APP).
             times { LogRequestStorage.store(example_log) }
+        end
 
-          @storage.llen("logs/service_id:#{@service_id}").
-            should == LogRequestStorage::LIMIT_PER_SERVICE
-          @storage.llen("logs/service_id:#{@service_id}/app_id:#{@application_id}").
-            should == LogRequestStorage::LIMIT_PER_APP
+        it 'respects the limits of the lists' do
+          expect(LogRequestStorage.count_by_service(service_id)).
+            to eq(LogRequestStorage::LIMIT_PER_SERVICE)
+          expect(LogRequestStorage.count_by_application(service_id, app_id)).
+            to eq(LogRequestStorage::LIMIT_PER_APP)
         end
       end
 
@@ -80,8 +81,8 @@ module ThreeScale
 
       def example_log(params = {})
         default_params = {
-          service_id: @service_id,
-          application_id: @application_id,
+          service_id: service_id,
+          application_id: app_id,
           usage: {"metric_id_one" => 1},
           timestamp: Time.utc(2010, 9, 10, 17, 4),
           log: {'request' => 'req', 'response' => 'resp', 'code' => 200}
