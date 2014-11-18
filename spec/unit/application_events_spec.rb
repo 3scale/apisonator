@@ -6,28 +6,29 @@ module ThreeScale
     describe ApplicationEvents do
       describe '.generate' do
         context "when there aren't applications" do
-          let(:applications) { [] }
           subject { ApplicationEvents.generate(applications) }
 
-          it { expect(subject).to eq([]) }
+          context 'with empty array' do
+            let(:applications) { [] }
+            it { expect(subject).to be_nil }
+          end
+
+          context 'with nil value' do
+            let(:applications) { nil }
+            it { expect(subject).to be_nil }
+          end
         end
 
         context 'when application has traffic for first time' do
-          let(:applications) do
-            (1..3).map do |app_id|
-              { service_id: 3, application_id: app_id, timestamp: Time.now.utc.to_s }
-            end
-          end
-          let(:event_types)  { [:first_traffic] }
-
-          subject { ApplicationEvents.generate(applications) }
+          subject { ApplicationEvents.generate([application]) }
+          let(:application) { { service_id: 3, application_id: 5 } }
+          let(:event_types) { [:first_traffic, :first_daily_traffic] }
+          let(:event)       { application.merge(timestamp: Time.now.utc.to_s) }
 
           before do
             Timecop.freeze(Time.now)
-            applications.each do |event|
-              event_types.each do |event_type|
-                expect(EventStorage).to receive(:store).with(event_type, event)
-              end
+            event_types.each do |event_type|
+              expect(EventStorage).to receive(:store).with(event_type, event)
             end
           end
 
@@ -38,13 +39,34 @@ module ThreeScale
           it { expect(subject) }
         end
 
-        context 'when application has traffic for first time in the day' do
-          let(:applications) { }
-          let(:event_type)   { :first_daily_traffic }
-          let(:event)        { { } }
+        context 'when application had has traffic for first time' do
+          subject { ApplicationEvents.generate([application]) }
+          let(:application) { { service_id: 3, application_id: 5 } }
 
           before do
-            expect(EventStorage).to receive(:store).with(event_type, event)
+            Timecop.travel(Time.now.utc - 24*60*60) do
+              ApplicationEvents.generate([application])
+            end
+          end
+
+          context 'with daily traffic for first time' do
+            let(:event) { application.merge(timestamp: Time.now.utc.to_s) }
+
+            before do
+              expect(EventStorage).to_not receive(:store).with(:first_traffic, event)
+              expect(EventStorage).to receive(:store).with(:first_daily_traffic, event)
+            end
+
+            it { expect(subject) }
+          end
+
+          context 'with daily traffic for second time' do
+            before do
+              ApplicationEvents.generate([application])
+              expect(EventStorage).to_not receive(:store)
+            end
+
+            it { expect(subject) }
           end
         end
       end
