@@ -172,58 +172,70 @@ class LatestEventsTest < Test::Unit::TestCase
       Backend::Transactor.process_batch(0,{:all => true})
       Resque.run!
 
-      ##
-      get "/events.json",       :provider_key => @master_provider_key
+      get "/events.json", provider_key: @master_provider_key
+      assert_equal 200, last_response.status
+      events = Yajl::Parser.parse(last_response.body)
+
+      assert_equal 4, events.size
+      app_events = events[0..1]
+      master_app_events = events[2..3]
+
+      assert_equal app_events.first['type'], "first_traffic"
+      assert_equal app_events.last['type'], "first_daily_traffic"
+      assert_equal master_app_events.first['type'], "first_traffic"
+      assert_equal master_app_events.last['type'], "first_daily_traffic"
+      assert_equal true, app_events.first['object']['service_id'] == @service_id
+      assert_equal true, master_app_events.first['object']['service_id'] == @master_service_id
+
+      delete "/events.json", to_id: 99999999, provider_key: @master_provider_key
       assert_equal 200, last_response.status
       obj = Yajl::Parser.parse(last_response.body)
+      assert_equal 4, obj
 
-      ## two, one of the app, and one for the master app
-      assert_equal 2, obj.size
-
-      obj.each do |item|
-        assert_equal item['type'], "first_traffic"
-        assert_equal true, item['object']['service_id']==@service_id || item['object']['service_id']==@master_service_id
-      end
-
-      delete "/events.json",       :to_id => 99999999, :provider_key => @master_provider_key
-      assert_equal 200, last_response.status
-      obj = Yajl::Parser.parse(last_response.body)
-      assert_equal 2, obj
-
-      get "/events.json",       :provider_key => @master_provider_key
+      get "/events.json", provider_key: @master_provider_key
       assert_equal 200, last_response.status
       obj = Yajl::Parser.parse(last_response.body)
       assert_equal [], obj
 
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                        :app_id       => @application_id2,
-                                        :usage        => {'foos' => 1}
+      get '/transactions/authrep.xml', provider_key: @provider_key,
+                                       app_id:       @application_id2,
+                                       usage:        {'foos' => 1}
       Resque.run!
 
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                        :app_id       => @application_id3,
-                                        :usage        => {'foos' => 1}
+      get '/transactions/authrep.xml', provider_key: @provider_key,
+                                       app_id:       @application_id3,
+                                       usage:        {'foos' => 1}
       Resque.run!
 
-      get "/events.json",       :provider_key => @master_provider_key
+      get "/events.json", provider_key: @master_provider_key
+      assert_equal 200, last_response.status
+      events = Yajl::Parser.parse(last_response.body)
+
+      assert_equal 4, events.size
+
+      app_2_events = events[0..1]
+      app_3_events = events[2..3]
+
+      assert_equal app_2_events.first['type'], "first_traffic"
+      assert_equal app_2_events.last['type'], "first_daily_traffic"
+      assert_equal true, app_2_events.first['object']['service_id'] == @service_id
+      assert_equal true, app_2_events.last['object']['service_id'] == @service_id
+      assert_equal true, app_2_events.first['object']['application_id'] == @application_id2
+      assert_equal true, app_2_events.last['object']['application_id'] == @application_id2
+
+      assert_equal app_3_events.first['type'], "first_traffic"
+      assert_equal app_3_events.last['type'], "first_daily_traffic"
+      assert_equal true, app_3_events.first['object']['service_id'] == @service_id
+      assert_equal true, app_3_events.last['object']['service_id'] == @service_id
+      assert_equal true, app_3_events.first['object']['application_id'] == @application_id3
+      assert_equal true, app_3_events.last['object']['application_id'] == @application_id3
+
+      delete "/events.json", to_id: 10000, provider_key: @master_provider_key
       assert_equal 200, last_response.status
       obj = Yajl::Parser.parse(last_response.body)
+      assert_equal 4, obj
 
-      ## two, one of the app, and one for the master app
-      assert_equal 2, obj.size
-
-      obj.each do |item|
-        assert_equal item['type'], "first_traffic"
-        assert_equal true, item['object']['service_id']==@service_id
-        assert_equal true, (item['object']['application_id']==@application_id2 || item['object']['application_id']==@application_id3)
-      end
-
-      delete "/events.json",       :to_id => 10000, :provider_key => @master_provider_key
-      assert_equal 200, last_response.status
-      obj = Yajl::Parser.parse(last_response.body)
-      assert_equal 2, obj
-
-      get "/events.json",       :provider_key => @master_provider_key
+      get "/events.json", provider_key: @master_provider_key
       assert_equal 200, last_response.status
       obj = Yajl::Parser.parse(last_response.body)
       assert_equal [], obj
@@ -281,19 +293,18 @@ class LatestEventsTest < Test::Unit::TestCase
     Backend::Transactor.process_batch(0,{:all => true})
     Resque.run!
 
-    get "/events.json",       :provider_key => @master_provider_key
+    get "/events.json", provider_key: @master_provider_key
     assert_equal 200, last_response.status
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_not_nil obj
-    assert_equal 8, obj.size
+    events = Yajl::Parser.parse(last_response.body)
+    assert_equal 12, events.size
 
     ## filter the non alert events
-    obj.each do |item|
+    events.each do |item|
       if item['type']!='alert'
-        delete "/events/#{item['id']}.json",       :provider_key => @master_provider_key
+        delete "/events/#{item['id']}.json", provider_key: @master_provider_key
         assert_equal 200, last_response.status
-        obj = Yajl::Parser.parse(last_response.body)
-        assert_equal 1, obj
+        deleted_events_size = Yajl::Parser.parse(last_response.body)
+        assert_equal 1, deleted_events_size
       end
     end
 
@@ -426,11 +437,12 @@ class LatestEventsTest < Test::Unit::TestCase
     Backend::Transactor.process_batch(0,{:all => true})
     Resque.run!
 
-    get "/events.json",                             :provider_key => @master_provider_key
+    get "/events.json", provider_key: @master_provider_key
     assert_equal 200, last_response.status
     obj = Yajl::Parser.parse(last_response.body)
-    ## 4 alerts, 3 first_traffic for the apps, 1 first_traffic for master app
-    assert_equal 4+1+3, obj.size
+    ## 4 alerts, 3 first_traffic for the apps, 3 first_daily_traffic for the
+    ## apps, 1 first_traffic for master app, 1 first_daily_traffic for master app
+    assert_equal 4+1+1+3+3, obj.size
 
     filter_events_by_type('alert')
 
