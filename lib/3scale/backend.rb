@@ -42,6 +42,7 @@ require '3scale/backend/storage'
 require '3scale/backend/queue_storage'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/log_request_storage'
+require '3scale/backend/log_request_cubert_storage'
 require '3scale/backend/aggregator'
 require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
@@ -51,6 +52,7 @@ require '3scale/backend/alerts'
 require '3scale/backend/event_storage'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
+require 'cubert/client'
 
 module ThreeScale
   module Core
