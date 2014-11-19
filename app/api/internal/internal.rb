@@ -1,3 +1,4 @@
+require '3scale/backend/version'
 require 'sinatra/namespace'
 
 module ThreeScale

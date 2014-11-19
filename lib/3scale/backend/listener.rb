@@ -1,3 +1,5 @@
+require '3scale/backend/version'
+
 module ThreeScale
   module Backend
     class Listener < Sinatra::Base
@@ -658,9 +660,14 @@ module ThreeScale
         body 'ok'
       end
 
+      # using a class variable instead of settings because we want this to be
+      # as fast as possible when responding, since we hit /status a lot.
+      @@status = { status: :ok,
+                   version: { backend: ThreeScale::Backend::VERSION } }.to_json
+
       get '/status' do
         content_type 'application/json'
-        { status: :ok, version: { backend: ThreeScale::Backend::VERSION } }.to_json
+        @@status
       end
 
       not_found do

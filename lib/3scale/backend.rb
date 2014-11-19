@@ -49,7 +49,6 @@ require '3scale/backend/user'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/event_storage'
-require '3scale/backend/version'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
 
