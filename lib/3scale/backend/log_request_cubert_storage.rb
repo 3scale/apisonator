@@ -24,12 +24,15 @@ module ThreeScale
         end
       end
 
-      def store(transaction)
-        cubert_store transaction
+      # TODO: get provider_key based on transaction[:service_id] instead of
+      # passing it directly (to get common IP with current storage)
+      def store(provider_key, transaction)
+        cubert_store provider_key, transaction if cubert_bucket(provider_key)
       end
 
-      def get(document_id)
-        cubert_connection.get_document(document_id, cubert_bucket, 'request_logs')
+      def get(provider_key, document_id)
+        cubert_connection.get_document(document_id,
+          cubert_bucket(provider_key), 'request_logs')
       end
 
       def list_by_service(service_id)
@@ -64,13 +67,17 @@ module ThreeScale
         Cubert::Client::Connection.new('http://localhost:8080')
       end
 
-      def cubert_bucket
-        @bucket ||= cubert_connection.create_bucket
+      def cubert_store(provider_key, data)
+        cubert_connection.create_document body: data,
+          bucket: cubert_bucket(provider_key), collection: 'request_logs'
       end
 
-      def cubert_store(data)
-        cubert_connection.create_document body: data, bucket: cubert_bucket,
-          collection: 'request_logs'
+      def cubert_bucket(provider_key)
+        storage.get(bucket_id_key(provider_key))
+      end
+
+      def bucket_id_key(provider_key)
+        "cubert_bucket_provider_#{provider_key}"
       end
 
       def queue_key_service(service_id)
