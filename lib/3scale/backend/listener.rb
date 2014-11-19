@@ -1,3 +1,5 @@
+require '3scale/backend/version'
+
 module ThreeScale
   module Backend
     class Listener < Sinatra::Base
