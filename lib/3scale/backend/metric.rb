@@ -1,11 +1,6 @@
 module ThreeScale
   module Backend
-    module CoreMetric
-      def self.included(base)
-        base.include InstanceMethods, KeyHelpers
-        base.extend ClassMethods, KeyHelpers
-      end
-
+    class Metric
       module KeyHelpers
         def key(service_id, id, attribute)
           encode_key("metric/service_id:#{service_id}/id:#{id}/#{attribute}")
@@ -24,49 +19,47 @@ module ThreeScale
         end
       end
 
-      module InstanceMethods
-        attr_writer :children
+      include KeyHelpers
+      extend KeyHelpers
 
-        def save
-          save_attributes
-          save_to_list
+      include Core::Storable
 
-          save_children
+      attr_accessor :service_id, :id, :parent_id, :name
+      attr_writer :children
 
-          self.class.clear_cache(service_id, id)
+      def save
+        save_attributes
+        save_to_list
 
-          Service.incr_version(service_id)
-        end
+        save_children
 
-        def children
-          @children ||= []
-        end
+        self.class.clear_cache(service_id, id)
 
-        private
-
-        def save_attributes
-          storage.set(id_key(service_id, name), id)
-          storage.set(key(service_id, id, :name), name)
-          storage.set(key(service_id, id, :parent_id), parent_id) if parent_id
-        end
-
-        def save_to_list
-          storage.sadd(id_set_key(service_id), id)
-        end
-
-        def save_children
-          children.each do |child|
-            child.service_id = service_id
-            child.parent_id = id
-            child.save
-          end
-        end
+        Service.incr_version(service_id)
       end
 
-      module ClassMethods
-        def load_all_ids(service_id)
-          storage.smembers(id_set_key(service_id)) || []
+      def children
+        @children ||= []
+      end
+
+      def to_hash
+        {
+          service_id: service_id,
+          id: id,
+          parent_id: parent_id,
+          name: name
+        }
+      end
+
+      def update(attributes)
+        attributes.each do |attr, val|
+          public_send("#{attr}=", val)
         end
+        self
+      end
+
+      class << self
+        include Memoizer::Decorator
 
         def load(service_id, id)
           name, parent_id = storage.mget(key(service_id, id, :name),
@@ -78,17 +71,28 @@ module ThreeScale
                       parent_id: parent_id)
         end
 
-        def load_all_names(service_id, ids)
-          Hash[ids.zip(storage.mget(*ids.map { |id| key(service_id, id, :name) }))]
+        def load_all(service_id)
+          Collection.new(service_id)
+        end
+        memoize :load_all
+
+        def load_id(service_id, name)
+          storage.get(id_key(service_id, name))
+        end
+
+        def load_all_ids(service_id)
+          storage.smembers(id_set_key(service_id)) || []
         end
 
         def load_name(service_id, id)
           storage.get(key(service_id, id, :name))
         end
+        memoize :load_name
 
-        def load_id(service_id, name)
-          storage.get(id_key(service_id, name))
+        def load_all_names(service_id, ids)
+          Hash[ids.zip(storage.mget(*ids.map { |id| key(service_id, id, :name) }))]
         end
+        memoize :load_all_names
 
         def save(attributes)
           metrics = new(attributes)
@@ -119,45 +123,26 @@ module ThreeScale
                                         load_name: [service_id, id]))
         end
       end
-    end
 
-    class Metric
-      include Memoizer::Decorator
-      include Core::Storable
-      include CoreMetric
+      private
 
-      attr_accessor :service_id, :id, :parent_id, :name
-
-      def to_hash
-        {
-          service_id: service_id,
-          id: id,
-          parent_id: parent_id,
-          name: name
-        }
+      def save_attributes
+        storage.set(id_key(service_id, name), id)
+        storage.set(key(service_id, id, :name), name)
+        storage.set(key(service_id, id, :parent_id), parent_id) if parent_id
       end
 
-      def update(attributes)
-        attributes.each do |attr, val|
-          public_send("#{attr}=", val)
+      def save_to_list
+        storage.sadd(id_set_key(service_id), id)
+      end
+
+      def save_children
+        children.each do |child|
+          child.service_id = service_id
+          child.parent_id = id
+          child.save
         end
-        self
       end
-
-      def self.load_all(service_id)
-        Collection.new(service_id)
-      end
-      memoize :load_all
-
-      def self.load_all_names(service_id, metric_ids)
-        super(service_id, metric_ids)
-      end
-      memoize :load_all_names
-
-      def self.load_name(service_id, metric_id)
-        super(service_id, metric_id)
-      end
-      memoize :load_name
 
     end
   end
