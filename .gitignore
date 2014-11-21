@@ -10,3 +10,4 @@ coverage
 *~
 vendor
 docs/internal_api
+.vagrant/
