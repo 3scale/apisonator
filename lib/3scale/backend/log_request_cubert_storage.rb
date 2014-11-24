@@ -25,37 +25,48 @@ module ThreeScale
       end
 
       def store(transaction)
-        provider = Service.load_by_id!(transaction[:service_id]).provider_key
-        cubert_store provider, transaction if cubert_bucket(provider)
+        provider_key = provider(transaction[:service_id])
+        if cubert_bucket(provider_key)
+          cubert_store provider_key, transaction
+        end
       end
 
       def get(provider_key, document_id)
         cubert_connection.get_document(document_id,
-          cubert_bucket(provider_key), 'request_logs')
+          cubert_bucket(provider_key), cubert_collection)
       end
 
       def list_by_service(service_id)
-        raw_items = storage.lrange(queue_key_service(service_id), 0, -1)
-        raw_items.map(&method(:decode))
+        provider_key = provider(service_id)
+        cubert_connection.find_documents(
+          {service_id: service_id},
+          cubert_bucket(provider_key),
+          cubert_collection
+        ).map(&:body)
       end
 
+      # TODO: move to Cubert
       def list_by_application(service_id, application_id)
         raw_items = storage.lrange(queue_key_application(service_id, application_id), 0, -1)
         raw_items.map(&method(:decode))
       end
 
+      # TODO: move to Cubert
       def count_by_service(service_id)
         storage.llen(queue_key_service(service_id))
       end
 
+      # TODO: move to Cubert
       def count_by_application(service_id, application_id)
         storage.llen(queue_key_application(service_id, application_id))
       end
 
+      # TODO: move to Cubert
       def delete_by_service(service_id)
         storage.del(queue_key_service(service_id))
       end
 
+      # TODO: move to Cubert
       def delete_by_application(service_id, application_id)
         storage.del(queue_key_application(service_id, application_id))
       end
@@ -77,6 +88,14 @@ module ThreeScale
 
       def bucket_id_key(provider_key)
         "cubert_bucket_provider_#{provider_key}"
+      end
+
+      def cubert_collection
+        'request_logs'
+      end
+
+      def provider(service_id)
+        Service.load_by_id!(service_id).provider_key
       end
 
       def queue_key_service(service_id)
