@@ -131,6 +131,16 @@ module ThreeScale
       attr_accessor :service_id, :username, :state, :plan_id, :plan_name
       attr_writer :version
 
+      def to_hash
+        {
+          service_id: service_id,
+          username: username,
+          state: state,
+          plan_id: plan_id,
+          plan_name: plan_name,
+        }
+      end
+
       def self.load_or_create!(service, user_id)
         key = Memoizer.build_key(self, :load_or_create!, service.id, user_id)
         Memoizer.memoize_block(key) do
