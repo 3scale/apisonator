@@ -4,24 +4,8 @@ module ThreeScale
       include StorageHelpers
       extend self
 
-      LIMIT_PER_APP = 20
-      LIMIT_PER_SERVICE = 200
-
-      REQUEST_TTL = 3600*24*10
-
-      ENTRY_MAX_LEN_REQUEST = 1024
-      ENTRY_MAX_LEN_RESPONSE = 4096
-      ENTRY_MAX_LEN_CODE = 32
-      TRUNCATED = " ...TRUNCATED"
-
       def store_all(transactions)
-        transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-          storage.pipelined do
-            slice.each do |transaction|
-              store(transaction)
-            end
-          end
-        end
+        transactions.each { |transaction| store transaction }
       end
 
       def store(transaction)
@@ -37,41 +21,43 @@ module ThreeScale
       end
 
       def list_by_service(service_id)
-        provider_key = provider(service_id)
-        cubert_connection.find_documents(
-          {service_id: service_id},
-          cubert_bucket(provider_key),
-          cubert_collection
-        ).map(&:body)
+        cubert_find provider(service_id), {service_id: service_id}
       end
 
-      # TODO: move to Cubert
       def list_by_application(service_id, application_id)
-        raw_items = storage.lrange(queue_key_application(service_id, application_id), 0, -1)
-        raw_items.map(&method(:decode))
+        cubert_find provider(service_id),
+          {service_id: service_id, application_id: application_id}
       end
 
-      # TODO: move to Cubert
+      # TODO: Change when counts are available in cubert, currently performs not
+      # exactly optimal
       def count_by_service(service_id)
-        storage.llen(queue_key_service(service_id))
+        list_by_service(service_id).size
       end
 
-      # TODO: move to Cubert
+      # TODO: Change when counts are available in cubert, currently performs not
+      # exactly optimal
       def count_by_application(service_id, application_id)
-        storage.llen(queue_key_application(service_id, application_id))
+        list_by_application(service_id, application_id).size
       end
 
-      # TODO: move to Cubert
+      # TODO: move to Cubert, currently deletion not available in Cubert
       def delete_by_service(service_id)
-        storage.del(queue_key_service(service_id))
+        raise NotImplemnted
       end
 
-      # TODO: move to Cubert
+      # TODO: move to Cubert, currently deletion not available in Cubert
       def delete_by_application(service_id, application_id)
-        storage.del(queue_key_application(service_id, application_id))
+        raise NotImplemented
       end
 
       private
+
+      def cubert_find(provider_key, query)
+        cubert_connection.find_documents(
+          query, cubert_bucket(provider_key), cubert_collection
+        ).map(&:body)
+      end
 
       def cubert_connection
         Cubert::Client::Connection.new('http://localhost:8080')
@@ -96,14 +82,6 @@ module ThreeScale
 
       def provider(service_id)
         Service.load_by_id!(service_id).provider_key
-      end
-
-      def queue_key_service(service_id)
-        "logs/service_id:#{service_id}"
-      end
-
-      def queue_key_application(service_id, application_id)
-        "logs/service_id:#{service_id}/app_id:#{application_id}"
       end
     end
   end

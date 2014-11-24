@@ -38,25 +38,90 @@ module ThreeScale
         end
       end
 
-      describe '.list_by_service' do
+      describe 'service related methods' do
         let(:other_service){ Service.save!(
           provider_key: enabled_provider_key, id: '7003'); '7003' }
-        let(:results) do
-          [
-            example_log(service_id: enabled_service, log: 'foo'),
-            example_log(service_id: other_service, log: 'baz'),
-            example_log(service_id: enabled_service, log: 'bar')
-          ].each { |log| LogRequestCubertStorage.store(log) }
-          LogRequestCubertStorage.list_by_service(enabled_service)
+
+        describe '.list_by_service' do
+          let(:results) do
+            [
+              example_log(service_id: enabled_service, log: 'foo'),
+              example_log(service_id: other_service, log: 'baz'),
+              example_log(service_id: enabled_service, log: 'bar')
+            ].each { |log| LogRequestCubertStorage.store(log) }
+            LogRequestCubertStorage.list_by_service(enabled_service)
+          end
+
+          it 'lists all logs' do
+            expect(results.any? { |el| el['log'] == 'foo' }).to be_true
+            expect(results.any? { |el| el['log'] == 'bar' }).to be_true
+          end
+
+          it 'lists logs just from the queried service' do
+            expect(results.any? { |el| el['log'] == 'baz' }).to be_false
+          end
         end
 
-        it 'lists all logs' do
-          expect(results.any? { |el| el['log'] == 'foo' }).to be_true
-          expect(results.any? { |el| el['log'] == 'bar' }).to be_true
+        describe '.count_by_service' do
+          let(:results) do
+            [
+              example_log(service_id: enabled_service, log: 'foo'),
+              example_log(service_id: other_service, log: 'baz'),
+              example_log(service_id: enabled_service, log: 'bar')
+            ].each { |log| LogRequestCubertStorage.store(log) }
+            LogRequestCubertStorage.count_by_service(enabled_service)
+          end
+
+          it 'lists all logs' do
+            expect(results).to eq(2)
+          end
+
+        end
+      end
+
+      describe 'application related methods' do
+        let(:app){ '1001' }
+        let(:other_app){ '1002' }
+
+        describe '.list_by_application' do
+          let(:results) do
+            [
+              example_log(service_id: enabled_service, log: 'foo',
+                application_id: app),
+              example_log(service_id: enabled_service, log: 'baz',
+                application_id: other_app),
+              example_log(service_id: enabled_service, log: 'bar',
+                application_id: app)
+            ].each { |log| LogRequestCubertStorage.store(log) }
+            LogRequestCubertStorage.list_by_application(enabled_service, app)
+          end
+
+          it 'lists all logs' do
+            expect(results.any? { |el| el['log'] == 'foo' }).to be_true
+            expect(results.any? { |el| el['log'] == 'bar' }).to be_true
+          end
+
+          it 'lists logs just from the queried service' do
+            expect(results.any? { |el| el['log'] == 'baz' }).to be_false
+          end
         end
 
-        it 'lists logs just from the queried service' do
-          expect(results.any? { |el| el['log'] == 'baz' }).to be_false
+        describe '.count_by_application' do
+          let(:results) do
+            [
+              example_log(service_id: enabled_service, log: 'foo',
+                application_id: app),
+              example_log(service_id: enabled_service, log: 'baz',
+                application_id: other_app),
+              example_log(service_id: enabled_service, log: 'bar',
+                application_id: app)
+            ].each { |log| LogRequestCubertStorage.store(log) }
+            LogRequestCubertStorage.count_by_application(enabled_service, app)
+          end
+
+          it 'returns the count of request logs' do
+            expect(results).to eq(2)
+          end
         end
       end
 
