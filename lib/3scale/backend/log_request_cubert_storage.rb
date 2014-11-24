@@ -24,10 +24,9 @@ module ThreeScale
         end
       end
 
-      # TODO: get provider_key based on transaction[:service_id] instead of
-      # passing it directly (to get common IP with current storage)
-      def store(provider_key, transaction)
-        cubert_store provider_key, transaction if cubert_bucket(provider_key)
+      def store(transaction)
+        provider = Service.load_by_id!(transaction[:service_id]).provider_key
+        cubert_store provider, transaction if cubert_bucket(provider)
       end
 
       def get(provider_key, document_id)
