@@ -2,43 +2,7 @@ module ThreeScale
   module Backend
     module CoreUser
       def self.included(base)
-        base.include InstanceMethods
         base.extend ClassMethods
-      end
-
-      module InstanceMethods
-        def save
-          service = Service.load_by_id(service_id)
-
-          save_attributes
-
-          ServiceUserManagementUseCase.new(service, username).add.tap do
-            self.class.clear_cache(service_id, username)
-          end
-        end
-
-        def active?
-          state == :active
-        end
-
-        def key
-          self.class.key(service_id, username)
-        end
-
-        def storage_key
-          self.class.storage_key(service_id, username, attribute)
-        end
-
-        private
-
-        def save_attributes
-          storage.hset key, "state", state.to_s if state
-          storage.hset key, "plan_id", plan_id if plan_id
-          storage.hset key, "plan_name", plan_name if plan_name
-          storage.hset key, "username", username if username
-          storage.hset key, "service_id", service_id if service_id
-          storage.hincrby key, "version", 1
-        end
       end
 
       module ClassMethods
@@ -153,6 +117,28 @@ module ThreeScale
         }
       end
 
+      def save
+        service = Service.load_by_id(service_id)
+
+        save_attributes
+
+        ServiceUserManagementUseCase.new(service, username).add.tap do
+          self.class.clear_cache(service_id, username)
+        end
+      end
+
+      def active?
+        state == :active
+      end
+
+      def key
+        self.class.key(service_id, username)
+      end
+
+      def storage_key
+        self.class.storage_key(service_id, username, attribute)
+      end
+
       def self.load_or_create!(service, user_id)
         key = Memoizer.build_key(self, :load_or_create!, service.id, user_id)
         Memoizer.memoize_block(key) do
@@ -181,6 +167,15 @@ module ThreeScale
       # Username is used as a unique user ID
       def user_id
         username
+      end
+
+      def save_attributes
+        storage.hset key, "state", state.to_s if state
+        storage.hset key, "plan_id", plan_id if plan_id
+        storage.hset key, "plan_name", plan_name if plan_name
+        storage.hset key, "username", username if username
+        storage.hset key, "service_id", service_id if service_id
+        storage.hincrby key, "version", 1
       end
 
     end
