@@ -4,15 +4,15 @@ module ThreeScale
       include StorageHelpers
       extend self
 
-      def store_all(transactions)
-        transactions.each { |transaction| store transaction }
-      end
-
       def store(transaction)
         provider_key = provider(transaction[:service_id])
         if cubert_bucket(provider_key)
           cubert_store provider_key, transaction
         end
+      end
+
+      def store_all(transactions)
+        transactions.each { |transaction| store transaction }
       end
 
       def get(provider_key, document_id)

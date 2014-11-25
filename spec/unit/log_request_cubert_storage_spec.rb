@@ -44,11 +44,11 @@ module ThreeScale
 
         describe '.list_by_service' do
           let(:results) do
-            [
+            LogRequestCubertStorage.store_all [
               example_log(service_id: enabled_service, log: 'foo'),
               example_log(service_id: other_service, log: 'baz'),
               example_log(service_id: enabled_service, log: 'bar')
-            ].each { |log| LogRequestCubertStorage.store(log) }
+            ]
             LogRequestCubertStorage.list_by_service(enabled_service)
           end
 
@@ -64,11 +64,11 @@ module ThreeScale
 
         describe '.count_by_service' do
           let(:results) do
-            [
+            LogRequestCubertStorage.store_all [
               example_log(service_id: enabled_service, log: 'foo'),
               example_log(service_id: other_service, log: 'baz'),
               example_log(service_id: enabled_service, log: 'bar')
-            ].each { |log| LogRequestCubertStorage.store(log) }
+            ]
             LogRequestCubertStorage.count_by_service(enabled_service)
           end
 
@@ -85,14 +85,14 @@ module ThreeScale
 
         describe '.list_by_application' do
           let(:results) do
-            [
+            LogRequestCubertStorage.store_all [
               example_log(service_id: enabled_service, log: 'foo',
                 application_id: app),
               example_log(service_id: enabled_service, log: 'baz',
                 application_id: other_app),
               example_log(service_id: enabled_service, log: 'bar',
                 application_id: app)
-            ].each { |log| LogRequestCubertStorage.store(log) }
+            ]
             LogRequestCubertStorage.list_by_application(enabled_service, app)
           end
 
@@ -108,14 +108,14 @@ module ThreeScale
 
         describe '.count_by_application' do
           let(:results) do
-            [
+            LogRequestCubertStorage.store_all [
               example_log(service_id: enabled_service, log: 'foo',
                 application_id: app),
               example_log(service_id: enabled_service, log: 'baz',
                 application_id: other_app),
               example_log(service_id: enabled_service, log: 'bar',
                 application_id: app)
-            ].each { |log| LogRequestCubertStorage.store(log) }
+            ]
             LogRequestCubertStorage.count_by_application(enabled_service, app)
           end
 

@@ -9,6 +9,7 @@ module ThreeScale
         def self.perform_logged(service_id, logs, enqueue_time)
           logs = preprocess(logs)
           LogRequestStorage.store_all(logs)
+          LogRequestCubertStorage.store_all(logs)
           @success_log_message = "#{service_id} #{logs.size} "
         end
 
