@@ -1,8 +1,8 @@
 module ThreeScale
   module Backend
     class Logger
-      FORMAT = "%s - %s [%s] \"%s %s%s %s\" %d %s %s %s %s %s %s %s %s\n"
-      ERROR_FORMAT = "%s - %s [%s] \"%s %s%s %s\" %d \"%s\" %s\n"
+      FORMAT = "%s - %s [%s] \"%s %s%s %s\" %d %s %s %s %s %s %s %s %s %s\n"
+      ERROR_FORMAT = "%s - %s [%s] \"%s %s%s %s\" %d \"%s\" %s %s\n"
 
       def initialize(app, logger=nil)
         @app = app
@@ -39,7 +39,8 @@ module ThreeScale
           env["HTTP_VERSION"],
           status.to_s[0..3],
           error,
-          now - began_at]
+          now - began_at,
+          env['HTTP_X_REQUEST_ID']]
       end
 
       def log(env, status, header, began_at)
@@ -64,7 +65,8 @@ module ThreeScale
           ThreeScale::Backend::Cache.stats[:hits] || "-",
           ThreeScale::Backend::Memoizer.stats[:size] || "-",
           ThreeScale::Backend::Memoizer.stats[:count] || "-",
-          ThreeScale::Backend::Memoizer.stats[:hits] || "-"]
+          ThreeScale::Backend::Memoizer.stats[:hits] || "-",
+          env['HTTP_X_REQUEST_ID']]
       end
 
       def extract_content_length(headers)
