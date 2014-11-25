@@ -40,7 +40,7 @@ module ThreeScale
       def ping_if_not_empty
         if pending_ping? && events_hook_configured?
           begin
-            store_last_ping
+            expire_last_ping
             request_to_events_hook
             return true
           rescue Exception => e
@@ -78,11 +78,8 @@ module ThreeScale
         RestClient.post(ThreeScale::Backend.configuration.events_hook, params)
       end
 
-      def store_last_ping
-        storage.pipelined do
-          storage.set(events_ping_key, 1)
-          storage.expire(events_ping_key, PING_TTL)
-        end
+      def expire_last_ping
+        storage.expire(events_ping_key, PING_TTL)
       end
 
       def pending_ping?
@@ -91,10 +88,10 @@ module ThreeScale
 
         events_set_size, ping_key_value = storage.pipelined do
           storage.zcard(events_queue_key)
-          storage.get(events_ping_key)
+          storage.incr(events_ping_key)
         end
 
-        events_set_size > 0 && ping_key_value.nil?
+        events_set_size > 0 && ping_key_value == 1
       end
 
       # TODO: Remove this method. It's used only in tests and there it's

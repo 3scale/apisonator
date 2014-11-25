@@ -206,6 +206,29 @@ module ThreeScale
             end
           end
 
+          context 'with two calls in same moment (race condition)' do
+            it 'returns false the second time' do
+              original_method = EventStorage.method(:pending_ping?)
+              EventStorage.stub(:pending_ping?) do
+                original_method.call.tap { Thread.stop }
+              end
+
+              threads = []
+              threads << Thread.new { EventStorage.ping_if_not_empty }
+              threads << Thread.new { EventStorage.ping_if_not_empty }
+
+              threads.each do |thread|
+                sleep(0.1) while thread.status != 'sleep'
+              end
+
+              threads.each { |thread| thread.run }
+              values = threads.map { |thread| thread.join.value }
+
+              expect(values).to include(false)
+              expect(values).to include(true)
+            end
+          end
+
           context 'when there is no configuration for events_hook' do
             before do
               ThreeScale::Backend.configuration.stub(:events_hook).and_return(nil)
