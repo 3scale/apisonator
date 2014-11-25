@@ -73,12 +73,11 @@ module ThreeScale
             else
               raise ServiceRequiresDefaultUserPlan, service.id if service.default_user_plan_id.nil? ||
                 service.default_user_plan_name.nil?
-              state = 'active' if state.nil?
             end
 
             user = new(service_id: service.id,
                        username: username,
-                       state: state.to_sym,
+                       state: :active,
                        plan_id: service.default_user_plan_id,
                        plan_name: service.default_user_plan_name)
             user.save
