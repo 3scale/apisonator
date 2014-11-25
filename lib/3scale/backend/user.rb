@@ -48,31 +48,27 @@ module ThreeScale
           values = storage.hmget(key, 'state', 'plan_id', 'plan_name', 'version')
           state, plan_id, plan_name, vv = values
 
-          user = nil
           unless state.nil?
-            user = new(service_id: service_id,
-                       username: username,
-                       state: state.to_sym,
-                       plan_id: plan_id,
-                       plan_name: plan_name)
-
-            incr_version(service_id, username) if vv.nil?
+            new(service_id: service_id, username: username,
+                state: state.to_sym, plan_id: plan_id,
+                plan_name: plan_name).tap do
+              incr_version(service_id, username) if vv.nil?
+            end
           end
-
-          return user
         end
 
         def load_or_create!(service, username)
           user = load(service.id, username)
 
-          if user.nil?
+          unless user
             # the user does not exist yet, we need to create it for the case of
             # the open loop
             if service.user_registration_required?
               raise ServiceRequiresRegisteredUser, service.id
-            else
-              raise ServiceRequiresDefaultUserPlan, service.id if service.default_user_plan_id.nil? ||
-                service.default_user_plan_name.nil?
+            end
+
+            if service.default_user_plan_id.nil? or service.default_user_plan_name.nil?
+              raise ServiceRequiresDefaultUserPlan, service.id
             end
 
             user = new(service_id: service.id,
@@ -83,21 +79,16 @@ module ThreeScale
             user.save
           end
 
-          return user
+          user
         end
 
         def save!(attributes)
-          raise UserRequiresUsername if attributes[:username].nil?
-          raise UserRequiresServiceId if attributes[:service_id].nil?
-          service = Service.load_by_id(attributes[:service_id])
-          raise UserRequiresValidService if service.nil?
-          attributes[:plan_id] ||= service.default_user_plan_id
-          attributes[:plan_name] ||= service.default_user_plan_name
-          raise UserRequiresDefinedPlan if attributes[:plan_id].nil? || attributes[:plan_name].nil?
-          attributes[:state] = "active" if attributes[:state].nil?
+          validate_attributes(attributes)
+
+          # create the user object
           user = new(attributes)
           user.save
-          return user
+          user
         end
 
         def get_version(service_id, username)
@@ -124,9 +115,22 @@ module ThreeScale
           "service:#{service_id}/user:#{username}/#{attribute}"
         end
 
+        private
+
         def clear_cache(service_id, user_id)
           key = Memoizer.build_key(self, :load_or_create!, service_id, user_id)
           Memoizer.clear key
+        end
+
+        def validate_attributes(attributes)
+          raise UserRequiresUsername if attributes[:username].nil?
+          raise UserRequiresServiceId if attributes[:service_id].nil?
+          service = Service.load_by_id(attributes[:service_id])
+          raise UserRequiresValidService if service.nil?
+          attributes[:plan_id] ||= service.default_user_plan_id
+          attributes[:plan_name] ||= service.default_user_plan_name
+          raise UserRequiresDefinedPlan if attributes[:plan_id].nil? || attributes[:plan_name].nil?
+          attributes[:state] ||= "active"
         end
 
       end
