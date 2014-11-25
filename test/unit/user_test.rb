@@ -13,12 +13,10 @@ class UserTest < Test::Unit::TestCase
     service = Service.save! :provider_key => 'foo', :id => 7001001
 
     assert_raise ServiceRequiresRegisteredUser do
-      ## failure because the service needs registered users
       User.load_or_create!(service, 'username1')
     end
 
     assert_raise UserRequiresDefinedPlan do
-      ## failure because user requires a defined plan
       User.save!(:username => 'username', :service_id => '7001001')
     end
 
@@ -46,7 +44,6 @@ class UserTest < Test::Unit::TestCase
     User.delete! service.id, user.username
 
     assert_raise ServiceRequiresRegisteredUser do
-      ## failure trying to load a user who does not exist and the service does not support open loop
       user = User.load_or_create!(service, 'username')
     end
   end
