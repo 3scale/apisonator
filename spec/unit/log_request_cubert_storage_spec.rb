@@ -20,8 +20,8 @@ module ThreeScale
         it 'runs when the service usage flag is enabled' do
           doc_id = LogRequestCubertStorage.store(enabled_service_log)
 
-          expect(LogRequestCubertStorage.get(enabled_service, doc_id).
-            body['service_id']).to eq(enabled_service_log[:service_id])
+          expect(cubert_get(enabled_service, doc_id).body['service_id']).
+            to eq(enabled_service_log[:service_id])
         end
 
         it "doesn't run when the service usage flag is disabled" do
@@ -31,7 +31,28 @@ module ThreeScale
         end
       end
 
+      private
+
+      def example_log(params = {})
+        default_params = {
+          service_id: 1,
+          application_id: 2,
+          usage: {"metric_id_one" => 1},
+          timestamp: Time.utc(2010, 9, 10, 17, 4),
+          log: {'request' => 'req', 'response' => 'resp', 'code' => 200}
+        }
+        default_params.merge params
+      end
+
+      def cubert_get(service_id, document_id)
+        Cubert::Client::Connection.new('http://localhost:8080').get_document(
+          document_id,
+          LogRequestCubertStorage.send(:bucket, service_id),
+          LogRequestCubertStorage.send(:collection)
+        )
+      end
     end
+
   end
 end
 
