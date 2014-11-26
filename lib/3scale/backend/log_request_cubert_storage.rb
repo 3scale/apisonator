@@ -15,40 +15,10 @@ module ThreeScale
         transactions.each { |transaction| store transaction }
       end
 
+      # TODO: Used just for testing/debugging purposes, move to test helper
       def get(service_id, document_id)
         cubert_connection.get_document document_id, cubert_bucket(service_id),
           cubert_collection
-      end
-
-      def list_by_service(service_id)
-        cubert_find provider(service_id), {service_id: service_id}
-      end
-
-      def list_by_application(service_id, application_id)
-        cubert_find provider(service_id),
-          {service_id: service_id, application_id: application_id}
-      end
-
-      # TODO: Change when counts are available in cubert, currently performs not
-      # exactly optimal
-      def count_by_service(service_id)
-        list_by_service(service_id).size
-      end
-
-      # TODO: Change when counts are available in cubert, currently performs not
-      # exactly optimal
-      def count_by_application(service_id, application_id)
-        list_by_application(service_id, application_id).size
-      end
-
-      # TODO: move to Cubert, currently deletion not available in Cubert
-      def delete_by_service(service_id)
-        raise NotImplemnted
-      end
-
-      # TODO: move to Cubert, currently deletion not available in Cubert
-      def delete_by_application(service_id, application_id)
-        raise NotImplemented
       end
 
       private
