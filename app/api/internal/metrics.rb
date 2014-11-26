@@ -29,7 +29,7 @@ module ThreeScale
 
         post '/:id' do |service_id, id|
           attributes = params[:metric]
-          halt 400, { status: :error, error: 'invalid parameter \'metric\'' }.to_json unless attributes
+          halt 400, { status: :error, error: 'missing parameter \'metric\'' }.to_json unless attributes
           attributes.merge!({service_id: service_id, id: id})
           metric = Metric.save attributes
           [201, headers, { status: :created, metric: metric.to_hash }.to_json]
@@ -37,7 +37,7 @@ module ThreeScale
 
         put '/:id' do |service_id, id|
           attributes = params[:metric]
-          halt 400, { status: :error, error: 'invalid parameter \'metric\'' }.to_json unless attributes
+          halt 400, { status: :error, error: 'missing parameter \'metric\'' }.to_json unless attributes
           attributes.merge!({service_id: service_id, id: id})
           metric = Metric.save attributes
           { status: :modified, metric: metric.to_hash }.to_json

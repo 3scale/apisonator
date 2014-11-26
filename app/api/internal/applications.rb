@@ -13,7 +13,7 @@ module ThreeScale
 
         post '/:id' do |service_id, id|
           attributes = params[:application]
-          halt 400, { status: :error, error: 'invalid parameter \'application\'' }.to_json unless attributes
+          halt 400, { status: :error, error: 'missing parameter \'application\'' }.to_json unless attributes
           if Application.exists?(service_id, id)
             halt 405, { status: :exists, error: 'application cannot be created, exists already' }.to_json
           end
@@ -24,7 +24,7 @@ module ThreeScale
 
         put '/:id' do |service_id, id|
           attributes = params[:application]
-          halt 400, { status: :error, error: 'invalid parameter \'application\'' }.to_json unless attributes
+          halt 400, { status: :error, error: 'missing parameter \'application\'' }.to_json unless attributes
           modified = Application.exists?(service_id, id)
           attributes.merge!({service_id: service_id, id: id})
           app = Application.save(attributes)
