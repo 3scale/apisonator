@@ -91,7 +91,7 @@ module ThreeScale
           storage.incr(events_ping_key)
         end
 
-        events_set_size > 0 && ping_key_value == 1
+        events_set_size > 0 && ping_key_value.to_i == 1
       end
 
       # TODO: Remove this method. It's used only in tests and there it's
