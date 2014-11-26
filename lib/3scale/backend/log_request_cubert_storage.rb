@@ -2,6 +2,7 @@ module ThreeScale
   module Backend
     module LogRequestCubertStorage
       include StorageHelpers
+      include Memoizer::Decorator
       extend self
 
       def store(transaction)
@@ -17,11 +18,12 @@ module ThreeScale
         transactions.each { |transaction| store transaction }
       end
 
-      private
-
       def enabled?
         !! storage.get(global_lock_key)
       end
+      memoize :enabled?
+
+      private
 
       def global_lock_key
         'cubert_request_log_storage_enabled'
@@ -34,6 +36,7 @@ module ThreeScale
       def bucket(service_id)
         storage.get bucket_id_key(service_id)
       end
+      memoize :bucket
 
       def bucket_id_key(service_id)
         "cubert_request_log_bucket_service_#{service_id}"
