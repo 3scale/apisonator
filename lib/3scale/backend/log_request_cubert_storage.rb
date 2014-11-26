@@ -31,7 +31,7 @@ module ThreeScale
       end
 
       def connection
-        Cubert::Client::Connection.new configuration.cubert.host
+        @connection ||= Cubert::Client::Connection.new(configuration.cubert.host)
       end
 
       def bucket(service_id)

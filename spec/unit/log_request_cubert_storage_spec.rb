@@ -41,6 +41,13 @@ module ThreeScale
             expect(doc_id).to be_nil
           end
         end
+
+      end
+
+      it 'reuses the connection' do
+        old_id = LogRequestCubertStorage.send(:connection).object_id
+        new_id = LogRequestCubertStorage.send(:connection).object_id
+        expect(old_id).to eq(new_id)
       end
 
       private
