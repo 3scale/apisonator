@@ -43,7 +43,7 @@ module ThreeScale
 
         put '/:metric_id/:period' do |service_id, plan_id, metric_id, period|
           attributes = params[:usagelimit]
-          halt 400, { status: :error, error: 'invalid parameter \'usagelimit\'' }.to_json unless attributes
+          halt 400, { status: :error, error: 'missing parameter \'usagelimit\'' }.to_json unless attributes
           value = attributes[period.to_sym]
           halt 400, { status: :error, error: "missing parameter '#{period}'" }.to_json unless value
           ul_hash = UsageLimitsHelper.to_hash(service_id, plan_id, metric_id, period, value)

@@ -4,7 +4,7 @@ module ThreeScale
       internal_api '/services/:service_id/users' do
         module UserHelper
           def self.save(service_id, username, attributes, method, headers)
-            halt 400, { status: :error, error: 'invalid parameter \'user\'' }.to_json unless attributes
+            halt 400, { status: :error, error: 'missing parameter \'user\'' }.to_json unless attributes
             attributes.merge!(service_id: service_id, username: username)
             begin
               user = User.save! attributes
