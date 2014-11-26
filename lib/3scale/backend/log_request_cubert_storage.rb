@@ -3,6 +3,7 @@ module ThreeScale
     module LogRequestCubertStorage
       include StorageHelpers
       include Memoizer::Decorator
+      include Configurable
       extend self
 
       def store(transaction)
@@ -30,7 +31,7 @@ module ThreeScale
       end
 
       def connection
-        Cubert::Client::Connection.new('http://localhost:8080')
+        Cubert::Client::Connection.new configuration.cubert.host
       end
 
       def bucket(service_id)

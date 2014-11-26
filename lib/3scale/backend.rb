@@ -88,6 +88,7 @@ ThreeScale::Backend.configuration.tap do |config|
                      :username, :password, :retry,
                      :write_timeout, :read_timeout
                     )
+  config.add_section(:cubert, :host)
 
   # Default config
   config.master_service_id  = 1
