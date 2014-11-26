@@ -5,9 +5,9 @@ module ThreeScale
       extend self
 
       def store(transaction)
-        provider_key = provider(transaction[:service_id])
-        if cubert_bucket(provider_key)
-          cubert_store provider_key, transaction
+        service = transaction[:service_id]
+        if cubert_bucket(service)
+          cubert_store service, transaction
         end
       end
 
@@ -15,9 +15,9 @@ module ThreeScale
         transactions.each { |transaction| store transaction }
       end
 
-      def get(provider_key, document_id)
-        cubert_connection.get_document(document_id,
-          cubert_bucket(provider_key), cubert_collection)
+      def get(service_id, document_id)
+        cubert_connection.get_document document_id, cubert_bucket(service_id),
+          cubert_collection
       end
 
       def list_by_service(service_id)
@@ -53,9 +53,9 @@ module ThreeScale
 
       private
 
-      def cubert_find(provider_key, query)
+      def cubert_find(service_id, query)
         cubert_connection.find_documents(
-          query, cubert_bucket(provider_key), cubert_collection
+          query, cubert_bucket(service_id), cubert_collection
         ).map(&:body)
       end
 
@@ -63,25 +63,21 @@ module ThreeScale
         Cubert::Client::Connection.new('http://localhost:8080')
       end
 
-      def cubert_store(provider_key, data)
+      def cubert_store(service_id, data)
         cubert_connection.create_document body: data,
-          bucket: cubert_bucket(provider_key), collection: 'request_logs'
+          bucket: cubert_bucket(service_id), collection: 'request_logs'
       end
 
-      def cubert_bucket(provider_key)
-        storage.get(bucket_id_key(provider_key))
+      def cubert_bucket(service_id)
+        storage.get(bucket_id_key(service_id))
       end
 
-      def bucket_id_key(provider_key)
-        "cubert_bucket_provider_#{provider_key}"
+      def bucket_id_key(service_id)
+        "cubert_bucket_service_#{service_id}"
       end
 
       def cubert_collection
         'request_logs'
-      end
-
-      def provider(service_id)
-        Service.load_by_id!(service_id).provider_key
       end
     end
   end
