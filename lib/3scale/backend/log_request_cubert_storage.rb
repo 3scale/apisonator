@@ -6,9 +6,9 @@ module ThreeScale
 
       def store(transaction)
         service = transaction[:service_id]
-        if bucket(service)
+        if enabled? && (bucket_id = bucket(service))
           connection.create_document(
-            body: transaction, bucket: bucket(service), collection: collection
+            body: transaction, bucket: bucket_id, collection: collection
           )
         end
       end
@@ -19,16 +19,24 @@ module ThreeScale
 
       private
 
+      def enabled?
+        !! storage.get(global_lock_key)
+      end
+
+      def global_lock_key
+        'cubert_request_log_storage_enabled'
+      end
+
       def connection
         Cubert::Client::Connection.new('http://localhost:8080')
       end
 
       def bucket(service_id)
-        storage.get(bucket_id_key(service_id))
+        storage.get bucket_id_key(service_id)
       end
 
       def bucket_id_key(service_id)
-        "cubert_bucket_service_#{service_id}"
+        "cubert_request_log_bucket_service_#{service_id}"
       end
 
       def collection

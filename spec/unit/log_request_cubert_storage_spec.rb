@@ -17,17 +17,29 @@ module ThreeScale
         let(:enabled_service_log) { example_log(service_id: enabled_service) }
         let(:disabled_service_log) { example_log(service_id: disabled_service) }
 
-        it 'runs when the service usage flag is enabled' do
-          doc_id = LogRequestCubertStorage.store(enabled_service_log)
+        context 'global request log storage enabled' do
+          before { storage.set(LogRequestCubertStorage.send(:global_lock_key), true) }
 
-          expect(cubert_get(enabled_service, doc_id).body['service_id']).
-            to eq(enabled_service_log[:service_id])
+          it 'runs when the service usage flag is enabled' do
+            doc_id = LogRequestCubertStorage.store(enabled_service_log)
+
+            expect(cubert_get(enabled_service, doc_id).body['service_id']).
+              to eq(enabled_service_log[:service_id])
+          end
+
+          it "doesn't run when the service usage flag is disabled" do
+            doc_id = LogRequestCubertStorage.store(disabled_service_log)
+
+            expect(doc_id).to be_nil
+          end
         end
 
-        it "doesn't run when the service usage flag is disabled" do
-          doc_id = LogRequestCubertStorage.store(disabled_service_log)
+        context 'global request log storage disabled' do
+          it "doesn't store logs" do
+            doc_id = LogRequestCubertStorage.store(enabled_service_log)
 
-          expect(doc_id).to be_nil
+            expect(doc_id).to be_nil
+          end
         end
       end
 
