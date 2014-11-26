@@ -40,7 +40,6 @@ module ThreeScale
       def ping_if_not_empty
         if pending_ping? && events_hook_configured?
           begin
-            expire_last_ping
             request_to_events_hook
             return true
           rescue Exception => e
@@ -91,7 +90,10 @@ module ThreeScale
           storage.incr(events_ping_key)
         end
 
-        events_set_size > 0 && ping_key_value.to_i == 1
+        if ping_key_value.to_i == 1
+          expire_last_ping
+          events_set_size > 0
+        end
       end
 
       # TODO: Remove this method. It's used only in tests and there it's
