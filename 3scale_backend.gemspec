@@ -35,6 +35,7 @@ Gem::Specification.new do |s|
   s.add_dependency '3scale_core',               '1.1.0'
   s.add_dependency 'redis-sentinel',            '1.4.4'
   s.add_dependency 'influxdb',                  '0.1.8'
+  s.add_dependency 'cubert-client',             '0.0.2.pre6'
 
   s.files = Dir.glob('{lib,bin,app}/**/*')
   s.files << 'README.md'

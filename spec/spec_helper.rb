@@ -11,6 +11,7 @@ RSpec.configure do |config|
         "127.0.0.1:7379",
         "127.0.0.1:7380",
       ]
+      app_config.cubert.host = 'http://localhost:8080'
     end
   end
 

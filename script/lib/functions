@@ -50,15 +50,26 @@ function stop_influxdb {
     kill -9 `cat "${INFLUXDB_PIDFILE}"`
 }
 
+function start_cubert {
+    ${SCRIPT_DIR}/launch_cubert &
+    sleep 5
+}
+
+function stop_cubert {
+    kill -9 `ps aux | grep cubert | awk '{ print $2 }'`
+}
+
 function start_services {
     start_redis
     start_twemproxy
     start_influxdb
+    start_cubert
 }
 
 function stop_services {
     stop_redis
     stop_twemproxy
     stop_influxdb
+    stop_cubert
 }
 

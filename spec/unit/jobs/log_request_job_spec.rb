@@ -7,7 +7,10 @@ module ThreeScale
         include TestHelpers::Sequences
 
         describe 'parameter conversion' do
-          before { ThreeScale::Backend::Worker.new }
+          before do
+            LogRequestCubertStorage.stub :store_all
+            ThreeScale::Backend::Worker.new
+          end
 
           it 'changes :usage to a string' do
             LogRequestStorage.should_receive(:store_all).with do |args|

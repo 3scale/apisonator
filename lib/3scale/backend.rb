@@ -42,6 +42,7 @@ require '3scale/backend/storage'
 require '3scale/backend/queue_storage'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/log_request_storage'
+require '3scale/backend/log_request_cubert_storage'
 require '3scale/backend/aggregator'
 require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
@@ -86,6 +87,7 @@ ThreeScale::Backend.configuration.tap do |config|
                      :username, :password, :retry,
                      :write_timeout, :read_timeout
                     )
+  config.add_section(:cubert, :host)
 
   # Default config
   config.master_service_id  = 1

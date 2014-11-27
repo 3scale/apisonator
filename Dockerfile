@@ -22,9 +22,7 @@ ADD 3scale_backend.gemspec /tmp/backend/
 RUN bundle install --without development --jobs `grep -c processor /proc/cpuinfo`
 
 WORKDIR /opt/backend/
-
 ADD . /opt/backend
-
 RUN bundle config --local without development
 
 RUN apt-get -y -q install openssh-server \
@@ -34,5 +32,7 @@ ADD docker/ssh /root/.ssh
 
 ADD http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb /influxdb_0.8.5_amd64.deb
 RUN dpkg -i /influxdb_0.8.5_amd64.deb
+
+RUN gem install cubert-server --version=0.0.2.pre.4
 
 CMD script/ci
