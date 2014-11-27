@@ -1,3 +1,5 @@
+require 'cubert/client'
+
 module ThreeScale
   module Backend
     module LogRequestCubertStorage
