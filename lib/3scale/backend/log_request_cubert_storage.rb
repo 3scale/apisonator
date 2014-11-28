@@ -35,8 +35,7 @@ module ThreeScale
       end
 
       def enable_service(service_id)
-        storage.set bucket_id_key(service_id),
-          Cubert::Client::Connection.new('http://localhost:8080').create_bucket
+        storage.set bucket_id_key(service_id), connection.create_bucket
         storage.sadd 'cubert_enabled_services', service_id
       end
 
