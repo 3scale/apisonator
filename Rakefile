@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+load 'lib/3scale/tasks/cubert.rake'
+
 task :environment do
   require '3scale/backend'
   require '3scale/backend/aggregator/stats_tasks'

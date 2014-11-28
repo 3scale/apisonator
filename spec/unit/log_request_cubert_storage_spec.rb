@@ -18,7 +18,7 @@ module ThreeScale
         let(:disabled_service_log) { example_log(service_id: disabled_service) }
 
         context 'global request log storage enabled' do
-          before { storage.set(LogRequestCubertStorage.send(:global_lock_key), true) }
+          before { LogRequestCubertStorage.global_enable }
 
           it 'runs when the service usage flag is enabled' do
             doc_id = LogRequestCubertStorage.store(enabled_service_log)
@@ -35,6 +35,8 @@ module ThreeScale
         end
 
         context 'global request log storage disabled' do
+          before { LogRequestCubertStorage.global_disable }
+
           it "doesn't store logs" do
             doc_id = LogRequestCubertStorage.store(enabled_service_log)
 

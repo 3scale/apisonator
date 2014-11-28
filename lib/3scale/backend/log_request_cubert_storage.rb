@@ -22,9 +22,17 @@ module ThreeScale
       end
 
       def enabled?
-        !! storage.get(global_lock_key)
+        storage.get(global_lock_key).to_i == 1
       end
       memoize :enabled?
+
+      def global_enable
+        storage.set global_lock_key, 1
+      end
+
+      def global_disable
+        storage.set global_lock_key, 0
+      end
 
       private
 
