@@ -20,6 +20,11 @@ namespace :cubert do
     ThreeScale::Backend::LogRequestCubertStorage.disable_service ARGV.last.to_i
   end
 
+  desc 'Disables Cuberta and cleans all the related keys.'
+  task :clean => :environment do
+    ThreeScale::Backend::LogRequestCubertStorage.clean_cubert_redis_keys
+  end
+
   def storage
     ThreeScale::Backend::Storage.instance
   end

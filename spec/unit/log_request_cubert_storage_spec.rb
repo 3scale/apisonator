@@ -41,11 +41,33 @@ module ThreeScale
       end
 
       describe '.disable_service' do
-        it 'remove the cubert bucket info from Redis' do
-          LogRequestCubertStorage.disable_service enabled_service
+        before { LogRequestCubertStorage.disable_service enabled_service }
 
+        it 'remove the cubert bucket info from Redis' do
           expect(LogRequestCubertStorage.send(:bucket, enabled_service)).
             to be_nil
+        end
+
+        it 'removes the service from the list of enabled services' do
+          expect(storage.smembers(LogRequestCubertStorage.send(
+            :enabled_services_key))).to be_empty
+        end
+      end
+
+      describe '.clean_cubert_redis_keys' do
+        before do
+          LogRequestCubertStorage.global_enable
+          enabled_service
+          LogRequestCubertStorage.clean_cubert_redis_keys
+        end
+
+        it 'removes all the keys' do
+          expect(storage.get LogRequestCubertStorage.send(:global_lock_key)).
+            to be_nil
+          expect(storage.smembers LogRequestCubertStorage.send(
+            :enabled_services_key)).to be_empty
+          expect(storage.get LogRequestCubertStorage.send(:bucket_id_key,
+            enabled_service)).to be_nil
         end
       end
 
