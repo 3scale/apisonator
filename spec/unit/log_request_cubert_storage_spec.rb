@@ -5,12 +5,7 @@ module ThreeScale
 
     describe LogRequestCubertStorage do
       let(:storage) { ThreeScale::Backend::Storage.instance }
-      let(:enabled_service) do
-        bucket_id = Cubert::Client::Connection.new('http://localhost:8080').
-          create_bucket
-        storage.set(LogRequestCubertStorage.send(:bucket_id_key, '7001'), bucket_id)
-        '7001'
-      end
+      let(:enabled_service) { LogRequestCubertStorage.enable_service('7001'); '7001' }
       let(:disabled_service) { '7002' }
 
       describe '.store' do
@@ -43,7 +38,15 @@ module ThreeScale
             expect(doc_id).to be_nil
           end
         end
+      end
 
+      describe '.disable_service' do
+        it 'remove the cubert bucket info from Redis' do
+          LogRequestCubertStorage.disable_service enabled_service
+
+          expect(LogRequestCubertStorage.send(:bucket, enabled_service)).
+            to be_nil
+        end
       end
 
       it 'reuses the connection' do

@@ -31,7 +31,16 @@ module ThreeScale
       end
 
       def global_disable
-        storage.set global_lock_key, 0
+        storage.del global_lock_key
+      end
+
+      def enable_service(service_id)
+        storage.set bucket_id_key(service_id),
+          Cubert::Client::Connection.new('http://localhost:8080').create_bucket
+      end
+
+      def disable_service(service_id)
+        storage.del bucket_id_key(service_id)
       end
 
       private
