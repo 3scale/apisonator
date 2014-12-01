@@ -36,7 +36,7 @@ module ThreeScale
 
       def enable_service(service_id)
         storage.set bucket_id_key(service_id), connection.create_bucket
-        storage.sadd 'cubert_enabled_services', service_id
+        storage.sadd enabled_services_key, service_id
       end
 
       def disable_service(service_id)
