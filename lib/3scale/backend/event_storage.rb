@@ -5,7 +5,7 @@ module ThreeScale
       extend self
 
       PING_TTL    = 60
-      EVENT_TYPES = [:first_traffic, :alert]
+      EVENT_TYPES = [:first_traffic, :first_daily_traffic, :alert]
 
       def store(type, object)
         raise Exception.new("Event type #{type} is invalid") unless EVENT_TYPES.member?(type)
