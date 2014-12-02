@@ -68,14 +68,14 @@ class WorkerTest < Test::Unit::TestCase
       worker = Backend::Worker.new(:one_off => true, :log_file => log_file)
 
       line = File.new(log_file,"r").read
-      assert_equal "# Logfile created on 2011-12-12 12:48:00 +0100 by logger.rb", line.split("/").first
+      assert_equal "# Logfile created on 2011-12-12 11:48:00 UTC by logger.rb", line.split("/").first
 
       ## creates the log file when on work
       FileUtils.remove_file(log_file, :force => true)
       worker = Backend::Worker.work(:one_off => true, :log_file => log_file)
 
       line = File.new(log_file,"r").read
-      assert_equal "# Logfile created on 2011-12-12 12:48:00 +0100 by logger.rb", line.split("/").first
+      assert_equal "# Logfile created on 2011-12-12 11:48:00 UTC by logger.rb", line.split("/").first
 
       FileUtils.remove_file(log_file, :force => true)
     end
