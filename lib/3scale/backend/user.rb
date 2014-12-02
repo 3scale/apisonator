@@ -12,7 +12,9 @@ module ThreeScale
 
           save_attributes
 
-          ServiceUserManagementUseCase.new(service, username).add
+          ServiceUserManagementUseCase.new(service, username).add.tap do
+            self.class.clear_cache(service_id, username)
+          end
         end
 
         def active?
@@ -111,6 +113,7 @@ module ThreeScale
           service = Service.load_by_id(service_id)
           raise UserRequiresValidService if service.nil?
           ServiceUserManagementUseCase.new(service, username).delete
+          clear_cache(service_id, username)
           storage.del(self.key(service_id, username))
         end
 
@@ -121,6 +124,12 @@ module ThreeScale
         def storage_key(service_id, username, attribute)
           "service:#{service_id}/user:#{username}/#{attribute}"
         end
+
+        def clear_cache(service_id, user_id)
+          key = Memoizer.build_key(self, :load_or_create!, service_id, user_id)
+          Memoizer.clear key
+        end
+
       end
     end
 
@@ -130,6 +139,16 @@ module ThreeScale
 
       attr_accessor :service_id, :username, :state, :plan_id, :plan_name
       attr_writer :version
+
+      def to_hash
+        {
+          service_id: service_id,
+          username: username,
+          state: state,
+          plan_id: plan_id,
+          plan_name: plan_name,
+        }
+      end
 
       def self.load_or_create!(service, user_id)
         key = Memoizer.build_key(self, :load_or_create!, service.id, user_id)
