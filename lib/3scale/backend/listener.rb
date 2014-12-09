@@ -1,4 +1,5 @@
 require '3scale/backend/version'
+require 'base64'
 
 module ThreeScale
   module Backend
@@ -653,7 +654,13 @@ module ThreeScale
       # "/applications/13fasaada/referrer_filters/foo.bar.com/edit"
       # because we must put it before this route.
       delete '/applications/:app_id/referrer_filters/*.xml' do
-        application.delete_referrer_filter(params[:splat].join)
+        referred_filter_param = params[:splat].join
+        referred_filter_name  = begin
+          Base64.urlsafe_decode64(referred_filter_param)
+        rescue ArgumentError
+          referred_filter_param
+        end
+        application.delete_referrer_filter(referred_filter_name)
         empty_response
       end
 
