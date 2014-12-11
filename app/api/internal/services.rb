@@ -5,6 +5,13 @@ module ThreeScale
   module Backend
     module API
       internal_api '/services' do
+        module ServiceHelpers
+          def self.user_use_case(id, username)
+            service = Service.load_by_id(id)
+            ServiceUserManagementUseCase.new(service, username) if service
+          end
+        end
+
         get '/:id' do
           if service = Service.load_by_id(params[:id])
             service.to_hash.to_json
@@ -57,6 +64,15 @@ module ThreeScale
           rescue ServiceIdInvalid => e
             respond_with_404 e
           end
+        end
+
+        # XXX remove this once Core 1.5 is in production
+        post '/:id/users' do
+          use_case = ServiceHelpers.user_use_case(params[:id], params[:username])
+          respond_with_404("Service #{params[:id]} not found") unless use_case
+
+          use_case.add
+          { status: :ok }.to_json
         end
 
       end
