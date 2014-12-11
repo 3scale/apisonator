@@ -147,4 +147,30 @@ resource "Services (prefix: /services)" do
     end
   end
 
+  # XXX remove this after Core 1.5 is in production
+  post '/services/:id/users' do
+    let(:raw_post) { params.to_json }
+
+    parameter :id, 'Service ID', required: true
+    parameter :username, 'Username to add', required: true
+
+    example_request 'Adding a user to a service', id: 1001, username: 'bar' do
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'ok'
+    end
+  end
+
+  delete '/services/:id/users/:username' do
+    parameter :id, 'Service ID', required: true
+    parameter :username, 'Username to delete', required: true
+
+    example 'Removing a user from a service' do
+      ThreeScale::Backend::ServiceUserManagementUseCase.new(@service, 'bar').add
+
+      do_request id: 1001, username: 'bar'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'ok'
+    end
+  end
+
 end
