@@ -1,3 +1,4 @@
+require 'base64'
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class ApplicationReferrerFiltersTest < Test::Unit::TestCase
@@ -143,11 +144,12 @@ class ApplicationReferrerFiltersTest < Test::Unit::TestCase
   end
 
   test 'DELETE .../referrer_filters/{rule}.xml deletes the referrer filter with special chars' do
-    value       = "chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm.xml"
+    value       = "chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm"
     application = Application.load(@service_id, @application_id)
-    application.create_referrer_filter('chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm')
+    application.create_referrer_filter(value)
 
-    delete "/applications/#{@application_id}/referrer_filters/#{value}",
+    encoded_value = Base64.urlsafe_encode64(value)
+    delete "/applications/#{@application_id}/referrer_filters/#{encoded_value}.xml",
            provider_key: @provider_key
 
     assert_equal 200, last_response.status
