@@ -110,7 +110,7 @@ resource 'Users (prefix: /services/:service_id/users)' do
 
     example_request 'Deleting a User' do
       status.should == 200
-      ['deleted', 'ok'].should include(response_json['status'])
+      response_json['status'].should == 'deleted'
       ThreeScale::Backend::User.load(service_id, username).should be_nil
     end
   end
