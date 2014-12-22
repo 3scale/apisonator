@@ -100,9 +100,11 @@ module ThreeScale
         }
       end
 
-      def save
-        service = Service.load_by_id(service_id)
+      def service
+        @service ||= Service.load_by_id service_id
+      end
 
+      def save
         save_attributes
 
         ServiceUserManagementUseCase.new(service, username).add.tap do
