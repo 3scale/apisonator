@@ -13,11 +13,16 @@ module ThreeScale
         state, plan_id, plan_name, vv = values
 
         unless state.nil?
-          new(service_id: service_id, username: username,
-              state: state.to_sym, plan_id: plan_id,
-              plan_name: plan_name).tap do
-                incr_version(service_id, username) if vv.nil?
-              end
+          attributes = {
+            service_id: service_id,
+            username: username,
+            state: state.to_sym,
+            plan_id: plan_id,
+            plan_name: plan_name,
+          }
+          new(attributes).tap do
+            incr_version(service_id, username) if vv.nil?
+          end
         end
       end
 
@@ -37,11 +42,14 @@ module ThreeScale
               raise ServiceRequiresDefaultUserPlan, service.id
             end
 
-            user = new(service_id: service.id,
-                       username: username,
-                       state: :active,
-                       plan_id: service.default_user_plan_id,
-                       plan_name: service.default_user_plan_name)
+            attributes = {
+              service_id: service.id,
+              username: username,
+              state: :active,
+              plan_id: service.default_user_plan_id,
+              plan_name: service.default_user_plan_name,
+            }
+            user = new(attributes)
             user.save
           end
 
