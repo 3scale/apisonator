@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'rake',                      '10.1.0'
   s.add_dependency 'builder',                   '2.1.2'
   s.add_dependency 'hiredis',                   '0.4.5'
-  s.add_dependency 'redis',                     '3.0.2'
+  s.add_dependency 'redis',                     '3.0.7'
   s.add_dependency 'resque',                    '1.23.0'
   s.add_dependency 'rack',                      '1.5.2'
   s.add_dependency 'airbrake',                  '3.1.16'
