@@ -1,3 +1,4 @@
+SHELL = ./script/make_report_time.sh
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
 PROJECT := $(notdir $(PROJECT_PATH))
