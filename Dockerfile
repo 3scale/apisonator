@@ -30,9 +30,9 @@ RUN apt-get -y -q install openssh-server \
 
 ADD docker/ssh /root/.ssh
 
-ADD http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb /influxdb_0.8.5_amd64.deb
-RUN dpkg -i /influxdb_0.8.5_amd64.deb
+RUN wget http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb \
+ && dpkg -i influxdb_0.8.5_amd64.deb
 
-RUN gem install cubert-server --version=0.0.2.pre.4
+RUN gem install cubert-server --version=0.0.2.pre.4 --no-ri --no-rdoc
 
 CMD script/ci
