@@ -1,4 +1,7 @@
-PROJECT := $(subst @,,$(notdir $(shell pwd)))
+MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
+PROJECT := $(notdir $(PROJECT_PATH))
+
 RUN = docker run --rm
 NAME = $(PROJECT)-build
 
