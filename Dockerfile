@@ -13,6 +13,11 @@ RUN wget https://codeload.github.com/twitter/twemproxy/tar.gz/v0.3.0 \
  && tar xvzf v0.3.0 && cd twemproxy-0.3.0 && autoreconf -fvi \
  && ./configure --prefix=/opt/twemproxy && make && make install
 
+RUN wget http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb \
+ && dpkg -i influxdb_0.8.5_amd64.deb
+
+RUN gem install cubert-server --version=0.0.2.pre.4 --no-ri --no-rdoc
+
 WORKDIR /tmp/backend/
 
 ADD Gemfile /tmp/backend/
@@ -27,10 +32,5 @@ ADD . /opt/backend
 RUN bundle config --local without development
 
 ADD docker/ssh /root/.ssh
-
-RUN wget http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb \
- && dpkg -i influxdb_0.8.5_amd64.deb
-
-RUN gem install cubert-server --version=0.0.2.pre.4 --no-ri --no-rdoc
 
 CMD script/ci
