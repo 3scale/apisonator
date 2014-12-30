@@ -29,6 +29,8 @@ module ThreeScale
           end
         end
 
+        private
+
         def self.parse_transactions(service_id, raw_transactions)
           transactions = []
           logs = []
