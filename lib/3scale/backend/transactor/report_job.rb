@@ -40,6 +40,9 @@ module ThreeScale
 
               user_id = raw_transaction['user_id']
               if !service_id.nil? && !user_id.nil? && !user_id.empty?
+                # if there are no transactions with user_id specified, we don't
+                # need to load the service. For that reason, we load it inside this
+                # condition.
                 ser ||= Service.load_by_id(service_id)
                 if !ser.nil? && ser.user_registration_required? && ser.default_user_plan_id.nil?
                   # this means that end_user_plans are not enabled for the service, so passing user_id
