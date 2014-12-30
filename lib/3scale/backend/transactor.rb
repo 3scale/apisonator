@@ -436,10 +436,6 @@ module ThreeScale
         time.to_s
       end
 
-      def parse_predicted_usage(service, usage)
-        ## warning, empty method? :-)
-      end
-
       ## copied from transactor.rb
       def load_user_current_usage(user)
         pairs = Array.new
