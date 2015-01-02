@@ -33,13 +33,12 @@ module ThreeScale
 
         def self.parse_transactions(service_id, raw_transactions)
           transactions = []
-          logs = []
-          ser = nil
+          logs         = []
+          ser          = nil
+          metrics      = nil
 
           group_by_application_id(service_id, raw_transactions) do |application_id, group|
-            metrics  = Metric.load_all(service_id)
             group.each do |raw_transaction|
-
               user_id = raw_transaction['user_id']
               if !service_id.nil? && !user_id.nil? && !user_id.empty?
                 # if there are no transactions with user_id specified, we don't
@@ -56,6 +55,7 @@ module ThreeScale
               usage = raw_transaction['usage']
 
               if !usage.nil? && !usage.empty?
+                metrics ||= Metric.load_all(service_id)
                 # makes no sense to process a transaction if no usage is passed
                 transactions << {
                   :service_id     => service_id,
