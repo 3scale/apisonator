@@ -46,31 +46,17 @@ module ThreeScale
               end
 
               usage = raw_transaction['usage']
-
+              # makes no sense to process a transaction if no usage is passed
               if !usage.nil? && !usage.empty?
-                metrics ||= Metric.load_all(service_id)
-                # makes no sense to process a transaction if no usage is passed
-                transaction = {
-                  service_id:     service_id,
-                  application_id: application_id,
-                  timestamp:      raw_transaction['timestamp'],
-                  usage:          metrics.process_usage(usage),
-                  user_id:        raw_transaction['user_id'],
-                }
+                metrics   ||= Metric.load_all(service_id)
+                transaction = compose_transaction(service_id, application_id, metrics, raw_transaction)
               end
 
               raw_log = raw_transaction['log']
+              # here we don't care about the usage, but log needs to be passed
               if !raw_log.nil? && !raw_log.empty? && !raw_log['request'].nil?
-                # here we don't care about the usage, but log needs to be passed
-                logs << {
-                  service_id:     service_id,
-                  application_id: application_id,
-                  timestamp:      raw_transaction['timestamp'],
-                  log:            raw_log,
-                  usage:          raw_transaction['usage'],
-                  user_id:        raw_transaction['user_id']
-                }
                 transaction[:response_code] = raw_log['code']
+                logs << compose_log(service_id, application_id, raw_transaction, raw_log)
               end
 
               transactions << transaction
@@ -93,6 +79,27 @@ module ThreeScale
           !(service &&
             service.user_registration_required? &&
             service.default_user_plan_id.nil?)
+        end
+
+        def self.compose_transaction(service_id, application_id, metrics, raw_transaction)
+          {
+            service_id:     service_id,
+            application_id: application_id,
+            timestamp:      raw_transaction['timestamp'],
+            usage:          metrics.process_usage(raw_transaction['usage']),
+            user_id:        raw_transaction['user_id'],
+          }
+        end
+
+        def self.compose_log(service_id, application_id, raw_transaction, raw_log)
+          {
+            service_id:     service_id,
+            application_id: application_id,
+            timestamp:      raw_transaction['timestamp'],
+            log:            raw_log,
+            usage:          raw_transaction['usage'],
+            user_id:        raw_transaction['user_id'],
+          }
         end
       end
     end
