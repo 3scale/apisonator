@@ -50,27 +50,30 @@ module ThreeScale
               if !usage.nil? && !usage.empty?
                 metrics ||= Metric.load_all(service_id)
                 # makes no sense to process a transaction if no usage is passed
-                transactions << {
-                  :service_id     => service_id,
-                  :application_id => application_id,
-                  :timestamp      => raw_transaction['timestamp'],
-                  :usage          => metrics.process_usage(raw_transaction['usage']),
-                  :user_id        => raw_transaction['user_id']}
-              end
-
-              r = raw_transaction['log']
-              if !r.nil? && !r.empty? && !r['request'].nil?
-                # here we don't care about the usage, but log needs to be passed
-                logs << {
-                  :service_id     => service_id,
-                  :application_id => application_id,
-                  :timestamp      => raw_transaction['timestamp'],
-                  :log            => raw_transaction['log'],
-                  :usage          => raw_transaction['usage'],
-                  :user_id        => raw_transaction['user_id']
+                transaction = {
+                  service_id:     service_id,
+                  application_id: application_id,
+                  timestamp:      raw_transaction['timestamp'],
+                  usage:          metrics.process_usage(usage),
+                  user_id:        raw_transaction['user_id'],
                 }
               end
 
+              raw_log = raw_transaction['log']
+              if !raw_log.nil? && !raw_log.empty? && !raw_log['request'].nil?
+                # here we don't care about the usage, but log needs to be passed
+                logs << {
+                  service_id:     service_id,
+                  application_id: application_id,
+                  timestamp:      raw_transaction['timestamp'],
+                  log:            raw_log,
+                  usage:          raw_transaction['usage'],
+                  user_id:        raw_transaction['user_id']
+                }
+                transaction[:response_code] = raw_log['code']
+              end
+
+              transactions << transaction
             end
           end
 
