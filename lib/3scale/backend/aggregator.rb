@@ -48,10 +48,6 @@ module ThreeScale
               ## applications contains the list of application, or
               ## application+users that need to be limit checked
               applications[key] = { application_id: key, service_id: service_id }
-              ## who puts service_id here? it turns out is
-              ## the transactor.report_enqueue
-              if transaction[:service_id].nil?
-              end
 
               if transaction[:user_id]
                 key = transaction[:user_id]
