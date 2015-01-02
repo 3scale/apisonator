@@ -45,21 +45,24 @@ module ThreeScale
                 raise ServiceCannotUseUserId.new(service_id) if !end_users_allowed
               end
 
+              raw_log           = raw_transaction['log']
+              log_response_code = nil
+
+              # here we don't care about the usage, but log needs to be passed
+              if !raw_log.nil? && !raw_log.empty? && !raw_log['request'].nil?
+                log_response_code = raw_log['code']
+                logs << compose_log(service_id, application_id, raw_transaction, raw_log)
+              end
+
               usage = raw_transaction['usage']
               # makes no sense to process a transaction if no usage is passed
               if !usage.nil? && !usage.empty?
                 metrics   ||= Metric.load_all(service_id)
                 transaction = compose_transaction(service_id, application_id, metrics, raw_transaction)
-              end
+                transaction[:response_code] = log_response_code if log_response_code
 
-              raw_log = raw_transaction['log']
-              # here we don't care about the usage, but log needs to be passed
-              if !raw_log.nil? && !raw_log.empty? && !raw_log['request'].nil?
-                transaction[:response_code] = raw_log['code']
-                logs << compose_log(service_id, application_id, raw_transaction, raw_log)
+                transactions << transaction
               end
-
-              transactions << transaction
             end
           end
 
