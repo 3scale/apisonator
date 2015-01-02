@@ -53,9 +53,9 @@ module ThreeScale
                 end
               end
 
-              u = raw_transaction['usage']
+              usage = raw_transaction['usage']
 
-              if !u.nil? && !u.empty?
+              if !usage.nil? && !usage.empty?
                 # makes no sense to process a transaction if no usage is passed
                 transactions << {
                   :service_id     => service_id,
