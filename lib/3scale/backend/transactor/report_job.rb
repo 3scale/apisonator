@@ -32,24 +32,17 @@ module ThreeScale
         private
 
         def self.parse_transactions(service_id, raw_transactions)
-          transactions = []
-          logs         = []
-          ser          = nil
-          metrics      = nil
+          transactions      = []
+          logs              = []
+          metrics           = nil
+          end_users_allowed = nil
 
           group_by_application_id(service_id, raw_transactions) do |application_id, group|
             group.each do |raw_transaction|
               user_id = raw_transaction['user_id']
-              if !service_id.nil? && !user_id.nil? && !user_id.empty?
-                # if there are no transactions with user_id specified, we don't
-                # need to load the service. For that reason, we load it inside this
-                # condition.
-                ser ||= Service.load_by_id(service_id)
-                if !ser.nil? && ser.user_registration_required? && ser.default_user_plan_id.nil?
-                  # this means that end_user_plans are not enabled for the service, so passing user_id
-                  # should raise an error
-                  raise ServiceCannotUseUserId.new(service_id)
-                end
+              if !service_id.nil? && !user_id.nil? && !user_id.empty? && end_users_allowed.nil?
+                end_users_allowed = end_users_allowed?(service_id)
+                raise ServiceCannotUseUserId.new(service_id) if !end_users_allowed
               end
 
               usage = raw_transaction['usage']
@@ -90,6 +83,13 @@ module ThreeScale
           transactions.group_by do |transaction|
             Application.extract_id!(service_id, transaction['app_id'], transaction['user_key'], transaction['access_token'])
           end.each(&block)
+        end
+
+        def self.end_users_allowed?(service_id)
+          service = Service.load_by_id(service_id)
+          !(service &&
+            service.user_registration_required? &&
+            service.default_user_plan_id.nil?)
         end
       end
     end
