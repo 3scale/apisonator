@@ -176,19 +176,20 @@ module ThreeScale
         end
 
         granularities = [:eternity, :month, :week, :day, :hour]
-        values = metrics.map do |metric_type, prefix|
+        set_keys = []
+        metrics.each do |metric_type, prefix|
           granularities += [:year, :minute] unless metric_type == :service
 
-          granularities.map do |granularity|
-            key = counter_key(prefix, granularity, transaction[:timestamp])
+          granularities.each do |granularity|
+            key  = counter_key(prefix, granularity, transaction[:timestamp])
             keys = add_to_copied_keys(cmd, bucket, key, value)
-            storage.expire(key, 180) if granularity == :minute
+            set_keys << keys unless keys.empty?
 
-            keys
+            storage.expire(key, 180) if granularity == :minute
           end
         end
 
-        values.flatten(1).reject(&:empty?)
+        set_keys
       end
 
       def add_to_copied_keys(cmd, bucket, key, value)
@@ -196,7 +197,6 @@ module ThreeScale
         if StorageStats.enabled?
           storage.sadd("keys_changed:#{bucket}", key)
           if cmd == :set
-            @keys_doing_set_op << [key, value]
             set_keys += [key, value]
           else
             storage.send(cmd, key, value)
