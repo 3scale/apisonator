@@ -29,50 +29,23 @@ module ThreeScale
           end
         end
 
+        private
+
         def self.parse_transactions(service_id, raw_transactions)
           transactions = []
-          logs = []
-          ser = nil
+          logs         = []
 
-          group_by_application_id(service_id, raw_transactions) do |application_id, group|
-            metrics  = Metric.load_all(service_id)
+          group_by_application_id(service_id, raw_transactions) do |app_id, group|
             group.each do |raw_transaction|
+              check_end_users_allowed(raw_transaction, service_id)
 
-              user_id = raw_transaction['user_id']
-              if !service_id.nil? && !user_id.nil? && !user_id.empty?
-                ser ||= Service.load_by_id(service_id)
-                if !ser.nil? && ser.user_registration_required? && ser.default_user_plan_id.nil?
-                  # this means that end_user_plans are not enabled for the service, so passing user_id
-                  # should raise an error
-                  raise ServiceCannotUseUserId.new(service_id)
-                end
-              end
+              transaction = compose_transaction(service_id, app_id, raw_transaction)
+              log         = compose_log(service_id, app_id, raw_transaction)
 
-              u = raw_transaction['usage']
+              transaction[:response_code] = log[:log]['code'] if transaction && log
 
-              if !u.nil? && !u.empty?
-                # makes no sense to process a transaction if no usage is passed
-                transactions << {
-                  :service_id     => service_id,
-                  :application_id => application_id,
-                  :timestamp      => raw_transaction['timestamp'],
-                  :usage          => metrics.process_usage(raw_transaction['usage']),
-                  :user_id        => raw_transaction['user_id']}
-              end
-
-              r = raw_transaction['log']
-              if !r.nil? && !r.empty? && !r['request'].nil?
-                # here we don't care about the usage, but log needs to be passed
-                logs << {
-                  :service_id     => service_id,
-                  :application_id => application_id,
-                  :timestamp      => raw_transaction['timestamp'],
-                  :log            => raw_transaction['log'],
-                  :usage          => raw_transaction['usage'],
-                  :user_id        => raw_transaction['user_id']
-                }
-              end
-
+              logs << log if log
+              transactions << transaction if transaction
             end
           end
 
@@ -85,6 +58,51 @@ module ThreeScale
           transactions.group_by do |transaction|
             Application.extract_id!(service_id, transaction['app_id'], transaction['user_key'], transaction['access_token'])
           end.each(&block)
+        end
+
+        def self.check_end_users_allowed(raw_transaction, service_id = nil)
+          user_id = raw_transaction['user_id']
+
+          if service_id && user_id && !user_id.empty? && !end_users_allowed?(service_id)
+            raise ServiceCannotUseUserId.new(service_id)
+          end
+        end
+
+        def self.end_users_allowed?(service_id)
+          service = Service.load_by_id(service_id)
+          !(service &&
+            service.user_registration_required? &&
+            service.default_user_plan_id.nil?)
+        end
+
+        def self.compose_transaction(service_id, app_id, raw_transaction)
+          usage = raw_transaction['usage']
+
+          if usage && !usage.empty?
+            metrics = Metric.load_all(service_id)
+            {
+              service_id:     service_id,
+              application_id: app_id,
+              timestamp:      raw_transaction['timestamp'],
+              usage:          metrics.process_usage(usage),
+              user_id:        raw_transaction['user_id'],
+            }
+          end
+        end
+
+        def self.compose_log(service_id, app_id, raw_transaction)
+          raw_log = raw_transaction['log']
+
+          if raw_log && !raw_log.empty? && !raw_log['request'].nil?
+            {
+              service_id:     service_id,
+              application_id: app_id,
+              timestamp:      raw_transaction['timestamp'],
+              log:            raw_log,
+              usage:          raw_transaction['usage'],
+              user_id:        raw_transaction['user_id'],
+            }
+          end
         end
       end
     end
