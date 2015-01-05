@@ -107,15 +107,15 @@ module ThreeScale
       end
 
       def store_changed_keys(transactions, bucket, prior_bucket, schedule_stats_job)
-        service_ids = transactions.map { |transaction| transaction[:service_id] }
-        service_ids.each do |id|
-          bucket_key = bucket_with_service_key(bucket, id)
+        transactions.each do |transaction|
+          service_id = transaction[:service_id]
+          bucket_key = bucket_with_service_key(bucket, service_id)
           storage.zadd(changed_keys_key, bucket.to_i, bucket_key)
 
           if schedule_stats_job
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
-            prior_bucket_key = bucket_with_service_key(prior_bucket, id)
+            prior_bucket_key = bucket_with_service_key(prior_bucket, service_id)
             Resque.enqueue(StatsJob, prior_bucket_key, Time.now.getutc.to_f)
           end
         end
