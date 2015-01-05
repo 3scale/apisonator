@@ -32,37 +32,21 @@ module ThreeScale
         private
 
         def self.parse_transactions(service_id, raw_transactions)
-          transactions      = []
-          logs              = []
-          metrics           = nil
-          end_users_allowed = nil
+          transactions = []
+          logs         = []
 
-          group_by_application_id(service_id, raw_transactions) do |application_id, group|
+          group_by_application_id(service_id, raw_transactions) do |app_id, group|
             group.each do |raw_transaction|
-              user_id = raw_transaction['user_id']
-              if !service_id.nil? && !user_id.nil? && !user_id.empty? && end_users_allowed.nil?
-                end_users_allowed = end_users_allowed?(service_id)
-                raise ServiceCannotUseUserId.new(service_id) if !end_users_allowed
+              check_end_users_allowed(service_id, raw_transaction['user_id'])
+
+              transaction = compose_transaction(service_id, app_id, raw_transaction)
+
+              if log = compose_log(service_id, app_id, raw_transaction)
+                transaction[:response_code] = log[:log]['code'] if transaction
+                logs << log
               end
 
-              raw_log           = raw_transaction['log']
-              log_response_code = nil
-
-              # here we don't care about the usage, but log needs to be passed
-              if !raw_log.nil? && !raw_log.empty? && !raw_log['request'].nil?
-                log_response_code = raw_log['code']
-                logs << compose_log(service_id, application_id, raw_transaction, raw_log)
-              end
-
-              usage = raw_transaction['usage']
-              # makes no sense to process a transaction if no usage is passed
-              if !usage.nil? && !usage.empty?
-                metrics   ||= Metric.load_all(service_id)
-                transaction = compose_transaction(service_id, application_id, metrics, raw_transaction)
-                transaction[:response_code] = log_response_code if log_response_code
-
-                transactions << transaction
-              end
+              transactions << transaction if transaction
             end
           end
 
@@ -77,6 +61,12 @@ module ThreeScale
           end.each(&block)
         end
 
+        def self.check_end_users_allowed(service_id = nil, user_id = nil)
+          if service_id && user_id && !user_id.empty? && !end_users_allowed?(service_id)
+            raise ServiceCannotUseUserId.new(service_id)
+          end
+        end
+
         def self.end_users_allowed?(service_id)
           service = Service.load_by_id(service_id)
           !(service &&
@@ -84,25 +74,34 @@ module ThreeScale
             service.default_user_plan_id.nil?)
         end
 
-        def self.compose_transaction(service_id, application_id, metrics, raw_transaction)
-          {
-            service_id:     service_id,
-            application_id: application_id,
-            timestamp:      raw_transaction['timestamp'],
-            usage:          metrics.process_usage(raw_transaction['usage']),
-            user_id:        raw_transaction['user_id'],
-          }
+        def self.compose_transaction(service_id, app_id, raw_transaction)
+          usage = raw_transaction['usage']
+
+          if usage && !usage.empty?
+            metrics = Metric.load_all(service_id)
+            {
+              service_id:     service_id,
+              application_id: app_id,
+              timestamp:      raw_transaction['timestamp'],
+              usage:          metrics.process_usage(usage),
+              user_id:        raw_transaction['user_id'],
+            }
+          end
         end
 
-        def self.compose_log(service_id, application_id, raw_transaction, raw_log)
-          {
-            service_id:     service_id,
-            application_id: application_id,
-            timestamp:      raw_transaction['timestamp'],
-            log:            raw_log,
-            usage:          raw_transaction['usage'],
-            user_id:        raw_transaction['user_id'],
-          }
+        def self.compose_log(service_id, app_id, raw_transaction)
+          raw_log = raw_transaction['log']
+
+          if raw_log && !raw_log.empty? && !raw_log['request'].nil?
+            {
+              service_id:     service_id,
+              application_id: app_id,
+              timestamp:      raw_transaction['timestamp'],
+              log:            raw_log,
+              usage:          raw_transaction['usage'],
+              user_id:        raw_transaction['user_id'],
+            }
+          end
         end
       end
     end
