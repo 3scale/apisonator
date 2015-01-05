@@ -37,15 +37,14 @@ module ThreeScale
 
           group_by_application_id(service_id, raw_transactions) do |app_id, group|
             group.each do |raw_transaction|
-              check_end_users_allowed(service_id, raw_transaction['user_id'])
+              check_end_users_allowed(raw_transaction, service_id)
 
               transaction = compose_transaction(service_id, app_id, raw_transaction)
+              log         = compose_log(service_id, app_id, raw_transaction)
 
-              if log = compose_log(service_id, app_id, raw_transaction)
-                transaction[:response_code] = log[:log]['code'] if transaction
-                logs << log
-              end
+              transaction[:response_code] = log[:log]['code'] if transaction && log
 
+              logs << log if log
               transactions << transaction if transaction
             end
           end
@@ -61,7 +60,9 @@ module ThreeScale
           end.each(&block)
         end
 
-        def self.check_end_users_allowed(service_id = nil, user_id = nil)
+        def self.check_end_users_allowed(raw_transaction, service_id = nil)
+          user_id = raw_transaction['user_id']
+
           if service_id && user_id && !user_id.empty? && !end_users_allowed?(service_id)
             raise ServiceCannotUseUserId.new(service_id)
           end
