@@ -86,7 +86,7 @@ GEM
       nesty
       sinatra (>= 1.2.7)
     hiredis (0.4.5)
-    httpclient (2.3.4.1)
+    httpclient (2.6.0.1)
     i18n (0.6.9)
     ice_nine (0.11.1)
     influxdb (0.1.8)
