@@ -9,8 +9,8 @@ xml.log_requests do
       xml.user_id item[:user_id] unless item[:user_id].nil?
       xml.usage item[:usage] unless item[:usage].nil?
       xml.timestamp timestamp
-      xml.request item[:log]['request']
-      xml.response item[:log]['response']
+      xml.request item[:log]['request'].to_s
+      xml.response item[:log]['response'].to_s
       xml.code item[:log]['code']
     end
   end
