@@ -1,4 +1,3 @@
-require 'json'
 require '3scale/backend'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
