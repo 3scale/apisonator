@@ -30,9 +30,9 @@ module ThreeScale
 
           bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
           @@current_bucket ||= bucket
-          @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+          prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
 
-          if @@current_bucket == bucket
+          if current_bucket == bucket
             schedule_stats_job = false
           else
             schedule_stats_job = true
@@ -99,7 +99,7 @@ module ThreeScale
 
         ## the time bucket has elapsed, trigger a stats job
         if @stats_enabled
-          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_stats_job)
+          store_changed_keys(transactions, current_bucket, prior_bucket, schedule_stats_job)
         end
 
         ApplicationEvents.ping
