@@ -21,11 +21,7 @@ module ThreeScale
         applications = Hash.new
         users        = Hash.new
 
-        Memoizer.memoize_block("stats-enabled") do
-          @stats_enabled = StorageStats.enabled?
-        end
-
-        if @stats_enabled
+        if StorageStats.enabled?
           timenow = Time.now.utc
 
           bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
@@ -79,7 +75,7 @@ module ThreeScale
           ## metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
-          if @stats_enabled && @keys_doing_set_op.size > 0
+          if StorageStats.enabled? && @keys_doing_set_op.size > 0
             @keys_doing_set_op.each do |item|
               key, value = item
 
@@ -98,7 +94,7 @@ module ThreeScale
         update_status_cache(applications, users)
 
         ## the time bucket has elapsed, trigger a stats job
-        if @stats_enabled
+        if StorageStats.enabled?
           store_changed_keys(transactions, current_bucket, prior_bucket, schedule_stats_job)
         end
 
@@ -156,7 +152,7 @@ module ThreeScale
 
           value  = value.to_i
 
-          if @stats_enabled
+          if StorageStats.enabled?
             bucket_key = bucket_with_service_key(current_bucket, service_id)
           else
             bucket_key = ""
@@ -201,7 +197,7 @@ module ThreeScale
 
       def add_to_copied_keys(cmd, bucket, key, value)
         set_keys = []
-        if @stats_enabled
+        if StorageStats.enabled?
           storage.sadd("keys_changed:#{bucket}", key)
           if cmd == :set
             @keys_doing_set_op << [key, value]
