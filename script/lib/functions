@@ -1,6 +1,7 @@
 REDIS_PORTS=(7379 7380 6379)
 TWEMPROXY_PIDFILE="/tmp/twemproxy_backend_tests.pid"
 INFLUXDB_PIDFILE="/tmp/influxdb_backend_tests.pid"
+CUBERT_PIDFILE="/tmp/cubert_backend_tests.pid"
 
 # helper for daemonizing processes from the shell
 function daemonize {
@@ -56,11 +57,11 @@ function stop_influxdb {
 }
 
 function start_cubert {
-    nohup /usr/bin/env ruby -e "require 'cubert/app'; Rack::Server.start app: Cubert::App.app" 0<&- &> /dev/null &
+    daemonize /usr/bin/env ruby -e "require 'cubert/app'; Rack::Server.start app: Cubert::App.app" > ${CUBERT_PIDFILE}
 }
 
 function stop_cubert {
-    kill -9 `ps aux | grep cubert | awk '{ print $2 }'`
+    kill -9 `cat "${CUBERT_PIDFILE}"`
 }
 
 function start_services {
