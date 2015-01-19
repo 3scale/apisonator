@@ -218,64 +218,12 @@ module ThreeScale
         set_keys
       end
 
-      ## copied from transactor.rb
-      def load_user_current_usage(user)
-        pairs = Array.new
-        metric_ids = Array.new
-        user.usage_limits.each do |usage_limit|
-          pairs << [usage_limit.metric_id, usage_limit.period]
-          metric_ids << usage_limit.metric_id
-        end
-
-        return {} if pairs.nil? or pairs.size==0
-
-        # preloading metric names
-        user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
-        now = Time.now.getutc
-        keys = pairs.map do |metric_id, period|
-          user_usage_value_key(user, metric_id, period, now)
-        end
-        raw_values = storage.mget(*keys)
-        values     = {}
-        pairs.each_with_index do |(metric_id, period), index|
-          values[period] ||= {}
-          values[period][metric_id] = raw_values[index].to_i
-        end
-        values
-      end
-
-      ## copied from transactor.rb
-      def load_current_usage(application)
-        pairs = Array.new
-        metric_ids = Array.new
-        application.usage_limits.each do |usage_limit|
-          pairs << [usage_limit.metric_id, usage_limit.period]
-          metric_ids << usage_limit.metric_id
-        end
-        ## Warning this makes the test transactor_test.rb fail, weird because it didn't happen before
-        return {} if pairs.nil? or pairs.size==0
-
-        # preloading metric names
-        application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
-        now = Time.now.getutc
-        keys = pairs.map do |metric_id, period|
-          usage_value_key(application, metric_id, period, now)
-        end
-        raw_values = storage.mget(*keys)
-        values     = {}
-        pairs.each_with_index do |(metric_id, period), index|
-          values[period] ||= {}
-          values[period][metric_id] = raw_values[index].to_i
-        end
-        values
-      end
-
       def update_status_cache(applications, users = {})
         current_timestamp = Time.now.getutc
 
         applications.each do |appid, values|
           application = Application.load(values[:service_id],values[:application_id])
-          usage = load_current_usage(application)
+          usage = ThreeScale::Backend::Transactor.send(:load_current_usage, application)
           status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)
           ThreeScale::Backend::Validators::Limits.apply(status,{})
 
@@ -289,7 +237,7 @@ module ThreeScale
           service ||= Service.load_by_id(values[:service_id])
           raise ServiceLoadInconsistency.new(values[:service_id],service.id) if service.id != values[:service_id]
           user = User.load_or_create!(service,values[:user_id])
-          usage = load_user_current_usage(user)
+          usage = ThreeScale::Backend::Transactor.send(:load_user_current_usage, user)
           status = ThreeScale::Backend::Transactor::Status.new(:user => user, :user_values => usage)
           ThreeScale::Backend::Validators::Limits.apply(status,{})
 
