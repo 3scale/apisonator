@@ -51,8 +51,7 @@ function stop_influxdb {
 }
 
 function start_cubert {
-    ${SCRIPT_DIR}/launch_cubert &
-    sleep 5
+    nohup /usr/bin/env ruby -e "require 'cubert/app'; Rack::Server.start app: Cubert::App.app" 0<&- &> /dev/null &
 }
 
 function stop_cubert {

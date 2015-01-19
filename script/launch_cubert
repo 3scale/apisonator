@@ -1,5 +1,7 @@
-#!/usr/bin/env ruby
+#!/bin/bash
 
-require 'cubert/app'
+SCRIPT_DIR=$(dirname "$(readlink -f $0)")
+. ${SCRIPT_DIR}/lib/functions
 
-Rack::Server.start app: Cubert::App.app
+start_cubert
+sleep 5
