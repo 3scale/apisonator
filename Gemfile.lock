@@ -128,7 +128,6 @@ GEM
       redis (~> 3.0, >= 3.0.4)
     redis-sentinel (1.4.4)
       redis
-    require_all (1.2.1)
     resque (1.23.0)
       multi_json (~> 1.0)
       redis-namespace (~> 1.0)
@@ -218,7 +217,6 @@ DEPENDENCIES
   pry-byebug (~> 2.0.0)
   pry-doc (~> 0.6.0)
   rack-test (~> 0.6.2)
-  require_all (~> 1.2.1)
   resque_spec (~> 0.15.0)
   resque_unit (~> 0.4.4)
   rspec_api_documentation (~> 2.0.0)

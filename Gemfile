@@ -1,7 +1,6 @@
 source 'https://rubygems.org'
 
 gemspec
-gem 'require_all', '~> 1.2.1'
 
 group :test do
   gem 'fakefs',      '~> 0.4.2'
