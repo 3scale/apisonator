@@ -18,7 +18,7 @@ function kill_pid {
 }
 
 function start_influxdb {
-    /usr/bin/influxdb -config=/opt/influxdb/shared/config.toml -pidfile="${INFLUXDB_PIDFILE}" &
+    daemonize /usr/bin/influxdb -config=/opt/influxdb/shared/config.toml -pidfile="${INFLUXDB_PIDFILE}" > /dev/null
     sleep 5
 }
 
