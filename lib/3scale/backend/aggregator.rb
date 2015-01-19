@@ -180,7 +180,8 @@ module ThreeScale
         }
 
         # this one is for the limits of the users
-        if user_id = transaction[:user_id]
+        user_id = transaction[:user_id]
+        if user_id
           user_prefix = user_key_prefix(service_prefix, user_id)
           metrics.merge!(user: metric_key_prefix(user_prefix, metric_id))
         end
@@ -221,28 +222,32 @@ module ThreeScale
       def update_status_cache(applications, users = {})
         current_timestamp = Time.now.getutc
 
-        applications.each do |appid, values|
-          application = Application.load(values[:service_id],values[:application_id])
-          usage = ThreeScale::Backend::Transactor.send(:load_current_usage, application)
-          status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)
-          ThreeScale::Backend::Validators::Limits.apply(status,{})
+        applications.each do |_appid, values|
+          application = Application.load(values[:service_id], values[:application_id])
+          usage  = ThreeScale::Backend::Transactor.send(:load_current_usage, application)
+          status = ThreeScale::Backend::Transactor::Status.new(application: application, values: usage)
+          ThreeScale::Backend::Validators::Limits.apply(status, {})
 
           max_utilization, max_record = utilization(status)
-          update_utilization(status,max_utilization, max_record,current_timestamp) if max_utilization>=0.0
+          if max_utilization >= 0.0
+            update_utilization(status, max_utilization, max_record, current_timestamp)
+          end
 
-          set_status_in_cache_application(values[:service_id],application,status,{:exclude_user => true})
+          set_status_in_cache_application(values[:service_id], application, status, exclude_user: true)
         end
 
-        users.each do |userid, values|
+        users.each do |_userid, values|
           service ||= Service.load_by_id(values[:service_id])
-          raise ServiceLoadInconsistency.new(values[:service_id],service.id) if service.id != values[:service_id]
-          user = User.load_or_create!(service,values[:user_id])
-          usage = ThreeScale::Backend::Transactor.send(:load_user_current_usage, user)
-          status = ThreeScale::Backend::Transactor::Status.new(:user => user, :user_values => usage)
-          ThreeScale::Backend::Validators::Limits.apply(status,{})
+          if service.id != values[:service_id]
+            raise ServiceLoadInconsistency.new(values[:service_id], service.id)
+          end
+          user   = User.load_or_create!(service, values[:user_id])
+          usage  = ThreeScale::Backend::Transactor.send(:load_user_current_usage, user)
+          status = ThreeScale::Backend::Transactor::Status.new(user: user, user_values: usage)
+          ThreeScale::Backend::Validators::Limits.apply(status, {})
 
-          key = caching_key(service.id,:user,user.username)
-          set_status_in_cache(key,status,{:exclude_application => true})
+          key = caching_key(service.id, :user, user.username)
+          set_status_in_cache(key, status, exclude_application: true)
         end
       end
 
