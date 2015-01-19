@@ -36,10 +36,10 @@ module ThreeScale
         end
 
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-          @keys_doing_set_op = []
+          keys_doing_set_op = []
 
           storage.pipelined do
-            @keys_doing_set_op = slice.map do |transaction|
+            keys_doing_set_op = slice.map do |transaction|
               key        = transaction[:application_id]
               service_id = transaction[:service_id]
               ## the key must be application+user if users exists
@@ -57,7 +57,7 @@ module ThreeScale
             end
           end
 
-          @keys_doing_set_op.flatten!(1)
+          keys_doing_set_op.flatten!(1)
 
           ## here the pipelined redis increments have been sent
           ## now we have to send the storage stats ones
@@ -70,8 +70,8 @@ module ThreeScale
           ## metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
-          if StorageStats.enabled? && @keys_doing_set_op.size > 0
-            @keys_doing_set_op.each do |item|
+          if StorageStats.enabled? && keys_doing_set_op.size > 0
+            keys_doing_set_op.each do |item|
               key, value = item
 
               storage.pipelined do
