@@ -2,6 +2,11 @@ REDIS_PORTS=(7379 7380 6379)
 TWEMPROXY_PIDFILE="/tmp/twemproxy_backend_tests.pid"
 INFLUXDB_PIDFILE="/tmp/influxdb_backend_tests.pid"
 
+# helper for daemonizing processes from the shell
+function daemonize {
+    (nohup "$@" 0<&- &> /dev/null & echo $!) &
+}
+
 function start_influxdb {
     /usr/bin/influxdb -config=/opt/influxdb/shared/config.toml -pidfile="${INFLUXDB_PIDFILE}" &
     sleep 5
