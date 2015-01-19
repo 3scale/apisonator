@@ -11,7 +11,6 @@ $:.unshift(File.expand_path(File.dirname(__FILE__) + '/../lib'))
 require '3scale/backend'
 
 require 'test/unit'
-require 'fakefs/safe'
 require 'mocha/setup'
 require 'nokogiri'
 require 'rack/test'
