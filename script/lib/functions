@@ -8,6 +8,15 @@ function daemonize {
     (nohup "$@" 0<&- &> /dev/null & echo $!) &
 }
 
+function kill_pidfile {
+    kill_pid `cat "$@"`
+}
+
+function kill_pid {
+    kill -TERM "${1}" & sleep 2
+    kill -9 "${1}" 2> /dev/null
+}
+
 function start_influxdb {
     /usr/bin/influxdb -config=/opt/influxdb/shared/config.toml -pidfile="${INFLUXDB_PIDFILE}" &
     sleep 5
