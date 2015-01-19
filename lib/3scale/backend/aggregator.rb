@@ -39,7 +39,7 @@ module ThreeScale
           keys_doing_set_op = []
 
           storage.pipelined do
-            keys_doing_set_op = slice.map do |transaction|
+            slice.each do |transaction|
               key        = transaction[:application_id]
               service_id = transaction[:service_id]
               ## the key must be application+user if users exists
@@ -53,11 +53,9 @@ module ThreeScale
                 users[key] = { service_id: service_id, user_id: key }
               end
 
-              aggregate(transaction)
+              keys_doing_set_op += aggregate(transaction)
             end
           end
-
-          keys_doing_set_op.flatten!(1)
 
           ## here the pipelined redis increments have been sent
           ## now we have to send the storage stats ones
