@@ -21,6 +21,10 @@ module ThreeScale
           parse_json_params params
         end
 
+        error Sinatra::NotFound do
+          { status: :not_found, error: 'Not found'}.to_json
+        end
+
         get '/check.json' do
           {status: :ok}.to_json
         end
