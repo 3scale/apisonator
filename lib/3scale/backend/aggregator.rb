@@ -123,8 +123,8 @@ module ThreeScale
       end
 
       def get_value_of_set_if_exists(value_str)
-        return nil if value_str.nil? || value_str[0]!="#"
-        return value_str[1..value_str.size].to_i
+        return nil if value_str.nil? || value_str[0] != "#"
+        value_str[1..value_str.size].to_i
       end
 
       def reset_current_bucket!
