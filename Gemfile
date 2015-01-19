@@ -3,7 +3,6 @@ source 'https://rubygems.org'
 gemspec
 
 group :test do
-  gem 'fakefs',      '~> 0.4.2'
   gem 'mocha',       '~> 0.13.2'
   gem 'nokogiri',    '~> 1.6.2'
   gem 'rack-test',   '~> 0.6.2'
