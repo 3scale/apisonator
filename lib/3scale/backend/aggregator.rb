@@ -132,7 +132,8 @@ module ThreeScale
         ##FIXME, here we have to check that the timestamp is in the
         ##current given the time period we are in
 
-        values = transaction[:usage].map do |metric_id, value|
+        values = []
+        transaction[:usage].each do |metric_id, value|
           service_id = transaction[:service_id]
           val        = get_value_of_set_if_exists(value)
 
@@ -151,10 +152,10 @@ module ThreeScale
             bucket_key = ""
           end
 
-          aggregate_values(cmd, metric_id, value, transaction, bucket_key)
+          values += aggregate_values(cmd, metric_id, value, transaction, bucket_key)
         end
 
-        values.flatten(1)
+        values
       end
 
       def aggregate_values(cmd, metric_id, value, transaction, bucket)
