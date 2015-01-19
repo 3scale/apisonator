@@ -37,10 +37,12 @@ function start_redis {
 }
 
 function stop_redis {
-    for port in "${REDIS_PORTS[@]}"
-    do
-	kill -9 `ps aux | grep redis-server | grep "$port" | awk '{ print $2 }'`
+    local pids
+    for port in "${REDIS_PORTS[@]}"; do
+	kill_pid `ps aux | grep redis-server | grep "$port" | awk '{ print $2 }'` &
+	pids[${port}]=$!
     done
+    wait ${pids[*]}
 }
 
 function start_twemproxy {
@@ -58,11 +60,11 @@ function start_twemproxy {
 }
 
 function stop_twemproxy {
-    kill -9 `cat "${TWEMPROXY_PIDFILE}"`
+    kill_pidfile ${TWEMPROXY_PIDFILE}
 }
 
 function stop_influxdb {
-    kill -9 `cat "${INFLUXDB_PIDFILE}"`
+    kill_pidfile ${INFLUXDB_PIDFILE}
 }
 
 function start_cubert {
@@ -70,7 +72,7 @@ function start_cubert {
 }
 
 function stop_cubert {
-    kill -9 `cat "${CUBERT_PIDFILE}"`
+    kill_pidfile ${CUBERT_PIDFILE}
 }
 
 function start_services {
@@ -81,9 +83,11 @@ function start_services {
 }
 
 function stop_services {
-    stop_redis
-    stop_twemproxy
-    stop_influxdb
-    stop_cubert
+    local pids
+    for fn in stop_redis stop_twemproxy stop_influxdb stop_cubert; do
+	eval "${fn}" &
+	pids[${fn}]=$!
+    done
+    wait ${pids[*]}
 }
 
