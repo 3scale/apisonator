@@ -13,8 +13,6 @@ module ThreeScale
   module Backend
     module Aggregator
       include Backend::StorageKeyHelpers
-      include Backend::Cache
-      include Backend::Alerts
       include Configurable
       include StatsKeys
       extend self
@@ -228,12 +226,12 @@ module ThreeScale
           status = ThreeScale::Backend::Transactor::Status.new(application: application, values: usage)
           ThreeScale::Backend::Validators::Limits.apply(status, {})
 
-          max_utilization, max_record = utilization(status)
+          max_utilization, max_record = ThreeScale::Backend::Alerts.utilization(status)
           if max_utilization >= 0.0
-            update_utilization(status, max_utilization, max_record, current_timestamp)
+            ThreeScale::Backend::Alerts.update_utilization(status, max_utilization, max_record, current_timestamp)
           end
 
-          set_status_in_cache_application(values[:service_id], application, status, exclude_user: true)
+          ThreeScale::Backend::Cache.set_status_in_cache_application(values[:service_id], application, status, exclude_user: true)
         end
 
         users.each do |_userid, values|
@@ -246,8 +244,8 @@ module ThreeScale
           status = ThreeScale::Backend::Transactor::Status.new(user: user, user_values: usage)
           ThreeScale::Backend::Validators::Limits.apply(status, {})
 
-          key = caching_key(service.id, :user, user.username)
-          set_status_in_cache(key, status, exclude_application: true)
+          key = ThreeScale::Backend::Cache.caching_key(service.id, :user, user.username)
+          ThreeScale::Backend::Cache.set_status_in_cache(key, status, exclude_application: true)
         end
       end
 
