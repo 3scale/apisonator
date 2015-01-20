@@ -381,6 +381,10 @@ module ThreeScale
 
         result
       end
+
+      def storage
+        Storage.instance
+      end
     end
   end
 end
