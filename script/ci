@@ -7,4 +7,5 @@ export REPORT_CODECLIMATE=1
 export TO_FILE=1
 
 export CI=jenkins
+
 exec script/test
