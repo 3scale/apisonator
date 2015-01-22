@@ -4,7 +4,7 @@ PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
 PROJECT := $(notdir $(PROJECT_PATH))
 BENCH = bench.txt
 
-RUN = docker run --rm
+RUN = docker run --rm -v $(PROJECT_PATH)/test/reports:/opt/backend/test/reports -v $(PROJECT_PATH)/spec/reports:/opt/backend/spec/reports
 NAME = $(PROJECT)-build
 
 .PHONY: test
