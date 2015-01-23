@@ -45,6 +45,8 @@ class WorkerTest < Test::Unit::TestCase
   end
 
   def test_logging_works
+    Backend::Worker.any_instance.expects(:redis_timeout).returns(1)
+
     Timecop.freeze(Time.utc(2011, 12, 12, 11, 48)) do
       log_file = "/tmp/temp_3scale_backend_worker.log"
       FileUtils.remove_file(log_file, :force => true)
