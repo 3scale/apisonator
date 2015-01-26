@@ -13,6 +13,7 @@ module ThreeScale
 
       # the order is relevant
       QUEUES = [:priority, :main, :stats]
+      REDIS_TIMEOUT = 60
 
       def initialize(options = {})
         trap('TERM') { shutdown }
@@ -34,7 +35,7 @@ module ThreeScale
         end
       end
 
-      def self.logger()
+      def self.logger
         @@logger
       end
 
@@ -48,7 +49,7 @@ module ThreeScale
       end
 
       def work
-                          register_worker
+        register_worker
 
         ## there is some corner cases in which the job would blow and not go to resque:failed,
         ## for instance if the data contained unprocessable data. For those cases a begin rescue
@@ -56,9 +57,8 @@ module ThreeScale
         loop do
           break if @shutdown
 
-          if job = reserve
-            perform(job)
-          end
+          job = reserve
+          perform(job) if job
 
           break if one_off?
         end
@@ -85,8 +85,8 @@ module ThreeScale
       private
 
       def reserve
-        @queues ||= QUEUES.map{|q| "queue:#{q}"}
-        stuff = redis.blpop(*@queues, :timeout => 60) # first is queue name, second is our class
+        @queues ||= QUEUES.map { |q| "queue:#{q}" }
+        stuff = redis.blpop(*@queues, timeout: redis_timeout)
 
         !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
       end
@@ -108,20 +108,23 @@ module ThreeScale
         stopped!
       end
 
-      ## the next 4 are required for resque, leave them as is
-      def started!
+      def redis_timeout
+        REDIS_TIMEOUT
       end
-      def stopped!
-      end
-      def processed!
-      end
-      def failed!
-      end
-      ## ----
 
       def hostname
         @hostname ||= `hostname`.chomp
       end
+
+      ## the next 4 are required for resque, leave them as is
+      def started!; end
+
+      def stopped!; end
+
+      def processed!; end
+
+      def failed!; end
+      ## ----
     end
   end
 end
