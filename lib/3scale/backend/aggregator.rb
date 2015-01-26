@@ -1,3 +1,5 @@
+require 'json'
+require '3scale/backend'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
@@ -20,14 +22,18 @@ module ThreeScale
         applications = Hash.new
         users        = Hash.new
 
-        if StorageStats.enabled?
+        Memoizer.memoize_block("stats-enabled") do
+          @stats_enabled = StorageStats.enabled?
+        end
+
+        if @stats_enabled
           timenow = Time.now.utc
 
           bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
           @@current_bucket ||= bucket
-          prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+          @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
 
-          if current_bucket == bucket
+          if @@current_bucket == bucket
             schedule_stats_job = false
           else
             schedule_stats_job = true
@@ -36,10 +42,10 @@ module ThreeScale
         end
 
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-          keys_doing_set_op = []
+          @keys_doing_set_op = []
 
           storage.pipelined do
-            slice.each do |transaction|
+            @keys_doing_set_op = slice.map do |transaction|
               key        = transaction[:application_id]
               service_id = transaction[:service_id]
               ## the key must be application+user if users exists
@@ -47,15 +53,21 @@ module ThreeScale
               ## applications contains the list of application, or
               ## application+users that need to be limit checked
               applications[key] = { application_id: key, service_id: service_id }
+              ## who puts service_id here? it turns out is
+              ## the transactor.report_enqueue
+              if transaction[:service_id].nil?
+              end
 
               if transaction[:user_id]
                 key = transaction[:user_id]
                 users[key] = { service_id: service_id, user_id: key }
               end
 
-              keys_doing_set_op += aggregate(transaction)
+              aggregate(transaction)
             end
           end
+
+          @keys_doing_set_op.flatten!(1)
 
           ## here the pipelined redis increments have been sent
           ## now we have to send the storage stats ones
@@ -68,8 +80,8 @@ module ThreeScale
           ## metric in the same pipeline. It has to be a check that
           ## set operations cannot be batched, only one transaction.
 
-          if StorageStats.enabled? && keys_doing_set_op.size > 0
-            keys_doing_set_op.each do |item|
+          if @stats_enabled && @keys_doing_set_op.size > 0
+            @keys_doing_set_op.each do |item|
               key, value = item
 
               storage.pipelined do
@@ -87,8 +99,8 @@ module ThreeScale
         update_status_cache(applications, users)
 
         ## the time bucket has elapsed, trigger a stats job
-        if StorageStats.enabled?
-          store_changed_keys(transactions, current_bucket, prior_bucket, schedule_stats_job)
+        if @stats_enabled
+          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_stats_job)
         end
 
         ApplicationEvents.ping
@@ -132,8 +144,7 @@ module ThreeScale
         ##FIXME, here we have to check that the timestamp is in the
         ##current given the time period we are in
 
-        values = []
-        transaction[:usage].each do |metric_id, value|
+        values = transaction[:usage].map do |metric_id, value|
           service_id = transaction[:service_id]
           val        = get_value_of_set_if_exists(value)
 
@@ -146,16 +157,16 @@ module ThreeScale
 
           value  = value.to_i
 
-          if StorageStats.enabled?
+          if @stats_enabled
             bucket_key = bucket_with_service_key(current_bucket, service_id)
           else
             bucket_key = ""
           end
 
-          values += aggregate_values(cmd, metric_id, value, transaction, bucket_key)
+          aggregate_values(cmd, metric_id, value, transaction, bucket_key)
         end
 
-        values
+        values.flatten(1)
       end
 
       def aggregate_values(cmd, metric_id, value, transaction, bucket)
@@ -174,27 +185,27 @@ module ThreeScale
         end
 
         granularities = [:eternity, :month, :week, :day, :hour]
-        set_keys = []
-        metrics.each do |metric_type, prefix|
+        values = metrics.map do |metric_type, prefix|
           granularities += [:year, :minute] unless metric_type == :service
 
-          granularities.each do |granularity|
-            key  = counter_key(prefix, granularity, transaction[:timestamp])
+          granularities.map do |granularity|
+            key = counter_key(prefix, granularity, transaction[:timestamp])
             keys = add_to_copied_keys(cmd, bucket, key, value)
-            set_keys << keys unless keys.empty?
-
             storage.expire(key, 180) if granularity == :minute
+
+            keys
           end
         end
 
-        set_keys
+        values.flatten(1).reject(&:empty?)
       end
 
       def add_to_copied_keys(cmd, bucket, key, value)
         set_keys = []
-        if StorageStats.enabled?
+        if @stats_enabled
           storage.sadd("keys_changed:#{bucket}", key)
           if cmd == :set
+            @keys_doing_set_op << [key, value]
             set_keys += [key, value]
           else
             storage.send(cmd, key, value)
