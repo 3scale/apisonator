@@ -15,11 +15,6 @@ module ThreeScale
               [post ? 201 : 200, headers, { status: post ? :created : :modified, user: user.to_hash }.to_json]
             end
           end
-
-          # XXX remove this once Core 1.5 is in production
-          def self.old_core_client(useragent)
-            useragent.nil? or useragent.empty? or useragent =~ /3scale_core v1\.[234]/
-          end
         end
 
         get '/:username' do |service_id, username|
@@ -42,8 +37,7 @@ module ThreeScale
         delete '/:username' do |service_id, username|
           begin
             User.delete! service_id, username
-            status = UserHelper.old_core_client(request.user_agent) ? :ok : :deleted
-            { status: status }.to_json
+            { status: :deleted }.to_json
           rescue => e
             [400, headers, { status: :error, error: e.message }.to_json]
           end
