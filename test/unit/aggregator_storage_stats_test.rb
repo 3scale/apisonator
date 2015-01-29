@@ -29,40 +29,47 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Airbrake.stubs(:notify).returns(true)
   end
 
+  def default_timestamp
+    Time.utc(2010, 5, 7, 13, 23, 33)
+  end
+
+  def default_transaction
+    {
+      service_id:     1001,
+      application_id: 2001,
+      timestamp:      default_timestamp,
+      usage:          { '3001' => 1 },
+    }
+  end
+
+  def transaction_with_set_value
+    default_transaction.merge(
+      usage: { '3001' => '#665' },
+    )
+  end
+
   test 'Stats jobs get properly enqueued' do
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
-      Aggregator.aggregate_all([{:service_id     => 1001,
-                                :application_id => 2001,
-                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                :usage          => {'3001' => 1}}])
+      Aggregator.aggregate_all([default_transaction])
     end
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size / 2).to_i)) do
-      Aggregator.aggregate_all([{:service_id     => 1001,
-                                :application_id => 2001,
-                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                :usage          => {'3001' => 1}}])
+      Aggregator.aggregate_all([default_transaction])
     end
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     ## antoher time bucket has elapsed
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size * 1.5).to_i)) do
-      Aggregator.aggregate_all([{:service_id     => 1001,
-                                :application_id => 2001,
-                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                :usage          => {'3001' => 1}}])
+      Aggregator.aggregate_all([default_transaction])
     end
     assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size * 1.9).to_i)) do
-      Aggregator.aggregate_all([{:service_id     => 1001,
-                                :application_id => 2001,
-                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                :usage          => {'3001' => 1}}])
+      Aggregator.aggregate_all([default_transaction])
     end
 
     assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
@@ -70,46 +77,9 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## antoher time bucket has elapsed
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size * 2).to_i)) do
-      Aggregator.aggregate_all([{:service_id     => 1001,
-                                :application_id => 2001,
-                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                :usage          => {'3001' => 1}}])
+      Aggregator.aggregate_all([default_transaction])
     end
     assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
-
-  end
-
-  test 'Distribute stats job per service' do
-    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
-
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
-      Aggregator.aggregate_all([{:service_id     => 1001,
-                                :application_id => 2001,
-                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                :usage          => {'3001' => 1}}])
-    end
-    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size*1.9).to_i)) do
-      Aggregator.aggregate_all(
-        [
-          { service_id: 1001,
-            application_id: 2001,
-            timestamp: Time.utc(2010, 5, 7, 13, 23, 33),
-            usage: {'3001' => 1}
-          },
-          {
-            service_id:     1002,
-            application_id: 2002,
-            timestamp: Time.utc(2010, 5, 7, 13, 23, 33),
-            usage: {'3002' => 1}
-          }
-        ])
-    end
-
-    assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
-    jobs = Resque.queue(:stats).map { |raw_job| decode(raw_job) }
-    assert_equal 1001, jobs[0][:args].first.split(":").first.to_i
-    assert_equal 1002, jobs[1][:args].first.split(":").first.to_i
   end
 
   test 'Distribute stats job per service' do
@@ -144,17 +114,13 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end  
 
   test 'benchmark check, not a real failure if happens' do
-
     cont = 1000
 
     t = Time.now
-    timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
+    timestamp = default_timestamp
 
     cont.times do
-      Aggregator.aggregate_all([{:service_id     => 1001,
-                                :application_id => 2001,
-                                :timestamp      => timestamp,
-                                :usage          => {'3001' => 1}}])
+      Aggregator.aggregate_all([default_transaction])
     end
 
     Aggregator::StatsTasks.schedule_one_stats_job
@@ -199,10 +165,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     t = Time.now
 
     cont.times do
-      Aggregator.aggregate_all([{:service_id     => 1001,
-                                :application_id => 2001,
-                                :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                :usage          => {'3001' => 1}}])
+      Aggregator.aggregate_all([default_transaction])
     end
 
     Aggregator::StatsTasks.schedule_one_stats_job
@@ -232,17 +195,14 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'aggregate_all increments_all_stats_counters' do
-    timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
-    Aggregator.aggregate_all([{:service_id     => 1001,
-                               :application_id => 2001,
-                               :timestamp      => timestamp,
-                               :usage          => {'3001' => 1}}])
+    timestamp = default_timestamp
+    Aggregator.aggregate_all([default_transaction])
 
-    assert_equal 0 , Resque.queue(:main).length  + Resque.queue(:stats).length
+    assert_equal 0, Resque.queue(:main).length  + Resque.queue(:stats).length
     Aggregator::StatsTasks.schedule_one_stats_job
-    assert_equal 1 , Resque.queue(:main).length + Resque.queue(:stats).length
+    assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
     Resque.run!
-    assert_equal 0 , Resque.queue(:main).length + Resque.queue(:stats).length
+    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
     assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp)
@@ -267,42 +227,22 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'aggregate takes into account setting the counter value ok' do
-    timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
+    timestamp = default_timestamp
 
-    v = []
-    10.times do
-      v <<   { :service_id     => 1001,
-              :application_id => 2001,
-              :timestamp      => timestamp,
-              :usage          => {'3001' => 1}}
-    end
-
-    Aggregator.aggregate_all(v)
+    Aggregator.aggregate_all(Array.new(10, default_transaction))
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 10, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    v = []
-    v  <<   { :service_id     => 1001,
-             :application_id => 2001,
-             :timestamp      => timestamp,
-             :usage          => {'3001' => '#665'}}
-
-    Aggregator.aggregate_all(v)
+    Aggregator.aggregate_all([transaction_with_set_value])
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 665, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    v = []
-    v <<   { :service_id     => 1001,
-             :application_id => 2001,
-             :timestamp      => timestamp,
-             :usage          => {'3001' => '1'}}
-
-    Aggregator.aggregate_all(v)
+    Aggregator.aggregate_all([default_transaction])
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
@@ -312,7 +252,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
   test 'direct test of get_old_buckets_to_process' do
     ## this should go as unit test of StatsBatcher
-    @storage.zadd(Aggregator::StatsKeys.changed_keys_key,"20121010102100","20121010102100")
+    @storage.zadd(Aggregator::StatsKeys.changed_keys_key, "20121010102100", "20121010102100")
     assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102100")
 
     assert_equal ["20121010102100"], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102120")
@@ -322,7 +262,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     @storage.del(Aggregator::StatsKeys.changed_keys_key)
 
     100.times do |i|
-      @storage.zadd(Aggregator::StatsKeys.changed_keys_key,i,i.to_s)
+      @storage.zadd(Aggregator::StatsKeys.changed_keys_key, i, i.to_s)
     end
 
     assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("0")
@@ -388,11 +328,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       bucket_key = timestamp.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
 
       Timecop.freeze(timestamp) do
-        Aggregator.aggregate_all([{:service_id    => service_id,
-                                  :application_id => 2001,
-                                  :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                  :usage          => {'3001' => 1}}])
-
+        Aggregator.aggregate_all([default_transaction])
       end
 
       assert_equal cont + 1, Aggregator::StatsInfo.pending_buckets.size
@@ -421,13 +357,10 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'failed cql batches get stored into redis and processed properly afterwards' do
-    metrics_timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
+    metrics_timestamp = default_timestamp
 
     ## first one ok,
-    Aggregator.aggregate_all([{:service_id     => 1001,
-                               :application_id => 2001,
-                               :timestamp      => metrics_timestamp,
-                               :usage          => {'3001' => 1}}])
+    Aggregator.aggregate_all([default_transaction])
 
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
     Aggregator::StatsTasks.schedule_one_stats_job
@@ -447,13 +380,10 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     5.times do
       Timecop.freeze(timestamp) do
-        Aggregator.aggregate_all([{:service_id     => 1001,
-                                  :application_id => 2001,
-                                  :timestamp      => metrics_timestamp,
-                                  :usage          => {'3001' => 1}}])
+        Aggregator.aggregate_all([default_transaction])
       end
 
-      timestamp = timestamp + Aggregator.stats_bucket_size
+      timestamp += Aggregator.stats_bucket_size
     end
 
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
@@ -510,36 +440,17 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     @storage_stats.stubs(:write_events).raises(Exception.new('bang!'))
     @storage_stats.stubs(:get).raises(Exception.new('bang!'))
 
-    timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
-    v = []
-    10.times do
-      v <<   { :service_id     => 1001,
-              :application_id => 2001,
-              :timestamp      => timestamp,
-              :usage          => {'3001' => 1}}
-    end
+    timestamp = default_timestamp
 
-    Aggregator.aggregate_all(v)
+    Aggregator.aggregate_all(Array.new(10, default_transaction))
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    v = []
-    v <<   { :service_id     => 1001,
-             :application_id => 2001,
-             :timestamp      => timestamp,
-             :usage          => {'3001' => '#665'}}
-
-    Aggregator.aggregate_all(v)
+    Aggregator.aggregate_all([transaction_with_set_value])
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    v = []
-    v <<   { :service_id     => 1001,
-             :application_id => 2001,
-             :timestamp      => timestamp,
-             :usage          => {'3001' => '1'}}
-
-    Aggregator.aggregate_all(v)
+    Aggregator.aggregate_all([default_transaction])
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
@@ -564,15 +475,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   test 'when storage stats is deactivated buckets are filled but nothing gets saved' do
     StorageStats.deactivate!
 
-    v = []
-    10.times do
-      v <<   { :service_id     => 1001,
-        :application_id => 2001,
-        :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-        :usage          => {'3001' => 1}}
-    end
-
-    Aggregator.aggregate_all(v)
+    Aggregator.aggregate_all(Array.new(10, default_transaction))
 
     assert_equal 0, Resque.queue(:main).length
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
@@ -597,15 +500,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
 
-    v = []
-    10.times do
-      v <<   { :service_id     => 1001,
-              :application_id => 2001,
-              :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-              :usage          => {'3001' => 1}}
-    end
-
-    Aggregator.aggregate_all(v)
+    Aggregator.aggregate_all(Array.new(10, default_transaction))
 
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
@@ -618,15 +513,10 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'when storage stats is disabled, storage stats does not have to be up and running, but stats get lost during the disabling period' do
-    timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
+    timestamp = default_timestamp
     v = []
     Timecop.freeze(Time.utc(2010, 5, 7, 13, 23, 33)) do
-      10.times do
-        v <<   { :service_id     => 1001,
-                :application_id => 2001,
-                :timestamp      => timestamp,
-                :usage          => {'3001' => 1}}
-      end
+      10.times { v << default_transaction }
     end
 
     StorageStats.disable!
@@ -671,16 +561,9 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'when storage stats is deactivated, storage stats does not have to be up and running, but stats do NOT get lost during the deactivation period' do
-    timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
-    v = []
-    Timecop.freeze(timestamp) do
-      10.times do
-        v <<   { :service_id     => 1001,
-                :application_id => 2001,
-                :timestamp      => timestamp,
-                :usage          => {'3001' => 1}}
-      end
-    end
+    timestamp = default_timestamp
+
+    v = Array.new(10, default_transaction)
 
     StorageStats.deactivate!
 
@@ -725,7 +608,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   test 'applications with end user plans (user_id) get recorded properly' do
     default_user_plan_id = next_id
     default_user_plan_name = "user plan mobile"
-    timestamp = Time.utc(2010, 5, 7, 13, 23, 33)
+    timestamp = default_timestamp
 
     service = Service.save!(:provider_key => @provider_key, :id => next_id)
     #
@@ -824,10 +707,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     5.times do
       Timecop.freeze(timestamp) do
-        Aggregator.aggregate_all([{:service_id     => 1001,
-                                  :application_id => 2001,
-                                  :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                  :usage          => {'3001' => 1}}])
+        Aggregator.aggregate_all([default_transaction])
       end
 
       timestamp += Aggregator.stats_bucket_size
@@ -867,28 +747,19 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'aggregate_all updates application set' do
-    Aggregator.aggregate_all([{:service_id     => 1001,
-                               :application_id => 2001,
-                               :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                               :usage          => {'3001' => 1}}])
+    Aggregator.aggregate_all([default_transaction])
 
     assert_equal ['2001'], @storage.smembers("stats/{service:1001}/cinstances")
   end
 
   test 'aggregate_all does not update service set' do
     assert_no_change :of => lambda { @storage.smembers('stats/services') } do
-      Aggregator.aggregate_all([{:service_id     => '1001',
-                                 :application_id => '2001',
-                                 :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                                 :usage          => {'3001' => 1}}])
+      Aggregator.aggregate_all([default_transaction])
     end
   end
 
   test 'aggregate_all sets expiration time for volatile keys' do
-    Aggregator.aggregate_all([{:service_id     => '1001',
-                               :application_id => '2001',
-                               :timestamp      => Time.utc(2010, 5, 7, 13, 23, 33),
-                               :usage          => {'3001' => 1}}])
+    Aggregator.aggregate_all([default_transaction])
 
     key = application_key('1001', '2001', '3001', :minute, 201005071323)
     ttl = @storage.ttl(key)
