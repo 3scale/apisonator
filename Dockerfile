@@ -1,4 +1,4 @@
-FROM quay.io/3scale/ruby:2.1
+FROM quay.io/3scale/docker:ruby-2.1.5
 MAINTAINER Toni Reina <toni@3scale> # 2014-06-16
 
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 136221EE520DDFAF0A905689B9316A7BC7917B12 \
