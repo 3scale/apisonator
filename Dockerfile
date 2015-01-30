@@ -31,6 +31,6 @@ WORKDIR /opt/backend/
 ADD . /opt/backend
 RUN bundle config --local without development
 
-ADD docker/ssh /root/.ssh
+ADD docker/ssh /home/ruby/.ssh
 
 CMD script/ci

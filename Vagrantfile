@@ -13,7 +13,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.network :forwarded_port, guest: 3000, host: 8081
 
-  config.ssh.username = "root"
+  config.ssh.username = 'ruby'
   config.ssh.private_key_path = "docker/ssh/docker_key"
 
   config.vm.synced_folder ".", "/vagrant"
