@@ -13,8 +13,10 @@ RUN wget https://codeload.github.com/twitter/twemproxy/tar.gz/v0.3.0 \
  && tar xvzf v0.3.0 && cd twemproxy-0.3.0 && autoreconf -fvi \
  && ./configure --prefix=/opt/twemproxy && make && make install
 
-RUN wget http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb \
- && dpkg -i influxdb_0.8.5_amd64.deb
+# influxdb requires for our user group write privileges in its shared dir
+RUN wget http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb && \
+ dpkg -i influxdb_0.8.5_amd64.deb && rm -f influxdb_0.8.5_amd64.deb && \
+ usermod -a -G influxdb ruby && chmod -R g+w /opt/influxdb/shared
 
 RUN gem install cubert-server --version=0.0.2.pre.4 --no-ri --no-rdoc
 
