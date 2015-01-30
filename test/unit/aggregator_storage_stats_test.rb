@@ -29,6 +29,10 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Airbrake.stubs(:notify).returns(true)
   end
 
+  def stats_bucket_size
+    Aggregator.send(:stats_bucket_size)
+  end
+
   def default_timestamp
     Time.utc(2010, 5, 7, 13, 23, 33)
   end
@@ -56,19 +60,19 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     end
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size / 2).to_i)) do
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (stats_bucket_size / 2).to_i)) do
       Aggregator.aggregate_all([default_transaction])
     end
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     ## antoher time bucket has elapsed
 
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size * 1.5).to_i)) do
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (stats_bucket_size * 1.5).to_i)) do
       Aggregator.aggregate_all([default_transaction])
     end
     assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
 
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size * 1.9).to_i)) do
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (stats_bucket_size * 1.9).to_i)) do
       Aggregator.aggregate_all([default_transaction])
     end
 
@@ -76,7 +80,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     ## antoher time bucket has elapsed
 
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size * 2).to_i)) do
+    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (stats_bucket_size * 2).to_i)) do
       Aggregator.aggregate_all([default_transaction])
     end
     assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
@@ -281,7 +285,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     v = Aggregator::StatsInfo.get_old_buckets_to_process("11")
     assert_equal 9, v.size
-    assert_equal ["2", "3", "4", "5", "6", "7", "8", "9", "10"], v
+    assert_equal %w(2 3 4 5 6 7 8 9 10), v
 
     v = Aggregator::StatsInfo.get_old_buckets_to_process
     assert_equal 89, v.size
@@ -305,7 +309,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
           r = Redis.new(host: '127.0.0.1', port: 22121)
           v = Aggregator::StatsInfo.get_old_buckets_to_process(((i + 1) * 10).to_s, r)
 
-          assert (v.size == 0 || v.size == 10)
+          assert(v.size == 0 || v.size == 10)
 
           cont += 1 if v.size == 10
         end
@@ -325,7 +329,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
 
     5.times do |cont|
-      bucket_key = timestamp.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
+      bucket_key = timestamp.beginning_of_bucket(stats_bucket_size).to_not_compact_s
 
       Timecop.freeze(timestamp) do
         Aggregator.aggregate_all([default_transaction])
@@ -336,7 +340,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       assert Aggregator::StatsInfo.pending_buckets.member?("#{service_id}:#{bucket_key}")
       assert_equal cont, Resque.queue(:main).length + Resque.queue(:stats).length
 
-      timestamp += Aggregator.stats_bucket_size
+      timestamp += stats_bucket_size
     end
 
     assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
@@ -345,7 +349,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     sorted_set = Aggregator::StatsInfo.pending_buckets.sort
 
     4.times do |i|
-      buckets = Aggregator::StatsInfo.get_old_buckets_to_process(sorted_set[i+1])
+      buckets = Aggregator::StatsInfo.get_old_buckets_to_process(sorted_set[i + 1])
       assert_equal 1, buckets.size
       assert_equal sorted_set[i], buckets.first
     end
@@ -383,7 +387,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
         Aggregator.aggregate_all([default_transaction])
       end
 
-      timestamp += Aggregator.stats_bucket_size
+      timestamp += stats_bucket_size
     end
 
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
@@ -588,7 +592,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
-    sleep(Aggregator.stats_bucket_size)
+    sleep(stats_bucket_size)
     v.each do |item|
       Aggregator.aggregate_all([item])
     end
@@ -610,7 +614,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     default_user_plan_name = "user plan mobile"
     timestamp = default_timestamp
 
-    service = Service.save!(:provider_key => @provider_key, :id => next_id)
+    service = Service.save!(provider_key: @provider_key, id: next_id)
     #
     # TODO: Temporary stubs until we decouple Backend::User from Core::User
     Core::Service.stubs(:load_by_id).returns(service)
@@ -621,18 +625,18 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     service.default_user_plan_id = default_user_plan_id
     service.save!
 
-    application = Application.save(:service_id => service.id,
-                                    :id         => next_id,
-                                    :state      => :active,
-                                    :plan_id    => @plan_id,
-                                    :plan_name  => @plan_name,
-                                    :user_required => true)
+    application = Application.save(service_id:    service.id,
+                                   id:            next_id,
+                                   state:         :active,
+                                   plan_id:       @plan_id,
+                                   plan_name:     @plan_name,
+                                   user_required: true)
 
-    Aggregator.aggregate_all([{:service_id     => service.id,
-                               :application_id => application.id,
-                               :timestamp      => timestamp,
-                               :usage          => {@metric_hits.id => 5},
-                               :user_id        => "user_id_xyz"}])
+    Aggregator.aggregate_all([{ service_id:     service.id,
+                                application_id: application.id,
+                                timestamp:      timestamp,
+                                usage:          { @metric_hits.id => 5 },
+                                user_id:        "user_id_xyz" }])
 
     Aggregator::StatsInfo.pending_buckets.size.times do
       Aggregator::StatsTasks.schedule_one_stats_job
@@ -663,11 +667,11 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, user: "user_id_xyz")
     assert_equal 5, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, user: "user_id_xyz")
 
-    Aggregator.aggregate_all([{:service_id     => service.id,
-                               :application_id => application.id,
-                               :timestamp      => timestamp,
-                               :usage          => { @metric_hits.id => 4 },
-                               :user_id        => "another_user_id_xyz" }])
+    Aggregator.aggregate_all([{ service_id:     service.id,
+                                application_id: application.id,
+                                timestamp:      timestamp,
+                                usage:          { @metric_hits.id => 4 },
+                                user_id:        "another_user_id_xyz" }])
 
     Aggregator::StatsInfo.pending_buckets.size.times do
       Aggregator::StatsTasks.schedule_one_stats_job
@@ -710,7 +714,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
         Aggregator.aggregate_all([default_transaction])
       end
 
-      timestamp += Aggregator.stats_bucket_size
+      timestamp += stats_bucket_size
     end
 
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
@@ -753,7 +757,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'aggregate_all does not update service set' do
-    assert_no_change :of => lambda { @storage.smembers('stats/services') } do
+    assert_no_change of: lambda { @storage.smembers('stats/services') } do
       Aggregator.aggregate_all([default_transaction])
     end
   end
@@ -764,7 +768,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     key = application_key('1001', '2001', '3001', :minute, 201005071323)
     ttl = @storage.ttl(key)
 
-    assert_not_equal -1, ttl
+    assert_not_equal(-1, ttl)
     assert ttl >  0
     assert ttl <= 180
   end
