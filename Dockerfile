@@ -9,8 +9,8 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 136221EE52
  && echo 'Europe/Madrid' > /etc/timezone \
  && dpkg-reconfigure --frontend noninteractive tzdata
 
-RUN wget https://codeload.github.com/twitter/twemproxy/tar.gz/v0.3.0 \
- && tar xvzf v0.3.0 && cd twemproxy-0.3.0 && autoreconf -fvi \
+RUN wget -qO- https://codeload.github.com/twitter/twemproxy/tar.gz/v0.3.0 | \
+ tar xz && cd twemproxy-0.3.0 && autoreconf -fvi \
  && ./configure --prefix=/opt/twemproxy && make && make install
 
 # influxdb requires for our user group write privileges in its shared dir
