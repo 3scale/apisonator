@@ -13,7 +13,7 @@ all: clean build test show_bench
 test:
 	$(RUN) --name $(NAME) $(PROJECT)
 pull:
-	- docker pull quay.io/3scale/docker:ruby-2.1.5
+	- docker pull quay.io/3scale/docker:dev-2.1.5
 
 bash:
 	$(RUN) -t -i $(PROJECT) bash
