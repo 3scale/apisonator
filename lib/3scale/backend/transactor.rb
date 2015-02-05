@@ -166,6 +166,7 @@ module ThreeScale
           user_values: user_usage,
           application: application,
           service:     service,
+          oauth:       true,
           values:      usage,
           user:        user,
         }
