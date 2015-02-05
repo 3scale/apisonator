@@ -139,6 +139,22 @@ module ThreeScale
         content_type 'application/vnd.3scale-v2.0+xml'
       end
 
+      def do_api_method(method_name)
+        normalize_non_empty_keys!
+        empty_response(403) and return unless valid_key_and_usage_params?
+
+        authorization, cached_authorization_text, cached_authorization_result = Transactor.send method_name, params[:provider_key], params
+
+        if cached_authorization_text.nil? || cached_authorization_result.nil?
+          status(authorization.authorized? ? 200 : 409)
+          body(params[:no_body] ? nil : authorization.to_xml)
+        else
+          status(cached_authorization_result ? 200 : 409)
+          body(params[:no_body] ? nil : cached_authorization_text)
+        end
+      end
+      private :do_api_method
+
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
       ##~ a = sapi.apis.add
@@ -189,18 +205,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_usage_predicted
       ##
       get '/transactions/authorize.xml' do
-        normalize_non_empty_keys!
-        empty_response(403) and return unless valid_key_and_usage_params?
-
-        authorization, cached_authorization_text, cached_authorization_result = Transactor.authorize(params[:provider_key], params)
-
-        if cached_authorization_text.nil? || cached_authorization_result.nil?
-          status(authorization.authorized? ? 200 : 409)
-          body(params[:no_body] ? nil : authorization.to_xml)
-        else
-          status(cached_authorization_result ? 200 : 409)
-          body(params[:no_body] ? nil : cached_authorization_text)
-        end
+        do_api_method :authorize
       end
 
       ## ------------ DOCS --------------
@@ -225,18 +230,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_redirect_url
       ##
       get '/transactions/oauth_authorize.xml' do
-        normalize_non_empty_keys!
-        empty_response(403) and return unless valid_key_and_usage_params?
-
-        authorization, cached_authorization_text, cached_authorization_result = Transactor.oauth_authorize(params[:provider_key], params)
-
-        if cached_authorization_text.nil? || cached_authorization_result.nil?
-          status(authorization.authorized? ? 200 : 409)
-          body(params[:no_body] ? nil : authorization.to_xml)
-        else
-          status(cached_authorization_result ? 200 : 409)
-          body(params[:no_body] ? nil : cached_authorization_text)
-        end
+        do_api_method :oauth_authorize
       end
 
       ## ------------ DOCS --------------
@@ -284,18 +278,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_log
       ##
       get '/transactions/authrep.xml' do
-        normalize_non_empty_keys!
-        empty_response(403) and return unless valid_key_and_usage_params?
-
-        authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
-
-        if cached_authorization_text.nil? || cached_authorization_result.nil?
-          status(authorization.authorized? ? 200 : 409)
-          body(params[:no_body] ? nil : authorization.to_xml)
-        else
-          status(cached_authorization_result ? 200 : 409)
-          body(params[:no_body] ? nil : cached_authorization_text)
-        end
+        do_api_method :authrep
       end
 
       ## ------------ DOCS --------------
