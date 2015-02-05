@@ -56,6 +56,7 @@ module ThreeScale
         def initialize(attributes = {})
           @service     = attributes[:service]
           @application = attributes[:application]
+          @oauth       = attributes[:oauth]
           @values      = attributes[:values] || {}
           @user        = attributes[:user]
           @user_values = attributes[:user_values]
@@ -70,6 +71,7 @@ module ThreeScale
 
         attr_reader :service
         attr_accessor :application
+        attr_reader :oauth
         attr_accessor :values
         attr_reader :predicted_values
         attr_accessor :user
@@ -146,7 +148,7 @@ module ThreeScale
             xml << "<authorized>false</authorized><reason>" << rejection_reason_text << "</reason>"
           end
 
-          if options[:oauth]
+          if oauth
             xml << "<application>"
             xml << "<id>" << application.id.to_s << "</id>"
             xml << "<key>" << application.keys.first.to_s << "</key>"
