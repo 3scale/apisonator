@@ -290,29 +290,11 @@ module ThreeScale
         authorization, cached_authorization_text, cached_authorization_result = Transactor.authrep(params[:provider_key], params)
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
-          if authorization.authorized?
-            status(200)
-          else
-            status(409)
-          end
-
-          if params[:no_body]
-            body nil
-          else
-            body authorization.to_xml
-          end
+          status(authorization.authorized? ? 200 : 409)
+          body(params[:no_body] ? nil : authorization.to_xml)
         else
-          if cached_authorization_result
-            status(200)
-          else
-            status(409)
-          end
-
-          if params[:no_body]
-            body nil
-          else
-            body cached_authorization_text
-          end
+          status(cached_authorization_result ? 200 : 409)
+          body(params[:no_body] ? nil : cached_authorization_text)
         end
       end
 
