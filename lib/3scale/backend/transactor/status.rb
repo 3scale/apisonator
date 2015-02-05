@@ -221,15 +221,15 @@ module ThreeScale
               xml << "<max_value>" << report.max_value.to_s << "</max_value>"
 
               if not options[:anchors_for_caching]
-                  if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil?
-                    # this is a authrep request and therefore we should sum the usage
-                    val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
+                if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil?
+                  # this is a authrep request and therefore we should sum the usage
+                  val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
                   if val.nil?
                     xml << "<current_value>" << (report.current_value + options[:usage][report.metric_name].to_i).to_s << "</current_value>"
                   else
                     xml << "<current_value>" << val.to_s << "</current_value>"
                   end
-                  else
+                else
                   xml << "<current_value>" << report.current_value.to_s << "</current_value>"
                 end
               else
