@@ -258,7 +258,7 @@ module ThreeScale
           if params[:no_body]
             body nil
           else
-            body authorization.to_xml(oauth: true)
+            body authorization.to_xml
           end
         else
           response_code = if cached_authorization_result
