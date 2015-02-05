@@ -57,6 +57,7 @@ module ThreeScale
           @service     = attributes[:service]
           @application = attributes[:application]
           @oauth       = attributes[:oauth]
+          @usage       = attributes[:usage]
           @values      = attributes[:values] || {}
           @user        = attributes[:user]
           @user_values = attributes[:user_values]
@@ -72,6 +73,7 @@ module ThreeScale
         attr_reader :service
         attr_accessor :application
         attr_reader :oauth
+        attr_reader :usage
         attr_accessor :values
         attr_reader :predicted_values
         attr_accessor :user
@@ -223,11 +225,11 @@ module ThreeScale
               xml << "<max_value>" << report.max_value.to_s << "</max_value>"
 
               if not options[:anchors_for_caching]
-                if authorized? && !options[:usage].nil? && !options[:usage][report.metric_name].nil?
+                if authorized? && usage && (usage_metric_name = usage[report.metric_name])
                   # this is a authrep request and therefore we should sum the usage
-                  val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][report.metric_name])
+                  val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(usage_metric_name)
                   if val.nil?
-                    xml << "<current_value>" << (report.current_value + options[:usage][report.metric_name].to_i).to_s << "</current_value>"
+                    xml << "<current_value>" << (report.current_value + usage_metric_name.to_i).to_s << "</current_value>"
                   else
                     xml << "<current_value>" << val.to_s << "</current_value>"
                   end
