@@ -256,6 +256,7 @@ module ThreeScale
           user_values: user_usage,
           application: application,
           service:     service,
+          usage:       params[:usage],
           values:      usage,
           user:        user,
         }
