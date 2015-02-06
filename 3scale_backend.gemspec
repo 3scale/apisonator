@@ -32,7 +32,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'yajl-ruby',                 '1.1.0'
   s.add_dependency 'rest-client',               '1.6.7'
   s.add_dependency 'redis-namespace',           '1.5.1'
-  s.add_dependency '3scale_core',               '1.1.0'
+  s.add_dependency '3scale_core',               '1.5.4'
   s.add_dependency 'redis-sentinel',            '1.4.4'
   s.add_dependency 'influxdb',                  '0.1.8'
   s.add_dependency 'cubert-client',             '0.0.2.pre7'
