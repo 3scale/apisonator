@@ -296,7 +296,7 @@ module ThreeScale
         end
       end
 
-      def split_xml(xml_str = nil)
+      def split_xml(xml_str)
         xml_str.split("<__separator__/>") if xml_str
       end
 
