@@ -189,9 +189,10 @@ module ThreeScale
         limit_violation_without_usage = false
         limit_violation_with_usage = false
 
-        i=0
-        v.each do |str|
-          if i.odd?
+        v.each_slice(2) do |uninteresting, str|
+          newxmlstr << uninteresting
+
+          if str
             _, metric, curr_value, max_value = str.split(",")
             curr_value = curr_value.to_i
             max_value = max_value.to_i
@@ -211,7 +212,7 @@ module ThreeScale
                 curr_value + inc > max_value
               end
 
-            str =
+            newxmlstr <<
               if authorized && options[:add_usage_on_report]
                 ## only increase if asked explicity via options[:add_usage_on_report] and if the status was
                 ## authorized to begin with, otherwise we might increment on a status that is not authorized
@@ -225,9 +226,6 @@ module ThreeScale
                 curr_value
               end.to_s
           end
-
-          newxmlstr << str
-          i += 1
         end
 
         violation = if authorized && (limit_violation_without_usage || limit_violation_with_usage)
