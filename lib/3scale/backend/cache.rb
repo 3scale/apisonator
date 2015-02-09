@@ -306,18 +306,9 @@ module ThreeScale
       end
 
       def xml_authorized?(split_app_xml, split_user_xml = nil)
-        if split_user_xml
-          app_authorized  = node_authorized?(split_app_xml.first)
-          user_authorized = node_authorized?(split_user_xml.first)
-
-          app_authorized && user_authorized
-        else
-          node_authorized?(split_app_xml.first)
-        end
-      end
-
-      def node_authorized?(node)
-        node != "0"
+        # a node is authorized if it is != '0'
+        split_app_xml.first != '0' &&
+          (split_user_xml.nil? || split_user_xml.first != '0')
       end
 
       def merge_xmls(authorized, split_app_xml, split_user_xml = nil)
