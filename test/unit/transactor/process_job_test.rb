@@ -49,15 +49,13 @@ module Transactor
 
     def test_aggregates
       Timecop.freeze(Time.utc(2010, 7, 25, 14, 5)) do
-        Aggregator.expects(:aggregate_all).
-          with([{:service_id     => @service_id,
-                :application_id => @application_id_one,
-                :timestamp      => Time.utc(2010, 7, 26, 12, 5),
-                :usage          => {@metric_id => 1}},
-                {:service_id     => @service_id,
-                  :application_id => @application_id_two,
-                  :timestamp      => Time.utc(2010, 7, 26, 12, 5),
-                  :usage          => {@metric_id => 1}}])
+        Aggregator.expects(:process).with do |transactions|
+          transactions.all? do |t|
+            t.is_a?(Transaction) && t.timestamp == Time.utc(2010, 7, 26, 12, 5)
+          end
+          transactions.first.application_id == @application_id_one
+          transactions.last.application_id  == @application_id_two
+        end
 
         Transactor::ProcessJob.perform([default_transaction_attributes,
                                         default_transaction_attributes.merge(
@@ -68,12 +66,13 @@ module Transactor
 
     def test_stores
       timestamp = '2010-09-10 16:49:00'
+
       Timecop.freeze(Time.utc(2010, 9, 10, 00, 00)) do
-        TransactionStorage.expects(:store_all).
-          with([{:service_id     => @service_id,
-                :application_id => @application_id_one,
-                :timestamp      => Time.utc(2010, 9, 10, 16, 49),
-                :usage          => {@metric_id => 1}}])
+        TransactionStorage.expects(:store_all).with do |transactions|
+          transactions.all? do |t|
+            t.is_a?(Transaction) && t.timestamp == Time.utc(2010, 9, 10, 16, 49)
+          end
+        end
 
         Transactor::ProcessJob.perform(
           [default_transaction_attributes.merge('timestamp' => timestamp)]
@@ -85,8 +84,8 @@ module Transactor
       timestamp = '2010-05-07 18:11:25'
 
       Timecop.freeze(Time.utc(2010, 5, 7, 17, 12, 25)) do
-        Aggregator.expects(:aggregate_all).with do |transactions|
-          transactions.first[:timestamp] == Time.utc(2010, 5, 7, 18, 11, 25)
+        Aggregator.expects(:process).with do |transactions|
+          transactions.first.timestamp == Time.utc(2010, 5, 7, 18, 11, 25)
         end
 
         Transactor::ProcessJob.perform(
@@ -99,8 +98,8 @@ module Transactor
       timestamp = '2010-05-07 18:11:25 +07:00'
 
       Timecop.freeze(Time.utc(2010, 5, 6, 12, 11, 25)) do
-        Aggregator.expects(:aggregate_all).with do |transactions|
-          transactions.first[:timestamp] == Time.utc(2010, 5, 7, 11, 11, 25)
+        Aggregator.expects(:process).with do |transactions|
+          transactions.first.timestamp == Time.utc(2010, 5, 7, 11, 11, 25)
         end
 
         Transactor::ProcessJob.perform(
@@ -113,8 +112,8 @@ module Transactor
       timestamp = ''
 
       Timecop.freeze(Time.utc(2010, 8, 19, 11, 43)) do
-        Aggregator.expects(:aggregate_all).with do |transactions|
-          transactions.first[:timestamp] == Time.utc(2010, 8, 19, 11, 43)
+        Aggregator.expects(:process).with do |transactions|
+          transactions.first.timestamp == Time.utc(2010, 8, 19, 11, 43)
         end
 
         Transactor::ProcessJob.perform(
