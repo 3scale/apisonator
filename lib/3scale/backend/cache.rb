@@ -299,42 +299,13 @@ module ThreeScale
           end
         end
 
-        if status.authorized?
-          storage.pipelined do
-            keys.each do |key|
-              storage.set(key,content)
-              storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
-              storage.srem("limit_violations_set",key)
-            end
-          end
-        else
-          storage.pipelined do
-            keys.each do |key|
-              storage.set(key,content)
-              storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
-              storage.sadd("limit_violations_set",key)
-            end
-          end
-        end
-
+        store_keys_in_cache(status, keys, content)
       end
+
 
       def set_status_in_cache(key, status, options ={})
         options[:anchors_for_caching] = true
-        if status.authorized?
-          storage.pipelined do
-            storage.set(key,status.to_xml(options))
-            storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
-            storage.srem("limit_violations_set",key)
-          end
-        else
-          ## it just violated the Limits, add to the violation set
-          storage.pipelined do
-            storage.set(key,status.to_xml(options))
-            storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
-            storage.sadd("limit_violations_set",key)
-          end
-        end
+        store_keys_in_cache(status, [key], status.to_xml(options))
       end
 
       def caching_key(service_id, type ,id)
@@ -342,6 +313,18 @@ module ThreeScale
       end
 
       private
+
+      def store_keys_in_cache(status, keys, content)
+        now = Time.now.getutc.sec
+        op = status.authorized? ? :srem : :sadd
+        storage.pipelined do
+          keys.each do |key|
+            storage.set(key, content)
+            storage.expire(key, STATUS_TTL - now)
+            storage.send op, 'limit_violations_set', key
+          end
+        end
+      end
 
       def split_xml(xml_str = nil)
         xml_str.split("<__separator__/>") if xml_str
