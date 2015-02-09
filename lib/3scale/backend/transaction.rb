@@ -1,6 +1,7 @@
 module ThreeScale
   module Backend
     class Transaction
+      REPORT_DEADLINE = 24 * 3600
       ATTRIBUTES = [:service_id, :application_id, :user_id, :timestamp,
                     :log, :usage, :response_code]
 

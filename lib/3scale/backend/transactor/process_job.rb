@@ -1,3 +1,5 @@
+require '3scale/backend/transaction'
+
 module ThreeScale
   module Backend
     module Transactor
@@ -25,7 +27,7 @@ module ThreeScale
             ## therefore on the test environment playing with timecop can have some nasty effects
             ## batching jobs across multiple days and consenquently raising this error,
             ## Backend::Transactor.process_batch(0,{:all => true}); Resque.run!
-            if (current_time - transaction[:timestamp]) > REPORT_DEADLINE
+            if (current_time - transaction[:timestamp]) > Transaction::REPORT_DEADLINE
               begin
                 raise ReportTimestampNotWithinRange.new
                 ##RIGHT NOW ONLY RAISE AN AIRBREAK TO KNOW IF SOMEONE DOES IT, once active, remove
