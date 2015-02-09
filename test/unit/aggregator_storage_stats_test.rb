@@ -23,7 +23,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Resque.reset!
     Memoizer.reset!
 
-    Aggregator.reset_current_bucket!
+    reset_aggregator_prior_bucket!
 
     ## stubbing the airbreak, not working on tests
     Airbrake.stubs(:notify).returns(true)

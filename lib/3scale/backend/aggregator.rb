@@ -66,10 +66,6 @@ module ThreeScale
         value_str[1..value_str.size].to_i
       end
 
-      def reset_current_bucket!
-        self.prior_bucket = nil
-      end
-
       private
 
       def aggregate(transaction, bucket = nil)
