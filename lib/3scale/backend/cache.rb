@@ -85,7 +85,6 @@ module ThreeScale
       end
 
       def combination_seen(action, provider_key, params)
-
         key_version = nil
 
         if params[:service_id].nil? || params[:service_id].empty?
@@ -96,8 +95,7 @@ module ThreeScale
           service_id = params[:service_id]
         end
 
-        if !service_id.nil?
-
+        isknown = if service_id
           key_version = signature(action, params)
           application_id = params[:app_id]
           application_id = params[:user_key] if application_id.nil?
@@ -113,75 +111,52 @@ module ThreeScale
 
           # FIXME: this needs to be done for redirect_url(??)
 
-          if username.nil?
-
-            cached_app_key = caching_key(service_id,:application,application_id_cached)
-            version,
-            ver_service,
-            ver_application,
-            dirty_app_xml,
-            caching_enabled = storage.mget(
+          mget_query = [
               key_version,
               Service.storage_key(service_id, :version),
               Application.storage_key(service_id,application_id,:version),
-              cached_app_key,
-              "settings/caching_enabled")
+              caching_key(service_id, :application, application_id_cached),
+              "settings/caching_enabled"
+          ]
 
-            current_version = "s:#{ver_service}/a:#{ver_application}"
+          mget_query.push(User.storage_key(service_id, username, :version),
+                          caching_key(service_id, :user, username)) if username
 
-          else
+          version,
+          ver_service,
+          ver_application,
+          dirty_app_xml,
+          caching_enabled,
+          ver_user,
+          dirty_user_xml = storage.mget mget_query
 
-            cached_app_key = caching_key(service_id,:application,application_id_cached)
-            cached_user_key = caching_key(service_id,:user,username)
+          current_version = "s:#{ver_service}/a:#{ver_application}"
+          current_version += "/u:#{ver_user}" if ver_user
 
-            version,
-            ver_service,
-            ver_application,
-            ver_user,
-            dirty_app_xml,
-            dirty_user_xml,
-            caching_enabled = storage.mget(
-              key_version,
-              Service.storage_key(service_id, :version),
-              Application.storage_key(service_id,application_id,:version),
-              User.storage_key(service_id,username,:version),
-              cached_app_key,
-              cached_user_key,
-              "settings/caching_enabled")
+          ## if success, we have seen this key combination before, probably shit loads
+          ## of times. And neither service, application or user have changed, or any
+          ## other object that has a foreing key to service, application or user
 
-            current_version = "s:#{ver_service}/a:#{ver_application}/u:#{ver_user}"
-          end
+          # this does not necessarily means that the request is going to be authorized
+          # it will depend on getting the status from cache. This means that this keys
+          # id's combination has been seen before, and perhaps, has a status stored in
+          # in the cache.
 
-          if !version.nil? && current_version==version
-            ## success, we have seen this key combination before, probably shit loads
-            ## of times. And neither service, application or user have changed, or any
-            ## other object that has a foreing key to service, application or user
-            isknown = true
-
-            # this does not necessarily means that the request is going to be authorized
-            # it will depend on getting the status from cache. This means that this keys
-            # id's combination has been seen before, and perhaps, has a status stored in
-            # in the cache.
-
-          else
-            ## something has changed in service, user, application, metric, plan, etc.
-            isknown = false
-          end
-
+          ## else something has changed in service, user, application, metric, plan, etc.
+          current_version == version
         else
-          isknown = false
+          # not known
+          false
         end
 
         combination_data = {:key => key_version, :current_version => current_version}
 
         ## the default of settings/caching_enabled results on true, to disable caching set
         ## settings/caching_enabled to 0
-        caching_enabled = caching_enabled!="0"
+        caching_enabled = caching_enabled != "0"
 
-        return [isknown, service_id, combination_data, dirty_app_xml, dirty_user_xml, caching_enabled]
-
+        [isknown, service_id, combination_data, dirty_app_xml, dirty_user_xml, caching_enabled]
       end
-
 
       def combination_save(data)
 
