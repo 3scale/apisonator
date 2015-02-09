@@ -216,7 +216,7 @@ module ThreeScale
 
         i=0
         v.each do |str|
-          if (i%2==1)
+          if i.odd?
             _, metric, curr_value, max_value = str.split(",")
             curr_value = curr_value.to_i
             max_value = max_value.to_i
@@ -285,7 +285,7 @@ module ThreeScale
           tmp_keys << "#{application.id}:#{app_key}"
         end
 
-        tmp_keys << "#{application.id}:" if application.keys.size==0
+        tmp_keys << "#{application.id}:" if application.keys.empty?
 
         application.referrer_filters.each do |referrer|
           tmp_keys.each do |item|
@@ -293,7 +293,7 @@ module ThreeScale
           end
         end
 
-        if application.referrer_filters.size==0
+        if application.referrer_filters.empty?
           tmp_keys.each do |item|
             keys << caching_key(service_id,:application,"#{item}:")
           end
