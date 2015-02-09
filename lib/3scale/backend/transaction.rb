@@ -24,6 +24,10 @@ module ThreeScale
       def [](key)
         send(key)
       end
+
+      def valid_timestamp?
+        (Time.now.getutc - timestamp) <= REPORT_DEADLINE
+      end
     end
   end
 end

@@ -45,6 +45,22 @@ module ThreeScale
         context 'with invalid time string as a parameter' do
         end
       end
+
+      describe '#valid_timestamp?' do
+        context 'when transaction timestamp is older than 1 day' do
+          let(:attrs) { { timestamp: Time.now - (48 * 3600) } }
+          subject { Transaction.new(attrs).valid_timestamp? }
+
+          it { expect(subject).to be_false }
+        end
+
+        context 'when transaction timestamp is newer than 1 day' do
+          let(:attrs) { { timestamp: Time.now - 3600 } }
+          subject { Transaction.new(attrs).valid_timestamp? }
+
+          it { expect(subject).to be_true }
+        end
+      end
     end
   end
 end
