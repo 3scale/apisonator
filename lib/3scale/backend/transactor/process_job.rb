@@ -29,7 +29,7 @@ module ThreeScale
             ## Backend::Transactor.process_batch(0,{:all => true}); Resque.run!
             if (current_time - transaction[:timestamp]) > Transaction::REPORT_DEADLINE
               begin
-                raise ReportTimestampNotWithinRange.new
+                raise ReportTimestampNotWithinRange.new(Transaction::REPORT_DEADLINE)
                 ##RIGHT NOW ONLY RAISE AN AIRBREAK TO KNOW IF SOMEONE DOES IT, once active, remove
                 ##the rescue and the aibrake notify
                 ##test_aggregates_failure_due_to_report_after_deadline(Transactor::ProcessJobTest) [/Users/solso/3scale/backend/test/unit/transactor/process_job_test.rb

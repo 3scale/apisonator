@@ -158,8 +158,8 @@ module ThreeScale
     end
 
     class ReportTimestampNotWithinRange < Error
-      def initialize
-        super %(report jobs cannot update metrics older than #{REPORT_DEADLINE} seconds)
+      def initialize(max_seconds)
+        super %(report jobs cannot update metrics older than #{max_seconds} seconds)
       end
     end
 
