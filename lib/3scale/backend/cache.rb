@@ -58,12 +58,13 @@ module ThreeScale
 
       def signature(action, params)
         key_version = "cache_combination/#{action}/"
+        usage = params[:usage]
 
         VALID_PARAMS_FOR_CACHE.each do |label|
-          if label!=:usage || params[:usage].nil?
+          if label != :usage || usage.nil?
             key_version << "#{label}:#{params[label]}/"
           else
-            params[:usage].each do |key,value|
+            usage.each do |key, value|
               key_version << "#{label}:#{key}:"
             end
           end
