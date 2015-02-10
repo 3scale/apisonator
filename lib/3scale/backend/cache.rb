@@ -22,19 +22,6 @@ module ThreeScale
       STATUS_TTL            = 60   # 1 minute, this is too short but we need minute information on the output :-(
       SERVICE_ID_CACHE_TTL  = 300  # 5 minutes
 
-
-      ## this is a little bit dangerous, but we can live with it
-      def get_service_id(provider_key)
-        current_time = Time.now.getutc
-        @@provider_key_2_service_id ||= Hash.new
-        sid, time = @@provider_key_2_service_id[provider_key]
-        if sid.nil? || (current_time-time > SERVICE_ID_CACHE_TTL)
-          sid = storage.get("service/provider_key:#{provider_key}/id")
-          @@provider_key_2_service_id[provider_key] = [sid, current_time] unless sid.nil?
-        end
-        sid
-      end
-
       def stats
         @@stats ||= {:count => 0, :hits => 0, :last => nil}
         @@stats
