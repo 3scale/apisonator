@@ -634,7 +634,7 @@ module ThreeScale
       private
 
       def blank?(object)
-        object.respond_to?(:empty?) ? object.empty? : !object
+        !object || object.respond_to?(:empty?) && object.empty?
       end
 
       def valid_key_and_usage_params?
