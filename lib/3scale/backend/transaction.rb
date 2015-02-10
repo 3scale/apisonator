@@ -25,8 +25,14 @@ module ThreeScale
         send(key)
       end
 
-      def valid_timestamp?
-        (Time.now.getutc - timestamp) <= REPORT_DEADLINE
+      # Validates if transaction timestamp is within accepted range
+      #
+      # @return [true] if the timestamp is within the valid range.
+      # @raise [ReportTimestampNotwithinrange] if the timestamp isn't within
+      #   the valid range.
+      def ensure_on_time!
+        return true if (Time.now.getutc - timestamp) <= REPORT_DEADLINE
+        fail ReportTimestampNotWithinRange, REPORT_DEADLINE
       end
     end
   end

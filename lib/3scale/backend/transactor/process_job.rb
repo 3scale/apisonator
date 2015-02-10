@@ -22,9 +22,7 @@ module ThreeScale
             transaction = Transaction.new(transaction_attrs)
 
             ## check if the timestamps is within accepted range
-            # unless transaction.valid_timestamp?
-            #   fail ReportTimestampNotWithinRange, Transaction::REPORT_DEADLINE
-            # end
+            # transaction.ensure_on_time!
 
             transaction
           end

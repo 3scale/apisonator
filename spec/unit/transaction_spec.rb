@@ -46,17 +46,17 @@ module ThreeScale
         end
       end
 
-      describe '#valid_timestamp?' do
+      describe '#ensure_on_time!' do
         context 'when transaction timestamp is older than 1 day' do
           let(:attrs) { { timestamp: Time.now - (48 * 3600) } }
-          subject { Transaction.new(attrs).valid_timestamp? }
+          subject { Transaction.new(attrs).ensure_on_time! }
 
-          it { expect(subject).to be_false }
+          it { expect { subject }.to raise_error(ReportTimestampNotWithinRange) }
         end
 
         context 'when transaction timestamp is newer than 1 day' do
           let(:attrs) { { timestamp: Time.now - 3600 } }
-          subject { Transaction.new(attrs).valid_timestamp? }
+          subject { Transaction.new(attrs).ensure_on_time! }
 
           it { expect(subject).to be_true }
         end
