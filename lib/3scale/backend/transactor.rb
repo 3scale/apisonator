@@ -46,7 +46,15 @@ module ThreeScale
 
       def do_authorize(method, provider_key, params, options)
         notify(provider_key, 'transactions/authorize' => 1)
-        check_values_of_usage(params[:usage]) unless params[:usage].nil?
+        ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
+        sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do |opts|
+          authorize_nocache(method, provider_key, params, opts)
+        end
+      end
+      private :do_authorize
+
+      def sanitize_and_cache_auth(method, provider_key, usage, no_cache, params, options)
+        check_values_of_usage(usage) unless usage.nil?
 
         status = nil
         status_xml = nil
@@ -54,13 +62,12 @@ module ThreeScale
         data_combination = nil
         cache_miss = true
 
-        ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
-        if method != :oauth_authorize and params[:no_caching].nil?
-          ## check is the keys/id combination from params has been seen before
+        unless no_cache
+          ## check if the keys/id combination has been seen before
           isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(method, provider_key, params)
 
           if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
-            options[:usage] = params[:usage] unless params[:usage].nil?
+            options[:usage] = usage unless usage.nil?
             options[:add_usage_on_report] = false
             status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
             cache_miss = false unless status_xml.nil? || status_result.nil? || violation
@@ -69,7 +76,7 @@ module ThreeScale
 
         if cache_miss
           report_cache_miss
-          status, service, application, user = authorize_nocache(method, provider_key, params, options)
+          status, service, application, user = yield(options)
           combination_save(data_combination) unless data_combination.nil? || !caching_allowed
           status_xml = nil
           status_result = nil
@@ -79,7 +86,7 @@ module ThreeScale
 
         [status, status_xml, status_result]
       end
-      private :do_authorize
+      private :sanitize_and_cache_auth
 
       def authorize(provider_key, params, options = {})
         do_authorize :authorize, provider_key, params, options
