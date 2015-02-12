@@ -216,16 +216,13 @@ module ThreeScale
           end
         end
 
-        violation = if authorized && (limit_violation_without_usage || limit_violation_with_usage)
-          ## the cache says that the status was authorized but a violation just occured on the limits...
-          ## then, just forget and let the proper way to calculate it
-          true
-        elsif !authorized && limit_violation_without_usage && !limit_violation_with_usage
-          ## the cache says that the status was NOT authorized and there is a limit violation without summing the usage
-          ## but because a negative usage or a set now it's ok, just forget the cache and the the proper way to calculate
-          true
+        # a violation on the limits with usage depends on whether status is authorized
+        # if no violation with usage, just look if we have a violation wo usage
+        # if we end up with a violation, forget the cache and compute it properly
+        violation = if limit_violation_with_usage
+          authorized
         else
-          false
+          limit_violation_without_usage
         end
 
         [newxmlstr, authorized, violation]
