@@ -86,50 +86,6 @@ module ThreeScale
         do_authorize :oauth_authorize, provider_key, params, options
       end
 
-      def authorize_nocache(method, provider_key, params, options = {})
-        service = load_service!(provider_key, params[:service_id])
-        app_id = params[:app_id]
-        if method == :oauth_authorize
-          ## if app_id is not defined, check for the access_token and resolve it to the app_id
-          if (app_id.nil? || app_id.empty?)
-            if params[:access_token].nil? || params[:access_token].empty?
-              raise ApplicationNotFound.new(app_id)
-            else
-              app_id = OAuthAccessTokenStorage.get_app_id(service.id, params[:access_token])
-              raise AccessTokenInvalid.new(params[:access_token]) if app_id.nil? || app_id.empty?
-            end
-          end
-
-          oauth = true
-          validators = OAUTH_VALIDATORS
-          user_key = nil
-        else
-          oauth = false
-          validators = VALIDATORS
-          user_key = params[:user_key]
-        end
-
-        application = Application.load_by_id_or_user_key!(service.id,
-                                                          app_id,
-                                                          user_key)
-
-        user         = load_user!(application, service, params[:user_id])
-        usage        = load_current_usage(application)
-        user_usage   = load_user_current_usage(user) if user
-        status_attrs = {
-          user_values: user_usage,
-          application: application,
-          service:     service,
-          oauth:       oauth,
-          values:      usage,
-          user:        user,
-        }
-
-        status = apply_validators(validators, status_attrs, params)
-
-        [status, service, application, user]
-      end
-
       def authrep(provider_key, params, options ={})
         status = nil
         status_xml = nil
@@ -190,38 +146,66 @@ module ThreeScale
 
       end
 
+      def authorize_nocache(method, provider_key, params, options = {})
+        service = load_service!(provider_key, params[:service_id])
+
+        app_id = params[:app_id]
+        if method == :oauth_authorize
+          ## if app_id is not defined, check for the access_token and resolve it to the app_id
+          if (app_id.nil? || app_id.empty?)
+            if params[:access_token].nil? || params[:access_token].empty?
+              raise ApplicationNotFound.new(app_id)
+            else
+              app_id = OAuthAccessTokenStorage.get_app_id(service.id, params[:access_token])
+              raise AccessTokenInvalid.new(params[:access_token]) if app_id.nil? || app_id.empty?
+            end
+          end
+
+          oauth = true
+          user_key = nil
+        else
+          oauth = false
+          user_key = params[:user_key]
+        end
+
+        do_validators(provider_key, service, app_id, params[:user_id], user_key, nil, oauth, params)
+      end
+
       ## this is the classic way to do an authrep in case the cache fails, there
       ## has been changes on the underlying data or the time to life has elapsed
       def authrep_nocache(provider_key, params, options = {})
-        status     = nil
-        user       = nil
-        user_usage = nil
+        service = load_service!(provider_key, params[:service_id])
 
-        service     = load_service!(provider_key, params[:service_id])
-        application = Application.load_by_id_or_user_key!(service.id,
-                                                          params[:app_id],
-                                                          params[:user_key])
-
-        user         = load_user!(application, service, params[:user_id])
-        usage        = load_current_usage(application)
-        user_usage   = load_user_current_usage(user) unless user.nil?
-        status_attrs = {
-          user_values: user_usage,
-          application: application,
-          service:     service,
-          usage:       params[:usage],
-          values:      usage,
-          user:        user,
-        }
-
-        status = apply_validators(VALIDATORS, status_attrs, params)
-
-        [status, service, application, user]
+        do_validators(provider_key, service, params[:app_id], params[:user_id], params[:user_key], params[:usage], false, params)
       rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
         # we still want to track these
         notify(provider_key, 'transactions/authorize' => 1)
         raise e
       end
+
+      def do_validators(provider_key, service, app_id, user_id, user_key, usage, oauth, params)
+        application = Application.load_by_id_or_user_key!(service.id,
+                                                          app_id,
+                                                          user_key)
+
+        user         = load_user!(application, service, user_id)
+        usage_values = load_current_usage(application)
+        user_usage   = load_user_current_usage(user) if user
+        status_attrs = {
+          user_values: user_usage,
+          application: application,
+          service:     service,
+          oauth:       oauth,
+          usage:       usage,
+          values:      usage_values,
+          user:        user,
+        }
+
+        status = apply_validators(oauth ? OAUTH_VALIDATORS : VALIDATORS, status_attrs, params)
+
+        [status, service, application, user]
+      end
+      private :do_validators
 
       def utilization(service_id, application_id)
         #service = Service.load_by_id!(service_id)
