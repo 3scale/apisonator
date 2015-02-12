@@ -28,22 +28,6 @@ module ThreeScale
           'transactions' => transactions.size)
       end
 
-      COMMON_VALIDATORS = [
-                    Validators::Referrer,
-                    Validators::State,
-                    Validators::Limits
-      ]
-      private_constant :COMMON_VALIDATORS
-
-      VALIDATORS = [Validators::Key] + COMMON_VALIDATORS
-      private_constant :VALIDATORS
-
-
-      OAUTH_VALIDATORS = [Validators::OauthSetting,
-                          Validators::OauthKey,
-                          Validators::RedirectUrl] + COMMON_VALIDATORS
-      private_constant :OAUTH_VALIDATORS
-
       def authorize(provider_key, params, options = {})
         do_authorize :authorize, provider_key, params, options
       end
@@ -138,6 +122,18 @@ module ThreeScale
       ## -------------------
 
       private
+
+      COMMON_VALIDATORS = [
+                    Validators::Referrer,
+                    Validators::State,
+                    Validators::Limits
+      ]
+
+      VALIDATORS = [Validators::Key] + COMMON_VALIDATORS
+
+      OAUTH_VALIDATORS = [Validators::OauthSetting,
+                          Validators::OauthKey,
+                          Validators::RedirectUrl] + COMMON_VALIDATORS
 
       def authorize_nocache(method, provider_key, params, options = {})
         service = load_service!(provider_key, params[:service_id])
