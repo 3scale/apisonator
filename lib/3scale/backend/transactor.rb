@@ -28,18 +28,21 @@ module ThreeScale
           'transactions' => transactions.size)
       end
 
-      VALIDATORS = [Validators::Key,
+      COMMON_VALIDATORS = [
                     Validators::Referrer,
                     Validators::State,
-                    Validators::Limits]
+                    Validators::Limits
+      ]
+      private_constant :COMMON_VALIDATORS
+
+      VALIDATORS = [Validators::Key] + COMMON_VALIDATORS
+      private_constant :VALIDATORS
 
 
       OAUTH_VALIDATORS = [Validators::OauthSetting,
                           Validators::OauthKey,
-                          Validators::RedirectUrl,
-                          Validators::Referrer,
-                          Validators::State,
-                          Validators::Limits]
+                          Validators::RedirectUrl] + COMMON_VALIDATORS
+      private_constant :OAUTH_VALIDATORS
 
       def do_authorize(method, provider_key, params, options)
         notify(provider_key, 'transactions/authorize' => 1)
