@@ -67,8 +67,10 @@ module ThreeScale
           isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(method, provider_key, params)
 
           if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
-            options[:usage] = usage unless usage.nil?
-            options[:add_usage_on_report] = false
+            unless usage.nil?
+              options[:usage] = usage
+              options[:add_usage_on_report] = true if method == :authrep
+            end
             status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
             cache_miss = false unless status_xml.nil? || status_result.nil? || violation
           end
@@ -84,7 +86,7 @@ module ThreeScale
           report_cache_hit
         end
 
-        [status, status_xml, status_result]
+        [status, status_xml, status_result, service, application, user, service_id]
       end
       private :sanitize_and_cache_auth
 
