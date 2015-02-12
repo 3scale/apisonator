@@ -99,39 +99,12 @@ module ThreeScale
       end
 
       def authrep(provider_key, params, options ={})
-        status = nil
-        status_xml = nil
-        status_result = nil
-        data_combination = nil
-        cache_miss = true
-
-        check_values_of_usage(params[:usage]) unless params[:usage].nil?
-
-        if params[:no_caching].nil?
-          ## check is the keys/id combination from params has been seen
-          ## before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:authrep,provider_key,params)
-
-          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
-            options[:usage] = params[:usage] unless params[:usage].nil?
-            options[:add_usage_on_report] = true unless params[:usage].nil?
-
-            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
-            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
-          end
+        usage = params[:usage]
+        ret = sanitize_and_cache_auth(:authrep, provider_key, usage, params[:no_caching], params, options) do |opts|
+          authrep_nocache(provider_key, params, opts)
         end
 
-        ##cache_miss ? report_cache_miss : report_cache_hit
-        ##combination_save(data_combination) unless data_combination.nil? || !caching_allowed
-        if cache_miss
-          report_cache_miss
-          status, service, application, user = authrep_nocache(provider_key,params,options)
-          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
-          status_xml = nil
-          status_result = nil
-        else
-          report_cache_hit
-        end
+        status, _, status_result, service, application, user, service_id = ret
 
         if application.nil?
           application_id = params[:app_id]
@@ -144,18 +117,16 @@ module ThreeScale
           username = user.username unless user.nil?
         end
 
-        if (!params[:usage].nil? || !params[:log].nil?) && ((!status.nil? && status.authorized?) || (status.nil? && status_result))
-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => params[:usage], "user_id" => username, "log" => params[:log]}}))
-          val = 0
-          val = params[:usage].size unless params[:usage].nil?
+        if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
+          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
+          val = usage ? usage.size : 0
           ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
           notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
         else
           notify(provider_key, 'transactions/authorize' => 1)
         end
 
-        [status, status_xml, status_result]
-
+        ret
       end
 
       def authorize_nocache(method, provider_key, params, options = {})
