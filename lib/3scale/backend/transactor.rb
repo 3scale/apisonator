@@ -44,52 +44,6 @@ module ThreeScale
                           Validators::RedirectUrl] + COMMON_VALIDATORS
       private_constant :OAUTH_VALIDATORS
 
-      def do_authorize(method, provider_key, params, options)
-        notify(provider_key, 'transactions/authorize' => 1)
-        ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
-        sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do |opts|
-          authorize_nocache(method, provider_key, params, opts)
-        end
-      end
-      private :do_authorize
-
-      def sanitize_and_cache_auth(method, provider_key, usage, no_cache, params, options)
-        check_values_of_usage(usage) unless usage.nil?
-
-        status = nil
-        status_xml = nil
-        status_result = nil
-        data_combination = nil
-        cache_miss = true
-
-        unless no_cache
-          ## check if the keys/id combination has been seen before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(method, provider_key, params)
-
-          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
-            unless usage.nil?
-              options[:usage] = usage
-              options[:add_usage_on_report] = true if method == :authrep
-            end
-            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
-            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
-          end
-        end
-
-        if cache_miss
-          report_cache_miss
-          status, service, application, user = yield(options)
-          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
-          status_xml = nil
-          status_result = nil
-        else
-          report_cache_hit
-        end
-
-        [status, status_xml, status_result, service, application, user, service_id]
-      end
-      private :sanitize_and_cache_auth
-
       def authorize(provider_key, params, options = {})
         do_authorize :authorize, provider_key, params, options
       end
@@ -166,30 +120,6 @@ module ThreeScale
         raise e
       end
 
-      def do_validators(provider_key, service, app_id, user_id, user_key, usage, oauth, params)
-        application = Application.load_by_id_or_user_key!(service.id,
-                                                          app_id,
-                                                          user_key)
-
-        user         = load_user!(application, service, user_id)
-        usage_values = load_current_usage(application)
-        user_usage   = load_user_current_usage(user) if user
-        status_attrs = {
-          user_values: user_usage,
-          application: application,
-          service:     service,
-          oauth:       oauth,
-          usage:       usage,
-          values:      usage_values,
-          user:        user,
-        }
-
-        status = apply_validators(oauth ? OAUTH_VALIDATORS : VALIDATORS, status_attrs, params)
-
-        [status, service, application, user]
-      end
-      private :do_validators
-
       def utilization(service_id, application_id)
         #service = Service.load_by_id!(service_id)
         #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
@@ -242,10 +172,76 @@ module ThreeScale
         EventStorage.delete_range(to_id)
       end
 
-
       ## -------------------
 
       private
+
+      def do_validators(provider_key, service, app_id, user_id, user_key, usage, oauth, params)
+        application = Application.load_by_id_or_user_key!(service.id,
+                                                          app_id,
+                                                          user_key)
+
+        user         = load_user!(application, service, user_id)
+        usage_values = load_current_usage(application)
+        user_usage   = load_user_current_usage(user) if user
+        status_attrs = {
+          user_values: user_usage,
+          application: application,
+          service:     service,
+          oauth:       oauth,
+          usage:       usage,
+          values:      usage_values,
+          user:        user,
+        }
+
+        status = apply_validators(oauth ? OAUTH_VALIDATORS : VALIDATORS, status_attrs, params)
+
+        [status, service, application, user]
+      end
+
+      def do_authorize(method, provider_key, params, options)
+        notify(provider_key, 'transactions/authorize' => 1)
+        ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
+        sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do |opts|
+          authorize_nocache(method, provider_key, params, opts)
+        end
+      end
+
+      def sanitize_and_cache_auth(method, provider_key, usage, no_cache, params, options)
+        check_values_of_usage(usage) unless usage.nil?
+
+        status = nil
+        status_xml = nil
+        status_result = nil
+        data_combination = nil
+        cache_miss = true
+
+        unless no_cache
+          ## check if the keys/id combination has been seen before
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(method, provider_key, params)
+
+          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
+            unless usage.nil?
+              options[:usage] = usage
+              options[:add_usage_on_report] = true if method == :authrep
+            end
+            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
+            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
+          end
+        end
+
+        if cache_miss
+          report_cache_miss
+          status, service, application, user = yield(options)
+          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+          status_xml = nil
+          status_result = nil
+        else
+          report_cache_hit
+        end
+
+        [status, status_xml, status_result, service, application, user, service_id]
+      end
 
       def load_user!(application, service, user_id)
         user = nil
