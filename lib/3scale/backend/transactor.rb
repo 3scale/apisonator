@@ -136,43 +136,38 @@ module ThreeScale
                           Validators::RedirectUrl] + COMMON_VALIDATORS
 
       def authorize_nocache(method, provider_key, params, options = {})
-        service = load_service!(provider_key, params[:service_id])
-
-        app_id = params[:app_id]
-        if method == :oauth_authorize
-          ## if app_id is not defined, check for the access_token and resolve it to the app_id
-          if (app_id.nil? || app_id.empty?)
-            if params[:access_token].nil? || params[:access_token].empty?
-              raise ApplicationNotFound.new(app_id)
-            else
-              app_id = OAuthAccessTokenStorage.get_app_id(service.id, params[:access_token])
-              raise AccessTokenInvalid.new(params[:access_token]) if app_id.nil? || app_id.empty?
-            end
-          end
-
-          oauth = true
-          user_key = nil
-        else
-          oauth = false
-          user_key = params[:user_key]
-        end
-
-        do_validators(provider_key, service, app_id, params[:user_id], user_key, nil, oauth, params)
+        oauth = method == :oauth_authorize
+        user_key = oauth ? nil : params[:user_key]
+        do_validators(oauth, provider_key, params[:service_id], params[:app_id], params[:user_id], user_key, nil, params)
       end
 
       ## this is the classic way to do an authrep in case the cache fails, there
       ## has been changes on the underlying data or the time to life has elapsed
       def authrep_nocache(provider_key, params, options = {})
-        service = load_service!(provider_key, params[:service_id])
-
-        do_validators(provider_key, service, params[:app_id], params[:user_id], params[:user_key], params[:usage], false, params)
+        do_validators(false, provider_key, params[:service_id], params[:app_id], params[:user_id], params[:user_key], params[:usage], params)
       rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
         # we still want to track these
         notify(provider_key, 'transactions/authorize' => 1)
         raise e
       end
 
-      def do_validators(provider_key, service, app_id, user_id, user_key, usage, oauth, params)
+      def do_validators(oauth, provider_key, service_id, app_id, user_id, user_key, usage, params)
+        service = load_service!(provider_key, service_id)
+
+        if oauth
+          # if app_id (client_id) isn't defined, check for access_token and
+          # resolve it to the app_id
+          if app_id.nil? or app_id.empty?
+            access_token = params[:access_token]
+            raise ApplicationNotFound.new(app_id) if access_token.nil? or access_token.empty?
+            app_id = OAuthAccessTokenStorage.get_app_id(service.id, access_token)
+            raise AccessTokenInvalid.new(access_token) if app_id.nil? || app_id.empty?
+          end
+          validators = OAUTH_VALIDATORS
+        else
+          validators = VALIDATORS
+        end
+
         application = Application.load_by_id_or_user_key!(service.id,
                                                           app_id,
                                                           user_key)
@@ -190,7 +185,7 @@ module ThreeScale
           user:        user,
         }
 
-        status = apply_validators(oauth ? OAUTH_VALIDATORS : VALIDATORS, status_attrs, params)
+        status = apply_validators(validators, status_attrs, params)
 
         [status, service, application, user]
       end
