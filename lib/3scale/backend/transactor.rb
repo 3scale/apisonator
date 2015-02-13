@@ -36,10 +36,18 @@ module ThreeScale
         do_authorize :oauth_authorize, provider_key, params, options
       end
 
-      def authrep(provider_key, params, options ={})
+      def authrep(provider_key, params, options = {})
+        do_authrep :authrep, provider_key, params, options
+      end
+
+      def oauth_authrep(provider_key, params, options = {})
+        do_authrep :oauth_authrep, provider_key, params, options
+      end
+
+      def do_authrep(method, provider_key, params, options)
         usage = params[:usage]
-        ret = sanitize_and_cache_auth(:authrep, provider_key, usage, params[:no_caching], params, options) do |opts|
-          authrep_nocache(provider_key, params, opts)
+        ret = sanitize_and_cache_auth(method, provider_key, usage, params[:no_caching], params, options) do |opts|
+          authrep_nocache(method, provider_key, params, opts)
         end
 
         status, _, status_result, service, application, user, service_id = ret
@@ -66,6 +74,7 @@ module ThreeScale
 
         ret
       end
+      private :do_authrep
 
       def utilization(service_id, application_id)
         #service = Service.load_by_id!(service_id)
@@ -143,8 +152,10 @@ module ThreeScale
 
       ## this is the classic way to do an authrep in case the cache fails, there
       ## has been changes on the underlying data or the time to life has elapsed
-      def authrep_nocache(provider_key, params, options = {})
-        do_validators(false, provider_key, params[:service_id], params[:app_id], params[:user_id], params[:user_key], params[:usage], params)
+      def authrep_nocache(method, provider_key, params, options = {})
+        oauth = method == :oauth_authrep
+        user_key = oauth ? nil : params[:user_key]
+        do_validators(oauth, provider_key, params[:service_id], params[:app_id], params[:user_id], user_key, params[:usage], params)
       rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
         # we still want to track these
         notify(provider_key, 'transactions/authorize' => 1)
@@ -214,7 +225,7 @@ module ThreeScale
           if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
             unless usage.nil?
               options[:usage] = usage
-              options[:add_usage_on_report] = true if method == :authrep
+              options[:add_usage_on_report] = true if method == :authrep || method == :oauth_authrep
             end
             status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
             cache_miss = false unless status_xml.nil? || status_result.nil? || violation
