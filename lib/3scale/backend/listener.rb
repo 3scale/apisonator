@@ -220,7 +220,8 @@ module ThreeScale
       ##~ op.summary = "Authorize (Oauth authentication mode pattern)"
       ##
       ##~ op.description = "<p>Read-only operation to authorize an application in the Oauth authentication pattern."
-      ##~ op.description = op.description + "<p>This calls returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
+      ##~ @oauth_desc_response = "<p>This calls returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
+      ##~ op.description = op.description + @oauth_desc_response
       ##~ op.description = op.description + " " + @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
@@ -244,14 +245,14 @@ module ThreeScale
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "AuthRep (Authorize + Report for the App Id authentication pattern)"
       ##
-      ##~ @authrep_desc = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time."
+      ##~ op.description = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time."
       ##~ @authrep_desc = @authrep_desc + "<p>The main difference between this call and the regular authorize call is that"
       ##~ @authrep_desc = @authrep_desc + " usage will be reported if the authorization is successful. Authrep is the most convenient way to integrate your API with the"
       ##~ @authrep_desc = @authrep_desc + " 3scale's Service Manangement API since it does a 1:1 mapping between a request to your API and a request to 3scale's API."
       ##~ @authrep_desc = @authrep_desc + "<p>If you do not want to do a request to 3scale for each request to your API or batch the reports you should use the Authorize and Report methods instead."
       ##~ @authrep_desc = @authrep_desc + "<p>Authrep is <b>not a read-only</b> operation and will increment the values if the authorization step is a success."
       ##
-      ##~ op.description = @authrep_desc
+      ##~ op.description = op.description + " " + @authrep_desc
       ##~ op.group = "authrep"
       ##
       ##~ op.parameters.add @parameter_provider_key
