@@ -44,38 +44,6 @@ module ThreeScale
         do_authrep :oauth_authrep, provider_key, params, options
       end
 
-      def do_authrep(method, provider_key, params, options)
-        usage = params[:usage]
-        ret = sanitize_and_cache_auth(method, provider_key, usage, params[:no_caching], params, options) do |opts|
-          authrep_nocache(method, provider_key, params, opts)
-        end
-
-        status, _, status_result, service, application, user, service_id = ret
-
-        if application.nil?
-          application_id = params[:app_id]
-          application_id = params[:user_key] if params[:app_id].nil?
-          username = params[:user_id]
-        else
-          service_id = service.id
-          application_id = application.id
-          username = nil
-          username = user.username unless user.nil?
-        end
-
-        if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
-          val = usage ? usage.size : 0
-          ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
-          notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
-        else
-          notify(provider_key, 'transactions/authorize' => 1)
-        end
-
-        ret
-      end
-      private :do_authrep
-
       def utilization(service_id, application_id)
         #service = Service.load_by_id!(service_id)
         #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
@@ -207,6 +175,37 @@ module ThreeScale
         sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do |opts|
           authorize_nocache(method, provider_key, params, opts)
         end
+      end
+
+      def do_authrep(method, provider_key, params, options)
+        usage = params[:usage]
+        ret = sanitize_and_cache_auth(method, provider_key, usage, params[:no_caching], params, options) do |opts|
+          authrep_nocache(method, provider_key, params, opts)
+        end
+
+        status, _, status_result, service, application, user, service_id = ret
+
+        if application.nil?
+          application_id = params[:app_id]
+          application_id = params[:user_key] if params[:app_id].nil?
+          username = params[:user_id]
+        else
+          service_id = service.id
+          application_id = application.id
+          username = nil
+          username = user.username unless user.nil?
+        end
+
+        if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
+          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
+          val = usage ? usage.size : 0
+          ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
+          notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
+        else
+          notify(provider_key, 'transactions/authorize' => 1)
+        end
+
+        ret
       end
 
       def sanitize_and_cache_auth(method, provider_key, usage, no_cache, params, options)
