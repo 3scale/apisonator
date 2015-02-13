@@ -285,6 +285,27 @@ module ThreeScale
         do_api_method :authrep
       end
 
+      ## ------------ DOCS --------------
+      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ a = sapi.apis.add
+      ##~ a.set "path" => "/transactions/oauth_authrep.xml", "format" => "xml"
+      ##~ op = a.operations.add
+      ##~ op.set :httpMethod => "GET", :nickname => "oauth_authrep", :deprecated => false
+      ##~ op.summary = "AuthRep (Oauth authentication mode pattern)"
+      ##
+      ##~ op.description = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time in the OAuth authentication pattern."
+      ##~ op.description = op.description + " " + @authrep_desc + " " + @oauth_desc_response
+      ##~ op.group = "authrep"
+      ##
+      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_client_id
+      ##~ op.parameters.add @parameter_referrer
+      ##~ op.parameters.add @parameter_user_id
+      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_log
+      ##~ op.parameters.add @parameter_redirect_url
+      ##
       get '/transactions/oauth_authrep.xml' do
         do_api_method :oauth_authrep
       end
