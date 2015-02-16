@@ -104,9 +104,3 @@ Resque.redis = ThreeScale::Backend::QueueStorage.connection(
   ThreeScale::Backend.environment,
   ThreeScale::Backend.configuration,
 )
-ThreeScale::Core.donbot_url =
-  if ThreeScale::Backend.production?
-    'http://host:8080/internal/'
-  else
-    'http://localhost:3000/internal'
-  end
