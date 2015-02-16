@@ -886,7 +886,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     key = application_key('1001', '2001', '3001', :minute, 201005071323)
     ttl = @storage.ttl(key)
 
-    assert_not_equal -1, ttl
+    assert_not_equal(-1, ttl)
     assert ttl >  0
     assert ttl <= 180
   end
