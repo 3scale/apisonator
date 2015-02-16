@@ -56,12 +56,6 @@ require '3scale/backend/worker'
 require '3scale/backend/errors'
 
 module ThreeScale
-  module Core
-    def self.storage
-      ThreeScale::Backend::Storage.instance
-    end
-  end
-
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
   PIPELINED_SLICE_SIZE = 400
   REPORT_DEADLINE      = 24*3600
