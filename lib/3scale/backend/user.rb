@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     class User
-      include Core::Storable
+      include Storable
 
       attr_accessor :service_id, :username, :state, :plan_id, :plan_name
       attr_writer :version

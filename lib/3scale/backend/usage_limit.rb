@@ -92,7 +92,7 @@ module ThreeScale
       attr_accessor :service_id, :plan_id, :metric_id, :period, :value
 
       include Memoizer::Decorator
-      include Core::Storable
+      include Storable
       include CoreUsageLimit
 
       def validate(usage)
