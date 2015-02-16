@@ -13,7 +13,7 @@ module ThreeScale
   module Backend
     # Methods for reporting and authorizing transactions.
     module Transactor
-      include Core::StorageKeyHelpers
+      include Backend::StorageKeyHelpers
       include Backend::Cache
       include NotifyBatcher
       extend self

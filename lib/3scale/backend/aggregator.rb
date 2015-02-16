@@ -11,7 +11,7 @@ require '3scale/backend/application_events'
 module ThreeScale
   module Backend
     module Aggregator
-      include Core::StorageKeyHelpers
+      include Backend::StorageKeyHelpers
       include Backend::Cache
       include Backend::Alerts
       include Configurable

@@ -7,7 +7,7 @@ module ThreeScale
     class ApplicationEvents
 
       class << self
-        include Core::StorageKeyHelpers
+        include Backend::StorageKeyHelpers
       end
 
       DAILY_KEY_TTL = 172_800
