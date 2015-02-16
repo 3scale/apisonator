@@ -14,8 +14,7 @@ module ThreeScale
           end
 
           @success_log_message = "#{service_id} #{transactions.size} #{logs.size} "
-
-        rescue ThreeScale::Core::Error, Error => error
+        rescue Error => error
           ErrorStorage.store(service_id, error)
           @error_log_message = "#{service_id} #{error}"
         rescue Exception => error
