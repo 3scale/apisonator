@@ -1,4 +1,3 @@
-require '3scale/core'
 require 'builder'
 require 'hiredis'
 require 'redis'

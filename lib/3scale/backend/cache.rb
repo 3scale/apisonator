@@ -1,5 +1,4 @@
 require '3scale/backend/errors'
-require '3scale/core'
 
 module ThreeScale
   module Backend
