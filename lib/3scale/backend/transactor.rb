@@ -95,7 +95,7 @@ module ThreeScale
 
       def validate(oauth, provider_key, report_usage, params)
         service = load_service!(provider_key, params[:service_id])
-        app_id, user_key = params[:app_id], params[:user_key]
+        app_id, user_key, user_id = params[:app_id], params[:user_key], params[:user_id]
 
         if oauth
           # if app_id (client_id) isn't defined, check for access_token and
@@ -103,7 +103,7 @@ module ThreeScale
           if app_id.nil? or app_id.empty?
             access_token = params[:access_token]
             raise ApplicationNotFound.new(app_id) if access_token.nil? or access_token.empty?
-            app_id = OAuthAccessTokenStorage.get_app_id(service.id, access_token)
+            app_id = OAuthAccessTokenStorage.get_app_id(service.id, access_token, user_id)
             raise AccessTokenInvalid.new(access_token) if app_id.nil? || app_id.empty?
           end
           validators = OAUTH_VALIDATORS
@@ -115,7 +115,7 @@ module ThreeScale
                                                           app_id,
                                                           user_key)
 
-        user         = load_user!(application, service, params[:user_id])
+        user         = load_user!(application, service, user_id)
         now          = Time.now.getutc
         usage_values = load_application_usage(application, now)
         user_usage   = load_user_usage(user, now) if user

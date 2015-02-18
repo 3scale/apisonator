@@ -95,8 +95,8 @@ module ThreeScale
           end
         end
 
-        def extract_id!(service_id, app_id, user_key, access_token)
-          with_app_id_from_params service_id, app_id, user_key, access_token do |appid|
+        def extract_id!(service_id, app_id, user_key, access_token, user_id = nil)
+          with_app_id_from_params service_id, app_id, user_key, access_token, user_id do |appid|
             exists? service_id, appid and appid
           end
         end
@@ -168,15 +168,15 @@ module ThreeScale
           )
         end
 
-        def with_app_id_from_params(service_id, app_id, user_key, access_token = nil)
+        def with_app_id_from_params(service_id, app_id, user_key, access_token = nil, user_id = nil)
           if app_id
             raise AuthenticationError unless user_key.nil?
           elsif user_key
             app_id = load_id_by_key(service_id, user_key)
             raise UserKeyInvalid, user_key if app_id.nil?
           elsif access_token
-            app_id = OAuthAccessTokenStorage.get_app_id service_id, access_token
-            raise AccessTokenInvalid, access_token if app_id.nil?
+            app_id = OAuthAccessTokenStorage.get_app_id service_id, access_token, user_id
+            raise AccessTokenInvalid, access_token, user_id if app_id.nil?
           else
             raise ApplicationNotFound
           end

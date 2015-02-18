@@ -35,7 +35,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                                                              :token => @access_token,
                                                              :ttl => 60
     assert_equal 200, last_response.status
-    assert_equal @application.id, OAuthAccessTokenStorage.get_app_id(@service.id, @access_token)
+    assert_equal @application.id, OAuthAccessTokenStorage.get_app_id(@service.id, @access_token, nil)
   end
 
   test 'successful authorize responds with 200' do

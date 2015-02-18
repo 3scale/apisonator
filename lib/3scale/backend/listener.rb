@@ -458,9 +458,9 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        @token_to_app_id = OAuthAccessTokenStorage.get_app_id(params[:service_id], params[:token])
+        @token_to_app_id = OAuthAccessTokenStorage.get_app_id(params[:service_id], params[:token], params[:user_id])
 
-        raise AccessTokenInvalid.new(params[:token]) if @token_to_app_id.nil?
+        raise AccessTokenInvalid.new(params[:token], params[:user_id]) if @token_to_app_id.nil?
 
         builder :oauth_app_id_by_token
       end
