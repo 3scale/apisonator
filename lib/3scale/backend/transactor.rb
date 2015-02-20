@@ -28,21 +28,189 @@ module ThreeScale
           'transactions' => transactions.size)
       end
 
+      VALIDATORS = [Validators::Key,
+                    Validators::Referrer,
+                    Validators::State,
+                    Validators::Limits]
+
+
+      OAUTH_VALIDATORS = [Validators::OauthSetting,
+                          Validators::OauthKey,
+                          Validators::RedirectUrl,
+                          Validators::Referrer,
+                          Validators::State,
+                          Validators::Limits]
+
+
       def authorize(provider_key, params, options = {})
-        do_authorize :authorize, provider_key, params, options
+        notify(provider_key, 'transactions/authorize' => 1)
+
+        check_values_of_usage(params[:usage]) unless params[:usage].nil?
+        status = nil
+        status_xml = nil
+        status_result = nil
+        data_combination = nil
+        cache_miss = true
+
+        if params[:no_caching].nil?
+
+          ## check is the keys/id combination from params has been seen before
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:authorize,provider_key,params)
+
+          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
+            options[:usage] = params[:usage] unless params[:usage].nil?
+            options[:add_usage_on_report] = false
+
+            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
+            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
+          end
+        end
+
+        if cache_miss
+          report_cache_miss
+          status, service, application, user = authorize_nocache(provider_key,params,options)
+          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+          status_xml = nil
+          status_result = nil
+        else
+          report_cache_hit
+        end
+
+        [status, status_xml, status_result]
+
+      end
+
+      def authorize_nocache(provider_key, params, options = {})
+        service     = load_service!(provider_key, params[:service_id])
+        application = Application.load_by_id_or_user_key!(service.id,
+                                                          params[:app_id],
+                                                          params[:user_key])
+
+        user         = load_user!(application, service, params[:user_id])
+        usage        = load_current_usage(application)
+        user_usage   = load_user_current_usage(user) if user
+        status_attrs = {
+          user_values: user_usage,
+          application: application,
+          service:     service,
+          values:      usage,
+          user:        user,
+        }
+
+        status = apply_validators(VALIDATORS, status_attrs, params)
+
+        [status, service, application, user]
       end
 
       def oauth_authorize(provider_key, params, options = {})
-        do_authorize :oauth_authorize, provider_key, params, options
-      end
+        notify(provider_key, 'transactions/authorize' => 1)
 
-      def authrep(provider_key, params, options ={})
-        usage = params[:usage]
-        ret = sanitize_and_cache_auth(:authrep, provider_key, usage, params[:no_caching], params, options) do |opts|
-          authrep_nocache(provider_key, params, opts)
+        check_values_of_usage(params[:usage]) unless params[:usage].nil?
+
+        status = nil
+        status_xml = nil
+        status_result = nil
+        cache_miss = true
+        data_combination = nil
+
+        ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
+        if false && params[:no_caching].nil?
+          ## check is the keys/id combination from params has been seen before
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:oauth_authorize,provider_key,params)
+
+          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
+
+            options[:usage] = params[:usage] unless params[:usage].nil?
+            options[:add_usage_on_report] = false
+
+            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
+            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
+
+          end
+
         end
 
-        status, _, status_result, service, application, user, service_id = ret
+        if cache_miss
+          report_cache_miss
+          status, service, application, user = oauth_authorize_nocache(provider_key,params,options)
+          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+          status_xml = nil
+          status_result = nil
+        else
+          report_cache_hit
+        end
+
+        [status, status_xml, status_result]
+
+      end
+
+      def oauth_authorize_nocache(provider_key, params, options = {})
+        service = load_service!(provider_key, params[:service_id])
+
+        ## if app_id is not defined, check for the access_token and resolve it to the app_id
+        app_id = params[:app_id]
+        if (app_id.nil? || app_id.empty?)
+          if params[:access_token].nil? || params[:access_token].empty?
+            raise ApplicationNotFound.new(app_id)
+          else
+            app_id = OAuthAccessTokenStorage.get_app_id(service.id, params[:access_token])
+            raise AccessTokenInvalid.new(params[:access_token]) if app_id.nil? || app_id.empty?
+          end
+        end
+
+        application  = Application.load_by_id_or_user_key!(service.id, app_id, nil)
+        user         = load_user!(application, service, params[:user_id])
+        usage        = load_current_usage(application)
+        user_usage   = load_user_current_usage(user) if user
+        status_attrs = {
+          user_values: user_usage,
+          application: application,
+          service:     service,
+          oauth:       true,
+          values:      usage,
+          user:        user,
+        }
+
+        status = apply_validators(OAUTH_VALIDATORS, status_attrs, params)
+
+        [status, service, application, user]
+      end
+
+
+      def authrep(provider_key, params, options ={})
+        status = nil
+        status_xml = nil
+        status_result = nil
+        data_combination = nil
+        cache_miss = true
+
+        check_values_of_usage(params[:usage]) unless params[:usage].nil?
+
+        if params[:no_caching].nil?
+          ## check is the keys/id combination from params has been seen
+          ## before
+          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(:authrep,provider_key,params)
+
+          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
+            options[:usage] = params[:usage] unless params[:usage].nil?
+            options[:add_usage_on_report] = true unless params[:usage].nil?
+
+            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
+            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
+          end
+        end
+
+        ##cache_miss ? report_cache_miss : report_cache_hit
+        ##combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+        if cache_miss
+          report_cache_miss
+          status, service, application, user = authrep_nocache(provider_key,params,options)
+          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
+          status_xml = nil
+          status_result = nil
+        else
+          report_cache_hit
+        end
 
         if application.nil?
           application_id = params[:app_id]
@@ -55,16 +223,51 @@ module ThreeScale
           username = user.username unless user.nil?
         end
 
-        if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
-          val = usage ? usage.size : 0
+        if (!params[:usage].nil? || !params[:log].nil?) && ((!status.nil? && status.authorized?) || (status.nil? && status_result))
+          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => params[:usage], "user_id" => username, "log" => params[:log]}}))
+          val = 0
+          val = params[:usage].size unless params[:usage].nil?
           ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
           notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
         else
           notify(provider_key, 'transactions/authorize' => 1)
         end
 
-        ret
+        [status, status_xml, status_result]
+
+      end
+
+      ## this is the classic way to do an authrep in case the cache fails, there
+      ## has been changes on the underlying data or the time to life has elapsed
+      def authrep_nocache(provider_key, params, options = {})
+        status     = nil
+        user       = nil
+        user_usage = nil
+
+        service     = load_service!(provider_key, params[:service_id])
+        application = Application.load_by_id_or_user_key!(service.id,
+                                                          params[:app_id],
+                                                          params[:user_key])
+
+        user         = load_user!(application, service, params[:user_id])
+        usage        = load_current_usage(application)
+        user_usage   = load_user_current_usage(user) unless user.nil?
+        status_attrs = {
+          user_values: user_usage,
+          application: application,
+          service:     service,
+          usage:       params[:usage],
+          values:      usage,
+          user:        user,
+        }
+
+        status = apply_validators(VALIDATORS, status_attrs, params)
+
+        [status, service, application, user]
+      rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
+        # we still want to track these
+        notify(provider_key, 'transactions/authorize' => 1)
+        raise e
       end
 
       def utilization(service_id, application_id)
@@ -119,125 +322,10 @@ module ThreeScale
         EventStorage.delete_range(to_id)
       end
 
+
       ## -------------------
 
       private
-
-      COMMON_VALIDATORS = [
-                    Validators::Referrer,
-                    Validators::State,
-                    Validators::Limits
-      ]
-
-      VALIDATORS = [Validators::Key] + COMMON_VALIDATORS
-
-      OAUTH_VALIDATORS = [Validators::OauthSetting,
-                          Validators::OauthKey,
-                          Validators::RedirectUrl] + COMMON_VALIDATORS
-
-      def authorize_nocache(method, provider_key, params, options = {})
-        service = load_service!(provider_key, params[:service_id])
-
-        app_id = params[:app_id]
-        if method == :oauth_authorize
-          ## if app_id is not defined, check for the access_token and resolve it to the app_id
-          if (app_id.nil? || app_id.empty?)
-            if params[:access_token].nil? || params[:access_token].empty?
-              raise ApplicationNotFound.new(app_id)
-            else
-              app_id = OAuthAccessTokenStorage.get_app_id(service.id, params[:access_token])
-              raise AccessTokenInvalid.new(params[:access_token]) if app_id.nil? || app_id.empty?
-            end
-          end
-
-          oauth = true
-          user_key = nil
-        else
-          oauth = false
-          user_key = params[:user_key]
-        end
-
-        do_validators(provider_key, service, app_id, params[:user_id], user_key, nil, oauth, params)
-      end
-
-      ## this is the classic way to do an authrep in case the cache fails, there
-      ## has been changes on the underlying data or the time to life has elapsed
-      def authrep_nocache(provider_key, params, options = {})
-        service = load_service!(provider_key, params[:service_id])
-
-        do_validators(provider_key, service, params[:app_id], params[:user_id], params[:user_key], params[:usage], false, params)
-      rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
-        # we still want to track these
-        notify(provider_key, 'transactions/authorize' => 1)
-        raise e
-      end
-
-      def do_validators(provider_key, service, app_id, user_id, user_key, usage, oauth, params)
-        application = Application.load_by_id_or_user_key!(service.id,
-                                                          app_id,
-                                                          user_key)
-
-        user         = load_user!(application, service, user_id)
-        usage_values = load_current_usage(application)
-        user_usage   = load_user_current_usage(user) if user
-        status_attrs = {
-          user_values: user_usage,
-          application: application,
-          service:     service,
-          oauth:       oauth,
-          usage:       usage,
-          values:      usage_values,
-          user:        user,
-        }
-
-        status = apply_validators(oauth ? OAUTH_VALIDATORS : VALIDATORS, status_attrs, params)
-
-        [status, service, application, user]
-      end
-
-      def do_authorize(method, provider_key, params, options)
-        notify(provider_key, 'transactions/authorize' => 1)
-        ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
-        sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do |opts|
-          authorize_nocache(method, provider_key, params, opts)
-        end
-      end
-
-      def sanitize_and_cache_auth(method, provider_key, usage, no_cache, params, options)
-        check_values_of_usage(usage) unless usage.nil?
-
-        status = nil
-        status_xml = nil
-        status_result = nil
-        data_combination = nil
-        cache_miss = true
-
-        unless no_cache
-          ## check if the keys/id combination has been seen before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(method, provider_key, params)
-
-          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
-            unless usage.nil?
-              options[:usage] = usage
-              options[:add_usage_on_report] = true if method == :authrep
-            end
-            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
-            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
-          end
-        end
-
-        if cache_miss
-          report_cache_miss
-          status, service, application, user = yield(options)
-          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
-          status_xml = nil
-          status_result = nil
-        else
-          report_cache_hit
-        end
-
-        [status, status_xml, status_result, service, application, user, service_id]
-      end
 
       def load_user!(application, service, user_id)
         user = nil

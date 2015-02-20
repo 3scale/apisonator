@@ -141,10 +141,7 @@ module ThreeScale
 
       def do_api_method(method_name)
         normalize_non_empty_keys!
-        unless valid_key_and_usage_params?
-          empty_response 403
-          return
-        end
+        empty_response(403) and return unless valid_key_and_usage_params?
 
         authorization, cached_authorization_text, cached_authorization_result = Transactor.send method_name, params[:provider_key], params
 
@@ -336,10 +333,7 @@ module ThreeScale
         ## I put 403 (Forbidden) for consitency however it should be 400
         ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
 
-        if params.nil? || blank?(params[:provider_key])
-          empty_response 403
-          return
-        end
+        empty_response(403) and return if params.nil? || blank?(params[:provider_key])
 
         if blank?(params[:transactions]) || !params[:transactions].is_a?(Hash)
           empty_response 400
@@ -361,10 +355,7 @@ module ThreeScale
       ## OAUTH ACCESS TOKENS
 
       post '/services/:service_id/oauth_access_tokens.xml' do
-        unless are_string_params(:provider_key, :service_id, :token)
-          empty_response 422
-          return
-        end
+        empty_response(422) and return unless are_string_params(:provider_key, :service_id, :token)
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
@@ -384,10 +375,7 @@ module ThreeScale
       end
 
       delete '/services/:service_id/oauth_access_tokens/:token.xml' do
-        unless are_string_params(:provider_key, :service_id, :token)
-          empty_response 422
-          return
-        end
+        empty_response(422) and return unless are_string_params(:provider_key, :service_id, :token)
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
@@ -399,10 +387,7 @@ module ThreeScale
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-        unless are_string_params(:provider_key, :service_id, :app_id)
-          empty_response 422
-          return
-        end
+        empty_response(422) and return unless are_string_params(:provider_key, :service_id, :app_id)
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
@@ -422,10 +407,7 @@ module ThreeScale
       end
 
       get '/services/:service_id/oauth_access_tokens/:token.xml' do
-        unless are_string_params(:provider_key, :service_id, :token)
-          empty_response 422
-          return
-        end
+        empty_response(422) and return unless are_string_params(:provider_key, :service_id, :token)
 
 
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
@@ -634,7 +616,7 @@ module ThreeScale
       private
 
       def blank?(object)
-        !object || object.respond_to?(:empty?) && object.empty?
+        object.respond_to?(:empty?) ? object.empty? : !object
       end
 
       def valid_key_and_usage_params?
