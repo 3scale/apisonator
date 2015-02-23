@@ -913,7 +913,7 @@ class ReportTest < Test::Unit::TestCase
       error = ErrorStorage.list(@service_id).last
       assert_not_nil error
       assert_equal 'report_timestamp_not_within_range', error[:code]
-      assert_equal "report jobs cannot update metrics older than #{REPORT_DEADLINE} seconds", error[:message]
+      assert_equal "report jobs cannot update metrics older than #{Transaction::REPORT_DEADLINE} seconds", error[:message]
     end
     end
     Airbrake.unstub(:notify)

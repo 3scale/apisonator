@@ -7,6 +7,7 @@ require '3scale/backend/storage_stats'
 require '3scale/backend/aggregator/stats_keys'
 require '3scale/backend/aggregator/stats_job'
 require '3scale/backend/application_events'
+require '3scale/backend/transaction'
 
 module ThreeScale
   module Backend
@@ -18,7 +19,13 @@ module ThreeScale
       include StatsKeys
       extend self
 
+      # TODO: Remove this method. Only used by tests
       def aggregate_all(transactions)
+        transactions = transactions.each { |t| Transaction.new(t) }
+        process(transactions)
+      end
+
+      def process(transactions)
         applications = Hash.new
         users        = Hash.new
 
