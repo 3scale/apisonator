@@ -11,8 +11,8 @@ class AggregatorTest < Test::Unit::TestCase
     seed_data
   end
 
-  test 'aggregate_all increments_all_stats_counters' do
-    Aggregator.aggregate_all([default_transaction])
+  test 'process increments_all_stats_counters' do
+    Aggregator.process([default_transaction])
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :eternity))
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
@@ -29,20 +29,20 @@ class AggregatorTest < Test::Unit::TestCase
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :minute, '201005071323'))
   end
 
-  test 'aggregate_all updates application set' do
-    Aggregator.aggregate_all([default_transaction])
+  test 'process updates application set' do
+    Aggregator.process([default_transaction])
 
     assert_equal ['2001'], @storage.smembers("stats/{service:1001}/cinstances")
   end
 
-  test 'aggregate_all does not update service set' do
-    assert_no_change :of => lambda { @storage.smembers('stats/services') } do
-      Aggregator.aggregate_all([default_transaction])
+  test 'process does not update service set' do
+    assert_no_change of: lambda { @storage.smembers('stats/services') } do
+      Aggregator.process([default_transaction])
     end
   end
 
-  test 'aggregate_all sets expiration time for volatile keys' do
-    Aggregator.aggregate_all([default_transaction])
+  test 'process sets expiration time for volatile keys' do
+    Aggregator.process([default_transaction])
 
     key = application_key('1001', '2001', '3001', :minute, 201005071323)
     ttl = @storage.ttl(key)
@@ -57,7 +57,7 @@ class AggregatorTest < Test::Unit::TestCase
     v << transaction_with_set_value
     v << default_transaction
 
-    Aggregator.aggregate_all(v)
+    Aggregator.process(v)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
   end
