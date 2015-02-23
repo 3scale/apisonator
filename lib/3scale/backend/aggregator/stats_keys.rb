@@ -6,10 +6,6 @@ module ThreeScale
 
         extend Backend::StorageKeyHelpers
 
-        def bucket_with_service_key(bucket, service)
-          "#{service}:#{bucket}"
-        end
-
         # @note The { ... } is the key tag. See redis docs for more info
         # about key tags.
         def service_key_prefix(service_id)

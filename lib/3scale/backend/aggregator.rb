@@ -69,25 +69,18 @@ module ThreeScale
 
         ## the time bucket has elapsed, trigger a stats job
         if @stats_enabled
-          store_changed_keys(transactions, @@current_bucket, @@prior_bucket, schedule_stats_job)
+          store_changed_keys(@@current_bucket, @@prior_bucket, schedule_stats_job)
         end
 
         ApplicationEvents.ping
       end
 
-      def store_changed_keys(transactions, bucket, prior_bucket, schedule_stats_job)
-        transactions.each do |transaction|
-          service_id = transaction[:service_id]
-          bucket_key = bucket_with_service_key(bucket, service_id)
-          storage.zadd(changed_keys_key, bucket.to_i, bucket_key)
+      def store_changed_keys(bucket, prior_bucket, schedule_stats_job)
+        storage.zadd(changed_keys_key, bucket.to_i, bucket)
 
-          if schedule_stats_job
-            ## this will happend every X seconds, N times. Where N is the number of workers
-            ## and X is a configuration parameter
-            prior_bucket_key = bucket_with_service_key(prior_bucket, service_id)
-            enqueue_stats_job(prior_bucket_key)
-          end
-        end
+        return unless schedule_stats_job
+        ## this will happen every X seconds, where X is a configuration parameter
+        enqueue_stats_job(prior_bucket)
       end
 
       def get_value_of_set_if_exists(value_str)
@@ -110,8 +103,6 @@ module ThreeScale
       private
 
       def aggregate(transaction)
-        service_id = transaction[:service_id]
-
         ##FIXME, here we have to check that the timestamp is in the
         ##current given the time period we are in
         transaction[:usage].each do |metric_id, raw_value|
@@ -119,7 +110,7 @@ module ThreeScale
           value = parse_usage_value(raw_value)
 
           if @stats_enabled
-            bucket_key = bucket_with_service_key(current_bucket, service_id)
+            bucket_key = current_bucket
           else
             bucket_key = ""
           end

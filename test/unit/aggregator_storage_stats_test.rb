@@ -67,33 +67,6 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
   end
 
-  test 'Distribute stats job per service' do
-    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
-
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
-      Aggregator.process([default_transaction])
-    end
-    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
-
-    Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (Aggregator.stats_bucket_size * 1.9).to_i)) do
-      Aggregator.process(
-        [
-          default_transaction,
-          {
-            service_id: 1002,
-            application_id: 2002,
-            timestamp: Time.utc(2010, 5, 7, 13, 23, 33),
-            usage: { '3002' => 1 },
-          }
-        ])
-    end
-    assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
-
-    jobs = Resque.queue(:stats).map { |raw_job| decode(raw_job) }
-    assert_equal 1001, jobs[0][:args].first.split(":").first.to_i
-    assert_equal 1002, jobs[1][:args].first.split(":").first.to_i
-  end
-
   test 'benchmark check, not a real failure if happens' do
     cont = 1000
 
@@ -300,7 +273,6 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
   test 'bucket keys are properly assigned' do
     timestamp  = Time.now.utc - 1000
-    service_id = 1001
 
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
@@ -314,7 +286,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
       assert_equal cont + 1, Aggregator::StatsInfo.pending_buckets.size
 
-      assert Aggregator::StatsInfo.pending_buckets.member?("#{service_id}:#{bucket_key}")
+      assert Aggregator::StatsInfo.pending_buckets.member?(bucket_key)
       assert_equal cont, Resque.queue(:main).length + Resque.queue(:stats).length
 
       timestamp += stats_bucket_size
