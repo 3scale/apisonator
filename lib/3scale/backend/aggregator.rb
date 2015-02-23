@@ -89,7 +89,7 @@ module ThreeScale
             ## this will happend every X seconds, N times. Where N is the number of workers
             ## and X is a configuration parameter
             prior_bucket_key = bucket_with_service_key(prior_bucket, service_id)
-            Resque.enqueue(StatsJob, prior_bucket_key, Time.now.getutc.to_f)
+            enqueue_stats_job(prior_bucket_key)
           end
         end
       end
@@ -186,6 +186,11 @@ module ThreeScale
       # @return [Integer] the parsed value
       def parse_usage_value(raw_value)
         (get_value_of_set_if_exists(raw_value) || raw_value).to_i
+      end
+
+      def enqueue_stats_job(bucket)
+        return unless StorageStats.enabled?
+        Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
       end
     end
   end
