@@ -140,21 +140,13 @@ module ThreeScale
       private
 
       def aggregate(transaction)
+        service_id = transaction[:service_id]
+
         ##FIXME, here we have to check that the timestamp is in the
         ##current given the time period we are in
-
-        values = transaction[:usage].map do |metric_id, value|
-          service_id = transaction[:service_id]
-          val        = get_value_of_set_if_exists(value)
-
-          if val.nil?
-            cmd = :incrby
-          else
-            cmd   = :set
-            value = val
-          end
-
-          value  = value.to_i
+        values = transaction[:usage].map do |metric_id, raw_value|
+          cmd   = storage_cmd(raw_value)
+          value = parse_usage_value(raw_value)
 
           if @stats_enabled
             bucket_key = bucket_with_service_key(current_bucket, service_id)
@@ -219,6 +211,25 @@ module ThreeScale
 
       def storage
         Storage.instance
+      end
+
+      # Return Redis command depending on raw_value.
+      # If raw_value is a string with a '#' in the beginning, it returns 'set'.
+      # Else, it returns 'incrby'.
+      #
+      # @param [String] raw_value
+      # @return [Symbol] the Redis command
+      def storage_cmd(raw_value)
+        get_value_of_set_if_exists(raw_value) ? :set : :incrby
+      end
+
+      # Parse 'raw_value' and return it as a integer.
+      # It take that raw_value can start with a '#' into consideration.
+      #
+      # @param [String] raw_value
+      # @return [Integer] the parsed value
+      def parse_usage_value(raw_value)
+        (get_value_of_set_if_exists(raw_value) || raw_value).to_i
       end
     end
   end
