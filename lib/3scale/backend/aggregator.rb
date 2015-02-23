@@ -41,10 +41,8 @@ module ThreeScale
         end
 
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-          @keys_doing_set_op = []
-
           storage.pipelined do
-            @keys_doing_set_op = slice.map do |transaction|
+            slice.each do |transaction|
               key        = transaction[:application_id]
               service_id = transaction[:service_id]
               ## the key must be application+user if users exists
@@ -63,30 +61,6 @@ module ThreeScale
               end
 
               aggregate(transaction)
-            end
-          end
-
-          @keys_doing_set_op.flatten!(1)
-
-          ## here the pipelined redis increments have been sent
-          ## now we have to send the storage stats ones
-
-          ## FIXME we had set operations :-/ This will only work when
-          ## the key is on redis, it will not be true in the future
-          ## not live keys (stats only) will only be on storage stats. Will
-          ## require fix, or limit the usage of #set. In addition,
-          ## set operations cannot coexist on increments on the same
-          ## metric in the same pipeline. It has to be a check that
-          ## set operations cannot be batched, only one transaction.
-
-          if @stats_enabled && @keys_doing_set_op.size > 0
-            @keys_doing_set_op.each do |item|
-              key, value = item
-
-              storage.pipelined do
-                storage.get(key)
-                storage.set(key, value)
-              end
             end
           end
         end
@@ -144,7 +118,7 @@ module ThreeScale
 
         ##FIXME, here we have to check that the timestamp is in the
         ##current given the time period we are in
-        values = transaction[:usage].map do |metric_id, raw_value|
+        transaction[:usage].each do |metric_id, raw_value|
           cmd   = storage_cmd(raw_value)
           value = parse_usage_value(raw_value)
 
@@ -156,8 +130,6 @@ module ThreeScale
 
           aggregate_values(cmd, metric_id, value, transaction, bucket_key)
         end
-
-        values.flatten(1)
       end
 
       def aggregate_values(cmd, metric_id, value, transaction, bucket)
@@ -177,36 +149,20 @@ module ThreeScale
         end
 
         granularities = [:eternity, :month, :week, :day, :hour]
-        values = metrics.map do |metric_type, prefix|
+        metrics.each do |metric_type, prefix|
           granularities += [:year, :minute] unless metric_type == :service
 
           granularities.map do |granularity|
             key = counter_key(prefix, granularity, transaction[:timestamp])
-            keys = add_to_copied_keys(cmd, bucket, key, value)
+            add_to_copied_keys(cmd, bucket, key, value)
             storage.expire(key, 180) if granularity == :minute
-
-            keys
           end
         end
-
-        values.flatten(1).reject(&:empty?)
       end
 
       def add_to_copied_keys(cmd, bucket, key, value)
-        set_keys = []
-        if @stats_enabled
-          storage.sadd("keys_changed:#{bucket}", key)
-          if cmd == :set
-            @keys_doing_set_op << [key, value]
-            set_keys += [key, value]
-          else
-            storage.send(cmd, key, value)
-          end
-        else
-          storage.send(cmd, key, value)
-        end
-
-        set_keys
+        storage.sadd("keys_changed:#{bucket}", key) if @stats_enabled
+        storage.send(cmd, key, value)
       end
 
       def storage
