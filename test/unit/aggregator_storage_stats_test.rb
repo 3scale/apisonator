@@ -33,25 +33,6 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator.send(:stats_bucket_size)
   end
 
-  def default_timestamp
-    Time.utc(2010, 5, 7, 13, 23, 33)
-  end
-
-  def default_transaction
-    {
-      service_id:     1001,
-      application_id: 2001,
-      timestamp:      default_timestamp,
-      usage:          { '3001' => 1 },
-    }
-  end
-
-  def transaction_with_set_value
-    default_transaction.merge(
-      usage: { '3001' => '#665' },
-    )
-  end
-
   test 'Stats jobs get properly enqueued' do
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
@@ -117,7 +98,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     cont = 1000
 
     t = Time.now
-    timestamp = default_timestamp
+    timestamp = default_transaction_timestamp
 
     cont.times do
       Aggregator.aggregate_all([default_transaction])
@@ -195,7 +176,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'aggregate_all increments_all_stats_counters' do
-    timestamp = default_timestamp
+    timestamp = default_transaction_timestamp
     Aggregator.aggregate_all([default_transaction])
 
     assert_equal 0, Resque.queue(:main).length  + Resque.queue(:stats).length
@@ -227,7 +208,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'aggregate takes into account setting the counter value ok' do
-    timestamp = default_timestamp
+    timestamp = default_transaction_timestamp
 
     Aggregator.aggregate_all(Array.new(10, default_transaction))
     Aggregator::StatsTasks.schedule_one_stats_job
@@ -357,7 +338,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'failed cql batches get stored into redis and processed properly afterwards' do
-    metrics_timestamp = default_timestamp
+    metrics_timestamp = default_transaction_timestamp
 
     ## first one ok,
     Aggregator.aggregate_all([default_transaction])
@@ -440,7 +421,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     @storage_stats.stubs(:write_events).raises(Exception.new('bang!'))
     @storage_stats.stubs(:get).raises(Exception.new('bang!'))
 
-    timestamp = default_timestamp
+    timestamp = default_transaction_timestamp
 
     Aggregator.aggregate_all(Array.new(10, default_transaction))
     Aggregator::StatsTasks.schedule_one_stats_job
@@ -513,7 +494,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'when storage stats is disabled, storage stats does not have to be up and running, but stats get lost during the disabling period' do
-    timestamp = default_timestamp
+    timestamp = default_transaction_timestamp
     v = []
     Timecop.freeze(Time.utc(2010, 5, 7, 13, 23, 33)) do
       10.times { v << default_transaction }
@@ -561,7 +542,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'when storage stats is deactivated, storage stats does not have to be up and running, but stats do NOT get lost during the deactivation period' do
-    timestamp = default_timestamp
+    timestamp = default_transaction_timestamp
 
     v = Array.new(10, default_transaction)
 
@@ -608,7 +589,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   test 'applications with end user plans (user_id) get recorded properly' do
     default_user_plan_id = next_id
     default_user_plan_name = "user plan mobile"
-    timestamp = default_timestamp
+    timestamp = default_transaction_timestamp
 
     service = Service.save!(provider_key: @provider_key, id: next_id)
     #

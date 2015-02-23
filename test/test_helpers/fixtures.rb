@@ -127,5 +127,24 @@ module TestHelpers
       end
       @metric_hits = metrics.first
     end
+
+    def default_transaction_timestamp
+      Time.utc(2010, 5, 7, 13, 23, 33)
+    end
+
+    def default_transaction
+      {
+        service_id:     1001,
+        application_id: 2001,
+        timestamp:      default_transaction_timestamp,
+        usage:          { '3001' => 1 },
+      }
+    end
+
+    def transaction_with_set_value
+      default_transaction.merge(
+        usage: { '3001' => '#665' },
+      )
+    end
   end
 end

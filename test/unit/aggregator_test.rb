@@ -11,21 +11,6 @@ class AggregatorTest < Test::Unit::TestCase
     seed_data
   end
 
-  def default_transaction
-    {
-      service_id:     1001,
-      application_id: 2001,
-      timestamp:      Time.utc(2010, 5, 7, 13, 23, 33),
-      usage:          { '3001' => 1 },
-    }
-  end
-
-  def transaction_with_set_value
-    default_transaction.merge(
-      usage: { '3001' => '#665' },
-    )
-  end
-
   test 'aggregate_all increments_all_stats_counters' do
     Aggregator.aggregate_all([default_transaction])
 
