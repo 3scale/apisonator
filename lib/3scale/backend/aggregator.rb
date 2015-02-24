@@ -19,12 +19,6 @@ module ThreeScale
       include StatsKeys
       extend self
 
-      # TODO: Remove this method. Only used by tests
-      def aggregate_all(transactions)
-        transactions = transactions.each { |t| Transaction.new(t) }
-        process(transactions)
-      end
-
       def process(transactions)
         applications = Hash.new
         users        = Hash.new
