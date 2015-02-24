@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+require 'airbrake/tasks'
+
 if ENV['CI']
   require 'ci/reporter/rake/rspec'
   require 'ci/reporter/rake/test_unit'
