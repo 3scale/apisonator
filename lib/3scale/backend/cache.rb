@@ -1,11 +1,10 @@
 require '3scale/backend/errors'
-require '3scale/core'
 
 module ThreeScale
   module Backend
     # Methods for caching
     module Cache
-      include Core::StorageKeyHelpers
+      include Backend::StorageKeyHelpers
       extend self
 
       VALID_PARAMS_FOR_CACHE = [:provider_key,

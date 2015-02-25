@@ -32,7 +32,6 @@ require 'rack/utils'
 
 class Seeder
   include Rack::Utils
-  include ThreeScale::Core
   include ThreeScale::Backend
 
   def seed(source_file, usage_limits, user_limits)
@@ -47,7 +46,7 @@ class Seeder
   end
 
   private
-  
+
   MASTER_SERVICE_ID = 1
 
   def seed_master_data
@@ -83,7 +82,6 @@ class Seeder
     # Create master cinstance
     Application.save(:service_id => master_service_id, :id => 1002, :state => :live)
     Application.save_id_by_key(master_service_id, provider_key, 1002)
-    
 
     # Create metrics
     Metric.save(:service_id => service_id, :id => 8001, :name => 'hits')
@@ -134,11 +132,11 @@ class Seeder
     [service_id, plan_id, user_plan_id]
   end
 
-	
+
 
   def seed_buyer_data(service_id, plan_id, user_plan_id, params, user_limits)
     # Create cinstances
-    app_ids = []   
+    app_ids = []
     params['transactions'].values.each do |transaction|
       app_ids << transaction['app_id']
     end

@@ -4,7 +4,7 @@ module ThreeScale
       module StatsKeys
         module_function
 
-        extend Core::StorageKeyHelpers
+        extend Backend::StorageKeyHelpers
 
         def bucket_with_service_key(bucket, service)
           "#{service}:#{bucket}"

@@ -8,7 +8,7 @@ module ThreeScale
       end
 
       include Sets
-      include Core::Storable
+      include Storable
 
       attr_accessor :service_id, :id, :state, :plan_id, :plan_name,
         :user_required, :redirect_url, :version

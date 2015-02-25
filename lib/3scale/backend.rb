@@ -1,4 +1,3 @@
-require '3scale/core'
 require 'builder'
 require 'hiredis'
 require 'redis'
@@ -19,6 +18,8 @@ require 'logger'
 
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
+require '3scale/backend/storage_key_helpers'
+require '3scale/backend/storable'
 require '3scale/backend/helpers'
 
 require_relative '../../app/api/api'
@@ -54,12 +55,6 @@ require '3scale/backend/worker'
 require '3scale/backend/errors'
 
 module ThreeScale
-  module Core
-    def self.storage
-      ThreeScale::Backend::Storage.instance
-    end
-  end
-
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
   PIPELINED_SLICE_SIZE = 400
 end
@@ -103,9 +98,3 @@ Resque.redis = ThreeScale::Backend::QueueStorage.connection(
   ThreeScale::Backend.environment,
   ThreeScale::Backend.configuration,
 )
-ThreeScale::Core.donbot_url =
-  if ThreeScale::Backend.production?
-    'http://host:8080/internal/'
-  else
-    'http://localhost:3000/internal'
-  end

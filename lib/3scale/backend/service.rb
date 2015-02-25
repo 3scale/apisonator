@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     class Service
-      include Core::Storable
+      include Storable
       include Backend::Helpers
       extend Backend::Helpers
 

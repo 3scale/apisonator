@@ -592,9 +592,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     timestamp = default_transaction_timestamp
 
     service = Service.save!(provider_key: @provider_key, id: next_id)
-    #
-    # TODO: Temporary stubs until we decouple Backend::User from Core::User
-    Core::Service.stubs(:load_by_id).returns(service)
+    Service.stubs(:load_by_id).returns(service)
     service.stubs :user_add
 
     service.user_registration_required = false

@@ -22,7 +22,7 @@ module ThreeScale
       include KeyHelpers
       extend KeyHelpers
 
-      include Core::Storable
+      include Storable
 
       attr_accessor :service_id, :id, :parent_id, :name
       attr_writer :children

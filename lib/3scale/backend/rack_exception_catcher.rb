@@ -20,9 +20,6 @@ module Rack
     rescue ThreeScale::Backend::Error => e
       delete_sinatra_error! env
       respond_with 403, prepare_body(e.to_xml, env)
-    rescue ThreeScale::Core::Error => e
-      delete_sinatra_error! env
-      respond_with 405, prepare_body(e.to_xml, env)
     rescue Exception => e
       if e.class == ArgumentError && (
           e.message == "invalid byte sequence in UTF-8" ||
