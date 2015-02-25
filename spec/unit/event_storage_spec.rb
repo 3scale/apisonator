@@ -176,7 +176,7 @@ module ThreeScale
       describe '.ping_if_not_empty' do
         before do
           ThreeScale::Backend.configuration.stub(:events_hook).and_return("foo")
-          RestClient.stub(:post).and_return(true)
+          Net::HTTP.stub(:post_form).and_return(true)
         end
 
         context 'with events in set' do
@@ -238,7 +238,7 @@ module ThreeScale
 
           context 'when hook notification fails' do
             before do
-              RestClient.stub(:post).and_raise(:BOOOM)
+              Net::HTTP.stub(:post_form).and_raise(:BOOOM)
               Airbrake.stub(:notify)
             end
 
