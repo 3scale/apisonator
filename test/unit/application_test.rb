@@ -176,7 +176,7 @@ class ApplicationTest < Test::Unit::TestCase
   test 'load_by_id_or_user_key! raises an exception if key-to-id mapping exists, but application does not' do
     Application.save_id_by_key('1001', 'foobar', '2001')
 
-    assert_raise UserKeyInvalid do
+    assert_raise ApplicationNotFound do
       Application.load_by_id_or_user_key!('1001', nil, 'foobar')
     end
   end
@@ -224,7 +224,7 @@ class ApplicationTest < Test::Unit::TestCase
   test 'extract_id! raises an exception if key-to-id mapping exists, but application does not' do
     Application.save_id_by_key('1001', 'foobar', '2001')
 
-    assert_raise UserKeyInvalid do
+    assert_raise ApplicationNotFound do
       Application.extract_id!('1001', nil, 'foobar', nil)
     end
   end
