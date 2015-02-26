@@ -71,9 +71,7 @@ module ThreeScale
       end
 
       def self.get_app_id(service_id, token)
-        app_id = storage.get(token_key(service_id,token))
-        storage.srem(token_set_key(service_id, app_id), token) if app_id.nil?
-        app_id
+        storage.get(token_key(service_id, token))
       end
 
       private
