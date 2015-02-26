@@ -1,5 +1,6 @@
 require '3scale/backend/version'
 require 'sinatra/namespace'
+require 'json'
 
 module ThreeScale
   module Backend
