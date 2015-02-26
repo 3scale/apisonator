@@ -72,9 +72,13 @@ module ThreeScale
 
         def request_to_events_hook
           Net::HTTP.post_form(
-            URI(ThreeScale::Backend.configuration.events_hook),
+            events_hook_uri,
             secret: ThreeScale::Backend.configuration.events_hook_shared_secret,
           )
+        end
+
+        def events_hook_uri
+          @events_hook_uri ||= URI(ThreeScale::Backend.configuration.events_hook)
         end
 
         def expire_last_ping
