@@ -12,7 +12,6 @@ require 'time'
 require 'yajl'
 require 'yaml'
 require 'zlib'
-require 'rest-client'
 require 'digest/md5'
 require 'logger'
 
