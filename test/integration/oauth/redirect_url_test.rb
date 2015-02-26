@@ -31,7 +31,7 @@ class OauthRedirectUrlTest < Test::Unit::TestCase
                                     :state        => :active,
                                     :plan_id      => @plan_id,
                                     :plan_name    => @plan_name,
-                                    :redirect_url => "http://3scale.net")
+                                    :redirect_url => 'http://3scale.net')
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id
@@ -45,14 +45,15 @@ class OauthRedirectUrlTest < Test::Unit::TestCase
                                     :state        => :active,
                                     :plan_id      => @plan_id,
                                     :plan_name    => @plan_name,
-                                    :redirect_url => "http://3scale.net")
+                                    :redirect_url => 'http://3scale.net')
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id,
-                                             :redirect_url => "http://3scale.net"
+                                             :redirect_url => 'http://3scale.net'
 
     assert_authorized
   end
+
   test 'does not authorize if its passed and doesnt match defined' do
 
     @application = Application.save(:service_id   => @service.id,
@@ -60,11 +61,11 @@ class OauthRedirectUrlTest < Test::Unit::TestCase
                                     :state        => :active,
                                     :plan_id      => @plan_id,
                                     :plan_name    => @plan_name,
-                                    :redirect_url => "http://3scale.net")
+                                    :redirect_url => 'http://3scale.net')
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id,
-                                             :redirect_url => "http://3scale.net2"
+                                             :redirect_url => 'http://3scale.net2'
 
     assert_not_authorized 'redirect_url "http://3scale.net2" is invalid'
   end

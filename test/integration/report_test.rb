@@ -24,10 +24,10 @@ class ReportTest < Test::Unit::TestCase
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
 
-    @apilog = {'request' => "API original request", 'response' => "API original response", 'code' => "200"}
-    @apilog2 = {'request' => "API original request 2", 'response' => "API original response 2", 'code' => "200"}
-    @apilog3 = {'request' => "API original request 3", 'response' => "API original response 3", 'code' => "200"}
-    @apilog_imcomplete = {'code' => "200"}
+    @apilog = {'request' => 'API original request', 'response' => 'API original response', 'code' => '200'}
+    @apilog2 = {'request' => 'API original request 2', 'response' => 'API original response 2', 'code' => '200'}
+    @apilog3 = {'request' => 'API original request 3', 'response' => 'API original response 3', 'code' => '200'}
+    @apilog_imcomplete = {'code' => '200'}
     @apilog_empty = {}
 
   end
@@ -35,7 +35,6 @@ class ReportTest < Test::Unit::TestCase
   def storage_stats_setup
     StorageStats.enable!
     StorageStats.activate!
-
 
     @storage_stats = StorageStats.instance(true)
     @storage_stats.drop_all_series
@@ -46,6 +45,7 @@ class ReportTest < Test::Unit::TestCase
 
   test 'options request returns list of allowed methods' do
     request '/transactions.xml', :method => 'OPTIONS'
+
     assert_equal 200,    last_response.status
     assert_equal 'POST', last_response.headers['Allow']
   end
@@ -63,7 +63,6 @@ class ReportTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
-
       Resque.run!
 
       key_month = application_key(@service_id, @application.id, @metric_id, :month, '20100501')
@@ -83,7 +82,6 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id    => @application.id,
                                 :usage     => {'hits' => 1},
                                 :timestamp => '2010-05-11 13:34:42'}}
-
       Resque.run!
 
       key = service_key(@service_id, @metric_id, :hour, '2010051113')
@@ -98,7 +96,6 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id    => @application.id,
                                 :usage     => {'hits' => 1},
                                 :timestamp => '2010-05-11 11:08:25 -02:00'}}
-
       Resque.run!
 
       key = service_key(@service_id, @metric_id, :hour, '2010051113')
@@ -113,7 +110,6 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id    => @application.id,
                                 :usage     => {'hits' => 1},
                                 :timestamp => ''}}
-
       Resque.run!
     end
 
@@ -136,7 +132,6 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {0 => {:app_id => 'boo', :usage => {'hits' => 1}, :log => @apilog}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     error = ErrorStorage.list(@service_id).last
@@ -154,7 +149,6 @@ class ReportTest < Test::Unit::TestCase
        :transactions => {0 => {:app_id => @application.id, :usage => {'nukes' => 1}}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     error = ErrorStorage.list(@service_id).last
@@ -170,7 +164,6 @@ class ReportTest < Test::Unit::TestCase
        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => ' '}}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     error = ErrorStorage.list(@service_id).last
@@ -187,7 +180,6 @@ class ReportTest < Test::Unit::TestCase
                                :usage  => {'hits' => 'tons!'}}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     error = ErrorStorage.list(@service_id).last
@@ -202,7 +194,6 @@ class ReportTest < Test::Unit::TestCase
        :provider_key => @provider_key,
        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
                          1 => {:app_id => 'boo',           :usage => {'hits' => 1}}}
-
     Resque.run!
 
     key = application_key(@service_id, @application.id, @metric_id,
@@ -230,7 +221,6 @@ class ReportTest < Test::Unit::TestCase
 
     Transactor.report(@provider_key, nil,
                       '0' => {'app_id' => @application.id, 'usage' => {'hits' => 2}})
-
     Resque.run!
 
     post '/transactions.xml',
@@ -238,7 +228,6 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     assert_equal 3, @storage.get(
@@ -256,7 +245,6 @@ class ReportTest < Test::Unit::TestCase
       Transactor.report(@provider_key, nil,
                         '0' => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
     end
-
     Resque.run!
 
     post '/transactions.xml',
@@ -264,7 +252,6 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     assert_equal 4, @storage.get(
@@ -281,7 +268,6 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {0 => {:user_key => user_key, :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     key = application_key(@service_id, @application.id, @metric_id, :month,
@@ -297,7 +283,6 @@ class ReportTest < Test::Unit::TestCase
        :transactions => {0 => {:user_key => 'inyourface', :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     error = ErrorStorage.list(@service_id).last
@@ -318,7 +303,6 @@ class ReportTest < Test::Unit::TestCase
                                :usage    => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
-
     Resque.run!
 
     error = ErrorStorage.list(@service_id).last
@@ -333,11 +317,11 @@ class ReportTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
+
+      ## processes all the pending NotifyJobs. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
@@ -359,11 +343,9 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog1},
                           2 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog2}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 3, @storage.get(application_key(@master_service_id,
@@ -378,11 +360,9 @@ class ReportTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => 'boo',
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
@@ -397,11 +377,9 @@ class ReportTest < Test::Unit::TestCase
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => 'baa', :usage => {'hits' => 1}}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
@@ -417,11 +395,9 @@ class ReportTest < Test::Unit::TestCase
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => 'baa',           :usage => {'hits' => 1}},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 2, @storage.get(application_key(@master_service_id,
@@ -434,72 +410,58 @@ class ReportTest < Test::Unit::TestCase
   test 'failed report on wrong provider key' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
-        :provider_key => "fake_provider_key",
+        :provider_key => 'fake_provider_key',
         :transactions => {0 => {:app_id => 'baa',           :usage => {'hits' => 1}},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 403, last_response.status
+
       doc = Nokogiri::XML(last_response.body)
       error = doc.at('error:root')
       assert_not_nil error
       assert_equal 'provider_key_invalid', error['code']
 
-
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_transactions_id,
                                                    :month, '20100501')).to_i
 
-
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :service_id => "fake_service_id",
+        :service_id => 'fake_service_id',
         :transactions => {0 => {:app_id => 'baa',           :usage => {'hits' => 1}},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 403, last_response.status
+
       doc = Nokogiri::XML(last_response.body)
       error = doc.at('error:root')
       assert_not_nil error
       assert_equal 'service_id_invalid', error['code']
 
-
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_transactions_id,
                                                    :month, '20100501')).to_i
-
-
-
     end
-
   end
 
   test 'not fail on bogus timestamp on report, default to current timestamp' do
-
-
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => nil}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
@@ -507,15 +469,12 @@ class ReportTest < Test::Unit::TestCase
                                                    @master_transactions_id,
                                                    :month, '20100501')).to_i
 
-
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => ''}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 2, @storage.get(application_key(@master_service_id,
@@ -523,37 +482,28 @@ class ReportTest < Test::Unit::TestCase
                                                    @master_transactions_id,
                                                    :month, '20100501')).to_i
 
-
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '0'}}
-
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       assert_equal 3, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_transactions_id,
                                                    :month, '20100501')).to_i
-
-
-
     end
   end
 
-
   test 'checking correct behavior of timestamps on report' do
-
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       ts = Time.utc(2010,5,11,13,34)
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => ts.to_s}}
-
       Resque.run!
 
       assert_equal 0, @storage.get(application_key(@service_id,
@@ -568,8 +518,7 @@ class ReportTest < Test::Unit::TestCase
 
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => "2012/10/01"}}
-
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2012/10/01'}}
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@service_id,
@@ -579,8 +528,7 @@ class ReportTest < Test::Unit::TestCase
 
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => "2012"}}
-
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2012'}}
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@service_id,
@@ -592,9 +540,7 @@ class ReportTest < Test::Unit::TestCase
                                                    @application.id,
                                                    @metric_id,
                                                    :month, '20100501')).to_i
-
     end
-
   end
 
   test 'successful report aggregates backend hit with storage stats' do
@@ -614,11 +560,9 @@ class ReportTest < Test::Unit::TestCase
         post '/transactions.xml',
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => application2.id, :usage => {'hits' => 1}}}
-
         Resque.run!
-        ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-        ## aggregate and another Resque.run! is needed
-        Backend::Transactor.process_batch(0,{:all => true})
+
+        Backend::Transactor.process_batch(0, all: true)
         Resque.run!
 
         assert_equal 2*(i+1), @storage.get(application_key(@master_service_id,
@@ -636,7 +580,7 @@ class ReportTest < Test::Unit::TestCase
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    timestamp = Time.parse_to_utc("20100501")
+    timestamp = Time.parse_to_utc('20100501')
 
     assert_equal 2*10, @storage_stats.get(@master_service_id,
                                           @master_hits_id,
@@ -668,28 +612,23 @@ class ReportTest < Test::Unit::TestCase
     storage_stats_setup
 
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-
       10.times do |i|
         post '/transactions.xml',
           :provider_key => @provider_key,
           :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
         Resque.run!
-        ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-        ## aggregate and another Resque.run! is needed
-        Backend::Transactor.process_batch(0,{:all => true})
+
+        Backend::Transactor.process_batch(0, all: true)
         Resque.run!
 
         assert_equal (i+1), @storage.get(application_key(@master_service_id,
                                                      @provider_application_id,
                                                      @master_hits_id,
                                                      :month, '20100501')).to_i
-
         assert_equal (i+1), @storage.get(application_key(@service_id,
                                                      @application.id,
                                                      @metric_id,
                                                      :month, '20100501')).to_i
-
       end
     end
 
@@ -710,14 +649,13 @@ class ReportTest < Test::Unit::TestCase
 
   ## FIXME: this test in incomplete, should be done properly soon
   test 'when exception raised in worker it goes to resque:failed' do
-
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
       assert_equal 1, Resque.queues[:priority].length
-      ##FIXME: i would like to be able to do @storage.llen("resque:priority")
+      ##FIXME: i would like to be able to do @storage.llen('resque:priority')
       ##but resque_unit does not write to redis :-/ want to get rid of resque_unit so badly
 
       @storage.stubs(:evalsha).raises(Exception.new('bang!'))
@@ -725,18 +663,15 @@ class ReportTest < Test::Unit::TestCase
       @storage.stubs(:incrby).raises(Exception.new('bang!'))
 
       assert_equal 0, Resque.queues[:failed].length
-
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                   @provider_application_id,
                                                   @master_hits_id,
                                                   :month, '20100501')).to_i
 
-
       assert_raise Exception do
         Resque.run!
-        ## processes all the pending notifyjobs that. This creates a NotifyJob with the
-        ## aggregate and another Resque.run! is needed
-        Backend::Transactor.process_batch(0,{:all => true})
+
+        Backend::Transactor.process_batch(0, all: true)
         Resque.run!
       end
 
@@ -744,8 +679,6 @@ class ReportTest < Test::Unit::TestCase
                                                   @provider_application_id,
                                                   @master_hits_id,
                                                   :month, '20100501')).to_i
-
-
       assert_equal 0, Resque.queues[:priority].length
       ## assert_equal 1, Resque.queues[:failed].length
       ## FIXME: THIS MOTHERFUCKER or :failed is empty!!!
@@ -757,17 +690,13 @@ class ReportTest < Test::Unit::TestCase
   end
 
   test 'successful aggregation of notify jobs' do
-
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-
       (configuration.notification_batch-1).times do
-
         post '/transactions.xml',
           :provider_key => @provider_key,
           :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
                             1 => {:app_id => @application.id, :usage => {'hits' => 1}},
                             2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
         Resque.run!
       end
 
@@ -779,7 +708,6 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}},
                           2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
 
       assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
@@ -789,23 +717,17 @@ class ReportTest < Test::Unit::TestCase
                                                   @provider_application_id,
                                                   @master_hits_id,
                                                   :month, '20100501')).to_i
-
     end
   end
 
-
   test 'successful aggregation of notify jobs with multiple iterations' do
-
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-
       ((configuration.notification_batch*5.5).to_i).times do
-
         post '/transactions.xml',
           :provider_key => @provider_key,
           :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
                             1 => {:app_id => @application.id, :usage => {'hits' => 1}},
                             2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
         Resque.run!
       end
 
@@ -816,29 +738,23 @@ class ReportTest < Test::Unit::TestCase
                                                   @provider_application_id,
                                                   @master_hits_id,
                                                   :month, '20100501')).to_i
-
     end
   end
 
   test 'reporting user_id when not enabled makes failures go to error instead of failed jobs' do
-
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :user_id => 'user_id'},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}},
                           2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
 
       assert_equal 0, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
                                                   :month, '20100501')).to_i
-
       assert_equal 0, Resque.queues[:main].size
-
       assert_equal 1, ErrorStorage.list(@service_id).count
 
       error = ErrorStorage.list(@service_id).last
@@ -851,57 +767,45 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}},
                           2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
 
       assert_equal 0, Resque.queues[:main].size
-
       assert_equal 3, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
                                                   :month, '20100501')).to_i
-
       assert_equal 1, ErrorStorage.list(@service_id).count
     end
   end
 
   test 'report cannot use an explicit timestamp older than 24 hours' do
-
     Airbrake.stubs(:notify).returns(true)
     if false
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:01'},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:02'},
                           2 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:03'}}
-
       Resque.run!
 
       assert_equal 3, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
                                                   :month, '20100501')).to_i
-
-
       assert_equal 0, ErrorStorage.list(@service_id).count
-
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:01'},
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:02'},
                           2 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:03'}}
-
       Resque.run!
 
       assert_equal 3, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
                                                   :month, '20100501')).to_i
-
-
       assert_equal 1, ErrorStorage.list(@service_id).count
 
       error = ErrorStorage.list(@service_id).last
@@ -913,38 +817,42 @@ class ReportTest < Test::Unit::TestCase
     Airbrake.unstub(:notify)
   end
 
-
   test 'regression test for parameter encoding issue' do
     post '/transactions.xml',
       :transactions => "\xf0\x90\x28\xbc"
+
     assert_equal 403, last_response.status
-    assert_equal "", last_response.body
+    assert_equal '', last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :transactions => "\xf0\x90\x28\xbc",
       :provider_key => @provider_key
+
     assert_equal 400, last_response.status
-    assert_equal "", last_response.body
+    assert_equal '', last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => "blablabla"
+      :transactions => 'blablabla'
+
     assert_equal 400, last_response.status
-    assert_equal "", last_response.body
+    assert_equal '', last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {"\xf0\x90\x28\xbc" => {:app_id => @application.id}}
+
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {"0" => {:app_id => @application.id, :usage => {"\xf0\x90\x28\xbc" => 1}}}
+      :transactions => {'0' => {:app_id => @application.id, :usage => {"\xf0\x90\x28\xbc" => 1}}}
+
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!
@@ -952,7 +860,8 @@ class ReportTest < Test::Unit::TestCase
     post '/transactions.xml',
       :provider_key => @provider_key,
       :service_id => "\xf0\x90\x28\xbc",
-      :transactions => {"0" => {:app_id => @application.id, :usage => {"hits" => 1}}}
+      :transactions => {'0' => {:app_id => @application.id, :usage => {'hits' => 1}}}
+
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!
@@ -960,13 +869,15 @@ class ReportTest < Test::Unit::TestCase
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => "\xf0\x90\x28\xbc"}}
+
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {"0" => {:app_id => @application.id, :usage => {"hits" => "\xf0\x90\x28\xbc"}}}
+      :transactions => {'0' => {:app_id => @application.id, :usage => {'hits' => "\xf0\x90\x28\xbc"}}}
+
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
     Resque.run!

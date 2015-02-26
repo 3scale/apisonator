@@ -65,4 +65,3 @@ class AuthorizeApplicationKeysTest < Test::Unit::TestCase
     assert_not_authorized 'application key "bar" is invalid'
   end
 end
-

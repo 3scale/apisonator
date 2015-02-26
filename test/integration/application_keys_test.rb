@@ -47,8 +47,8 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
 
     doc = Nokogiri::XML(last_response.body)
-    keys_node = doc.at('keys:root')
 
+    keys_node = doc.at('keys:root')
     assert_not_nil keys_node
     assert_equal 2,     keys_node.search('key').count
 
@@ -80,7 +80,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
   end
 
   test 'GET .../keys.xml fails on invalid application id' do
-    get "/applications/boo/keys.xml", :provider_key => @provider_key
+    get '/applications/boo/keys.xml', :provider_key => @provider_key
 
     assert_error_response :status  => 404,
                           :code    => 'application_not_found',
@@ -99,12 +99,11 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_equal url, last_response.headers['Location']
 
     doc = Nokogiri::XML(last_response.body)
+
     assert_equal 'foo', doc.at('key:root')['value']
     assert_equal url,   doc.at('key:root')['href']
-
     assert @application.has_key?('foo')
   end
-
 
   test 'POST .../keys.xml creates a custom key' do
     #SecureRandom.stubs(:hex).returns('foo')
@@ -120,18 +119,12 @@ class ApplicationKeysTest < Test::Unit::TestCase
     assert_equal url, last_response.headers['Location']
 
     doc = Nokogiri::XML(last_response.body)
+
     assert_equal @custom_key, doc.at('key:root')['value']
     assert_equal url,   doc.at('key:root')['href']
-
     assert_equal [@custom_key], @application.keys
-
     assert @application.has_key?(@custom_key)
-
-
   end
-
-
-
 
   test 'POST .../keys.xml fails on invalid provider key' do
     post "/applications/#{@application.id}/keys.xml", :provider_key => 'boo'
@@ -141,7 +134,7 @@ class ApplicationKeysTest < Test::Unit::TestCase
   end
 
   test 'POST .../keys.xml fails on invalid application id' do
-    post "/applications/invalid/keys.xml", :provider_key => @provider_key
+    post '/applications/invalid/keys.xml', :provider_key => @provider_key
 
     assert_error_response :status  => 404,
                           :code    => 'application_not_found',

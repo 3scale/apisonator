@@ -41,8 +41,11 @@ class AuthrepReportingTest < Test::Unit::TestCase
 
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
+
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
+
     assert_not_nil day
     assert_equal '3', day.at('current_value').content
 
@@ -51,16 +54,14 @@ class AuthrepReportingTest < Test::Unit::TestCase
     assert_equal 3, @storage.get(application_key(@service.id,
                                                  @application.id,
                                                  @metric_id,
-                                                 :month, Time.now.getutc.strftime("%Y%m01"))).to_i
-
-
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
     assert_not_authorized 'usage limits are exceeded'
   end
 
   test 'succeeds when only limits for the metrics not in the predicted usage are exceeded' do
     metric_one_id = @metric_id
-
     metric_two_id = next_id
+
     Metric.save(:service_id => @service.id, :id => metric_two_id, :name => 'hacks')
 
     UsageLimit.save(:service_id => @service.id,
@@ -81,7 +82,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     assert_equal 2, @storage.get(application_key(@service.id,
                                                  @application.id,
                                                  @metric_id,
-                                                 :month, Time.now.getutc.strftime("%Y%m01"))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     # There is no cache available for this request. It uses authrep_nocache method internally.
     get '/transactions/authrep.xml', :provider_key => @provider_key,
@@ -90,8 +91,11 @@ class AuthrepReportingTest < Test::Unit::TestCase
 
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
+
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
+
     assert_not_nil day
     assert_equal '3', day.at('current_value').content
 
@@ -101,14 +105,12 @@ class AuthrepReportingTest < Test::Unit::TestCase
                                                  @application.id,
                                                  @metric_id,
                                                  :month, Time.now.getutc.strftime("%Y%m01"))).to_i
-
     assert_authorized
 
     # Second time, there is cache available for this request. It doesn't use authrep_nocache.
     # It uses the pregenerated xml but it detects that a violation just happened and
     # executes the validations, ignoring the status on xml.
     # Related with: https://github.com/3scale/backend/issues/64
-
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
                                      :usage        => {'hits' => 1}
@@ -116,6 +118,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
+
     assert_equal '4', day.at('current_value').content
     assert_authorized
   end
@@ -139,15 +142,12 @@ class AuthrepReportingTest < Test::Unit::TestCase
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
                                      :usage        => {'queries' => 1}
-
     Resque.run!
 
     assert_equal 5, @storage.get(application_key(@service.id,
                                                  @application.id,
                                                  @metric_id,
-                                                 :month, Time.now.getutc.strftime("%Y%m01"))).to_i
-
-
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
     assert_not_authorized 'usage limits are exceeded'
   end
 end

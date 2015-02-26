@@ -134,5 +134,4 @@ class OauthReferrerFiltersTest < Test::Unit::TestCase
 
     assert_authorized
   end
-
 end

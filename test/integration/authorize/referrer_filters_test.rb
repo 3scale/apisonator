@@ -23,6 +23,7 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
   test 'succeeds if no referrer filter is defined and no referrer is passed' do
     @service.referrer_filters_required = false
     @service.save!
+
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id
 
@@ -121,7 +122,6 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
     assert_authorized
   end
 
-
   test 'authorize always is referrer filters at the service level are set to false, even when incorrect' do
     @service.referrer_filters_required = false
     @service.save!
@@ -134,6 +134,4 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
 
     assert_authorized
   end
-
-  
 end

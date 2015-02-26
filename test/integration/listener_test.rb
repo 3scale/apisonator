@@ -37,12 +37,11 @@ class ListenerTest < Test::Unit::TestCase
       post '/transactions.xml?transactions[0]=foo2', :provider_key => 'foo'
     end
   end
-  
+
   def test_utf8_exception_is_caught
-    Transactor.stubs(:report).raises(ArgumentError.new("invalid byte sequence in UTF-8"))
+    Transactor.stubs(:report).raises(ArgumentError.new('invalid byte sequence in UTF-8'))
     assert_nothing_raised do
       post '/transactions.xml?transactions[0]=foo2', :provider_key => 'foo'
     end
   end
-  
 end

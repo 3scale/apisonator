@@ -74,19 +74,15 @@ class AuthrepApplicationKeysTest < Test::Unit::TestCase
                                      :app_id       => @application.id,
                                      :app_key      => key1
 
-    assert_authorized 
+    assert_authorized
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
                                      :app_key      => key2
 
-    assert_authorized 
+    assert_authorized
 
-    assert_equal key1, "foo_app_key"
-
-    assert_equal [key2, "foo_app_key"].sort, @application.keys.sort  
-
+    assert_equal key1, 'foo_app_key'
+    assert_equal [key2, 'foo_app_key'].sort, @application.keys.sort
   end
-
 end
-
