@@ -8,7 +8,7 @@ module ThreeScale
         include StorageHelpers
 
         def store(type, object)
-          raise Exception.new("Event type #{type} is invalid") unless EVENT_TYPES.member?(type)
+          fail InvalidEventType, type unless EVENT_TYPES.member?(type)
           new_id = storage.incrby(events_id_key, 1)
           event  = { id: new_id, type: type, timestamp: Time.now.utc, object: object }
           storage.zadd(events_queue_key, event[:id], encode(event))

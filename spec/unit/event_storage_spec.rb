@@ -27,7 +27,7 @@ module ThreeScale
 
         context 'with invalid event type' do
           it 'raises an exception' do
-            expect { EventStorage.store(:foo, {}) }.to raise_error
+            expect { EventStorage.store(:foo, {}) }.to raise_error(InvalidEventType)
           end
         end
       end

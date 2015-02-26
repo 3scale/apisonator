@@ -235,6 +235,11 @@ module ThreeScale
       end
     end
 
+    class InvalidEventType < Error
+      def initialize(type)
+        super %(Event type "#{type}" is invalid")
+      end
+    end
 
     # Legacy API support
 
