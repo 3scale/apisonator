@@ -21,3 +21,5 @@ group :development, :test do
   gem 'pry-byebug', '~> 2.0.0'
   gem 'rspec_api_documentation', '~> 2.0.0'
 end
+
+gem 'sshkit', group: :development
