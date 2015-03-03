@@ -16,10 +16,9 @@ module ThreeScale
 
         def clean_cubert_redis_keys
           storage.del global_lock_key
-          storage.smembers(enabled_services_key).each do
-            |s| new(s).disable_service
-          end
+          storage.smembers(all_bucket_keys_key).each { |s| storage.del s }
           storage.del enabled_services_key
+          storage.del all_bucket_keys_key
         end
 
         def global_lock_key
@@ -28,6 +27,10 @@ module ThreeScale
 
         def enabled_services_key
           'cubert_enabled_services'
+        end
+
+        def all_bucket_keys_key
+          'cubert_bucket_keys'
         end
 
         def connection
@@ -42,6 +45,7 @@ module ThreeScale
       def enable_service
         unless storage.get bucket_id_key
           storage.set bucket_id_key, self.class.connection.create_bucket
+          storage.sadd self.class.all_bucket_keys_key, bucket_id_key
         end
         storage.sadd self.class.enabled_services_key, @service_id
       end
@@ -58,8 +62,6 @@ module ThreeScale
         storage.get(self.class.global_lock_key).to_i == 1 &&
           storage.sismember(self.class.enabled_services_key, @service_id)
       end
-
-      private
 
       def bucket_id_key
         "cubert_request_log_bucket_service_#{@service_id}"
