@@ -9,14 +9,20 @@ module ThreeScale
       let(:disabled_service) { '7002' }
 
       describe '.disable_service' do
-        before { use_case.new(enabled_service).disable_service }
-
-        it 'remove the cubert bucket info from Redis' do
-          expect(use_case.new(enabled_service).bucket).to be_nil
+        before do
+          @service = use_case.new(enabled_service)
+          @old_bucket = @service.bucket
+          @service.disable_service
         end
 
         it 'removes the service from the list of enabled services' do
           expect(storage.smembers(use_case.enabled_services_key)).to be_empty
+        end
+
+        it 'keeps the bucket info to be reused when service is re-enabled' do
+          expect(@service.bucket).not_to be_nil
+          @service.enable_service
+          expect(@service.bucket).to eq(@old_bucket)
         end
       end
 

@@ -40,12 +40,13 @@ module ThreeScale
       end
 
       def enable_service
-        storage.set bucket_id_key, self.class.connection.create_bucket
+        unless storage.get bucket_id_key
+          storage.set bucket_id_key, self.class.connection.create_bucket
+        end
         storage.sadd self.class.enabled_services_key, @service_id
       end
 
       def disable_service
-        storage.del bucket_id_key
         storage.srem self.class.enabled_services_key, @service_id
       end
 
