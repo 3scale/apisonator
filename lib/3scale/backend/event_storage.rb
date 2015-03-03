@@ -1,121 +1,123 @@
 module ThreeScale
   module Backend
-    module EventStorage
-      include StorageHelpers
-      extend self
-
+    class EventStorage
       PING_TTL    = 60
       EVENT_TYPES = [:first_traffic, :first_daily_traffic, :alert]
 
-      def store(type, object)
-        raise Exception.new("Event type #{type} is invalid") unless EVENT_TYPES.member?(type)
-        new_id = storage.incrby(events_id_key, 1)
-        event  = { id: new_id, type: type, timestamp: Time.now.utc, object: object }
-        storage.zadd(events_queue_key, event[:id], encode(event))
-      end
+      class << self
+        include StorageHelpers
 
-      def list
-        raw_events = storage.zrevrange(events_queue_key, 0, -1)
-        raw_events.map { |raw_event| decode_event(raw_event) }.reverse
-      end
-
-      def delete_range(to_id)
-        to_id = to_id.to_i
-        if (to_id > 0)
-          return storage.zremrangebyscore(events_queue_key, 0, to_id)
-        else
-          return 0
+        def store(type, object)
+          fail InvalidEventType, type unless EVENT_TYPES.member?(type)
+          new_id = storage.incrby(events_id_key, 1)
+          event  = { id: new_id, type: type, timestamp: Time.now.utc, object: object }
+          storage.zadd(events_queue_key, event[:id], encode(event))
         end
-      end
 
-      def delete(id)
-        id = id.to_i
-        (id > 0) ? storage.zremrangebyscore(events_queue_key, id, id) : 0
-      end
+        def list
+          raw_events = storage.zrevrange(events_queue_key, 0, -1)
+          raw_events.map { |raw_event| decode_event(raw_event) }.reverse
+        end
 
-      def size
-        storage.zcard(events_queue_key)
-      end
-
-      def ping_if_not_empty
-        if pending_ping? && events_hook_configured?
-          begin
-            request_to_events_hook
-            return true
-          rescue Exception => e
-            Airbrake.notify(e)
-            return nil
+        def delete_range(to_id)
+          to_id = to_id.to_i
+          if to_id > 0
+            storage.zremrangebyscore(events_queue_key, 0, to_id)
+          else
+            0
           end
         end
 
-        return false
-      end
-
-      private
-
-      def events_queue_key
-        "events/queue"
-      end
-
-      def events_ping_key
-        "events/ping"
-      end
-
-      def events_id_key
-        "events/id"
-      end
-
-      def events_hook_configured?
-        events_hook = ThreeScale::Backend.configuration.events_hook
-        events_hook && !events_hook.empty?
-      end
-
-      def request_to_events_hook
-        Net::HTTP.post_form(
-          URI(ThreeScale::Backend.configuration.events_hook),
-          secret: ThreeScale::Backend.configuration.events_hook_shared_secret,
-        )
-      end
-
-      def expire_last_ping
-        storage.expire(events_ping_key, PING_TTL)
-      end
-
-      def pending_ping?
-        ## the queue is not empty and more than timeout has passed
-        ## since the front-end was notified
-
-        events_set_size, ping_key_value = storage.pipelined do
-          storage.zcard(events_queue_key)
-          storage.incr(events_ping_key)
+        def delete(id)
+          id = id.to_i
+          (id > 0) ? storage.zremrangebyscore(events_queue_key, id, id) : 0
         end
 
-        if ping_key_value.to_i == 1
+        def size
+          storage.zcard(events_queue_key)
+        end
+
+        def ping_if_not_empty
+          if pending_ping? && events_hook_configured?
+            begin
+              request_to_events_hook
+              return true
+            rescue Exception => e
+              Airbrake.notify(e)
+              return nil
+            end
+          end
+
+          false
+        end
+
+        private
+
+        def events_queue_key
+          "events/queue"
+        end
+
+        def events_ping_key
+          "events/ping"
+        end
+
+        def events_id_key
+          "events/id"
+        end
+
+        def events_hook_configured?
+          events_hook = ThreeScale::Backend.configuration.events_hook
+          events_hook && !events_hook.empty?
+        end
+
+        def request_to_events_hook
+          Net::HTTP.post_form(
+            events_hook_uri,
+            secret: ThreeScale::Backend.configuration.events_hook_shared_secret,
+          )
+        end
+
+        def events_hook_uri
+          @events_hook_uri ||= URI(ThreeScale::Backend.configuration.events_hook)
+        end
+
+        def expire_last_ping
+          storage.expire(events_ping_key, PING_TTL)
+        end
+
+        def pending_ping?
+          ## the queue is not empty and more than timeout has passed
+          ## since the front-end was notified
+          events_set_size, ping_key_value = storage.pipelined do
+            storage.zcard(events_queue_key)
+            storage.incr(events_ping_key)
+          end
+
+          return unless ping_key_value.to_i == 1
           expire_last_ping
           events_set_size > 0
         end
-      end
 
-      # TODO: Remove this method. It's used only in tests and there it's
-      # possible to mock a constant.
-      def redef_without_warning(const, value)
-        remove_const(const)
-        const_set(const, value)
-      end
-
-      def decode_event(raw_event)
-        event = decode(raw_event)
-
-        # decode only symbolizes keys and parse timestamp for first level
-        if obj = event[:object]
-          event[:object] = obj.symbolize_keys
-
-          if ts = event[:object][:timestamp]
-            event[:object][:timestamp] = Time.parse_to_utc(ts)
-          end
+        # TODO: Remove this method. It's used only in tests and there it's
+        # possible to mock a constant.
+        def redef_without_warning(const, value)
+          remove_const(const)
+          const_set(const, value)
         end
 
-        event
+        def decode_event(raw_event)
+          event = decode(raw_event)
+
+          # decode only symbolizes keys and parse timestamp for first level
+          obj = event[:object]
+          if obj
+            event[:object] = obj.symbolize_keys
+            ts = event[:object][:timestamp]
+            event[:object][:timestamp] = Time.parse_to_utc(ts) if ts
+          end
+
+          event
+        end
       end
     end
   end
