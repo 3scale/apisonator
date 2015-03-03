@@ -13,8 +13,6 @@ module ThreeScale
   module Backend
     module Aggregator
       include Backend::StorageKeyHelpers
-      include Backend::Cache
-      include Backend::Alerts
       include Configurable
       include StatsKeys
       extend self
@@ -97,7 +95,7 @@ module ThreeScale
 
         ## now we have done all incrementes for all the transactions, we
         ## need to update the cached_status for for the transactor
-        update_status_cache(applications, users)
+        ThreeScale::Backend::Cache.update_status_cache(applications, users)
 
         ## the time bucket has elapsed, trigger a stats job
         if @stats_enabled
@@ -123,8 +121,8 @@ module ThreeScale
       end
 
       def get_value_of_set_if_exists(value_str)
-        return nil if value_str.nil? || value_str[0]!="#"
-        return value_str[1..value_str.size].to_i
+        return nil if value_str.nil? || value_str[0] != "#"
+        value_str[1..value_str.size].to_i
       end
 
       def reset_current_bucket!
@@ -180,7 +178,8 @@ module ThreeScale
         }
 
         # this one is for the limits of the users
-        if user_id = transaction[:user_id]
+        user_id = transaction[:user_id]
+        if user_id
           user_prefix = user_key_prefix(service_prefix, user_id)
           metrics.merge!(user: metric_key_prefix(user_prefix, metric_id))
         end
@@ -216,86 +215,6 @@ module ThreeScale
         end
 
         set_keys
-      end
-
-      ## copied from transactor.rb
-      def load_user_current_usage(user)
-        pairs = Array.new
-        metric_ids = Array.new
-        user.usage_limits.each do |usage_limit|
-          pairs << [usage_limit.metric_id, usage_limit.period]
-          metric_ids << usage_limit.metric_id
-        end
-
-        return {} if pairs.nil? or pairs.size==0
-
-        # preloading metric names
-        user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
-        now = Time.now.getutc
-        keys = pairs.map do |metric_id, period|
-          user_usage_value_key(user, metric_id, period, now)
-        end
-        raw_values = storage.mget(*keys)
-        values     = {}
-        pairs.each_with_index do |(metric_id, period), index|
-          values[period] ||= {}
-          values[period][metric_id] = raw_values[index].to_i
-        end
-        values
-      end
-
-      ## copied from transactor.rb
-      def load_current_usage(application)
-        pairs = Array.new
-        metric_ids = Array.new
-        application.usage_limits.each do |usage_limit|
-          pairs << [usage_limit.metric_id, usage_limit.period]
-          metric_ids << usage_limit.metric_id
-        end
-        ## Warning this makes the test transactor_test.rb fail, weird because it didn't happen before
-        return {} if pairs.nil? or pairs.size==0
-
-        # preloading metric names
-        application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
-        now = Time.now.getutc
-        keys = pairs.map do |metric_id, period|
-          usage_value_key(application, metric_id, period, now)
-        end
-        raw_values = storage.mget(*keys)
-        values     = {}
-        pairs.each_with_index do |(metric_id, period), index|
-          values[period] ||= {}
-          values[period][metric_id] = raw_values[index].to_i
-        end
-        values
-      end
-
-      def update_status_cache(applications, users = {})
-        current_timestamp = Time.now.getutc
-
-        applications.each do |appid, values|
-          application = Application.load(values[:service_id],values[:application_id])
-          usage = load_current_usage(application)
-          status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)
-          ThreeScale::Backend::Validators::Limits.apply(status,{})
-
-          max_utilization, max_record = utilization(status)
-          update_utilization(status,max_utilization, max_record,current_timestamp) if max_utilization>=0.0
-
-          set_status_in_cache_application(values[:service_id],application,status,{:exclude_user => true})
-        end
-
-        users.each do |userid, values|
-          service ||= Service.load_by_id(values[:service_id])
-          raise ServiceLoadInconsistency.new(values[:service_id],service.id) if service.id != values[:service_id]
-          user = User.load_or_create!(service,values[:user_id])
-          usage = load_user_current_usage(user)
-          status = ThreeScale::Backend::Transactor::Status.new(:user => user, :user_values => usage)
-          ThreeScale::Backend::Validators::Limits.apply(status,{})
-
-          key = caching_key(service.id,:user,user.username)
-          set_status_in_cache(key,status,{:exclude_application => true})
-        end
       end
 
       def storage
