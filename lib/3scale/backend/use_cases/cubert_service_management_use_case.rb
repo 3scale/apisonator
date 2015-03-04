@@ -59,8 +59,11 @@ module ThreeScale
       end
 
       def enabled?
-        storage.get(self.class.global_lock_key).to_i == 1 &&
+        global_enable, service_enable = storage.pipelined do
+          storage.get(self.class.global_lock_key)
           storage.sismember(self.class.enabled_services_key, @service_id)
+        end
+        global_enable.to_i == 1 && service_enable
       end
 
       def bucket_id_key
