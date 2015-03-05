@@ -1,5 +1,3 @@
-require 'json'
-require '3scale/backend'
 require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/errors'
@@ -16,6 +14,10 @@ module ThreeScale
       include Configurable
       include StatsKeys
       extend self
+
+      GRANULARITY_EXPIRATION_TIME = {
+        minute: 180,
+      }
 
       def process(transactions)
         applications = Hash.new
@@ -141,15 +143,12 @@ module ThreeScale
 
           granularities.map do |granularity|
             key = counter_key(prefix, granularity, transaction[:timestamp])
-            add_to_copied_keys(cmd, bucket, key, value)
-            storage.expire(key, 180) if granularity == :minute
+            expire_time = expire_time_for_granularity(granularity)
+
+            store_key(cmd, key, value, expire_time)
+            store_in_changed_keys(key, bucket)
           end
         end
-      end
-
-      def add_to_copied_keys(cmd, bucket, key, value)
-        storage.sadd("keys_changed:#{bucket}", key) if @stats_enabled
-        storage.send(cmd, key, value)
       end
 
       def storage
@@ -173,6 +172,20 @@ module ThreeScale
       # @return [Integer] the parsed value
       def parse_usage_value(raw_value)
         (get_value_of_set_if_exists(raw_value) || raw_value).to_i
+      end
+
+      def store_key(cmd, key, value, expire_time = nil)
+        storage.send(cmd, key, value)
+        storage.expire(key, expire_time) if expire_time
+      end
+
+      def expire_time_for_granularity(granularity)
+        GRANULARITY_EXPIRATION_TIME[granularity]
+      end
+
+      def store_in_changed_keys(key, bucket)
+        return unless @stats_enabled
+        storage.sadd("keys_changed:#{bucket}", key)
       end
 
       def enqueue_stats_job(bucket)
