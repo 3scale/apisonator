@@ -17,12 +17,12 @@ module ThreeScale
       end
 
       def store(transaction)
-        key = queue_key(transaction[:service_id])
+        key = queue_key(transaction.service_id)
 
         storage.lpush(key,
-                      encode(:application_id => transaction[:application_id],
-                             :usage          => transaction[:usage],
-                             :timestamp      => transaction[:timestamp]))
+                      encode(application_id: transaction.application_id,
+                             usage:          transaction.usage,
+                             timestamp:      transaction.timestamp))
         storage.ltrim(key, 0, LIMIT - 1)
       end
 
