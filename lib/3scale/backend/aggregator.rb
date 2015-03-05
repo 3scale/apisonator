@@ -23,8 +23,8 @@ module ThreeScale
 
       def process(transactions)
         current_bucket = nil
-        applications   = Hash.new
-        users          = Hash.new
+        touched_apps   = {}
+        touched_users  = {}
 
         if StorageStats.enabled?
           current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
@@ -34,30 +34,17 @@ module ThreeScale
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
           storage.pipelined do
             slice.each do |transaction|
-              key        = transaction.application_id
-              service_id = transaction.service_id
-              ## the key must be application+user if users exists
-              ## since this is the lowest granularity.
-              ## applications contains the list of application, or
-              ## application+users that need to be limit checked
-              applications[key] = { application_id: key, service_id: service_id }
-
-              if transaction.user_id
-                key = transaction.user_id
-                users[key] = { service_id: service_id, user_id: key }
-              end
-
               aggregate(transaction, current_bucket)
+
+              touched_apps.merge!(touched_relation(:application, transaction))
+              next unless transaction.user_id
+              touched_users.merge!(touched_relation(:user, transaction))
             end
           end
         end
 
-        ApplicationEvents.generate(applications.values)
-
-        ## now we have done all incrementes for all the transactions, we
-        ## need to update the cached_status for for the transactor
-        ThreeScale::Backend::Cache.update_status_cache(applications, users)
-
+        ApplicationEvents.generate(touched_apps.values)
+        Cache.update_status_cache(touched_apps, touched_users)
         ApplicationEvents.ping
       end
 
@@ -170,6 +157,23 @@ module ThreeScale
       def enqueue_stats_job(bucket)
         return unless StorageStats.enabled?
         Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
+      end
+
+      # Return a Hash with needed info to update the cached XMLs
+      #
+      # @param [Symbol] relation
+      # @param [Transaction] transaction
+      # @return [Hash] the hash that contains which kind of relation has been
+      #   updated (application or used) and the transaction's service_id.
+      #   The key of the hash is the transaction value of that relation attr.
+      def touched_relation(relation, transaction)
+        relation_value = transaction.send("#{relation}_id")
+        {
+          relation_value => {
+            :"#{relation}_id" => relation_value,
+            :service_id       => transaction.service_id,
+          },
+        }
       end
     end
   end
