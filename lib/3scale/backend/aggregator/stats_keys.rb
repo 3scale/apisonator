@@ -72,6 +72,24 @@ module ThreeScale
         def failed_save_to_storage_stats_at_least_once_key
           "stats:failed_at_least_once"
         end
+
+        def transaction_metric_keys(transaction, metric_id)
+          service_key     = service_key_prefix(transaction.service_id)
+          application_key = application_key_prefix(service_key,
+                                                   transaction.application_id)
+
+          keys = {
+            service:     metric_key_prefix(service_key, metric_id),
+            application: metric_key_prefix(application_key, metric_id),
+          }
+
+          if transaction.user_id
+            user_key = user_key_prefix(service_key, transaction.user_id)
+            keys.merge!(user: metric_key_prefix(user_key, metric_id))
+          end
+
+          keys
+        end
       end
     end
   end

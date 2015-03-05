@@ -72,27 +72,14 @@ module ThreeScale
       end
 
       def aggregate_values(cmd, metric_id, value, transaction, bucket_key)
-        service_prefix = service_key_prefix(transaction.service_id)
-        application_prefix = application_key_prefix(service_prefix, transaction.application_id)
-
-        metrics = {
-          service: metric_key_prefix(service_prefix, metric_id),
-          application: metric_key_prefix(application_prefix, metric_id),
-        }
-
-        # this one is for the limits of the users
-        user_id = transaction.user_id
-        if user_id
-          user_prefix = user_key_prefix(service_prefix, user_id)
-          metrics.merge!(user: metric_key_prefix(user_prefix, metric_id))
-        end
+        keys = StatsKeys.transaction_metric_keys(transaction, metric_id)
 
         granularities = [:eternity, :month, :week, :day, :hour]
-        metrics.each do |metric_type, prefix|
+        keys.each do |metric_type, prefix_key|
           granularities += [:year, :minute] unless metric_type == :service
 
           granularities.map do |granularity|
-            key = counter_key(prefix, granularity, transaction.timestamp)
+            key = counter_key(prefix_key, granularity, transaction.timestamp)
             expire_time = expire_time_for_granularity(granularity)
 
             store_key(cmd, key, value, expire_time)
