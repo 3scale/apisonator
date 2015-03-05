@@ -78,7 +78,7 @@ module ThreeScale
         keys.each do |metric_type, prefix_key|
           granularities += [:year, :minute] unless metric_type == :service
 
-          granularities.map do |granularity|
+          granularities.each do |granularity|
             key = counter_key(prefix_key, granularity, transaction.timestamp)
             expire_time = expire_time_for_granularity(granularity)
 
