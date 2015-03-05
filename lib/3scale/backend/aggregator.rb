@@ -21,25 +21,13 @@ module ThreeScale
 
       def process(transactions)
         current_bucket = nil
-        touched_apps   = {}
-        touched_users  = {}
 
         if StorageStats.enabled?
           current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
           prepare_stats_buckets(current_bucket)
         end
 
-        transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-          storage.pipelined do
-            slice.each do |transaction|
-              aggregate(transaction, current_bucket)
-
-              touched_apps.merge!(touched_relation(:application, transaction))
-              next unless transaction.user_id
-              touched_users.merge!(touched_relation(:user, transaction))
-            end
-          end
-        end
+        touched_apps, touched_users = aggregate(transactions, current_bucket)
 
         ApplicationEvents.generate(touched_apps.values)
         Cache.update_status_cache(touched_apps, touched_users)
@@ -53,10 +41,28 @@ module ThreeScale
 
       private
 
-      def aggregate(transaction, bucket = nil)
+      def aggregate(transactions, bucket = nil)
+        touched_apps   = {}
+        touched_users  = {}
+
+        transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
+          storage.pipelined do
+            slice.each do |transaction|
+              aggregate_usage(transaction, bucket)
+
+              touched_apps.merge!(touched_relation(:application, transaction))
+              next unless transaction.user_id
+              touched_users.merge!(touched_relation(:user, transaction))
+            end
+          end
+        end
+
+        [touched_apps, touched_users]
+      end
+
+      def aggregate_usage(transaction, bucket = nil)
         bucket_key = "keys_changed:#{bucket}" if bucket
-        ##FIXME, here we have to check that the timestamp is in the
-        ##current given the time period we are in
+
         transaction.usage.each do |metric_id, raw_value|
           cmd   = storage_cmd(raw_value)
           value = parse_usage_value(raw_value)
