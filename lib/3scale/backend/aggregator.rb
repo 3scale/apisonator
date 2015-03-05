@@ -19,27 +19,16 @@ module ThreeScale
         minute: 180,
       }
 
+      attr_accessor :prior_bucket
+
       def process(transactions)
-        applications = Hash.new
-        users        = Hash.new
+        current_bucket = nil
+        applications   = Hash.new
+        users          = Hash.new
 
-        Memoizer.memoize_block("stats-enabled") do
-          @stats_enabled = StorageStats.enabled?
-        end
-
-        if @stats_enabled
-          timenow = Time.now.utc
-
-          bucket = timenow.beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
-          @@current_bucket ||= bucket
-          @@prior_bucket = (timenow - Aggregator.stats_bucket_size).beginning_of_bucket(Aggregator.stats_bucket_size).to_not_compact_s
-
-          if @@current_bucket == bucket
-            schedule_stats_job = false
-          else
-            schedule_stats_job = true
-            @@current_bucket = bucket
-          end
+        if StorageStats.enabled?
+          current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
+          prepare_stats_buckets(current_bucket)
         end
 
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
@@ -58,7 +47,7 @@ module ThreeScale
                 users[key] = { service_id: service_id, user_id: key }
               end
 
-              aggregate(transaction)
+              aggregate(transaction, current_bucket)
             end
           end
         end
@@ -69,20 +58,23 @@ module ThreeScale
         ## need to update the cached_status for for the transactor
         ThreeScale::Backend::Cache.update_status_cache(applications, users)
 
-        ## the time bucket has elapsed, trigger a stats job
-        if @stats_enabled
-          store_changed_keys(@@current_bucket, @@prior_bucket, schedule_stats_job)
-        end
-
         ApplicationEvents.ping
       end
 
-      def store_changed_keys(bucket, prior_bucket, schedule_stats_job)
-        storage.zadd(changed_keys_key, bucket.to_i, bucket)
+      def prepare_stats_buckets(current_bucket)
+        store_changed_keys(current_bucket)
 
-        return unless schedule_stats_job
-        ## this will happen every X seconds, where X is a configuration parameter
-        enqueue_stats_job(prior_bucket)
+        if prior_bucket.nil?
+          self.prior_bucket = current_bucket
+        elsif current_bucket != prior_bucket
+          enqueue_stats_job(prior_bucket)
+          self.prior_bucket = current_bucket
+        end
+      end
+
+      def store_changed_keys(bucket = nil)
+        return unless bucket
+        storage.zadd(StatsKeys.changed_keys_key, bucket.to_i, bucket)
       end
 
       def get_value_of_set_if_exists(value_str)
@@ -91,11 +83,7 @@ module ThreeScale
       end
 
       def reset_current_bucket!
-        @@current_bucket = nil
-      end
-
-      def current_bucket
-        @@current_bucket
+        self.prior_bucket = nil
       end
 
       def stats_bucket_size
@@ -104,24 +92,19 @@ module ThreeScale
 
       private
 
-      def aggregate(transaction)
+      def aggregate(transaction, bucket = nil)
+        bucket_key = "keys_changed:#{bucket}" if bucket
         ##FIXME, here we have to check that the timestamp is in the
         ##current given the time period we are in
         transaction.usage.each do |metric_id, raw_value|
           cmd   = storage_cmd(raw_value)
           value = parse_usage_value(raw_value)
 
-          if @stats_enabled
-            bucket_key = current_bucket
-          else
-            bucket_key = ""
-          end
-
           aggregate_values(cmd, metric_id, value, transaction, bucket_key)
         end
       end
 
-      def aggregate_values(cmd, metric_id, value, transaction, bucket)
+      def aggregate_values(cmd, metric_id, value, transaction, bucket_key)
         service_prefix = service_key_prefix(transaction.service_id)
         application_prefix = application_key_prefix(service_prefix, transaction.application_id)
 
@@ -146,7 +129,7 @@ module ThreeScale
             expire_time = expire_time_for_granularity(granularity)
 
             store_key(cmd, key, value, expire_time)
-            store_in_changed_keys(key, bucket)
+            store_in_changed_keys(key, bucket_key)
           end
         end
       end
@@ -183,9 +166,9 @@ module ThreeScale
         GRANULARITY_EXPIRATION_TIME[granularity]
       end
 
-      def store_in_changed_keys(key, bucket)
-        return unless @stats_enabled
-        storage.sadd("keys_changed:#{bucket}", key)
+      def store_in_changed_keys(key, bucket_key)
+        return unless bucket_key
+        storage.sadd(bucket_key, key)
       end
 
       def enqueue_stats_job(bucket)
