@@ -61,22 +61,6 @@ module ThreeScale
         ApplicationEvents.ping
       end
 
-      def prepare_stats_buckets(current_bucket)
-        store_changed_keys(current_bucket)
-
-        if prior_bucket.nil?
-          self.prior_bucket = current_bucket
-        elsif current_bucket != prior_bucket
-          enqueue_stats_job(prior_bucket)
-          self.prior_bucket = current_bucket
-        end
-      end
-
-      def store_changed_keys(bucket = nil)
-        return unless bucket
-        storage.zadd(StatsKeys.changed_keys_key, bucket.to_i, bucket)
-      end
-
       def get_value_of_set_if_exists(value_str)
         return nil if value_str.nil? || value_str[0] != "#"
         value_str[1..value_str.size].to_i
@@ -84,10 +68,6 @@ module ThreeScale
 
       def reset_current_bucket!
         self.prior_bucket = nil
-      end
-
-      def stats_bucket_size
-        @stats_bucket_size ||= (configuration.stats.bucket_size || 5)
       end
 
       private
@@ -132,6 +112,26 @@ module ThreeScale
             store_in_changed_keys(key, bucket_key)
           end
         end
+      end
+
+      def prepare_stats_buckets(current_bucket)
+        store_changed_keys(current_bucket)
+
+        if prior_bucket.nil?
+          self.prior_bucket = current_bucket
+        elsif current_bucket != prior_bucket
+          enqueue_stats_job(prior_bucket)
+          self.prior_bucket = current_bucket
+        end
+      end
+
+      def store_changed_keys(bucket = nil)
+        return unless bucket
+        storage.zadd(StatsKeys.changed_keys_key, bucket.to_i, bucket)
+      end
+
+      def stats_bucket_size
+        @stats_bucket_size ||= (configuration.stats.bucket_size || 5)
       end
 
       def storage
