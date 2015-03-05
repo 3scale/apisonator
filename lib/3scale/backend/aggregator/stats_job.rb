@@ -4,7 +4,6 @@ require_relative 'stats_info'
 module ThreeScale
   module Backend
     module Aggregator
-
       class StatsJob < BackgroundJob
         @queue = :stats
 
@@ -14,12 +13,11 @@ module ThreeScale
             return
           end
 
-          buckets_to_save = if bucket == "inf"
-            StatsInfo.get_old_buckets_to_process(bucket)
+          if bucket == "inf"
+            buckets_to_save = StatsInfo.get_old_buckets_to_process(bucket)
           else
-            [bucket]
+            buckets_to_save = [bucket]
           end
-          return if buckets_to_save.empty?
 
           buckets_to_save.each do |b|
             # It will save all the changed keys from the oldest time bucket. If
