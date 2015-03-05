@@ -99,7 +99,7 @@ module ThreeScale
       end
 
       def stats_bucket_size
-        @@stats_bucket_size ||= (configuration.stats.bucket_size || 5)
+        @stats_bucket_size ||= (configuration.stats.bucket_size || 5)
       end
 
       private
