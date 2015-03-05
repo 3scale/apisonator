@@ -61,7 +61,7 @@ module ThreeScale
       end
 
       def aggregate_usage(transaction, bucket = nil)
-        bucket_key = "keys_changed:#{bucket}" if bucket
+        bucket_key = StatsKeys.changed_keys_bucket_key(bucket) if bucket
 
         transaction.usage.each do |metric_id, raw_value|
           cmd   = storage_cmd(raw_value)
