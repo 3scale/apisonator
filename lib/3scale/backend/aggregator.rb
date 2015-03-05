@@ -45,16 +45,16 @@ module ThreeScale
         transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
           storage.pipelined do
             slice.each do |transaction|
-              key        = transaction[:application_id]
-              service_id = transaction[:service_id]
+              key        = transaction.application_id
+              service_id = transaction.service_id
               ## the key must be application+user if users exists
               ## since this is the lowest granularity.
               ## applications contains the list of application, or
               ## application+users that need to be limit checked
               applications[key] = { application_id: key, service_id: service_id }
 
-              if transaction[:user_id]
-                key = transaction[:user_id]
+              if transaction.user_id
+                key = transaction.user_id
                 users[key] = { service_id: service_id, user_id: key }
               end
 
@@ -107,7 +107,7 @@ module ThreeScale
       def aggregate(transaction)
         ##FIXME, here we have to check that the timestamp is in the
         ##current given the time period we are in
-        transaction[:usage].each do |metric_id, raw_value|
+        transaction.usage.each do |metric_id, raw_value|
           cmd   = storage_cmd(raw_value)
           value = parse_usage_value(raw_value)
 
@@ -122,8 +122,8 @@ module ThreeScale
       end
 
       def aggregate_values(cmd, metric_id, value, transaction, bucket)
-        service_prefix = service_key_prefix(transaction[:service_id])
-        application_prefix = application_key_prefix(service_prefix, transaction[:application_id])
+        service_prefix = service_key_prefix(transaction.service_id)
+        application_prefix = application_key_prefix(service_prefix, transaction.application_id)
 
         metrics = {
           service: metric_key_prefix(service_prefix, metric_id),
@@ -131,7 +131,7 @@ module ThreeScale
         }
 
         # this one is for the limits of the users
-        user_id = transaction[:user_id]
+        user_id = transaction.user_id
         if user_id
           user_prefix = user_key_prefix(service_prefix, user_id)
           metrics.merge!(user: metric_key_prefix(user_prefix, metric_id))
@@ -142,7 +142,7 @@ module ThreeScale
           granularities += [:year, :minute] unless metric_type == :service
 
           granularities.map do |granularity|
-            key = counter_key(prefix, granularity, transaction[:timestamp])
+            key = counter_key(prefix, granularity, transaction.timestamp)
             expire_time = expire_time_for_granularity(granularity)
 
             store_key(cmd, key, value, expire_time)
