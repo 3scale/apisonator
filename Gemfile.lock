@@ -4,7 +4,7 @@ PATH
     3scale_backend (2.25.0)
       airbrake (= 3.1.16)
       builder (= 2.1.2)
-      cubert-client (= 0.0.2.pre7)
+      cubert-client (= 0.0.4)
       hiredis (= 0.4.5)
       influxdb (= 0.1.8)
       rack (= 1.5.2)
@@ -68,8 +68,8 @@ GEM
     columnize (0.8.9)
     crack (0.4.2)
       safe_yaml (~> 1.0.0)
-    cubert-client (0.0.2.pre7)
-      rack
+    cubert-client (0.0.4)
+      rack (= 1.5.2)
       vanguard (>= 0.0.5)
       virtus
     daemons (1.1.9)
@@ -79,7 +79,7 @@ GEM
     diff-lcs (1.2.5)
     docile (1.1.3)
     equalizer (0.0.9)
-    eventmachine (1.0.6)
+    eventmachine (1.0.7)
     faraday (0.8.9)
       multipart-post (~> 1.2.0)
     geminabox (0.12.4)
