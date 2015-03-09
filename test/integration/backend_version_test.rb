@@ -81,7 +81,7 @@ class BackendVersionTest < Test::Unit::TestCase
 
     if @service.backend_version.nil? || @service.backend_version.empty?
       application_key_one = @application.create_key
-      application_key_two = @application.create_key
+      _application_key_two = @application.create_key
 
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application.id,

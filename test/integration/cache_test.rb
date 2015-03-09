@@ -107,7 +107,7 @@ class CacheTest < Test::Unit::TestCase
     @service.save!
   
     app_key = @application.create_key("app_key")
-    referrer = @application.create_referrer_filter('*.bar.example.org')
+    _referrer = @application.create_referrer_filter('*.bar.example.org')
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                       :app_id       => @application.id,
@@ -188,7 +188,7 @@ class CacheTest < Test::Unit::TestCase
     @service.save!
     tmp_last_response = nil
     app_key = @application.create_key("app_key")
-    referrer = @application.create_referrer_filter('*.bar.example.org')
+    _referrer = @application.create_referrer_filter('*.bar.example.org')
 
     get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                         :app_id       => @application.id,
@@ -350,7 +350,7 @@ class CacheTest < Test::Unit::TestCase
                     :day        => 1000)
 
     app_key = @application.create_key("app_key1")
-    app_key2 = @application.create_key("app_key2")
+    _app_key2 = @application.create_key("app_key2")
 
     current_state = Transactor.caching_enabled?
     Transactor.caching_enable

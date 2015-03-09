@@ -37,7 +37,7 @@ class OauthApplicationKeysTest < Test::Unit::TestCase
 
   test 'succeeds if multiple application keys are defined and one of them is passed' do
     application_key_one = @application.create_key
-    application_key_two = @application.create_key
+    _application_key_two = @application.create_key
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id,

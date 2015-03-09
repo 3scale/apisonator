@@ -83,7 +83,6 @@ class SetUserUsageTest < Test::Unit::TestCase
                                        :user_id     => "user1",
                                        :usage      => {'hits' => 2}
                                     
-      doc = Nokogiri::XML(last_response.body)
                                     
       assert_user_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), "hits", "day", 101, 100)
       assert_not_authorized("usage limits are exceeded")

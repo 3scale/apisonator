@@ -638,12 +638,6 @@ class ReportTest < Test::Unit::TestCase
 
     timestamp = Time.parse_to_utc("20100501")
 
-    conditions = {
-      application: @provider_application_id,
-      metric:      @master_hits_id,
-      time:        timestamp,
-    }
-
     assert_equal 2*10, @storage_stats.get(@master_service_id,
                                           @master_hits_id,
                                           :month, timestamp,

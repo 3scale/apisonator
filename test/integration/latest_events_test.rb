@@ -329,12 +329,11 @@ class LatestEventsTest < Test::Unit::TestCase
         assert_equal "foos per month: 81/100", item['object']["limit"]
         assert_not_nil item['object']['timestamp']
         assert_not_nil item['object']['id']
-        cont = 1
       end
 
     end
 
-    assert_not_equal -1, saved_id
+    assert_not_equal(-1, saved_id)
 
     delete "/events/#{saved_id}.json",       :provider_key => @master_provider_key
     assert_equal 200, last_response.status
@@ -461,11 +460,10 @@ class LatestEventsTest < Test::Unit::TestCase
         assert_equal "foos per month: 115/100", item['object']["limit"]
         assert_not_nil item['object']['timestamp']
         assert_not_nil item['object']['id']
-        cont = 1
       end
     end
 
-    assert_not_equal -1, saved_id
+    assert_not_equal(-1, saved_id)
 
   end
 

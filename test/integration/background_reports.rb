@@ -92,7 +92,7 @@ class BackgroundReportTest < Test::Unit::TestCase
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_1.id,
-                                       :service_id   => @service_1.id,
+                                       :service_id   => @service_1.id
                                        
     assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
