@@ -41,6 +41,13 @@ module ThreeScale
 
       private
 
+      # Aggregate stats values for a collection of Transactions.
+      #
+      # @param [Array] transactions the collection of transactions
+      # @param [String, Nil] bucket
+      # @return [Array] An array of two hashes. First element is a Hash with
+      #   those applications whose stats values have been updated.
+      #   Second element is the same but containing users.
       def aggregate(transactions, bucket = nil)
         touched_apps   = {}
         touched_users  = {}
@@ -60,26 +67,40 @@ module ThreeScale
         [touched_apps, touched_users]
       end
 
+      # Aggregates the usage of a transaction. If a bucket time is specified,
+      # all new or updated stats keys will be stored in a Redis Set with a name
+      # composed by 'keys_changed' + bucket.
+      #
+      # @param [Transaction] transaction
+      # @param [String, Nil] bucket
       def aggregate_usage(transaction, bucket = nil)
         bucket_key = StatsKeys.changed_keys_bucket_key(bucket) if bucket
 
         transaction.usage.each do |metric_id, raw_value|
-          cmd   = storage_cmd(raw_value)
-          value = parse_usage_value(raw_value)
+          metric_keys = StatsKeys.transaction_metric_keys(transaction, metric_id)
+          cmd         = storage_cmd(raw_value)
+          value       = parse_usage_value(raw_value)
 
-          aggregate_values(cmd, metric_id, value, transaction, bucket_key)
+          aggregate_values(value, transaction.timestamp, metric_keys, cmd, bucket_key)
         end
       end
 
-      def aggregate_values(cmd, metric_id, value, transaction, bucket_key)
-        keys = StatsKeys.transaction_metric_keys(transaction, metric_id)
-
+      # Aggregates a value in a timestamp for all given keys using a specific
+      # Redis command to store them. If a bucket_key is specified, each key will
+      # be added to a Redis Set with that name.
+      #
+      # @param [Integer] value
+      # @param [Time] timestamp
+      # @param [Array] keys
+      # @param [Symbol] cmd
+      # @param [String, Nil] bucket_key
+      def aggregate_values(value, timestamp, keys, cmd, bucket_key = nil)
         granularities = [:eternity, :month, :week, :day, :hour]
         keys.each do |metric_type, prefix_key|
           granularities += [:year, :minute] unless metric_type == :service
 
           granularities.each do |granularity|
-            key = counter_key(prefix_key, granularity, transaction.timestamp)
+            key = counter_key(prefix_key, granularity, timestamp)
             expire_time = expire_time_for_granularity(granularity)
 
             store_key(cmd, key, value, expire_time)
@@ -140,7 +161,7 @@ module ThreeScale
         GRANULARITY_EXPIRATION_TIME[granularity]
       end
 
-      def store_in_changed_keys(key, bucket_key)
+      def store_in_changed_keys(key, bucket_key = nil)
         return unless bucket_key
         storage.sadd(bucket_key, key)
       end
