@@ -27,10 +27,11 @@ module ThreeScale
           prepare_stats_buckets(current_bucket)
         end
 
-        touched_apps, touched_users = aggregate(transactions, current_bucket)
+        touched_relations = aggregate(transactions, current_bucket)
 
-        ApplicationEvents.generate(touched_apps.values)
-        Cache.update_status_cache(touched_apps, touched_users)
+        ApplicationEvents.generate(touched_relations[:applications].values)
+        Cache.update_status_cache(touched_relations[:applications],
+                                  touched_relations[:users])
         ApplicationEvents.ping
       end
 
@@ -45,9 +46,9 @@ module ThreeScale
       #
       # @param [Array] transactions the collection of transactions
       # @param [String, Nil] bucket
-      # @return [Array] An array of two hashes. First element is a Hash with
-      #   those applications whose stats values have been updated.
-      #   Second element is the same but containing users.
+      # @return [Hash] A Hash with two keys: applications and users. Each key
+      #   contains a Hash with those applications/users whose stats values have
+      #   been updated.
       def aggregate(transactions, bucket = nil)
         touched_apps   = {}
         touched_users  = {}
@@ -64,7 +65,7 @@ module ThreeScale
           end
         end
 
-        [touched_apps, touched_users]
+        { applications: touched_apps, users: touched_users }
       end
 
       # Aggregates the usage of a transaction. If a bucket time is specified,
