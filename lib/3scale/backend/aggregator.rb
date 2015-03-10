@@ -35,11 +35,6 @@ module ThreeScale
         ApplicationEvents.ping
       end
 
-      def get_value_of_set_if_exists(value_str)
-        return nil if value_str.nil? || value_str[0] != "#"
-        value_str[1..value_str.size].to_i
-      end
-
       private
 
       # Aggregate stats values for a collection of Transactions.
@@ -141,7 +136,7 @@ module ThreeScale
       # @param [String] raw_value
       # @return [Symbol] the Redis command
       def storage_cmd(raw_value)
-        get_value_of_set_if_exists(raw_value) ? :set : :incrby
+        Helpers.get_value_of_set_if_exists(raw_value) ? :set : :incrby
       end
 
       # Parse 'raw_value' and return it as a integer.
@@ -150,7 +145,7 @@ module ThreeScale
       # @param [String] raw_value
       # @return [Integer] the parsed value
       def parse_usage_value(raw_value)
-        (get_value_of_set_if_exists(raw_value) || raw_value).to_i
+        (Helpers.get_value_of_set_if_exists(raw_value) || raw_value).to_i
       end
 
       def store_key(cmd, key, value, expire_time = nil)

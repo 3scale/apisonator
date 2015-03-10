@@ -48,7 +48,7 @@ module ThreeScale
           usage.keys.inject(usage.dup) do |memo, id|
             ancestor_id(id).each do |ancestor_id|
 
-              val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(memo[id])
+              val = Helpers.get_value_of_set_if_exists(memo[id])
               if val.nil?
                 memo[ancestor_id] ||= 0
                 # need to do the to_i here because the value can be a string if the ancestor is passed

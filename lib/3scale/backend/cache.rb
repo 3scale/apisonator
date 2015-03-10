@@ -188,7 +188,7 @@ module ThreeScale
 
             if options[:usage]
               inc = options[:usage][metric].to_i
-              val = ThreeScale::Backend::Aggregator.get_value_of_set_if_exists(options[:usage][metric])
+              val = Helpers.get_value_of_set_if_exists(options[:usage][metric])
             end
 
             limit_violation_without_usage ||= curr_value > max_value

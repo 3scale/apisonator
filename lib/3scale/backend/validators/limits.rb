@@ -45,7 +45,7 @@ module ThreeScale
         def increment_or_set(values, usage)
           usage.inject(values) do |memo, (metric_id, value)|
             memo.keys.each do |period|
-              val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(value)
+              val = Helpers.get_value_of_set_if_exists(value)
 
               if val.nil?
                 memo[period][metric_id] ||= 0
