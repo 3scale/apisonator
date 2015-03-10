@@ -12,7 +12,7 @@ class StatusSnapshotTest < Test::Unit::TestCase
 
     Resque.reset!
     Memoizer.reset!
-    
+
     setup_provider_fixtures
 
     @application_id1 = next_id
@@ -42,163 +42,169 @@ class StatusSnapshotTest < Test::Unit::TestCase
                     :plan_id    => @plan_id,
                     :metric_id  => @foos_id,
                     :month        => 500)
-
   end
 
-
   test 'basic working of status_snapshot' do
-
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50, 'foos' => 115}}}
     Resque.run!
 
-    get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
+    get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml",
        :provider_key => @provider_key
-                                                       
+
     assert_equal 200, last_response.status
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal doc.at('max_utilization')[:value], '50'
     assert_equal doc.search('usage_report').size, 3
     assert_equal doc.search('max_usage_report').size, 1
 
-    get "/services/#{@service_id}/applications/fake_application_key/utilization.xml", 
+    get "/services/#{@service_id}/applications/fake_application_key/utilization.xml",
        :provider_key => @provider_key
+
     assert_equal 404, last_response.status
 
-    get "/services/fake_service_id/applications/#{@application_id1}/utilization.xml", 
+    get "/services/fake_service_id/applications/#{@application_id1}/utilization.xml",
        :provider_key => @provider_key
+
     assert_equal 403, last_response.status
 
-    get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
+    get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml",
        :provider_key => 'fake_provider_key'
-    assert_equal 403, last_response.status
 
+    assert_equal 403, last_response.status
   end
 
   test 'basic check of utilization stats' do
-
-    Timecop.freeze(Time.utc(2010, 1, 1, 0, 0, 0)) do    
+    Timecop.freeze(Time.utc(2010, 1, 1, 0, 0, 0)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 30}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 10}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
+      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml",
        :provider_key => @provider_key
-                                                       
+
       assert_equal 200, last_response.status
+
       doc   = Nokogiri::XML(last_response.body)
-      assert_equal doc.at('max_utilization')[:value], '90'    
-    end    
-    
+      assert_equal doc.at('max_utilization')[:value], '90'
+    end
+
     Timecop.freeze(Time.utc(2010, 1, 3, 15, 0 ,0)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 30}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
-       
-      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
+
+      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml",
        :provider_key => @provider_key
-                                                       
+
       assert_equal 200, last_response.status
+
       doc   = Nokogiri::XML(last_response.body)
-      assert_equal doc.at('max_utilization')[:value], '80'    
-    end    
+      assert_equal doc.at('max_utilization')[:value], '80'
+    end
 
     Timecop.freeze(Time.utc(2010, 1, 6, 15, 0, 0)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 60}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
-       :provider_key => @provider_key                                                       
+      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml",
+       :provider_key => @provider_key
+
       assert_equal 200, last_response.status
+
       doc   = Nokogiri::XML(last_response.body)
       assert_equal doc.at('max_utilization')[:value], '110'
-    end    
+    end
 
     Timecop.freeze(Time.utc(2010, 1, 6, 15, 55, 0)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 100}}}
-      Backend::Transactor.process_batch(0,{:all => true})
-      Resque.run!      
+      Backend::Transactor.process_batch(0, all: true)
+      Resque.run!
 
-      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
-       :provider_key => @provider_key                                                       
+      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml",
+       :provider_key => @provider_key
+
       assert_equal 200, last_response.status
+
       doc   = Nokogiri::XML(last_response.body)
       assert_equal doc.at('max_utilization')[:value], '210'
-    end    
+    end
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 0}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
-       :provider_key => @provider_key                                                       
+      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml",
+       :provider_key => @provider_key
+
       assert_equal 200, last_response.status
+
       doc   = Nokogiri::XML(last_response.body)
-     
       assert_equal doc.at('max_utilization')[:value], '38'
       ## the 38 comes out of 380 of 1000 per month
+
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application_id1, :usage => {'hits' => 50}}}
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
-       
-      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml", 
-       :provider_key => @provider_key                                                       
+
+      get "/services/#{@service_id}/applications/#{@application_id1}/utilization.xml",
+       :provider_key => @provider_key
+
       assert_equal 200, last_response.status
+
       doc   = Nokogiri::XML(last_response.body)
       assert_equal doc.at('max_utilization')[:value], '50'
-     
       assert_not_nil doc.at('stats').to_xml
 
       expected = "<stats>\n    <data time=\"2010-01-01 00:00:00 UTC\" value=\"90\"/>\n    <data time=\"2010-01-03 15:00:00 UTC\" value=\"80\"/>\n    <data time=\"2010-01-06 15:00:00 UTC\" value=\"210\"/>\n  </stats>"
-
       assert_equal expected, doc.at('stats').to_xml.to_s
     end
-  end 
+  end
 
-  test 'test applications with plans without limits' do 
-
+  test 'test applications with plans without limits' do
     application_id = next_id
     plan_id = next_id
-    plan_name = "no_limits"
+    plan_name = 'no_limits'
 
     Application.save(:service_id => @service.id,
                       :id         => application_id,
@@ -206,22 +212,21 @@ class StatusSnapshotTest < Test::Unit::TestCase
                       :plan_id    => plan_id,
                       :plan_name  => plan_name)
 
-    get "/services/#{@service_id}/applications/#{application_id}/utilization.xml", 
+    get "/services/#{@service_id}/applications/#{application_id}/utilization.xml",
        :provider_key => @provider_key
-                                                       
+
     assert_equal 200, last_response.status
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal doc.search('utilization').size, 1
     assert_nil doc.at('max_utilization')
     assert_nil doc.at('usage_report')
-
   end
 
-  test 'regression test, plan with only zero limits should not blow' do 
-
+  test 'regression test, plan with only zero limits should not blow' do
     application_id = next_id
     plan_id = next_id
-    plan_name = "zero_limits"
+    plan_name = 'zero_limits'
 
     Application.save(:service_id => @service.id,
                       :id         => application_id,
@@ -239,20 +244,18 @@ class StatusSnapshotTest < Test::Unit::TestCase
                     :metric_id  => @foos_id,
                     :month        => 0)
 
-    get "/services/#{@service_id}/applications/#{application_id}/utilization.xml", 
+    get "/services/#{@service_id}/applications/#{application_id}/utilization.xml",
        :provider_key => @provider_key
-                                                       
+
     assert_equal 200, last_response.status
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal doc.at('max_utilization')[:value], '0'
     assert_equal doc.search('usage_report').size, 2
     metric_name = doc.search('usage_report').first[:metric_name]
     assert_equal doc.search('max_usage_report').size, 1
-    assert_equal doc.search('max_usage_report').first[:period], "month"
+    assert_equal doc.search('max_usage_report').first[:period], 'month'
     assert_equal doc.search('max_usage_report').first[:metric_name], metric_name
-    assert_equal doc.search('max_usage_report').first[:max_value], "0"
-
+    assert_equal doc.search('max_usage_report').first[:max_value], '0'
   end
-
-
 end

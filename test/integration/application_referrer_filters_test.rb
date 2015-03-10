@@ -51,7 +51,6 @@ class ApplicationReferrerFiltersTest < Test::Unit::TestCase
 
     doc = Nokogiri::XML(last_response.body)
     items = doc.at('referrer_filters:root')
-
     assert_not_nil items
     assert_equal 2, items.search('referrer_filter').count
 
@@ -113,8 +112,8 @@ class ApplicationReferrerFiltersTest < Test::Unit::TestCase
       :referrer_filter => ''
 
     assert_error_response :status  => 422,
-                          :code    => "referrer_filter_invalid",
-                          :message => "referrer filter can't be blank"
+                          :code    => 'referrer_filter_invalid',
+                          :message => 'referrer filter can\'t be blank'
   end
 
   test 'POST .../referrer_filters.xml fails on invalid provider key' do
@@ -125,7 +124,7 @@ class ApplicationReferrerFiltersTest < Test::Unit::TestCase
   end
 
   test 'POST .../referrer_filters.xml fails on invalid application id' do
-    post "/applications/invalid/referrer_filters.xml", :provider_key => @provider_key
+    post '/applications/invalid/referrer_filters.xml', :provider_key => @provider_key
 
     assert_error_response :status  => 404,
                           :code    => 'application_not_found',
@@ -144,11 +143,11 @@ class ApplicationReferrerFiltersTest < Test::Unit::TestCase
   end
 
   test 'DELETE .../referrer_filters/{rule}.xml deletes the referrer filter with special chars' do
-    value       = "chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm"
+    value       = 'chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm'
     application = Application.load(@service_id, @application_id)
     application.create_referrer_filter(value)
-
     encoded_value = Base64.urlsafe_encode64(value)
+
     delete "/applications/#{@application_id}/referrer_filters/#{encoded_value}.xml",
            provider_key: @provider_key
 
@@ -178,13 +177,11 @@ class ApplicationReferrerFiltersTest < Test::Unit::TestCase
     application = Application.load(@service_id, @application_id)
     application.create_referrer_filter('example.org')
 
-    delete "/applications/boo/referrer_filters/example.org.xml",
+    delete '/applications/boo/referrer_filters/example.org.xml',
            :provider_key => @provider_key
 
     assert_error_response :status  => 404,
                           :code    => 'application_not_found',
                           :message => 'application with id="boo" was not found'
   end
-
-
 end

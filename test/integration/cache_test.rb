@@ -12,7 +12,7 @@ class CacheTest < Test::Unit::TestCase
 
     Resque.reset!
     Memoizer.reset!
-    
+
     setup_provider_fixtures
 
     @application = Application.save(:service_id => @service.id,
@@ -23,11 +23,9 @@ class CacheTest < Test::Unit::TestCase
 
     @metric_id = next_id
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
-
   end
 
-  test 'caching of referrals with wildcards is not effective' do 
-
+  test 'caching of referrals with wildcards is not effective' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -35,7 +33,7 @@ class CacheTest < Test::Unit::TestCase
 
     @service.referrer_filters_required = true
     @service.save!
-  
+
     referrer = @application.create_referrer_filter('*.bar.example.org')
 
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
@@ -51,26 +49,24 @@ class CacheTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
     assert_equal '3', day.at('current_value').content
-
     assert_equal 0, Transactor.stats[:hits]
     assert_equal 3, Transactor.stats[:count]
-
 
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
     referrer = @application.create_referrer_filter('another.referral')
     referrer = @application.create_referrer_filter('www.bar.example.org')
 
-    app_key = @application.create_key("app_key1")
-    @application.create_key("app_key2")
-    @application.create_key("app_key3")
-    
+    app_key = @application.create_key('app_key1')
+    @application.create_key('app_key2')
+    @application.create_key('app_key3')
+
     ## we need to scratch the memoizer because we have created keys and referrer filters
     Memoizer.reset!
-
 
     3.times do
       get '/transactions/authrep.xml',  :provider_key => @provider_key,
@@ -84,19 +80,16 @@ class CacheTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
     assert_equal '6', day.at('current_value').content
-
     assert_equal 2, Transactor.stats[:hits]
     assert_equal 3, Transactor.stats[:count]
-
-
   end
 
   test 'caching with referrals with authrep' do
-
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -105,16 +98,16 @@ class CacheTest < Test::Unit::TestCase
     #old_referrer_filters = @service.referrer_filters_required
     @service.referrer_filters_required = true
     @service.save!
-  
-    app_key = @application.create_key("app_key")
-    referrer = @application.create_referrer_filter('*.bar.example.org')
+
+    app_key = @application.create_key('app_key')
+    _referrer = @application.create_referrer_filter('*.bar.example.org')
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                       :app_id       => @application.id,
                                       :app_key      => app_key,
                                       :usage        => {'hits' => 1}
-
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
@@ -127,9 +120,11 @@ class CacheTest < Test::Unit::TestCase
                                         :referrer     => 'www.bar.example.org'
       Resque.run!
     end
+
     doc   = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
@@ -141,19 +136,22 @@ class CacheTest < Test::Unit::TestCase
                                       :usage        => {'hits' => 1},
                                       :referrer     => 'fake'
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
-  
+
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                       :app_id       => @application.id,
                                       :app_key      => app_key,
                                       :usage        => {'hits' => 1},
                                       :referrer     => 'www.bar.example.org'
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
@@ -165,19 +163,18 @@ class CacheTest < Test::Unit::TestCase
                                       :usage        => {'hits' => 1},
                                       :referrer     => 'fake'
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
 
-    
     @service.referrer_filters_required = false
     @service.save!
   end
 
   test 'caching with referrals with authorize' do
-
     ##Transactor.caching_disable
-    
+
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -186,15 +183,17 @@ class CacheTest < Test::Unit::TestCase
     #old_referrer_filters = @service.referrer_filters_required
     @service.referrer_filters_required = true
     @service.save!
+
     tmp_last_response = nil
-    app_key = @application.create_key("app_key")
-    referrer = @application.create_referrer_filter('*.bar.example.org')
+    app_key = @application.create_key('app_key')
+    _referrer = @application.create_referrer_filter('*.bar.example.org')
 
     get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                         :app_id       => @application.id,
                                         :app_key      => app_key,
                                         :referrer     => 'www.bar'
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
@@ -204,15 +203,19 @@ class CacheTest < Test::Unit::TestCase
                                           :app_id       => @application.id,
                                           :app_key      => app_key,
                                           :referrer     => 'www.bar.example.org'
+
       tmp_last_response = last_response
+
       post '/transactions.xml',
               :provider_key => @provider_key,
               :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
     end
+
     doc   = Nokogiri::XML(tmp_last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, tmp_last_response.status
@@ -222,22 +225,27 @@ class CacheTest < Test::Unit::TestCase
                                         :app_id       => @application.id,
                                         :app_key      => app_key,
                                         :referrer     => 'fake'
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
-  
+
     get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                         :app_id       => @application.id,
                                         :app_key      => app_key,
                                         :referrer     => 'www.bar.example.org'
+
     tmp_last_response = last_response
+
     post '/transactions.xml',
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
     Resque.run!
+
     doc   = Nokogiri::XML(tmp_last_response.body)
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, tmp_last_response.status
@@ -249,19 +257,18 @@ class CacheTest < Test::Unit::TestCase
                                         :usage        => {'hits' => 1},
                                         :referrer     => 'fake'
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
-    
+
     @service.referrer_filters_required = false
     @service.save!
 
-
     ##Transactor.caching_enable
-
   end
 
-  test 'caching considers metrics' do 
+  test 'caching considers metrics' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -273,6 +280,7 @@ class CacheTest < Test::Unit::TestCase
                                         :app_id       => @application.id,
                                         :usage        => {'hits' => 1, 'fake_metric' => 1}
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 403, last_response.status
 
@@ -280,9 +288,9 @@ class CacheTest < Test::Unit::TestCase
                                         :app_id       => @application.id,
                                         :usage        => {'hits' => 1, 'fake_metric' => 1}
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 403, last_response.status
-
     assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 2
 
@@ -290,6 +298,7 @@ class CacheTest < Test::Unit::TestCase
                                         :app_id       => @application.id,
                                         :usage        => {'hits' => 1}
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 200, last_response.status
 
@@ -297,10 +306,9 @@ class CacheTest < Test::Unit::TestCase
                                         :app_id       => @application.id,
                                         :usage        => {'hits' => 1}
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 200, last_response.status
-
-
     assert_equal Transactor.stats[:hits], 1
     assert_equal Transactor.stats[:count], 4
 
@@ -308,6 +316,7 @@ class CacheTest < Test::Unit::TestCase
                                         :app_id       => @application.id,
                                         :usage        => {'hits' => 1, 'fake_metric' => 1}
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 403, last_response.status
 
@@ -315,51 +324,45 @@ class CacheTest < Test::Unit::TestCase
                                         :app_id       => @application.id,
                                         :usage        => {'hits' => 1, 'fake_metric' => 1}
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 403, last_response.status
-
     assert_equal Transactor.stats[:hits], 1
     assert_equal Transactor.stats[:count], 6
-
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                         :app_id       => @application.id,
                                         :usage        => {'hits' => 1}
-
     Resque.run!
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
+
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
+
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal '3', day.at('current_value').content
-
     assert_equal Transactor.stats[:hits], 2
     assert_equal Transactor.stats[:count], 7
-
-
   end
 
-
   test 'checking that modified redis setting/caching_enabled controls caching' do
-
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
                     :day        => 1000)
 
-    app_key = @application.create_key("app_key1")
-    app_key2 = @application.create_key("app_key2")
+    app_key = @application.create_key('app_key1')
+    _app_key2 = @application.create_key('app_key2')
 
     current_state = Transactor.caching_enabled?
     Transactor.caching_enable
-    tmp_last_response = ""
-
+    tmp_last_response = ''
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
-    5.times do    
-
+    5.times do
       get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key
@@ -368,48 +371,40 @@ class CacheTest < Test::Unit::TestCase
       post '/transactions.xml',
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
-
     end
 
     doc   = Nokogiri::XML(tmp_last_response.body)
-
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
-    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, tmp_last_response.status
     assert_equal '4', day.at('current_value').content
-
     assert_equal Transactor.stats[:hits], 4
     assert_equal Transactor.stats[:count], 5
 
-
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
-    5.times do    
-
+    5.times do
       get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
                                             :usage        => {'hits' => 1}
+
       tmp_last_response = last_response
       Resque.run!
-
     end
 
     doc   = Nokogiri::XML(tmp_last_response.body)
-
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
-    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, tmp_last_response.status
     assert_equal '10', day.at('current_value').content
-
     assert_equal Transactor.stats[:hits], 4
     assert_equal Transactor.stats[:count], 5
 
@@ -417,134 +412,118 @@ class CacheTest < Test::Unit::TestCase
 
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
-    5.times do    
-
+    5.times do
       get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key
+
       tmp_last_response = last_response
+
       post '/transactions.xml',
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
-
     end
 
     doc   = Nokogiri::XML(tmp_last_response.body)
-
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
-    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, tmp_last_response.status
     assert_equal '14', day.at('current_value').content
-
     assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 5
 
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
-    5.times do    
-
+    5.times do
       get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
                                             :usage        => {'hits' => 1}
+
       tmp_last_response = last_response
       Resque.run!
-
     end
 
     doc   = Nokogiri::XML(tmp_last_response.body)
-
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
-    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, tmp_last_response.status
     assert_equal '20', day.at('current_value').content
-
     assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 5
 
     Transactor.caching_enable
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
-    5.times do    
-
+    5.times do
       get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
                                             :no_caching   => true
+
       tmp_last_response = last_response
 
       post '/transactions.xml',
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
       Resque.run!
-
     end
 
     doc   = Nokogiri::XML(tmp_last_response.body)
-
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
-    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, tmp_last_response.status
     assert_equal '24', day.at('current_value').content
-
     assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 5
 
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
-    5.times do    
-
+    5.times do
       get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
                                             :usage        => {'hits' => 1},
                                             :no_caching   => true
+
       tmp_last_response = last_response
       Resque.run!
-
     end
 
     doc   = Nokogiri::XML(tmp_last_response.body)
-
     usage_reports = doc.at('usage_reports')
     assert_not_nil usage_reports
-    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+    day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, tmp_last_response.status
     assert_equal '30', day.at('current_value').content
-
     assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 5
 
     Transactor.caching_enable if current_state
-
   end
-  
 
-  test 'checking hit ratio with authorize and app_key' do 
-
+  test 'checking hit ratio with authorize and app_key' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
                     :day        => 1000)
 
-    app_key = @application.create_key("app_key1")
-    app_key2 = @application.create_key("app_key2")
+    app_key = @application.create_key('app_key1')
+    app_key2 = @application.create_key('app_key2')
 
-    keys = [app_key, app_key2, "fake_app_key"]
+    keys = [app_key, app_key2, 'fake_app_key']
 
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
@@ -552,12 +531,11 @@ class CacheTest < Test::Unit::TestCase
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-
-      10.times do |i| 
+      10.times do |i|
         get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => keys[i%2],
-                                            :usage        => {"hits" => 1}
+                                            :usage        => {'hits' => 1}
         Resque.run!
       end
 
@@ -565,35 +543,32 @@ class CacheTest < Test::Unit::TestCase
       assert_equal Transactor.stats[:count], 10
       assert_equal Transactor.stats[:last], 0
 
-      10.times do |i| 
+      10.times do |i|
         get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => keys[i%2],
-                                            :usage        => {"hits" => 1}
+                                            :usage        => {'hits' => 1}
         post '/transactions.xml',
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
         Resque.run!
-
       end
-      
+
       assert_equal Transactor.stats[:hits], 9
       assert_equal Transactor.stats[:count], 20
       assert_equal Transactor.stats[:last], 1
 
       9.times do |i|
-
         old_hits = Transactor.stats[:hits]
 
         get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => keys[i%keys.size],
-                                            :usage        => {"hits" => 1}
+                                            :usage        => {'hits' => 1}
 
         doc = Nokogiri::XML(last_response.body)
 
-        if ((i+1)%3)==0
+        if ((i+1) % 3) == 0
           assert_equal 'false', doc.at('status:root authorized').content
           assert_equal 409, last_response.status
           assert_equal Transactor.stats[:hits], old_hits
@@ -602,33 +577,28 @@ class CacheTest < Test::Unit::TestCase
           assert_equal 200, last_response.status
           assert_equal Transactor.stats[:hits], old_hits+1
         end
-        
-        if ((i+1)%3)!=0
+
+        if ((i+1) % 3) != 0
           post '/transactions.xml',
               :provider_key => @provider_key,
               :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
         end
-        
+
         Resque.run!
-
       end
-
-
     end
-
   end
 
-  test 'checking hit ratio with authrep and app_key' do 
-
+  test 'checking hit ratio with authrep and app_key' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
                     :day        => 1000)
 
-    app_key = @application.create_key("app_key1")
-    app_key2 = @application.create_key("app_key2")
+    app_key = @application.create_key('app_key1')
+    app_key2 = @application.create_key('app_key2')
 
-    keys = [app_key, app_key2, "fake_app_key"]
+    keys = [app_key, app_key2, 'fake_app_key']
 
     Transactor.stats = {:count => 0, :hits => 0, :last => nil}
 
@@ -636,13 +606,11 @@ class CacheTest < Test::Unit::TestCase
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-
-      10.times do |i| 
+      10.times do |i|
         get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => keys[i%2],
-                                            :usage        => {"hits" => 1}
-
+                                            :usage        => {'hits' => 1}
         Resque.run!
       end
 
@@ -650,19 +618,17 @@ class CacheTest < Test::Unit::TestCase
       assert_equal Transactor.stats[:count], 10
 
       9.times do |i|
-
         old_hits = Transactor.stats[:hits]
 
         get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => keys[i%keys.size],
-                                            :usage        => {"hits" => 1}
-
+                                            :usage        => {'hits' => 1}
         Resque.run!
 
         doc = Nokogiri::XML(last_response.body)
 
-        if ((i+1)%3)==0
+        if ((i+1) % 3) == 0
           assert_equal 'false', doc.at('status:root authorized').content
           assert_equal 409, last_response.status
           assert_equal Transactor.stats[:hits], old_hits
@@ -671,16 +637,11 @@ class CacheTest < Test::Unit::TestCase
           assert_equal 200, last_response.status
           assert_equal Transactor.stats[:hits], old_hits+1
         end
-
       end
-
-
     end
-
   end
 
- test 'checking hit ratio with authorize' do 
-
+  test 'checking hit ratio with authorize' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -692,11 +653,10 @@ class CacheTest < Test::Unit::TestCase
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-
-      5.times do |i| 
+      5.times do |i|
         get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
-                                            :usage        => {"hits" => 1}
+                                            :usage        => {'hits' => 1}
 
         doc = Nokogiri::XML(last_response.body)
         assert_equal 'true', doc.at('status:root authorized').content
@@ -705,20 +665,15 @@ class CacheTest < Test::Unit::TestCase
         post '/transactions.xml',
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
         Resque.run!
-
       end
-      
+
       assert_equal Transactor.stats[:hits], 4
       assert_equal Transactor.stats[:count], 5
-
     end
-
   end
 
-  test 'checking hit ratio with authrep' do 
-
+  test 'checking hit ratio with authrep' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -730,84 +685,73 @@ class CacheTest < Test::Unit::TestCase
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-
-      5.times do |i| 
+      5.times do |i|
         get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
-                                            :usage        => {"hits" => 1}
-
+                                            :usage        => {'hits' => 1}
         Resque.run!
 
         doc = Nokogiri::XML(last_response.body)
         assert_equal 'true', doc.at('status:root authorized').content
         assert_equal 200, last_response.status
-
       end
 
       assert_equal Transactor.stats[:hits], 4
       assert_equal Transactor.stats[:count], 5
-
     end
 
   end
 
-
-  test 'updating values with app_keys with authrep' do 
-
+  test 'updating values with app_keys with authrep' do
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-
       UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
                     :day        => 100)
 
-      app_key = @application.create_key("app_key1")
+      app_key = @application.create_key('app_key1')
 
       get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
-                                            :usage        => {"hits" => 1}
-
+                                            :usage        => {'hits' => 1}
       Resque.run!
-      doc   = Nokogiri::XML(last_response.body)
 
+      doc   = Nokogiri::XML(last_response.body)
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'true', doc.at('status:root authorized').content
       assert_equal 200, last_response.status
       assert_equal '1', day.at('current_value').content
 
-
       get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
-                                            :usage        => {"hits" => 10}
-
+                                            :usage        => {'hits' => 10}
       Resque.run!
-      doc   = Nokogiri::XML(last_response.body)
 
+      doc   = Nokogiri::XML(last_response.body)
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'true', doc.at('status:root authorized').content
       assert_equal 200, last_response.status
       assert_equal '11', day.at('current_value').content
 
       get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
-                                            :app_key      => "fake_app_key",
-                                            :usage        => {"hits" => 10}
-
+                                            :app_key      => 'fake_app_key',
+                                            :usage        => {'hits' => 10}
       Resque.run!
-      doc   = Nokogiri::XML(last_response.body)
 
+      doc   = Nokogiri::XML(last_response.body)
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'false', doc.at('status:root authorized').content
       assert_equal 409, last_response.status
       assert_equal '11', day.at('current_value').content
@@ -815,15 +759,14 @@ class CacheTest < Test::Unit::TestCase
       get '/transactions/authrep.xml',      :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
-                                            :usage        => {"hits" => 10}
-
+                                            :usage        => {'hits' => 10}
       Resque.run!
-      doc   = Nokogiri::XML(last_response.body)
 
+      doc   = Nokogiri::XML(last_response.body)
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'true', doc.at('status:root authorized').content
       assert_equal 200, last_response.status
       assert_equal '21', day.at('current_value').content
@@ -831,42 +774,40 @@ class CacheTest < Test::Unit::TestCase
       get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
-                                            :usage        => {"hits" => 200}
+                                            :usage        => {'hits' => 200}
       Resque.run!
+
       doc   = Nokogiri::XML(last_response.body)
-      
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'false', doc.at('status:root authorized').content
       assert_equal 409, last_response.status
       assert_equal '21', day.at('current_value').content
     end
   end
 
-  test 'updating values with app_keys with authorize' do 
-
+  test 'updating values with app_keys with authorize' do
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-
       UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
                     :day        => 100)
 
-      app_key = @application.create_key("app_key1")
+      app_key = @application.create_key('app_key1')
 
       get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
-                                            :usage        => {"hits" => 1}
+                                            :usage        => {'hits' => 1}
       Resque.run!
-      doc   = Nokogiri::XML(last_response.body)
 
+      doc   = Nokogiri::XML(last_response.body)
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'true', doc.at('status:root authorized').content
       assert_equal 200, last_response.status
       assert_equal '0', day.at('current_value').content
@@ -875,20 +816,20 @@ class CacheTest < Test::Unit::TestCase
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
-      assert_equal 202, last_response.status
 
+      assert_equal 202, last_response.status
 
       get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
-                                            :usage        => {"hits" => 10}
+                                            :usage        => {'hits' => 10}
       Resque.run!
-      doc   = Nokogiri::XML(last_response.body)
 
+      doc   = Nokogiri::XML(last_response.body)
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'true', doc.at('status:root authorized').content
       assert_equal 200, last_response.status
       assert_equal '1', day.at('current_value').content
@@ -897,20 +838,20 @@ class CacheTest < Test::Unit::TestCase
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 10}}}
       Resque.run!
-      assert_equal 202, last_response.status
 
+      assert_equal 202, last_response.status
 
       get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
-                                            :app_key      => "fake_app_key",
-                                            :usage        => {"hits" => 10}
+                                            :app_key      => 'fake_app_key',
+                                            :usage        => {'hits' => 10}
       Resque.run!
-      doc   = Nokogiri::XML(last_response.body)
 
+      doc   = Nokogiri::XML(last_response.body)
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'false', doc.at('status:root authorized').content
       assert_equal 409, last_response.status
       assert_equal '11', day.at('current_value').content
@@ -918,137 +859,121 @@ class CacheTest < Test::Unit::TestCase
       get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :app_key      => app_key,
-                                            :usage        => {"hits" => 200}
+                                            :usage        => {'hits' => 200}
       Resque.run!
+
       doc   = Nokogiri::XML(last_response.body)
-      
       usage_reports = doc.at('usage_reports')
       assert_not_nil usage_reports
-      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
 
+      day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
       assert_equal 'false', doc.at('status:root authorized').content
       assert_equal 409, last_response.status
       assert_equal '11', day.at('current_value').content
-
     end
-
-
   end
 
-
-  test 'checking correct behaviour of caching by app_key' do 
-
+  test 'checking correct behaviour of caching by app_key' do
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id
-                                          
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
 
-
-    @application.create_key("app_key1")
-    @application.create_key("app_key2")
+    @application.create_key('app_key1')
+    @application.create_key('app_key2')
 
     ## error is app_keys defined and not passed
-
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id
     Resque.run!
-                                    
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
 
     ## checking that they can be remove and then it's fine
-    
-    @application.delete_key("app_key1")
-    @application.delete_key("app_key2")
 
+    @application.delete_key('app_key1')
+    @application.delete_key('app_key2')
 
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id
-    Resque.run!   
+    Resque.run!
 
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
 
-    ## putting the app_keys back in place and checking that either key goes well and putting one 
+    ## putting the app_keys back in place and checking that either key goes well and putting one
     ## that does not exist gives an error. Then, checking that a good key does not get the cached
-    ## error, and finally checking that a repeated bad key does not get the cached good result. 
+    ## error, and finally checking that a repeated bad key does not get the cached good result.
 
-    @application.create_key("app_key1")
-    @application.create_key("app_key2")
+    @application.create_key('app_key1')
+    @application.create_key('app_key2')
 
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id,
-                                          :app_key      => "app_key1" 
-             
+                                          :app_key      => 'app_key1'
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
 
-
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id,
-                                          :app_key      => "app_key2"
-                                    
+                                          :app_key      => 'app_key2'
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
 
-    
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id,
-                                          :app_key      => "fake_app_key2"
-                                        
+                                          :app_key      => 'fake_app_key2'
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
 
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id,
-                                          :app_key      => "fake_app_key2"
-                                        
+                                          :app_key      => 'fake_app_key2'
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
 
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id,
-                                          :app_key      => "app_key2"
-                     
+                                          :app_key      => 'app_key2'
+
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
     assert_equal 200, last_response.status
 
-
     get '/transactions/authorize.xml',    :provider_key => @provider_key,
                                           :app_id       => @application.id,
-                                          :app_key      => "fake_app_key2"
+                                          :app_key      => 'fake_app_key2'
 
-                                    
     doc   = Nokogiri::XML(last_response.body)
     assert_equal 'false', doc.at('status:root authorized').content
     assert_equal 409, last_response.status
-
-
   end
 
   test 'cached vs. non-cached authrep' do
-
     cached = []
     not_cached = []
     caching_was_enabled = Transactor.caching_enabled?
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-
       @application = Application.save(:service_id => @service.id,
                                       :id         => next_id,
                                       :state      => :active,
                                       :plan_id    => @plan_id,
                                       :plan_name  => @plan_name)
-     
+
       Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
 
       UsageLimit.save(:service_id => @service.id,
@@ -1063,7 +988,6 @@ class CacheTest < Test::Unit::TestCase
         Resque.run!
 
         cached << last_response.body
-
       end
 
       @application = Application.save(:service_id => @service.id,
@@ -1088,10 +1012,8 @@ class CacheTest < Test::Unit::TestCase
         Resque.run!
 
         not_cached << last_response.body
-
       end
-
-    end  
+    end
 
     10.times do |i|
       assert_not_nil  cached[i]
@@ -1101,33 +1023,30 @@ class CacheTest < Test::Unit::TestCase
 
       doc   = Nokogiri::XML(cached[i])
       assert_equal 'true', doc.at('status:root authorized').content
-
     end
-  
+
     doc   = Nokogiri::XML(cached[10])
     assert_equal 'false', doc.at('status:root authorized').content
+
     doc   = Nokogiri::XML(not_cached[10])
     assert_equal 'false', doc.at('status:root authorized').content
 
     Transactor.caching_enable if caching_was_enabled
-    
   end
 
   test 'cached vs. non-cached authorize' do
-
     cached = []
     not_cached = []
     caching_was_enabled = Transactor.caching_enabled?
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-
       @application = Application.save(:service_id => @service.id,
                                       :id         => next_id,
                                       :state      => :active,
                                       :plan_id    => @plan_id,
                                       :plan_name  => @plan_name)
 
-      app_key = @application.create_key("app_key1")
+      app_key = @application.create_key('app_key1')
 
       Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
 
@@ -1147,8 +1066,6 @@ class CacheTest < Test::Unit::TestCase
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 10}}}
         Resque.run!
-
-
       end
 
       @application = Application.save(:service_id => @service.id,
@@ -1157,7 +1074,7 @@ class CacheTest < Test::Unit::TestCase
                                       :plan_id    => @plan_id,
                                       :plan_name  => @plan_name)
 
-      app_key = @application.create_key("app_key1")
+      app_key = @application.create_key('app_key1')
 
       Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
 
@@ -1172,18 +1089,15 @@ class CacheTest < Test::Unit::TestCase
         get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id,
                                          :app_key      => app_key
+
         not_cached << last_response.body
 
         post '/transactions.xml',
             :provider_key => @provider_key,
             :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 10}}}
-
         Resque.run!
-
-
       end
-
-    end  
+    end
 
     11.times do |i|
       assert_not_nil  cached[i]
@@ -1193,23 +1107,20 @@ class CacheTest < Test::Unit::TestCase
 
       doc   = Nokogiri::XML(cached[i])
       assert_equal 'true', doc.at('status:root authorized').content
-
     end
-  
+
     doc   = Nokogiri::XML(cached[11])
     assert_equal 'false', doc.at('status:root authorized').content
+
     doc   = Nokogiri::XML(not_cached[11])
     assert_equal 'false', doc.at('status:root authorized').content
 
     Transactor.caching_enable if caching_was_enabled
-    
   end
 
-
-  test 'check signature with versions' do 
-
+  test 'check signature with versions' do
     ## this test only makes sense if caching is enabled
-    return unless Transactor.caching_enabled?  
+    return unless Transactor.caching_enabled?
 
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
@@ -1217,59 +1128,64 @@ class CacheTest < Test::Unit::TestCase
                     :day        => 100)
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
+      params = {:provider_key => @provider_key,
+                :app_id       => @application.id,
+                :usage        => {'hits' => 2}}
 
-        params = {:provider_key => @provider_key,
-                  :app_id       => @application.id,
-                  :usage        => {'hits' => 2}}
+      key_version = Cache.signature(:authrep,params)
 
-        key_version = Cache.signature(:authrep,params)
+      get '/transactions/authrep.xml', params
+      Resque.run!
 
-        get '/transactions/authrep.xml', params
-        Resque.run!
+      get '/transactions/authrep.xml', params
+      Resque.run!
 
-        get '/transactions/authrep.xml', params
-        Resque.run!
-        
-        version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
-        current_version = "s:#{ver_service}/a:#{ver_application}"
-        assert_equal version, current_version
+      version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
+      current_version = "s:#{ver_service}/a:#{ver_application}"
 
-        get '/transactions/authrep.xml', params
-        Resque.run!
+      assert_equal version, current_version
 
-        version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
-        current_version = "s:#{ver_service}/a:#{ver_application}"
-        assert_equal version, current_version      
+      get '/transactions/authrep.xml', params
+      Resque.run!
 
-        ## now modify usage limit
-        UsageLimit.save(:service_id => @service.id,
-                    :plan_id    => @plan_id,
-                    :metric_id  => @metric_id,
-                    :day        => 200)
+      version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
+      current_version = "s:#{ver_service}/a:#{ver_application}"
 
-        version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
-        current_version = "s:#{ver_service}/a:#{ver_application}"
-        assert_not_equal version, current_version
+      assert_equal version, current_version
 
-        get '/transactions/authrep.xml', params
-        Resque.run!
+      ## now modify usage limit
+      UsageLimit.save(:service_id => @service.id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :day        => 200)
 
-        version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
-        current_version = "s:#{ver_service}/a:#{ver_application}"
-        assert_equal version, current_version
+      version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
+      current_version = "s:#{ver_service}/a:#{ver_application}"
 
-        Metric.save(:service_id => @service.id, :id => (@metric_id.to_i+1).to_s, :name => 'hits2')
+      assert_not_equal version, current_version
 
-        version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
-        current_version = "s:#{ver_service}/a:#{ver_application}"
-        assert_not_equal version, current_version
+      get '/transactions/authrep.xml', params
+      Resque.run!
 
-        get '/transactions/authrep.xml', params
-        Resque.run!
+      version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
+      current_version = "s:#{ver_service}/a:#{ver_application}"
 
-        version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
-        current_version = "s:#{ver_service}/a:#{ver_application}"
-        assert_equal version, current_version
-    end 
+      assert_equal version, current_version
+
+      Metric.save(:service_id => @service.id, :id => (@metric_id.to_i+1).to_s, :name => 'hits2')
+
+      version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
+      current_version = "s:#{ver_service}/a:#{ver_application}"
+
+      assert_not_equal version, current_version
+
+      get '/transactions/authrep.xml', params
+      Resque.run!
+
+      version, ver_service, ver_application = @storage.mget(key_version,Service.storage_key(@service.id, :version),Application.storage_key(@service.id,@application.id,:version))
+      current_version = "s:#{ver_service}/a:#{ver_application}"
+
+      assert_equal version, current_version
+    end
   end
 end

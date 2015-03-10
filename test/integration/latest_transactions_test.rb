@@ -11,7 +11,7 @@ class LatestTransactionsTest < Test::Unit::TestCase
 
     Resque.reset!
     Memoizer.reset!
-    
+
     setup_provider_fixtures
 
     @application_id = next_id
@@ -38,13 +38,10 @@ class LatestTransactionsTest < Test::Unit::TestCase
 
   test 'GET /transactions/latest.xml returns list of latest transactions' do
     Timecop.freeze(Time.utc(2010, 9, 9, 0, 0)) do
-       
       Transactor.report(@provider_key, @service_id, 0 => {'app_id'    => @application_id,
                                             'usage'     => {'foos' => 1},
                                             'timestamp' => '2010-09-09 11:00:00'})
-
       Resque.run!
-
 
       Transactor.report(@provider_key, @service_id, 0 => {'app_id'    => @application_id,
                                             'usage'     => {'bars' => 2},
@@ -52,6 +49,7 @@ class LatestTransactionsTest < Test::Unit::TestCase
       Resque.run!
 
       get '/transactions/latest.xml', :provider_key => @provider_key
+
       assert_equal 200, last_response.status
 
       doc = Nokogiri::XML(last_response.body)
@@ -66,7 +64,7 @@ class LatestTransactionsTest < Test::Unit::TestCase
       assert_equal @application_id,             nodes[1]['application_id']
       assert_equal '2010-09-09 11:00:00 +0000', nodes[1]['timestamp']
       assert_equal '1', nodes[1].at("value[metric_id = \"#{@foos_id}\"]").content
-    end  
+    end
   end
 
   test 'GET /transactions/latest.xml returns at most 50 transactions' do
@@ -74,10 +72,10 @@ class LatestTransactionsTest < Test::Unit::TestCase
       Transactor.report(@provider_key, nil, 0 => {'app_id'    => @application_id,
                                              'usage'     => {'bars' => 2}})
     end
-
     Resque.run!
 
     get '/transactions/latest.xml', :provider_key => @provider_key
+
     assert_equal 200, last_response.status
     assert_equal 50, Nokogiri::XML(last_response.body).search('transaction').size
   end

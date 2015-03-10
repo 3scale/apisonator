@@ -24,8 +24,7 @@ class OauthBasicTest < Test::Unit::TestCase
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
 
     ## apilog is imcomplete because the response and the code (response code) are unknow at this stage
-    @apilog = {'request' => "API original request"}
-
+    @apilog = {'request' => 'API original request'}
   end
 
   test 'successful authorize responds with 200' do
@@ -43,7 +42,7 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :log          => @apilog
 
     assert_equal 200, last_response.status
-    assert_equal "", last_response.body
+    assert_equal '', last_response.body
   end
 
   test 'successful authorize has custom content type' do
@@ -60,6 +59,7 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :log          => @apilog
 
     doc = Nokogiri::XML(last_response.body)
+
     assert_equal @plan_name, doc.at('status:root plan').content
   end
 
@@ -69,25 +69,25 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :log          => @apilog
 
     doc = Nokogiri::XML(last_response.body)
+
     assert_equal 'true', doc.at('status:root authorized').content
   end
 
   test 'response of successful authorize contains application data' do
-
     @application = Application.save(:service_id   => @service.id,
                                     :id           => next_id,
                                     :state        => :active,
                                     :plan_id      => @plan_id,
                                     :plan_name    => @plan_name,
-                                    :redirect_url => "http://3scale.net")
+                                    :redirect_url => 'http://3scale.net')
     @application.create_key
-
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id     => @application.id,
                                              :log          => @apilog
 
     doc = Nokogiri::XML(last_response.body)
+
     assert_equal @application.id,           doc.at('application/id').content
     assert_equal @application.keys.first,   doc.at('application/key').content
     assert_equal @application.redirect_url, doc.at('application/redirect_url').content
@@ -119,9 +119,11 @@ class OauthBasicTest < Test::Unit::TestCase
       doc = Nokogiri::XML(last_response.body)
 
       usage_reports = doc.at('usage_reports')
+
       assert_not_nil usage_reports
 
       day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
+
       assert_not_nil day
       assert_equal '2010-05-15 00:00:00 +0000', day.at('period_start').content
       assert_equal '2010-05-16 00:00:00 +0000', day.at('period_end').content
@@ -129,6 +131,7 @@ class OauthBasicTest < Test::Unit::TestCase
       assert_equal '100',                       day.at('max_value').content
 
       month = usage_reports.at('usage_report[metric = "hits"][period = "month"]')
+
       assert_not_nil month
       assert_equal '2010-05-01 00:00:00 +0000', month.at('period_start').content
       assert_equal '2010-06-01 00:00:00 +0000', month.at('period_end').content
@@ -169,14 +172,13 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :log        => @apilog
 
     assert_equal 403, last_response.status
-    assert_equal "", last_response.body
+    assert_equal '', last_response.body
   end
 
   test 'fails on invalid application id' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => 'boo',
                                              :log          => @apilog
-
 
     assert_error_response :status  => 404,
                           :code    => 'application_not_found',
@@ -190,7 +192,7 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :log          => @apilog
 
     assert_equal 404, last_response.status
-    assert_equal "", last_response.body
+    assert_equal '', last_response.body
   end
 
   test 'fails on missing application id' do
@@ -208,11 +210,10 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :app_id       => @application.id,
                                              :log          => @apilog
 
-
     assert_equal 409, last_response.status
     assert_not_authorized 'application is not active'
   end
-  
+
   test 'does not authorize on inactive application with no body' do
     @application.state = :suspended
     @application.save
@@ -223,7 +224,7 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :log          => @apilog
 
     assert_equal 409, last_response.status
-    assert_equal "", last_response.body
+    assert_equal '', last_response.body
   end
 
   test 'does not authorize on exceeded client usage limits' do
@@ -234,7 +235,6 @@ class OauthBasicTest < Test::Unit::TestCase
 
     Transactor.report(@provider_key, @service.id,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
-
     Resque.run!
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
@@ -254,7 +254,6 @@ class OauthBasicTest < Test::Unit::TestCase
 
     Transactor.report(@provider_key, nil,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
-
     Resque.run!
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
@@ -263,7 +262,7 @@ class OauthBasicTest < Test::Unit::TestCase
                                              :log          => @apilog
 
     assert_equal 409, last_response.status
-    assert_equal "", last_response.body
+    assert_equal '', last_response.body
   end
 
   test 'response contains usage reports marked as exceeded on exceeded client usage limits' do
@@ -274,7 +273,6 @@ class OauthBasicTest < Test::Unit::TestCase
 
     Transactor.report(@provider_key, nil,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
-
     Resque.run!
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
@@ -298,7 +296,6 @@ class OauthBasicTest < Test::Unit::TestCase
       Transactor.report(@provider_key, nil,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
     end
-
     Resque.run!
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
@@ -308,32 +305,29 @@ class OauthBasicTest < Test::Unit::TestCase
   end
 
   test 'succeeds on eternity limits' do
-
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
                       :month => 4)
-    
+
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
                       :eternity   => 10)
 
-
       3.times do
         Transactor.report(@provider_key, nil,
                           0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
       end
-
       Resque.run!
 
       get '/transactions/oauth_authorize.xml',  :provider_key => @provider_key,
                                                 :app_id       => @application.id
-      
+
       doc   = Nokogiri::XML(last_response.body)
-      month   = doc.at('usage_report[metric = "hits"][period = "month"]')      
+      month   = doc.at('usage_report[metric = "hits"][period = "month"]')
+
       assert_not_nil month
       assert_equal '2010-05-01 00:00:00 +0000', month.at('period_start').content
       assert_equal '2010-06-01 00:00:00 +0000', month.at('period_end').content
@@ -341,47 +335,41 @@ class OauthBasicTest < Test::Unit::TestCase
       assert_equal '4', month.at('max_value').content
       assert_nil   month['exceeded']
 
+      eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
-      eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')      
       assert_not_nil  eternity
       assert_nil      eternity.at('period_start')
       assert_nil      eternity.at('period_end')
       assert_equal    '3', eternity.at('current_value').content
       assert_equal    '10', eternity.at('max_value').content
       assert_nil      eternity['exceeded']
-
     end
-
-   
   end
 
   test 'does not authorize on eternity limits' do
-
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
                       :month => 20)
-    
+
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
                       :eternity   => 2)
 
-
       3.times do
         Transactor.report(@provider_key, nil,
                           0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
       end
-
       Resque.run!
 
       get '/transactions/oauth_authorize.xml',  :provider_key => @provider_key,
                                                 :app_id       => @application.id
-      
+
       doc   = Nokogiri::XML(last_response.body)
-      month   = doc.at('usage_report[metric = "hits"][period = "month"]')      
+      month   = doc.at('usage_report[metric = "hits"][period = "month"]')
+
       assert_not_nil month
       assert_equal  '2010-05-01 00:00:00 +0000', month.at('period_start').content
       assert_equal  '2010-06-01 00:00:00 +0000', month.at('period_end').content
@@ -389,23 +377,19 @@ class OauthBasicTest < Test::Unit::TestCase
       assert_equal  '20', month.at('max_value').content
       assert_nil    month['exceeded']
 
-      eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')      
+      eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
+
       assert_not_nil  eternity
       assert_nil      eternity.at('period_start')
       assert_nil      eternity.at('period_end')
       assert_equal    '3', eternity.at('current_value').content
       assert_equal    '2', eternity.at('max_value').content
       assert_equal    'true', eternity['exceeded']
-
-
     end
-
   end
 
   test 'eternity is not returned if the limit on it is not defined' do
-
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
                       :metric_id  => @metric_id,
@@ -415,36 +399,31 @@ class OauthBasicTest < Test::Unit::TestCase
         Transactor.report(@provider_key, nil,
                           0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
       end
-
       Resque.run!
 
       get '/transactions/oauth_authorize.xml',  :provider_key => @provider_key,
                                                 :app_id       => @application.id
-    
+
       doc   = Nokogiri::XML(last_response.body)
       month   = doc.at('usage_report[metric = "hits"][period = "month"]')
       eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
       assert_not_nil month
       assert_nil     eternity
-    
     end
-
   end
 
   test 'usage must be an array regression' do
-
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
-                                     :usage        => ""
+                                     :usage        => ''
+
     assert_equal 403, last_response.status
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
-                                     :usage        => "1001"
-    assert_equal 403, last_response.status
+                                     :usage        => '1001'
 
+    assert_equal 403, last_response.status
   end
-
-
 end

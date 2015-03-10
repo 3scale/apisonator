@@ -57,7 +57,6 @@ class OauthPredictedUsageTest < Test::Unit::TestCase
     assert_not_authorized 'usage limits are exceeded'
   end
 
-
   test 'succeeds when only limits for the metrics not in the predicted usage are exceeded' do
     metric_one_id = @metric_id
 
@@ -115,8 +114,6 @@ class OauthPredictedUsageTest < Test::Unit::TestCase
     assert_authorized
   end
 
-
-
   test 'does not authorize if usage of a parent metric exceeds the limits but only a child metric which does not exceed the limits is in the predicted usage' do
     child_metric_id = next_id
     Metric.save(:service_id => @service.id,
@@ -163,5 +160,4 @@ class OauthPredictedUsageTest < Test::Unit::TestCase
 
     assert_not_authorized 'usage limits are exceeded'
   end
-
 end

@@ -24,6 +24,7 @@ class AuthorizeLegacyTest < Test::Unit::TestCase
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :user_key     => user_key
+
     assert_authorized
   end
 

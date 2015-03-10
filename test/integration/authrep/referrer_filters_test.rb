@@ -135,6 +135,4 @@ class AuthrepReferrerFiltersTest < Test::Unit::TestCase
 
     assert_authorized
   end
-
-  
 end

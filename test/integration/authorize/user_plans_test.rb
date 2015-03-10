@@ -7,7 +7,6 @@ class UserPlansTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
   include TestHelpers::Errors
 
-
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -35,7 +34,6 @@ class UserPlansTest < Test::Unit::TestCase
                                     :plan_id    => @plan_id_3,
                                     :plan_name  => @plan_name_3)
 
-
     @metric_id_1 = next_id
     Metric.save(:service_id => @service_1.id, :id => @metric_id_1, :name => 'hits')
 
@@ -59,8 +57,5 @@ class UserPlansTest < Test::Unit::TestCase
                     :plan_id    => @plan_id_3,
                     :metric_id  => @metric_id_3,
                     :day => 100)
-
   end
-
-
 end

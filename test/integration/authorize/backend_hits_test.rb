@@ -29,19 +29,17 @@ class AuthorizeBackendHitsTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id
+      Resque.run!
 
-      Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
+      ## processes all the pending NotifyJobs. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
-      
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_hits_id,
                                                    :month, '20100501')).to_i
-
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_authorizes_id,
@@ -53,13 +51,10 @@ class AuthorizeBackendHitsTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => 'boo',
                                          :app_id       => @application.id
+      Resque.run!
 
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
-      Resque.run!
-      
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -72,13 +67,10 @@ class AuthorizeBackendHitsTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => 'baa'
+      Resque.run!
 
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
-      Resque.run!
-      
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -94,13 +86,10 @@ class AuthorizeBackendHitsTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id
+      Resque.run!
 
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
-      Resque.run!
-      
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
@@ -125,13 +114,11 @@ class AuthorizeBackendHitsTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id
+      Resque.run!
 
+      Backend::Transactor.process_batch(0, all: true)
       Resque.run!
-      ## processes all the pending notifyjobs that. This creates a NotifyJob with the 
-      ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0,{:all => true})
-      Resque.run!
-      
+
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_authorizes_id,

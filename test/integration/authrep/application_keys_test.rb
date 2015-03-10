@@ -38,7 +38,7 @@ class AuthrepApplicationKeysTest < Test::Unit::TestCase
 
   test 'succeeds if multiple application keys are defined and one of them is passed' do
     application_key_one = @application.create_key
-    application_key_two = @application.create_key
+    _application_key_two = @application.create_key
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
@@ -74,19 +74,15 @@ class AuthrepApplicationKeysTest < Test::Unit::TestCase
                                      :app_id       => @application.id,
                                      :app_key      => key1
 
-    assert_authorized 
+    assert_authorized
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
                                      :app_id       => @application.id,
                                      :app_key      => key2
 
-    assert_authorized 
+    assert_authorized
 
-    assert_equal key1, "foo_app_key"
-
-    assert_equal [key2, "foo_app_key"].sort, @application.keys.sort  
-
+    assert_equal key1, 'foo_app_key'
+    assert_equal [key2, 'foo_app_key'].sort, @application.keys.sort
   end
-
 end
-
