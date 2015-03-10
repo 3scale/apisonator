@@ -33,7 +33,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'redis-namespace',           '1.5.1'
   s.add_dependency 'redis-sentinel',            '1.4.4'
   s.add_dependency 'influxdb',                  '0.1.8'
-  s.add_dependency 'cubert-client',             '0.0.2.pre7'
+  s.add_dependency 'cubert-client',             '0.0.4'
 
   s.files = Dir.glob('{lib,bin,app}/**/*')
   s.files << 'README.md'
