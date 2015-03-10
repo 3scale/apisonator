@@ -1,19 +1,24 @@
 module ThreeScale
   module Backend
-    module CoreUsageLimit
-      def self.included(base)
-        base.include InstanceMethods
-        base.extend ClassMethods
+    class UsageLimit
+      include Storable
+
+      PERIODS = [:eternity, :year, :month, :week, :day, :hour, :minute].freeze
+
+      attr_accessor :service_id, :plan_id, :metric_id, :period, :value
+
+      def metric_name
+        Metric.load_name(service_id, metric_id)
       end
 
-      module InstanceMethods
-        def metric_name
-          Metric.load_name(service_id, metric_id)
-        end
+      def validate(usage)
+        usage_value = usage[period]
+        usage_value &&= usage_value[metric_id].to_i
+        usage_value <= value
       end
 
-      module ClassMethods
-        PERIODS = [:eternity, :year, :month, :week, :day, :hour, :minute].freeze
+      class << self
+        include Memoizer::Decorator
 
         def load_all(service_id, plan_id)
           metric_ids = Metric.load_all_ids(service_id)
@@ -33,6 +38,7 @@ module ThreeScale
                          value: value.to_i)
           end.compact
         end
+        memoize :load_all
 
         def load_value(service_id, plan_id, metric_id, period)
           raw_value = storage.get(key(service_id, plan_id, metric_id, period))
@@ -86,26 +92,6 @@ module ThreeScale
           Memoizer.clear(Memoizer.build_key(self, :load_all, service_id, plan_id))
         end
       end
-    end
-
-    class UsageLimit
-      attr_accessor :service_id, :plan_id, :metric_id, :period, :value
-
-      include Memoizer::Decorator
-      include Storable
-      include CoreUsageLimit
-
-      def validate(usage)
-        usage_value = usage[period]
-        usage_value &&= usage_value[metric_id].to_i
-        usage_value <= value
-      end
-
-      ## memoize loading the usage limits of the plan
-      def self.load_all(service_id, plan_id)
-        super(service_id, plan_id)
-      end
-      memoize :load_all
 
     end
   end
