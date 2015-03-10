@@ -21,19 +21,6 @@ module ThreeScale
       STATUS_TTL            = 60   # 1 minute, this is too short but we need minute information on the output :-(
       SERVICE_ID_CACHE_TTL  = 300  # 5 minutes
 
-
-      ## this is a little bit dangerous, but we can live with it
-      def get_service_id(provider_key)
-        current_time = Time.now.getutc
-        @@provider_key_2_service_id ||= Hash.new
-        sid, time = @@provider_key_2_service_id[provider_key]
-        if sid.nil? || (current_time-time > SERVICE_ID_CACHE_TTL)
-          sid = storage.get("service/provider_key:#{provider_key}/id")
-          @@provider_key_2_service_id[provider_key] = [sid, current_time] unless sid.nil?
-        end
-        sid
-      end
-
       def stats
         @@stats ||= {:count => 0, :hits => 0, :last => nil}
         @@stats
@@ -70,12 +57,13 @@ module ThreeScale
 
       def signature(action, params)
         key_version = "cache_combination/#{action}/"
+        usage = params[:usage]
 
         VALID_PARAMS_FOR_CACHE.each do |label|
-          if label!=:usage || params[:usage].nil?
+          if label != :usage || usage.nil?
             key_version << "#{label}:#{params[label]}/"
           else
-            params[:usage].each do |key,value|
+            usage.each do |key, value|
               key_version << "#{label}:#{key}:"
             end
           end
@@ -84,7 +72,6 @@ module ThreeScale
       end
 
       def combination_seen(action, provider_key, params)
-
         key_version = nil
 
         if params[:service_id].nil? || params[:service_id].empty?
@@ -95,8 +82,7 @@ module ThreeScale
           service_id = params[:service_id]
         end
 
-        if !service_id.nil?
-
+        isknown = if service_id
           key_version = signature(action, params)
           application_id = params[:app_id]
           application_id = params[:user_key] if application_id.nil?
@@ -112,75 +98,52 @@ module ThreeScale
 
           # FIXME: this needs to be done for redirect_url(??)
 
-          if username.nil?
-
-            cached_app_key = caching_key(service_id,:application,application_id_cached)
-            version,
-            ver_service,
-            ver_application,
-            dirty_app_xml,
-            caching_enabled = storage.mget(
+          mget_query = [
               key_version,
               Service.storage_key(service_id, :version),
               Application.storage_key(service_id,application_id,:version),
-              cached_app_key,
-              "settings/caching_enabled")
+              caching_key(service_id, :application, application_id_cached),
+              "settings/caching_enabled"
+          ]
 
-            current_version = "s:#{ver_service}/a:#{ver_application}"
+          mget_query.push(User.storage_key(service_id, username, :version),
+                          caching_key(service_id, :user, username)) if username
 
-          else
+          version,
+          ver_service,
+          ver_application,
+          dirty_app_xml,
+          caching_enabled,
+          ver_user,
+          dirty_user_xml = storage.mget mget_query
 
-            cached_app_key = caching_key(service_id,:application,application_id_cached)
-            cached_user_key = caching_key(service_id,:user,username)
+          current_version = "s:#{ver_service}/a:#{ver_application}"
+          current_version += "/u:#{ver_user}" if ver_user
 
-            version,
-            ver_service,
-            ver_application,
-            ver_user,
-            dirty_app_xml,
-            dirty_user_xml,
-            caching_enabled = storage.mget(
-              key_version,
-              Service.storage_key(service_id, :version),
-              Application.storage_key(service_id,application_id,:version),
-              User.storage_key(service_id,username,:version),
-              cached_app_key,
-              cached_user_key,
-              "settings/caching_enabled")
+          ## if success, we have seen this key combination before, probably shit loads
+          ## of times. And neither service, application or user have changed, or any
+          ## other object that has a foreing key to service, application or user
 
-            current_version = "s:#{ver_service}/a:#{ver_application}/u:#{ver_user}"
-          end
+          # this does not necessarily means that the request is going to be authorized
+          # it will depend on getting the status from cache. This means that this keys
+          # id's combination has been seen before, and perhaps, has a status stored in
+          # in the cache.
 
-          if !version.nil? && current_version==version
-            ## success, we have seen this key combination before, probably shit loads
-            ## of times. And neither service, application or user have changed, or any
-            ## other object that has a foreing key to service, application or user
-            isknown = true
-
-            # this does not necessarily means that the request is going to be authorized
-            # it will depend on getting the status from cache. This means that this keys
-            # id's combination has been seen before, and perhaps, has a status stored in
-            # in the cache.
-
-          else
-            ## something has changed in service, user, application, metric, plan, etc.
-            isknown = false
-          end
-
+          ## else something has changed in service, user, application, metric, plan, etc.
+          current_version == version
         else
-          isknown = false
+          # not known
+          false
         end
 
         combination_data = {:key => key_version, :current_version => current_version}
 
         ## the default of settings/caching_enabled results on true, to disable caching set
         ## settings/caching_enabled to 0
-        caching_enabled = caching_enabled!="0"
+        caching_enabled = caching_enabled != "0"
 
-        return [isknown, service_id, combination_data, dirty_app_xml, dirty_user_xml, caching_enabled]
-
+        [isknown, service_id, combination_data, dirty_app_xml, dirty_user_xml, caching_enabled]
       end
-
 
       def combination_save(data)
 
@@ -213,9 +176,10 @@ module ThreeScale
         limit_violation_without_usage = false
         limit_violation_with_usage = false
 
-        i=0
-        v.each do |str|
-          if (i%2==1)
+        v.each_slice(2) do |uninteresting, str|
+          newxmlstr << uninteresting
+
+          if str
             _, metric, curr_value, max_value = str.split(",")
             curr_value = curr_value.to_i
             max_value = max_value.to_i
@@ -224,52 +188,43 @@ module ThreeScale
 
             if options[:usage]
               inc = options[:usage][metric].to_i
-              val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(options[:usage][metric])
+              val = ThreeScale::Backend::Aggregator.get_value_of_set_if_exists(options[:usage][metric])
             end
 
-            unless limit_violation_without_usage
-              limit_violation_without_usage = (curr_value > max_value)
-            end
-
-            unless limit_violation_with_usage
+            limit_violation_without_usage ||= curr_value > max_value
+            limit_violation_with_usage ||=
               if val
-                limit_violation_with_usage = (val.to_i > max_value)
+                val.to_i > max_value
               elsif inc > 0
-                limit_violation_with_usage = (curr_value + inc > max_value)
+                curr_value + inc > max_value
               end
-            end
 
-            if authorized && options[:add_usage_on_report]
-              ## only increase if asked explicity via options[:add_usage_on_report] and if the status was
-              ## authorized to begin with, otherwise we might increment on a status that is not authorized
-              ## and that would look weird for the user
-              if val.nil?
-                str = (curr_value + inc).to_s
+            newxmlstr <<
+              if authorized && options[:add_usage_on_report]
+                ## only increase if asked explicity via options[:add_usage_on_report] and if the status was
+                ## authorized to begin with, otherwise we might increment on a status that is not authorized
+                ## and that would look weird for the user
+                if val.nil?
+                  curr_value + inc
+                else
+                  val
+                end
               else
-                str = val.to_s
-              end
-            else
-              str = curr_value.to_s
-            end
+                curr_value
+              end.to_s
           end
-
-          newxmlstr << str
-          i += 1
         end
 
-        if authorized && (limit_violation_without_usage || limit_violation_with_usage)
-          ## the cache says that the status was authorized but a violation just occured on the limits...
-          ## then, just forget and let the proper way to calculate it
-          violation_just_happened = true
-        elsif !authorized && limit_violation_without_usage && !limit_violation_with_usage
-          ## the cache says that the status was NOT authorized and there is a limit violation without summing the usage
-          ## but because a negative usage or a set now it's ok, just forget the cache and the the proper way to calculate
-          violation_just_happened = true
+        # a violation on the limits with usage depends on whether status is authorized
+        # if no violation with usage, just look if we have a violation wo usage
+        # if we end up with a violation, forget the cache and compute it properly
+        violation = if limit_violation_with_usage
+          authorized
         else
-          violation_just_happened = false
+          limit_violation_without_usage
         end
 
-        [newxmlstr, authorized, violation_just_happened]
+        [newxmlstr, authorized, violation]
       end
 
 
@@ -284,7 +239,7 @@ module ThreeScale
           tmp_keys << "#{application.id}:#{app_key}"
         end
 
-        tmp_keys << "#{application.id}:" if application.keys.size==0
+        tmp_keys << "#{application.id}:" if application.keys.empty?
 
         application.referrer_filters.each do |referrer|
           tmp_keys.each do |item|
@@ -292,48 +247,19 @@ module ThreeScale
           end
         end
 
-        if application.referrer_filters.size==0
+        if application.referrer_filters.empty?
           tmp_keys.each do |item|
             keys << caching_key(service_id,:application,"#{item}:")
           end
         end
 
-        if status.authorized?
-          storage.pipelined do
-            keys.each do |key|
-              storage.set(key,content)
-              storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
-              storage.srem("limit_violations_set",key)
-            end
-          end
-        else
-          storage.pipelined do
-            keys.each do |key|
-              storage.set(key,content)
-              storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
-              storage.sadd("limit_violations_set",key)
-            end
-          end
-        end
-
+        store_keys_in_cache(status, keys, content)
       end
+
 
       def set_status_in_cache(key, status, options ={})
         options[:anchors_for_caching] = true
-        if status.authorized?
-          storage.pipelined do
-            storage.set(key,status.to_xml(options))
-            storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
-            storage.srem("limit_violations_set",key)
-          end
-        else
-          ## it just violated the Limits, add to the violation set
-          storage.pipelined do
-            storage.set(key,status.to_xml(options))
-            storage.expire(key,STATUS_TTL-Time.now.getutc.sec)
-            storage.sadd("limit_violations_set",key)
-          end
-        end
+        store_keys_in_cache(status, [key], status.to_xml(options))
       end
 
       def caching_key(service_id, type ,id)
@@ -374,23 +300,26 @@ module ThreeScale
 
       private
 
-      def split_xml(xml_str = nil)
+      def store_keys_in_cache(status, keys, content)
+        now = Time.now.getutc.sec
+        op = status.authorized? ? :srem : :sadd
+        storage.pipelined do
+          keys.each do |key|
+            storage.set(key, content)
+            storage.expire(key, STATUS_TTL - now)
+            storage.send op, 'limit_violations_set', key
+          end
+        end
+      end
+
+      def split_xml(xml_str)
         xml_str.split("<__separator__/>") if xml_str
       end
 
       def xml_authorized?(split_app_xml, split_user_xml = nil)
-        if split_user_xml
-          app_authorized  = node_authorized?(split_app_xml.first)
-          user_authorized = node_authorized?(split_user_xml.first)
-
-          app_authorized && user_authorized
-        else
-          node_authorized?(split_app_xml.first)
-        end
-      end
-
-      def node_authorized?(node)
-        node != "0"
+        # a node is authorized if it is != '0'
+        split_app_xml.first != '0' &&
+          (split_user_xml.nil? || split_user_xml.first != '0')
       end
 
       def merge_xmls(authorized, split_app_xml, split_user_xml = nil)
