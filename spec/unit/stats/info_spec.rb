@@ -1,16 +1,16 @@
-require_relative '../spec_helper'
-require_relative '../../lib/3scale/backend/aggregator/stats_info'
+require_relative '../../spec_helper'
+require_relative '../../../lib/3scale/backend/stats/info'
 
 module ThreeScale
   module Backend
-    module Aggregator
-      describe StatsInfo do
+    module Stats
+      describe Info do
         def storage
           ThreeScale::Backend::Storage.instance
         end
 
         describe '#pending_buckets' do
-          subject { StatsInfo.pending_buckets }
+          subject { Info.pending_buckets }
 
           context 'without pending buckets' do
             it { expect(subject).to be_empty }
@@ -27,7 +27,7 @@ module ThreeScale
         end
 
         describe '#pending_buckets_size' do
-          subject { StatsInfo.pending_buckets_size }
+          subject { Info.pending_buckets_size }
 
           context 'without pending buckets' do
             it { expect(subject).to be(0) }
@@ -44,7 +44,7 @@ module ThreeScale
         end
 
         describe '#pending_keys_by_bucket' do
-          subject { StatsInfo.pending_keys_by_bucket }
+          subject { Info.pending_keys_by_bucket }
 
           context 'without pending buckets' do
             it { expect(subject).to be_empty }
@@ -64,7 +64,7 @@ module ThreeScale
 
         describe '#get_old_buckets_to_process' do
           context "without pending buckets" do
-            subject { StatsInfo.get_old_buckets_to_process }
+            subject { Info.get_old_buckets_to_process }
             it { expect(subject).to be_empty }
           end
 
@@ -76,19 +76,19 @@ module ThreeScale
             end
 
             context "when passes a normal bucket" do
-              subject { StatsInfo.get_old_buckets_to_process("bar:2") }
+              subject { Info.get_old_buckets_to_process("bar:2") }
               it { expect(subject).to eql(["foo", "bar"]) }
             end
 
             context "when passes a special bucket inf" do
-              subject { StatsInfo.get_old_buckets_to_process("inf") }
+              subject { Info.get_old_buckets_to_process("inf") }
               it { expect(subject).to eql(["foo", "bar", "foobar"])}
             end
           end
         end
 
         describe '#failed_buckets' do
-          subject { StatsInfo.failed_buckets }
+          subject { Info.failed_buckets }
 
           context 'without failed buckets' do
             it { expect(subject).to be_empty }
@@ -105,7 +105,7 @@ module ThreeScale
         end
 
         describe '#failed_buckets_at_least_once' do
-          subject { StatsInfo.failed_buckets_at_least_once }
+          subject { Info.failed_buckets_at_least_once }
 
           context 'without failed buckets' do
             it { expect(subject).to be_empty }
@@ -120,7 +120,6 @@ module ThreeScale
             it { expect(subject).to include("foo", "bar") }
           end
         end
-
       end
     end
   end

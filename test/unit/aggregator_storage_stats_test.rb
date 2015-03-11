@@ -80,7 +80,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     time_with_storage_stats = Time.now - t
@@ -125,7 +125,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     time_without_storage_stats = Time.now - t
@@ -207,11 +207,11 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   test 'direct test of get_old_buckets_to_process' do
     ## this should go as unit test of StatsBatcher
     @storage.zadd(Aggregator::StatsKeys.changed_keys_key, "20121010102100", "20121010102100")
-    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102100")
+    assert_equal [], Stats::Info.get_old_buckets_to_process("20121010102100")
 
-    assert_equal ["20121010102100"], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102120")
+    assert_equal ["20121010102100"], Stats::Info.get_old_buckets_to_process("20121010102120")
 
-    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("20121010102120")
+    assert_equal [], Stats::Info.get_old_buckets_to_process("20121010102120")
 
     @storage.del(Aggregator::StatsKeys.changed_keys_key)
 
@@ -219,28 +219,28 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       @storage.zadd(Aggregator::StatsKeys.changed_keys_key, i, i.to_s)
     end
 
-    assert_equal [], Aggregator::StatsInfo.get_old_buckets_to_process("0")
+    assert_equal [], Stats::Info.get_old_buckets_to_process("0")
 
-    v = Aggregator::StatsInfo.get_old_buckets_to_process("1")
+    v = Stats::Info.get_old_buckets_to_process("1")
     assert_equal v, ["0"]
 
-    v = Aggregator::StatsInfo.get_old_buckets_to_process("1")
+    v = Stats::Info.get_old_buckets_to_process("1")
     assert_equal [], v
 
-    v = Aggregator::StatsInfo.get_old_buckets_to_process("2")
+    v = Stats::Info.get_old_buckets_to_process("2")
     assert_equal v, ["1"]
 
-    v = Aggregator::StatsInfo.get_old_buckets_to_process("2")
+    v = Stats::Info.get_old_buckets_to_process("2")
     assert_equal [], v
 
-    v = Aggregator::StatsInfo.get_old_buckets_to_process("11")
+    v = Stats::Info.get_old_buckets_to_process("11")
     assert_equal 9, v.size
     assert_equal %w(2 3 4 5 6 7 8 9 10), v
 
-    v = Aggregator::StatsInfo.get_old_buckets_to_process
+    v = Stats::Info.get_old_buckets_to_process
     assert_equal 89, v.size
 
-    v = Aggregator::StatsInfo.get_old_buckets_to_process
+    v = Stats::Info.get_old_buckets_to_process
     assert_equal [], v
   end
 
@@ -257,7 +257,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       20.times do
         threads << Thread.new do
           r = Redis.new(host: '127.0.0.1', port: 22121)
-          v = Aggregator::StatsInfo.get_old_buckets_to_process(((i + 1) * 10).to_s, r)
+          v = Stats::Info.get_old_buckets_to_process(((i + 1) * 10).to_s, r)
 
           assert(v.size == 0 || v.size == 10)
 
@@ -274,7 +274,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   test 'bucket keys are properly assigned' do
     timestamp  = Time.now.utc - 1000
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     5.times do |cont|
@@ -284,27 +284,27 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
         Aggregator.process([default_transaction])
       end
 
-      assert_equal cont + 1, Aggregator::StatsInfo.pending_buckets.size
+      assert_equal cont + 1, Stats::Info.pending_buckets.size
 
-      assert Aggregator::StatsInfo.pending_buckets.member?(bucket_key)
+      assert Stats::Info.pending_buckets.member?(bucket_key)
       assert_equal cont, Resque.queue(:main).length + Resque.queue(:stats).length
 
       timestamp += stats_bucket_size
     end
 
-    assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
-    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 5, Stats::Info.pending_buckets.size
+    assert_equal 0, Stats::Info.failed_buckets.size
 
-    sorted_set = Aggregator::StatsInfo.pending_buckets.sort
+    sorted_set = Stats::Info.pending_buckets.sort
 
     4.times do |i|
-      buckets = Aggregator::StatsInfo.get_old_buckets_to_process(sorted_set[i + 1])
+      buckets = Stats::Info.get_old_buckets_to_process(sorted_set[i + 1])
       assert_equal 1, buckets.size
       assert_equal sorted_set[i], buckets.first
     end
 
-    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
-    buckets = Aggregator::StatsInfo.get_old_buckets_to_process
+    assert_equal 1, Stats::Info.pending_buckets.size
+    buckets = Stats::Info.get_old_buckets_to_process
     assert_equal 1, buckets.size
     assert_equal sorted_set[4], buckets.first
   end
@@ -315,12 +315,12 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## first one ok,
     Aggregator.process([default_transaction])
 
-    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 1, Stats::Info.pending_buckets.size
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 0, Stats::Info.failed_buckets.size
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :month, '20100501'))
     assert_equal 1, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
@@ -340,9 +340,9 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     end
 
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
-    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
-    assert_equal 0, Aggregator::StatsInfo.failed_buckets_at_least_once.size
-    assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.failed_buckets.size
+    assert_equal 0, Stats::Info.failed_buckets_at_least_once.size
+    assert_equal 5, Stats::Info.pending_buckets.size
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
@@ -350,9 +350,9 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:stats).length
 
     ## buckets went to the failed state
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
-    assert_equal 5, Aggregator::StatsInfo.failed_buckets.size
-    assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
+    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 5, Stats::Info.failed_buckets.size
+    assert_equal 5, Stats::Info.failed_buckets_at_least_once.size
 
     ## remove the stubbing
     @storage_stats = Stats::Storage.instance(true)
@@ -362,28 +362,28 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     ## now let's process the failed, one by one...
 
-    v = Aggregator::StatsInfo.failed_buckets
+    v = Stats::Info.failed_buckets
     Stats::Storage.save_changed_keys(v.first)
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
-    assert_equal 4, Aggregator::StatsInfo.failed_buckets.size
-    assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
+    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 4, Stats::Info.failed_buckets.size
+    assert_equal 5, Stats::Info.failed_buckets_at_least_once.size
 
     assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
     assert_equal 6, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
 
     ## or altogether
 
-    v = Aggregator::StatsInfo.failed_buckets
+    v = Stats::Info.failed_buckets
     v.each do |bucket|
       Stats::Storage.save_changed_keys(bucket)
     end
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
-    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
-    assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
+    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 0, Stats::Info.failed_buckets.size
+    assert_equal 5, Stats::Info.failed_buckets_at_least_once.size
 
     assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
     assert_equal 6, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
@@ -414,11 +414,11 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
-    assert_equal 1, Aggregator::StatsInfo.failed_buckets.size
-    assert_equal 1, Aggregator::StatsInfo.failed_buckets_at_least_once.size
+    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 1, Stats::Info.failed_buckets.size
+    assert_equal 1, Stats::Info.failed_buckets_at_least_once.size
 
-    v = Aggregator::StatsInfo.failed_buckets
+    v = Stats::Info.failed_buckets
     Stats::Storage.save_changed_keys(v.first)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
@@ -431,13 +431,13 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator.process(Array.new(10, default_transaction))
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 1, Stats::Info.pending_buckets.size
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 1, Stats::Info.pending_buckets.size
 
     Stats::Storage.activate!
 
@@ -445,7 +445,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
   end
 
   test 'when storage stats is disabled nothing gets logged' do
@@ -456,13 +456,13 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator.process(Array.new(10, default_transaction))
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
   end
 
   test 'when storage stats is disabled, storage stats does not have to be up and running, but stats get lost during the disabling period' do
@@ -480,7 +480,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       Aggregator.process([item])
     end
 
-    Aggregator::StatsInfo.pending_buckets.size.times do
+    Stats::Info.pending_buckets.size.times do
       Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
@@ -488,7 +488,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## because storage stats is disabled nothing blows and nothing get logged, it's
     ## like the storage stats code never existed
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
 
     assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
     assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
@@ -499,14 +499,14 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     v.each do |item|
       Aggregator.process([item])
     end
-    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 1, Stats::Info.pending_buckets.size
 
-    Aggregator::StatsInfo.pending_buckets.size.times do
+    Stats::Info.pending_buckets.size.times do
       Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
@@ -524,7 +524,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       Aggregator.process([item])
     end
 
-    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 1, Stats::Info.pending_buckets.size
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
@@ -532,26 +532,26 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## because storage stats is deactivated nothing blows but it gets logged waiting for storage stats
     ## to be in place again
     assert_equal 0, Resque.queue(:main).length
-    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 1, Stats::Info.pending_buckets.size
 
     assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     Stats::Storage.activate!
 
-    assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 1, Stats::Info.pending_buckets.size
 
     sleep(stats_bucket_size)
     v.each do |item|
       Aggregator.process([item])
     end
 
-    assert_equal 2, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 2, Stats::Info.pending_buckets.size
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '20', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
@@ -587,12 +587,12 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     Aggregator.process([transaction])
 
-    Aggregator::StatsInfo.pending_buckets.size.times do
+    Stats::Info.pending_buckets.size.times do
       Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '5', @storage.get(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))
@@ -624,12 +624,12 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     Aggregator.process([transaction])
 
-    Aggregator::StatsInfo.pending_buckets.size.times do
+    Stats::Info.pending_buckets.size.times do
       Aggregator::StatsTasks.schedule_one_stats_job
     end
     Resque.run!
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
 
     assert_equal '9', @storage.get(application_key(service.id, application.id, @metric_hits.id, :hour,   '2010050713'))
@@ -669,17 +669,17 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     end
 
     ## failed_buckets is 0 because nothing has been tried and hence failed yet
-    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
-    assert_equal 5, Aggregator::StatsInfo.pending_buckets.size
+    assert_equal 0, Stats::Info.failed_buckets.size
+    assert_equal 5, Stats::Info.pending_buckets.size
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Resque.queue(:main).length
 
     ## jobs did not do anything because storage stats connection failed
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
-    assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
-    assert_equal 5, Aggregator::StatsInfo.failed_buckets.size
+    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 5, Stats::Info.failed_buckets_at_least_once.size
+    assert_equal 5, Stats::Info.failed_buckets.size
 
     v = @storage.keys("keys_changed:*")
     assert_equal true, v.size > 0
@@ -696,9 +696,9 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     v = @storage.keys("keys_changed:*")
     assert_equal 0, v.size
 
-    assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
-    assert_equal 0, Aggregator::StatsInfo.failed_buckets.size
-    assert_equal 0, Aggregator::StatsInfo.failed_buckets_at_least_once.size
+    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 0, Stats::Info.failed_buckets.size
+    assert_equal 0, Stats::Info.failed_buckets_at_least_once.size
   end
 
   test 'process updates application set' do

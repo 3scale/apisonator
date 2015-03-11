@@ -1,5 +1,5 @@
 require_relative '../stats/storage'
-require_relative 'stats_info'
+require_relative '../stats/info'
 
 module ThreeScale
   module Backend
@@ -14,7 +14,7 @@ module ThreeScale
           end
 
           if bucket == "inf"
-            buckets_to_save = StatsInfo.get_old_buckets_to_process(bucket)
+            buckets_to_save = Stats::Info.get_old_buckets_to_process(bucket)
           else
             buckets_to_save = [bucket]
           end

@@ -1,7 +1,7 @@
 require_relative '../storage'
 require_relative '../stats/storage'
 require_relative 'stats_keys'
-require_relative 'stats_info'
+require_relative '../stats/info'
 
 module ThreeScale
   module Backend
@@ -36,7 +36,7 @@ module ThreeScale
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
           Stats::Storage.disable!
 
-          (StatsInfo.failed_buckets + StatsInfo.pending_buckets).each do |bucket|
+          (Stats::Info.failed_buckets + Stats::Info.pending_buckets).each do |bucket|
             keys = storage.smembers(changed_keys_bucket_key(bucket))
             unless options[:silent] == true
               puts "Deleting bucket: #{bucket}, containing #{keys.size} keys"
