@@ -1,5 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
-require_relative '../../lib/3scale/backend/aggregator/stats_tasks'
+require_relative '../../lib/3scale/backend/stats/tasks'
 
 class AggregatorStorageStatsTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
@@ -77,7 +77,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       Aggregator.process([default_transaction])
     end
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Stats::Info.pending_buckets.size
@@ -122,7 +122,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       Aggregator.process([default_transaction])
     end
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Stats::Info.pending_buckets.size
@@ -153,7 +153,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator.process([default_transaction])
 
     assert_equal 0, Resque.queue(:main).length  + Resque.queue(:stats).length
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
     Resque.run!
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
@@ -184,21 +184,21 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     timestamp = default_transaction_timestamp
 
     Aggregator.process(Array.new(10, default_transaction))
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 10, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     Aggregator.process([transaction_with_set_value])
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 665, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
     Aggregator.process([default_transaction])
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 666, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
@@ -316,7 +316,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator.process([default_transaction])
 
     assert_equal 1, Stats::Info.pending_buckets.size
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Stats::Info.pending_buckets.size
     assert_equal 0, Resque.queue(:main).length
@@ -344,7 +344,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Stats::Info.failed_buckets_at_least_once.size
     assert_equal 5, Stats::Info.pending_buckets.size
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Resque.queue(:stats).length
@@ -396,15 +396,15 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     timestamp = default_transaction_timestamp
 
     Aggregator.process(Array.new(10, default_transaction))
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     Aggregator.process([transaction_with_set_value])
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     Aggregator.process([default_transaction])
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     ## it failed for storage stats
@@ -433,7 +433,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     assert_equal 1, Stats::Info.pending_buckets.size
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
@@ -441,7 +441,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     Stats::Storage.activate!
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
@@ -458,7 +458,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Stats::Info.pending_buckets.size
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Resque.queue(:main).length
@@ -481,7 +481,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     end
 
     Stats::Info.pending_buckets.size.times do
-      Aggregator::StatsTasks.schedule_one_stats_job
+      Stats::Tasks.schedule_one_stats_job
     end
     Resque.run!
 
@@ -502,7 +502,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 1, Stats::Info.pending_buckets.size
 
     Stats::Info.pending_buckets.size.times do
-      Aggregator::StatsTasks.schedule_one_stats_job
+      Stats::Tasks.schedule_one_stats_job
     end
     Resque.run!
 
@@ -526,7 +526,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     assert_equal 1, Stats::Info.pending_buckets.size
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     ## because storage stats is deactivated nothing blows but it gets logged waiting for storage stats
@@ -548,7 +548,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     assert_equal 2, Stats::Info.pending_buckets.size
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 0, Stats::Info.pending_buckets.size
@@ -588,7 +588,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator.process([transaction])
 
     Stats::Info.pending_buckets.size.times do
-      Aggregator::StatsTasks.schedule_one_stats_job
+      Stats::Tasks.schedule_one_stats_job
     end
     Resque.run!
 
@@ -625,7 +625,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Aggregator.process([transaction])
 
     Stats::Info.pending_buckets.size.times do
-      Aggregator::StatsTasks.schedule_one_stats_job
+      Stats::Tasks.schedule_one_stats_job
     end
     Resque.run!
 
@@ -672,7 +672,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Stats::Info.failed_buckets.size
     assert_equal 5, Stats::Info.pending_buckets.size
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
     assert_equal 0, Resque.queue(:main).length
 
@@ -688,7 +688,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     v = @storage.keys("copied:*")
     assert_equal 0, v.size
 
-    Aggregator::StatsTasks.delete_all_buckets_and_keys_only_as_rake!(silent: true)
+    Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!(silent: true)
 
     v = @storage.keys("copied:*")
     assert_equal 0, v.size

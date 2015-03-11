@@ -1,14 +1,13 @@
 require_relative '../storage'
-require_relative '../stats/storage'
-require_relative 'stats_keys'
-require_relative '../stats/info'
+require_relative 'storage'
+require_relative '../aggregator/stats_keys'
+require_relative 'info'
 
 module ThreeScale
   module Backend
-    module Aggregator
-      module StatsTasks
-
-        extend StatsKeys
+    module Stats
+      module Tasks
+        extend Aggregator::StatsKeys
 
         module_function
 
@@ -30,7 +29,7 @@ module ThreeScale
         end
 
         def schedule_one_stats_job(bucket = "inf")
-          Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
+          Resque.enqueue(Aggregator::StatsJob, bucket, Time.now.getutc.to_f)
         end
 
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
@@ -43,7 +42,7 @@ module ThreeScale
             end
             storage.del(changed_keys_bucket_key(bucket))
           end
-          storage.del(changed_keys_key);
+          storage.del(changed_keys_key)
           storage.del(failed_save_to_storage_stats_key)
           storage.del(failed_save_to_storage_stats_at_least_once_key)
         end
@@ -51,7 +50,7 @@ module ThreeScale
         private
 
         def self.storage
-          Storage.instance
+          Backend::Storage.instance
         end
 
         def self.storage_stats

@@ -1,5 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
-require_relative '../../lib/3scale/backend/aggregator/stats_tasks'
+require_relative '../../lib/3scale/backend/stats/tasks'
 
 class ReportTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
@@ -577,7 +577,7 @@ class ReportTest < Test::Unit::TestCase
       end
     end
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     timestamp = Time.parse_to_utc('20100501')
@@ -632,10 +632,10 @@ class ReportTest < Test::Unit::TestCase
       end
     end
 
-    Aggregator::StatsTasks.schedule_one_stats_job
+    Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
-    values = Aggregator::StatsTasks.check_values(@service_id,
+    values = Stats::Tasks.check_values(@service_id,
                                                  @application.id,
                                                  @metric_id,
                                                  Time.utc(2010, 5, 12, 13, 33),

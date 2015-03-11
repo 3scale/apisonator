@@ -11,7 +11,7 @@ load 'lib/3scale/tasks/cubert.rake'
 
 task :environment do
   require '3scale/backend'
-  require '3scale/backend/aggregator/stats_tasks'
+  require '3scale/backend/stats/tasks'
 end
 
 def testable_environment?
@@ -134,7 +134,7 @@ namespace :stats do
   namespace :panic_mode do
     desc '!!! Delete all time buckets and keys after disabling storage stats'
     task :delete_all_buckets_and_keys => :environment do
-      puts ThreeScale::Backend::Aggregator::StatsTasks.delete_all_buckets_and_keys_only_as_rake!
+      puts ThreeScale::Backend::Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!
     end
 
     desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
@@ -149,7 +149,7 @@ namespace :stats do
 
     desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
     task :insert_stats_job => :environment do
-      puts ThreeScale::Backend::Aggregator::StatsTasks.schedule_one_stats_job
+      puts ThreeScale::Backend::Stats::Tasks.schedule_one_stats_job
     end
   end
 
@@ -222,7 +222,7 @@ namespace :stats do
       raise ArgumentError.new(ex_message)
     end
 
-    values = ThreeScale::Backend::Aggregator::StatsTasks.check_values(args[:service_id],
+    values = ThreeScale::Backend::Stats::Tasks.check_values(args[:service_id],
                                                                       args[:app_id],
                                                                       args[:metric_id],
                                                                       timestamp)
