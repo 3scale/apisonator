@@ -1,5 +1,5 @@
 require '3scale/backend/cache'
-require '3scale/backend/storage_stats'
+require '3scale/backend/stats/storage'
 require '3scale/backend/aggregator/stats_keys'
 require '3scale/backend/aggregator/stats_job'
 require '3scale/backend/application_events'
@@ -22,7 +22,7 @@ module ThreeScale
       def process(transactions)
         current_bucket = nil
 
-        if StorageStats.enabled?
+        if Stats::Storage.enabled?
           current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
           prepare_stats_buckets(current_bucket)
         end
@@ -163,7 +163,7 @@ module ThreeScale
       end
 
       def enqueue_stats_job(bucket)
-        return unless StorageStats.enabled?
+        return unless Stats::Storage.enabled?
         Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
       end
 

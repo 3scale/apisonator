@@ -6,12 +6,12 @@ module ThreeScale
       describe StatsJob do
         before do
           ThreeScale::Backend::Worker.new
-          StorageStats.enable!
-          StorageStats.activate!
+          Stats::Storage.enable!
+          Stats::Storage.activate!
         end
 
         it 'it saves the changed keys for buckets passed' do
-          StorageStats.should_receive(:save_changed_keys).with("foo")
+          Stats::Storage.should_receive(:save_changed_keys).with("foo")
 
           StatsJob.perform "foo", Time.now.getutc.to_f
         end
@@ -28,5 +28,3 @@ module ThreeScale
     end
   end
 end
-
-

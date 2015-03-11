@@ -33,10 +33,10 @@ class ReportTest < Test::Unit::TestCase
   end
 
   def storage_stats_setup
-    StorageStats.enable!
-    StorageStats.activate!
+    Stats::Storage.enable!
+    Stats::Storage.activate!
 
-    @storage_stats = StorageStats.instance(true)
+    @storage_stats = Stats::Storage.instance(true)
     @storage_stats.drop_all_series
 
     Resque.reset!

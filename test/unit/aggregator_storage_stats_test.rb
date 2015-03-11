@@ -13,11 +13,11 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     @storage.flushdb
     seed_data
 
-    StorageStats.enable!
+    Stats::Storage.enable!
     Memoizer.reset!
-    StorageStats.activate!
+    Stats::Storage.activate!
 
-    @storage_stats = StorageStats.instance(true)
+    @storage_stats = Stats::Storage.instance(true)
     @storage_stats.drop_all_series
 
     Resque.reset!
@@ -111,7 +111,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Memoizer.reset!
     seed_data
 
-    @storage_stats = StorageStats.instance(true)
+    @storage_stats = Stats::Storage.instance(true)
     @storage_stats.drop_all_series
 
     assert_equal nil, @storage_stats.get(1001, 3001, :month, timestamp)
@@ -355,7 +355,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 5, Aggregator::StatsInfo.failed_buckets_at_least_once.size
 
     ## remove the stubbing
-    @storage_stats = StorageStats.instance(true)
+    @storage_stats = Stats::Storage.instance(true)
 
     assert_equal '6', @storage.get(service_key(1001, 3001, :month, '20100501'))
     assert_equal 1, @storage_stats.get(1001, 3001, :month, metrics_timestamp)
@@ -363,7 +363,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## now let's process the failed, one by one...
 
     v = Aggregator::StatsInfo.failed_buckets
-    StorageStats.save_changed_keys(v.first)
+    Stats::Storage.save_changed_keys(v.first)
 
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Aggregator::StatsInfo.pending_buckets.size
@@ -377,7 +377,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     v = Aggregator::StatsInfo.failed_buckets
     v.each do |bucket|
-      StorageStats.save_changed_keys(bucket)
+      Stats::Storage.save_changed_keys(bucket)
     end
 
     assert_equal 0, Resque.queue(:main).length
@@ -409,7 +409,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     ## it failed for storage stats
 
-    @storage_stats = StorageStats.instance(true)
+    @storage_stats = Stats::Storage.instance(true)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
@@ -419,14 +419,14 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 1, Aggregator::StatsInfo.failed_buckets_at_least_once.size
 
     v = Aggregator::StatsInfo.failed_buckets
-    StorageStats.save_changed_keys(v.first)
+    Stats::Storage.save_changed_keys(v.first)
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal 666, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 
   test 'when storage stats is deactivated buckets are filled but nothing gets saved' do
-    StorageStats.deactivate!
+    Stats::Storage.deactivate!
 
     Aggregator.process(Array.new(10, default_transaction))
 
@@ -439,7 +439,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
-    StorageStats.activate!
+    Stats::Storage.activate!
 
     Aggregator::StatsTasks.schedule_one_stats_job
     Resque.run!
@@ -449,7 +449,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'when storage stats is disabled nothing gets logged' do
-    StorageStats.disable!
+    Stats::Storage.disable!
     ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
 
@@ -472,7 +472,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       10.times { v << default_transaction }
     end
 
-    StorageStats.disable!
+    Stats::Storage.disable!
     ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
 
@@ -493,7 +493,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
     assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    StorageStats.enable!
+    Stats::Storage.enable!
     ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
     v.each do |item|
@@ -518,7 +518,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     v = Array.new(10, default_transaction)
 
-    StorageStats.deactivate!
+    Stats::Storage.deactivate!
 
     v.each do |item|
       Aggregator.process([item])
@@ -537,7 +537,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal '10', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
     assert_equal nil, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    StorageStats.activate!
+    Stats::Storage.activate!
 
     assert_equal 1, Aggregator::StatsInfo.pending_buckets.size
 
