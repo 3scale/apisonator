@@ -18,8 +18,8 @@ module ThreeScale
 
           context 'with pending buckets' do
             before do
-              storage.zadd(StatsKeys.changed_keys_key, 0, "foo")
-              storage.zadd(StatsKeys.changed_keys_key, 1, "bar")
+              storage.zadd(Keys.changed_keys_key, 0, "foo")
+              storage.zadd(Keys.changed_keys_key, 1, "bar")
             end
 
             it { expect(subject).to eql(["foo", "bar"]) }
@@ -35,8 +35,8 @@ module ThreeScale
 
           context 'with pending buckets' do
             before do
-              storage.zadd(StatsKeys.changed_keys_key, 0, "foo")
-              storage.zadd(StatsKeys.changed_keys_key, 1, "bar")
+              storage.zadd(Keys.changed_keys_key, 0, "foo")
+              storage.zadd(Keys.changed_keys_key, 1, "bar")
             end
 
             it { expect(subject).to be(2) }
@@ -53,9 +53,9 @@ module ThreeScale
 
           context 'with pending buckets' do
             before do
-              storage.zadd(StatsKeys.changed_keys_key, 0, "foo")
-              storage.sadd(StatsKeys.changed_keys_bucket_key("foo"), "20100101")
-              storage.sadd(StatsKeys.changed_keys_bucket_key("foo"), "20140404")
+              storage.zadd(Keys.changed_keys_key, 0, "foo")
+              storage.sadd(Keys.changed_keys_bucket_key("foo"), "20100101")
+              storage.sadd(Keys.changed_keys_bucket_key("foo"), "20140404")
             end
 
             it { expect(subject).to include("foo" => 2) }
@@ -70,9 +70,9 @@ module ThreeScale
 
           context "with pending buckets" do
             before do
-              storage.zadd(StatsKeys.changed_keys_key, 0, "foo")
-              storage.zadd(StatsKeys.changed_keys_key, 1, "bar")
-              storage.zadd(StatsKeys.changed_keys_key, 2, "foobar")
+              storage.zadd(Keys.changed_keys_key, 0, "foo")
+              storage.zadd(Keys.changed_keys_key, 1, "bar")
+              storage.zadd(Keys.changed_keys_key, 2, "foobar")
             end
 
             context "when passes a normal bucket" do
@@ -96,8 +96,8 @@ module ThreeScale
 
           context 'with failed buckets' do
             before do
-              storage.sadd(StatsKeys.failed_save_to_storage_stats_key, "foo")
-              storage.sadd(StatsKeys.failed_save_to_storage_stats_key, "bar")
+              storage.sadd(Keys.failed_save_to_storage_stats_key, "foo")
+              storage.sadd(Keys.failed_save_to_storage_stats_key, "bar")
             end
 
             it { expect(subject).to include("foo", "bar") }
@@ -113,8 +113,8 @@ module ThreeScale
 
           context 'with failed buckets' do
             before do
-              storage.sadd(StatsKeys.failed_save_to_storage_stats_at_least_once_key, "foo")
-              storage.sadd(StatsKeys.failed_save_to_storage_stats_at_least_once_key, "bar")
+              storage.sadd(Keys.failed_save_to_storage_stats_at_least_once_key, "foo")
+              storage.sadd(Keys.failed_save_to_storage_stats_at_least_once_key, "bar")
             end
 
             it { expect(subject).to include("foo", "bar") }

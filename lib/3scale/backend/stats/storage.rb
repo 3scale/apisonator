@@ -1,6 +1,6 @@
 require_relative '../storage'
 require_relative '../storage_influxdb'
-require_relative '../aggregator/stats_keys'
+require_relative 'keys'
 
 module ThreeScale
   module Backend
@@ -8,7 +8,7 @@ module ThreeScale
       class Storage
         class << self
           include Memoizer::Decorator
-          include Aggregator::StatsKeys
+          include Keys
 
           def instance(reset = false)
             StorageInfluxDB.instance(reset)

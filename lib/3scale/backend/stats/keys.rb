@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
-    module Aggregator
-      module StatsKeys
+    module Stats
+      module Keys
         module_function
 
         extend Backend::StorageKeyHelpers

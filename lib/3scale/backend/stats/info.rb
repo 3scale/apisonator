@@ -1,11 +1,11 @@
 require_relative '../storage'
-require_relative '../aggregator/stats_keys'
+require_relative 'keys'
 
 module ThreeScale
   module Backend
     module Stats
       module Info
-        extend Aggregator::StatsKeys
+        extend Keys
 
         module_function
 

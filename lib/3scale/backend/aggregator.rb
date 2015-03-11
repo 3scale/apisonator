@@ -1,6 +1,6 @@
 require '3scale/backend/cache'
 require '3scale/backend/stats/storage'
-require '3scale/backend/aggregator/stats_keys'
+require '3scale/backend/stats/keys'
 require '3scale/backend/aggregator/stats_job'
 require '3scale/backend/application_events'
 require '3scale/backend/transaction'
@@ -10,7 +10,7 @@ module ThreeScale
     module Aggregator
       include Backend::StorageKeyHelpers
       include Configurable
-      include StatsKeys
+      include Stats::Keys
       extend self
 
       GRANULARITY_EXPIRATION_TIME = {
@@ -70,10 +70,10 @@ module ThreeScale
       # @param [Transaction] transaction
       # @param [String, Nil] bucket
       def aggregate_usage(transaction, bucket = nil)
-        bucket_key = StatsKeys.changed_keys_bucket_key(bucket) if bucket
+        bucket_key = Stats::Keys.changed_keys_bucket_key(bucket) if bucket
 
         transaction.usage.each do |metric_id, raw_value|
-          metric_keys = StatsKeys.transaction_metric_keys(transaction, metric_id)
+          metric_keys = Stats::Keys.transaction_metric_keys(transaction, metric_id)
           cmd         = storage_cmd(raw_value)
           value       = parse_usage_value(raw_value)
 
@@ -118,7 +118,7 @@ module ThreeScale
 
       def store_changed_keys(bucket = nil)
         return unless bucket
-        storage.zadd(StatsKeys.changed_keys_key, bucket.to_i, bucket)
+        storage.zadd(Stats::Keys.changed_keys_key, bucket.to_i, bucket)
       end
 
       def stats_bucket_size
