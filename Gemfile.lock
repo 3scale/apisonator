@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    3scale_backend (2.26.0)
+    3scale_backend (2.26.1)
       airbrake (= 3.1.16)
       builder (= 2.1.2)
       cubert-client (= 0.0.4)
