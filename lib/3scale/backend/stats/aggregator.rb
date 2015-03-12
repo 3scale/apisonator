@@ -12,7 +12,7 @@ module ThreeScale
         class << self
           include Backend::StorageKeyHelpers
           include Configurable
-          include Stats::Keys
+          include Keys
 
           GRANULARITY_EXPIRATION_TIME = {
             minute: 180,
@@ -23,7 +23,7 @@ module ThreeScale
           def process(transactions)
             current_bucket = nil
 
-            if Stats::Storage.enabled?
+            if Storage.enabled?
               current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
               prepare_stats_buckets(current_bucket)
             end
@@ -71,10 +71,10 @@ module ThreeScale
           # @param [Transaction] transaction
           # @param [String, Nil] bucket
           def aggregate_usage(transaction, bucket = nil)
-            bucket_key = Stats::Keys.changed_keys_bucket_key(bucket) if bucket
+            bucket_key = Keys.changed_keys_bucket_key(bucket) if bucket
 
             transaction.usage.each do |metric_id, raw_value|
-              metric_keys = Stats::Keys.transaction_metric_keys(transaction, metric_id)
+              metric_keys = Keys.transaction_metric_keys(transaction, metric_id)
               cmd         = storage_cmd(raw_value)
               value       = parse_usage_value(raw_value)
 
@@ -119,7 +119,7 @@ module ThreeScale
 
           def store_changed_keys(bucket = nil)
             return unless bucket
-            storage.zadd(Stats::Keys.changed_keys_key, bucket.to_i, bucket)
+            storage.zadd(Keys.changed_keys_key, bucket.to_i, bucket)
           end
 
           def stats_bucket_size
@@ -164,8 +164,8 @@ module ThreeScale
           end
 
           def enqueue_stats_job(bucket)
-            return unless Stats::Storage.enabled?
-            Resque.enqueue(Stats::ReplicateJob, bucket, Time.now.getutc.to_f)
+            return unless Storage.enabled?
+            Resque.enqueue(ReplicateJob, bucket, Time.now.getutc.to_f)
           end
 
           # Return a Hash with needed info to update the cached XMLs

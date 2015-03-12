@@ -29,13 +29,13 @@ module ThreeScale
         end
 
         def schedule_one_stats_job(bucket = "inf")
-          Resque.enqueue(Stats::ReplicateJob, bucket, Time.now.getutc.to_f)
+          Resque.enqueue(ReplicateJob, bucket, Time.now.getutc.to_f)
         end
 
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
-          Stats::Storage.disable!
+          Storage.disable!
 
-          (Stats::Info.failed_buckets + Stats::Info.pending_buckets).each do |bucket|
+          (Info.failed_buckets + Info.pending_buckets).each do |bucket|
             keys = storage.smembers(changed_keys_bucket_key(bucket))
             unless options[:silent] == true
               puts "Deleting bucket: #{bucket}, containing #{keys.size} keys"
@@ -54,7 +54,7 @@ module ThreeScale
         end
 
         def self.storage_stats
-          Stats::Storage.instance
+          Storage.instance
         end
       end
     end
