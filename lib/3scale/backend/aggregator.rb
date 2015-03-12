@@ -1,7 +1,7 @@
 require '3scale/backend/cache'
 require '3scale/backend/stats/storage'
 require '3scale/backend/stats/keys'
-require '3scale/backend/aggregator/stats_job'
+require '3scale/backend/stats/replicate_job'
 require '3scale/backend/application_events'
 require '3scale/backend/transaction'
 
@@ -164,7 +164,7 @@ module ThreeScale
 
       def enqueue_stats_job(bucket)
         return unless Stats::Storage.enabled?
-        Resque.enqueue(StatsJob, bucket, Time.now.getutc.to_f)
+        Resque.enqueue(Stats::ReplicateJob, bucket, Time.now.getutc.to_f)
       end
 
       # Return a Hash with needed info to update the cached XMLs

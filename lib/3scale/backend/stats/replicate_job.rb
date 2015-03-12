@@ -1,10 +1,10 @@
-require_relative '../stats/storage'
-require_relative '../stats/info'
+require_relative 'storage'
+require_relative 'info'
 
 module ThreeScale
   module Backend
-    module Aggregator
-      class StatsJob < BackgroundJob
+    module Stats
+      class ReplicateJob < BackgroundJob
         @queue = :stats
 
         def self.perform_logged(bucket, enqueue_time)

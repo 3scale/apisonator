@@ -29,7 +29,7 @@ module ThreeScale
         end
 
         def schedule_one_stats_job(bucket = "inf")
-          Resque.enqueue(Aggregator::StatsJob, bucket, Time.now.getutc.to_f)
+          Resque.enqueue(Stats::ReplicateJob, bucket, Time.now.getutc.to_f)
         end
 
         def delete_all_buckets_and_keys_only_as_rake!(options = {})
