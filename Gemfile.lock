@@ -5,6 +5,7 @@ PATH
       airbrake (= 3.1.16)
       builder (= 2.1.2)
       cubert-client (= 0.0.4)
+      daemons (= 1.1.9)
       hiredis (= 0.4.5)
       influxdb (= 0.1.8)
       rack (= 1.5.2)
