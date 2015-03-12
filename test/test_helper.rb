@@ -40,7 +40,7 @@ ThreeScale::Backend.configuration
 ThreeScale::Backend::Worker.new
 
 def reset_aggregator_prior_bucket!
-  ThreeScale::Backend::Aggregator.send(:prior_bucket=, nil)
+  ThreeScale::Backend::Stats::Aggregator.send(:prior_bucket=, nil)
 end
 
 class Test::Unit::TestCase

@@ -30,31 +30,31 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   def stats_bucket_size
-    Aggregator.send(:stats_bucket_size)
+    Stats::Aggregator.send(:stats_bucket_size)
   end
 
   test 'Stats jobs get properly enqueued' do
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45)) do
-      Aggregator.process([default_transaction])
+      Stats::Aggregator.process([default_transaction])
     end
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (stats_bucket_size / 2).to_i)) do
-      Aggregator.process([default_transaction])
+      Stats::Aggregator.process([default_transaction])
     end
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     ## antoher time bucket has elapsed
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (stats_bucket_size * 1.5).to_i)) do
-      Aggregator.process([default_transaction])
+      Stats::Aggregator.process([default_transaction])
     end
     assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (stats_bucket_size * 1.9).to_i)) do
-      Aggregator.process([default_transaction])
+      Stats::Aggregator.process([default_transaction])
     end
 
     assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
@@ -62,7 +62,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## antoher time bucket has elapsed
 
     Timecop.freeze(Time.utc(2010, 1, 7, 0, 0, 45 + (stats_bucket_size * 2).to_i)) do
-      Aggregator.process([default_transaction])
+      Stats::Aggregator.process([default_transaction])
     end
     assert_equal 2, Resque.queue(:main).length + Resque.queue(:stats).length
   end
@@ -74,7 +74,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     timestamp = default_transaction_timestamp
 
     cont.times do
-      Aggregator.process([default_transaction])
+      Stats::Aggregator.process([default_transaction])
     end
 
     Stats::Tasks.schedule_one_stats_job
@@ -119,7 +119,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     t = Time.now
 
     cont.times do
-      Aggregator.process([default_transaction])
+      Stats::Aggregator.process([default_transaction])
     end
 
     Stats::Tasks.schedule_one_stats_job
@@ -150,7 +150,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
   test 'process increments_all_stats_counters' do
     timestamp = default_transaction_timestamp
-    Aggregator.process([default_transaction])
+    Stats::Aggregator.process([default_transaction])
 
     assert_equal 0, Resque.queue(:main).length  + Resque.queue(:stats).length
     Stats::Tasks.schedule_one_stats_job
@@ -183,20 +183,20 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   test 'aggregate takes into account setting the counter value ok' do
     timestamp = default_transaction_timestamp
 
-    Aggregator.process(Array.new(10, default_transaction))
+    Stats::Aggregator.process(Array.new(10, default_transaction))
     Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 10, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    Aggregator.process([transaction_with_set_value])
+    Stats::Aggregator.process([transaction_with_set_value])
 
     Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
     assert_equal 665, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
 
-    Aggregator.process([default_transaction])
+    Stats::Aggregator.process([default_transaction])
 
     Stats::Tasks.schedule_one_stats_job
     Resque.run!
@@ -281,7 +281,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       bucket_key = timestamp.beginning_of_bucket(stats_bucket_size).to_not_compact_s
 
       Timecop.freeze(timestamp) do
-        Aggregator.process([default_transaction])
+        Stats::Aggregator.process([default_transaction])
       end
 
       assert_equal cont + 1, Stats::Info.pending_buckets.size
@@ -313,7 +313,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     metrics_timestamp = default_transaction_timestamp
 
     ## first one ok,
-    Aggregator.process([default_transaction])
+    Stats::Aggregator.process([default_transaction])
 
     assert_equal 1, Stats::Info.pending_buckets.size
     Stats::Tasks.schedule_one_stats_job
@@ -333,7 +333,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     5.times do
       Timecop.freeze(timestamp) do
-        Aggregator.process([default_transaction])
+        Stats::Aggregator.process([default_transaction])
       end
 
       timestamp += stats_bucket_size
@@ -395,15 +395,15 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     timestamp = default_transaction_timestamp
 
-    Aggregator.process(Array.new(10, default_transaction))
+    Stats::Aggregator.process(Array.new(10, default_transaction))
     Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
-    Aggregator.process([transaction_with_set_value])
+    Stats::Aggregator.process([transaction_with_set_value])
     Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
-    Aggregator.process([default_transaction])
+    Stats::Aggregator.process([default_transaction])
     Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
@@ -428,7 +428,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   test 'when storage stats is deactivated buckets are filled but nothing gets saved' do
     Stats::Storage.deactivate!
 
-    Aggregator.process(Array.new(10, default_transaction))
+    Stats::Aggregator.process(Array.new(10, default_transaction))
 
     assert_equal 0, Resque.queue(:main).length
     assert_equal 1, Stats::Info.pending_buckets.size
@@ -453,7 +453,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
 
-    Aggregator.process(Array.new(10, default_transaction))
+    Stats::Aggregator.process(Array.new(10, default_transaction))
 
     assert_equal 0, Resque.queue(:main).length
     assert_equal 0, Stats::Info.pending_buckets.size
@@ -477,7 +477,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Memoizer.reset!
 
     v.each do |item|
-      Aggregator.process([item])
+      Stats::Aggregator.process([item])
     end
 
     Stats::Info.pending_buckets.size.times do
@@ -497,7 +497,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
     v.each do |item|
-      Aggregator.process([item])
+      Stats::Aggregator.process([item])
     end
     assert_equal 1, Stats::Info.pending_buckets.size
 
@@ -521,7 +521,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Stats::Storage.deactivate!
 
     v.each do |item|
-      Aggregator.process([item])
+      Stats::Aggregator.process([item])
     end
 
     assert_equal 1, Stats::Info.pending_buckets.size
@@ -543,7 +543,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     sleep(stats_bucket_size)
     v.each do |item|
-      Aggregator.process([item])
+      Stats::Aggregator.process([item])
     end
 
     assert_equal 2, Stats::Info.pending_buckets.size
@@ -585,7 +585,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
                                   usage:          { @metric_hits.id => 5 },
                                   user_id:        "user_id_xyz")
 
-    Aggregator.process([transaction])
+    Stats::Aggregator.process([transaction])
 
     Stats::Info.pending_buckets.size.times do
       Stats::Tasks.schedule_one_stats_job
@@ -622,7 +622,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
                                   usage:          { @metric_hits.id => 4 },
                                   user_id:        "another_user_id_xyz")
 
-    Aggregator.process([transaction])
+    Stats::Aggregator.process([transaction])
 
     Stats::Info.pending_buckets.size.times do
       Stats::Tasks.schedule_one_stats_job
@@ -662,7 +662,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     5.times do
       Timecop.freeze(timestamp) do
-        Aggregator.process([default_transaction])
+        Stats::Aggregator.process([default_transaction])
       end
 
       timestamp += stats_bucket_size
@@ -702,19 +702,19 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'process updates application set' do
-    Aggregator.process([default_transaction])
+    Stats::Aggregator.process([default_transaction])
 
     assert_equal ['2001'], @storage.smembers("stats/{service:1001}/cinstances")
   end
 
   test 'process does not update service set' do
     assert_no_change of: lambda { @storage.smembers('stats/services') } do
-      Aggregator.process([default_transaction])
+      Stats::Aggregator.process([default_transaction])
     end
   end
 
   test 'process sets expiration time for volatile keys' do
-    Aggregator.process([default_transaction])
+    Stats::Aggregator.process([default_transaction])
 
     key = application_key('1001', '2001', '3001', :minute, 201005071323)
     ttl = @storage.ttl(key)
