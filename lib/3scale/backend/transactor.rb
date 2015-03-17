@@ -116,22 +116,23 @@ module ThreeScale
 
       def authorize_nocache(method, provider_key, params, options = {})
         oauth = method == :oauth_authorize
-        do_validators(oauth, provider_key, params[:service_id], params[:app_id], params[:user_id], params[:user_key], nil, params)
+        validate(oauth, provider_key, nil, params)
       end
 
       ## this is the classic way to do an authrep in case the cache fails, there
       ## has been changes on the underlying data or the time to life has elapsed
       def authrep_nocache(method, provider_key, params, options = {})
         oauth = method == :oauth_authrep
-        do_validators(oauth, provider_key, params[:service_id], params[:app_id], params[:user_id], params[:user_key], params[:usage], params)
+        validate(oauth, provider_key, params[:usage], params)
       rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
         # we still want to track these
         notify(provider_key, 'transactions/authorize' => 1)
         raise e
       end
 
-      def do_validators(oauth, provider_key, service_id, app_id, user_id, user_key, usage, params)
-        service = load_service!(provider_key, service_id)
+      def validate(oauth, provider_key, usage, params)
+        service = load_service!(provider_key, params[:service_id])
+        app_id, user_key = params[:app_id], params[:user_key]
 
         if oauth
           # if app_id (client_id) isn't defined, check for access_token and
@@ -151,7 +152,7 @@ module ThreeScale
                                                           app_id,
                                                           user_key)
 
-        user         = load_user!(application, service, user_id)
+        user         = load_user!(application, service, params[:user_id])
         usage_values = load_current_usage(application)
         user_usage   = load_user_current_usage(user) if user
         status_attrs = {
