@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    3scale_backend (2.27.0)
+    3scale_backend (2.27.1)
       airbrake (= 3.1.16)
       builder (= 2.1.2)
       cubert-client (= 0.0.4)
@@ -201,7 +201,7 @@ GEM
       equalizer (~> 0.0.9)
     vegas (0.1.11)
       rack (>= 1.0.0)
-    virtus (1.0.4)
+    virtus (1.0.5)
       axiom-types (~> 0.1)
       coercible (~> 1.0)
       descendants_tracker (~> 0.0, >= 0.0.3)
