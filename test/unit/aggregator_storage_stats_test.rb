@@ -150,7 +150,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
   test 'process increments_all_stats_counters' do
     timestamp = default_transaction_timestamp
-    Stats::Aggregator.process([default_transaction])
+    Stats::Aggregator.process([transaction_with_response_code])
 
     assert_equal 0, Resque.queue(:main).length  + Resque.queue(:stats).length
     Stats::Tasks.schedule_one_stats_job
@@ -159,24 +159,38 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
+    assert_equal '1', @storage.get(response_code_key(1001, '200', :month,  '20100501'))
+    assert_equal '1', @storage.get(response_code_key(1001, '2XX', :month,  '20100501'))
     assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp)
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :day,    '20100507'))
+    assert_equal '1', @storage.get(response_code_key(1001, '200', :day,    '20100507'))
+    assert_equal '1', @storage.get(response_code_key(1001, '2XX', :day,    '20100507'))
     assert_equal 1, @storage_stats.get(1001, 3001, :day, timestamp)
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
+    assert_equal '1', @storage.get(response_code_key(1001, '200', :hour,   '2010050713'))
+    assert_equal '1', @storage.get(response_code_key(1001, '2XX', :hour,   '2010050713'))
     assert_equal 1, @storage_stats.get(1001, 3001, :hour, timestamp)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '200', :year,   '20100101'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :year,   '20100101'))
     assert_equal 1, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '200', :month,  '20100501'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :month,  '20100501'))
     assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '200', :day,    '20100507'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :day,    '20100507'))
     assert_equal 1, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '200', :hour,   '2010050713'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :hour,   '2010050713'))
     assert_equal 1, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
   end
 

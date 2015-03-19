@@ -4,6 +4,7 @@ require '3scale/backend/stats/keys'
 require '3scale/backend/stats/replicate_job'
 require '3scale/backend/application_events'
 require '3scale/backend/transaction'
+require '3scale/backend/stats/response_code_aggregator'
 
 module ThreeScale
   module Backend
@@ -54,7 +55,7 @@ module ThreeScale
                 slice.each do |transaction|
                   aggregate_usage(transaction, bucket)
 
-                  aggregate_response_codes(transaction, bucket)
+                  aggregate_response_codes(transaction, bucket) if transaction.response_code
 
                   touched_apps.merge!(touched_relation(:application, transaction))
                   next unless transaction.user_id
@@ -70,10 +71,13 @@ module ThreeScale
           def aggregate_response_codes(transaction, bucket)
             response_code = transaction.response_code
             return unless response_code
-            bucket_key = nil
-            cmd = storage_cmd('1')
-            keys = Keys.transaction_response_code_keys(transaction, response_code)
-            aggregate_values(response_code, transaction.timestamp, keys, cmd, bucket_key)
+            rca = ResponseCodeAggregator.new
+            cmd = :incrby
+            value = 1
+            keys_with_multiple_rc = rca.aggregate(transaction)
+            keys_with_multiple_rc.each do |keys|
+              aggregate_values(value, transaction.timestamp, keys, cmd, bucket)
+            end
           end
 
           # Aggregates the usage of a transaction. If a bucket time is specified,
@@ -100,7 +104,7 @@ module ThreeScale
           #
           # @param [Integer] value
           # @param [Time] timestamp
-          # @param [Array] keys
+          # @param [Array] keys  is an array of {(service|application) => "key"}
           # @param [Symbol] cmd
           # @param [String, Nil] bucket_key
           def aggregate_values(value, timestamp, keys, cmd, bucket_key = nil)

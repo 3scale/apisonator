@@ -141,13 +141,19 @@ module TestHelpers
       }
     end
 
-    def default_transaction
-      Transaction.new(default_transaction_attrs)
+    def default_transaction(attrs = default_transaction_attrs)
+      Transaction.new(attrs)
     end
 
     def transaction_with_set_value
       attrs = default_transaction_attrs.merge(usage: { '3001' => '#665' })
       Transaction.new(attrs)
     end
+
+    def transaction_with_response_code(code = 200)
+      attrs = default_transaction_attrs.merge(response_code: code)
+      Transaction.new(attrs)
+    end
+
   end
 end

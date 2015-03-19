@@ -48,7 +48,7 @@ module ThreeScale
 
         describe '.response_code_key_prefix' do
           let(:prefix) { "stats/{service:1000}/cinstance:10"}
-          let(:response_code) { 404 }
+          let(:result) { Keys.response_code_key_prefix(prefix, 404) }
 
           it 'returns a composed key with metric id' do
             expect(result).to eq("stats/{service:1000}/cinstance:10/response_code:404")

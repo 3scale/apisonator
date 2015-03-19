@@ -96,7 +96,6 @@ module ThreeScale
         end
 
         def transaction_response_code_keys(transaction, response_code)
-          response_code = transaction.response_code
           service_key     = service_key_prefix(transaction.service_id)
           application_key = application_key_prefix(service_key,
                                                    transaction.application_id)
