@@ -32,6 +32,10 @@ module ThreeScale
           "#{prefix}/metric:#{metric_id}"
         end
 
+        def response_code_key_prefix(prefix, response_code)
+          "#{prefix}/response_code:#{response_code}"
+        end
+
         def usage_value_key(application, metric_id, period, time)
           service_key = service_key_prefix(application.service_id)
           app_key     = application_key_prefix(service_key, application.id)
@@ -90,6 +94,26 @@ module ThreeScale
 
           keys
         end
+
+        def transaction_response_code_keys(transaction, response_code)
+          response_code = transaction.response_code
+          service_key     = service_key_prefix(transaction.service_id)
+          application_key = application_key_prefix(service_key,
+                                                   transaction.application_id)
+
+          keys = {
+            service:     response_code_key_prefix(service_key, response_code),
+            application: response_code_key_prefix(application_key, response_code)
+          }
+
+          if transaction.user_id
+            user_key = user_key_prefix(service_key, transaction.user_id)
+            keys.merge!(user: response_code_key_prefix(user_key, response_code))
+          end
+
+          keys
+        end
+
       end
     end
   end

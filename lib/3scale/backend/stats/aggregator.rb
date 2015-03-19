@@ -54,6 +54,8 @@ module ThreeScale
                 slice.each do |transaction|
                   aggregate_usage(transaction, bucket)
 
+                  aggregate_response_codes(transaction, bucket)
+
                   touched_apps.merge!(touched_relation(:application, transaction))
                   next unless transaction.user_id
                   touched_users.merge!(touched_relation(:user, transaction))
@@ -62,6 +64,16 @@ module ThreeScale
             end
 
             { applications: touched_apps, users: touched_users }
+          end
+
+          # transaction has a response_code
+          def aggregate_response_codes(transaction, bucket)
+            response_code = transaction.response_code
+            return unless response_code
+            bucket_key = nil
+            cmd = storage_cmd('1')
+            keys = Keys.transaction_response_code_keys(transaction, response_code)
+            aggregate_values(response_code, transaction.timestamp, keys, cmd, bucket_key)
           end
 
           # Aggregates the usage of a transaction. If a bucket time is specified,
