@@ -12,7 +12,6 @@ PATH
       rake (= 10.1.0)
       redis (= 3.2.1)
       redis-namespace (= 1.5.1)
-      redis-sentinel (= 1.4.4)
       resque (= 1.23.0)
       sinatra (= 1.4.5)
       sinatra-contrib (= 1.4.2)
@@ -132,8 +131,6 @@ GEM
     redis (3.2.1)
     redis-namespace (1.5.1)
       redis (~> 3.0, >= 3.0.4)
-    redis-sentinel (1.4.4)
-      redis
     resque (1.23.0)
       multi_json (~> 1.0)
       redis-namespace (~> 1.0)

@@ -1,7 +1,6 @@
 require 'builder'
 require 'hiredis'
 require 'redis'
-require 'redis-sentinel'
 require 'fiber'
 require 'ostruct'
 require 'airbrake'
