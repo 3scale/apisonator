@@ -10,7 +10,6 @@ require 'sinatra/base'
 require 'time'
 require 'yajl'
 require 'yaml'
-require 'zlib'
 require 'digest/md5'
 require 'logger'
 
