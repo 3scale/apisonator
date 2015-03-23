@@ -8,8 +8,8 @@ module ThreeScale
           Redis.new
         else
           if valid_configuration?(configuration)
-            Redis.new(master_name: configuration.queues.master_name,
-                      sentinels:   configuration.queues.sentinels)
+            Redis.new(host:      "redis://#{configuration.queues.master_name}",
+                      sentinels: configuration.queues.sentinels)
           else
             raise "Configuration must have a valid queues section."
           end

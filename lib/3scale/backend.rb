@@ -1,7 +1,6 @@
 require 'builder'
 require 'hiredis'
 require 'redis'
-require 'redis-sentinel'
 require 'airbrake'
 require 'resque'
 require 'securerandom'
