@@ -1,3 +1,5 @@
+require 'ostruct'
+
 module ThreeScale
   module Backend
     class Configuration < OpenStruct
