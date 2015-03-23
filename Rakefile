@@ -11,7 +11,7 @@ load 'lib/3scale/tasks/cubert.rake'
 
 task :environment do
   require '3scale/backend'
-  require '3scale/backend/aggregator/stats_tasks'
+  require '3scale/backend/stats/tasks'
 end
 
 def testable_environment?
@@ -134,7 +134,7 @@ namespace :stats do
   namespace :panic_mode do
     desc '!!! Delete all time buckets and keys after disabling storage stats'
     task :delete_all_buckets_and_keys => :environment do
-      puts ThreeScale::Backend::Aggregator::StatsTasks.delete_all_buckets_and_keys_only_as_rake!
+      puts ThreeScale::Backend::Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!
     end
 
     desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
@@ -149,28 +149,28 @@ namespace :stats do
 
     desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
     task :insert_stats_job => :environment do
-      puts ThreeScale::Backend::Aggregator::StatsTasks.schedule_one_stats_job
+      puts ThreeScale::Backend::Stats::Tasks.schedule_one_stats_job
     end
   end
 
   desc 'Number of stats buckets active in Redis'
   task :buckets_size => :environment do
-    puts ThreeScale::Backend::Aggregator::StatsInfo.pending_buckets_size
+    puts ThreeScale::Backend::Stats::Info.pending_buckets_size
   end
 
   desc 'Number of keys in each stats bucket in Redis'
   task :buckets_info => :environment do
-    puts ThreeScale::Backend::Aggregator::StatsInfo.pending_keys_by_bucket.inspect
+    puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
   end
 
   desc 'Buckets currently failing to be processed'
   task :failed_buckets => :environment do
-    puts ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets
+    puts ThreeScale::Backend::Stats::Info.failed_buckets
   end
 
   desc 'All buckets that failed to be processed at least once, even if ok now'
   task :failed_buckets_once => :environment do
-    puts ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets_at_least_once
+    puts ThreeScale::Backend::Stats::Info.failed_buckets_at_least_once
   end
 
   desc 'Activate saving to storage stats.'
@@ -195,7 +195,7 @@ namespace :stats do
 
   desc 'Process failed buckets (one by one)'
   task :process_failed => :environment do
-    v = ThreeScale::Backend::Aggregator::StatsInfo.failed_buckets
+    v = ThreeScale::Backend::Stats::Info.failed_buckets
     if v.size==0
       puts "No failed buckets!"
     else
@@ -222,7 +222,7 @@ namespace :stats do
       raise ArgumentError.new(ex_message)
     end
 
-    values = ThreeScale::Backend::Aggregator::StatsTasks.check_values(args[:service_id],
+    values = ThreeScale::Backend::Stats::Tasks.check_values(args[:service_id],
                                                                       args[:app_id],
                                                                       args[:metric_id],
                                                                       timestamp)

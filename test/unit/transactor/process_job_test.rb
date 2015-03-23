@@ -49,7 +49,7 @@ module Transactor
 
     def test_aggregates
       Timecop.freeze(Time.utc(2010, 7, 25, 14, 5)) do
-        Aggregator.expects(:process).with do |transactions|
+        Stats::Aggregator.expects(:process).with do |transactions|
           transactions.all? do |t|
             t.is_a?(Transaction) && t.timestamp == Time.utc(2010, 7, 26, 12, 5)
           end
@@ -84,7 +84,7 @@ module Transactor
       timestamp = '2010-05-07 18:11:25'
 
       Timecop.freeze(Time.utc(2010, 5, 7, 17, 12, 25)) do
-        Aggregator.expects(:process).with do |transactions|
+        Stats::Aggregator.expects(:process).with do |transactions|
           transactions.first.timestamp == Time.utc(2010, 5, 7, 18, 11, 25)
         end
 
@@ -98,7 +98,7 @@ module Transactor
       timestamp = '2010-05-07 18:11:25 +07:00'
 
       Timecop.freeze(Time.utc(2010, 5, 6, 12, 11, 25)) do
-        Aggregator.expects(:process).with do |transactions|
+        Stats::Aggregator.expects(:process).with do |transactions|
           transactions.first.timestamp == Time.utc(2010, 5, 7, 11, 11, 25)
         end
 
@@ -112,7 +112,7 @@ module Transactor
       timestamp = ''
 
       Timecop.freeze(Time.utc(2010, 8, 19, 11, 43)) do
-        Aggregator.expects(:process).with do |transactions|
+        Stats::Aggregator.expects(:process).with do |transactions|
           transactions.first.timestamp == Time.utc(2010, 8, 19, 11, 43)
         end
 

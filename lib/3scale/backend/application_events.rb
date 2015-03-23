@@ -1,6 +1,6 @@
 require '3scale/backend/storage'
 require '3scale/backend/event_storage'
-require '3scale/backend/aggregator/stats_keys'
+require '3scale/backend/stats/keys'
 
 module ThreeScale
   module Backend
@@ -33,8 +33,8 @@ module ThreeScale
       private
 
       def self.first_traffic(service_id, application_id)
-        key = Aggregator::StatsKeys.applications_key_prefix(
-          Aggregator::StatsKeys.service_key_prefix(service_id)
+        key = Stats::Keys.applications_key_prefix(
+          Stats::Keys.service_key_prefix(service_id)
         )
         if storage.sadd(key, encode_key(application_id))
           EventStorage.store(:first_traffic,

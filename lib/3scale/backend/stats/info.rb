@@ -1,12 +1,11 @@
 require_relative '../storage'
-require_relative 'stats_keys'
+require_relative 'keys'
 
 module ThreeScale
   module Backend
-    module Aggregator
-      module StatsInfo
-
-        extend StatsKeys
+    module Stats
+      module Info
+        extend Keys
 
         module_function
 
@@ -36,7 +35,6 @@ module ThreeScale
 
         ## returns the array of buckets to process that are < bucket
         def get_old_buckets_to_process(bucket = "inf", redis_conn = nil)
-
           ## there should be very few elements on the changed_keys_key
 
           redis_conn = storage if redis_conn.nil?
@@ -45,14 +43,14 @@ module ThreeScale
           redis_conn.eval(
             buckets_to_process_script,
             keys: [changed_keys_key],
-            argv: ["(#{score_bucket_key}"]
+            argv: ["(#{score_bucket_key}"],
           )
         end
 
         private
 
         def self.storage
-          Storage.instance
+          Backend::Storage.instance
         end
 
         def self.buckets_to_process_script

@@ -7,7 +7,7 @@ require '3scale/backend/transactor/status'
 require '3scale/backend/cache'
 require '3scale/backend/errors'
 require '3scale/backend/validators'
-require '3scale/backend/aggregator/stats_keys'
+require '3scale/backend/stats/keys'
 
 module ThreeScale
   module Backend
@@ -365,7 +365,7 @@ module ThreeScale
         user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
-          Aggregator::StatsKeys.user_usage_value_key(user, metric_id, period, now)
+          Stats::Keys.user_usage_value_key(user, metric_id, period, now)
         end
         raw_values = storage.mget(*keys)
         values     = {}
@@ -390,7 +390,7 @@ module ThreeScale
         application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
         now = Time.now.getutc
         keys = pairs.map do |metric_id, period|
-          Aggregator::StatsKeys.usage_value_key(application, metric_id, period, now)
+          Stats::Keys.usage_value_key(application, metric_id, period, now)
         end
         raw_values = storage.mget(*keys)
         values     = {}
