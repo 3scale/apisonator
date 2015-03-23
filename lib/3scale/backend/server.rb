@@ -7,15 +7,9 @@ module ThreeScale
 
       def start(options)
         log = !options[:daemonize] || options[:log_file]
-        configuration = ThreeScale::Backend.configuration
 
         server = ::Thin::Server.new(options[:host], options[:port]) do
-          if configuration.hoptoad.api_key
-            Airbrake.configure do |config|
-              config.api_key = configuration.hoptoad.api_key
-            end
-            use Airbrake::Sinatra
-          end
+          use Airbrake::Sinatra if Airbrake.configuration.api_key
           use ThreeScale::Backend::Logger if log
 
           ThreeScale::Backend::Server.mount_internal_api self
