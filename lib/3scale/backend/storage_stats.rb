@@ -5,7 +5,7 @@ require_relative 'aggregator/stats_keys'
 module ThreeScale
   module Backend
     module StorageStats
-
+      include Memoizer::Decorator
       extend Aggregator::StatsKeys
 
       def self.instance(reset = false)
@@ -15,6 +15,7 @@ module ThreeScale
       def self.enabled?
         storage.get("stats:enabled").to_i == 1
       end
+      memoize :enabled?
 
       def self.active?
         storage.get("stats:active").to_i == 1

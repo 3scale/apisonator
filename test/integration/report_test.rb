@@ -40,7 +40,7 @@ class ReportTest < Test::Unit::TestCase
     @storage_stats.drop_all_series
 
     Resque.reset!
-    Aggregator.reset_current_bucket!
+    reset_aggregator_prior_bucket!
   end
 
   test 'options request returns list of allowed methods' do

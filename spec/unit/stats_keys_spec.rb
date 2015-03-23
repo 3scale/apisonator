@@ -10,17 +10,6 @@ module ThreeScale
         let(:user_id)        { 20 }
         let(:time)           { Time.utc(2014, 7, 29, 18, 25) }
 
-        describe '.bucket_with_service_key' do
-          let(:bucket)  { time.to_not_compact_s }
-          let(:result)  {
-            StatsKeys.bucket_with_service_key(bucket, service_id)
-          }
-
-          it 'returns a composed key with bucket and service' do
-            expect(result).to eq("1000:20140729182500")
-          end
-        end
-
         describe '.service_key_prefix' do
           let(:result)  { StatsKeys.service_key_prefix(service_id) }
           it 'returns a composed key' do

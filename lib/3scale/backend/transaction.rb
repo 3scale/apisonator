@@ -19,12 +19,6 @@ module ThreeScale
         end
       end
 
-      # This is needed for tests
-      # TODO: Remove it
-      def [](key)
-        send(key)
-      end
-
       # Validates if transaction timestamp is within accepted range
       #
       # @return [true] if the timestamp is within the valid range.

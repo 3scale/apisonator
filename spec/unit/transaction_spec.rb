@@ -3,20 +3,6 @@ module ThreeScale
     describe Transaction do
       let(:transaction) { Transaction.new(service_id: 1000) }
 
-      describe '#[]' do
-        context 'with valid attribute' do
-          subject { transaction[:service_id] }
-
-          it { expect(subject).to be(1000) }
-        end
-
-        context 'with invalid attribute' do
-          subject { transaction[:foo] }
-
-          it { expect { subject }.to raise_error(NoMethodError) }
-        end
-      end
-
       describe '#timestamp=' do
         context 'with nil as a parameter' do
           before { transaction.timestamp = nil }

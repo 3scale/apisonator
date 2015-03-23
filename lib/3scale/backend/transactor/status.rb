@@ -227,7 +227,7 @@ module ThreeScale
               if not options[:anchors_for_caching]
                 if authorized? && usage && (usage_metric_name = usage[report.metric_name])
                   # this is a authrep request and therefore we should sum the usage
-                  val = ThreeScale::Backend::Aggregator::get_value_of_set_if_exists(usage_metric_name)
+                  val = Helpers.get_value_of_set_if_exists(usage_metric_name)
                   if val.nil?
                     xml << "<current_value>" << (report.current_value + usage_metric_name.to_i).to_s << "</current_value>"
                   else
