@@ -460,17 +460,17 @@ class LatestEventsTest < Test::Unit::TestCase
   test 'events_hook is triggered on report' do
     saved_ttl = EventStorage::PING_TTL
     EventStorage.send(:redef_without_warning, 'PING_TTL', 5)
+    EventStorage.stubs(:request_to_events_hook).at_least_once.returns(true)
 
     configuration.events_hook = 'http://foobar.foobar'
 
     post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id1, :usage => {'foos' => 115}}}
+      provider_key: @provider_key,
+      transactions: { 0 => { app_id: @application_id1, usage: { 'foos' => 115 } } }
 
-    assert_raise NoMethodError do
-      Resque.run!
-    end
+    Resque.run!
 
+    EventStorage.unstub(:request_to_events_hook)
     configuration.events_hook = ''
     EventStorage.send(:redef_without_warning, 'PING_TTL', saved_ttl)
   end
@@ -478,6 +478,7 @@ class LatestEventsTest < Test::Unit::TestCase
   test 'events_hook is triggered on authrep' do
     saved_ttl = EventStorage::PING_TTL
     EventStorage.send(:redef_without_warning, 'PING_TTL', 5)
+    EventStorage.stubs(:request_to_events_hook).at_least_once.returns(true)
 
     configuration.events_hook = 'http://foobar.foobar'
 
@@ -486,10 +487,9 @@ class LatestEventsTest < Test::Unit::TestCase
                                     :usage        => {'foos' => 99}
     assert_equal 200, last_response.status
 
-    assert_raise NoMethodError do
-      Resque.run!
-    end
+    Resque.run!
 
+    EventStorage.unstub(:request_to_events_hook)
     configuration.events_hook = ''
     EventStorage.send(:redef_without_warning, 'PING_TTL', saved_ttl)
   end
