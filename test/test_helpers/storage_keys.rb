@@ -22,6 +22,10 @@ module TestHelpers
       "stats/{service:#{service_id}}/cinstance:#{application_id}/response_code:#{response_code}/#{period_part(period, time)}"
     end
 
+    def end_user_response_code_key(service_id, user_id, response_code, period, time = nil)
+      "stats/{service:#{service_id}}/uinstance:#{user_id}/response_code:#{response_code}/#{period_part(period, time)}"
+    end
+
     def period_part(period, time = nil)
       if period == :eternity
         'eternity'

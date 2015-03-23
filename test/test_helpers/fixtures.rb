@@ -151,7 +151,11 @@ module TestHelpers
     end
 
     def transaction_with_response_code(code = 200)
-      attrs = default_transaction_attrs.merge(response_code: code)
+      transaction_with(response_code: code)
+    end
+
+    def transaction_with(opts = {})
+      attrs = default_transaction_attrs.merge(opts)
       Transaction.new(attrs)
     end
 

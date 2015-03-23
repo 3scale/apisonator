@@ -56,7 +56,6 @@ module ThreeScale
                   aggregate_usage(transaction, bucket)
 
                   aggregate_response_codes(transaction, bucket) if transaction.response_code
-
                   touched_apps.merge!(touched_relation(:application, transaction))
                   next unless transaction.user_id
                   touched_users.merge!(touched_relation(:user, transaction))
