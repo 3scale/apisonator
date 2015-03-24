@@ -87,12 +87,18 @@ module TestHelpers
 
       @plan_id_3 = next_id
       @plan_name_3 = "plan#{@plan_id_3}"
-
     end
 
     def setup_oauth_provider_fixtures
       setup_provider_fixtures
       @service = Service.save!(provider_key: @provider_key, id: @service_id, backend_version: 'oauth')
+    end
+
+    def setup_oauth_provider_fixtures_multiple_services
+      setup_provider_fixtures_multiple_services
+      @service_1 = Service.save!(:provider_key => @provider_key, :id => @service_1.id, backend_version: 'oauth')
+      @service_2 = Service.save!(:provider_key => @provider_key, :id => @service_2.id, backend_version: 'oauth')
+      @service_3 = Service.save!(:provider_key => @provider_key, :id => @service_3.id, backend_version: 'oauth')
     end
 
     def seed_data
