@@ -6,6 +6,8 @@ class AuthrepReportingTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::StorageKeys
 
+  include TestHelpers::AuthRep
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -13,7 +15,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     Resque.reset!
     Memoizer.reset!
 
-    setup_provider_fixtures
+    setup_oauth_provider_fixtures
 
     @application = Application.save(:service_id => @service.id,
                                     :id         => next_id,
@@ -25,7 +27,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
   end
 
-  test 'does not authorize when current usage + predicted usage exceeds the limits' do
+  test_authrep 'does not authorize when current usage + predicted usage exceeds the limits' do |e|
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -35,9 +37,9 @@ class AuthrepReportingTest < Test::Unit::TestCase
                                            'usage'  => {'hits' => 3}})
     Resque.run!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'hits' => 2}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'hits' => 2}
 
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
@@ -58,7 +60,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     assert_not_authorized 'usage limits are exceeded'
   end
 
-  test 'succeeds when only limits for the metrics not in the predicted usage are exceeded' do
+  test_authrep 'succeeds when only limits for the metrics not in the predicted usage are exceeded' do |e|
     metric_one_id = @metric_id
     metric_two_id = next_id
 
@@ -85,9 +87,9 @@ class AuthrepReportingTest < Test::Unit::TestCase
                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     # There is no cache available for this request. It uses authrep_nocache method internally.
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'hits' => 1}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'hits' => 1}
 
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
@@ -111,9 +113,9 @@ class AuthrepReportingTest < Test::Unit::TestCase
     # It uses the pregenerated xml but it detects that a violation just happened and
     # executes the validations, ignoring the status on xml.
     # Related with: https://github.com/3scale/backend/issues/64
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'hits' => 1}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'hits' => 1}
 
     doc = Nokogiri::XML(last_response.body)
     usage_reports = doc.at('usage_reports')
@@ -123,7 +125,7 @@ class AuthrepReportingTest < Test::Unit::TestCase
     assert_authorized
   end
 
-  test 'does not authorize if usage of a parent metric exceeds the limits but only a child metric which does not exceed the limits is in the predicted usage' do
+  test_authrep 'does not authorize if usage of a parent metric exceeds the limits but only a child metric which does not exceed the limits is in the predicted usage' do |e|
     child_metric_id = next_id
     Metric.save(:service_id => @service.id,
                 :parent_id  => @metric_id,
@@ -139,9 +141,9 @@ class AuthrepReportingTest < Test::Unit::TestCase
                                            'usage'  => {'hits'  => 5}})
     Resque.run!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'queries' => 1}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'queries' => 1}
     Resque.run!
 
     assert_equal 5, @storage.get(application_key(@service.id,
