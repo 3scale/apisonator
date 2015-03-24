@@ -89,6 +89,11 @@ ThreeScale::Backend.configuration.tap do |config|
   config.load!
 end
 
+Airbrake.configure do |config|
+  config.api_key = ThreeScale::Backend.configuration.hoptoad.api_key
+  config.rescue_rake_exceptions = true
+end
+
 Resque.redis = ThreeScale::Backend::QueueStorage.connection(
   ThreeScale::Backend.environment,
   ThreeScale::Backend.configuration,

@@ -28,8 +28,7 @@ module ThreeScale
           "#{severity} #{pid} #{datetime.getutc.strftime("[%d/%b/%Y %H:%M:%S %Z]")} #{msg}\n"
         }
 
-        airbrake_key = configuration.hoptoad.api_key
-        configure_airbrake_for_resque(airbrake_key) if airbrake_key
+        configure_airbrake_for_resque if Airbrake.configuration.api_key
       end
 
       def self.logger
@@ -113,14 +112,11 @@ module ThreeScale
         @hostname ||= `hostname`.chomp
       end
 
-      def configure_airbrake_for_resque(api_key)
+      def configure_airbrake_for_resque
         require 'resque/failure/multiple'
         require 'resque/failure/airbrake'
         require 'resque/failure/redis'
-        Resque::Failure::Airbrake.configure do |config|
-          config.api_key = api_key
-          config.secure  = true
-        end
+
         Resque::Failure::Multiple.classes = [
           Resque::Failure::Redis,
           Resque::Failure::Airbrake,
