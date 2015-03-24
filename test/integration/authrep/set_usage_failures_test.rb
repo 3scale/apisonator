@@ -5,6 +5,8 @@ class SetUsageFailuresTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
 
+  include TestHelpers::AuthRep
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -12,7 +14,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     Resque.reset!
     Memoizer.reset!
 
-    setup_provider_fixtures
+    setup_oauth_provider_fixtures
 
     @application = Application.save(:service_id => @service.id,
                                     :id         => next_id,
@@ -48,11 +50,11 @@ class SetUsageFailuresTest < Test::Unit::TestCase
                     :day => 100, :month => 1000, :eternity => 10000)
   end
 
-  test 'basic failures when setting usage on authreps' do
+  test_authrep 'basic failures when setting usage on authreps' do |e|
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id     => @application.id,
-                                       :usage => {'hits' => '#99'}
+      get e, :provider_key => @provider_key,
+             :app_id     => @application.id,
+             :usage      => {'hits' => '#99'}
       Resque.run!
 
       assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits', 'day', 99, 100)
@@ -62,9 +64,9 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     assert_equal 0, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id     => @application.id,
-                                       :usage => {'hits' => '##3'}
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hits' => '##3'}
       Resque.run!
 
       assert_error_response :code    => 'usage_value_invalid',
@@ -74,9 +76,9 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     assert_equal 0, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id     => @application.id,
-                                       :usage => {'hits' => '#'}
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hits' => '#'}
       Resque.run!
 
       assert_error_response :code => 'usage_value_invalid',
@@ -86,9 +88,9 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     assert_equal 0, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id     => @application.id,
-                                       :usage => {'hits' => ' '}
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hits' => ' '}
       Resque.run!
 
       assert_error_response :code => 'usage_value_invalid',
@@ -98,9 +100,9 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     assert_equal 0, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id     => @application.id,
-                                       :usage => {'hits' => '#55', 'hits_child_1' => '-#55'}
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hits' => '#55', 'hits_child_1' => '-#55'}
       Resque.run!
 
       assert_error_response :code => 'usage_value_invalid',
@@ -113,17 +115,17 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     assert_equal 0, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml',  :provider_key => @provider_key,
-                                          :app_id     => @application.id
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id
       Resque.run!
 
       assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits', 'day', 99, 100)
       assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits_child_1', 'day', 0, 50)
       assert_authorized
 
-      get '/transactions/authorize.xml',  :provider_key => @provider_key,
-                                          :app_id     => @application.id,
-                                          :usage      => {'hits' => '2'}
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hits' => '2'}
       Resque.run!
 
       assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits', 'day', 99, 100)
@@ -131,9 +133,9 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     end
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml',  :provider_key => @provider_key,
-                                            :app_id     => @application.id,
-                                            :usage      => {'hits' => '##55'}
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hits' => '##55'}
       Resque.run!
 
       assert_error_response :code => 'usage_value_invalid',
@@ -141,19 +143,19 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     end
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-       get '/transactions/authrep.xml',  :provider_key => @provider_key,
-                                            :app_id     => @application.id,
-                                            :usage      => {'hits' => -1}
-       Resque.run!
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hits' => -1}
+      Resque.run!
 
-       assert_error_response :code => 'usage_value_invalid',
-                             :message => 'usage value "-1" for metric "hits" is invalid'
+      assert_error_response :code => 'usage_value_invalid',
+                            :message => 'usage value "-1" for metric "hits" is invalid'
     end
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml',  :provider_key => @provider_key,
-                                             :app_id     => @application.id,
-                                             :usage      => {'hitssssss' => '55'}
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hitssssss' => '55'}
       Resque.run!
 
       assert_error_response :code => 'metric_invalid',
@@ -161,9 +163,9 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     end
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
-      get '/transactions/authrep.xml',  :provider_key => @provider_key,
-                                             :app_id     => @application.id,
-                                             :usage      => {'hitssssss' => '55'}
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :usage        => {'hitssssss' => '55'}
       Resque.run!
 
       assert_error_response :code => 'metric_invalid',
