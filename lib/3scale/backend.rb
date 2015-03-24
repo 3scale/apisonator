@@ -2,6 +2,7 @@ require 'builder'
 require 'hiredis'
 require 'redis'
 require 'airbrake'
+require 'airbrake/rake_handler'
 require 'resque'
 require 'securerandom'
 require 'sinatra/base'
@@ -91,6 +92,7 @@ end
 
 Airbrake.configure do |config|
   config.api_key = ThreeScale::Backend.configuration.hoptoad.api_key
+  config.rescue_rake_exceptions = true
 end
 
 Resque.redis = ThreeScale::Backend::QueueStorage.connection(
