@@ -80,6 +80,17 @@ module ThreeScale
 
         # yields [pair(metric_id, period), value]
         def with_pairs_and_values(service_id, plan_id, metric_ids, &blk)
+          pairs, values = get_pairs_and_values_for service_id, plan_id, metric_ids
+          pairs.zip values, &blk
+        end
+
+        def get_pairs_and_values_for(service_id, plan_id, metric_ids)
+          pairs, keys = generate_pairs_and_keys_for service_id, plan_id, metric_ids
+
+          [pairs, storage.mget(*keys)]
+        end
+
+        def generate_pairs_and_keys_for(service_id, plan_id, metric_ids)
           pairs = []
           keys = []
 
@@ -89,9 +100,7 @@ module ThreeScale
             keys << key_for_pair(prefix, pair)
           end
 
-          values = storage.mget(*keys)
-
-          pairs.zip values, &blk
+          [pairs, keys]
         end
 
         def clear_cache(service_id, plan_id)
