@@ -22,7 +22,7 @@ module ThreeScale
 
         def load_all(service_id, plan_id)
           metric_ids = Metric.load_all_ids(service_id)
-          return [] if metric_ids.nil? || metric_ids.empty?
+          return metric_ids if metric_ids.empty?
 
           pairs = []
           keys = []
