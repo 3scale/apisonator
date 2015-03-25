@@ -53,12 +53,10 @@ module ThreeScale
         end
 
         def save(attributes)
-          PERIODS.select { |period| attributes[period] }.each do |period|
-            storage.set(key(attributes[:service_id],
-                            attributes[:plan_id],
-                            attributes[:metric_id],
-                            period),
-                        attributes[period])
+          prefix = key_prefix(attributes[:service_id], attributes[:plan_id], attributes[:metric_id])
+          PERIODS.each do |period|
+            p_val = attributes[period]
+            p_val && storage.set(key_for_period(prefix, period), p_val)
           end
           clear_cache(attributes[:service_id], attributes[:plan_id])
           Service.incr_version(attributes[:service_id])
