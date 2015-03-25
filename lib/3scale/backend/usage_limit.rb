@@ -29,14 +29,15 @@ module ThreeScale
           keys = keys_for_pairs_of_metric_id_and_period(service_id, plan_id, pairs)
           values = storage.mget(*keys)
 
-          pairs.each_with_index.map do |(metric_id, period), index|
-            value = values[index]
-            value && new(service_id: service_id,
-                         plan_id: plan_id,
-                         metric_id: metric_id,
-                         period: period,
-                         value: value.to_i)
-          end.compact
+          results = []
+          pairs.zip values do |pair, value|
+            value && results << new(service_id: service_id,
+                                    plan_id: plan_id,
+                                    metric_id: pair[0],
+                                    period: pair[1],
+                                    value: value.to_i)
+          end
+          results
         end
         memoize :load_all
 
