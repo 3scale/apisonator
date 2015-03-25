@@ -24,19 +24,8 @@ module ThreeScale
           metric_ids = Metric.load_all_ids(service_id)
           return metric_ids if metric_ids.empty?
 
-          pairs = []
-          keys = []
-
-          prefix = key_prefix service_id, plan_id
-          metric_ids.product PERIODS do |pair|
-            pairs << pair
-            keys << key_for_pair(prefix, pair)
-          end
-
-          values = storage.mget(*keys)
-
           results = []
-          pairs.zip values do |pair, value|
+          with_pairs_and_values service_id, plan_id, metric_ids do |pair, value|
             value && results << new(service_id: service_id,
                                     plan_id: plan_id,
                                     metric_id: pair[0],
@@ -87,6 +76,22 @@ module ThreeScale
 
         def key_for_period(key_pre, period)
           encode_key(key_pre + period.to_s)
+        end
+
+        # yields [pair(metric_id, period), value]
+        def with_pairs_and_values(service_id, plan_id, metric_ids, &blk)
+          pairs = []
+          keys = []
+
+          prefix = key_prefix service_id, plan_id
+          metric_ids.product PERIODS do |pair|
+            pairs << pair
+            keys << key_for_pair(prefix, pair)
+          end
+
+          values = storage.mget(*keys)
+
+          pairs.zip values, &blk
         end
 
         def clear_cache(service_id, plan_id)
