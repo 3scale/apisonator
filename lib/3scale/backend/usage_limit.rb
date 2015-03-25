@@ -67,14 +67,24 @@ module ThreeScale
         private
 
         def key(service_id, plan_id, metric_id, period)
-          encode_key("usage_limit/service_id:#{service_id}/plan_id:#{plan_id}" +
-                     "/metric_id:#{metric_id}/#{period}")
+          key_for_pair(key_prefix(service_id, plan_id), [metric_id, period])
+        end
+
+        # NOTE: metric_id == nil is an accepted value
+        def key_prefix(service_id, plan_id, metric_id = :none)
+          "usage_limit/service_id:#{service_id}/plan_id:#{plan_id}/metric_id:" \
+            "#{"#{metric_id}/" if metric_id != :none}"
+        end
+
+        # receives a key prefix and a pair [metric_id, period]
+        def key_for_pair(key_pre, pair)
+          encode_key("#{key_pre}#{pair[0]}/#{pair[1]}")
         end
 
         def keys_for_pairs_of_metric_id_and_period(service_id, plan_id, pairs)
-          key_prefix = "usage_limit/service_id:#{service_id}/plan_id:#{plan_id}"
-          pairs.map do |metric_id, period|
-            encode_key("#{key_prefix}/metric_id:#{metric_id}/#{period}")
+          key_pre = key_prefix service_id, plan_id
+          pairs.map do |pair|
+            key_for_pair(key_pre, pair)
           end
         end
 
