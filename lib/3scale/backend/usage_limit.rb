@@ -67,7 +67,7 @@ module ThreeScale
         private
 
         def key(service_id, plan_id, metric_id, period)
-          key_for_pair(key_prefix(service_id, plan_id), [metric_id, period])
+          key_for_period(key_prefix(service_id, plan_id, metric_id), period)
         end
 
         # NOTE: metric_id == nil is an accepted value
@@ -86,6 +86,10 @@ module ThreeScale
           pairs.map do |pair|
             key_for_pair(key_pre, pair)
           end
+        end
+
+        def key_for_period(key_pre, period)
+          encode_key(key_pre + period.to_s)
         end
 
         def clear_cache(service_id, plan_id)
