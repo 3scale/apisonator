@@ -64,7 +64,7 @@ module ThreeScale
 
           def aggregate_all(transaction, bucket)
             [Aggregators::ResponseCode, Aggregators::Usage].each do |aggregator|
-              aggregator.new.aggregate(transaction, bucket)
+              aggregator.aggregate(transaction, bucket)
             end
           end
 

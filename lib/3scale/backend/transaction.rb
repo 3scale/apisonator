@@ -19,6 +19,16 @@ module ThreeScale
         end
       end
 
+
+      def extract_response_code
+        if (response_code.is_a?(String) && response_code =~ /\A\d{3}\z/) ||
+           (response_code.is_a?(Fixnum) && (100 ..999).cover?(response_code) )
+          response_code.to_i
+        else
+          false
+        end
+      end
+
       # Validates if transaction timestamp is within accepted range
       #
       # @return [true] if the timestamp is within the valid range.
