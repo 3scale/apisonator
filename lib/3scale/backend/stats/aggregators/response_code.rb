@@ -30,7 +30,7 @@ module ThreeScale
               return {} unless response_code
               values = values_to_inc(response_code)
               values.flat_map do |code|
-                Keys.transaction_response_code_keys(transaction, code)
+                Keys.transaction_keys(transaction, :response_code,  code)
               end
             end
 

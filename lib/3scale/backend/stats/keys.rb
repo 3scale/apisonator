@@ -77,37 +77,21 @@ module ThreeScale
           "stats:failed_at_least_once"
         end
 
-        def transaction_metric_keys(transaction, metric_id)
+        def transaction_keys(transaction, item, value)
           service_key     = service_key_prefix(transaction.service_id)
           application_key = application_key_prefix(service_key,
                                                    transaction.application_id)
 
+          method = "#{item}_key_prefix".to_sym
+
           keys = {
-            service:     metric_key_prefix(service_key, metric_id),
-            application: metric_key_prefix(application_key, metric_id),
+            service:     public_send(method, service_key, value),
+            application: public_send(method, application_key, value),
           }
 
           if transaction.user_id
             user_key = user_key_prefix(service_key, transaction.user_id)
-            keys.merge!(user: metric_key_prefix(user_key, metric_id))
-          end
-
-          keys
-        end
-
-        def transaction_response_code_keys(transaction, response_code)
-          service_key     = service_key_prefix(transaction.service_id)
-          application_key = application_key_prefix(service_key,
-                                                   transaction.application_id)
-
-          keys = {
-            service:     response_code_key_prefix(service_key, response_code),
-            application: response_code_key_prefix(application_key, response_code)
-          }
-
-          if transaction.user_id
-            user_key = user_key_prefix(service_key, transaction.user_id)
-            keys.merge!(user: response_code_key_prefix(user_key, response_code))
+            keys.merge!(user: public_send(method, user_key, value))
           end
 
           keys

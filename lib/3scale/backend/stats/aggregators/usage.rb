@@ -21,7 +21,7 @@ module ThreeScale
               bucket_key = Keys.changed_keys_bucket_key(bucket) if bucket
 
               transaction.usage.each do |metric_id, raw_value|
-                metric_keys = Keys.transaction_metric_keys(transaction, metric_id)
+                metric_keys = Keys.transaction_keys(transaction, :metric, metric_id)
                 cmd         = storage_cmd(raw_value)
                 value       = parse_usage_value(raw_value)
 
