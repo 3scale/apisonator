@@ -1,4 +1,3 @@
-              require 'pry'
 require '3scale/backend/stats/keys'
 require '3scale/backend/transaction'
 require '3scale/backend/stats/aggregators/base'
@@ -12,7 +11,7 @@ module ThreeScale
             include Keys
             include Base
 
-            TRACKED_CODES = Set.new([200,404,403,500,503])
+            TRACKED_CODES = [200,404,403,500,503]
 
             def aggregate(transaction, bucket = nil)
               keys_for_multiple_codes = keys_for_response_code(transaction)
