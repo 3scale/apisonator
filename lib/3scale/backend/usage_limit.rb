@@ -26,11 +26,11 @@ module ThreeScale
 
           results = []
           with_pairs_and_values service_id, plan_id, metric_ids do |pair, value|
-            value && results << new(service_id: service_id,
-                                    plan_id: plan_id,
-                                    metric_id: pair[0],
-                                    period: pair[1],
-                                    value: value.to_i)
+            value and results << new(service_id: service_id,
+                                     plan_id: plan_id,
+                                     metric_id: pair[0],
+                                     period: pair[1],
+                                     value: value.to_i)
           end
           results
         end
@@ -38,14 +38,14 @@ module ThreeScale
 
         def load_value(service_id, plan_id, metric_id, period)
           raw_value = storage.get(key(service_id, plan_id, metric_id, period))
-          raw_value && raw_value.to_i
+          raw_value and raw_value.to_i
         end
 
         def save(attributes)
           prefix = key_prefix(attributes[:service_id], attributes[:plan_id], attributes[:metric_id])
           PERIODS.each do |period|
             p_val = attributes[period]
-            p_val && storage.set(key_for_period(prefix, period), p_val)
+            p_val and storage.set(key_for_period(prefix, period), p_val)
           end
           clear_cache(attributes[:service_id], attributes[:plan_id])
           Service.incr_version(attributes[:service_id])
