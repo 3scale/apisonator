@@ -22,36 +22,30 @@ module ThreeScale
 
         def load_all(service_id, plan_id)
           metric_ids = Metric.load_all_ids(service_id)
-          return [] if metric_ids.nil? || metric_ids.empty?
+          return metric_ids if metric_ids.empty?
 
-          pairs = pairs_of_metric_id_and_period(metric_ids)
-
-          keys = keys_for_pairs_of_metric_id_and_period(service_id, plan_id, pairs)
-          values = storage.mget(*keys)
-
-          pairs.each_with_index.map do |(metric_id, period), index|
-            value = values[index]
-            value && new(service_id: service_id,
-                         plan_id: plan_id,
-                         metric_id: metric_id,
-                         period: period,
-                         value: value.to_i)
-          end.compact
+          results = []
+          with_pairs_and_values service_id, plan_id, metric_ids do |pair, value|
+            value and results << new(service_id: service_id,
+                                     plan_id: plan_id,
+                                     metric_id: pair[0],
+                                     period: pair[1],
+                                     value: value.to_i)
+          end
+          results
         end
         memoize :load_all
 
         def load_value(service_id, plan_id, metric_id, period)
           raw_value = storage.get(key(service_id, plan_id, metric_id, period))
-          raw_value && raw_value.to_i
+          raw_value and raw_value.to_i
         end
 
         def save(attributes)
-          PERIODS.select { |period| attributes[period] }.each do |period|
-            storage.set(key(attributes[:service_id],
-                            attributes[:plan_id],
-                            attributes[:metric_id],
-                            period),
-                        attributes[period])
+          prefix = key_prefix(attributes[:service_id], attributes[:plan_id], attributes[:metric_id])
+          PERIODS.each do |period|
+            p_val = attributes[period]
+            p_val and storage.set(key_for_period(prefix, period), p_val)
           end
           clear_cache(attributes[:service_id], attributes[:plan_id])
           Service.incr_version(attributes[:service_id])
@@ -66,26 +60,47 @@ module ThreeScale
         private
 
         def key(service_id, plan_id, metric_id, period)
-          encode_key("usage_limit/service_id:#{service_id}/plan_id:#{plan_id}" +
-                     "/metric_id:#{metric_id}/#{period}")
+          key_for_period(key_prefix(service_id, plan_id, metric_id), period)
         end
 
-        def pairs_of_metric_id_and_period(metric_ids)
+        # NOTE: metric_id == nil is an accepted value
+        def key_prefix(service_id, plan_id, metric_id = :none)
+          "usage_limit/service_id:#{service_id}/plan_id:#{plan_id}/metric_id:" \
+            "#{"#{metric_id}/" if metric_id != :none}"
+        end
+
+        # receives a key prefix and a pair [metric_id, period]
+        def key_for_pair(key_pre, pair)
+          encode_key("#{key_pre}#{pair[0]}/#{pair[1]}")
+        end
+
+        def key_for_period(key_pre, period)
+          encode_key(key_pre + period.to_s)
+        end
+
+        # yields [pair(metric_id, period), value]
+        def with_pairs_and_values(service_id, plan_id, metric_ids, &blk)
+          pairs, values = get_pairs_and_values_for service_id, plan_id, metric_ids
+          pairs.zip values, &blk
+        end
+
+        def get_pairs_and_values_for(service_id, plan_id, metric_ids)
+          pairs, keys = generate_pairs_and_keys_for service_id, plan_id, metric_ids
+
+          [pairs, storage.mget(*keys)]
+        end
+
+        def generate_pairs_and_keys_for(service_id, plan_id, metric_ids)
           pairs = []
-          metric_ids.each do |metric_id|
-            PERIODS.each do |period|
-              pairs << [metric_id, period]
-            end
+          keys = []
+
+          prefix = key_prefix service_id, plan_id
+          metric_ids.product PERIODS do |pair|
+            pairs << pair
+            keys << key_for_pair(prefix, pair)
           end
 
-          pairs
-        end
-
-        def keys_for_pairs_of_metric_id_and_period(service_id, plan_id, pairs)
-          key_prefix = "usage_limit/service_id:#{service_id}/plan_id:#{plan_id}"
-          pairs.map do |metric_id, period|
-            encode_key("#{key_prefix}/metric_id:#{metric_id}/#{period}")
-          end
+          [pairs, keys]
         end
 
         def clear_cache(service_id, plan_id)

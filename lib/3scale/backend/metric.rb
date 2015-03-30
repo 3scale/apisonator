@@ -81,7 +81,8 @@ module ThreeScale
         end
 
         def load_all_ids(service_id)
-          storage.smembers(id_set_key(service_id)) || []
+          # smembers is guaranteed to return an array of strings, even if empty
+          storage.smembers(id_set_key(service_id))
         end
 
         def load_name(service_id, id)
