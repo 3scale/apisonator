@@ -6,6 +6,8 @@ class AuthrepUserIdTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::StorageKeys
 
+  include TestHelpers::AuthRep
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -13,7 +15,7 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     Resque.reset!
     Memoizer.reset!
 
-    setup_provider_fixtures
+    setup_oauth_provider_fixtures
 
     @default_user_plan_id = next_id
     @default_user_plan_name = 'user plan mobile'
@@ -55,10 +57,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
                     :day => 10)
   end
 
-  test 'application without end user required does not return user usage reports' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_without_users.id,
-                                     :usage        => {'hits' => 3}
+  test_authrep 'application without end user required does not return user usage reports' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_without_users.id,
+           :usage        => {'hits' => 3}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -74,10 +76,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
 
     last_doc = doc
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_without_users.id,
-                                     :usage        => {'hits' => 0},
-                                     :user_id      => 'random user id'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_without_users.id,
+           :usage        => {'hits' => 0},
+           :user_id      => 'random user id'
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -85,11 +87,11 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal last_doc.to_xml, doc.to_xml
   end
 
-  test 'user usage report depends on the user_id, whereas usage report does not' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => 'user1'
+  test_authrep 'user usage report depends on the user_id, whereas usage report does not' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => 'user1'
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -109,10 +111,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal '0', day.at('current_value').content
     assert_equal @default_user_plan_name, doc.at('user_plan').content
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => 'user1'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => 'user1'
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -132,10 +134,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal '0', day.at('current_value').content
     assert_equal @default_user_plan_name, doc.at('user_plan').content
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => 'user2'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => 'user2'
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -155,10 +157,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal '0', day.at('current_value').content
     assert_equal @default_user_plan_name, doc.at('user_plan').content
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'foo' => 3},
-                                     :user_id      => 'user3'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'foo' => 3},
+           :user_id      => 'user3'
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -179,7 +181,7 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal @default_user_plan_name, doc.at('user_plan').content
   end
 
-  test 'user usage reports are across service, independant of application' do
+  test_authrep 'user usage reports are across service, independant of application' do |e|
     @application_with_users2 = Application.save(:service_id => @service.id,
                                     :id         => next_id,
                                     :state      => :active,
@@ -187,10 +189,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
                                     :plan_name  => @plan_name,
                                     :user_required => true)
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => 'user1'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => 'user1'
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -210,10 +212,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal '0', day.at('current_value').content
     assert_equal @default_user_plan_name, doc.at('user_plan').content
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users2.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => 'user1'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users2.id,
+           :usage        => {'hits' => 3},
+           :user_id      => 'user1'
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -234,20 +236,20 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal @default_user_plan_name, doc.at('user_plan').content
   end
 
-  test 'application with users required fails if user_id is not passed or not valid' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3}
+  test_authrep 'application with users required fails if user_id is not passed or not valid' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3}
     Resque.run!
 
     assert_equal 403, last_response.status
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'user_not_defined', doc.at('error')[:code]
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => ''
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => ''
     Resque.run!
 
     assert_equal 403, last_response.status
@@ -256,40 +258,40 @@ class AuthrepUserIdTest < Test::Unit::TestCase
 
     ## watch out, '   ' could be a valid user_id
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => nil
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => nil
     Resque.run!
 
     assert_equal 403, last_response.status
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'user_not_defined', doc.at('error')[:code]
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => {}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => {}
     Resque.run!
 
     assert_equal 403, last_response.status
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'user_not_defined', doc.at('error')[:code]
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => {'foo' => 'bar'}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => {'foo' => 'bar'}
     Resque.run!
 
     assert_equal 403, last_response.status
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'user_not_defined', doc.at('error')[:code]
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => ['bla', 'foo']
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => ['bla', 'foo']
     Resque.run!
 
     assert_equal 403, last_response.status
@@ -297,17 +299,17 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal 'user_not_defined', doc.at('error')[:code]
 
     ## all number gets treated as string in the backend, it's ok
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => 11111
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => 11111
     Resque.run!
 
     assert_equal 200, last_response.status
     doc = Nokogiri::XML(last_response.body)
   end
 
-  test 'user plans does not need to have limits' do
+  test_authrep 'user plans does not need to have limits' do |e|
     user = User.load_or_create!(@service, 'user1')
     assert_equal @default_user_plan_id, user.plan_id
     assert_equal @default_user_plan_name, user.plan_name
@@ -321,10 +323,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal new_user_plan_id, user.plan_id
     assert_equal 'new name of user plan', user.plan_name
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => 'user1'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => 'user1'
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -339,10 +341,10 @@ class AuthrepUserIdTest < Test::Unit::TestCase
     assert_equal 'new name of user plan', doc.at('user_plan').content
 
     ## but that does not affect other users
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_with_users.id,
-                                     :usage        => {'hits' => 3},
-                                     :user_id      => 'user2'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_with_users.id,
+           :usage        => {'hits' => 3},
+           :user_id      => 'user2'
     Resque.run!
 
     assert_equal 200, last_response.status

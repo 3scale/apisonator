@@ -3,13 +3,15 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class TransactorTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
 
+  include TestHelpers::AuthRep
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
 
     Resque.reset!
 
-    setup_provider_fixtures
+    setup_oauth_provider_fixtures
 
     @application_one = Application.save(:service_id => @service_id,
                                         :id         => next_id,
@@ -58,8 +60,6 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-
-
   test 'report raises an exception when provider key is invalid' do
     assert_raise ProviderKeyInvalid do
       Transactor.report('booo', nil, '0' => {'app_id' => @application_one.id,
@@ -73,7 +73,6 @@ class TransactorTest < Test::Unit::TestCase
                                         'usage'  => {'hits' => 1}})
     end
   end
-
 
   test 'report queues backend hit' do
     Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
@@ -94,7 +93,7 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
- test 'report queues backend hit with explicit service id' do
+  test 'report queues backend hit with explicit service id' do
     Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
       Transactor.report(@provider_key, @service_id, '0' => {'app_id' => @application_one.id,
                                                'usage'  => {'hits' => 1}},
@@ -113,15 +112,12 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-
   test 'authorize returns status object with the plan name' do
     status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
     assert_not_nil status.first
     assert_equal @plan_name, status.first.plan_name
   end
-
-
 
   test 'authorize returns status object with usage reports if the plan has usage limits' do
     UsageLimit.save(:service_id => @service_id,
@@ -152,7 +148,6 @@ class TransactorTest < Test::Unit::TestCase
       Resque.run!
     end
 
-
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       status, status_xml, status_result = Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
@@ -171,7 +166,6 @@ class TransactorTest < Test::Unit::TestCase
         assert_equal 2,      report_day.current_value
         assert_equal 200,    report_day.max_value
       else
-
         ## this means it comes from the cache,
         ## warning: need to reproduce the above asserts for xml
         assert_not_nil status_xml
@@ -184,7 +178,6 @@ class TransactorTest < Test::Unit::TestCase
         assert_equal  tmp2, nil
 
         assert_equal status_xml, status.to_xml
-
       end
     end
   end
@@ -281,15 +274,15 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-  test 'authrep returns status object without usage reports if the plan has no usage limits' do
-    status, status_xml, status_result = Transactor.authrep(@provider_key, :app_id => @application_one.id)
+  test_authrep 'returns status object without usage reports if the plan has no usage limits' do |_, method|
+    status, status_xml, status_result = Transactor.send(method, @provider_key, :app_id => @application_one.id)
     if not status.nil?
       assert_equal 0, status.usage_reports.count
     else
       assert_not_nil status_xml
       assert_not_nil status_result
 
-      status, tmp1, tmp2 = Transactor.authrep(@provider_key, { :app_id => @application_one.id, :no_caching => true })
+      status, tmp1, tmp2 = Transactor.send(method, @provider_key, { :app_id => @application_one.id, :no_caching => true })
 
       assert_not_nil status
       assert_equal  tmp1, nil
@@ -301,63 +294,64 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-  test 'authrep raises an exception when provider key is invalid' do
+  test_authrep 'raises an exception when provider key is invalid' do |_, method|
     assert_raise ProviderKeyInvalid do
-      Transactor.authrep('booo', :app_id => @application_one.id)
+      Transactor.send(method, 'booo', :app_id => @application_one.id)
     end
   end
 
-  test 'authrep raises an exception when application id is invalid' do
+  test_authrep 'raises an exception when application id is invalid' do |_, method|
     assert_raise ApplicationNotFound do
-      Transactor.authrep(@provider_key, :app_id => 'baaa')
+      Transactor.send(method, @provider_key, :app_id => 'baaa')
     end
   end
 
-  test 'authrep raises an exception when application id is missing' do
+  test_authrep 'raises an exception when application id is missing' do |_, method|
     assert_raise ApplicationNotFound do
-      Transactor.authrep(@provider_key, {})
+      Transactor.send(method, @provider_key, {})
     end
   end
 
-  test 'authrep works with legacy user key' do
-    user_key = 'foobar'
-    Application.save_id_by_key(@service_id, user_key, @application_one.id)
-
-    assert_not_nil Transactor.authrep(@provider_key, :user_key => user_key)
-  end
-
-  test 'authrep raises an exception when legacy user key is invalid' do
-    Application.save_id_by_key(@service_id, 'foobar', @application_one.id)
-
-    assert_raise UserKeyInvalid do
-      Transactor.authrep(@provider_key, :user_key => 'eatthis')
-    end
-  end
-
-  test 'authrep raises an exception when both application id and legacy user key are passed' do
+  test_authrep 'raises an exception when both application id and legacy user key are passed' do |_, method|
     user_key = 'foobar'
     Application.save_id_by_key(@service_id, user_key, @application_one.id)
 
     assert_raise AuthenticationError do
-      Transactor.authrep(@provider_key, :app_id   => @application_one.id,
-                                          :user_key => user_key)
+      Transactor.send(method, @provider_key, :app_id => @application_one.id,
+                      :user_key => user_key)
     end
   end
 
-  test 'authrep queues backend hit' do
+  test_authrep 'queues backend hit' do |_, method|
     Timecop.freeze(Time.utc(2010, 7, 29, 17, 9)) do
-      Transactor.authrep(@provider_key, :app_id => @application_one.id)
+      Transactor.send(method, @provider_key, :app_id => @application_one.id)
 
       ## processes all the pending notifyjobs.
       Transactor.process_batch(0,{:all => true})
 
       assert_queued Transactor::NotifyJob,
-                    [@provider_key,
-                     {'transactions/authorize' => 1},
-                     '2010-07-29 17:09:00 UTC',
-                     Time.utc(2010, 7, 29, 17, 9).to_f]
+        [@provider_key,
+         {'transactions/authorize' => 1},
+         '2010-07-29 17:09:00 UTC',
+         Time.utc(2010, 7, 29, 17, 9).to_f]
     end
   end
 
+  # OAuth is supposed to not support user_key at all, and we already have
+  # tests covering that in test/integration/oauth/legacy_test.rb
+  test_authrep 'works with legacy user key', except: :oauth_authrep do |_, method|
+    user_key = 'foobar'
+    Application.save_id_by_key(@service_id, user_key, @application_one.id)
 
+    assert_not_nil Transactor.send(method, @provider_key, :user_key => user_key)
+  end
+
+  test_authrep 'raises an exception when legacy user key is invalid',
+               except: :oauth_authrep do |_, method|
+    Application.save_id_by_key(@service_id, 'foobar', @application_one.id)
+
+    assert_raise UserKeyInvalid do
+      Transactor.send(method, @provider_key, :user_key => 'eatthis')
+    end
+  end
 end

@@ -6,6 +6,8 @@ class MultiServicesTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::StorageKeys
 
+  include TestHelpers::AuthRep
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -13,7 +15,7 @@ class MultiServicesTest < Test::Unit::TestCase
     Resque.reset!
     Memoizer.reset!
 
-    setup_provider_fixtures_multiple_services
+    setup_oauth_provider_fixtures_multiple_services
 
     @application_1 = Application.save(:service_id => @service_1.id,
                                     :id         => next_id,
@@ -58,11 +60,11 @@ class MultiServicesTest < Test::Unit::TestCase
                     :day => 100)
   end
 
-  test 'provider key with multiple services, check that call to authrep.xml (most coverge) works with explicit/implicit service ids' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_3.id,
-                                     :service_id   => @service_3.id,
-                                     :usage        => {'hits' => 3}
+  test_authrep 'provider key with multiple services, check that call to authrep (most coverage) works with explicit/implicit service ids' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_3.id,
+           :service_id   => @service_3.id,
+           :usage        => {'hits' => 3}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -81,10 +83,10 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_3,
                                                  :month, Time.now.strftime('%Y%m01'))).to_i
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_2.id,
-                                     :service_id   => @service_2.id,
-                                     :usage        => {'hits' => 2}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_2.id,
+           :service_id   => @service_2.id,
+           :usage        => {'hits' => 2}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -103,10 +105,10 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_2,
                                                  :month, Time.now.strftime('%Y%m01'))).to_i
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :service_id   => @service_1.id,
-                                     :usage        => {'hits' => 1}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_1.id,
+           :service_id   => @service_1.id,
+           :usage        => {'hits' => 1}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -126,9 +128,9 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  :month, Time.now.strftime('%Y%m01'))).to_i
 
     ## now without explicit service_id
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 10}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_1.id,
+           :usage        => {'hits' => 10}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -147,11 +149,11 @@ class MultiServicesTest < Test::Unit::TestCase
                                                   :month, Time.now.strftime('%Y%m01'))).to_i
   end
 
-  test 'provider key with multiple services, check that call to authrep.xml (most coverge) works with explicit/implicit service ids while changing the default service' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_2.id,
-                                     :service_id   => @service_2.id,
-                                     :usage        => {'hits' => 2}
+  test_authrep 'provider key with multiple services, check that call to authrep (most coverage) works with explicit/implicit service ids while changing the default service' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_2.id,
+           :service_id   => @service_2.id,
+           :usage        => {'hits' => 2}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -170,10 +172,10 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_2,
                                                  :month, Time.now.strftime('%Y%m01'))).to_i
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :service_id   => @service_1.id,
-                                     :usage        => {'hits' => 1}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_1.id,
+           :service_id   => @service_1.id,
+           :usage        => {'hits' => 1}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -193,9 +195,9 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  :month, Time.now.strftime('%Y%m01'))).to_i
 
     ## now without explicit service_id
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 10}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_1.id,
+           :usage        => {'hits' => 10}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -220,9 +222,9 @@ class MultiServicesTest < Test::Unit::TestCase
     @service_2.default_service = true
     @service_2.save!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_2.id,
-                                     :usage        => {'hits' => 10}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_2.id,
+           :usage        => {'hits' => 10}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -247,10 +249,10 @@ class MultiServicesTest < Test::Unit::TestCase
                                                   :month, Time.now.strftime('%Y%m01'))).to_i
 
     ## more calls
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_1.id,
-                                     :service_id   => @service_1.id,
-                                     :usage        => {'hits' => 20}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_1.id,
+           :service_id   => @service_1.id,
+           :usage        => {'hits' => 20}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -269,10 +271,10 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_1,
                                                  :month, Time.now.strftime('%Y%m01'))).to_i
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_2.id,
-                                     :service_id   => @service_2.id,
-                                     :usage        => {'hits' => 20}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_2.id,
+           :service_id   => @service_2.id,
+           :usage        => {'hits' => 20}
     Resque.run!
 
     assert_equal 200, last_response.status
@@ -292,10 +294,10 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  :month, Time.now.strftime('%Y%m01'))).to_i
   end
 
-  test 'provider_key needs to be checked regardless if the service_id is correct' do
-    get '/transactions/authrep.xml', :provider_key => 'fakeproviderkey',
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 2}
+  test_authrep 'provider_key needs to be checked regardless if the service_id is correct' do |e|
+    get e, :provider_key => 'fakeproviderkey',
+           :app_id       => @application_1.id,
+           :usage        => {'hits' => 2}
     Resque.run!
 
     assert_equal 403, last_response.status
@@ -306,10 +308,10 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_not_nil error
     assert_equal 'provider_key_invalid', error['code']
 
-    get '/transactions/authrep.xml', :provider_key => 'fakeproviderkey',
-                                     :service_id   => @service_1.id,
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 1}
+    get e, :provider_key => 'fakeproviderkey',
+           :service_id   => @service_1.id,
+           :app_id       => @application_1.id,
+           :usage        => {'hits' => 1}
     Resque.run!
 
     assert_equal 403, last_response.status
@@ -319,10 +321,10 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_not_nil error
     assert_equal 'provider_key_invalid', error['code']
 
-    get '/transactions/authrep.xml', :provider_key => 'fakeproviderkey',
-                                     :service_id   => @service_2.id,
-                                     :app_id       => @application_2.id,
-                                     :usage        => {'hits' => 2}
+    get e, :provider_key => 'fakeproviderkey',
+           :service_id   => @service_2.id,
+           :app_id       => @application_2.id,
+           :usage        => {'hits' => 2}
     Resque.run!
 
     assert_equal 403, last_response.status
@@ -333,13 +335,13 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 'provider_key_invalid', error['code']
   end
 
-  test 'testing that the app_id matches the service that is default service' do
+  test_authrep 'testing that the app_id matches the service that is default service' do |e|
     ## user want to access the service_2 but forget to add service_id, and app_id == @application_2.id does not
     ## exists for the service_1
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application_2.id,
-                                     :usage        => {'hits' => 2}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application_2.id,
+           :usage        => {'hits' => 2}
     Resque.run!
 
     assert_equal 404, last_response.status
@@ -351,11 +353,11 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 'application_not_found', error['code']
   end
 
-  test 'when service_id is not valid there is an error no matter if the provider key is valid' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :service_id   => @service_2.id << '666',
-                                     :app_id       => @application_2.id,
-                                     :usage        => {'hits' => 2}
+  test_authrep 'when service_id is not valid there is an error no matter if the provider key is valid' do |e|
+    get e, :provider_key => @provider_key,
+           :service_id   => @service_2.id << '666',
+           :app_id       => @application_2.id,
+           :usage        => {'hits' => 2}
     Resque.run!
 
     assert_equal 403, last_response.status
@@ -366,10 +368,10 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_not_nil error
     assert_equal 'service_id_invalid', error['code']
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :service_id   => @service_1.id << '666',
-                                     :app_id       => @application_1.id,
-                                     :usage        => {'hits' => 2}
+    get e, :provider_key => @provider_key,
+           :service_id   => @service_1.id << '666',
+           :app_id       => @application_1.id,
+           :usage        => {'hits' => 2}
     Resque.run!
 
     assert_equal 403, last_response.status

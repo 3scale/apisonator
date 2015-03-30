@@ -284,6 +284,10 @@ module ThreeScale
         do_api_method :authrep
       end
 
+      get '/transactions/oauth_authrep.xml' do
+        do_api_method :oauth_authrep
+      end
+
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
       ##~ a = sapi.apis.add

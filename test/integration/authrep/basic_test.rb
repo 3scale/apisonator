@@ -5,6 +5,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
 
+  include TestHelpers::AuthRep
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -12,7 +14,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     Resque.reset!
     Memoizer.reset!
 
-    setup_provider_fixtures
+    setup_oauth_provider_fixtures
 
     @application = Application.save(:service_id => @service.id,
                                     :id         => next_id,
@@ -27,49 +29,49 @@ class AuthrepBasicTest < Test::Unit::TestCase
     @apilog = {'request' => 'API original request'}
   end
 
-  test 'successful authorize responds with 200' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :log          => @apilog
+  test_authrep 'successful authorize responds with 200' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :log          => @apilog
 
     assert_equal 200, last_response.status
   end
 
-  test 'successful authorize with no body responds with 200' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :no_body      => true,
-                                     :log          => @apilog
+  test_authrep 'successful authorize with no body responds with 200' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :no_body      => true,
+           :log          => @apilog
 
     assert_equal 200, last_response.status
     assert_equal '', last_response.body
   end
 
-  test 'successful authorize has custom content type' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :log          => @apilog
+  test_authrep 'successful authorize has custom content type' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :log          => @apilog
 
     assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
 
-  test 'successful authorize renders plan name' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id     => @application.id
+  test_authrep 'successful authorize renders plan name' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal @plan_name, doc.at('status:root plan').content
   end
 
-  test 'response of successful authorize contains authorized flag set to true' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id     => @application.id
+  test_authrep 'response of successful authorize contains authorized flag set to true' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
 
     doc = Nokogiri::XML(last_response.body)
     assert_equal 'true', doc.at('status:root authorized').content
   end
 
-  test 'response of successful authorize contains usage reports if the plan has usage limits' do
+  test_authrep 'response of successful authorize contains usage reports if the plan has usage limits' do |e|
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -88,8 +90,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
     end
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id     => @application.id
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id
 
       doc = Nokogiri::XML(last_response.body)
       usage_reports = doc.at('usage_reports')
@@ -114,13 +116,13 @@ class AuthrepBasicTest < Test::Unit::TestCase
     end
   end
 
-  test 'response of successful authorize does not contain usage reports if the plan has no usage limits' do
+  test_authrep 'response of successful authorize does not contain usage reports if the plan has no usage limits' do |e|
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       Transactor.report(@provider_key, nil,
                         0 => {'app_id' => @application.id, 'usage' => {'hits' => 2}})
 
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id     => @application.id
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id
 
       doc = Nokogiri::XML(last_response.body)
 
@@ -128,115 +130,115 @@ class AuthrepBasicTest < Test::Unit::TestCase
     end
   end
 
-  test 'fails on invalid provider key' do
-    get '/transactions/authrep.xml', :provider_key => 'boo',
-                                     :app_id     => @application.id,
-                                     :log        => @apilog
+  test_authrep 'fails on invalid provider key' do |e|
+    get e, :provider_key => 'boo',
+           :app_id       => @application.id,
+           :log          => @apilog
 
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
   end
 
-  test 'fails on invalid provider key with no body' do
-    get '/transactions/authrep.xml', :provider_key => 'boo',
-                                     :app_id     => @application.id,
-                                     :no_body    => true,
-                                     :log        => @apilog
+  test_authrep 'fails on invalid provider key with no body' do |e|
+    get e, :provider_key => 'boo',
+           :app_id       => @application.id,
+           :no_body      => true,
+           :log          => @apilog
 
     assert_equal 403, last_response.status
     assert_equal '', last_response.body
   end
 
-  test 'fails on invalid application id' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => 'boo',
-                                     :log        => @apilog
+  test_authrep 'fails on invalid application id' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => 'boo',
+           :log          => @apilog
 
     assert_error_response :status  => 404,
                           :code    => 'application_not_found',
                           :message => 'application with id="boo" was not found'
   end
 
-  test 'fails on invalid application id with no body' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => 'boo',
-                                     :no_body      => true
+  test_authrep 'fails on invalid application id with no body' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => 'boo',
+           :no_body      => true
 
     assert_equal 404, last_response.status
     assert_equal '', last_response.body
   end
 
-  test 'fails on missing application id' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key
+  test_authrep 'fails on missing application id' do |e|
+    get e, :provider_key => @provider_key
 
     assert_error_response :status  => 404,
                           :code    => 'application_not_found'
   end
 
-  test 'does not authorize on inactive application' do
+  test_authrep 'does not authorize on inactive application' do |e|
     @application.state = :suspended
     @application.save
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :log        => @apilog
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :log          => @apilog
 
     assert_equal 409, last_response.status
     assert_not_authorized 'application is not active'
   end
 
-  test 'does not authorize on inactive application with no body' do
+  test_authrep 'does not authorize on inactive application with no body' do |e|
     @application.state = :suspended
     @application.save
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :no_body      => true,
-                                     :log        => @apilog
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :no_body      => true,
+           :log          => @apilog
 
     assert_equal 409, last_response.status
     assert_equal '', last_response.body
   end
 
-  test 'does not authorize on exceeded client usage limits' do
+  test_authrep 'does not authorize on exceeded client usage limits' do |e|
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
-                    :day => 4)
+                    :day        => 4)
 
     Transactor.report(@provider_key, nil,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id     => @application.id,
-                                     :log        => @apilog
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :log          => @apilog
 
     assert_equal 409, last_response.status
     assert_not_authorized 'usage limits are exceeded'
   end
 
-  test 'does not authorize on exceeded client usage limits with no body' do
+  test_authrep 'does not authorize on exceeded client usage limits with no body' do |e|
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
-                    :day => 4)
+                    :day        => 4)
 
     Transactor.report(@provider_key, nil,
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
 
     Resque.run!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id     => @application.id,
-                                     :no_body    => true
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :no_body      => true
 
     assert_equal 409, last_response.status
     assert_equal '', last_response.body
   end
 
-  test 'response contains usage reports marked as exceeded on exceeded client usage limits' do
+  test_authrep 'response contains usage reports marked as exceeded on exceeded client usage limits' do |e|
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -247,9 +249,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     Resque.run!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :log        => @apilog
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :log          => @apilog
 
     doc   = Nokogiri::XML(last_response.body)
     day   = doc.at('usage_report[metric = "hits"][period = "day"]')
@@ -259,7 +261,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_nil           month['exceeded']
   end
 
-  test 'succeeds on exceeded provider usage limits' do
+  test_authrep 'succeeds on exceeded provider usage limits' do |e|
     UsageLimit.save(:service_id => @master_service_id,
                     :plan_id    => @master_plan_id,
                     :metric_id  => @master_hits_id,
@@ -272,12 +274,12 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     Resque.run!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
     assert_authorized
   end
 
-  test 'succeeds on eternity limits' do
+  test_authrep 'succeeds on eternity limits' do |e|
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
@@ -296,9 +298,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
       Resque.run!
 
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id,
-                                       :log        => @apilog
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id,
+             :log          => @apilog
 
       doc   = Nokogiri::XML(last_response.body)
       month   = doc.at('usage_report[metric = "hits"][period = "month"]')
@@ -321,7 +323,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     end
   end
 
-  test 'does not authorize on eternity limits' do
+  test_authrep 'does not authorize on eternity limits' do |e|
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
@@ -340,8 +342,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
       Resque.run!
 
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id
 
       doc   = Nokogiri::XML(last_response.body)
       month   = doc.at('usage_report[metric = "hits"][period = "month"]')
@@ -364,7 +366,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     end
   end
 
-  test 'eternity is not returned if the limit on it is not defined' do
+  test_authrep 'eternity is not returned if the limit on it is not defined' do |e|
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
@@ -378,8 +380,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
       Resque.run!
 
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id
 
       doc   = Nokogiri::XML(last_response.body)
       month   = doc.at('usage_report[metric = "hits"][period = "month"]')
@@ -390,19 +392,19 @@ class AuthrepBasicTest < Test::Unit::TestCase
     end
   end
 
-  test 'usage must be an array regression' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => ''
+  test_authrep 'usage must be an array regression' do |e|
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => ''
     assert_equal 403, last_response.status
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => '1001'
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => '1001'
     assert_equal 403, last_response.status
   end
 
-  test 'regression test for bug on reporting hits and the method of hits at the same time' do
+  test_authrep 'regression test for bug on reporting hits and the method of hits at the same time' do |e|
     # http://3scale.airbrake.io/errors/39117266
 
     @child_metric_id = next_id
@@ -416,15 +418,15 @@ class AuthrepBasicTest < Test::Unit::TestCase
                 :name => 'hits',
                 :children => [m1])
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'hits' => '1', 'child_hits' => '1'}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'hits' => '1', 'child_hits' => '1'}
     Resque.run!
 
     assert_equal 200, last_response.status
   end
 
-  test 'reporting hits and a child method at once' do
+  test_authrep 'reporting hits and a child method at once' do |e|
     ## FIXME: this case should not be allowed since it can lead to
     ## WTF cases
 
@@ -449,9 +451,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
                     :metric_id  => @child_metric_id,
                     :eternity   => 10)
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'hits' => '1', 'child_hits' => '1'}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'hits' => '1', 'child_hits' => '1'}
 
     assert_equal 200, last_response.status
 
@@ -466,8 +468,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     Resque.run!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
 
     assert_equal 200, last_response.status
 
@@ -480,9 +482,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     assert_equal '1', eternity.at('current_value').content
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'hits' => '1', 'child_hits' => '1'}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'hits' => '1', 'child_hits' => '1'}
 
     assert_equal 200, last_response.status
 
@@ -497,8 +499,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     Resque.run!
 
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
 
     eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
@@ -509,7 +511,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal '2', eternity.at('current_value').content
   end
 
-  test 'reporting hits and a child method at once, not unitary values' do
+  test_authrep 'reporting hits and a child method at once, not unitary values' do |e|
     ## FIXME: this case should not be allowed since it can lead to
     ## WTF cases
 
@@ -535,9 +537,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
                     :eternity   => 100)
 
     # adding both hits and child_hits
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'hits' => '2', 'child_hits' => '5'}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'hits' => '2', 'child_hits' => '5'}
 
     assert_equal 200, last_response.status
 
@@ -552,8 +554,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     Resque.run!
 
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
 
     assert_equal 200, last_response.status
 
@@ -567,9 +569,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal '5', eternity.at('current_value').content
 
     # another try on adding both hits and child_hits
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'hits' => '3', 'child_hits' => '2'}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'hits' => '3', 'child_hits' => '2'}
 
     assert_equal 200, last_response.status
 
@@ -584,8 +586,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     Resque.run!
 
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
 
     assert_equal 200, last_response.status
 
@@ -599,9 +601,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal '7', eternity.at('current_value').content
 
     # now only child_hits
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :usage        => {'child_hits' => '50'}
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :usage        => {'child_hits' => '50'}
 
     assert_equal 200, last_response.status
 
@@ -616,8 +618,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     Resque.run!
 
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
 
     assert_equal 200, last_response.status
 

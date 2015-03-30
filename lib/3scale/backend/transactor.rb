@@ -36,35 +36,12 @@ module ThreeScale
         do_authorize :oauth_authorize, provider_key, params, options
       end
 
-      def authrep(provider_key, params, options ={})
-        usage = params[:usage]
-        ret = sanitize_and_cache_auth(:authrep, provider_key, usage, params[:no_caching], params, options) do |opts|
-          authrep_nocache(provider_key, params, opts)
-        end
+      def authrep(provider_key, params, options = {})
+        do_authrep :authrep, provider_key, params, options
+      end
 
-        status, _, status_result, service, application, user, service_id = ret
-
-        if application.nil?
-          application_id = params[:app_id]
-          application_id = params[:user_key] if params[:app_id].nil?
-          username = params[:user_id]
-        else
-          service_id = service.id
-          application_id = application.id
-          username = nil
-          username = user.username unless user.nil?
-        end
-
-        if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
-          val = usage ? usage.size : 0
-          ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
-          notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
-        else
-          notify(provider_key, 'transactions/authorize' => 1)
-        end
-
-        ret
+      def oauth_authrep(provider_key, params, options = {})
+        do_authrep :oauth_authrep, provider_key, params, options
       end
 
       def utilization(service_id, application_id)
@@ -124,60 +101,58 @@ module ThreeScale
       private
 
       COMMON_VALIDATORS = [
-                    Validators::Referrer,
-                    Validators::State,
-                    Validators::Limits
-      ]
+        Validators::Referrer,
+        Validators::State,
+        Validators::Limits
+      ].freeze
 
-      VALIDATORS = [Validators::Key] + COMMON_VALIDATORS
+      VALIDATORS = ([Validators::Key] + COMMON_VALIDATORS).freeze
 
-      OAUTH_VALIDATORS = [Validators::OauthSetting,
-                          Validators::OauthKey,
-                          Validators::RedirectUrl] + COMMON_VALIDATORS
+      OAUTH_VALIDATORS = ([
+        Validators::OauthSetting,
+        Validators::OauthKey,
+        Validators::RedirectUrl] +
+        COMMON_VALIDATORS).freeze
 
       def authorize_nocache(method, provider_key, params, options = {})
-        service = load_service!(provider_key, params[:service_id])
-
-        app_id = params[:app_id]
-        if method == :oauth_authorize
-          ## if app_id is not defined, check for the access_token and resolve it to the app_id
-          if (app_id.nil? || app_id.empty?)
-            if params[:access_token].nil? || params[:access_token].empty?
-              raise ApplicationNotFound.new(app_id)
-            else
-              app_id = OAuthAccessTokenStorage.get_app_id(service.id, params[:access_token])
-              raise AccessTokenInvalid.new(params[:access_token]) if app_id.nil? || app_id.empty?
-            end
-          end
-
-          oauth = true
-          user_key = nil
-        else
-          oauth = false
-          user_key = params[:user_key]
-        end
-
-        do_validators(provider_key, service, app_id, params[:user_id], user_key, nil, oauth, params)
+        oauth = method == :oauth_authorize
+        validate(oauth, provider_key, false, params)
       end
 
       ## this is the classic way to do an authrep in case the cache fails, there
       ## has been changes on the underlying data or the time to life has elapsed
-      def authrep_nocache(provider_key, params, options = {})
-        service = load_service!(provider_key, params[:service_id])
-
-        do_validators(provider_key, service, params[:app_id], params[:user_id], params[:user_key], params[:usage], false, params)
+      def authrep_nocache(method, provider_key, params, options = {})
+        oauth = method == :oauth_authrep
+        validate(oauth, provider_key, true, params)
       rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
         # we still want to track these
         notify(provider_key, 'transactions/authorize' => 1)
         raise e
       end
 
-      def do_validators(provider_key, service, app_id, user_id, user_key, usage, oauth, params)
+      def validate(oauth, provider_key, report_usage, params)
+        service = load_service!(provider_key, params[:service_id])
+        app_id, user_key = params[:app_id], params[:user_key]
+
+        if oauth
+          # if app_id (client_id) isn't defined, check for access_token and
+          # resolve it to the app_id
+          if app_id.nil? or app_id.empty?
+            access_token = params[:access_token]
+            raise ApplicationNotFound.new(app_id) if access_token.nil? or access_token.empty?
+            app_id = OAuthAccessTokenStorage.get_app_id(service.id, access_token)
+            raise AccessTokenInvalid.new(access_token) if app_id.nil? || app_id.empty?
+          end
+          validators = OAUTH_VALIDATORS
+        else
+          validators = VALIDATORS
+        end
+
         application = Application.load_by_id_or_user_key!(service.id,
                                                           app_id,
                                                           user_key)
 
-        user         = load_user!(application, service, user_id)
+        user         = load_user!(application, service, params[:user_id])
         usage_values = load_current_usage(application)
         user_usage   = load_user_current_usage(user) if user
         status_attrs = {
@@ -185,12 +160,12 @@ module ThreeScale
           application: application,
           service:     service,
           oauth:       oauth,
-          usage:       usage,
+          usage:       report_usage ? params[:usage] : nil,
           values:      usage_values,
           user:        user,
         }
 
-        status = apply_validators(oauth ? OAUTH_VALIDATORS : VALIDATORS, status_attrs, params)
+        status = apply_validators(validators, status_attrs, params)
 
         [status, service, application, user]
       end
@@ -201,6 +176,37 @@ module ThreeScale
         sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do |opts|
           authorize_nocache(method, provider_key, params, opts)
         end
+      end
+
+      def do_authrep(method, provider_key, params, options)
+        usage = params[:usage]
+        ret = sanitize_and_cache_auth(method, provider_key, usage, params[:no_caching], params, options) do |opts|
+          authrep_nocache(method, provider_key, params, opts)
+        end
+
+        status, _, status_result, service, application, user, service_id = ret
+
+        if application.nil?
+          application_id = params[:app_id]
+          application_id = params[:user_key] if params[:app_id].nil?
+          username = params[:user_id]
+        else
+          service_id = service.id
+          application_id = application.id
+          username = nil
+          username = user.username unless user.nil?
+        end
+
+        if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
+          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
+          val = usage ? usage.size : 0
+          ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
+          notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
+        else
+          notify(provider_key, 'transactions/authorize' => 1)
+        end
+
+        ret
       end
 
       def sanitize_and_cache_auth(method, provider_key, usage, no_cache, params, options)
@@ -219,7 +225,7 @@ module ThreeScale
           if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
             unless usage.nil?
               options[:usage] = usage
-              options[:add_usage_on_report] = true if method == :authrep
+              options[:add_usage_on_report] = true if method == :authrep || method == :oauth_authrep
             end
             status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
             cache_miss = false unless status_xml.nil? || status_result.nil? || violation

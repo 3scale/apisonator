@@ -5,12 +5,14 @@ class AuthrepReferrerFiltersTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
 
+  include TestHelpers::AuthRep
+
   def setup
     Storage.instance(true).flushdb
 
     Memoizer.reset!
 
-    setup_provider_fixtures
+    setup_oauth_provider_fixtures
 
     @service.referrer_filters_required = true # if this is disabled we bypass the verification
     @service.save!
@@ -21,118 +23,107 @@ class AuthrepReferrerFiltersTest < Test::Unit::TestCase
                                     :plan_name  => @plan_name)
   end
 
-  test 'succeeds if no referrer filter is defined and no referrer is passed' do
+  test_authrep 'succeeds if no referrer filter is defined and no referrer is passed' do |e|
     @service.referrer_filters_required = false
     @service.save!
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
 
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
     assert_authorized
   end
 
-  test 'succeeds if simple domain filter is defined and matching referrer is passed' do
+  test_authrep 'succeeds if simple domain filter is defined and matching referrer is passed' do |e|
     @application.create_referrer_filter('example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :referrer     => 'example.org'
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :referrer     => 'example.org'
     assert_authorized
   end
 
-  test 'succeeds if wildcard domain filter is defined and matching referrer is passed' do
+  test_authrep 'succeeds if wildcard domain filter is defined and matching referrer is passed' do |e|
     @application.create_referrer_filter('*.bar.example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :referrer     => 'foo.bar.example.org'
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :referrer     => 'foo.bar.example.org'
     assert_authorized
   end
 
-  test 'succeeds if a referrer filter is defined but referrer is bypassed' do
+  test_authrep 'succeeds if a referrer filter is defined but referrer is bypassed' do |e|
     @application.create_referrer_filter('example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :referrer     => '*'
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :referrer     => '*'
     assert_authorized
   end
 
-  test 'does not authorize if domain filter is defined but no referrer is passed' do
+  test_authrep 'does not authorize if domain filter is defined but no referrer is passed' do |e|
     @application.create_referrer_filter('example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
     assert_not_authorized 'referrer is missing'
   end
 
-  test 'does not authorize if simple domain filter is defined but referrer does not match' do
+  test_authrep 'does not authorize if simple domain filter is defined but referrer does not match' do |e|
     @application.create_referrer_filter('foo.example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :referrer     => 'bar.example.org'
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :referrer     => 'bar.example.org'
     assert_not_authorized 'referrer "bar.example.org" is not allowed'
   end
 
-  test 'does not authorize if wildcard domain filter is defined but referrer does not match' do
+  test_authrep 'does not authorize if wildcard domain filter is defined but referrer does not match' do |e|
     @application.create_referrer_filter('*.foo.example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :referrer     => 'baz.bar.example.org'
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :referrer     => 'baz.bar.example.org'
     assert_not_authorized 'referrer "baz.bar.example.org" is not allowed'
   end
 
-  test 'succeeds if referrer filters are not required' do
+  test_authrep 'succeeds if referrer filters are not required' do |e|
     @service.referrer_filters_required = false
     @service.save!
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id
     assert_authorized
   end
 
-  test 'succeeds if referrer filters are required and defined' do
+  test_authrep 'succeeds if referrer filters are required and defined' do |e|
     @application.create_referrer_filter('foo.example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :referrer     => 'foo.example.org'
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :referrer     => 'foo.example.org'
     assert_authorized
   end
 
-  test 'authorize always is referrer filters at the service level are set to false' do
+  test_authrep 'authorize always is referrer filters at the service level are set to false' do |e|
     @service.referrer_filters_required = false
     @service.save!
 
     @application.create_referrer_filter('*.foo.example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :referrer     => 'test.foo.example.org'
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :referrer     => 'test.foo.example.org'
     assert_authorized
   end
 
-
-  test 'authorize always is referrer filters at the service level are set to false, even when incorrect' do
+  test_authrep 'authorize always is referrer filters at the service level are set to false, even when incorrect' do |e|
     @service.referrer_filters_required = false
     @service.save!
 
     @application.create_referrer_filter('*.foo.example.org')
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                     :app_id       => @application.id,
-                                     :referrer     => 'baz.bar.example.org'
-
+    get e, :provider_key => @provider_key,
+           :app_id       => @application.id,
+           :referrer     => 'baz.bar.example.org'
     assert_authorized
   end
 end

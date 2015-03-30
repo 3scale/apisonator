@@ -6,6 +6,8 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::StorageKeys
 
+  include TestHelpers::AuthRep
+
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
@@ -13,7 +15,7 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
     Resque.reset!
     Memoizer.reset!
 
-    setup_provider_fixtures
+    setup_oauth_provider_fixtures
 
     @application = Application.save(:service_id => @service.id,
                                     :id         => next_id,
@@ -25,10 +27,10 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
   end
 
-  test 'successful authorize reports backend hit' do
+  test_authrep 'successful authorize reports backend hit' do |e|
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id
 
       Resque.run!
       ## processes all the pending NotifyJobs. This creates a NotifyJob with the
@@ -48,10 +50,10 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
     end
   end
 
-  test 'authorize with invalid provider key does not report backend hit' do
+  test_authrep 'authorize with invalid provider key does not report backend hit' do |e|
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      get '/transactions/authrep.xml', :provider_key => 'boo',
-                                       :app_id       => @application.id
+      get e, :provider_key => 'boo',
+             :app_id       => @application.id
       Resque.run!
 
       Backend::Transactor.process_batch(0, all: true)
@@ -64,10 +66,10 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
     end
   end
 
-  test 'authorize with invalid application id reports backend hit' do
+  test_authrep 'authorize with invalid application id reports backend hit' do |e|
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => 'baa'
+      get e, :provider_key => @provider_key,
+             :app_id       => 'baa'
       Resque.run!
 
       Backend::Transactor.process_batch(0, all: true)
@@ -80,13 +82,13 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
     end
   end
 
-  test 'authorize with inactive application reports backend hit' do
+  test_authrep 'authorize with inactive application reports backend hit' do |e|
     @application.state = :suspended
     @application.save
 
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id
 
       Resque.run!
 
@@ -100,7 +102,7 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
     end
   end
 
-  test 'authorize with exceeded usage limits reports backend hit' do
+  test_authrep 'authorize with exceeded usage limits reports backend hit' do |e|
     UsageLimit.save(:service_id => @service_id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
@@ -116,8 +118,8 @@ class AuthrepBackendHitsTest < Test::Unit::TestCase
     end
 
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id
+      get e, :provider_key => @provider_key,
+             :app_id       => @application.id
       Resque.run!
 
       Backend::Transactor.process_batch(0, all: true)
