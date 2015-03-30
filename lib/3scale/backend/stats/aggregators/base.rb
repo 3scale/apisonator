@@ -18,9 +18,10 @@ module ThreeScale
           # @param [Symbol] cmd
           # @param [String, Nil] bucket_key
           def aggregate_values(value, timestamp, keys, cmd, bucket_key = nil)
-            granularities = [:eternity, :month, :week, :day, :hour]
+            service_granularities = [:eternity, :month, :week, :day, :hour]
+            expanded_granularities = service_granularities + [:year, :minute]
             keys.each do |metric_type, prefix_key|
-              granularities += [:year, :minute] unless metric_type == :service
+              granularities = ( metric_type == :service) ? service_granularities : expanded_granularities
 
               granularities.each do |granularity|
                 key = counter_key(prefix_key, granularity, timestamp)
