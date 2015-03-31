@@ -137,6 +137,12 @@ module ThreeScale
       end
     end
 
+    class RequiredParamsMissing < Invalid
+      def initialize
+        super 'missing required parameters'
+      end
+    end
+
     class UsageValueInvalid < Error
       def initialize(metric_name, value)
         if !value.is_a?(String) || value.blank?
