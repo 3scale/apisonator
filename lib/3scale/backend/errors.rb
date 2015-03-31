@@ -117,7 +117,7 @@ module ThreeScale
 
     class BadRequest < Invalid
       def initialize
-        super 'request contains syntanx errors, should not be repeated without modification'
+        super 'request contains syntax errors, should not be repeated without modification'
       end
     end
 
