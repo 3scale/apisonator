@@ -81,7 +81,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 3, @storage.get(application_key(@service_3.id,
                                                  @application_3.id,
                                                  @metric_id_3,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     get e, :provider_key => @provider_key,
            :app_id       => @application_2.id,
@@ -103,7 +103,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 2, @storage.get(application_key(@service_2.id,
                                                  @application_2.id,
                                                  @metric_id_2,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     get e, :provider_key => @provider_key,
            :app_id       => @application_1.id,
@@ -125,7 +125,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     ## now without explicit service_id
     get e, :provider_key => @provider_key,
@@ -146,7 +146,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
-                                                  :month, Time.now.strftime('%Y%m01'))).to_i
+                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
   end
 
   test_authrep 'provider key with multiple services, check that call to authrep (most coverage) works with explicit/implicit service ids while changing the default service' do |e|
@@ -170,7 +170,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 2, @storage.get(application_key(@service_2.id,
                                                  @application_2.id,
                                                  @metric_id_2,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     get e, :provider_key => @provider_key,
            :app_id       => @application_1.id,
@@ -192,7 +192,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     ## now without explicit service_id
     get e, :provider_key => @provider_key,
@@ -214,7 +214,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
-                                                  :month, Time.now.strftime('%Y%m01'))).to_i
+                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     ## now, change the default service id to be the second one
     Memoizer.reset!
@@ -241,12 +241,12 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 12, @storage.get(application_key(@service_2.id,
                                                   @application_2.id,
                                                   @metric_id_2,
-                                                  :month, Time.now.strftime('%Y%m01'))).to_i
+                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
-                                                  :month, Time.now.strftime('%Y%m01'))).to_i
+                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     ## more calls
     get e, :provider_key => @provider_key,
@@ -269,7 +269,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 31, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     get e, :provider_key => @provider_key,
            :app_id       => @application_2.id,
@@ -291,7 +291,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 32, @storage.get(application_key(@service_2.id,
                                                  @application_2.id,
                                                  @metric_id_2,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
   end
 
   test_authrep 'provider_key needs to be checked regardless if the service_id is correct' do |e|

@@ -72,15 +72,15 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 3, @storage.get(application_key(@service_3.id,
                                                  @application_3.id,
                                                  @metric_id_3,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
     assert_equal 0, @storage.get(application_key(@service_2.id,
                                                  @application_3.id,
                                                  @metric_id_3,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
     assert_equal 0, @storage.get(application_key(@service_2.id,
                                                  @application_3.id,
                                                  @metric_id_2,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     assert_not_errors_in_transactions
   end
@@ -97,7 +97,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 0, @storage.get(application_key(@service_3.id,
                                                  @application_3.id,
                                                  @metric_id_3,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     get '/transactions/errors.xml', :provider_key => @provider_key
 
@@ -180,7 +180,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 3, @storage.get(application_key(@service_3.id,
                                                  @application_3.id,
                                                  @metric_id_3,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -210,7 +210,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 2, @storage.get(application_key(@service_2.id,
                                                  @application_2.id,
                                                  @metric_id_2,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -239,7 +239,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     ## now without explicit service_id
     post '/transactions.xml',
@@ -267,7 +267,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
-                                                  :month, Time.now.strftime('%Y%m01'))).to_i
+                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     assert_not_errors_in_transactions
   end
@@ -300,7 +300,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 2, @storage.get(application_key(@service_2.id,
                                                  @application_2.id,
                                                  @metric_id_2,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -329,7 +329,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     ## now without explicit service_id
     post '/transactions.xml',
@@ -358,7 +358,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
-                                                  :month, Time.now.strftime('%Y%m01'))).to_i
+                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     ## now, change the default service id to be the second one
 
@@ -394,11 +394,11 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 12, @storage.get(application_key(@service_2.id,
                                                   @application_2.id,
                                                   @metric_id_2,
-                                                  :month, Time.now.strftime('%Y%m01'))).to_i
+                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
     assert_equal 11, @storage.get(application_key(@service_1.id,
                                                   @application_1.id,
                                                   @metric_id_1,
-                                                  :month, Time.now.strftime('%Y%m01'))).to_i
+                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     ## more calls
     post '/transactions.xml',
@@ -428,7 +428,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 31, @storage.get(application_key(@service_1.id,
                                                  @application_1.id,
                                                  @metric_id_1,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -458,7 +458,7 @@ class MultiServicesTest < Test::Unit::TestCase
     assert_equal 32, @storage.get(application_key(@service_2.id,
                                                  @application_2.id,
                                                  @metric_id_2,
-                                                 :month, Time.now.strftime('%Y%m01'))).to_i
+                                                 :month, Time.now.getutc.strftime('%Y%m01'))).to_i
     assert_not_errors_in_transactions
   end
 
