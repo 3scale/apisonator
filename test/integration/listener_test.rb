@@ -44,4 +44,19 @@ class ListenerTest < Test::Unit::TestCase
       post '/transactions.xml?transactions[0]=foo2', :provider_key => 'foo'
     end
   end
+
+  def test_missing_required_parameters
+    post '/services/123/oauth_access_tokens.xml', :provider_key => 'foo' # no :token
+    assert_equal 422, last_response.status
+
+    node = xml.at('error')
+    assert_equal 'missing required parameters', node.content
+    assert_equal 'required_params_missing', node['code']
+  end
+
+  private
+
+  def xml
+    Nokogiri::XML(last_response.body)
+  end
 end
