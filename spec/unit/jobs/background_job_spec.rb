@@ -41,7 +41,7 @@ module ThreeScale
 
         it 'complains when you don\'t set a log message' do
           expect { BarJob.perform() }.to raise_error(
-            RuntimeError, 'No job message given')
+            BackgroundJob::Error, 'No job message given')
         end
       end
     end

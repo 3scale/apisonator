@@ -3,6 +3,8 @@ module ThreeScale
 
     class BackgroundJob
 
+      Error = Class.new StandardError
+
       class << self
         def perform(*args)
           @args = args
@@ -25,7 +27,7 @@ module ThreeScale
           stats_mem = Memoizer.stats
           end_time = Time.now.getutc
 
-          raise 'No job message given' unless message
+          raise Error, 'No job message given' unless message
           prefix = log_class_name + ' ' + message
 
           if status_ok
