@@ -150,7 +150,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
   test 'process increments_all_stats_counters' do
     timestamp = default_transaction_timestamp
-    Stats::Aggregator.process([default_transaction])
+    Stats::Aggregator.process([transaction_with_response_code])
 
     assert_equal 0, Resque.queue(:main).length  + Resque.queue(:stats).length
     Stats::Tasks.schedule_one_stats_job
@@ -159,25 +159,54 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :month,  '20100501'))
+    assert_equal '1', @storage.get(response_code_key(1001, '200', :month,  '20100501'))
+    assert_equal '1', @storage.get(response_code_key(1001, '2XX', :month,  '20100501'))
     assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp)
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :day,    '20100507'))
+    assert_equal '1', @storage.get(response_code_key(1001, '200', :day,    '20100507'))
+    assert_equal '1', @storage.get(response_code_key(1001, '2XX', :day,    '20100507'))
     assert_equal 1, @storage_stats.get(1001, 3001, :day, timestamp)
 
     assert_equal '1', @storage.get(service_key(1001, 3001, :hour,   '2010050713'))
+    assert_equal '1', @storage.get(response_code_key(1001, '200', :hour,   '2010050713'))
+    assert_equal '1', @storage.get(response_code_key(1001, '2XX', :hour,   '2010050713'))
     assert_equal 1, @storage_stats.get(1001, 3001, :hour, timestamp)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :year,   '20100101'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '200', :year,   '20100101'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :year,   '20100101'))
     assert_equal 1, @storage_stats.get(1001, 3001, :year, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :month,  '20100501'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '200', :month,  '20100501'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :month,  '20100501'))
     assert_equal 1, @storage_stats.get(1001, 3001, :month, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '200', :day,    '20100507'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :day,    '20100507'))
     assert_equal 1, @storage_stats.get(1001, 3001, :day, timestamp, application: 2001)
 
     assert_equal '1', @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '200', :hour,   '2010050713'))
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :hour,   '2010050713'))
     assert_equal 1, @storage_stats.get(1001, 3001, :hour, timestamp, application: 2001)
+  end
+
+
+  test 'aggregates response codes incrementing 2XX for unknown 209 response '  do
+    timestamp = default_transaction_timestamp
+    transaction_with_unknown_response_code = transaction_with_response_code(209)
+    Stats::Aggregator.process([transaction_with_unknown_response_code])
+
+    assert_equal 0, Resque.queue(:main).length  + Resque.queue(:stats).length
+    Stats::Tasks.schedule_one_stats_job
+    assert_equal 1, Resque.queue(:main).length + Resque.queue(:stats).length
+    Resque.run!
+    assert_equal 0, Resque.queue(:main).length + Resque.queue(:stats).length
+    assert_equal '1', @storage.get(app_response_code_key(1001, 2001, '2XX', :hour,   '2010050713'))
+    assert_equal nil, @storage.get(app_response_code_key(1001, 2001, '209', :hour,   '2010050713'))
   end
 
   test 'aggregate takes into account setting the counter value ok' do
@@ -652,6 +681,53 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     assert_equal 4, @storage_stats.get(service.id, @metric_hits.id, :hour, timestamp, user: "another_user_id_xyz")
     assert_equal 4, @storage_stats.get(service.id, @metric_hits.id, :month, timestamp, user: "another_user_id_xyz")
+  end
+
+
+  test 'transactions with end_user plans (user_id) with response codes get properly aggregated' do
+    default_user_plan_id = next_id
+    default_user_plan_name = "user plan mobile"
+    timestamp = default_transaction_timestamp
+
+    service = Service.save!(provider_key: @provider_key, id: next_id)
+    Service.stubs(:load_by_id).returns(service)
+    service.stubs :user_add
+
+    service.user_registration_required = false
+    service.default_user_plan_name = default_user_plan_name
+    service.default_user_plan_id = default_user_plan_id
+    service.save!
+
+    application = Application.save(service_id:    service.id,
+                                   id:            next_id,
+                                   state:         :active,
+                                   plan_id:       @plan_id,
+                                   plan_name:     @plan_name,
+                                   user_required: true)
+
+    transaction = Transaction.new(service_id:     service.id,
+                                  application_id: application.id,
+                                  timestamp:      timestamp,
+                                  usage:          { @metric_hits.id => 1 },
+                                  response_code: 200,
+                                  user_id:        "user_id_xyz")
+
+    Stats::Aggregator.process([transaction])
+
+    Stats::Info.pending_buckets.size.times do
+      Stats::Tasks.schedule_one_stats_job
+    end
+    Resque.run!
+
+    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 0, Resque.queue(:main).length
+
+    assert_equal '1', @storage.get(end_user_response_code_key(service.id, "user_id_xyz", '2XX', :hour,   '2010050713'))
+    assert_equal '1', @storage.get(end_user_response_code_key(service.id, "user_id_xyz", '2XX', :month,   '20100501'))
+    assert_equal '1', @storage.get(end_user_response_code_key(service.id, "user_id_xyz", '2XX', :eternity))
+    assert_equal '1', @storage.get(end_user_response_code_key(service.id, "user_id_xyz", '200', :hour,   '2010050713'))
+    assert_equal '1', @storage.get(end_user_response_code_key(service.id, "user_id_xyz", '200', :month,   '20100501'))
+    assert_equal '1', @storage.get(end_user_response_code_key(service.id, "user_id_xyz", '200', :eternity))
   end
 
   test 'delete all buckets and keys' do

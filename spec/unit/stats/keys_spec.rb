@@ -46,6 +46,15 @@ module ThreeScale
           end
         end
 
+        describe '.response_code_key_prefix' do
+          let(:prefix) { "stats/{service:1000}/cinstance:10"}
+          let(:result) { Keys.response_code_key_prefix(prefix, 404) }
+
+          it 'returns a composed key with metric id' do
+            expect(result).to eq("stats/{service:1000}/cinstance:10/response_code:404")
+          end
+        end
+
         describe '.usage_value_key' do
           let(:app) {
             double("application", service_id: service_id, id: application_id)
