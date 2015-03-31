@@ -38,11 +38,11 @@ module ThreeScale
         end
 
         def success_log_message
-          @success_log_message or raise("This should be set.")
+          @success_log_message or raise("@success_log_message should be set.")
         end
 
         def error_log_message
-          @error_log_message or raise("This should be set.")
+          @error_log_message # [dead code] or raise("@error_log_message be set.")
         end
 
         def success?

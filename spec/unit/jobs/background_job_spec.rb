@@ -41,7 +41,7 @@ module ThreeScale
 
         it 'complains when you don\'t set a log message' do
           expect { BarJob.perform() }.to raise_error(
-            RuntimeError, "This should be set.")
+            RuntimeError, '@success_log_message should be set.')
         end
       end
     end
