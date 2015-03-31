@@ -368,16 +368,13 @@ module ThreeScale
         [pairs, metric_ids]
       end
 
-      def load_user_current_usage(user)
+      def _load_current_usage(obj)
         pairs, metric_ids = get_pairs_and_metric_ids user.usage_limits
         return {} if pairs.empty?
 
         # preloading metric names
-        user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
-        now = Time.now.getutc
-        keys = pairs.map do |metric_id, period|
-          Stats::Keys.user_usage_value_key(user, metric_id, period, now)
-        end
+        obj.metric_names = Metric.load_all_names(obj.service_id, metric_ids)
+        keys = pairs.map(&Proc.new)
         raw_values = storage.mget(*keys)
         values     = {}
         pairs.each_with_index do |(metric_id, period), index|
@@ -387,23 +384,18 @@ module ThreeScale
         values
       end
 
-      def load_current_usage(application)
-        pairs, metric_ids = get_pairs_and_metric_ids application.usage_limits
-        return {} if pairs.empty?
-
-        # preloading metric names
-        application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
+      def load_user_current_usage(user)
         now = Time.now.getutc
-        keys = pairs.map do |metric_id, period|
+        _load_current_usage user do |metric_id, period|
+          Stats::Keys.user_usage_value_key(user, metric_id, period, now)
+        end
+      end
+
+      def load_current_usage(application)
+        now = Time.now.getutc
+        _load_current_usage application do |metric_id, period|
           Stats::Keys.usage_value_key(application, metric_id, period, now)
         end
-        raw_values = storage.mget(*keys)
-        values     = {}
-        pairs.each_with_index do |(metric_id, period), index|
-          values[period] ||= {}
-          values[period][metric_id] = raw_values[index].to_i
-        end
-        values
       end
 
       def storage
