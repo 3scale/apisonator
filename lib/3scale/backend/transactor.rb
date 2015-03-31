@@ -370,7 +370,7 @@ module ThreeScale
 
       def load_user_current_usage(user)
         pairs, metric_ids = get_pairs_and_metric_ids user.usage_limits
-        return {} if pairs.nil? or pairs.size==0
+        return {} if pairs.empty?
 
         # preloading metric names
         user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
@@ -389,7 +389,7 @@ module ThreeScale
 
       def load_current_usage(application)
         pairs, metric_ids = get_pairs_and_metric_ids application.usage_limits
-        return {} if pairs.nil? or pairs.size==0
+        return {} if pairs.empty?
 
         # preloading metric names
         application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
