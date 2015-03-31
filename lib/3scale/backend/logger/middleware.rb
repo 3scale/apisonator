@@ -2,8 +2,39 @@ module ThreeScale
   module Backend
     class Logger
       class Middleware
-        FORMAT = "%s - %s [%s] \"%s %s%s %s\" %d %s %s %s %s %s %s %s %s %s\n"
-        ERROR_FORMAT = "%s - %s [%s] \"%s %s%s %s\" %d \"%s\" %s %s\n"
+        Z3_RANGE = 0..3.freeze
+
+        private_constant(*[
+          :HTTP_X_FORWARDED_FOR,
+          :REMOTE_ADDR,
+          :REMOTE_USER,
+          :REQUEST_METHOD,
+          :PATH_INFO,
+          :HTTP_VERSION,
+          :HTTP_X_REQUEST_ID,
+          :QUERY_STRING
+        ].each do |k|
+          const_set(k, k.to_s.freeze)
+        end)
+
+        private_constant(*{
+          FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d %s %s %s %s %s %s %s %s %s\n",
+          ERROR_FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d \"%s\" %s %s\n",
+          DATE_FORMAT: '%d/%b/%Y %H:%M:%S %Z',
+          STR_PROVIDER_KEY: 'provider_key',
+          STR_POST: 'POST',
+          STR_EQUAL: '=',
+          STR_DASH: '-',
+          STR_AMPERSAND: '&',
+          STR_ZERO: '0',
+          STR_RACK_ERRORS: 'rack.errors',
+          STR_EMPTY: '',
+          STR_QUESTION_MARK: '?',
+          STR_NEWLINE: "\n"
+        }.map do |k, v|
+          const_set(k, v.freeze)
+          k
+        end)
 
         def initialize(app, logger=nil)
           @app = app
@@ -29,19 +60,20 @@ module ThreeScale
           now = Time.now.getutc
           qs  = extract_query_string(env)
 
-          logger = @logger || env['rack.errors']
+          logger = @logger || env[STR_RACK_ERRORS]
           logger.write ERROR_FORMAT % [
-            env['HTTP_X_FORWARDED_FOR'] || env["REMOTE_ADDR"] || "-",
-            env["REMOTE_USER"] || "-",
-            now.strftime("%d/%b/%Y %H:%M:%S %Z"),
-            env["REQUEST_METHOD"],
-            env["PATH_INFO"],
-            qs.empty? ? "" : "?" + qs.gsub("\n",""),
-            env["HTTP_VERSION"],
-            status.to_s[0..3],
+            env[HTTP_X_FORWARDED_FOR] || env[REMOTE_ADDR] || STR_DASH,
+            env[REMOTE_USER] || STR_DASH,
+            now.strftime(DATE_FORMAT),
+            env[REQUEST_METHOD],
+            env[PATH_INFO],
+            qs.empty? ? STR_EMPTY : STR_QUESTION_MARK + qs.tr(STR_NEWLINE, STR_EMPTY),
+            env[HTTP_VERSION],
+            status.to_s[Z3_RANGE],
             error,
             now - began_at,
-            env['HTTP_X_REQUEST_ID']]
+            env[HTTP_X_REQUEST_ID]
+          ]
         end
 
         def log(env, status, header, began_at)
@@ -51,42 +83,44 @@ module ThreeScale
           cache    = ThreeScale::Backend::Cache.stats
           memoizer = ThreeScale::Backend::Memoizer.stats
 
-          logger = @logger || env['rack.errors']
+          logger = @logger || env[STR_RACK_ERRORS]
           logger.write FORMAT % [
-            env['HTTP_X_FORWARDED_FOR'] || env["REMOTE_ADDR"] || "-",
-            env["REMOTE_USER"] || "-",
-            now.strftime("%d/%b/%Y %H:%M:%S %Z"),
-            env["REQUEST_METHOD"],
-            env["PATH_INFO"],
-            qs.empty? ? "" : "?"+qs.gsub("\n",""),
-            env["HTTP_VERSION"],
-            status.to_s[0..3],
+            env[HTTP_X_FORWARDED_FOR] || env[REMOTE_ADDR] || STR_DASH,
+            env[REMOTE_USER] || STR_DASH,
+            now.strftime(DATE_FORMAT),
+            env[REQUEST_METHOD],
+            env[PATH_INFO],
+            qs.empty? ? STR_EMPTY : STR_QUESTION_MARK + qs.tr(STR_NEWLINE, STR_EMPTY),
+            env[HTTP_VERSION],
+            status.to_s[Z3_RANGE],
             length,
             now - began_at,
-            cache[:last] || '-',
-            cache[:count] || '-',
-            cache[:hits] || '-',
-            memoizer[:size] || '-',
-            memoizer[:count] || '-',
-            memoizer[:hits] || '-',
-            env['HTTP_X_REQUEST_ID']]
+            cache[:last] || STR_DASH,
+            cache[:count] || STR_DASH,
+            cache[:hits] || STR_DASH,
+            memoizer[:size] || STR_DASH,
+            memoizer[:count] || STR_DASH,
+            memoizer[:hits] || STR_DASH,
+            env[HTTP_X_REQUEST_ID]
+          ]
         end
 
         def extract_content_length(headers)
-          value = headers['Content-Length'] or return '-'
-          value.to_s == '0' ? '-' : value
+          value = headers['Content-Length'] or return STR_DASH
+          value.to_s == STR_ZERO ? STR_DASH : value
         end
 
         def extract_query_string(env)
-          if env["REQUEST_METHOD"].to_s.upcase == "POST"
-            provider_key = Rack::Request.new(env).params["provider_key"]
-            qs = env["QUERY_STRING"].dup
+          oqs = env[QUERY_STRING]
+          if env[REQUEST_METHOD].to_s.upcase == STR_POST
+            provider_key = Rack::Request.new(env).params[STR_PROVIDER_KEY]
+            qs = oqs.dup
             unless provider_key.nil?
-              qs << "&" unless env["QUERY_STRING"].empty?
-              qs << "provider_key=#{provider_key}"
+              qs << STR_AMPERSAND unless oqs.empty?
+              qs << STR_PROVIDER_KEY + STR_EQUAL + provider_key.to_s
             end
           else
-            qs = env["QUERY_STRING"]
+            qs = oqs
           end
 
           qs
