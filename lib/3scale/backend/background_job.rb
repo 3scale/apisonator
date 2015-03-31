@@ -6,9 +6,9 @@ module ThreeScale
       class << self
         def perform(*args)
           @args = args
-          with_logging do
-            perform_logged(*args)
-          end
+          @success_log_message = @error_log_message = nil
+
+          perform_wrapper
         end
 
         def perform_logged
@@ -21,11 +21,9 @@ module ThreeScale
           @args.last or raise('Enqueue time not specified')
         end
 
-        def with_logging
-          @success_log_message = @error_log_message = nil
-
+        def perform_wrapper
           start_time = Time.now.getutc
-          yield
+          perform_logged(*@args)
           stats_mem = Memoizer.stats
           end_time = Time.now.getutc
 
