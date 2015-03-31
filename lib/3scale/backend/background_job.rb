@@ -5,7 +5,7 @@ module ThreeScale
 
       class << self
         def perform(*args)
-          @args = args || []
+          @args = args
           with_logging do
             perform_logged(*args)
           end
