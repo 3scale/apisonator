@@ -356,15 +356,20 @@ module ThreeScale
         time.to_s
       end
 
-      ## copied from transactor.rb
-      def load_user_current_usage(user)
-        pairs = Array.new
-        metric_ids = Array.new
-        user.usage_limits.each do |usage_limit|
-          pairs << [usage_limit.metric_id, usage_limit.period]
-          metric_ids << usage_limit.metric_id
+      def get_pairs_and_metric_ids(usage_limits)
+        pairs = []
+
+        metric_ids = usage_limits.map do |usage_limit|
+          m_id = usage_limit.metric_id
+          pairs << [m_id, usage_limit.period]
+          m_id
         end
 
+        [pairs, metric_ids]
+      end
+
+      def load_user_current_usage(user)
+        pairs, metric_ids = get_pairs_and_metric_ids user.usage_limits
         return {} if pairs.nil? or pairs.size==0
 
         # preloading metric names
@@ -383,13 +388,7 @@ module ThreeScale
       end
 
       def load_current_usage(application)
-        pairs = Array.new
-        metric_ids = Array.new
-        application.usage_limits.each do |usage_limit|
-          pairs << [usage_limit.metric_id, usage_limit.period]
-          metric_ids << usage_limit.metric_id
-        end
-        ## Warning this makes the test transactor_test.rb fail, weird because it didn't happen before
+        pairs, metric_ids = get_pairs_and_metric_ids application.usage_limits
         return {} if pairs.nil? or pairs.size==0
 
         # preloading metric names
