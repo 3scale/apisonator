@@ -365,10 +365,7 @@ module ThreeScale
       ## OAUTH ACCESS TOKENS
 
       post '/services/:service_id/oauth_access_tokens.xml' do
-        unless are_string_params(:provider_key, :service_id, :token)
-          empty_response 422
-          return
-        end
+        require_params! :provider_key, :service_id, :token
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
@@ -388,10 +385,7 @@ module ThreeScale
       end
 
       delete '/services/:service_id/oauth_access_tokens/:token.xml' do
-        unless are_string_params(:provider_key, :service_id, :token)
-          empty_response 422
-          return
-        end
+        require_params! :provider_key, :service_id, :token
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
@@ -403,10 +397,7 @@ module ThreeScale
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-        unless are_string_params(:provider_key, :service_id, :app_id)
-          empty_response 422
-          return
-        end
+        require_params! :provider_key, :service_id, :app_id
 
         # TODO: this should directly respond rather than raise
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
@@ -426,11 +417,7 @@ module ThreeScale
       end
 
       get '/services/:service_id/oauth_access_tokens/:token.xml' do
-        unless are_string_params(:provider_key, :service_id, :token)
-          empty_response 422
-          return
-        end
-
+        require_params! :provider_key, :service_id, :token
 
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
           raise ProviderKeyInvalid, params[:provider_key]
@@ -656,8 +643,8 @@ module ThreeScale
         end
       end
 
-      def are_string_params(*keys)
-        params && keys.all? { |key| !blank?(params[key]) }
+      def require_params!(*keys)
+        raise RequiredParamsMissing unless params && keys.all? { |key| !blank?(params[key]) }
       end
 
       def normalize_non_empty_keys!
