@@ -7,7 +7,7 @@ module ThreeScale
 
         def self.perform_logged(*args)
           sleep 0.15
-          @success_log_message = 'job was successful'
+          [true, 'job was successful']
         end
       end
 
@@ -41,7 +41,7 @@ module ThreeScale
 
         it 'complains when you don\'t set a log message' do
           expect { BarJob.perform() }.to raise_error(
-            RuntimeError, "This should be set.")
+            BackgroundJob::Error, 'No job message given')
         end
       end
     end

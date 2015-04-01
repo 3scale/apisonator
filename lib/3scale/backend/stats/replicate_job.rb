@@ -9,8 +9,7 @@ module ThreeScale
 
         def self.perform_logged(bucket, enqueue_time)
           unless Storage.enabled? && Storage.active?
-            @success_log_message = "#{bucket} StorageStats-not-active "
-            return
+            return true, "#{bucket} StorageStats-not-active"
           end
 
           if bucket == "inf"
@@ -26,7 +25,7 @@ module ThreeScale
             Storage.save_changed_keys(b)
           end
 
-          @success_log_message = "#{bucket} #{buckets_to_save.size} "
+          [true, "#{bucket} #{buckets_to_save.size}"]
         end
       end
     end

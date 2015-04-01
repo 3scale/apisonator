@@ -11,20 +11,24 @@ module ThreeScale
       class ProcessJob
         # @queue = :main
 
-        def self.perform(transactions, options = {})
-          transactions = preprocess(transactions)
-          TransactionStorage.store_all(transactions) unless options[:master]
-          Stats::Aggregator.process(transactions)
-        end
+        class << self
+          def perform(transactions, options = {})
+            transactions = preprocess(transactions)
+            TransactionStorage.store_all(transactions) unless options[:master]
+            Stats::Aggregator.process(transactions)
+          end
 
-        def self.preprocess(transactions)
-          transactions.map do |transaction_attrs|
-            transaction = Transaction.new(transaction_attrs)
+          private
 
-            ## check if the timestamps is within accepted range
-            # transaction.ensure_on_time!
+          def preprocess(transactions)
+            transactions.map do |transaction_attrs|
+              transaction = Transaction.new(transaction_attrs)
 
-            transaction
+              ## check if the timestamps is within accepted range
+              # transaction.ensure_on_time!
+
+              transaction
+            end
           end
         end
       end
