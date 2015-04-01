@@ -302,22 +302,6 @@ module ThreeScale
         value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/
       end
 
-      ##
-      # TODO: Check who is calling this method.
-      ##
-      def run_validators(validators_set, service, application, user, params)
-        status = Status.new(:service => service, :application => application).tap do |st|
-          validators_set.all? do |validator|
-            if validator == Validators::Referrer && !st.service.referrer_filters_required?
-              true
-            else
-              validator.apply(st, params)
-            end
-          end
-        end
-        return status
-      end
-
       def check_for_users(service, application, params)
         if application.user_required?
           raise UserNotDefined, application.id if params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String)
