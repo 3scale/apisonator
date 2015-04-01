@@ -375,11 +375,10 @@ module ThreeScale
         # preloading metric names
         obj.metric_names = Metric.load_all_names(obj.service_id, metric_ids)
         keys = pairs.map(&Proc.new)
-        raw_values = storage.mget(*keys)
-        values     = {}
-        pairs.each_with_index do |(metric_id, period), index|
+        values = {}
+        pairs.zip(storage.mget(*keys)) do |(metric_id, period), value|
           values[period] ||= {}
-          values[period][metric_id] = raw_values[index].to_i
+          values[period][metric_id] = value.to_i
         end
         values
       end
