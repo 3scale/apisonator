@@ -49,7 +49,7 @@ module ThreeScale
         #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
 
         application = Application.load!(service_id, application_id)
-        usage = load_current_usage(application)
+        usage = load_application_usage(application, Time.now.getutc)
         status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)
         ThreeScale::Backend::Validators::Limits.apply(status, {})
 
@@ -61,8 +61,7 @@ module ThreeScale
 
         stats = ThreeScale::Backend::Alerts.stats(service_id, application_id)
 
-        return [status.usage_reports, max_record, max_utilization, stats]
-
+        [status.usage_reports, max_record, max_utilization, stats]
       end
 
       def alert_limit(service_id)
@@ -153,8 +152,9 @@ module ThreeScale
                                                           user_key)
 
         user         = load_user!(application, service, params[:user_id])
-        usage_values = load_current_usage(application)
-        user_usage   = load_user_current_usage(user) if user
+        now          = Time.now.getutc
+        usage_values = load_application_usage(application, now)
+        user_usage   = load_user_usage(user, now) if user
         status_attrs = {
           user_values: user_usage,
           application: application,
@@ -368,8 +368,8 @@ module ThreeScale
         [pairs, metric_ids]
       end
 
-      def _load_current_usage(obj)
-        pairs, metric_ids = get_pairs_and_metric_ids user.usage_limits
+      def load_usage(obj)
+        pairs, metric_ids = get_pairs_and_metric_ids obj.usage_limits
         return {} if pairs.empty?
 
         # preloading metric names
@@ -383,17 +383,15 @@ module ThreeScale
         values
       end
 
-      def load_user_current_usage(user)
-        now = Time.now.getutc
-        _load_current_usage user do |metric_id, period|
-          Stats::Keys.user_usage_value_key(user, metric_id, period, now)
+      def load_user_usage(user, ts)
+        load_usage user do |metric_id, period|
+          Stats::Keys.user_usage_value_key(user, metric_id, period, ts)
         end
       end
 
-      def load_current_usage(application)
-        now = Time.now.getutc
-        _load_current_usage application do |metric_id, period|
-          Stats::Keys.usage_value_key(application, metric_id, period, now)
+      def load_application_usage(application, ts)
+        load_usage application do |metric_id, period|
+          Stats::Keys.usage_value_key(application, metric_id, period, ts)
         end
       end
 

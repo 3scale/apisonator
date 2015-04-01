@@ -271,7 +271,7 @@ module ThreeScale
 
         applications.each do |_appid, values|
           application = Application.load(values[:service_id], values[:application_id])
-          usage  = ThreeScale::Backend::Transactor.send(:load_current_usage, application)
+          usage  = ThreeScale::Backend::Transactor.send(:load_application_usage, application, current_timestamp)
           status = ThreeScale::Backend::Transactor::Status.new(application: application, values: usage)
           ThreeScale::Backend::Validators::Limits.apply(status, {})
 
@@ -289,7 +289,7 @@ module ThreeScale
             raise ServiceLoadInconsistency.new(values[:service_id], service.id)
           end
           user   = User.load_or_create!(service, values[:user_id])
-          usage  = ThreeScale::Backend::Transactor.send(:load_user_current_usage, user)
+          usage  = ThreeScale::Backend::Transactor.send(:load_user_usage, user, current_timestamp)
           status = ThreeScale::Backend::Transactor::Status.new(user: user, user_values: usage)
           ThreeScale::Backend::Validators::Limits.apply(status, {})
 
