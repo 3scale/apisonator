@@ -14,16 +14,16 @@ module ThreeScale
               Resque.enqueue(LogRequestJob, service_id, logs, Time.now.getutc.to_f)
             end
 
-            @success_log_message = "#{service_id} #{transactions.size} #{logs.size} "
+            [true, "#{service_id} #{transactions.size} #{logs.size}"]
           rescue Error => error
             ErrorStorage.store(service_id, error)
-            @error_log_message = "#{service_id} #{error}"
+            [false, "#{service_id} #{error}"]
           rescue Exception => error
             if error.class == ArgumentError &&
                 error.message == "invalid byte sequence in UTF-8"
 
               ErrorStorage.store(service_id, NotValidData.new)
-              @error_log_message = "#{service_id} #{error}"
+              [false, "#{service_id} #{error}"]
             else
               raise error
             end

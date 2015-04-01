@@ -21,7 +21,7 @@ module ThreeScale
                 usage: master_metrics.process_usage(usage)
               }], :master => true)
             end
-            @success_log_message = "#{provider_key} #{application_id || '--'} "
+            [true, "#{provider_key} #{application_id || '--'}"]
           end
 
           private

@@ -11,7 +11,7 @@ module ThreeScale
             logs = preprocess(logs)
             LogRequestStorage.store_all(logs)
             LogRequestCubertStorage.store_all(logs)
-            @success_log_message = "#{service_id} #{logs.size} "
+            [true, "#{service_id} #{logs.size}"]
           end
 
           private
