@@ -49,7 +49,7 @@ module ThreeScale
         #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
 
         application = Application.load!(service_id, application_id)
-        usage = load_current_usage(application)
+        usage = load_application_usage(application, Time.now.getutc)
         status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)
         ThreeScale::Backend::Validators::Limits.apply(status, {})
 
@@ -61,8 +61,7 @@ module ThreeScale
 
         stats = ThreeScale::Backend::Alerts.stats(service_id, application_id)
 
-        return [status.usage_reports, max_record, max_utilization, stats]
-
+        [status.usage_reports, max_record, max_utilization, stats]
       end
 
       def alert_limit(service_id)
@@ -153,8 +152,9 @@ module ThreeScale
                                                           user_key)
 
         user         = load_user!(application, service, params[:user_id])
-        usage_values = load_current_usage(application)
-        user_usage   = load_user_current_usage(user) if user
+        now          = Time.now.getutc
+        usage_values = load_application_usage(application, now)
+        user_usage   = load_user_usage(user, now) if user
         status_attrs = {
           user_values: user_usage,
           application: application,
@@ -302,22 +302,6 @@ module ThreeScale
         value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/
       end
 
-      ##
-      # TODO: Check who is calling this method.
-      ##
-      def run_validators(validators_set, service, application, user, params)
-        status = Status.new(:service => service, :application => application).tap do |st|
-          validators_set.all? do |validator|
-            if validator == Validators::Referrer && !st.service.referrer_filters_required?
-              true
-            else
-              validator.apply(st, params)
-            end
-          end
-        end
-        return status
-      end
-
       def check_for_users(service, application, params)
         if application.user_required?
           raise UserNotDefined, application.id if params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String)
@@ -356,55 +340,43 @@ module ThreeScale
         time.to_s
       end
 
-      ## copied from transactor.rb
-      def load_user_current_usage(user)
-        pairs = Array.new
-        metric_ids = Array.new
-        user.usage_limits.each do |usage_limit|
-          pairs << [usage_limit.metric_id, usage_limit.period]
-          metric_ids << usage_limit.metric_id
+      def get_pairs_and_metric_ids(usage_limits)
+        pairs = []
+
+        metric_ids = usage_limits.map do |usage_limit|
+          m_id = usage_limit.metric_id
+          pairs << [m_id, usage_limit.period]
+          m_id
         end
 
-        return {} if pairs.nil? or pairs.size==0
+        [pairs, metric_ids]
+      end
+
+      def load_usage(obj)
+        pairs, metric_ids = get_pairs_and_metric_ids obj.usage_limits
+        return {} if pairs.empty?
 
         # preloading metric names
-        user.metric_names = Metric.load_all_names(user.service_id, metric_ids)
-        now = Time.now.getutc
-        keys = pairs.map do |metric_id, period|
-          Stats::Keys.user_usage_value_key(user, metric_id, period, now)
-        end
-        raw_values = storage.mget(*keys)
-        values     = {}
-        pairs.each_with_index do |(metric_id, period), index|
+        obj.metric_names = Metric.load_all_names(obj.service_id, metric_ids)
+        keys = pairs.map(&Proc.new)
+        values = {}
+        pairs.zip(storage.mget(*keys)) do |(metric_id, period), value|
           values[period] ||= {}
-          values[period][metric_id] = raw_values[index].to_i
+          values[period][metric_id] = value.to_i
         end
         values
       end
 
-      def load_current_usage(application)
-        pairs = Array.new
-        metric_ids = Array.new
-        application.usage_limits.each do |usage_limit|
-          pairs << [usage_limit.metric_id, usage_limit.period]
-          metric_ids << usage_limit.metric_id
+      def load_user_usage(user, ts)
+        load_usage user do |metric_id, period|
+          Stats::Keys.user_usage_value_key(user, metric_id, period, ts)
         end
-        ## Warning this makes the test transactor_test.rb fail, weird because it didn't happen before
-        return {} if pairs.nil? or pairs.size==0
+      end
 
-        # preloading metric names
-        application.metric_names = Metric.load_all_names(application.service_id, metric_ids)
-        now = Time.now.getutc
-        keys = pairs.map do |metric_id, period|
-          Stats::Keys.usage_value_key(application, metric_id, period, now)
+      def load_application_usage(application, ts)
+        load_usage application do |metric_id, period|
+          Stats::Keys.usage_value_key(application, metric_id, period, ts)
         end
-        raw_values = storage.mget(*keys)
-        values     = {}
-        pairs.each_with_index do |(metric_id, period), index|
-          values[period] ||= {}
-          values[period][metric_id] = raw_values[index].to_i
-        end
-        values
       end
 
       def storage
