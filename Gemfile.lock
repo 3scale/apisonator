@@ -4,7 +4,7 @@ PATH
     3scale_backend (2.32.1)
       airbrake (= 3.1.16)
       builder (= 2.1.2)
-      cubert-client (= 0.0.7)
+      cubert-client (= 0.0.8)
       daemons (= 1.1.9)
       hiredis (= 0.4.5)
       influxdb (= 0.1.8)
@@ -68,7 +68,7 @@ GEM
     columnize (0.8.9)
     crack (0.4.2)
       safe_yaml (~> 1.0.0)
-    cubert-client (0.0.7)
+    cubert-client (0.0.8)
       rack (>= 1.4.5)
       vanguard (>= 0.0.5)
       virtus
