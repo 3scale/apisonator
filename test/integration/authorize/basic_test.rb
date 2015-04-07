@@ -434,7 +434,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
       assert_equal 400, last_response.status
       assert_error_response :status  => 400,
                             :code    => 'bad_request',
-                            :message => 'request contains syntanx errors, should not be repeated without modification'
+                            :message => 'request contains syntax errors, should not be repeated without modification'
     end
   end
 

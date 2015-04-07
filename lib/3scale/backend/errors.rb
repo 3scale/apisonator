@@ -117,7 +117,7 @@ module ThreeScale
 
     class BadRequest < Invalid
       def initialize
-        super 'request contains syntanx errors, should not be repeated without modification'
+        super 'request contains syntax errors, should not be repeated without modification'
       end
     end
 
@@ -134,6 +134,12 @@ module ThreeScale
         else
           super %(referrer "#{referrer}" is not allowed)
         end
+      end
+    end
+
+    class RequiredParamsMissing < Invalid
+      def initialize
+        super 'missing required parameters'
       end
     end
 
