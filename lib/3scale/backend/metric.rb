@@ -115,10 +115,9 @@ module ThreeScale
           storage.pipelined do
             storage.srem(id_set_key(service_id), id)
 
-            storage.del(key(service_id, id, :name))
-            storage.del(key(service_id, id, :parent_id))
-            storage.del(id_key(service_id, name))
-
+            storage.del(key(service_id, id, :name),
+                        key(service_id, id, :parent_id),
+                        id_key(service_id, name))
             Service.incr_version(service_id)
           end
 
