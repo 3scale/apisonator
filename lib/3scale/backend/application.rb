@@ -20,8 +20,8 @@ module ThreeScale
           state: state,
           plan_id: plan_id,
           plan_name: plan_name,
-          user_required: user_required,
           redirect_url: redirect_url,
+          user_required: user_required,
           version: version
         }
       end
@@ -41,17 +41,17 @@ module ThreeScale
           values = storage.mget(storage_key(service_id, id, :state),
                                 storage_key(service_id, id, :plan_id),
                                 storage_key(service_id, id, :plan_name),
-                                storage_key(service_id, id, :user_required),
                                 storage_key(service_id, id, :redirect_url),
+                                storage_key(service_id, id, :user_required),
                                 storage_key(service_id, id, :version))
-          state, plan_id, plan_name, user_required, redirect_url, vv = values
+          state, plan_id, plan_name, redirect_url, user_required, version = values
 
           # save a network call by just checking state here for existence
           return nil unless state
 
           ## the default value is false
           user_required = user_required.to_i > 0
-          self.incr_version(service_id, id) unless vv
+          version = self.incr_version(service_id, id) unless version
 
           new(service_id: service_id,
               id: id,
@@ -60,7 +60,7 @@ module ThreeScale
               plan_name: plan_name,
               user_required: user_required,
               redirect_url: redirect_url,
-              version: self.get_version(service_id, id))
+              version: version)
         end
         memoize :load
 
