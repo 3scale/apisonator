@@ -10,8 +10,10 @@ module ThreeScale
       include Sets
       include Storable
 
-      attr_accessor :service_id, :id, :state, :plan_id, :plan_name,
-        :user_required, :redirect_url, :version
+      ATTRIBUTES = [:state, :plan_id, :plan_name, :redirect_url,
+                    :user_required, :version].freeze
+
+      attr_accessor :service_id, :id, *ATTRIBUTES
 
       def to_hash
         {
@@ -159,12 +161,11 @@ module ThreeScale
         end
 
         def delete_attributes(service_id, id)
-          storage.del(storage_key(service_id, id, :state))
-          storage.del(storage_key(service_id, id, :plan_id))
-          storage.del(storage_key(service_id, id, :plan_name))
-          storage.del(storage_key(service_id, id, :user_required))
-          storage.del(storage_key(service_id, id, :redirect_url))
-          storage.del(storage_key(service_id, id, :version))
+          storage.del(
+            ATTRIBUTES.map do |f|
+              storage_key(service_id, id, f)
+            end
+          )
         end
 
         def with_app_id_from_params(service_id, app_id, user_key, access_token = nil)
@@ -182,7 +183,6 @@ module ThreeScale
 
           yield app_id or raise ApplicationNotFound, app_id
         end
-
       end
 
       def user_required?
