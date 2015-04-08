@@ -124,10 +124,11 @@ module ThreeScale
         end
 
         def clear_cache(service_id, id)
+          params = [service_id, id]
           keys = Memoizer.build_keys_for_class(self,
-                    load: [service_id, id],
-                    load!: [service_id, id],
-                    exists?: [service_id, id])
+                    load: params,
+                    load!: params,
+                    exists?: params)
           Memoizer.clear keys
         end
 

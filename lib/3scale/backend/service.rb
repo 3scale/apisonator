@@ -105,12 +105,13 @@ module ThreeScale
         end
 
         def clear_cache(provider_key, id)
+          provider_key_arg = [provider_key]
           keys = Memoizer.build_keys_for_class(self,
                     authenticate_service_id: [id, provider_key],
-                    default_id: [provider_key],
-                    load: [provider_key],
+                    default_id: provider_key_arg,
+                    load: provider_key_arg,
                     load_by_id: [id],
-                    list: [provider_key]
+                    list: provider_key_arg
                                               )
           Memoizer.clear keys
         end
