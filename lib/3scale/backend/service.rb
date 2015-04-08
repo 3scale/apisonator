@@ -208,15 +208,17 @@ module ThreeScale
       private
 
       def delete_attributes
-        storage.del ATTRIBUTES.map{ |attr| storage_key(attr) }
-        storage.del storage_key(:user_set)
-        storage.del storage_key_by_provider(:id) if default_service?
+        keys = ATTRIBUTES.map { |attr| storage_key(attr) }
+        keys << storage_key(:user_set)
+        keys << storage_key_by_provider(:id) if default_service?
+        storage.del keys
       end
 
       def delete_from_lists
-        storage.srem storage_key_by_provider(:ids), id
+        set = storage_key_by_provider :ids
+        storage.srem set, id
         storage.srem encode_key('services_set'), id
-        storage.del storage_key_by_provider(:ids) if default_service?
+        storage.del set if default_service?
       end
 
       def storage_key_by_provider(attribute)
