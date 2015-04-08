@@ -28,14 +28,20 @@ module ThreeScale
       attr_writer :children
 
       def save
-        save_attributes
-        save_to_list
+        storage.pipelined do
+          save_attributes
+          save_to_list
+          # XXX why increase the version for each save in a metric?
+          # a metric with N children and each children with M additional
+          # children increases the version by N*M...
+          Service.incr_version(service_id)
+        end
 
+        # can't include this in the pipeline since it is a potentially
+        # large number of commands.
         save_children
 
         self.class.clear_cache(service_id, id)
-
-        Service.incr_version(service_id)
       end
 
       def children
