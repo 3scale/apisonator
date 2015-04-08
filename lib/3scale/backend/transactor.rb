@@ -360,7 +360,7 @@ module ThreeScale
         obj.metric_names = Metric.load_all_names(obj.service_id, metric_ids)
         keys = pairs.map(&Proc.new)
         values = {}
-        pairs.zip(storage.mget(*keys)) do |(metric_id, period), value|
+        pairs.zip(storage.mget(keys)) do |(metric_id, period), value|
           values[period] ||= {}
           values[period][metric_id] = value.to_i
         end

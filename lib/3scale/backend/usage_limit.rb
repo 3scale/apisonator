@@ -87,7 +87,7 @@ module ThreeScale
         def get_pairs_and_values_for(service_id, plan_id, metric_ids)
           pairs, keys = generate_pairs_and_keys_for service_id, plan_id, metric_ids
 
-          [pairs, storage.mget(*keys)]
+          [pairs, storage.mget(keys)]
         end
 
         def generate_pairs_and_keys_for(service_id, plan_id, metric_ids)

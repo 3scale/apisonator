@@ -51,7 +51,7 @@ module ThreeScale
       def self.all_by_service_and_app(service_id, app_id)
         tokens = storage.smembers(token_set_key(service_id, app_id))
         keys = tokens.map { |t| token_key(service_id, t) }
-        applications = keys.empty? ? [] : storage.mget(*keys)
+        applications = keys.empty? ? [] : storage.mget(keys)
         set_key = token_set_key(service_id, app_id)
 
         result = tokens.map.with_index do |token,i|
@@ -82,8 +82,7 @@ module ThreeScale
 
       def self.token_set_key(service_id, app_id)
         "oauth_access_tokens/service:#{service_id}/app:#{app_id}/"
-       end
-
+      end
     end
   end
 end
