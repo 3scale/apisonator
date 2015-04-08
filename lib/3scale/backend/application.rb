@@ -189,10 +189,12 @@ module ThreeScale
       end
 
       def save
-        persist_attributes
-        persist_set
+        self.version = storage.pipelined do
+          persist_attributes
+          persist_set
+          self.class.incr_version(service_id, id)
+        end.last.to_s
 
-        self.version = self.class.incr_version(service_id, id).to_s
         self.class.clear_cache(service_id, id)
 
         Memoizer.memoize(Memoizer.build_key(self.class, :exists?, service_id, id), state)
