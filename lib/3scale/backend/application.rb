@@ -119,8 +119,10 @@ module ThreeScale
         end
 
         def delete_data(service_id, id)
-          delete_set(service_id, id)
-          delete_attributes(service_id, id)
+          storage.pipelined do
+            delete_set(service_id, id)
+            delete_attributes(service_id, id)
+          end
         end
 
         def clear_cache(service_id, id)
