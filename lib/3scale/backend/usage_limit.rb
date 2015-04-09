@@ -42,13 +42,17 @@ module ThreeScale
         end
 
         def save(attributes)
-          prefix = key_prefix(attributes[:service_id], attributes[:plan_id], attributes[:metric_id])
-          PERIODS.each do |period|
-            p_val = attributes[period]
-            p_val and storage.set(key_for_period(prefix, period), p_val)
+          service_id = attributes[:service_id]
+          plan_id = attributes[:plan_id]
+          prefix = key_prefix(service_id, plan_id, attributes[:metric_id])
+          storage.pipelined do
+            PERIODS.each do |period|
+              p_val = attributes[period]
+              p_val and storage.set(key_for_period(prefix, period), p_val)
+            end
+            Service.incr_version(service_id)
           end
-          clear_cache(attributes[:service_id], attributes[:plan_id])
-          Service.incr_version(attributes[:service_id])
+          clear_cache(service_id, plan_id)
         end
 
         def delete(service_id, plan_id, metric_id, period)
