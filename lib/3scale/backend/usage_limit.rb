@@ -56,9 +56,11 @@ module ThreeScale
         end
 
         def delete(service_id, plan_id, metric_id, period)
-          storage.del(key(service_id, plan_id, metric_id, period))
+          storage.pipelined do
+            storage.del(key(service_id, plan_id, metric_id, period))
+            Service.incr_version(service_id)
+          end
           clear_cache(service_id, plan_id)
-          Service.incr_version(service_id)
         end
 
         private
