@@ -364,29 +364,31 @@ module ThreeScale
       ##
       ##
       post '/transactions.xml' do
+        provider_key = params[:provider_key]
         ## return error code 400 (Bad request) if the parameters are not there
         ## I put 403 (Forbidden) for consitency however it should be 400
         ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
 
-        if params.nil? || blank?(params[:provider_key])
+        if params.nil? || blank?(provider_key)
           empty_response 403
           return
         end
 
-        if blank?(params[:transactions]) || !params[:transactions].is_a?(Hash)
+        transactions = params[:transactions]
+        if blank?(transactions) || !transactions.is_a?(Hash)
           empty_response 400
           return
         end
 
         ## not very proud of this but... this is to cover for those cases that it does not blow on
         ## rack_exception_catcher
-        if !params[:transactions].valid_encoding?
+        if !transactions.valid_encoding?
           status 400
           body ThreeScale::Backend::NotValidData.new().to_xml
           return
         end
 
-        Transactor.report(params[:provider_key], params[:service_id], params[:transactions])
+        Transactor.report(provider_key, params[:service_id], transactions)
         empty_response 202
       end
 
