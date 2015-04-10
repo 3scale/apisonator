@@ -91,7 +91,7 @@ module ThreeScale
         memoize :load_name
 
         def load_all_names(service_id, ids)
-          Hash[ids.zip(storage.mget(*ids.map { |id| key(service_id, id, :name) }))]
+          Hash[ids.zip(storage.mget(ids.map { |id| key(service_id, id, :name) }))]
         end
         memoize :load_all_names
 

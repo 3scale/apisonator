@@ -43,7 +43,7 @@ module ThreeScale
             keys = changed_keys_to_save(bucket)
             return if keys.empty?
 
-            values = storage.mget(*keys)
+            values = storage.mget(keys)
             keys.each_with_index do |key, index|
               instance.add_event(key, values[index].to_i)
             end
