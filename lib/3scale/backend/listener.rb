@@ -125,6 +125,7 @@ module ThreeScale
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_log
 
 
+      COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze, 'user_key'.freeze, 'provider_key'.freeze].freeze
 
       ## ------------ DOCS --------------
 
@@ -675,12 +676,11 @@ module ThreeScale
       end
 
       def normalize_non_empty_keys!
+        return if params.nil?
         ## this is to minimize potential security hazzards with an empty user_key
-        [:service_id, :app_id, :app_key, :user_key, :provider_key].each do |lab|
-          labs = lab.to_s
-          if !params.nil? && !params[labs].nil?
-            params[labs] = nil if (params[labs]=="" || params[labs].class != String || params[labs].strip.empty?)
-          end
+        COMMON_PARAMS.each do |p|
+          thisparam = params[p]
+          params[p] = nil if !thisparam.nil? && (thisparam.class != String || thisparam.strip.empty?)
         end
       end
 
