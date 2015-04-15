@@ -3,6 +3,15 @@
 SCRIPT_DIR=$(dirname "$(readlink -f $0)")
 . ${SCRIPT_DIR}/lib/functions
 
+function cleanup()
+{
+    if [ -z "$CI" ]; then
+        stop_services
+    fi
+}
+
+trap 'cleanup' INT
+
 export RACK_ENV=test
 
 start_services
@@ -10,8 +19,6 @@ start_services
 bundle exec rake
 EXITVAL=$?
 
-if [ -z "$CI" ]; then
-    stop_services
-fi
+cleanup
 
 exit ${EXITVAL}
