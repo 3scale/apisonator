@@ -1,5 +1,3 @@
-require 'logger'
-
 module ThreeScale
   module Backend
     # Worker for working off background jobs. This is very stripped down version of the
@@ -26,16 +24,15 @@ module ThreeScale
 
       def self.new(options = {})
         pid = Process.pid
-        @logger = ::Logger.new(options.delete(:log_file) || configuration.workers_log_file || '/dev/null')
-        @logger.formatter = proc { |severity, datetime, progname, msg|
-          "#{severity} #{pid} #{datetime.getutc.strftime("[%d/%b/%Y %H:%M:%S %Z]")} #{msg}\n"
-        }
+        Logging.enable! on: self.singleton_class, with: [
+            options.delete(:log_file) || configuration.workers_log_file || '/dev/null'
+          ] do |logger|
+            logger.formatter = proc { |severity, datetime, progname, msg|
+              "#{severity} #{pid} #{datetime.getutc.strftime("[%d/%b/%Y %H:%M:%S %Z]")} #{msg}\n"
+            }
+        end
 
         super
-      end
-
-      def self.logger
-        @logger
       end
 
       # == Options
