@@ -9,8 +9,8 @@ require 'time'
 require 'yajl'
 require 'yaml'
 require 'digest/md5'
-require 'logger'
 
+require '3scale/backend/logger'
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
 require '3scale/backend/storage_key_helpers'
@@ -31,7 +31,6 @@ require '3scale/backend/error_storage'
 require '3scale/backend/listener'
 require '3scale/backend/metric'
 require '3scale/backend/runner'
-require '3scale/backend/logger'
 require '3scale/backend/server'
 require '3scale/backend/service'
 require '3scale/backend/storage'
@@ -66,6 +65,10 @@ module ThreeScale
       environment == 'development'
     end
 
+    def self.test?
+      environment == 'test'
+    end
+
     configuration.tap do |config|
       # Add configuration sections
       config.add_section(:queues, :master_name, :sentinels)
@@ -87,6 +90,14 @@ module ThreeScale
 
       # Load configuration from a file.
       config.load!
+    end
+
+    # We should think about chaing it to something more general.
+    @logger = Logger.new "#{(development? || test?) ? ENV['HOME'] :
+      configuration.workers_log_path}/backend_logger.log", 10
+
+    def self.logger
+      @logger
     end
   end
 end
