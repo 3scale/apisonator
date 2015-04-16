@@ -52,41 +52,43 @@ require '3scale/backend/errors'
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
   PIPELINED_SLICE_SIZE = 400
-end
 
-ThreeScale::Backend.define_singleton_method :environment do
-  ENV["RACK_ENV"] || 'development'
-end
+  module Backend
+    def self.environment
+      ENV['RACK_ENV'] || 'development'
+    end
 
-ThreeScale::Backend.define_singleton_method :production? do
-  environment == 'production'
-end
+    def self.production?
+      environment == 'production'
+    end
 
-ThreeScale::Backend.define_singleton_method :development? do
-  environment == 'development'
-end
+    def self.development?
+      environment == 'development'
+    end
 
-ThreeScale::Backend.configuration.tap do |config|
-  # Add configuration sections
-  config.add_section(:queues, :master_name, :sentinels)
-  config.add_section(:redis, :proxy, :nodes, :backup_file)
-  config.add_section(:hoptoad, :api_key)
-  config.add_section(:stats, :bucket_size)
-  config.add_section(:influxdb, :hosts, :database,
-                     :username, :password, :retry,
-                     :write_timeout, :read_timeout
-                    )
-  config.add_section(:cubert, :host)
+    configuration.tap do |config|
+      # Add configuration sections
+      config.add_section(:queues, :master_name, :sentinels)
+      config.add_section(:redis, :proxy, :nodes, :backup_file)
+      config.add_section(:hoptoad, :api_key)
+      config.add_section(:stats, :bucket_size)
+      config.add_section(:influxdb, :hosts, :database,
+                         :username, :password, :retry,
+                         :write_timeout, :read_timeout
+                        )
+      config.add_section(:cubert, :host)
 
-  # Default config
-  config.master_service_id  = 1
+      # Default config
+      config.master_service_id  = 1
 
-  ## this means that there will be a NotifyJob for every X notifications (this is
-  ## the call to master)
-  config.notification_batch = 10000
+      ## this means that there will be a NotifyJob for every X notifications (this is
+      ## the call to master)
+      config.notification_batch = 10000
 
-  # Load configuration from a file.
-  config.load!
+      # Load configuration from a file.
+      config.load!
+    end
+  end
 end
 
 Airbrake.configure do |config|
