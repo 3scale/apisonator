@@ -12,6 +12,13 @@ module ThreeScale
         ::Logger.new(*args)
       end
     end
+
+    # include this module to have a handy access to the default logger
+    module Logging
+      def logger
+        @logger ||= ThreeScale::Backend.logger
+      end
+    end
   end
 end
 
