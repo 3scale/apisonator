@@ -18,6 +18,19 @@ module ThreeScale
       def logger
         @logger ||= ThreeScale::Backend.logger
       end
+
+      def self.enable!(on:, with: [], as: :logger)
+        logger = if with.empty?
+                   ThreeScale::Backend.logger
+                 else
+                   ThreeScale::Backend::Logger.new(*with).tap do |l|
+                     yield l if block_given?
+                   end
+                 end
+        on.send :define_method, as do
+          logger
+        end
+      end
     end
   end
 end
