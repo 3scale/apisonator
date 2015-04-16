@@ -15,24 +15,27 @@ module ThreeScale
       QUEUES = [:priority, :main, :stats]
       REDIS_TIMEOUT = 60
 
-      def initialize(options = {})
+      def initialize(options)
         trap('TERM') { shutdown }
         trap('INT')  { shutdown }
 
         @one_off = options[:one_off]
 
-        ## there is a Logger class in ThreeScale::Backend already and it's for Rack, cannot
-        ## reuse it
-        @@logger = ::Logger.new(options[:log_file] || configuration.workers_log_file || "/dev/null")
-        @@logger.formatter = proc { |severity, datetime, progname, msg|
-          "#{severity} #{pid} #{datetime.getutc.strftime("[%d/%b/%Y %H:%M:%S %Z]")} #{msg}\n"
-        }
-
         configure_airbrake_for_resque if Airbrake.configuration.api_key
       end
 
+      def self.new(options = {})
+        pid = Process.pid
+        @logger = ::Logger.new(options.delete(:log_file) || configuration.workers_log_file || '/dev/null')
+        @logger.formatter = proc { |severity, datetime, progname, msg|
+          "#{severity} #{pid} #{datetime.getutc.strftime("[%d/%b/%Y %H:%M:%S %Z]")} #{msg}\n"
+        }
+
+        super
+      end
+
       def self.logger
-        @@logger
+        @logger
       end
 
       # == Options
@@ -60,10 +63,6 @@ module ThreeScale
         end
 
         unregister_worker
-      end
-
-      def pid
-        @pid ||= Process.pid
       end
 
       def shutdown
