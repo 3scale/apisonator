@@ -39,23 +39,43 @@ class OauthRedirectUrlTest < Test::Unit::TestCase
     assert_authorized
   end
 
-  test 'succeeds if its defined and the passed redirect_url matches' do
-    @application = Application.save(:service_id   => @service.id,
-                                    :id           => next_id,
-                                    :state        => :active,
-                                    :plan_id      => @plan_id,
-                                    :plan_name    => @plan_name,
-                                    :redirect_url => 'http://3scale.net')
+  # these have to be checked against both 'redirect_url' and 'redirect_uri', as
+  # they are both accepted, the former because of compatibility, and the latter
+  # because of compliance with the OAuth spec.
+  [:redirect_url, :redirect_uri].each do |redirect_fld|
+    test "succeeds if its defined and the passed #{redirect_fld} matches" do
+      @application = Application.save(:service_id   => @service.id,
+                                      :id           => next_id,
+                                      :state        => :active,
+                                      :plan_id      => @plan_id,
+                                      :plan_name    => @plan_name,
+                                      :redirect_url => 'http://3scale.net')
 
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id       => @application.id,
-                                             :redirect_url => 'http://3scale.net'
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                               :app_id       => @application.id,
+                                               redirect_fld  => 'http://3scale.net'
 
-    assert_authorized
+      assert_authorized
+    end
+
+    test "does not authorize if #{redirect_fld} is passed and doesnt match defined" do
+
+      @application = Application.save(:service_id   => @service.id,
+                                      :id           => next_id,
+                                      :state        => :active,
+                                      :plan_id      => @plan_id,
+                                      :plan_name    => @plan_name,
+                                      :redirect_url => 'http://3scale.net')
+
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                               :app_id       => @application.id,
+                                               redirect_fld  => 'http://3scale.net2'
+
+      assert_not_authorized "#{redirect_fld} \"http://3scale.net2\" is invalid"
+    end
   end
 
-  test 'does not authorize if its passed and doesnt match defined' do
-
+  test 'redirect_url takes precedence for compatibility over redirect_uri' do
     @application = Application.save(:service_id   => @service.id,
                                     :id           => next_id,
                                     :state        => :active,
@@ -65,8 +85,14 @@ class OauthRedirectUrlTest < Test::Unit::TestCase
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id       => @application.id,
-                                             :redirect_url => 'http://3scale.net2'
+                                             :redirect_url => 'http://3scale.net',
+                                             :redirect_uri => 'http://3scale.net2'
+    assert_authorized
 
-    assert_not_authorized 'redirect_url "http://3scale.net2" is invalid'
+    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                             :app_id       => @application.id,
+                                             :redirect_url => 'http://3scale.net2',
+                                             :redirect_uri => 'http://3scale.net'
+    assert_not_authorized "redirect_url \"http://3scale.net2\" is invalid"
   end
 end
