@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     module Validators
-      class RedirectUrl < Base
+      class RedirectURI < Base
         # This should've been named redirect_uri as per OAuth specs, but was
         # initially named redirect_url. We check both fields, prioritizing the
         # contents in the legacy redirect_url parameter over the "new"
