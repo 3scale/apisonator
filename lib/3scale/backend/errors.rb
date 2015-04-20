@@ -76,6 +76,12 @@ module ThreeScale
       end
     end
 
+    class RedirectURIInvalid < Error
+      def initialize(uri)
+        super %(redirect_uri "#{uri}" is invalid)
+      end
+    end
+
     class RedirectUrlInvalid < Error
       def initialize(url)
         super %(redirect_url "#{url}" is invalid)
