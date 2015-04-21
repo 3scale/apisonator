@@ -73,6 +73,25 @@ class OauthRedirectUrlTest < Test::Unit::TestCase
 
       assert_not_authorized "#{redirect_fld} \"http://3scale.net2\" is invalid"
     end
+
+    test "returns #{redirect_fld} field if the request used it" do
+      @application = Application.save(:service_id   => @service.id,
+                                      :id           => next_id,
+                                      :state        => :active,
+                                      :plan_id      => @plan_id,
+                                      :plan_name    => @plan_name,
+                                      :redirect_url => 'http://3scale.net')
+
+      get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                               :app_id       => @application.id,
+                                               redirect_fld  => 'http://3scale.net'
+
+      doc = Nokogiri::XML(last_response.body)
+
+      redirect_url = doc.at("application/#{redirect_fld}")
+      assert_not_nil redirect_url
+      assert_equal @application.redirect_url, redirect_url.content
+    end
   end
 
   test 'redirect_url takes precedence for compatibility over redirect_uri' do
