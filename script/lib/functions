@@ -13,7 +13,7 @@ function kill_pidfile {
 }
 
 function kill_pid {
-    kill -TERM "${1}" & sleep 2
+    kill -TERM "${1}" 2> /dev/null & sleep 2
     kill -9 "${1}" 2> /dev/null
 }
 
