@@ -14,9 +14,13 @@ module ThreeScale
           redirect_uri = if params.has_key? REDIRECT_URL
                            invalid_exception = RedirectURLInvalid
                            params[REDIRECT_URL]
-                         else
+                         elsif params.has_key? REDIRECT_URI
+                           status.redirect_uri_field = REDIRECT_URI
                            params[REDIRECT_URI]
+                         else
+                           nil
                          end
+
           if redirect_uri.nil? || redirect_uri.empty? || application.redirect_url == redirect_uri
             succeed!
           else
