@@ -27,7 +27,7 @@ module ThreeScale
       ##~ @parameter_app_id_inline["description_inline"] = true
       ##
       ##~ @parameter_client_id = {"name" => "app_id", "dataType" => "string", "required" => true, "paramType" => "query", "threescale_name" => "app_ids"}
-      ##~ @parameter_client_id["description"] = "Client Id (identifier of the application if the auth. pattern is Oauth, note that client_id == app_id)"
+      ##~ @parameter_client_id["description"] = "Client Id (identifier of the application if the auth. pattern is OAuth, note that client_id == app_id)"
       ##~ @parameter_client_id_inline = @parameter_client_id.clone
       ##~ @parameter_client_id_inline["description_inline"] = true
 
@@ -217,10 +217,11 @@ module ThreeScale
       ##~ a.set "path" => "/transactions/oauth_authorize.xml", "format" => "xml"
       ##~ op = a.operations.add
       ##~ op.set :httpMethod => "GET", :tags => ["authorize","user_key"], :nickname => "oauth_authorize", :deprecated => false
-      ##~ op.summary = "Authorize (Oauth authentication mode pattern)"
+      ##~ op.summary = "Authorize (OAuth authentication mode pattern)"
       ##
-      ##~ op.description = "<p>Read-only operation to authorize an application in the Oauth authentication pattern."
-      ##~ op.description = op.description + "<p>This calls returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
+      ##~ op.description = "<p>Read-only operation to authorize an application in the OAuth authentication pattern."
+      ##~ @oauth_desc_response = "<p>This calls returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
+      ##~ op.description = op.description + @oauth_desc_response
       ##~ op.description = op.description + " " + @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
@@ -244,14 +245,14 @@ module ThreeScale
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "AuthRep (Authorize + Report for the App Id authentication pattern)"
       ##
-      ##~ @authrep_desc = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time."
+      ##~ op.description = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time."
       ##~ @authrep_desc = @authrep_desc + "<p>The main difference between this call and the regular authorize call is that"
       ##~ @authrep_desc = @authrep_desc + " usage will be reported if the authorization is successful. Authrep is the most convenient way to integrate your API with the"
       ##~ @authrep_desc = @authrep_desc + " 3scale's Service Manangement API since it does a 1:1 mapping between a request to your API and a request to 3scale's API."
       ##~ @authrep_desc = @authrep_desc + "<p>If you do not want to do a request to 3scale for each request to your API or batch the reports you should use the Authorize and Report methods instead."
       ##~ @authrep_desc = @authrep_desc + "<p>Authrep is <b>not a read-only</b> operation and will increment the values if the authorization step is a success."
       ##
-      ##~ op.description = @authrep_desc
+      ##~ op.description = op.description + " " + @authrep_desc
       ##~ op.group = "authrep"
       ##
       ##~ op.parameters.add @parameter_provider_key
@@ -284,6 +285,27 @@ module ThreeScale
         do_api_method :authrep
       end
 
+      ## ------------ DOCS --------------
+      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ a = sapi.apis.add
+      ##~ a.set "path" => "/transactions/oauth_authrep.xml", "format" => "xml"
+      ##~ op = a.operations.add
+      ##~ op.set :httpMethod => "GET", :nickname => "oauth_authrep", :deprecated => false
+      ##~ op.summary = "AuthRep (OAuth authentication mode pattern)"
+      ##
+      ##~ op.description = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time in the OAuth authentication pattern."
+      ##~ op.description = op.description + " " + @authrep_desc + " " + @oauth_desc_response
+      ##~ op.group = "authrep"
+      ##
+      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_client_id
+      ##~ op.parameters.add @parameter_referrer
+      ##~ op.parameters.add @parameter_user_id
+      ##~ op.parameters.add @parameter_usage
+      ##~ op.parameters.add @parameter_log
+      ##~ op.parameters.add @parameter_redirect_url
+      ##
       get '/transactions/oauth_authrep.xml' do
         do_api_method :oauth_authrep
       end
@@ -326,7 +348,7 @@ module ThreeScale
       ##~ a.set "path" => "/transactions.xml", "format" => "xml"
       ##~ op = a.operations.add
       ##~ op.set :httpMethod => "POST"
-      ##~ op.summary = "Report (Oauth authentication pattern)"
+      ##~ op.summary = "Report (OAuth authentication pattern)"
       ##~ op.description = @report_desc
       ##~ op.group = "report"
       #
