@@ -10,7 +10,7 @@ module ThreeScale
 
         server = ::Thin::Server.new(options[:host], options[:port]) do
           use Airbrake::Sinatra if Airbrake.configuration.api_key
-          use ThreeScale::Backend::Logger if log
+          use ThreeScale::Backend::Logger::Middleware if log
 
           ThreeScale::Backend::Server.mount_internal_api self
           run ThreeScale::Backend::Listener.new

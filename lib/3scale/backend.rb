@@ -9,8 +9,8 @@ require 'time'
 require 'yajl'
 require 'yaml'
 require 'digest/md5'
-require 'logger'
 
+require '3scale/backend/logger'
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
 require '3scale/backend/storage_key_helpers'
@@ -31,7 +31,6 @@ require '3scale/backend/error_storage'
 require '3scale/backend/listener'
 require '3scale/backend/metric'
 require '3scale/backend/runner'
-require '3scale/backend/logger'
 require '3scale/backend/server'
 require '3scale/backend/service'
 require '3scale/backend/storage'
@@ -52,41 +51,55 @@ require '3scale/backend/errors'
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
   PIPELINED_SLICE_SIZE = 400
-end
 
-ThreeScale::Backend.define_singleton_method :environment do
-  ENV["RACK_ENV"] || 'development'
-end
+  module Backend
+    def self.environment
+      ENV['RACK_ENV'] || 'development'
+    end
 
-ThreeScale::Backend.define_singleton_method :production? do
-  environment == 'production'
-end
+    def self.production?
+      environment == 'production'
+    end
 
-ThreeScale::Backend.define_singleton_method :development? do
-  environment == 'development'
-end
+    def self.development?
+      environment == 'development'
+    end
 
-ThreeScale::Backend.configuration.tap do |config|
-  # Add configuration sections
-  config.add_section(:queues, :master_name, :sentinels)
-  config.add_section(:redis, :proxy, :nodes, :backup_file)
-  config.add_section(:hoptoad, :api_key)
-  config.add_section(:stats, :bucket_size)
-  config.add_section(:influxdb, :hosts, :database,
-                     :username, :password, :retry,
-                     :write_timeout, :read_timeout
-                    )
-  config.add_section(:cubert, :host)
+    def self.test?
+      environment == 'test'
+    end
 
-  # Default config
-  config.master_service_id  = 1
+    configuration.tap do |config|
+      # Add configuration sections
+      config.add_section(:queues, :master_name, :sentinels)
+      config.add_section(:redis, :proxy, :nodes, :backup_file)
+      config.add_section(:hoptoad, :api_key)
+      config.add_section(:stats, :bucket_size)
+      config.add_section(:influxdb, :hosts, :database,
+                         :username, :password, :retry,
+                         :write_timeout, :read_timeout
+                        )
+      config.add_section(:cubert, :host)
 
-  ## this means that there will be a NotifyJob for every X notifications (this is
-  ## the call to master)
-  config.notification_batch = 10000
+      # Default config
+      config.master_service_id  = 1
 
-  # Load configuration from a file.
-  config.load!
+      ## this means that there will be a NotifyJob for every X notifications (this is
+      ## the call to master)
+      config.notification_batch = 10000
+
+      # Load configuration from a file.
+      config.load!
+    end
+
+    # We should think about chaing it to something more general.
+    @logger = Logger.new "#{(development? || test?) ? ENV['HOME'] :
+      configuration.workers_log_path}/backend_logger.log", 10
+
+    def self.logger
+      @logger
+    end
+  end
 end
 
 Airbrake.configure do |config|
