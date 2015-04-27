@@ -12,13 +12,11 @@ module ThreeScale
           end
 
           def metric_name
-            name = nil
             if @type==:application
-              name = @parent.application.metric_name(@usage_limit.metric_id)
+              @parent.application.metric_name(@usage_limit.metric_id)
             else
-              name = @parent.user.metric_name(@usage_limit.metric_id)
+              @parent.user.metric_name(@usage_limit.metric_id)
             end
-            name
           end
 
           def period
