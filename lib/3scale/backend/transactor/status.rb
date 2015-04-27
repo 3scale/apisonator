@@ -163,21 +163,15 @@ module ThreeScale
                    '</application>'
           end
 
-          if @user.nil?
+          if @user.nil? || !@application.nil? && !options[:exclude_application]
             xml << "<__separator__/>" if options[:anchors_for_caching]
             xml << "<plan>" << plan_name.to_s << "</plan>"
             xml << aux_reports_to_xml(:application, application_usage_reports, options)
-          else
-            if !@application.nil? && !options[:exclude_application]
-              xml << "<__separator__/>" if options[:anchors_for_caching]
-              xml << "<plan>" << plan_name.to_s << "</plan>"
-              xml << aux_reports_to_xml(:application, application_usage_reports, options)
-            end
-            if !@user.nil? && !options[:exclude_user]
-              xml << "<__separator__/>" if options[:anchors_for_caching]
-              xml << "<user_plan>" << user_plan_name.to_s << "</user_plan>"
-              xml << aux_reports_to_xml(:user, user_usage_reports, options)
-            end
+          end
+          if !@user.nil? && !options[:exclude_user]
+            xml << "<__separator__/>" if options[:anchors_for_caching]
+            xml << "<user_plan>" << user_plan_name.to_s << "</user_plan>"
+            xml << aux_reports_to_xml(:user, user_usage_reports, options)
           end
 
           xml << "<__separator__/>" if options[:anchors_for_caching]
