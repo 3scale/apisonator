@@ -94,7 +94,7 @@ module ThreeScale
 
     # We should think about chaing it to something more general.
     @logger = Logger.new "#{(development? || test?) ? ENV['HOME'] :
-      configuration.workers_log_path}/backend_logger.log", 10
+      configuration.log_path}/backend_logger.log", 10
 
     def self.logger
       @logger
