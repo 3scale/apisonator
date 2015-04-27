@@ -51,6 +51,9 @@ module ThreeScale
       ##~ @parameter_redirect_url = {"name" => "redirect_url", "dataType" => "string", "required" => false, "paramType" => "query"}
       ##~ @parameter_redirect_url["description"] = "Optional redirect URL for OAuth. Will be validated if sent."
       ##
+      ##~ @parameter_redirect_uri = {"name" => "redirect_uri", "dataType" => "string", "required" => false, "paramType" => "query"}
+      ##~ @parameter_redirect_uri["description"] = "Optional redirect URI for OAuth. This is the same as 'redirect_url', but if used you should expect a matching 'redirect_uri' response field."
+      ##
 
       ##  FIXME: CHECK THIS ONE TOO
       ##~ @parameter_no_body = {"name" => "no_body", "dataType" => "boolean", "required" => false, "paramType" => "query"}
@@ -232,6 +235,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage_predicted
       ##~ op.parameters.add @parameter_redirect_url
+      ##~ op.parameters.add @parameter_redirect_uri
       ##
       get '/transactions/oauth_authorize.xml' do
         do_api_method :oauth_authorize
@@ -305,6 +309,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_usage
       ##~ op.parameters.add @parameter_log
       ##~ op.parameters.add @parameter_redirect_url
+      ##~ op.parameters.add @parameter_redirect_uri
       ##
       get '/transactions/oauth_authrep.xml' do
         do_api_method :oauth_authrep

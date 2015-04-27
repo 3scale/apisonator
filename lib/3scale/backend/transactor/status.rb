@@ -53,6 +53,10 @@ module ThreeScale
           end
         end
 
+        # This is the default field we respond with when using OAuth redirects
+        # We only use 'redirect_uri' if a request sent such a param. See #397.
+        REDIRECT_URI_FIELD = 'redirect_url'.freeze
+
         def initialize(attributes = {})
           @service     = attributes[:service]
           @application = attributes[:application]
@@ -67,12 +71,14 @@ module ThreeScale
             raise ':application is required'
           end
 
+          @redirect_uri_field = REDIRECT_URI_FIELD
           @authorized  = true
         end
 
         attr_reader :service
         attr_accessor :application
         attr_reader :oauth
+        attr_accessor :redirect_uri_field
         attr_reader :usage
         attr_accessor :values
         attr_reader :predicted_values
@@ -151,11 +157,12 @@ module ThreeScale
           end
 
           if oauth
-            xml << "<application>"
-            xml << "<id>" << application.id.to_s << "</id>"
-            xml << "<key>" << application.keys.first.to_s << "</key>"
-            xml << "<redirect_url>" << application.redirect_url.to_s << "</redirect_url>"
-            xml << "</application>"
+            redirect_uri = application.redirect_url
+            xml << '<application>' \
+                   "<id>#{application.id}</id>" \
+                   "<key>#{application.keys.first}</key>" \
+                   "<#{@redirect_uri_field}>#{redirect_uri}</#{@redirect_uri_field}>" \
+                   '</application>'
           end
 
           if @user.nil?

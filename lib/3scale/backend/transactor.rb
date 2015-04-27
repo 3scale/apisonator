@@ -110,7 +110,7 @@ module ThreeScale
       OAUTH_VALIDATORS = ([
         Validators::OauthSetting,
         Validators::OauthKey,
-        Validators::RedirectUrl] +
+        Validators::RedirectURI] +
         COMMON_VALIDATORS).freeze
 
       def authorize_nocache(method, provider_key, params, options = {})

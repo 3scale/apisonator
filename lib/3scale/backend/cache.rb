@@ -15,6 +15,7 @@ module ThreeScale
                                 :user_id,
                                 :referrer,
                                 :redirect_url,
+                                :redirect_uri,
                                 :usage]
 
       COMBINATION_TTL       = 3600 # 1 hour
