@@ -165,12 +165,12 @@ module ThreeScale
 
           if @user.nil? || !@application.nil? && !options[:exclude_application]
             xml << "<__separator__/>" if options[:anchors_for_caching]
-            xml << "<plan>" << plan_name.to_s << "</plan>"
+            xml << "<plan>" << plan_name.to_s.encode(xml: :text) << "</plan>"
             xml << aux_reports_to_xml(:application, application_usage_reports, options)
           end
           if !@user.nil? && !options[:exclude_user]
             xml << "<__separator__/>" if options[:anchors_for_caching]
-            xml << "<user_plan>" << user_plan_name.to_s << "</user_plan>"
+            xml << "<user_plan>" << user_plan_name.to_s.encode(xml: :text) << "</user_plan>"
             xml << aux_reports_to_xml(:user, user_usage_reports, options)
           end
 
@@ -213,7 +213,9 @@ module ThreeScale
           unless reports.empty?
             xml << "<#{xml_node_keys[report_type]}_reports>"
             reports.each do |report|
-              attributes = "metric=\"#{report.metric_name}\" period=\"#{report.period}\""
+              # Note: String#encode(xml: :attr) *includes* double quotes already
+              attributes = "metric=#{report.metric_name.to_s.encode(xml: :attr)} " \
+                           "period=\"#{report.period}\""
               attributes << " exceeded=\"true\"" if report.exceeded?
               xml << "<usage_report #{attributes}>"
 
@@ -238,7 +240,7 @@ module ThreeScale
               else
                 ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
                 ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                xml << "<current_value>" << "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
+                xml << "<current_value>" << "|.|#{report_type},#{report.metric_name.encode(xml: :text)},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
               end
 
               xml << "</usage_report>"
