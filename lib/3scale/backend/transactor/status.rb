@@ -163,7 +163,7 @@ module ThreeScale
                    '</application>'
           end
 
-          if @user.nil? || !@application.nil? && !options[:exclude_application]
+          if !@application.nil? && !options[:exclude_application]
             xml << "<__separator__/>" if options[:anchors_for_caching]
             xml << "<plan>" << plan_name.to_s.encode(xml: :text) << "</plan>"
             xml << aux_reports_to_xml(:application, application_usage_reports, options)
