@@ -15,8 +15,8 @@ module Transactor
       @metric_id      = next_id
 
       # use names that NEED escaping in our output format
-      @plan_name      = 'awesome & co. <needs> escaping'
-      @metric_name    = 'foos & co. <needs> escaping'
+      @plan_name      = 'awesome & co. <needs> "escaping"'
+      @metric_name    = 'foos & co. <needs> "escaping"'
 
       @application    = Application.new(:service_id => @service_id,
                                         :id         => next_id,
@@ -144,7 +144,12 @@ module Transactor
         usage_reports = root.at('usage_reports')
         assert_not_nil usage_reports
 
-        report = usage_reports.at("usage_report[metric = \"#{@metric_name}\"][period = \"month\"]")
+        # XPath and CSS selectors just won't work in Nokogiri with doubly-quoted
+        # strings for attributes.
+        # See https://groups.google.com/forum/#!topic/nokogiri-talk/6stziv8GcJM
+        report = usage_reports.search('usage_report').find do |node|
+          node['metric'] == @metric_name && node['period'] == 'month'
+        end
         assert_not_nil report
         assert_equal '2010-05-01 00:00:00 +0000', report.at('period_start').content
         assert_equal '2010-06-01 00:00:00 +0000', report.at('period_end').content
@@ -189,8 +194,11 @@ module Transactor
 
       doc = Nokogiri::XML(status.to_xml)
 
-      month  = doc.at("usage_report[metric = \"#{@metric_name}\"][period = \"month\"]")
-      day    = doc.at("usage_report[metric = \"#{@metric_name}\"][period = \"day\"]")
+      nodes = doc.search('usage_report').find_all do |node|
+        node['metric'] == @metric_name
+      end
+      month  = nodes.find { |n| n['period'] == 'month' }
+      day    = nodes.find { |n| n['period'] == 'day' }
 
       assert_not_nil       month
       assert_not_nil       day
