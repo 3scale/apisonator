@@ -45,9 +45,11 @@ module ThreeScale
         end
 
         def log(env, status, header, began_at)
-          now    = Time.now.getutc
-          qs     = extract_query_string(env)
-          length = extract_content_length(header)
+          now      = Time.now.getutc
+          qs       = extract_query_string(env)
+          length   = extract_content_length(header)
+          cache    = ThreeScale::Backend::Cache.stats
+          memoizer = ThreeScale::Backend::Memoizer.stats
 
           logger = @logger || env['rack.errors']
           logger.write FORMAT % [
@@ -61,12 +63,12 @@ module ThreeScale
             status.to_s[0..3],
             length,
             now - began_at,
-            ThreeScale::Backend::Cache.stats[:last] || "-",
-            ThreeScale::Backend::Cache.stats[:count] || "-",
-            ThreeScale::Backend::Cache.stats[:hits] || "-",
-            ThreeScale::Backend::Memoizer.stats[:size] || "-",
-            ThreeScale::Backend::Memoizer.stats[:count] || "-",
-            ThreeScale::Backend::Memoizer.stats[:hits] || "-",
+            cache[:last] || '-',
+            cache[:count] || '-',
+            cache[:hits] || '-',
+            memoizer[:size] || '-',
+            memoizer[:count] || '-',
+            memoizer[:hits] || '-',
             env['HTTP_X_REQUEST_ID']]
         end
 
