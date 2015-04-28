@@ -213,8 +213,7 @@ module ThreeScale
           unless reports.empty?
             xml << "<#{xml_node_keys[report_type]}_reports>"
             reports.each do |report|
-              # Note: String#encode(xml: :attr) *includes* double quotes already
-              attributes = "metric=#{report.metric_name.to_s.encode(xml: :attr)} " \
+              attributes = "metric=\"#{report.metric_name}\" " \
                            "period=\"#{report.period}\""
               attributes << " exceeded=\"true\"" if report.exceeded?
               xml << "<usage_report #{attributes}>"
@@ -240,7 +239,7 @@ module ThreeScale
               else
                 ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
                 ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                xml << "<current_value>" << "|.|#{report_type},#{report.metric_name.encode(xml: :text)},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
+                xml << "<current_value>" << "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
               end
 
               xml << "</usage_report>"

@@ -16,7 +16,8 @@ module Transactor
 
       # use names that NEED escaping in our output format
       @plan_name      = 'awesome & co. <needs> "escaping"'
-      @metric_name    = 'foos & co. <needs> "escaping"'
+      # MT _SHOULD_ guarantee this doesn't need XML escaping for attributes or text
+      @metric_name    = 'foos'
 
       @application    = Application.new(:service_id => @service_id,
                                         :id         => next_id,
