@@ -24,18 +24,17 @@ module ThreeScale
         ##anything can go on an access token
         return false if token.nil? || token.empty? || !token.is_a?(String) || token.size > 256
 
-        raise AccessTokenAlreadyExists.new(token) unless storage.get(token_key(service_id, token)).nil?
+        key = token_key(service_id, token)
+
+        raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
 
         if ttl.nil?
-          storage.set(token_key(service_id, token), app_id)
+          storage.set(key, app_id)
         else
           ttl = ttl.to_i
+          return false if ttl <= 0
 
-          if ttl > 0
-            storage.setex(token_key(service_id, token), ttl, app_id)
-          else
-            return false
-          end
+          storage.setex(key, ttl, app_id)
         end
 
         storage.sadd(token_set_key(service_id, app_id), token)
