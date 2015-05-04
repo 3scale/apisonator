@@ -43,9 +43,12 @@ module ThreeScale
       end
 
       def self.delete(service_id, token)
-        # NOTE: the key is not removed from its app_id set as we don't
-        # know the app_id; the set will be refreshed on load
-        storage.del(token_key(service_id, token))
+        key = token_key(service_id, token)
+        app_id = storage.get key
+        storage.pipelined do
+          storage.del key
+          storage.srem(token_set_key(service_id, app_id), token)
+        end
       end
 
       def self.all_by_service_and_app(service_id, app_id)
