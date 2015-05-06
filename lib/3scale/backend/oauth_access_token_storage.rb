@@ -24,18 +24,17 @@ module ThreeScale
         ##anything can go on an access token
         return false if token.nil? || token.empty? || !token.is_a?(String) || token.size > 256
 
-        raise AccessTokenAlreadyExists.new(token) unless storage.get(token_key(service_id, token)).nil?
+        key = token_key(service_id, token)
+
+        raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
 
         if ttl.nil?
-          storage.set(token_key(service_id, token), app_id)
+          storage.set(key, app_id)
         else
           ttl = ttl.to_i
+          return false if ttl <= 0
 
-          if ttl > 0
-            storage.setex(token_key(service_id, token), ttl, app_id)
-          else
-            return false
-          end
+          storage.setex(key, ttl, app_id)
         end
 
         storage.sadd(token_set_key(service_id, app_id), token)
@@ -43,9 +42,12 @@ module ThreeScale
       end
 
       def self.delete(service_id, token)
-        # NOTE: the key is not removed from its app_id set as we don't
-        # know the app_id; the set will be refreshed on load
-        storage.del(token_key(service_id, token))
+        key = token_key(service_id, token)
+        app_id = storage.get key
+        storage.pipelined do
+          storage.del key
+          storage.srem(token_set_key(service_id, app_id), token)
+        end
       end
 
       def self.all_by_service_and_app(service_id, app_id)
@@ -69,9 +71,7 @@ module ThreeScale
       end
 
       def self.get_app_id(service_id, token)
-        app_id = storage.get(token_key(service_id,token))
-        storage.srem(token_set_key(service_id, app_id), token) if app_id.nil?
-        app_id
+        storage.get(token_key(service_id, token))
       end
 
       private
