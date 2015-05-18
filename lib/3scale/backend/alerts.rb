@@ -62,6 +62,10 @@ module ThreeScale
         [max_utilization, max_record]
       end
 
+      def build_key(service_id, app_id = nil)
+        "alerts/service_id:#{service_id}/#{app_id ? "app_id:#{app_id}/" : ''.freeze}"
+      end
+
       def update_utilization(status, max_utilization, max_record, timestamp)
         discrete = utilization_discrete(max_utilization)
         max_utilization_i = (max_utilization * 100.0).round
@@ -69,12 +73,18 @@ module ThreeScale
         period_day = timestamp.beginning_of_cycle(:day).to_compact_s
         period_hour = timestamp.beginning_of_cycle(:hour).to_compact_s
 
-        key = "alerts/service_id:#{status.application.service_id}/app_id:#{status.application.id}/#{period_day}/#{discrete}"
-        key_notified = "alerts/service_id:#{status.application.service_id}/app_id:#{status.application.id}/#{discrete}/already_notified"
-        key_allowed = "alerts/service_id:#{status.application.service_id}/allowed_set"
-        key_current_max = "alerts/service_id:#{status.application.service_id}/app_id:#{status.application.id}/#{period_hour}/current_max"
-        key_last_time_period = "alerts/service_id:#{status.application.service_id}/app_id:#{status.application.id}/last_time_period"
-        key_stats_utilization = "alerts/service_id:#{status.application.service_id}/app_id:#{status.application.id}/stats_utilization"
+        service_id = status.application.service_id
+        app_id = status.application.id
+
+        alerts_service_app = build_key(service_id, app_id)
+        alerts_service = build_key(service_id)
+
+        key = "#{alerts_service_app}#{period_day}/#{discrete}"
+        key_notified = "#{alerts_service_app}#{discrete}/already_notified"
+        key_allowed = "#{alerts_service}allowed_set"
+        key_current_max = "#{alerts_service_app}#{period_hour}/current_max"
+        key_last_time_period = "#{alerts_service_app}last_time_period"
+        key_stats_utilization = "#{alerts_service_app}stats_utilization"
 
         ## key_notified does not have the period, it reacts to (service_id/app_id/discrete)
         tmp, already_alerted, allowed, current_max, last_time_period = storage.pipelined do
@@ -92,7 +102,7 @@ module ThreeScale
             ## the first one of the hour and not itself. This is only done once per hour
 
             if !last_time_period.nil?
-              value = storage.get("alerts/service_id:#{status.application.service_id}/app_id:#{status.application.id}/#{last_time_period}/current_max")
+              value = storage.get("#{alerts_service_app}#{last_time_period}/current_max")
               value = value.to_i
               if value > 0
                 storage.pipelined do
@@ -119,8 +129,8 @@ module ThreeScale
           alert = { :id => next_id,
                     :utilization => discrete,
                     :max_utilization => max_utilization,
-                    :application_id => status.application.id,
-                    :service_id => status.application.service_id,
+                    :application_id => app_id,
+                    :service_id => service_id,
                     :timestamp => timestamp,
                     :limit => "#{max_record.metric_name} per #{max_record.period}: #{max_record.current_value}/#{max_record.max_value}"}
 
@@ -129,7 +139,7 @@ module ThreeScale
       end
 
       def stats(service_id, application_id)
-        key_stats = "alerts/service_id:#{service_id}/app_id:#{application_id}/stats_utilization"
+        key_stats = "#{build_key(service_id, application_id)}stats_utilization"
         list = storage.lrange(key_stats,0,-1)
               # format compact address,value
         return list
