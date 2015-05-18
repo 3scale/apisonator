@@ -70,8 +70,11 @@ module ThreeScale
         discrete = utilization_discrete(max_utilization)
         max_utilization_i = (max_utilization * 100.0).round
 
-        period_day = timestamp.beginning_of_cycle(:day).to_compact_s
+        beginning_of_day = timestamp.beginning_of_cycle(:day)
+        period_day = beginning_of_day.to_compact_s
         period_hour = timestamp.beginning_of_cycle(:hour).to_compact_s
+        # UNIX timestamp for key expiration - add 1 day + 5 mins
+        expire_at = (beginning_of_day + 86700).to_i
 
         service_id = status.application.service_id
         app_id = status.application.id
@@ -93,6 +96,8 @@ module ThreeScale
           storage.sismember(key_allowed,discrete)
           storage.get(key_current_max)
           storage.get(key_last_time_period)
+          storage.expireat(key, expire_at)
+          storage.expireat(key_current_max, expire_at)
         end
 
         ## update the status of utilization
