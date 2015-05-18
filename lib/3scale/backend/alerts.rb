@@ -6,6 +6,8 @@ module ThreeScale
       ALERT_TTL       = 24*3600 # 1 day (only one message per day)
       ## zero must be here and sorted, yes or yes
       ALERT_BINS      = [0, 50, 80, 90, 100, 120, 150, 200, 300]
+      FIRST_ALERT_BIN = ALERT_BINS.first
+      RALERT_BINS     = ALERT_BINS.reverse
 
       def list_allowed_limit(service_id)
         storage.smembers("alerts/service_id:#{service_id}/allowed_set")
@@ -135,12 +137,10 @@ module ThreeScale
 
       def utilization_discrete(utilization)
         u = utilization * 100.0
-        s = ALERT_BINS.size
-        ## reverse loop
-        s.times do |i|
-          return ALERT_BINS[s-i-1] if u >= ALERT_BINS[s-i-1]
-        end
-        return ALERT_BINS.first
+        # reverse search
+        RALERT_BINS.find do |b|
+          u >= b
+        end || FIRST_ALERT_BIN
       end
 
       def storage
