@@ -90,7 +90,7 @@ module ThreeScale
         key_stats_utilization = "#{alerts_service_app}stats_utilization"
 
         ## key_notified does not have the period, it reacts to (service_id/app_id/discrete)
-        tmp, already_alerted, allowed, current_max, last_time_period = storage.pipelined do
+        _, already_alerted, allowed, current_max, last_time_period, _, _ = storage.pipelined do
           storage.incrby(key,"1")
           storage.get(key_notified)
           storage.sismember(key_allowed,discrete)
@@ -125,7 +125,7 @@ module ThreeScale
         end
 
         if already_alerted.nil? && allowed && discrete.to_i > 0
-          next_id, tmp1, tmp2 = storage.pipelined do
+          next_id, _, _ = storage.pipelined do
             storage.incrby("alerts/current_id",1)
             storage.set(key_notified,"1")
             storage.expire(key_notified,ALERT_TTL)
