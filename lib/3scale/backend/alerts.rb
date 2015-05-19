@@ -35,10 +35,6 @@ module ThreeScale
         [max_utilization, max_record]
       end
 
-      def build_key(service_id, app_id = nil)
-        "alerts/service_id:#{service_id}/#{app_id ? "app_id:#{app_id}/" : ''.freeze}"
-      end
-
       def update_utilization(status, max_utilization, max_record, timestamp)
         discrete = utilization_discrete(max_utilization)
         max_utilization_i = (max_utilization * 100.0).round
@@ -134,6 +130,15 @@ module ThreeScale
       def storage
         Storage.instance
       end
+
+      private
+
+      def build_key(service_id, app_id = nil)
+        key = "alerts/service_id:#{service_id}/"
+        key << "app_id:#{app_id}/" if app_id
+        key
+      end
+
     end
   end
 end
