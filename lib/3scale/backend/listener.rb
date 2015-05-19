@@ -10,7 +10,7 @@ module ThreeScale
 
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
-      ##~ sapi.basePath = "http://su1.3scale.net"
+      ##~ sapi.basePath = "https://su1.3scale.net"
       ##~ sapi.swagrVersion = "0.1a"
       ##~ sapi.apiVersion = "1.0"
       ##
@@ -250,14 +250,14 @@ module ThreeScale
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "AuthRep (Authorize + Report for the App Id authentication pattern)"
       ##
-      ##~ op.description = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time."
-      ##~ @authrep_desc = @authrep_desc + "<p>The main difference between this call and the regular authorize call is that"
+      ##~ @authrep_desc_base = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time."
+      ##~ @authrep_desc = "<p>The main difference between this call and the regular authorize call is that"
       ##~ @authrep_desc = @authrep_desc + " usage will be reported if the authorization is successful. Authrep is the most convenient way to integrate your API with the"
       ##~ @authrep_desc = @authrep_desc + " 3scale's Service Manangement API since it does a 1:1 mapping between a request to your API and a request to 3scale's API."
       ##~ @authrep_desc = @authrep_desc + "<p>If you do not want to do a request to 3scale for each request to your API or batch the reports you should use the Authorize and Report methods instead."
       ##~ @authrep_desc = @authrep_desc + "<p>Authrep is <b>not a read-only</b> operation and will increment the values if the authorization step is a success."
       ##
-      ##~ op.description = op.description + " " + @authrep_desc
+      ##~ op.description = @authrep_desc_base + @authrep_desc
       ##~ op.group = "authrep"
       ##
       ##~ op.parameters.add @parameter_provider_key
@@ -275,7 +275,7 @@ module ThreeScale
       ##~ op = a.operations.add
       ##~ op.set :httpMethod => "GET"
       ##~ op.summary = "AuthRep (Authorize + Report for the API Key authentication pattern)"
-      ##~ op.description = @authrep_desc
+      ##~ op.description = @authrep_desc_base + @authrep_desc
       ##~ op.group = "authrep"
       ##
       ##~ op.parameters.add @parameter_provider_key
@@ -299,7 +299,7 @@ module ThreeScale
       ##~ op.summary = "AuthRep (OAuth authentication mode pattern)"
       ##
       ##~ op.description = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time in the OAuth authentication pattern."
-      ##~ op.description = op.description + " " + @authrep_desc + " " + @oauth_desc_response
+      ##~ op.description = op.description + @authrep_desc + @oauth_desc_response
       ##~ op.group = "authrep"
       ##
       ##~ op.parameters.add @parameter_provider_key
