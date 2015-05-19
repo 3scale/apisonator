@@ -30,8 +30,7 @@ module ThreeScale
       def utilization(status)
         max_utilization = -1.0
         max_record = nil
-
-        status.usage_reports.each do |item|
+        max = proc do |item|
           if item.max_value > 0
             utilization = item.current_value / item.max_value.to_f
 
@@ -42,21 +41,13 @@ module ThreeScale
           end
         end
 
-        status.user_usage_reports.each do |item|
-          if item.max_value>0
-            utilization = item.current_value / item.max_value.to_f
-            if utilization > max_utilization
-              max_record = item
-              max_utilization = utilization
-            end
-          end
-        end
+        status.usage_reports.each(&max)
+        status.user_usage_reports.each(&max)
 
         if max_utilization == -1
           ## case that all the limits have max_value==0
           max_utilization = 0
-          max_record = status.usage_reports.first
-          max_record = status.user_usage_reports.first if max_record.nil?
+          max_record = status.usage_reports.first || status.user_usage_reports.first
         end
 
         [max_utilization, max_record]
