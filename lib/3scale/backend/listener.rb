@@ -181,8 +181,8 @@ module ThreeScale
       ##~ @authorize_desc = @authorize_desc + "<p><b>Note:</b> Even if the predicted usage is passed in, authorize is still a <b>read-only</b> operation. You have to make the report call"
       ##~ @authorize_desc = @authorize_desc + " to report the usage."
       ##
-      ##~ @authorize_desc_response = "<p>The response can have an http response code: <code class='http'>200</code> OK (if authorization is granted), <code class='http'>409</code> (if it's not granted, typically application over limits or keys missing, check <code class='http'>'reason'</<code> tag'), "
-      ##~ @authorize_desc_response = @authorize_desc_response + " or <code class='http'>403</code> (for authentication errors, check <code class='http'>'error'</code> tag) and <code class='http'>404</code> (not found)."
+      ##~ @authorize_desc_response = "<p>The response can have an http response code: <code class='http'>200</code> OK (if authorization is granted), <code class='http'>409</code> (if it's not granted, typically application over limits or keys missing, check 'reason' tag), "
+      ##~ @authorize_desc_response = @authorize_desc_response + " or <code class='http'>403</code> (for authentication errors, check 'error' tag) and <code class='http'>404</code> (not found)."
 
       ##~ op.description = "<p>Read-only operation to authorize an application in the App Id authentication pattern." + " "+ @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
