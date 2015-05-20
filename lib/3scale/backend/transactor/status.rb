@@ -12,13 +12,11 @@ module ThreeScale
           end
 
           def metric_name
-            name = nil
             if @type==:application
-              name = @parent.application.metric_name(@usage_limit.metric_id)
+              @parent.application.metric_name(@usage_limit.metric_id)
             else
-              name = @parent.user.metric_name(@usage_limit.metric_id)
+              @parent.user.metric_name(@usage_limit.metric_id)
             end
-            name
           end
 
           def period
@@ -165,21 +163,15 @@ module ThreeScale
                    '</application>'
           end
 
-          if @user.nil?
+          if !@application.nil? && !options[:exclude_application]
             xml << "<__separator__/>" if options[:anchors_for_caching]
-            xml << "<plan>" << plan_name.to_s << "</plan>"
+            xml << "<plan>" << plan_name.to_s.encode(xml: :text) << "</plan>"
             xml << aux_reports_to_xml(:application, application_usage_reports, options)
-          else
-            if !@application.nil? && !options[:exclude_application]
-              xml << "<__separator__/>" if options[:anchors_for_caching]
-              xml << "<plan>" << plan_name.to_s << "</plan>"
-              xml << aux_reports_to_xml(:application, application_usage_reports, options)
-            end
-            if !@user.nil? && !options[:exclude_user]
-              xml << "<__separator__/>" if options[:anchors_for_caching]
-              xml << "<user_plan>" << user_plan_name.to_s << "</user_plan>"
-              xml << aux_reports_to_xml(:user, user_usage_reports, options)
-            end
+          end
+          if !@user.nil? && !options[:exclude_user]
+            xml << "<__separator__/>" if options[:anchors_for_caching]
+            xml << "<user_plan>" << user_plan_name.to_s.encode(xml: :text) << "</user_plan>"
+            xml << aux_reports_to_xml(:user, user_usage_reports, options)
           end
 
           xml << "<__separator__/>" if options[:anchors_for_caching]
@@ -221,7 +213,8 @@ module ThreeScale
           unless reports.empty?
             xml << "<#{xml_node_keys[report_type]}_reports>"
             reports.each do |report|
-              attributes = "metric=\"#{report.metric_name}\" period=\"#{report.period}\""
+              attributes = "metric=\"#{report.metric_name}\" " \
+                           "period=\"#{report.period}\""
               attributes << " exceeded=\"true\"" if report.exceeded?
               xml << "<usage_report #{attributes}>"
 

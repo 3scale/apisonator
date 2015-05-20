@@ -14,7 +14,10 @@ module Transactor
       @application_id = next_id
       @metric_id      = next_id
 
-      @plan_name      = 'awesome'
+      # use names that NEED escaping in our output format
+      @plan_name      = 'awesome & co. <needs> "escaping"'
+      # MT _SHOULD_ guarantee this doesn't need XML escaping for attributes or text
+      @metric_name    = 'foos'
 
       @application    = Application.new(:service_id => @service_id,
                                         :id         => next_id,
@@ -23,7 +26,7 @@ module Transactor
 
       Metric.save(:service_id => @service_id,
                   :id         => @metric_id,
-                  :name       => 'foos')
+                  :name       => @metric_name)
     end
 
     test 'status contains usage reports' do
@@ -43,7 +46,7 @@ module Transactor
 
         report = status.usage_reports.first
         assert_equal :month,               report.period
-        assert_equal 'foos',               report.metric_name
+        assert_equal @metric_name,         report.metric_name
         assert_equal Time.utc(2010, 5, 1), report.period_start
         assert_equal Time.utc(2010, 6, 1), report.period_end
         assert_equal 2000,                 report.max_value
@@ -130,7 +133,7 @@ module Transactor
       Timecop.freeze(time) do
         xml = Transactor::Status.new(:application => @application,
                                      :values      => usage).to_xml
-                   
+
         doc = Nokogiri::XML(xml)
 
         root = doc.at('status:root')
@@ -142,7 +145,12 @@ module Transactor
         usage_reports = root.at('usage_reports')
         assert_not_nil usage_reports
 
-        report = usage_reports.at('usage_report[metric = "foos"][period = "month"]')
+        # XPath and CSS selectors just won't work in Nokogiri with doubly-quoted
+        # strings for attributes.
+        # See https://groups.google.com/forum/#!topic/nokogiri-talk/6stziv8GcJM
+        report = usage_reports.search('usage_report').find do |node|
+          node['metric'] == @metric_name && node['period'] == 'month'
+        end
         assert_not_nil report
         assert_equal '2010-05-01 00:00:00 +0000', report.at('period_start').content
         assert_equal '2010-06-01 00:00:00 +0000', report.at('period_end').content
@@ -187,9 +195,14 @@ module Transactor
 
       doc = Nokogiri::XML(status.to_xml)
 
-      month  = doc.at('usage_report[metric = "foos"][period = "month"]')
-      day    = doc.at('usage_report[metric = "foos"][period = "day"]')
+      nodes = doc.search('usage_report').find_all do |node|
+        node['metric'] == @metric_name
+      end
+      month  = nodes.find { |n| n['period'] == 'month' }
+      day    = nodes.find { |n| n['period'] == 'day' }
 
+      assert_not_nil       month
+      assert_not_nil       day
       assert_nil           month['exceeded']
       assert_equal 'true', day['exceeded']
     end
