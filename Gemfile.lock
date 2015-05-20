@@ -1,3 +1,11 @@
+GIT
+  remote: git://github.com/unleashed/source2swagger.git
+  revision: e7a8cb18b2d52d5f4b791fd86b19622a7df3c444
+  branch: master
+  specs:
+    source2swagger (0.0.2)
+      json
+
 PATH
   remote: .
   specs:
@@ -227,5 +235,6 @@ DEPENDENCIES
   resque_spec (~> 0.15.0)
   resque_unit (~> 0.4.4)
   rspec_api_documentation (~> 2.0.0)
+  source2swagger!
   sshkit
   timecop (~> 0.7.1)

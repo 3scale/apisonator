@@ -22,4 +22,8 @@ group :development, :test do
   gem 'rspec_api_documentation', '~> 2.0.0'
 end
 
+group :development do
+  gem 'source2swagger', github: 'unleashed/source2swagger', branch: 'master'
+end
+
 gem 'sshkit', group: :development

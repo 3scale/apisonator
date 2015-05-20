@@ -8,6 +8,7 @@ if ENV['CI']
   require 'ci/reporter/rake/test_unit'
 end
 
+load 'lib/3scale/tasks/swagger.rake'
 load 'lib/3scale/tasks/cubert.rake'
 
 task :environment do
