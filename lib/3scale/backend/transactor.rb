@@ -45,9 +45,6 @@ module ThreeScale
       end
 
       def utilization(service_id, application_id)
-        #service = Service.load_by_id!(service_id)
-        #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
-
         application = Application.load!(service_id, application_id)
         usage = load_application_usage(application, Time.now.getutc)
         status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)
@@ -65,20 +62,14 @@ module ThreeScale
       end
 
       def alert_limit(service_id)
-        #service = Service.load_by_id!(service_id)
-        #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
         @list = Alerts.list_allowed_limit(service_id)
       end
 
       def add_alert_limit(service_id, limit)
-        ##service = Service.load_by_id!(service_id)
-        ##raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
         @list = Alerts.add_allowed_limit(service_id,limit)
       end
 
       def delete_alert_limit(service_id, limit)
-        #service = Service.load_by_id!(service_id)
-        #raise ProviderKeyInvalid, provider_key if service.nil? || service.provider_key!=provider_key
         @list = Alerts.delete_allowed_limit(service_id,limit)
       end
 
@@ -94,8 +85,6 @@ module ThreeScale
       def delete_events_by_range(to_id)
         EventStorage.delete_range(to_id)
       end
-
-      ## -------------------
 
       private
 

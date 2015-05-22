@@ -16,8 +16,6 @@ module ThreeScale
           end
         end
 
-        # TODO: ip subnet match ?
-
         private
 
         def matches?(pattern, value)
