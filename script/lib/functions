@@ -9,7 +9,9 @@ function daemonize {
 }
 
 function kill_pidfile {
-    kill_pid `cat "$@"`
+    local file="$1"
+    kill_pid `cat "${file}"`
+    rm -f "${file}"
 }
 
 function kill_pid {
@@ -56,7 +58,7 @@ function start_twemproxy {
     else
         configdir="/vagrant/config"
     fi
-    /opt/twemproxy/sbin/nutcracker -m 512 -o /tmp/nutcracker.log -p "${TWEMPROXY_PIDFILE}" -d -c ${configdir}/twemproxy.yml
+    /opt/twemproxy/sbin/nutcracker -m 512 -o /tmp/nutcracker-$(date +"%Y%m%d%H%M%S").log -p "${TWEMPROXY_PIDFILE}" -d -c ${configdir}/twemproxy.yml
 }
 
 function stop_twemproxy {
