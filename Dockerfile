@@ -15,16 +15,25 @@ RUN wget http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb && \
 
 RUN gem install cubert-server --version=0.0.2.pre.4 --no-ri --no-rdoc
 
-WORKDIR /opt/backend/
-ADD . /opt/backend
+WORKDIR /tmp/backend/
+
+ADD bin /tmp/backend/bin/
+ADD Gemfile /tmp/backend/
+ADD Gemfile.lock /tmp/backend/
+ADD lib/3scale/backend/version.rb /tmp/backend/lib/3scale/backend/
+ADD 3scale_backend.gemspec /tmp/backend/
 
 ADD docker/ssh /home/ruby/.ssh
-RUN chown -R ruby:ruby /opt/backend/ /home/ruby/.ssh
+RUN chown -R ruby:ruby /tmp/backend/ /home/ruby/.ssh
 
 USER ruby
 RUN bundle install
 
 USER root
-RUN ln -s /home/ruby/.bundle /root/.bundle && bundle install
+WORKDIR /opt/backend/
+ADD . /opt/backend
+
+RUN rm -rf /tmp/backend/ && ln -s /home/ruby/.bundle /root/.bundle \
+ && bundle install
 
 CMD script/ci
