@@ -1,4 +1,4 @@
-FROM quay.io/3scale/docker:dev-2.1.5
+FROM quay.io/3scale/docker:dev-2.1.6
 MAINTAINER Toni Reina <toni@3scale> # 2014-06-16
 
 RUN wget -qO- https://github.com/antirez/redis/archive/2.8.19.tar.gz | \
@@ -15,19 +15,16 @@ RUN wget http://s3.amazonaws.com/influxdb/influxdb_0.8.5_amd64.deb && \
 
 RUN gem install cubert-server --version=0.0.2.pre.4 --no-ri --no-rdoc
 
-WORKDIR /tmp/backend/
-
-ADD Gemfile /tmp/backend/
-ADD Gemfile.lock /tmp/backend/
-ADD lib/3scale/backend/version.rb /tmp/backend/lib/3scale/backend/
-ADD 3scale_backend.gemspec /tmp/backend/
-
-RUN fast_bundle install
-
 WORKDIR /opt/backend/
 ADD . /opt/backend
 
 ADD docker/ssh /home/ruby/.ssh
-RUN chown -R ruby:ruby /home/ruby/.ssh
+RUN chown -R ruby:ruby /opt/backend/ /home/ruby/.ssh
+
+USER ruby
+RUN bundle install
+
+USER root
+RUN ln -s /home/ruby/.bundle /root/.bundle && bundle install
 
 CMD script/ci
