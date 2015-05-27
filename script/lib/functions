@@ -9,7 +9,9 @@ function daemonize {
 }
 
 function kill_pidfile {
-    kill_pid `cat "$@"`
+    local file="$1"
+    kill_pid `cat "${file}"`
+    rm -f "${file}"
 }
 
 function kill_pid {
