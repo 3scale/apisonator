@@ -15,15 +15,14 @@ group :test do
   gem 'ci_reporter_rspec', require: nil
 end
 
+group :development do
+  gem 'sshkit'
+  gem 'source2swagger', github: 'unleashed/source2swagger', branch: 'master'
+end
+
 group :development, :test do
   gem 'pry',      '~> 0.10.0'
   gem 'pry-doc',  '~> 0.6.0'
   gem 'pry-byebug', '~> 2.0.0'
   gem 'rspec_api_documentation', '~> 2.0.0'
 end
-
-group :development do
-  gem 'source2swagger', github: 'unleashed/source2swagger', branch: 'master'
-end
-
-gem 'sshkit', group: :development
