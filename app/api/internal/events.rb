@@ -16,7 +16,7 @@ module ThreeScale
         end
 
         delete '/' do
-          result = EventStorage.delete_range(params[:to_id])
+          result = EventStorage.delete_range(params[:upto_id])
           { status: :deleted, num_events: result }.to_json
         end
       end

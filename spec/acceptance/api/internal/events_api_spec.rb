@@ -64,7 +64,7 @@ resource 'Events' do
   end
 
   delete '/events/' do
-    parameter :to_id, "ID of the last event of the range", required: true
+    parameter :upto_id, "ID of the last event of the range", required: true
 
     let(:raw_post) { params.to_json }
 
@@ -75,7 +75,7 @@ resource 'Events' do
         end
       end
 
-      let(:to_id) { ThreeScale::Backend::EventStorage.list.last[:id] }
+      let(:upto_id) { ThreeScale::Backend::EventStorage.list.last[:id] }
       example_request "Delete events by Range" do
 
         expect(response_status).to eq(200)
@@ -84,7 +84,7 @@ resource 'Events' do
       end
 
       example "Delete a subset of events by Range", document: false do
-        do_request(to_id: ThreeScale::Backend::EventStorage.list[1][:id], parameters: { foo: :bar })
+        do_request(upto_id: ThreeScale::Backend::EventStorage.list[1][:id], parameters: { foo: :bar })
 
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
@@ -93,7 +93,7 @@ resource 'Events' do
     end
 
     context 'when there are no errors to delete' do
-      let(:to_id) { 0 }
+      let(:upto_id) { 0 }
 
       example "Delete Events by Range" do
         do_request
