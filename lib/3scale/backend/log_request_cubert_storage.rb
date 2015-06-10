@@ -12,6 +12,7 @@ module ThreeScale
       def store transaction
         service_id = transaction[:service_id]
         if enabled?(service_id) && bucket_id = bucket(service_id)
+          transaction[:log]["code"] = transaction[:log]["code"].to_i
           connection.create_document(
             body: transaction, bucket: bucket_id, collection: collection
           )

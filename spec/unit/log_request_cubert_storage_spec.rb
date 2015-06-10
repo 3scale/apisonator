@@ -23,6 +23,17 @@ module ThreeScale
               to eq(enabled_service_log[:service_id])
           end
 
+          it 'stores the log code as a integer' do
+            example = example_log(
+              log: { 'request' => 'foo', 'response' => 'bar', 'code' => '200' },
+              service_id: enabled_service,
+            )
+
+            doc_id  = LogRequestCubertStorage.store(example)
+            expect(cubert_get(enabled_service, doc_id).body['log']['code']).
+              to eq(200)
+          end
+
           it "doesn't run when the service usage flag is disabled" do
             doc_id = LogRequestCubertStorage.store(disabled_service_log)
 
@@ -62,8 +73,5 @@ module ThreeScale
         )
       end
     end
-
   end
 end
-
-
