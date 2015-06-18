@@ -531,20 +531,6 @@ module ThreeScale
         empty_response
       end
 
-      ## EVENTS (replacement for alerts and violations)
-
-      get '/events.json' do
-        only_if_master { Transactor.latest_events }
-      end
-
-      delete '/events/:event_id.json' do
-        only_if_master { Transactor.delete_event_by_id(params[:event_id]) }
-      end
-
-      delete '/events.json' do
-        only_if_master { Transactor.delete_events_by_range(params[:to_id]) }
-      end
-
       ## ALERTS & VIOLATIONS
 
       get "/services/:service_id/applications/:app_id/utilization.xml" do
@@ -645,17 +631,6 @@ module ThreeScale
 
       def valid_key_and_usage_params?
         params && !blank?(params[:provider_key]) && (params[:usage].nil? || params[:usage].is_a?(Hash))
-      end
-
-      def only_if_master
-        begin
-          check_if_master()
-          content_type 'application/json'
-          status 200
-          body Yajl::Encoder.encode(yield)
-        rescue ProviderKeyInvalid => e
-          error_response(e)
-        end
       end
 
       def require_params!(*keys)
