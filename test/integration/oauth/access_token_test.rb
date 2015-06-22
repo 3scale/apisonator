@@ -101,7 +101,7 @@ class AccessTokenTest < Test::Unit::TestCase
   end
 
   test 'create oauth_access_token with invalid token returns 422' do
-    s = (0...256+1).map{65.+(rand(25)).chr}.join
+    s = (0...OAuthAccessTokenStorage::MAXIMUM_TOKEN_SIZE+1).map { (65 + rand(25)).chr }.join
     ['', nil, [], {}, s].each do |token|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
