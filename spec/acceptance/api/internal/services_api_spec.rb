@@ -147,4 +147,16 @@ resource "Services (prefix: /services)" do
     end
   end
 
+  post '/services/:id/logs_bucket' do
+    parameter :id, 'Service ID', required: true
+
+    let(:raw_post) { params.to_json }
+
+    example_request 'Setting the request log bucket for a service', id: 1001 do
+      status.should == 200
+      ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).enabled?.
+        should == true
+    end
+  end
+
 end
