@@ -59,6 +59,12 @@ module ThreeScale
           end
         end
 
+        post '/:id/logs_bucket' do
+          service = CubertServiceManagementUseCase.new(params[:id])
+          service.enable_service params[:bucket]
+          {status: :ok, bucket: service.bucket}.to_json
+        end
+
       end
     end
   end
