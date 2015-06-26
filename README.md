@@ -15,6 +15,18 @@ This is 3scale's kick-ass ultra-scalable API management system backend.
 
 We recommend developing locally and execute tests in container.
 
+### With docker
+
+Just run:
+
+```
+make build
+make bash
+```
+
+You'll get a shell in a docker container built with all the necessary
+dependencies.
+
 ### Testing API users / backend from outside
 
 You can test users of backend API services by starting its dependencies and then backend itself:
@@ -77,4 +89,5 @@ You can do it executing: `script/release`
 You can do it executing: `script/release`
 3. Follow the steps described in deploy project.
 
-__Note:__ As you can see, here we have a process that we can automatize. This note is an invitation for bold developers. 
+__Note:__ As you can see, here we have a process that we can automatize. This note is an invitation for bold developers.
+
