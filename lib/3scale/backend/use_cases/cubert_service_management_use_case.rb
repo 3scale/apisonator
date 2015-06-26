@@ -17,16 +17,11 @@ module ThreeScale
         def clean_cubert_redis_keys
           storage.del global_lock_key
           storage.smembers(all_bucket_keys_key).each { |s| storage.del s }
-          storage.del enabled_services_key
           storage.del all_bucket_keys_key
         end
 
         def global_lock_key
           'cubert_request_log_storage_enabled'
-        end
-
-        def enabled_services_key
-          'cubert_enabled_services'
         end
 
         def all_bucket_keys_key
@@ -42,16 +37,18 @@ module ThreeScale
         @service_id = service_id
       end
 
-      def enable_service
-        unless storage.get bucket_id_key
-          storage.set bucket_id_key, self.class.connection.create_bucket
-          storage.sadd self.class.all_bucket_keys_key, bucket_id_key
-        end
-        storage.sadd self.class.enabled_services_key, @service_id
+      def enable_service new_bucket = nil
+        new_bucket ||= self.class.connection.create_bucket
+
+        storage.set bucket_id_key, new_bucket
+        storage.sadd self.class.all_bucket_keys_key, bucket_id_key
       end
 
       def disable_service
-        storage.srem self.class.enabled_services_key, @service_id
+        old_bucket = bucket
+
+        storage.del bucket_id_key
+        storage.srem self.class.all_bucket_keys_key, old_bucket
       end
 
       def bucket
@@ -59,11 +56,11 @@ module ThreeScale
       end
 
       def enabled?
-        global_enable, service_enable = storage.pipelined do
+        global_enable, service_bucket = storage.pipelined do
           storage.get(self.class.global_lock_key)
-          storage.sismember(self.class.enabled_services_key, @service_id)
+          bucket
         end
-        global_enable.to_i == 1 && service_enable
+        global_enable.to_i == 1 && service_bucket
       end
 
       def bucket_id_key

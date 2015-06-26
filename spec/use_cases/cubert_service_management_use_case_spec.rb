@@ -10,19 +10,37 @@ module ThreeScale
 
       describe '.disable_service' do
         before do
-          @service = use_case.new(enabled_service)
-          @old_bucket = @service.bucket
+          @service = use_case.new enabled_service
           @service.disable_service
         end
 
-        it 'removes the service from the list of enabled services' do
-          expect(storage.smembers(use_case.enabled_services_key)).to be_empty
+        it 'deletes the bucket' do
+          expect(@service.bucket).to be_nil
         end
 
-        it 'keeps the bucket info to be reused when service is re-enabled' do
-          expect(@service.bucket).not_to be_nil
+        it 'disables the service' do
+          expect(@service.enabled?).to be_false
+        end
+      end
+
+      describe '.enable_service' do
+        before do
+          use_case.global_enable
+          @service = use_case.new(disabled_service)
           @service.enable_service
-          expect(@service.bucket).to eq(@old_bucket)
+        end
+
+        it 'enables service' do
+          expect(@service.enabled?).to be_true
+        end
+
+        it 'create a bucket if needed' do
+          expect(@service.bucket).not_to be_nil
+        end
+
+        it 'assigns a specified bucket' do
+          @service.enable_service 'foo'
+          expect(@service.bucket).to eq('foo')
         end
       end
 
@@ -35,7 +53,6 @@ module ThreeScale
 
         it 'removes all the keys' do
           expect(storage.get use_case.global_lock_key).to be_nil
-          expect(storage.smembers use_case.enabled_services_key).to be_empty
           expect(use_case.new(enabled_service).bucket).to be_nil
         end
       end
