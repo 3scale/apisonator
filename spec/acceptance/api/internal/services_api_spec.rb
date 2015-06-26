@@ -162,5 +162,21 @@ resource "Services (prefix: /services)" do
     end
   end
 
+  delete '/services/:id/logs_bucket' do
+    parameter :id, 'Service ID', required: true
+
+    let(:raw_post) { params.to_json }
+
+    example 'Removing log bucket info' do
+      ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).
+        enable_service 'foobar'
+
+      do_request id: 1001
+      status.should == 200
+      response_json['status'].should == 'ok'
+      ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket.
+        should be_nil
+    end
+  end
 
 end

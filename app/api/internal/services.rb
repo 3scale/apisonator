@@ -65,6 +65,11 @@ module ThreeScale
           {status: :ok, bucket: service.bucket}.to_json
         end
 
+        delete '/:id/logs_bucket' do
+          CubertServiceManagementUseCase.new(params[:id]).disable_service
+          {status: :ok}.to_json
+        end
+
       end
     end
   end
