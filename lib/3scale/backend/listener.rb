@@ -547,16 +547,19 @@ module ThreeScale
 
       ## ALERTS & VIOLATIONS
 
+      # TODO: Remove
       get '/services/:service_id/alert_limits.xml' do
         @list = Transactor.alert_limit(service_id)
         builder :alert_limits
       end
 
+      # TODO: Remove
       post '/services/:service_id/alert_limits/:limit.xml' do
         @list = Transactor.add_alert_limit(service_id, params[:limit])
         builder :alert_limits
       end
 
+      # TODO: Remove
       delete '/services/:service_id/alert_limits/:limit.xml' do
         @list = Transactor.delete_alert_limit(service_id, params[:limit])
         builder :alert_limits

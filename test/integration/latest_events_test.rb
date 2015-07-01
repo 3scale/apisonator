@@ -104,6 +104,7 @@ class LatestEventsTest < Test::Unit::TestCase
     assert_equal 'provider key "fake_provider_key" is invalid', obj['error']['message']
   end
 
+  # TODO: Remove
   test 'adding removing alert_limits' do
     get "/services/#{@service_id}/alert_limits.xml", :provider_key => @provider_key
     assert_equal 200, last_response.status
