@@ -16,13 +16,8 @@ module ThreeScale
 
           server = case options[:server].to_s
                    when 'thin'
-                     rackup_code = File.read(options[:config])
-                     app = eval("Rack::Builder.new {( #{rackup_code}\n )}.to_app", TOPLEVEL_BINDING, options[:config])
-                     ::Thin::Server.new(options[:Host], options[:Port], options, app).tap do |srv|
-                       srv.log_file = options[:log_file] || '/dev/null'
-                       srv.pid_file = options[:pid]
-                       srv.daemonize if options[:daemonize]
-                     end
+                     require '3scale/backend/server/thin'
+                     Thin.new(options)
                    else
                      Rack::Server.new(options)
                    end
