@@ -12,7 +12,10 @@ module ThreeScale
       COMMANDS = [:start, :stop, :restart, :restore_backup]
 
       def run
-        send(*parse!(ARGV))
+        myopts, serveropts = ARGV.join(' ').split(' -- ')
+        command, options = parse!(myopts ? myopts.split : [])
+        options[:argv] = serveropts ? serveropts.split : []
+        send command, options
       end
 
       def start(options)
@@ -48,11 +51,12 @@ module ThreeScale
           parser.on('-d', '--daemonize',    'run as daemon')                           { |value| options[:daemonize] = true }
           parser.on('-l', '--log FILE' ,    'log file')                                { |value| options[:log_file] = value }
           parser.on('-s', '--server SERVER','app server')                              { |value| options[:server] = value }
+          parser.on('--', 'rest of arguments are passed to the server')
 
           parser.separator ""
           parser.separator "Commands: #{COMMANDS.join(', ')}"
 
-          parser.parse!
+          parser.parse! argv
         end
 
         command = argv.shift
