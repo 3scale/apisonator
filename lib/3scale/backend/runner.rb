@@ -9,7 +9,7 @@ module ThreeScale
         Host:'0.0.0.0',
         Port: '3000',
       }
-      COMMANDS = [:start, :stop, :restart, :restore_backup]
+      COMMANDS = [:start, :stop, :restart, :restore_backup, :command]
 
       def run
         myopts, serveropts = ARGV.join(' ').split(' -- ')
@@ -34,6 +34,14 @@ module ThreeScale
         puts ">> Replaying write commands from backup."
         Storage.instance(true).restore_backup
         puts ">> Done."
+      end
+
+      def command(options)
+        srv_cmd = options[:argv].pop
+        if srv_cmd.nil? || srv_cmd.start_with?('-')
+          abort 'No server command found as last argument'
+        end
+        Server.send(srv_cmd, options)
       end
 
       private
