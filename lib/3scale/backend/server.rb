@@ -17,20 +17,17 @@ module ThreeScale
           end
         end
 
-        def stop(options)
-          get_server(options[:server]).stop(options.merge(pid: pid_file(options[:Port])))
-        end
-
-        def restart(options)
-          get_server(options[:server]).restart(options.merge(pid: pid_file(options[:Port])))
-        end
-
         def pid_file(port)
           if ThreeScale::Backend.development?
             "/tmp/3scale_backend_#{port}.pid"
           else
             "/var/run/3scale/3scale_backend_#{port}.pid"
           end
+        end
+
+        def method_missing(m, *args, &blk)
+          options = args.first
+          get_server(options[:server]).send(m.to_s.tr('-', '_'), options.merge(pid: pid_file(options[:Port])))
         end
 
         # the methods below are used by the Rack application for auth
