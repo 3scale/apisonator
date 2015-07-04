@@ -4,18 +4,17 @@ module ThreeScale
   module Backend
     class Server
       class << self
+        attr_reader :log
+
         def start(options)
-          log = !options[:daemonize] || options[:log_file]
-
-          app = Rack::Builder.app do
-            use Airbrake::Sinatra if Airbrake.configuration.api_key
-            use ThreeScale::Backend::Logger::Middleware if log
-
-            ThreeScale::Backend::Server.mount_internal_api self
-            run ThreeScale::Backend::Listener.new
-          end
+          @log = !options[:daemonize] || options[:log_file]
 
           options[:tag] = "3scale_backend #{ThreeScale::Backend::VERSION}"
+
+          options[:rackup] = ThreeScale::Backend.root_dir + '/config.ru'
+          rackup_code = File.read(options[:rackup])
+
+          app = eval("Rack::Builder.new {( #{rackup_code}\n )}.to_app", TOPLEVEL_BINDING, options[:rackup])
 
           server = ::Thin::Server.new(options[:host], options[:port], options, app)
 
@@ -40,16 +39,6 @@ module ThreeScale
             "/tmp/3scale_backend_#{port}.pid"
           else
             "/var/run/3scale/3scale_backend_#{port}.pid"
-          end
-        end
-
-        def mount_internal_api(server)
-          server.map "/internal" do
-            use Rack::Auth::Basic do |username, password|
-              ThreeScale::Backend::Server.check_password username, password
-            end
-
-            run ThreeScale::Backend::API::Internal.new
           end
         end
 
