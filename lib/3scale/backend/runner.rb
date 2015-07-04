@@ -47,6 +47,7 @@ module ThreeScale
           parser.on('-p', '--port PORT',    'use PORT (default: 3000)')                { |value| options[:Port] = value.to_i }
           parser.on('-d', '--daemonize',    'run as daemon')                           { |value| options[:daemonize] = true }
           parser.on('-l', '--log FILE' ,    'log file')                                { |value| options[:log_file] = value }
+          parser.on('-s', '--server SERVER','app server')                              { |value| options[:server] = value }
 
           parser.separator ""
           parser.separator "Commands: #{COMMANDS.join(', ')}"
