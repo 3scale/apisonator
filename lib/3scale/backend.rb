@@ -70,6 +70,15 @@ module ThreeScale
       File.expand_path(__FILE__ + '/../../..')
     end
 
+    def self.number_of_cpus
+      cpuinfo_file = '/proc/cpuinfo'
+      if File.readable? cpuinfo_file
+        File.open(cpuinfo_file) { |f| f.grep(/processor/).size }
+      else
+        1 # non-Linux users get a default good enough for dev & test
+      end
+    end
+
     def self.environment
       ENV['RACK_ENV'] || 'development'
     end
