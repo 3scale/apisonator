@@ -12,12 +12,23 @@ module ThreeScale
           options[:tag] = "3scale_backend #{ThreeScale::Backend::VERSION}"
           options[:pid] = pid_file(options[:Port])
           options[:config] = ThreeScale::Backend.root_dir + '/config.ru'
+          options[:server] ||= :thin
 
-          server = Rack::Server.new(options)
+          server = case options[:server].to_s
+                   when 'thin'
+                     rackup_code = File.read(options[:config])
+                     app = eval("Rack::Builder.new {( #{rackup_code}\n )}.to_app", TOPLEVEL_BINDING, options[:config])
+                     ::Thin::Server.new(options[:Host], options[:Port], options, app).tap do |srv|
+                       srv.log_file = options[:log_file] || '/dev/null'
+                       srv.pid_file = options[:pid]
+                       srv.daemonize if options[:daemonize]
+                     end
+                   else
+                     Rack::Server.new(options)
+                   end
 
           server.start do |srv|
             puts ">> Starting #{options[:tag]}. Let's roll!"
-            srv.log_file = options[:log_file] || '/dev/null' if srv.respond_to? :log_file
           end
         end
 
