@@ -16,17 +16,14 @@ module ThreeScale
           run ThreeScale::Backend::Listener.new
         end
 
+        options[:tag] = "3scale_backend #{ThreeScale::Backend::VERSION}"
+
         server = ::Thin::Server.new(options[:host], options[:port], options, app)
 
         server.pid_file = pid_file(options[:port])
         server.log_file = options[:log_file] || "/dev/null"
 
-        # Hack to set process name (so it looks nicer in a process list).
-        def server.name
-          "3scale_backend #{ThreeScale::Backend::VERSION} listening on #{host}:#{port}"
-        end
-
-        puts ">> Starting #{server.name}. Let's roll!"
+        puts ">> Starting #{options[:tag]}. Let's roll!"
         server.daemonize if options[:daemonize]
         server.start
       end
