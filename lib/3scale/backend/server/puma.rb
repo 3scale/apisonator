@@ -29,6 +29,12 @@ module ThreeScale
             arg_add puma_argv, '--daemon', '-d', true unless options[:daemonize].nil?
             arg_add puma_argv, '--pidfile', options[:pid] unless options[:pid].nil?
 
+            # serving model settings here
+            #
+            # currently just a cluster of CPUs + 1 workers
+            arg_add puma_argv, '--threads', '-t', '1:1'
+            arg_add puma_argv, '--workers', '-w', (ThreeScale::Backend.number_of_cpus + 1)
+
             # additional settings here
             arg_add puma_argv, '--tag', (options[:tag] || name)
             arg_add puma_argv, '--state', '-S', STATE_PATH
