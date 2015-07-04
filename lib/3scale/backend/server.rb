@@ -37,7 +37,7 @@ module ThreeScale
       end
 
       def pid_file(port)
-        if ENV['RACK_ENV'] == 'development'
+        if ThreeScale::Backend.development?
           "/tmp/3scale_backend_#{port}.pid"
         else
           "/var/run/3scale/3scale_backend_#{port}.pid"
