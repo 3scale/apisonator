@@ -5,7 +5,10 @@ module ThreeScale
     module Runner
       extend self
 
-      DEFAULT_OPTIONS = {:host => '0.0.0.0', :port => 3000}
+      DEFAULT_OPTIONS = {
+        Host:'0.0.0.0',
+        Port: '3000',
+      }
       COMMANDS = [:start, :stop, :restart, :restore_backup]
 
       def run
@@ -39,21 +42,21 @@ module ThreeScale
           parser.banner = 'Usage: 3scale_backend [options] command'
           parser.separator ""
           parser.separator "Options:"
-        
-          parser.on('-a', '--address HOST', 'bind to HOST address (default: 0.0.0.0)') { |value| options[:host] = value }
-          parser.on('-p', '--port PORT',    'use PORT (default: 3000)')                { |value| options[:port] = value.to_i }
+
+          parser.on('-a', '--address HOST', 'bind to HOST address (default: 0.0.0.0)') { |value| options[:Host] = value }
+          parser.on('-p', '--port PORT',    'use PORT (default: 3000)')                { |value| options[:Port] = value.to_i }
           parser.on('-d', '--daemonize',    'run as daemon')                           { |value| options[:daemonize] = true }
           parser.on('-l', '--log FILE' ,    'log file')                                { |value| options[:log_file] = value }
 
           parser.separator ""
           parser.separator "Commands: #{COMMANDS.join(', ')}"
-        
+
           parser.parse!
         end
 
         command = argv.shift
         command &&= command.to_sym
-        
+
         unless COMMANDS.include?(command)
           if command
             abort "Unknown command: #{command}. Use one of: #{COMMANDS.join(', ')}"

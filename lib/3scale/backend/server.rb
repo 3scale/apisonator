@@ -10,28 +10,23 @@ module ThreeScale
           @log = !options[:daemonize] || options[:log_file]
 
           options[:tag] = "3scale_backend #{ThreeScale::Backend::VERSION}"
+          options[:pid] = pid_file(options[:Port])
+          options[:config] = ThreeScale::Backend.root_dir + '/config.ru'
 
-          options[:rackup] = ThreeScale::Backend.root_dir + '/config.ru'
-          rackup_code = File.read(options[:rackup])
+          server = Rack::Server.new(options)
 
-          app = eval("Rack::Builder.new {( #{rackup_code}\n )}.to_app", TOPLEVEL_BINDING, options[:rackup])
-
-          server = ::Thin::Server.new(options[:host], options[:port], options, app)
-
-          server.pid_file = pid_file(options[:port])
-          server.log_file = options[:log_file] || "/dev/null"
-
-          puts ">> Starting #{options[:tag]}. Let's roll!"
-          server.daemonize if options[:daemonize]
-          server.start
+          server.start do |srv|
+            puts ">> Starting #{options[:tag]}. Let's roll!"
+            srv.log_file = options[:log_file] || '/dev/null' if srv.respond_to? :log_file
+          end
         end
 
         def stop(options)
-          ::Thin::Server.kill(pid_file(options[:port]))
+          ::Thin::Server.kill(pid_file(options[:Port]))
         end
 
         def restart(options)
-          ::Thin::Server.restart(pid_file(options[:port]))
+          ::Thin::Server.restart(pid_file(options[:Port]))
         end
 
         def pid_file(port)
