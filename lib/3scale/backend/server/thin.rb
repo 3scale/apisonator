@@ -14,6 +14,14 @@ module ThreeScale
               srv.daemonize if options[:daemonize]
             end
           end
+
+          def stop(options)
+            ::Thin::Server.kill(options[:pid])
+          end
+
+          def restart(options)
+            ::Thin::Server.restart(options[:pid])
+          end
         end
       end
     end

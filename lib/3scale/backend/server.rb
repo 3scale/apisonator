@@ -1,5 +1,3 @@
-require 'thin'
-
 module ThreeScale
   module Backend
     class Server
@@ -12,27 +10,19 @@ module ThreeScale
           options[:tag] = "3scale_backend #{ThreeScale::Backend::VERSION}"
           options[:pid] = pid_file(options[:Port])
           options[:config] = ThreeScale::Backend.root_dir + '/config.ru'
-          options[:server] ||= :thin
 
-          server = case options[:server].to_s
-                   when 'thin'
-                     require '3scale/backend/server/thin'
-                     Thin.new(options)
-                   else
-                     Rack::Server.new(options)
-                   end
-
+          server = get_server(options[:server]).new options
           server.start do |srv|
             puts ">> Starting #{options[:tag]}. Let's roll!"
           end
         end
 
         def stop(options)
-          ::Thin::Server.kill(pid_file(options[:Port]))
+          get_server(options[:server]).stop(options.merge(pid: pid_file(options[:Port])))
         end
 
         def restart(options)
-          ::Thin::Server.restart(pid_file(options[:Port]))
+          get_server(options[:server]).restart(options.merge(pid: pid_file(options[:Port])))
         end
 
         def pid_file(port)
@@ -43,6 +33,7 @@ module ThreeScale
           end
         end
 
+        # the methods below are used by the Rack application for auth
         def check_password(username, password)
           username == ThreeScale::Backend::Server.auth_username &&
             password == ThreeScale::Backend::Server.auth_password
@@ -54,6 +45,19 @@ module ThreeScale
 
         def auth_password
           'password'
+        end
+
+        private
+
+        def get_server(server_name)
+          server_name ||= :thin
+          server_name = server_name.to_s.tr('-', '_')
+          require "3scale/backend/server/#{server_name}"
+          class_name = server_name.split('_').map(&:capitalize).join
+          const_get(class_name)
+        rescue LoadError
+          require '3scale/backend/server/rack'
+          Rack
         end
       end
 
