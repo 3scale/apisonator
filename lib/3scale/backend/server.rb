@@ -47,7 +47,7 @@ module ThreeScale
         private
 
         def get_server(server_name)
-          server_name ||= RUBY_ENGINE == 'ruby' ? :thin : :puma
+          server_name ||= :puma
           server_name = server_name.to_s.tr('-', '_')
           require "3scale/backend/server/#{server_name}"
           class_name = server_name.split('_').map(&:capitalize).join
