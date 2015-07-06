@@ -58,12 +58,24 @@ module ThreeScale
 
       def list_by_service(service_id)
         raw_items = storage.lrange(queue_key_service(service_id), 0, -1)
-        raw_items.map(&method(:decode))
+        raw_items.map do |i|
+          begin
+            decode(i)
+          rescue Encoding::InvalidByteSequenceError
+            decode(i.force_encoding('UTF-8'))
+          end
+        end
       end
 
       def list_by_application(service_id, application_id)
         raw_items = storage.lrange(queue_key_application(service_id, application_id), 0, -1)
-        raw_items.map(&method(:decode))
+        raw_items.map do |i|
+          begin
+            decode(i)
+          rescue Encoding::InvalidByteSequenceError
+            decode(i.force_encoding('UTF-8'))
+          end
+        end
       end
 
       def count_by_service(service_id)

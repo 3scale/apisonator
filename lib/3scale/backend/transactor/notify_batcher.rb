@@ -48,7 +48,7 @@ module ThreeScale
           tt = Time.now.getutc
           tt = tt-tt.sec
 
-          encoded = Yajl::Encoder.encode({:provider_key => provider_key, :usage => usage, :time => encode_time(tt)})
+          encoded = { provider_key: provider_key, usage: usage, time: encode_time(tt) }.to_json
           num_elements = storage.rpush(key_for_notifications_batch, encoded)
 
           ## HACK: TO REMOVE, this is so that tests pass right aways, a batch of 1
