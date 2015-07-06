@@ -28,23 +28,23 @@ module ThreeScale
         key_service = queue_key_service(transaction[:service_id])
         key_app = queue_key_application(transaction[:service_id], transaction[:application_id])
 
-        begin
-          value = encode(:application_id => transaction[:application_id],
-                        :service_id     => transaction[:service_id],
-                        :log            => transaction[:log],
-                        :usage          => transaction[:usage],
-                        :timestamp      => transaction[:timestamp])
-          decode(value)
+        value_hash = {
+          application_id: transaction[:application_id],
+          service_id:     transaction[:service_id],
+          log:            transaction[:log],
+          usage:          transaction[:usage],
+          timestamp:      transaction[:timestamp]
+        }
 
+        begin
+          value = encode(value_hash)
+          decode(value) # XXX is this needed at all?
         rescue Yajl::ParseError
           log = {'request' => 'Error: the log entry could not be stored. Please use UTF8 encoding.',
                  'response' => 'N/A',
                  'code' => 'N/A'}
-          value = encode(:application_id => transaction[:application_id],
-                        :service_id     => transaction[:service_id],
-                        :log            => log,
-                        :usage          => transaction[:usage],
-                        :timestamp      => transaction[:timestamp])
+          value_hash[:log] = log
+          value = encode(value_hash)
         end
 
         storage.lpush(key_service,value)
