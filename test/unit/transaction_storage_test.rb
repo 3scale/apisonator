@@ -49,7 +49,7 @@ class TransactionStorageTest < Test::Unit::TestCase
                  'usage'          => { metric_id_one => 1 },
                  'timestamp'      => '2010-09-10 17:04:00 UTC' }
 
-    assert_equal expected, Yajl::Parser.parse(transactions[0])
+    assert_equal expected, JSON.parse(transactions[0])
 
     # Service two
     transactions = @storage.lrange("transactions/service_id:#{service_id_two}", 0, -1)
@@ -59,7 +59,7 @@ class TransactionStorageTest < Test::Unit::TestCase
                  'usage'          => { metric_id_two => 2 },
                  'timestamp'      => '2010-09-10 17:10:00 UTC' }
 
-    assert_equal expected, Yajl::Parser.parse(transactions[0])
+    assert_equal expected, JSON.parse(transactions[0])
   end
 
   test '#list returns transactions from the storage' do
@@ -67,14 +67,18 @@ class TransactionStorageTest < Test::Unit::TestCase
     application_id_two = next_id
 
     @storage.lpush("transactions/service_id:#{@service_id}",
-                   Yajl::Encoder.encode(application_id: application_id_one,
-                                        usage:          { @metric_id => 1 },
-                                        timestamp:      '2010-09-10 11:00:00 UTC'))
+                   {
+                     application_id: application_id_one,
+                     usage:          { @metric_id => 1 },
+                     timestamp:      '2010-09-10 11:00:00 UTC'
+                   }.to_json)
 
     @storage.lpush("transactions/service_id:#{@service_id}",
-                   Yajl::Encoder.encode(application_id: application_id_two,
-                                        usage:          { @metric_id => 2 },
-                                        timestamp:      '2010-09-10 11:02:00 UTC'))
+                   {
+                     application_id: application_id_two,
+                     usage:          { @metric_id => 2 },
+                     timestamp:      '2010-09-10 11:02:00 UTC'
+                   }.to_json)
 
     expected = [
       {
