@@ -9,10 +9,12 @@ module ThreeScale
       FIRST_ALERT_BIN = ALERT_BINS.first
       RALERT_BINS     = ALERT_BINS.reverse
 
+      # TODO: Remove
       def list_allowed_limit(service_id)
         storage.smembers("alerts/service_id:#{service_id}/allowed_set")
       end
 
+      # TODO: Remove
       def delete_allowed_limit(service_id, value)
         val = value.to_i
         key = "alerts/service_id:#{service_id}/allowed_set"
@@ -20,6 +22,7 @@ module ThreeScale
         storage.smembers(key)
       end
 
+      # TODO: Remove
       def add_allowed_limit(service_id, value)
         val = value.to_i
         key = "alerts/service_id:#{service_id}/allowed_set"
