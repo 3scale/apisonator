@@ -33,7 +33,7 @@ module ThreeScale
             #
             # currently just a cluster of CPUs + 1 workers
             arg_add puma_argv, '--threads', '-t', '1:1'
-            arg_add puma_argv, '--workers', '-w', (ThreeScale::Backend.number_of_cpus + 1)
+            arg_add puma_argv, '--workers', '-w', Process.respond_to?(:fork) ? (ThreeScale::Backend.number_of_cpus + 1) : 0
 
             # additional settings here
             arg_add puma_argv, '--tag', (options[:tag] || name)
