@@ -138,7 +138,9 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
 
-    good_enough = time_with_storage_stats < time_without_storage_stats * 1.5
+    # pend 'JRuby needs warmup and/or parameter tuning for meaningful performance benchmarks' if RUBY_ENGINE == 'jruby'
+    good_enough = time_with_storage_stats < time_without_storage_stats * 1.5 *
+      (RUBY_ENGINE == 'jruby' ? 2 : 1)
 
     unless good_enough
       puts "\nwith    storage stats: #{time_with_storage_stats}s"
