@@ -162,7 +162,20 @@ module ThreeScale
         end
 
         if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
+          enqueue_value = { 0 => { 'app_id' => application_id, 'usage' => usage, 'user_id' => username, 'log' => params[:log] } }
+          begin
+            report_enqueue(service_id, enqueue_value)
+          rescue JSON::GeneratorError
+            # catch the case that we got invalid UTF-8 in the log and just fill
+            # in with an error message instead of bailing out.
+            # Note: we catch all and retry, not only the "partial character in
+            # source, but hit end" error, just in case we can fix other
+            # problems and/or that message changes.
+            enqueue_value[0]['log'] = {'request' => 'Error: the log entry could not be stored. Please use UTF8 encoding.',
+                                       'response' => 'N/A',
+                                       'code' => 'N/A'}
+            report_enqueue(service_id, enqueue_value)
+          end
           val = usage ? usage.size : 0
           ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
           notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
