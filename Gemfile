@@ -2,6 +2,8 @@ source 'https://rubygems.org'
 
 gemspec
 
+ruby '2.2.2', :engine => 'jruby', :engine_version => '9.0.0.0'
+
 # C-API only gems
 #
 # It is useful to tag these because not all Ruby implementations support these
