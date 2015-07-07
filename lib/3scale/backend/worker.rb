@@ -40,7 +40,12 @@ module ThreeScale
       # - :one_off           - if true, will process one job, then quit
       #
       def self.work(options = {})
-        Process.setproctitle("3scale_backend_worker #{ThreeScale::Backend::VERSION}")
+        title = "3scale_backend_worker #{ThreeScale::Backend::VERSION}"
+        if Process.respond_to? :setproctitle
+          Process.setproctitle(title)
+        else
+          $0 = title
+        end
         new(options).work
       end
 
