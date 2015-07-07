@@ -1,4 +1,4 @@
-FROM quay.io/3scale/docker:dev-backend-2.2.2
+FROM quay.io/3scale/docker:dev-backend-jruby-9.0
 MAINTAINER Toni Reina <toni@3scale.net>
 
 USER ruby
@@ -18,6 +18,7 @@ RUN ruby -e "begin; Gem::Specification.find_by_name('cubert-server', Gem::Requir
 RUN chown -R ruby:ruby /tmp/backend/ /home/ruby/.ssh
 
 USER ruby
+
 RUN bundle install
 
 USER root
@@ -34,4 +35,4 @@ RUN bundle install
 USER root
 
 # and this is needed to switch to an unprivileged user for running the suite
-CMD ["/bin/bash", "-c", "cd /home/ruby/backend && su ruby -c 'script/ci'"]
+CMD ["/bin/bash", "-c", "cd /home/ruby/backend && su ruby -c 'PATH=$PATH:/opt/jruby/bin script/ci'"]
