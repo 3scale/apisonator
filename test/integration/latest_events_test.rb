@@ -42,7 +42,7 @@ class LatestEventsTest < Test::Unit::TestCase
                     :month        => 100)
 
     Alerts::ALERT_BINS.each do |val|
-      add_allowed_limit(@service_id, val)
+      AlertLimit.save(@service_id, val)
     end
   end
 
