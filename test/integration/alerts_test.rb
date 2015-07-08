@@ -37,7 +37,7 @@ class AlertsTest < Test::Unit::TestCase
                     :month        => 100)
 
     Alerts::ALERT_BINS.each do |val|
-      add_allowed_limit(@service_id, val)
+      AlertLimit.save(@service_id, val)
     end
   end
 
@@ -73,7 +73,7 @@ class AlertsTest < Test::Unit::TestCase
       Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      delete_allowed_limit(@service_id, 100)
+      AlertLimit.delete(@service_id, 100)
 
       ## this one should over 100 and below 120 should not happen since
       Transactor.report(@provider_key,
@@ -82,7 +82,7 @@ class AlertsTest < Test::Unit::TestCase
       Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      add_allowed_limit(@service_id, 100)
+      AlertLimit.save(@service_id, 100)
 
       Transactor.report(@provider_key,
                         @service_id,

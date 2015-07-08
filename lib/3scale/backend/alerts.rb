@@ -9,27 +9,6 @@ module ThreeScale
       FIRST_ALERT_BIN = ALERT_BINS.first
       RALERT_BINS     = ALERT_BINS.reverse
 
-      # TODO: Remove
-      def list_allowed_limit(service_id)
-        storage.smembers("alerts/service_id:#{service_id}/allowed_set")
-      end
-
-      # TODO: Remove
-      def delete_allowed_limit(service_id, value)
-        val = value.to_i
-        key = "alerts/service_id:#{service_id}/allowed_set"
-        storage.srem(key,val) if ALERT_BINS.member?(val) && val.to_s==value.to_s
-        storage.smembers(key)
-      end
-
-      # TODO: Remove
-      def add_allowed_limit(service_id, value)
-        val = value.to_i
-        key = "alerts/service_id:#{service_id}/allowed_set"
-        storage.sadd(key,val) if ALERT_BINS.member?(val) && val.to_s==value.to_s
-        storage.smembers(key)
-      end
-
       def utilization(status)
         max_utilization = -1.0
         max_record = nil
