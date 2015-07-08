@@ -104,52 +104,6 @@ class LatestEventsTest < Test::Unit::TestCase
     assert_equal 'provider key "fake_provider_key" is invalid', obj['error']['message']
   end
 
-  # TODO: Remove
-  test 'adding removing alert_limits' do
-    get "/services/#{@service_id}/alert_limits.xml", :provider_key => @provider_key
-    assert_equal 200, last_response.status
-
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal Alerts::ALERT_BINS.size, doc.search('limit').size
-
-    doc.search('limit').each do |item|
-      assert_equal true, Alerts::ALERT_BINS.member?(item.attributes['value'].content.to_i)
-    end
-
-    delete "/services/#{@service_id}/alert_limits/100.xml", :provider_key => @provider_key
-    assert_equal 200, last_response.status
-
-    delete "/services/#{@service_id}/alert_limits/120.xml", :provider_key => @provider_key
-    assert_equal 200, last_response.status
-
-    delete "/services/#{@service_id}/alert_limits/666.xml", :provider_key => @provider_key
-    assert_equal 200, last_response.status
-
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal Alerts::ALERT_BINS.size-2, doc.search('limit').size
-    doc.search('limit').each do |item|
-      assert_equal true, Alerts::ALERT_BINS.member?(item.attributes['value'].content.to_i)
-      assert_not_equal '100', item.attributes['value'].content
-      assert_not_equal '120', item.attributes['value'].content
-      assert_not_equal '666', item.attributes['value'].content
-    end
-
-    post "/services/#{@service_id}/alert_limits/120.xml", :provider_key => @provider_key
-    assert_equal 200, last_response.status
-
-    post "/services/#{@service_id}/alert_limits/999.xml", :provider_key => @provider_key
-    assert_equal 200, last_response.status
-
-    doc   = Nokogiri::XML(last_response.body)
-    assert_equal Alerts::ALERT_BINS.size-1, doc.search('limit').size
-    doc.search('limit').each do |item|
-      assert_equal true, Alerts::ALERT_BINS.member?(item.attributes['value'].content.to_i)
-      assert_not_equal '100', item.attributes['value'].content
-      assert_not_equal '666', item.attributes['value'].content
-      assert_not_equal '999', item.attributes['value'].content
-    end
-  end
-
   test 'test correct results for first_traffic events with authrep' do
       get '/transactions/authrep.xml', :provider_key => @provider_key,
                                         :app_id       => @application_id1,
