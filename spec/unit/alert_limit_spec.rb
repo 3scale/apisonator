@@ -54,6 +54,22 @@ module ThreeScale
 
           it { expect(subject).to be_false }
         end
+
+        context 'with nil value' do
+          before { AlertLimit.save(service_id, 0) }
+
+          subject { AlertLimit.delete(service_id, nil) }
+
+          it { expect(subject).to be_false }
+        end
+
+        context 'with wrong value' do
+          before { AlertLimit.save(service_id, 0) }
+
+          subject { AlertLimit.delete(service_id, "fooo") }
+
+          it { expect(subject).to be_false }
+        end
       end
 
       describe '#save' do
