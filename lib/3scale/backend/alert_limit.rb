@@ -38,14 +38,18 @@ module ThreeScale
       end
 
       def self.delete(service_id, value)
-        storage.srem(key(service_id), value.to_i)
+        storage.srem(key(service_id), value.to_i) if valid_value?(value)
+      end
+
+      def self.valid_value?(value)
+        val = value.to_i
+        Alerts::ALERT_BINS.include?(val) && val.to_s == value.to_s
       end
 
       private
 
       def valid?
-        val = value.to_i
-        Alerts::ALERT_BINS.member?(val) && val.to_s == value.to_s
+        self.class.valid_value?(value)
       end
     end
   end
