@@ -62,21 +62,6 @@ module ThreeScale
       end
 
       # TODO: remove
-      def alert_limit(service_id)
-        @list = Alerts.list_allowed_limit(service_id)
-      end
-
-      # TODO: remove
-      def add_alert_limit(service_id, limit)
-        @list = Alerts.add_allowed_limit(service_id,limit)
-      end
-
-      # TODO: remove
-      def delete_alert_limit(service_id, limit)
-        @list = Alerts.delete_allowed_limit(service_id,limit)
-      end
-
-      # TODO: remove
       def latest_events
         EventStorage.list
       end
