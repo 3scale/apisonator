@@ -147,7 +147,7 @@ resource "Services (prefix: /services)" do
     end
   end
 
-  post '/services/:id/logs_bucket' do
+  put '/services/:id/logs_bucket' do
     parameter :id, 'Service ID', required: true
     parameter :bucket, 'Bucket name', require: true
 
