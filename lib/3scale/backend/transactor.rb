@@ -61,21 +61,6 @@ module ThreeScale
         [status.usage_reports, max_record, max_utilization, stats]
       end
 
-      # TODO: remove
-      def latest_events
-        EventStorage.list
-      end
-
-      # TODO: remove
-      def delete_event_by_id(id)
-        EventStorage.delete(id)
-      end
-
-      # TODO: remove
-      def delete_events_by_range(to_id)
-        EventStorage.delete_range(to_id)
-      end
-
       private
 
       COMMON_VALIDATORS = [
