@@ -46,38 +46,15 @@ class LatestEventsTest < Test::Unit::TestCase
     end
   end
 
-  def filter_events_by_type(type)
-    get '/events.json',                            :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    ## filter the non alert events
-    obj.each do |item|
-      if item['type'] != type
-        delete "/events/#{item['id']}.json",       :provider_key => @master_provider_key
-        assert_equal 200, last_response.status
-
-        obj = Yajl::Parser.parse(last_response.body)
-        assert_equal 1, obj
-      end
-    end
-  end
-
   test 'test correct results for first_traffic events with authrep' do
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                        :app_id       => @application_id1,
-                                        :usage        => {'foos' => 1}
-      Resque.run!
+      authrep(app_id: @application_id1, usage: { 'foos' => 1 })
 
       ## processes all the pending NotifyJobs. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
       Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      get '/events.json', provider_key: @master_provider_key
-      assert_equal 200, last_response.status
-
-      events = Yajl::Parser.parse(last_response.body)
+      events = get_events
       assert_equal 4, events.size
 
       app_events = events[0..1]
@@ -90,32 +67,14 @@ class LatestEventsTest < Test::Unit::TestCase
       assert_equal true, app_events.first['object']['service_id'] == @service_id
       assert_equal true, master_app_events.first['object']['service_id'] == @master_service_id
 
-      delete '/events.json', to_id: 99999999, provider_key: @master_provider_key
-      assert_equal 200, last_response.status
+      assert_equal 4, delete_events(99999999)
 
-      obj = Yajl::Parser.parse(last_response.body)
-      assert_equal 4, obj
+      assert_equal [], get_events
 
-      get '/events.json', provider_key: @master_provider_key
-      assert_equal 200, last_response.status
+      authrep(app_id: @application_id2, usage: { 'foos' => 1 })
+      authrep(app_id: @application_id3, usage: {'foos' => 1 })
 
-      obj = Yajl::Parser.parse(last_response.body)
-      assert_equal [], obj
-
-      get '/transactions/authrep.xml', provider_key: @provider_key,
-                                       app_id:       @application_id2,
-                                       usage:        {'foos' => 1}
-      Resque.run!
-
-      get '/transactions/authrep.xml', provider_key: @provider_key,
-                                       app_id:       @application_id3,
-                                       usage:        {'foos' => 1}
-      Resque.run!
-
-      get '/events.json', provider_key: @master_provider_key
-      assert_equal 200, last_response.status
-
-      events = Yajl::Parser.parse(last_response.body)
+      events = get_events
       assert_equal 4, events.size
 
       app_2_events = events[0..1]
@@ -135,96 +94,41 @@ class LatestEventsTest < Test::Unit::TestCase
       assert_equal true, app_3_events.first['object']['application_id'] == @application_id3
       assert_equal true, app_3_events.last['object']['application_id'] == @application_id3
 
-      delete '/events.json', to_id: 10000, provider_key: @master_provider_key
-      assert_equal 200, last_response.status
+      assert_equal 4, delete_events(10_000)
 
-      obj = Yajl::Parser.parse(last_response.body)
-      assert_equal 4, obj
+      assert_equal [], get_events
 
-      get '/events.json', provider_key: @master_provider_key
-      assert_equal 200, last_response.status
-
-      obj = Yajl::Parser.parse(last_response.body)
-      assert_equal [], obj
-
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                        :app_id       => @application_id2,
-                                        :usage        => {'foos' => 1}
-      Resque.run!
-
-      get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                        :app_id       => @application_id3,
-                                        :usage        => {'foos' => 1}
-      Resque.run!
+      authrep(app_id: @application_id2, usage: { 'foos' => 1 })
+      authrep(app_id: @application_id3, usage: { 'foos' => 1})
 
       ## now it's empty because @application_id1, and @application_id2 first_traffic event already raised
-      get '/events.json',       :provider_key => @master_provider_key
-      assert_equal 200, last_response.status
+      assert_equal [], get_events
 
-      obj = Yajl::Parser.parse(last_response.body)
-      assert_equal [], obj
-
-      delete '/events.json',       :to_id => 10000, :provider_key => @master_provider_key
-      assert_equal 200, last_response.status
-
-      obj = Yajl::Parser.parse(last_response.body)
-      assert_equal 0, obj
+      assert_equal 0, delete_events(10_000)
   end
 
   test 'test correct results for events with authrep' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                      :app_id       => @application_id1,
-                                      :usage        => {'foos' => 81}
-    Resque.run!
-
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                      :app_id       => @application_id1,
-                                      :usage        => {'foos' => 10}
-    Resque.run!
-
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                      :app_id       => @application_id2,
-                                      :usage        => {'foos' => 81}
-    Resque.run!
-
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                      :app_id       => @application_id3,
-                                      :usage        => {'foos' => 81}
-    Resque.run!
+    authrep(app_id: @application_id1, usage: { 'foos' => 81 })
+    authrep(app_id: @application_id1, usage: { 'foos' => 10 })
+    authrep(app_id: @application_id2, usage: { 'foos' => 81 })
+    authrep(app_id: @application_id3, usage: { 'foos' => 81 })
 
     Backend::Transactor.process_batch(0, all: true)
     Resque.run!
 
-    get '/events.json', provider_key: @master_provider_key
-    assert_equal 200, last_response.status
+    assert_equal 12, get_events.size
 
-    events = Yajl::Parser.parse(last_response.body)
-    assert_equal 12, events.size
+    filter_events_by_type("alert")
 
-    ## filter the non alert events
+    events = get_events
+    assert_equal 4, events.size
+
     events.each do |item|
-      if item['type']!='alert'
-        delete "/events/#{item['id']}.json", provider_key: @master_provider_key
-        assert_equal 200, last_response.status
-
-        deleted_events_size = Yajl::Parser.parse(last_response.body)
-        assert_equal 1, deleted_events_size
-      end
-    end
-
-    get '/events.json',       :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_not_nil obj
-    assert_equal 4, obj.size
-
-    obj.each do |item|
       assert_equal 'alert', item['type']
     end
 
     saved_id = -1
-    obj.each do |item|
+    events.each do |item|
       if item['type'] == 'alert' && item['object']['application_id'].to_i == @application_id3.to_i
         saved_id = item['id']
         assert_equal @service_id.to_i, item['object']['service_id'].to_i
@@ -237,127 +141,66 @@ class LatestEventsTest < Test::Unit::TestCase
     end
     assert_not_equal(-1, saved_id)
 
-    delete "/events/#{saved_id}.json",       :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
+    delete_event(saved_id)
 
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_equal 1, obj
-
-    get '/events.json',       :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_not_nil obj
-    assert_equal 3, obj.size
-    obj.each do |item|
-      assert_not_equal saved_id.to_i, item['id'].to_i
-    end
+    events = get_events
+    assert_equal 3, events.size
+    events.each { |item| assert_not_equal saved_id.to_i, item['id'].to_i }
   end
 
   test 'test alerts with authrep' do
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                      :app_id       => @application_id1,
-                                      :usage        => {'foos' => 99}
-    Resque.run!
+    authrep(app_id: @application_id1, usage: { 'foos' => 99 })
 
     filter_events_by_type('alert')
 
-    get '/events.json',                             :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_equal 1, obj.size
+    assert_equal 1, get_events.size
 
     filter_events_by_type('alert')
 
-    get '/events.json',                             :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
+    assert_equal 1, get_events.size
 
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_equal 1, obj.size
-
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                      :app_id       => @application_id2,
-                                      :usage        => {'foos' => 99}
-    Resque.run!
+    authrep(app_id: @application_id2, usage: { 'foos' => 99 })
 
     assert_equal 200, last_response.status
 
     filter_events_by_type('alert')
 
-    get '/events.json',                             :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
+    assert_equal 2, get_events.size
 
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_equal 2, obj.size
-
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                      :app_id       => @application_id1,
-                                      :usage        => {'foos' => 1}
-    Resque.run!
+    authrep(app_id: @application_id1, usage: { 'foos' => 1 })
 
     assert_equal 200, last_response.status
 
     filter_events_by_type('alert')
 
-    get '/events.json',                             :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_equal 3, obj.size
+    assert_equal 3, get_events.size
 
     filter_events_by_type('alert')
 
-    get '/events.json',                             :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_equal 3, obj.size
+    assert_equal 3, get_events.size
   end
 
   test 'test correct results for alerts with reports' do
     ## alerts over 100% cannot happen on authrep
-    post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id1, :usage => {'foos' => 115}}}
-    Resque.run!
-
-    post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id1, :usage => {'foos' => 10}}}
-    Resque.run!
-
-    post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id2, :usage => {'foos' => 115}}}
-    Resque.run!
-
-    post '/transactions.xml',
-      :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application_id3, :usage => {'foos' => 115}}}
-    Resque.run!
+    report({ 0 => { app_id: @application_id1, usage: { 'foos' => 115 }}})
+    report({ 0 => { app_id: @application_id1, usage: { 'foos' => 10 }}})
+    report({ 0 => { app_id: @application_id2, usage: { 'foos' => 115 }}})
+    report({ 0 => { app_id: @application_id3, usage: { 'foos' => 115 }}})
 
     Backend::Transactor.process_batch(0, all: true)
     Resque.run!
 
-    get '/events.json', provider_key: @master_provider_key
-    assert_equal 200, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
     ## 4 alerts, 3 first_traffic for the apps, 3 first_daily_traffic for the
     ## apps, 1 first_traffic for master app, 1 first_daily_traffic for master app
-    assert_equal 4+1+1+3+3, obj.size
+    assert_equal 4+1+1+3+3, get_events.size
 
     filter_events_by_type('alert')
 
-    get '/events.json',                             :provider_key => @master_provider_key
-    assert_equal 200, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_equal 4, obj.size
+    events = get_events
+    assert_equal 4, events.size
 
     saved_id = -1
-    obj.each do |item|
+    events.each do |item|
       if item['type'] == 'alert' && item['object']['application_id'].to_i == @application_id3.to_i
         saved_id = item['id']
         assert_equal @service_id.to_i, item['object']['service_id'].to_i
@@ -396,15 +239,57 @@ class LatestEventsTest < Test::Unit::TestCase
 
     configuration.events_hook = 'http://foobar.foobar'
 
-    get '/transactions/authrep.xml', :provider_key => @provider_key,
-                                    :app_id       => @application_id1,
-                                    :usage        => {'foos' => 99}
-    assert_equal 200, last_response.status
-
-    Resque.run!
+    authrep(app_id: @application_id1, usage: { 'foos' => 99 })
 
     EventStorage.unstub(:request_to_events_hook)
     configuration.events_hook = ''
     EventStorage.send(:redef_without_warning, 'PING_TTL', saved_ttl)
+  end
+
+  private
+
+  def internal_api
+    Rack::Test::Session.new(
+      Rack::MockSession.new(ThreeScale::Backend::API::Internal)
+    )
+  end
+
+  def get_events
+    response = internal_api.get '/events/'
+    assert_equal 200, response.status
+
+    Yajl::Parser.parse(response.body)["events"]
+  end
+
+  def delete_events(upto_id)
+    response = internal_api.delete '/events/', { upto_id: upto_id }.to_json
+    assert_equal 200, response.status
+
+    Yajl::Parser.parse(response.body)["num_events"]
+  end
+
+  def delete_event(id)
+    response = internal_api.delete "/events/#{id}"
+    assert_equal 200, response.status
+    assert_equal "deleted", Yajl::Parser.parse(response.body)["status"]
+  end
+
+  def filter_events_by_type(type)
+    get_events.each do |item|
+      delete_event(item['id']) if item['type'] != type
+    end
+  end
+
+  def authrep(params)
+    get '/transactions/authrep.xml', params.merge(provider_key: @provider_key)
+    assert_equal 200, last_response.status
+    Resque.run!
+  end
+
+  def report(transactions)
+    post '/transactions.xml',
+         provider_key: @provider_key, transactions: transactions
+    assert_equal 202, last_response.status
+    Resque.run!
   end
 end
