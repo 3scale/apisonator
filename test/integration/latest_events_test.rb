@@ -63,47 +63,6 @@ class LatestEventsTest < Test::Unit::TestCase
     end
   end
 
-  test 'test empty responses' do
-    get "/services/#{@service_id}/alerts.xml",   :provider_key => @provider_key
-    assert_equal 404, last_response.status
-
-    get '/events.json',   :provider_key => @master_provider_key
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_not_nil obj
-    assert_equal [], obj
-    assert_equal 200, last_response.status
-  end
-
-  test 'test errors on the parameters' do
-    get "/services/#{@service_id}/alerts.xml", :provider_key => 'fake_provider_key'
-    assert_equal 404, last_response.status
-
-    get '/events.json', :provider_key => 'fake_provider_key'
-    assert_equal 403, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_not_nil obj
-    assert_equal 'provider_key_invalid', obj['error']['code']
-    assert_equal 'provider key "fake_provider_key" is invalid', obj['error']['message']
-
-    delete '/events.json', :to_id => 9999999, :provider_key => 'fake_provider_key'
-    assert_equal 403, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_not_nil obj
-    assert_equal 'provider_key_invalid', obj['error']['code']
-    assert_equal 'provider key "fake_provider_key" is invalid', obj['error']['message']
-
-    delete '/events/9999999.json', :provider_key => 'fake_provider_key'
-    assert_equal 403, last_response.status
-
-    obj = Yajl::Parser.parse(last_response.body)
-    assert_not_nil obj
-    assert_equal 'provider_key_invalid', obj['error']['code']
-    assert_equal 'provider key "fake_provider_key" is invalid', obj['error']['message']
-  end
-
   test 'test correct results for first_traffic events with authrep' do
       get '/transactions/authrep.xml', :provider_key => @provider_key,
                                         :app_id       => @application_id1,
