@@ -61,36 +61,6 @@ module ThreeScale
         [status.usage_reports, max_record, max_utilization, stats]
       end
 
-      # TODO: remove
-      def alert_limit(service_id)
-        @list = Alerts.list_allowed_limit(service_id)
-      end
-
-      # TODO: remove
-      def add_alert_limit(service_id, limit)
-        @list = Alerts.add_allowed_limit(service_id,limit)
-      end
-
-      # TODO: remove
-      def delete_alert_limit(service_id, limit)
-        @list = Alerts.delete_allowed_limit(service_id,limit)
-      end
-
-      # TODO: remove
-      def latest_events
-        EventStorage.list
-      end
-
-      # TODO: remove
-      def delete_event_by_id(id)
-        EventStorage.delete(id)
-      end
-
-      # TODO: remove
-      def delete_events_by_range(to_id)
-        EventStorage.delete_range(to_id)
-      end
-
       private
 
       COMMON_VALIDATORS = [
