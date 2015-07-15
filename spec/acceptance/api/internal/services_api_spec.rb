@@ -154,16 +154,16 @@ resource "Services (prefix: /services)" do
     let(:raw_post) { params.to_json }
 
     example_request 'Setting a log bucket', id: 1001, bucket: 'foo' do
-      status.should == 200
-      response_json['status'].should == 'ok'
-      response_json['bucket'].should == 'foo'
-      ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket.
-        should == 'foo'
+      expect(status).to eq(200)
+      expect(response_json['status']).to eq('ok')
+      expect(response_json['bucket']).to eq('foo')
+      expect(ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket).
+        to eq('foo')
     end
 
     example_request 'Missing required parameter', id: 1001, bucket: '' do
-      status.should == 400
-      response_json['error'].should == 'bucket is missing'
+      expect(status).to eq(400)
+      expect(response_json['error']).to eq('bucket is missing')
     end
   end
 
@@ -177,10 +177,10 @@ resource "Services (prefix: /services)" do
         enable_service 'foobar'
 
       do_request id: 1001
-      status.should == 200
-      response_json['status'].should == 'ok'
-      ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket.
-        should be_nil
+      expect(status).to eq(200)
+      expect(response_json['status']).to eq('ok')
+      expect(ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket).
+        to be_nil
     end
   end
 
