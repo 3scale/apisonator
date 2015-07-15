@@ -51,7 +51,7 @@ module ThreeScale
         delete '/:id' do
           begin
             Service.delete_by_id params[:id]
-            {status: :ok}.to_json
+            {status: :deleted}.to_json
           rescue ServiceIsDefaultService => e
             respond_with_400 e
           rescue ServiceIdInvalid => e
@@ -71,7 +71,7 @@ module ThreeScale
 
         delete '/:id/logs_bucket' do
           CubertServiceManagementUseCase.new(params[:id]).disable_service
-          {status: :ok}.to_json
+          {status: :deleted}.to_json
         end
 
       end
