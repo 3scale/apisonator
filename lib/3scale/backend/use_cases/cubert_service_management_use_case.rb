@@ -37,8 +37,8 @@ module ThreeScale
         @service_id = service_id
       end
 
-      def enable_service new_bucket = nil
-        new_bucket ||= self.class.connection.create_bucket
+      def enable_service new_bucket
+        raise BucketMissing if new_bucket.blank?
 
         storage.set bucket_id_key, new_bucket
         storage.sadd self.class.all_bucket_keys_key, bucket_id_key

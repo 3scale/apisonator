@@ -5,7 +5,7 @@ module ThreeScale
     describe CubertServiceManagementUseCase do
       let(:storage) { ThreeScale::Backend::Storage.instance }
       let(:use_case){ CubertServiceManagementUseCase }
-      let(:enabled_service) { use_case.new('7001').enable_service; '7001' }
+      let(:enabled_service) { use_case.new('7001').enable_service('foo'); '7001' }
       let(:disabled_service) { '7002' }
 
       describe '.disable_service' do
@@ -27,7 +27,7 @@ module ThreeScale
         before do
           use_case.global_enable
           @service = use_case.new(disabled_service)
-          @service.enable_service
+          @service.enable_service 'foo'
         end
 
         it 'enables service' do
@@ -39,8 +39,8 @@ module ThreeScale
         end
 
         it 'assigns a specified bucket' do
-          @service.enable_service 'foo'
-          expect(@service.bucket).to eq('foo')
+          @service.enable_service 'foobar'
+          expect(@service.bucket).to eq('foobar')
         end
       end
 

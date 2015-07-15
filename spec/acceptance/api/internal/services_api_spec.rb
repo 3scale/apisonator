@@ -160,6 +160,11 @@ resource "Services (prefix: /services)" do
       ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket.
         should == 'foo'
     end
+
+    example_request 'Missing required parameter', id: 1001, bucket: '' do
+      status.should == 400
+      response_json['error'].should == 'bucket is missing'
+    end
   end
 
   delete '/services/:id/logs_bucket' do

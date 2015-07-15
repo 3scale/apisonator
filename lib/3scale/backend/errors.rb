@@ -149,6 +149,12 @@ module ThreeScale
       end
     end
 
+    class BucketMissing < Invalid
+      def initialize
+        super 'bucket is missing'
+      end
+    end
+
     class UsageValueInvalid < Error
       def initialize(metric_name, value)
         if !value.is_a?(String) || value.blank?

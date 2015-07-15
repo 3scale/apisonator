@@ -6,7 +6,10 @@ module ThreeScale
     describe LogRequestCubertStorage do
       let(:storage) { ThreeScale::Backend::Storage.instance }
       let(:cubert) { CubertServiceManagementUseCase }
-      let(:enabled_service) { cubert.new('7001').enable_service; '7001' }
+      let(:enabled_service) do
+        cubert.new('7001').enable_service cubert.connection.create_bucket
+        '7001'
+      end
       let(:disabled_service) { '7002' }
 
       describe '.store' do
