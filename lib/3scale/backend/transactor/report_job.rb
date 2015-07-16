@@ -93,7 +93,7 @@ module ThreeScale
           def compose_log(service_id, app_id, raw_transaction)
             raw_log = raw_transaction['log']
 
-            if raw_log && !raw_log.empty? && !raw_log['request'].nil?
+            if raw_log && !raw_log.empty?
               {
                 service_id:     service_id,
                 application_id: app_id,
