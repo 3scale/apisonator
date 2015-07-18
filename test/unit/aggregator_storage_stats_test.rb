@@ -424,17 +424,20 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     timestamp = default_transaction_timestamp
 
-    Stats::Aggregator.process(Array.new(10, default_transaction))
-    Stats::Tasks.schedule_one_stats_job
-    Resque.run!
+    Timecop.freeze(timestamp) do
+      Stats::Aggregator.process(Array.new(10, default_transaction))
+      Stats::Tasks.schedule_one_stats_job
+      Resque.run!
 
-    Stats::Aggregator.process([transaction_with_set_value])
-    Stats::Tasks.schedule_one_stats_job
-    Resque.run!
+      Stats::Aggregator.process([transaction_with_set_value])
+      Stats::Tasks.schedule_one_stats_job
+      Resque.run!
 
-    Stats::Aggregator.process([default_transaction])
-    Stats::Tasks.schedule_one_stats_job
-    Resque.run!
+      Stats::Aggregator.process([default_transaction])
+      Stats::Tasks.schedule_one_stats_job
+      Resque.run!
+    end
+    
 
     ## it failed for storage stats
 
@@ -549,8 +552,8 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     Stats::Storage.deactivate!
 
-    v.each do |item|
-      Stats::Aggregator.process([item])
+    Timecop.freeze(timestamp) do
+      v.each { |item| Stats::Aggregator.process([item]) }
     end
 
     assert_equal 1, Stats::Info.pending_buckets.size
@@ -558,8 +561,8 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Stats::Tasks.schedule_one_stats_job
     Resque.run!
 
-    ## because storage stats is deactivated nothing blows but it gets logged waiting for storage stats
-    ## to be in place again
+    ## because storage stats is deactivated nothing blows but it gets logged
+    ## waiting for storage stats to be in place again
     assert_equal 0, Resque.queue(:main).length
     assert_equal 1, Stats::Info.pending_buckets.size
 
@@ -570,9 +573,8 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     assert_equal 1, Stats::Info.pending_buckets.size
 
-    sleep(stats_bucket_size)
-    v.each do |item|
-      Stats::Aggregator.process([item])
+    Timecop.freeze(timestamp + stats_bucket_size) do
+      v.each { |item| Stats::Aggregator.process([item]) }
     end
 
     assert_equal 2, Stats::Info.pending_buckets.size
