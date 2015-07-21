@@ -115,6 +115,17 @@ module ThreeScale
           end
         end
 
+        def get_user_tokens_for(service_id, app_id)
+          users_set = users_set_key(service_id, app_id)
+          users = storage.smembers(users_set)
+          user_tokens = storage.pipelined do
+            users.each do |u|
+              storage.smembers(token_set_key(service_id, app_id, u))
+            end
+          end
+          [users, user_tokens]
+        end
+
       end
     end
   end
