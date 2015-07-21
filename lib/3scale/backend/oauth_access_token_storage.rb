@@ -2,12 +2,13 @@ module ThreeScale
   module Backend
 
     class OAuthAccessToken
-      attr_reader :token
+      attr_reader :token, :user_id
       attr_accessor :ttl
 
-      def initialize(token, ttl)
+      def initialize(token, ttl, user_id = nil)
         @token = token
         @ttl = ttl
+        @user_id = user_id
       end
     end
 
