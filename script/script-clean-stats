@@ -1,0 +1,98 @@
+## We use 'redis-hl' gem in this script.
+## It's available in https://github.com/unleashed/redis-hl and it's also
+## uploaded in geminabox.
+## If there is no geminabox configured in the server where you want to execute
+## the script, you can copy the .gem file there and do
+## `gem install redis-hl-0.0.1.gem`.
+##
+## Usage: ruby script-clean-stats 127.0.0.1 "stats/*/*:20120[0-7]*"
+##
+
+require 'redis-hl'
+
+BATCHSIZE = 200
+
+include RedisHL
+
+def print(s)
+  STDOUT.print s
+  STDOUT.flush
+end
+
+YEARMONTHDAY = 20120720
+RE = /stats\/.*\/(month|week|day|hour|minute):(?<year>(\d{4}))(?<month>(\d{2}))(?<day>(\d{2}))\d*\z/
+
+batch = BATCHSIZE
+slice_size = 40
+count = 0
+dels = 0
+
+now = Time.now
+host, match, resumearg = ARGV
+
+c = Client.new(Redis.new(host: host), config: { batch: batch, pause: 0.05 })
+
+rinfo = resumearg ? Collection::ResumeInfo.new(resumearg) : Collection::ResumeInfo.new
+e = c.root.each config: { match: match, build_key: false }, resumeinfo: rinfo
+
+out = File.open "REDIS_HL_STATS_#{now.utc.to_i}.log", 'w'
+out.puts "Logged on #{now.utc}\n\nRunning on #{host} with #{match} and " \
+         "batchsize #{batch} resuming at #{resumearg ? resumearg : 0}\n\nINFO:\n"
+
+c.info.info.sort.each do |k,v|
+  out.puts "#{k}: #{v}"
+end
+
+out.puts "\nOUTPUT:\n"
+begin
+  e.lazy.each_slice(slice_size) do |keys|
+    print '.'
+    sz = keys.size
+    keys.select! do |k|
+      if k !~ /stats\/{service:1000}\//
+        md = RE.match k
+        if md
+          date = md[:year] + md[:month] + md[:day]
+          date = date.to_i
+          date <= YEARMONTHDAY
+        end
+      end
+    end
+    print 'S'
+    szd = keys.size
+    unless szd == 0
+      vals = c.root.naked_mget(*keys)
+      print 'M'
+      out.puts(keys.zip(vals).map { |k, v| "#{k} => #{v}" }.join("\n"))
+    end
+    count -= 1 if count > 0
+    sleep 0.01
+    print "D#{szd}"
+    c.root.naked_mdel(*keys) unless szd == 0
+    dels += szd
+    rinfo.ack!(sz)
+  end
+rescue Interrupt
+  print 'I'
+  out.puts "\n*** INTERRUPTED\n"
+rescue Exception => e
+  print "E\n#{e}\n"
+  count += 1
+  if count > 100
+    out.puts "\n*** RAISED #{e}\n"
+    out.flush
+    raise e
+  end
+  sleep 6
+  retry
+ensure
+  begin
+    out.puts "\nDELS: #{dels}\n\nRINFO: #{rinfo.inspect}\nFINAL INFO:\n"
+    c.info.info.sort.each do |k,v|
+      out.puts "#{k}: #{v}"
+    end
+    out.flush
+  rescue Exception
+  end
+  out.close
+end
