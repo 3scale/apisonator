@@ -101,6 +101,19 @@ module ThreeScale
           token_set_key(service_id, app_id, nil) << "users/"
         end
 
+        # delete a token without extra checks, just using the parameters
+        def delete_token_unchecked(token_set, token, token_key)
+          storage.del token_key if storage.srem(token_set, token)
+        end
+
+        # delete the user from the list if this was its last token
+        # we check for an empty user token set (non-existing)
+        def update_users(token_set, service_id, app_id, user_id)
+          if user_id && !user_id.empty? && !storage.exists(token_set)
+            storage.srem(users_set_key(service_id, app_id), user_id)
+          end
+        end
+
       end
     end
   end
