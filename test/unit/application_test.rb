@@ -247,7 +247,7 @@ class ApplicationTest < Test::Unit::TestCase
   test 'extract_id! handles access_token' do
 
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
-    OAuthAccessTokenStorage.create('1001', '2001', 'token')
+    OAuthAccessTokenStorage.create('1001', '2001', 'token', nil)
     assert_equal '2001', Application.extract_id!('1001', nil, nil, 'token')
 
   end
@@ -255,7 +255,7 @@ class ApplicationTest < Test::Unit::TestCase
   test 'extract_id! fails when access token is not mapped to an app_id' do
 
      Application.save(:service_id => '1001', :id => '2001', :state => :active)
-     OAuthAccessTokenStorage.create('1001', '2001', 'token')
+     OAuthAccessTokenStorage.create('1001', '2001', 'token', nil)
 
      assert_raise AccessTokenInvalid do
        Application.extract_id!('1001', nil, nil, 'fake-token')
@@ -266,7 +266,7 @@ class ApplicationTest < Test::Unit::TestCase
   test 'extract_id! fails when access token is mapped to an app_id that does not exist' do
 
      Application.save(:service_id => '1001', :id => '2001', :state => :active)
-     OAuthAccessTokenStorage.create('1001', 'fake', 'token')
+     OAuthAccessTokenStorage.create('1001', 'fake', 'token', nil)
 
      assert_raise ApplicationNotFound do
        Application.extract_id!('1001', nil, nil, 'token')
@@ -279,7 +279,7 @@ class ApplicationTest < Test::Unit::TestCase
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
     Application.save(:service_id => '1001', :id => '3001', :state => :active)
 
-    OAuthAccessTokenStorage.create('1001', '3001', 'token')
+    assert OAuthAccessTokenStorage.create('1001', '3001', 'token', nil)
 
     assert_equal '3001', Application.extract_id!('1001', nil, nil, 'token')
 

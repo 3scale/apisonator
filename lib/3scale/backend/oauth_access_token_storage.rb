@@ -21,10 +21,10 @@ module ThreeScale
 
         # Creates OAuth Access Token association with the Application.
         #
-        # Returns false in case of invalid invalid params (negative TTL
+        # Returns false in case of invalid params (negative TTL
         # or invalid token).
         #
-        def create(service_id, app_id, token, ttl = nil)
+        def create(service_id, app_id, token, user_id, ttl = nil)
           ##return false unless token =~ /\A(\w|-)+\Z/
           ##anything can go on an access token
           return false if token.nil? || token.empty? || !token.is_a?(String) || token.size > MAXIMUM_TOKEN_SIZE
@@ -42,7 +42,13 @@ module ThreeScale
             storage.setex(key, ttl, app_id)
           end
 
-          storage.sadd(token_set_key(service_id, app_id), token)
+          user_id = nil if user_id && user_id.empty?
+
+          storage.pipelined do
+            storage.sadd(users_set_key(service_id, app_id), user_id) if user_id
+            storage.sadd(token_set_key(service_id, app_id, user_id), token)
+          end
+
           true
         end
 
