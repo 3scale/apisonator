@@ -22,6 +22,8 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                                     :plan_id    => @plan_id,
                                     :plan_name  => @plan_name)
 
+    @user = User.save!(service_id: @service_id, username: 'pantxo', plan_id: '1', plan_name: 'plan')
+
     @metric_id = next_id
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
 
@@ -29,6 +31,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     @apilog = {'request' => 'API original request'}
 
     @access_token = 'valid-token'
+    @access_token_user = 'valid-user-token'
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
@@ -36,11 +39,45 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                                                              :ttl => 60
     assert_equal 200, last_response.status
     assert_equal @application.id, OAuthAccessTokenStorage.get_app_id(@service.id, @access_token, nil)
+
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => @access_token_user,
+                                                             :user_id => @user.username,
+                                                             :ttl => 60
+    assert_equal 200, last_response.status
+    assert_equal @application.id, OAuthAccessTokenStorage.get_app_id(@service.id, @access_token_user, @user.username)
   end
 
   test 'successful authorize responds with 200' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token  => @access_token,
+                                             :access_token => @access_token,
+                                             :log          => @apilog
+
+    assert_equal 200, last_response.status
+  end
+
+  test 'authorization with a user token with no user specified fails' do
+    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                             :access_token => @access_token_user,
+                                             :log          => @apilog
+
+    assert_equal 404, last_response.status
+  end
+
+  test 'authorization with a user token with user specified succeeds' do
+    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                             :access_token => @access_token_user,
+                                             :user_id      => @user.username,
+                                             :log          => @apilog
+
+    assert_equal 200, last_response.status
+  end
+
+  test 'authorization with a global token with user specified succeeds' do
+    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                             :access_token => @access_token,
+                                             :user_id      => @user.username,
                                              :log          => @apilog
 
     assert_equal 200, last_response.status
