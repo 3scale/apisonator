@@ -10,7 +10,7 @@ resource 'Alert limits' do
     let(:service_id) { '7575' }
 
     context 'when there are no alert limits' do
-      example 'Getting events', document: false do
+      example 'Getting alert limits', document: false do
         do_request
 
         expect(response_status).to eq(200)
