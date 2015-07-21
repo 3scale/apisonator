@@ -62,24 +62,42 @@ module ThreeScale
           update_users(token_set, service_id, app_id, user_id)
         end
 
-        def all_by_service_and_app(service_id, app_id)
-          tokens = storage.smembers(token_set_key(service_id, app_id))
-          keys = tokens.map { |t| token_key(service_id, t) }
-          applications = keys.empty? ? [] : storage.mget(keys)
-          set_key = token_set_key(service_id, app_id)
+        def all_by_service_and_app(service_id, app_id, user_id)
+          user_id = nil if user_id && user_id.empty?
+          set_key = token_set_key(service_id, app_id, user_id)
+          tokens = storage.smembers(set_key)
 
-          result = tokens.map.with_index do |token,i|
-            if applications[i].nil?
-              # remove expired tokens from the set
-              storage.srem(set_key, token)
-              nil
-            else
-              ttl = storage.ttl(keys[i])
-              OAuthAccessToken.new(token, ttl)
+          if user_id.nil?
+            # get tokens from all the users
+            users, user_tokens = get_user_tokens_for service_id, app_id
+            # prepend user_tokens to tokens for use below
+            users << nil
+            user_tokens << tokens
+            tokens = user_tokens
+          else
+            users = [user_id]
+            tokens = [tokens]
+          end
+
+          results = []
+          users.zip(tokens) do |user, tok|
+            keys = tok.map { |t| token_key(service_id, t) }
+            applications = keys.empty? ? [] : storage.mget(keys)
+            tok.zip(applications, keys).map do |token, app, key|
+              if app.nil?
+                # remove expired tokens
+                token_set = token_set_key(service_id, app_id, user)
+                if delete_token_unchecked(token_set, token, key)
+                  update_users(token_set, service_id, app, user)
+                end
+              else
+                ttl = storage.ttl(key)
+                results << OAuthAccessToken.new(token, ttl, user)
+              end
             end
           end
 
-          result.compact
+          results
         end
 
         def get_app_id(service_id, token)

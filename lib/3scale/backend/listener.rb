@@ -447,7 +447,7 @@ module ThreeScale
           return
         end
 
-        @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id)
+        @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id, params[:user_id])
         builder :oauth_access_tokens
       end
 
