@@ -407,6 +407,11 @@ module ThreeScale
           return
         end
 
+        if !params[:user_id].blank? && !User.exists?(params[:service_id], params[:user_id])
+          empty_response 404
+          return
+        end
+
         if OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token], params[:user_id], params[:ttl])
           empty_response 200
         else

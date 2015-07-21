@@ -6,6 +6,10 @@ module ThreeScale
       attr_accessor :service_id, :username, :state, :plan_id, :plan_name
       attr_writer :version
 
+      def self.exists?(service_id, username)
+        storage.exists(key(service_id, username))
+      end
+
       def self.load(service_id, username)
         key = self.key(service_id, username)
 
