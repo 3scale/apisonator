@@ -91,6 +91,10 @@ module ThreeScale
           key
         end
 
+        def users_set_key(service_id, app_id)
+          token_set_key(service_id, app_id, nil) << "users/"
+        end
+
       end
     end
   end
