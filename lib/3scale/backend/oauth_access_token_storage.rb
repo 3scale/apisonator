@@ -102,13 +102,8 @@ module ThreeScale
 
         def get_app_id(service_id, token, user_id)
           app_id = storage.get(token_key(service_id, token))
-          if user_id && !user_id.empty?
-            # it would make sense to do the same for non-user_id calls, but
-            # that might impact performance for too many cases.
-            token_set = token_set_key(service_id, app_id, user_id)
-            app_id = nil if !storage.sismember(token_set, token)
-          end
-          app_id
+          return nil unless app_id
+          app_id if storage.sismember(token_set_key(service_id, app_id, user_id), token)
         end
 
         private
