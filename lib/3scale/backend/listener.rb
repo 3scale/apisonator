@@ -427,7 +427,7 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        OAuthAccessTokenStorage.delete(service_id, params[:token])
+        OAuthAccessTokenStorage.delete(service_id, params[:user_id], params[:token])
         empty_response 200
       end
 
