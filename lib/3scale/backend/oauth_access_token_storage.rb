@@ -85,8 +85,10 @@ module ThreeScale
           "oauth_access_tokens/service:#{service_id}/#{token}"
         end
 
-        def token_set_key(service_id, app_id)
-          "oauth_access_tokens/service:#{service_id}/app:#{app_id}/"
+        def token_set_key(service_id, app_id, user_id)
+          key = "oauth_access_tokens/service:#{service_id}/app:#{app_id}/"
+          key << "user:#{user_id}/" if user_id
+          key
         end
 
       end
