@@ -55,11 +55,15 @@ module ThreeScale
         def delete(service_id, user_id, token)
           key = token_key(service_id, token)
           app_id = storage.get key
-          return if app_id.nil?
+          return :notfound if app_id.nil?
           token_set = token_set_key(service_id, app_id, user_id)
 
-          delete_token_unchecked(token_set, token, key)
-          update_users(token_set, service_id, app_id, user_id)
+          if delete_token_unchecked(token_set, token, key)
+            update_users(token_set, service_id, app_id, user_id)
+            :deleted
+          else
+            :forbidden
+          end
         end
 
         def all_by_service_and_app(service_id, app_id, user_id)
