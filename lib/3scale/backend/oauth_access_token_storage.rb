@@ -33,22 +33,26 @@ module ThreeScale
 
           raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
 
-          if ttl.nil?
-            storage.set(key, app_id)
-          else
+          # build the storage command so that we can pipeline everything cleanly
+          command = :set
+          args = [key]
+
+          if ttl
             ttl = ttl.to_i
             return false if ttl <= 0
-
-            storage.setex(key, ttl, app_id)
+            command = :setex
+            args << ttl
           end
+
+          args << app_id
 
           user_id = nil if user_id && user_id.empty?
 
           storage.pipelined do
+            storage.send(command, *args)
             storage.sadd(users_set_key(service_id, app_id), user_id) if user_id
             storage.sadd(token_set_key(service_id, app_id, user_id), token)
           end
-
           true
         end
 
