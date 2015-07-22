@@ -1,5 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
+# TODO Delete this file
 class ApplicationKeysTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::Sequences

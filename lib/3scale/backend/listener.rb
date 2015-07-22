@@ -538,6 +538,7 @@ module ThreeScale
         builder :utilization
       end
 
+      # TODO Remove
       get '/applications/:app_id/keys.xml' do
         @keys = application.keys
         builder :application_keys
@@ -550,6 +551,7 @@ module ThreeScale
         builder :utilization
       end
 
+      # TODO Remove
       post '/applications/:app_id/keys.xml' do
 
         if params[:key].nil? || params[:key].empty?
@@ -563,6 +565,7 @@ module ThreeScale
         builder :create_application_key
       end
 
+      # TODO Remove
       delete '/applications/:app_id/keys/:key.xml' do
         application.delete_key(params[:key])
         empty_response
