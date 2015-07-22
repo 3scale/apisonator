@@ -41,7 +41,7 @@ resource 'Application keys' do
         ]
 
         expect(response_status).to eq(200)
-        expect(response_json['application_keys']).to eq(expected_values)
+        expect(response_json['application_keys']).to match_array(expected_values)
       end
     end
   end
