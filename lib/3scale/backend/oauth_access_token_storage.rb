@@ -72,26 +72,14 @@ module ThreeScale
 
         def all_by_service_and_app(service_id, app_id, user_id)
           user_id = nil if user_id && user_id.empty?
-          set_key = token_set_key(service_id, app_id, user_id)
-          tokens = storage.smembers(set_key)
 
-          if user_id.nil?
-            # get tokens from all the users
-            users, user_tokens = get_user_tokens_for service_id, app_id
-            # prepend user_tokens to tokens for use below
-            users << nil
-            user_tokens << tokens
-            tokens = user_tokens
-          else
-            users = [user_id]
-            tokens = [tokens]
-          end
+          users, grouped_tokens = get_grouped_tokens_for service_id, app_id, user_id
 
           results = []
-          users.zip(tokens) do |user, tok|
-            keys = tok.map { |t| token_key(service_id, t) }
+          users.zip(grouped_tokens) do |user, tokens|
+            keys = tokens.map { |t| token_key(service_id, t) }
             applications = keys.empty? ? [] : storage.mget(keys)
-            tok.zip(applications, keys).map do |token, app, key|
+            tokens.zip(applications, keys).map do |token, app, key|
               if app.nil?
                 # remove expired tokens
                 token_set = token_set_key(service_id, app_id, user)
@@ -152,15 +140,35 @@ module ThreeScale
           end
         end
 
-        def get_user_tokens_for(service_id, app_id)
+        def get_grouped_user_tokens_for(service_id, app_id)
           users_set = users_set_key(service_id, app_id)
           users = storage.smembers(users_set)
-          user_tokens = storage.pipelined do
+          user_grouped_tokens = storage.pipelined do
             users.each do |u|
               storage.smembers(token_set_key(service_id, app_id, u))
             end
           end
-          [users, user_tokens]
+          [users, user_grouped_tokens]
+        end
+
+        # returns [users, tokens grouped by user respectively]
+        def get_grouped_tokens_for(service_id, app_id, user_id)
+          set_key = token_set_key(service_id, app_id, user_id)
+          grouped_tokens = storage.smembers(set_key)
+
+          if user_id.nil?
+            # get tokens from all the users
+            users, user_grouped_tokens = get_grouped_user_tokens_for service_id, app_id
+            # prepend user_tokens to tokens for use below
+            users << nil
+            user_grouped_tokens << grouped_tokens
+            grouped_tokens = user_grouped_tokens
+          else
+            users = [user_id]
+            grouped_tokens = [grouped_tokens]
+          end
+
+          [users, grouped_tokens]
         end
 
       end
