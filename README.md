@@ -54,6 +54,11 @@ $ start_twemproxy
 ...
 ```
 
+#### Documentation
+
+Make sure to read the corresponding documentation in [ActiveDocs](https://support.3scale.net/reference/active-docs) for the external
+API. You can also generate the documentation of the Internal API with Rake tasks.
+
 ## Integration flow
 
 This is our basic integration flow:
