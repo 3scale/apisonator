@@ -114,18 +114,7 @@ module ThreeScale
         end
 
         def get_app_id(service_id, token, user_id)
-          app_id = storage.get(token_key(service_id, token))
-          return nil unless app_id
-          if storage.sismember(token_set_key(service_id, app_id, user_id), token)
-            # found, everyone is happy :)
-            app_id
-          else
-            # :/ if a user was specified and the token not found there, try
-            #    the global list of tokens for this app, else return nil
-            if user_id && storage.sismember(token_set_key(service_id, app_id, nil), token)
-              app_id
-            end
-          end
+          storage.get(token_key(service_id, token, user_id))
         end
 
         private
