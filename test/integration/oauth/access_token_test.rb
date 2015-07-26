@@ -583,6 +583,122 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal '-1', node[0].attribute('ttl').value
   end
 
+  test 'Delete all tokens for a given service, app and user' do
+    application2 = Application.save(:service_id => @service.id,
+                                     :id         => next_id,
+                                     :state      => :active,
+                                     :plan_id    => @plan_id,
+                                     :plan_name  => @plan_name)
+
+    user2 = User.save!(service_id: @service.id, username: 'pantxa', plan_id: '1', plan_name: 'plan')
+
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => application2.id,
+                                                             :user_id => @user.username,
+                                                             :token => 'USER-TOKEN'
+    assert_equal 200, last_response.status
+
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => application2.id,
+                                                             :user_id => user2.username,
+                                                             :token => 'USER2-TOKEN'
+    assert_equal 200, last_response.status
+
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => application2.id,
+                                                             :user_id => user2.username,
+                                                             :token => 'USER2-TOKEN2'
+    assert_equal 200, last_response.status
+
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => application2.id,
+                                                             :token => 'GLOBAL-TOKEN'
+    assert_equal 200, last_response.status
+
+    # we have 4 tokens, 1 global and 1 for one user, 2 for the other
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => @user.username
+
+    assert_equal 200, last_response.status
+
+    assert_equal 1, xml.at('oauth_access_tokens').element_children.size
+
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 'USER-TOKEN', node.content
+    assert_equal @user.username, node.attribute('user_id').value
+
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => user2.username
+
+    assert_equal 200, last_response.status
+
+    assert_equal 2, xml.at('oauth_access_tokens').element_children.size
+
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    assert_equal 4, xml.at('oauth_access_tokens').element_children.size
+
+    # remove 1 user token
+    OAuthAccessTokenStorage.remove_app_tokens(@service.id, application2.id, @user.username)
+
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    assert_equal 3, xml.at('oauth_access_tokens').element_children.size
+
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => @user.username
+
+    assert_equal 200, last_response.status
+
+    assert_equal 0, xml.at('oauth_access_tokens').element_children.size
+
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => user2.username
+
+    assert_equal 200, last_response.status
+
+    assert_equal 2, xml.at('oauth_access_tokens').element_children.size
+
+    # remove all remaining tokens for this app
+    OAuthAccessTokenStorage.remove_app_tokens(@service.id, application2.id)
+
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => @user.username
+
+    assert_equal 200, last_response.status
+
+    assert_equal 0, xml.at('oauth_access_tokens').element_children.size
+
+
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => user2.username
+
+    assert_equal 200, last_response.status
+
+    assert_equal 0, xml.at('oauth_access_tokens').element_children.size
+
+
+    get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    assert_equal 0, xml.at('oauth_access_tokens').element_children.size
+  end
+
   # TODO: more test covering multiservice cases (there is only one right now)
 
   private
