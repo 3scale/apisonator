@@ -25,7 +25,8 @@ discussion:
 
 * Tokens can be application-wide or user-specific.
 
-* Application-wide tokens always succeed in authorizing regardless of user ids.
+* Application-wide tokens are only considered for authorization when there is no
+  user id associated to the request, so they cannot authorize users.
 
 * User-specific tokens only succeed in authorizing when the user_id they relate
   to was specified in the authorization call.
@@ -37,6 +38,10 @@ discussion:
 The Redis layout for mapping a token to a service is a single key-value:
 
 `oauth_access_tokens/service:#{service_id}/#{token}`
+
+If looking up a token for a specific user, the key has the format:
+
+`oauth_access_tokens/service:#{service_id}/user:#{user_id}/#{token}`
 
 So it depends only on a service. This key is known as the `token_key`.
 
@@ -58,7 +63,7 @@ store them in sets too. Those sets are `token_set_key`s as well.
 Their format is:
 
 * `"oauth_access_tokens/service:#{service_id}/app:#{app_id}/"` for non-user sets
-* `"oauth_access_tokens/service:#{service_id}/app:#{app_id}/user_id:#{user_id}/"`
+* `"oauth_access_tokens/service:#{service_id}/app:#{app_id}/user:#{user_id}/"`
   for user-specific sets.
 
 The remaining question is how do we know which users have tokens. We also handle
@@ -128,7 +133,23 @@ Authorization is granted or denied based on the application id that the token
 points to. Obviously, no authorization will occur if there is no such mapping.
 
 When authorizing, we can just read the `token_key` and validate it is not empty.
-This is the previous method, but the appearance of user_ids opens some questions.
+The appearance of user_ids opens some questions.
+
+Currently we have opted for maintaining this method, at the cost of not adding
+extra consistency checks which would result in higher response times.
+
+This also translates into needing extra checks elsewhere for consistency. Also,
+since we decide to include the user id in the key format, it is now much harder
+to ensure tokens are unique across users of a service.
+
+> As of this writing, creation of tokens for different users in the same service
+> does not guarantee that tokens are unique. It can only be guaranteed that they
+> are unique with regard to the same user. This is a design tradeoff that can
+> only be fixed by adding some nasty checks at authorization time on the format
+> of tokens (adds some performance cost), by adding a huge cost at creation time
+> (ie. walking all users to look for dupes), or by just reverting the decision
+> to include user ids in the `token_key`s, which would end up impacting response
+> time at authorization time.
 
 ## Design discussion
 
@@ -151,6 +172,14 @@ The following questions arise:
 * Should we always check that a token is included in the `token_set_key` set?
   Especially relevant for when no user_id is present (app-wide sets), because
   otherwise they would be served with a single Redis request.
+
+  ANSWER: we have preemptively chosen to keep a single Redis request by adding
+  the user_id to the key format. This poses problems to ensure tokens are unique
+  across users of a service.
+
 * Should we fall back to application-wide tokens if a user_id was specified and
   the token does not exist in the user's `token_set_key` set?
 
+  ANSWER: Currently we do NOT fall back. Application-wide tokens only authorize
+  non-user specific requests. User-specific requests lookup tokens registered
+  for that specific user and nothing else.
