@@ -48,12 +48,29 @@ module ThreeScale
 
           user_id = nil if user_id && user_id.empty?
 
+          token_set = token_set_key(service_id, app_id, user_id)
+          users_set = users_set_key(service_id, app_id) if user_id
+
           storage.pipelined do
             storage.send(command, *args)
-            storage.sadd(users_set_key(service_id, app_id), user_id) if user_id
-            storage.sadd(token_set_key(service_id, app_id, user_id), token)
+            storage.sadd(token_set, token)
+            storage.sadd(users_set, user_id) if user_id
           end
-          true
+
+          # Now make sure everything ended up there
+          #
+          # Note that we have a sharding proxy and pipelines can't be guaranteed
+          # to behave like transactions, since we might have one non-working
+          # shard. Instead of relying on proxy-specific responses, we just check
+          # that the data we should have in the store is really there.
+          results = storage.pipelined do
+            storage.get(key)
+            storage.sismember(token_set, token)
+            storage.sismember(users_set, user_id) if user_id
+          end
+
+          results.shift == app_id && results.all? { |x| x == true } ||
+            raise(AccessTokenStorageError.new(token))
         end
 
         def delete(service_id, user_id, token)
