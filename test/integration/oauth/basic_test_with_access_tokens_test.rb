@@ -74,13 +74,13 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
-  test 'authorization with a global token with user specified succeeds' do
+  test 'authorization with a global token with user specified fails' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :access_token => @access_token,
                                              :user_id      => @user.username,
                                              :log          => @apilog
 
-    assert_equal 200, last_response.status
+    assert_equal 404, last_response.status
   end
 
   test 'successful authorize with no body responds with 200' do
