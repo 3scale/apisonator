@@ -63,6 +63,11 @@ module ThreeScale
       end
     end
 
+    class AccessTokenStorageError < Error
+      def initialized(id = nil)
+        super %(storage error when saving access_token "#{id}")
+      end
+    end
 
     class ApplicationNotActive < Error
       def initialize
