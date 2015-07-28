@@ -150,6 +150,7 @@ class LogRequestTest < Test::Unit::TestCase
   end
 
   test 'test correct results for alerts with report' do
+    cubert_enable @service_id
     @log1 = {'request' => '/bla/bla/bla?query=bla&again=boo'}
 
     post '/transactions.xml',
@@ -267,6 +268,7 @@ class LogRequestTest < Test::Unit::TestCase
   end
 
   test 'test correct results for alerts with authrep' do
+    cubert_enable @service_id
     @log1 = {'request' => '/bla/bla/bla?query=bla&again=boo'}
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
@@ -363,6 +365,7 @@ class LogRequestTest < Test::Unit::TestCase
   # regression test for bug https://3scale.airbrake.io/errors/51189322
   #
   test 'check that logs can be properly encoded before storing' do
+    cubert_enable @service_id
     log1 = {'request' => 'shop/caf\xe9'}
 
     get '/transactions/authrep.xml', :provider_key => @provider_key,
@@ -437,5 +440,12 @@ class LogRequestTest < Test::Unit::TestCase
 
     doc1   = Nokogiri::XML(last_response.body)
     assert_equal 4, doc1.search('log_request').size
+  end
+
+  private
+
+  def cubert_enable(service_id)
+    CubertServiceManagementUseCase.global_enable
+    CubertServiceManagementUseCase.new(service_id).enable_service 'foo'
   end
 end

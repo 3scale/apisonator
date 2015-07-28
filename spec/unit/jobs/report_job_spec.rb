@@ -70,32 +70,51 @@ module ThreeScale
                                :plan_id    => @plan_id)
             end
 
-            context 'when the log only contains code' do
-              let(:log_with_code) { @log1.select { |k,v| k == 'code' } }
-              let(:transactions)  do
-                {
-                  '0' => {
-                    'app_id' => @application_id,
-                    'usage'  => {'hits' => 1, 'other' => 6},
-                    'log'    => log_with_code,
-                  }
-                }
+            context 'when Cubert storage is enabled' do
+              before do
+                CubertServiceManagementUseCase.global_enable
+                CubertServiceManagementUseCase.new(@service_id).enable_service 'foo'
               end
 
-              it 'is enqueued' do
+              context 'when the log only contains code' do
+                let(:log_with_code) { @log1.select { |k,v| k == 'code' } }
+                let(:transactions)  do
+                  {
+                    '0' => {
+                      'app_id' => @application_id,
+                      'usage'  => {'hits' => 1, 'other' => 6},
+                      'log'    => log_with_code,
+                    }
+                  }
+                end
+
+                it 'is enqueued' do
+                  expect(LogRequestJob).to have_queue_size_of(0)
+                  Transactor::ReportJob.perform(@service_id, transactions, Time.now.getutc.to_f)
+                  expect(LogRequestJob).to have_queue_size_of(1)
+                end
+              end
+
+              it 'is re-queued when necessary' do
                 expect(LogRequestJob).to have_queue_size_of(0)
-                Transactor::ReportJob.perform(@service_id, transactions, Time.now.getutc.to_f)
+
+                Transactor::ReportJob.perform(
+                  @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, Time.now.getutc.to_f)
+
                 expect(LogRequestJob).to have_queue_size_of(1)
               end
             end
 
-            it 'is re-queued when necessary' do
-              expect(LogRequestJob).to have_queue_size_of(0)
+            context 'when Cubert storage is disabled' do
+              before do
+                CubertServiceManagementUseCase.global_disable
+              end
 
-              Transactor::ReportJob.perform(
-                @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, Time.now.getutc.to_f)
-
-              expect(LogRequestJob).to have_queue_size_of(1)
+              it 'is not queued' do
+                Transactor::ReportJob.perform(
+                  @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, Time.now.getutc.to_f)
+                expect(LogRequestJob).to have_queue_size_of(0)
+              end
             end
           end
         end
