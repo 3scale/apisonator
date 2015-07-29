@@ -98,7 +98,7 @@ module ThreeScale
           results = []
           users.zip(grouped_tokens) do |user, tokens|
             keys = tokens.map { |t| token_key(service_id, t) }
-            applications = keys.empty? ? [] : storage.mget(keys)
+            applications = get_apps_for_keys(keys, user)
             tokens.zip(applications, keys).map do |token, app, key|
               if app.nil?
                 # remove expired tokens
