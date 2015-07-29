@@ -114,7 +114,7 @@ module ThreeScale
         end
 
         def get_app_id(service_id, token, user_id)
-          storage.get(token_key(service_id, token))
+          get_app_for_key(token_key(service_id, token), user_id)
         end
 
         private
