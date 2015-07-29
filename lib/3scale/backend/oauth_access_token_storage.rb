@@ -78,7 +78,7 @@ module ThreeScale
 
         def delete(service_id, user_id, token)
           key = token_key(service_id, token)
-          app_id = storage.get key
+          app_id = get_app_for_key key, user_id
           return :notfound if app_id.nil?
           token_set = token_set_key(service_id, app_id, user_id)
 
