@@ -39,11 +39,16 @@ The Redis layout for mapping a token to a service is a single key-value:
 
 `oauth_access_tokens/service:#{service_id}/#{token}`
 
-If looking up a token for a specific user, the key has the format:
-
-`oauth_access_tokens/service:#{service_id}/user:#{user_id}/#{token}`
-
 So it depends only on a service. This key is known as the `token_key`.
+
+For performance reasons and for supporting cheking that tokens are unique, the
+key only depends on the service id, but the value can have a user id annotation.
+This annotation is a prefix of the form: "user:#{user_id}/". This way we can
+detect user-specific tokens.
+
+This, as we will see below, is not strictly necessary, but it constitutes
+a denormalization in order to improve performance, since this way a single
+storage request will be enough for authorization purposes.
 
 ## Creating and Deleting tokens
 
@@ -73,7 +78,8 @@ application.
 ### Redis steps
 
 When storing a new token, we add `token_key` in Redis and assign an optional TTL
-to it if the token expires after a certain amount of time.
+to it if the token expires after a certain amount of time. The value of such key
+is the application id referred, with the user specific prefix if applicable.
 
 We also add the token to the `token_set_key` for the whole application or for
 a specific user if provided. Finally, if we were provided with a user, add that
@@ -139,17 +145,8 @@ Currently we have opted for maintaining this method, at the cost of not adding
 extra consistency checks which would result in higher response times.
 
 This also translates into needing extra checks elsewhere for consistency. Also,
-since we decide to include the user id in the key format, it is now much harder
-to ensure tokens are unique across users of a service.
-
-> As of this writing, creation of tokens for different users in the same service
-> does not guarantee that tokens are unique. It can only be guaranteed that they
-> are unique with regard to the same user. This is a design tradeoff that can
-> only be fixed by adding some nasty checks at authorization time on the format
-> of tokens (adds some performance cost), by adding a huge cost at creation time
-> (ie. walking all users to look for dupes), or by just reverting the decision
-> to include user ids in the `token_key`s, which would end up impacting response
-> time at authorization time.
+since we decide to include the user id in the key value instead of in the key
+itself, we can still ensure that all tokens are unique across a service.
 
 ## Design discussion
 
@@ -161,11 +158,17 @@ tokens. If we did not do this, any and all tokens would effectively become
 application-wide tokens, and user_ids would become more a cosmetic feature for
 grouping tokens than a real enforcing filter.
 
-The current implementation checks that the `token_set_key` set contains the
-token for consistency. If no user_id was given, that's the application-wide
-token set, and if the membership test fails an error would be returned. If
-an user_id was provided, the code checks the application-wide token set before
-giving up.
+Past implementations checked that the `token_set_key` set contains the token for
+consistency. If no user_id was given, that's the application-wide token set, and
+if the membership test failed an error would be returned. If an user_id was
+provided, the code checked the application-wide token set before giving up.
+
+The current implementation checks that the user_id given is the owner of the
+token because it checks the embedded user id in the token_key's value. Other
+than that, there is no extra check, and we could have an inconsistent state if
+we had a transaction interrupted when deleting (ie. we do not have real
+transactions). That's why we try to first delete the token key, then the token
+and user from their respective sets.
 
 The following questions arise:
 
