@@ -44,9 +44,12 @@ module ThreeScale
             args << ttl
           end
 
-          args << app_id
-
-          user_id = nil if user_id && user_id.empty?
+          args << if user_id.blank?
+                    user_id = nil
+                    app_id
+                  else
+                    "user:#{user_id}/#{app_id}"
+                  end
 
           token_set = token_set_key(service_id, app_id, user_id)
           users_set = users_set_key(service_id, app_id) if user_id
@@ -69,7 +72,7 @@ module ThreeScale
             storage.sismember(users_set, user_id) if user_id
           end
 
-          results.shift == app_id && results.all? { |x| x == true } ||
+          results.shift == args.last && results.all? { |x| x == true } ||
             raise(AccessTokenStorageError.new(token))
         end
 
