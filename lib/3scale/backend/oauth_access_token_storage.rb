@@ -177,6 +177,31 @@ module ThreeScale
           [users, grouped_tokens]
         end
 
+        # returns the app_id read from a storage key's value,
+        # checking the user id if present
+        def get_app_from_value(value, user_id = nil)
+          if value.nil? || user_id.nil?
+            value
+          else
+            user_id_magic = "user:#{user_id}/"
+            if value.start_with? user_id_magic
+              value[user_id_magic.size..-1]
+            else
+              nil
+            end
+          end
+        end
+
+        def get_apps_for_keys(keys, user_id)
+          return [] if keys.empty?
+          storage.mget(keys).map do |value|
+            get_app_from_value value, user_id
+          end
+        end
+
+        def get_app_for_key(key, user_id)
+          get_app_from_value(storage.get(key), user_id)
+        end
       end
     end
   end
