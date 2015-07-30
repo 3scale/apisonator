@@ -13,9 +13,20 @@ module ThreeScale
         service_id = transaction[:service_id]
         if enabled?(service_id) && bucket_id = bucket(service_id)
           transaction[:log]["code"] = transaction[:log]["code"].to_i
-          connection.create_document(
-            body: transaction, bucket: bucket_id, collection: collection
-          )
+          begin
+            connection.create_document(
+              body: transaction, bucket: bucket_id, collection: collection
+            )
+          rescue JSON::GeneratorError
+            transaction[:log] = {
+              'request' => 'Error: the log entry could not be stored. Please use UTF8 encoding.',
+              'response' => 'N/A',
+              'code' => 'N/A'
+            }
+            connection.create_document(
+              body: transaction, bucket: bucket_id, collection: collection
+            )
+          end
         end
       end
 

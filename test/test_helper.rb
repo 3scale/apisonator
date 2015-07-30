@@ -26,6 +26,7 @@ ThreeScale::Backend.configure do |config|
     "127.0.0.1:7379",
     "127.0.0.1:7380",
   ]
+  config.cubert.host = 'http://localhost:8080'
 
   config.stats.bucket_size  = 5
   config.notification_batch = 5
