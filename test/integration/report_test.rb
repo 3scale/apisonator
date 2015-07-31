@@ -89,6 +89,34 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
+  test 'successful report with UTC timestamped transactions' do
+    Timecop.freeze(Time.utc(2010, 4, 23, 00, 00)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id    => @application.id,
+                                :usage     => {'hits' => 1},
+                                :timestamp => '2010-05-11 11:08:25 UTC'}}
+      Resque.run!
+
+      key = service_key(@service_id, @metric_id, :hour, '2010051111')
+      assert_equal 1, @storage.get(key).to_i
+    end
+  end
+
+  test 'successful report with proper local timestamped transactions' do
+    Timecop.freeze(Time.utc(2010, 4, 23, 00, 00)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id    => @application.id,
+                                :usage     => {'hits' => 1},
+                                :timestamp => '2010-05-11 11:08:25 +0200'}}
+      Resque.run!
+
+      key = service_key(@service_id, @metric_id, :hour, '2010051109')
+      assert_equal 1, @storage.get(key).to_i
+    end
+  end
+
   test 'successful report with local timestamped transactions' do
     Timecop.freeze(Time.utc(2010, 4, 23, 00, 00)) do
       post '/transactions.xml',
