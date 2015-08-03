@@ -17,6 +17,7 @@ class AccessTokenTest < Test::Unit::TestCase
                                     :plan_id    => @plan_id,
                                     :plan_name  => @plan_name)
 
+    @user = User.save!(service_id: @service.id, username: 'pantxo', plan_id: '1', plan_name: 'plan')
   end
 
   test 'CR(U)D oauth_access_token' do
@@ -36,6 +37,7 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal 1, node.count
     assert_equal 'VALID-TOKEN', node.content
     assert_equal '-1', node.attribute('ttl').value
+    assert node.attribute('user_id').nil?
 
     # Read an invalid app id
     get "/services/#{@service.id}/applications/#{@application.id.succ}/oauth_access_tokens.xml",
@@ -59,6 +61,121 @@ class AccessTokenTest < Test::Unit::TestCase
     # Create using an invalid app id
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id.succ,
+                                                             :token => 'VALID-TOKEN'
+    assert_equal 404, last_response.status
+  end
+
+  test 'CR(U)D oauth_access_token with user_id' do
+    # Create
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :user_id => @user.username,
+                                                             :token => 'USER-TOKEN'
+    assert_equal 200, last_response.status
+
+    # Create unrelated token within the same app
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'GLOBAL-TOKEN'
+    assert_equal 200, last_response.status
+
+    # Read tokens for this user, should be 1
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => @user.username
+
+    assert_equal 200, last_response.status
+
+    assert_equal 1, xml.at('oauth_access_tokens').element_children.size
+
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 'USER-TOKEN', node.content
+    assert_equal '-1', node.attribute('ttl').value
+    assert_equal @user.username, node.attribute('user_id').value
+
+    # Read tokens for the whole app, should get 2
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    assert_equal 2, xml.at('oauth_access_tokens').element_children.size
+
+    # Read tokens for another user_id, should be 0
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => "non-#{@user.username}"
+
+    assert_equal 200, last_response.status
+    assert xml.at('oauth_access_tokens').element_children.empty?, 'No tokens should be present'
+
+    # Delete the unrelated token
+    delete "/services/#{@service.id}/oauth_access_tokens/GLOBAL-TOKEN.xml",
+           :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    # Read tokens for the whole app again, should be only 1
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+    assert_equal 1, xml.at('oauth_access_tokens').element_children.size
+
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 'USER-TOKEN', node.content
+    assert_equal '-1', node.attribute('ttl').value
+    assert_equal @user.username, node.attribute('user_id').value
+
+    # Read tokens for the user_id again, should be 1
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => @user.username
+
+    assert_equal 200, last_response.status
+
+    assert_equal 1, xml.at('oauth_access_tokens').element_children.size
+
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 'USER-TOKEN', node.content
+    assert_equal '-1', node.attribute('ttl').value
+    assert_equal @user.username, node.attribute('user_id').value
+
+    # Delete the user token without specifying user
+    delete "/services/#{@service.id}/oauth_access_tokens/USER-TOKEN.xml",
+           :provider_key => @provider_key
+
+    assert_equal 403, last_response.status
+
+    # Delete the user token specifying the user
+    delete "/services/#{@service.id}/oauth_access_tokens/USER-TOKEN.xml",
+           :provider_key => @provider_key,
+           :user_id => @user.username
+
+    assert_equal 200, last_response.status
+
+    # Delete the user token specifying the user AGAIN (expect 404)
+    delete "/services/#{@service.id}/oauth_access_tokens/USER-TOKEN.xml",
+           :provider_key => @provider_key,
+           :user_id => @user.username
+
+    assert_equal 404, last_response.status
+
+    # Read tokens for the user_id again, should be 0
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :user_id => @user.username
+
+    assert_equal 200, last_response.status
+    assert xml.at('oauth_access_tokens').element_children.empty?, 'No tokens should be present'
+
+    # Create using an invalid user_id
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :user_id => 'INVALID_USER_ID',
                                                              :token => 'VALID-TOKEN'
     assert_equal 404, last_response.status
   end
@@ -271,17 +388,27 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_equal 200, last_response.status
 
+    # try to create the same token for a different user
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :user_id => @user.username,
+                                                             :token => 'valid-token-666'
+
+    assert_error_response :status  => 403,
+                          :code    => 'access_token_already_exists',
+                          :message => 'access_token "valid-token-666" already exists'
+
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => application2.id,
                                                              :token => 'valid-token-666'
 
     assert_error_response :status  => 403,
-                         :code    => 'access_token_already_exists',
-                         :message => 'access_token "valid-token-666" already exists'
+                          :code    => 'access_token_already_exists',
+                          :message => 'access_token "valid-token-666" already exists'
 
     post "/services/#{service2.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
-                                                            :app_id => application_diff_service.id,
-                                                            :token => 'valid-token-666'
+                                                             :app_id => application_diff_service.id,
+                                                             :token => 'valid-token-666'
 
     assert_equal 200, last_response.status
   end

@@ -407,7 +407,12 @@ module ThreeScale
           return
         end
 
-        if OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token], params[:ttl])
+        if !params[:user_id].blank? && !User.exists?(params[:service_id], params[:user_id])
+          empty_response 404
+          return
+        end
+
+        if OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token], params[:user_id], params[:ttl])
           empty_response 200
         else
           empty_response 422
@@ -422,8 +427,14 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        OAuthAccessTokenStorage.delete(service_id, params[:token])
-        empty_response 200
+        case OAuthAccessTokenStorage.delete(service_id, params[:user_id], params[:token])
+        when :deleted
+          empty_response 200
+        when :forbidden
+          empty_response 403
+        else
+          empty_response 404
+        end
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
@@ -442,7 +453,7 @@ module ThreeScale
           return
         end
 
-        @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id)
+        @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id, params[:user_id])
         builder :oauth_access_tokens
       end
 
@@ -453,9 +464,9 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        @token_to_app_id = OAuthAccessTokenStorage.get_app_id(params[:service_id], params[:token])
+        @token_to_app_id = OAuthAccessTokenStorage.get_app_id(params[:service_id], params[:token], params[:user_id])
 
-        raise AccessTokenInvalid.new(params[:token]) if @token_to_app_id.nil?
+        raise AccessTokenInvalid.new(params[:token], params[:user_id]) if @token_to_app_id.nil?
 
         builder :oauth_app_id_by_token
       end
