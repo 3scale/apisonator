@@ -120,6 +120,29 @@ module ThreeScale
           get_app_for_key(token_key(service_id, token), user_id)
         end
 
+        # triggered by Application deletion (maybe User deletion too)
+        #
+        # requires service_id and app_id at the least, optionally user_id
+        #
+        def remove_app_tokens(service_id, app_id, user_id = nil)
+          token_set = token_set_key service_id, app_id, user_id
+          _, grouped_tokens = get_grouped_tokens_for service_id, app_id, user_id
+          grouped_tokens.each do |tokens|
+            tokens.each_slice(10) do |token_slice|
+              keys = token_slice.map { |t| token_key(service_id, t) }
+              storage.del keys
+            end
+          end
+          storage.del token_set
+
+          users_set = users_set_key(service_id, app_id)
+          if user_id.nil?
+            storage.del users_set
+          else
+            storage.srem users_set, user_id
+          end
+        end
+
         private
 
         def token_key(service_id, token)
