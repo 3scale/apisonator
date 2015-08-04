@@ -9,7 +9,7 @@ GIT
 PATH
   remote: .
   specs:
-    3scale_backend (2.40.1)
+    3scale_backend (2.41.0)
       airbrake (= 3.1.16)
       builder (= 2.1.2)
       cubert-client (= 0.0.10)
@@ -53,7 +53,7 @@ GEM
       descendants_tracker (~> 0.0.4)
       ice_nine (~> 0.11.0)
       thread_safe (~> 0.3, >= 0.3.1)
-    backports (3.6.5)
+    backports (3.6.6)
     builder (2.1.2)
     byebug (3.5.1)
       columnize (~> 0.8)
