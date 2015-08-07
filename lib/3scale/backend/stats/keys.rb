@@ -91,7 +91,7 @@ module ThreeScale
 
           if transaction.user_id
             user_key = user_key_prefix(service_key, transaction.user_id)
-            keys.merge!(user: public_send(method, user_key, value))
+            keys[:user] = public_send(method, user_key, value)
           end
 
           keys
