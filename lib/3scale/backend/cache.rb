@@ -337,7 +337,7 @@ module ThreeScale
 
         ## better that v.join()
         result = ""
-        for i in 1..(split_app_xml.size - 1) do
+        (1...split_app_xml.size).each do |i|
           result << split_app_xml[i].to_s
         end
 
