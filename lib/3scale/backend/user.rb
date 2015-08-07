@@ -4,7 +4,7 @@ module ThreeScale
       include Storable
 
       attr_accessor :service_id, :username, :state, :plan_id, :plan_name
-      attr_writer :version
+      attr_writer :version, :metric_names
 
       def self.exists?(service_id, username)
         storage.exists(key(service_id, username))
@@ -130,10 +130,6 @@ module ThreeScale
 
       def metric_names
         @metric_names ||= {}
-      end
-
-      def metric_names=(hash)
-        @metric_names = hash
       end
 
       def metric_name(metric_id)
