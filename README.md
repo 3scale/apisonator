@@ -83,6 +83,8 @@ But, there are no unbreakable rules, so if you have a good reason to deploy mult
 2. Package the project as a gem and upload it to our private gem server.
 You can do it executing: `script/release`
 3. Follow the steps described in deploy project.
+4. Probably you want to see how it works with traffic replayed form production.
+5. Check the Grafana pretty graphs to make sure all keeps working.
 
 ### Deploy in production
 
@@ -93,6 +95,7 @@ You can do it executing: `script/release`
 2. Package the project as a gem and upload it to our private gem server.
 You can do it executing: `script/release`
 3. Follow the steps described in deploy project.
+4. Check the Grafana pretty graphs to make sure all keeps working.
 
 __Note:__ As you can see, here we have a process that we can automatize. This note is an invitation for bold developers.
 
