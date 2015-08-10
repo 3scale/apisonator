@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 gemspec
 
 group :test do
-  gem 'mocha',       '~> 0.13.2'
+  gem 'mocha',       '~> 1.1.0'
   gem 'nokogiri',    '~> 1.6.2'
   gem 'rack-test',   '~> 0.6.2'
   gem 'resque_unit', '~> 0.4.4'
