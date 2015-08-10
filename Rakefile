@@ -3,6 +3,10 @@
 require 'airbrake/tasks'
 require 'airbrake/rake_handler'
 
+Airbrake.configure do |config|
+  config.rescue_rake_exceptions = true
+end
+
 if ENV['CI']
   require 'ci/reporter/rake/rspec'
   require 'ci/reporter/rake/test_unit'
