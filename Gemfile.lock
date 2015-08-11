@@ -11,7 +11,7 @@ PATH
   specs:
     3scale_backend (2.44.0)
       airbrake (= 4.3.0)
-      builder (= 2.1.2)
+      builder (= 3.2.2)
       cubert-client (= 0.0.10)
       daemons (= 1.1.9)
       hiredis (= 0.6.0)
@@ -54,7 +54,7 @@ GEM
       ice_nine (~> 0.11.0)
       thread_safe (~> 0.3, >= 0.3.1)
     backports (3.6.6)
-    builder (2.1.2)
+    builder (3.2.2)
     byebug (5.0.0)
       columnize (= 0.9.0)
     ci_reporter (2.0.0)

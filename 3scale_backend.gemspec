@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'rake',                      '10.1.0'
   s.add_dependency 'daemons',                   '1.1.9'
-  s.add_dependency 'builder',                   '2.1.2'
+  s.add_dependency 'builder',                   '3.2.2'
   s.add_dependency 'hiredis',                   '0.6.0'
   s.add_dependency 'redis',                     '3.2.1'
   s.add_dependency 'resque',                    '1.23.0'
