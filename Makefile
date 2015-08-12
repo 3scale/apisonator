@@ -18,7 +18,7 @@ pull:
 	- docker pull quay.io/3scale/docker:dev-backend-2.1.6
 
 bash:
-	$(RUN) -t -i -v $(PROJECT_PATH):/home/ruby/backend $(PROJECT) bash
+	$(RUN) -t -i -v $(PROJECT_PATH):/home/ruby/backend -u ruby $(PROJECT) bash
 
 build: pull
 	docker build -t $(PROJECT) .
