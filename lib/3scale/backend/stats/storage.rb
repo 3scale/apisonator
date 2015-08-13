@@ -75,7 +75,7 @@ module ThreeScale
           # @return [Array]
           def changed_keys_to_save(bucket)
             keys = storage.smembers(changed_keys_bucket_key(bucket))
-            keys.reject { |key| key =~ /minute|eternity/ }
+            keys.delete_if { |key| key =~ /minute|eternity/ }
           end
 
           def storage

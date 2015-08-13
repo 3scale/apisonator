@@ -161,7 +161,8 @@ module ThreeScale
         event             = find_event(service_id, metric_id, period, timestamp, metadata)
         event           ||= new_event(service_id, metric_id, period, timestamp, metadata)
 
-        event.merge!(value: value)
+        event[:value] = value
+        event
       end
 
       # TODO: Add a method to filter/validate metadata?

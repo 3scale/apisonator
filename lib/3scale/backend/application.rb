@@ -14,6 +14,7 @@ module ThreeScale
                     :user_required, :version].freeze
 
       attr_accessor :service_id, :id, *ATTRIBUTES
+      attr_writer :metric_names
 
       def to_hash
         {
@@ -212,10 +213,6 @@ module ThreeScale
 
       def metric_names
         @metric_names ||= {}
-      end
-
-      def metric_names=(hash)
-        @metric_names = hash
       end
 
       def metric_name(metric_id)
