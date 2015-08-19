@@ -287,7 +287,12 @@ module ThreeScale
       ##~ op.parameters.add @parameter_log
       ##
       get '/transactions/authrep.xml' do
-        do_api_method :authrep
+        begin
+          do_api_method :authrep
+        rescue ThreeScale::Backend::Error => error
+          ErrorStorage.store(@service_id, error) if @service_id
+          raise error
+        end
       end
 
       ## ------------ DOCS --------------
@@ -313,7 +318,12 @@ module ThreeScale
       ##~ op.parameters.add @parameter_redirect_uri
       ##
       get '/transactions/oauth_authrep.xml' do
-        do_api_method :oauth_authrep
+        begin
+          do_api_method :oauth_authrep
+        rescue ThreeScale::Backend::Error => error
+          ErrorStorage.store(@service_id, error) if @service_id
+          raise error
+        end
       end
 
       ## ------------ DOCS --------------
