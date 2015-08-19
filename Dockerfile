@@ -1,4 +1,4 @@
-FROM quay.io/3scale/docker:dev-backend-2.1.6
+FROM quay.io/3scale/docker:dev-backend-2.2.2
 MAINTAINER Toni Reina <toni@3scale.net>
 
 USER ruby
