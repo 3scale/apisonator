@@ -160,8 +160,13 @@ module ThreeScale
           body(params[:no_body] ? nil : cached_authorization_text)
         end
       rescue ThreeScale::Backend::Error => error
-        ErrorStorage.store(@service_id, error) if @service_id
-        raise error
+        begin
+          ErrorStorage.store(service_id, error)
+        rescue ProviderKeyInvalid
+          # This happens trying to load the service id
+        ensure
+          raise error
+        end
       end
       private :do_api_method
 
