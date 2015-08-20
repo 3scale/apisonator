@@ -73,7 +73,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
                             :message => 'usage value "##3" for metric "hits" is invalid'
     end
 
-    assert_equal 0, ErrorStorage.count(@service_id)
+    assert_equal 1, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
       get e, :provider_key => @provider_key,
@@ -85,7 +85,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
                             :message => 'usage value "#" for metric "hits" is invalid'
     end
 
-    assert_equal 0, ErrorStorage.count(@service_id)
+    assert_equal 2, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
       get e, :provider_key => @provider_key,
@@ -97,7 +97,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
                             :message => 'usage value for metric "hits" can not be empty'
     end
 
-    assert_equal 0, ErrorStorage.count(@service_id)
+    assert_equal 3, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
       get e, :provider_key => @provider_key,
@@ -112,7 +112,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
     ## the first one to fail, raises the error, and the 55 does not get updated because all
     ## metrics must be correct
 
-    assert_equal 0, ErrorStorage.count(@service_id)
+    assert_equal 4, ErrorStorage.count(@service_id)
 
     Timecop.freeze(Time.utc(2011, 1, 1)) do
       get e, :provider_key => @provider_key,
