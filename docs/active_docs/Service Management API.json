@@ -304,7 +304,7 @@
               "required": false,
               "paramType": "query",
               "allowMultiple": false,
-              "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1.",
+              "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting usage[hits]=1 will increment the hits counter by +1.",
               "parameters": [
                 {
                   "name": "metric",
@@ -404,7 +404,7 @@
               "required": false,
               "paramType": "query",
               "allowMultiple": false,
-              "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1.",
+              "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting usage[hits]=1 will increment the hits counter by +1.",
               "parameters": [
                 {
                   "name": "metric",
@@ -506,7 +506,7 @@
               "required": false,
               "paramType": "query",
               "allowMultiple": false,
-              "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1.",
+              "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting usage[hits]=1 will increment the hits counter by +1.",
               "parameters": [
                 {
                   "name": "metric",
@@ -631,7 +631,7 @@
                   "required": false,
                   "paramType": "query",
                   "allowMultiple": false,
-                  "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1.",
+                  "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting usage[hits]=1 will increment the hits counter by +1.",
                   "parameters": [
                     {
                       "name": "metric",
@@ -744,7 +744,7 @@
                   "required": false,
                   "paramType": "query",
                   "allowMultiple": false,
-                  "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1.",
+                  "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting usage[hits]=1 will increment the hits counter by +1.",
                   "parameters": [
                     {
                       "name": "metric",
@@ -857,7 +857,7 @@
                   "required": false,
                   "paramType": "query",
                   "allowMultiple": false,
-                  "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting sage[hits]=1 will increment the hits counter by +1.",
+                  "description": "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting usage[hits]=1 will increment the hits counter by +1.",
                   "parameters": [
                     {
                       "name": "metric",
