@@ -582,6 +582,8 @@ module ThreeScale
         empty_response
       end
 
+      # TODO Remove
+      # (when System switches to using internal API / Core for referrer filters
       get '/applications/:app_id/referrer_filters.xml' do
         @referrer_filters = application.referrer_filters
         builder :application_referrer_filters
