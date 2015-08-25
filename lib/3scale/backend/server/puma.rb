@@ -40,26 +40,16 @@ module ThreeScale
             arg_add puma_argv, '--state', '-S', STATE_PATH
             arg_add puma_argv, '--control', CONTROL_URL
             arg_add puma_argv, '--dir', ThreeScale::Backend.root_dir
-
-            log_file = if options[:log_file]
-                         if options[:error_file].nil? && ThreeScale::Backend.production?
-                           options[:error_file] = options[:log_file] + '.err'
-                         end
-                         open_log_file options[:log_file]
-                       else
-                         STDOUT
-                       end
-
-            error_file = if options[:error_file]
-                           open_log_file options[:error_file]
-                         else
-                           STDERR
-                         end
+            # this stops Puma from logging each request on its own in dev mode
+            arg_add puma_argv, '--quiet', '-q', true
 
             # rackup file goes last
             puma_argv << [options[:config]] unless options[:config].nil?
 
-            @cli = ::Puma::CLI.new(puma_argv.flatten, ::Puma::Events.new(log_file, error_file))
+            puma_config_hack! options[:log_file], '2.13.4'
+
+            @cli = ::Puma::CLI.new(puma_argv.flatten)
+
             self
           end
 
@@ -78,6 +68,33 @@ module ThreeScale
           end
 
           private
+
+          def puma_config_hack!(log_file, version)
+            # Puma does not allow us to specify some settings from the CLI
+            # interface, so we are forced to override them. The problem is that
+            # by the time the config file is loaded and parsed, it is already
+            # too late for us to change anything. So... basically we monkey
+            # patch it. For this to be really accurate, we check the version so
+            # that a human has actually looked at their code and made sure this
+            # works.
+            raise 'Unknown Puma version' unless version == ::Puma::Const::VERSION
+
+            ::Puma::CLI.class_eval do
+              alias_method :old_parse_options, :parse_options
+              define_method :parse_options do
+                old_parse_options
+                # config is a method with the config settings in Puma::CLI
+                opts = config.options
+                if log_file
+                  opts[:redirect_append] = true
+                  opts[:redirect_stdout] = log_file
+                  opts[:redirect_stderr] = log_file
+                end
+                # don't want this to be overriden with a puma config!
+                opts[:environment] = ThreeScale::Backend.environment
+              end
+            end
+          end
 
           def arg_add(argv, *switches, value)
             to_add = [switches.first]
@@ -101,10 +118,6 @@ module ThreeScale
               return file if File.readable? file
             end
             raise 'cannot find configuration file for Puma'
-          end
-
-          def open_log_file(file)
-            File.open file, File::CREAT | File::WRONLY | File::APPEND
           end
         end
       end
