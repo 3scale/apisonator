@@ -30,7 +30,8 @@ module ThreeScale
           STR_RACK_ERRORS: 'rack.errors',
           STR_EMPTY: '',
           STR_QUESTION_MARK: '?',
-          STR_NEWLINE: "\n"
+          STR_NEWLINE: "\n",
+          STR_CONTENT_LENGTH: 'Content-Length'
         }.map do |k, v|
           const_set(k, v.freeze)
           k
@@ -106,7 +107,7 @@ module ThreeScale
         end
 
         def extract_content_length(headers)
-          value = headers['Content-Length'] or return STR_DASH
+          value = headers[STR_CONTENT_LENGTH] or return STR_DASH
           value.to_s == STR_ZERO ? STR_DASH : value
         end
 
