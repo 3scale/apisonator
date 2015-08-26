@@ -1,3 +1,16 @@
+# Setup bundler if present before anything else.
+#
+# Note that this has to go away once we have transitioned to a Bundler based
+# deployment process.
+require 'pathname'
+ENV['BUNDLE_GEMFILE'] ||= File.expand_path(File.join('..', '..', '..', 'Gemfile'),
+                                           Pathname.new(__FILE__).realpath)
+begin
+  require 'rubygems'
+  require 'bundler/setup'
+rescue LoadError
+end
+
 require 'builder'
 require 'hiredis'
 require 'redis'

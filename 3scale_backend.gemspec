@@ -38,7 +38,14 @@ Gem::Specification.new do |s|
   s.files = Dir.glob('{lib,bin,app}/**/*')
   s.files << 'README.md'
   s.files << 'Rakefile'
+  # Gemfile* and gemspec are included here to support
+  # running Bundler at gem install time.
+  s.files << 'Gemfile'
+  s.files << 'Gemfile.lock'
+  s.files << __FILE__
 
   s.executables  = ['3scale_backend', '3scale_backend_worker']
   s.require_path = 'lib'
+
+  s.extensions = 'ext/mkrf_conf.rb'
 end
