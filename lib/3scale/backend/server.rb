@@ -1,71 +1,61 @@
-require 'thin'
-
 module ThreeScale
   module Backend
-    module Server
-      extend self
+    class Server
+      class << self
+        attr_reader :log
 
-      def start(options)
-        log = !options[:daemonize] || options[:log_file]
+        def start(options)
+          @log = !options[:daemonize] || options[:log_file]
 
-        server = ::Thin::Server.new(options[:host], options[:port]) do
-          use Airbrake::Sinatra if Airbrake.configuration.api_key
-          use ThreeScale::Backend::Logger::Middleware if log
+          options[:tag] = "3scale_backend #{ThreeScale::Backend::VERSION}"
+          options[:pid] = pid_file(options[:Port])
+          options[:config] = ThreeScale::Backend.root_dir + '/config.ru'
 
-          ThreeScale::Backend::Server.mount_internal_api self
-          run ThreeScale::Backend::Listener.new
-        end
-
-        server.pid_file = pid_file(options[:port])
-        server.log_file = options[:log_file] || "/dev/null"
-
-        # Hack to set process name (so it looks nicer in a process list).
-        def server.name
-          "3scale_backend #{ThreeScale::Backend::VERSION} listening on #{host}:#{port}"
-        end
-
-        puts ">> Starting #{server.name}. Let's roll!"
-        server.daemonize if options[:daemonize]
-        server.start
-      end
-
-      def stop(options)
-        ::Thin::Server.kill(pid_file(options[:port]))
-      end
-
-      def restart(options)
-        ::Thin::Server.restart(pid_file(options[:port]))
-      end
-
-      def pid_file(port)
-        if ENV['RACK_ENV'] == 'development'
-          "/tmp/3scale_backend_#{port}.pid"
-        else
-          "/var/run/3scale/3scale_backend_#{port}.pid"
-        end
-      end
-
-      def mount_internal_api(server)
-        server.map "/internal" do
-          use Rack::Auth::Basic do |username, password|
-            ThreeScale::Backend::Server.check_password username, password
+          server = get_server(options[:server]).new options
+          server.start do |srv|
+            puts ">> Starting #{options[:tag]}. Let's roll!"
           end
-
-          run ThreeScale::Backend::API::Internal.new
         end
-      end
 
-      def check_password(username, password)
-        username == ThreeScale::Backend::Server.auth_username &&
-          password == ThreeScale::Backend::Server.auth_password
-      end
+        def pid_file(port)
+          if ThreeScale::Backend.development?
+            "/tmp/3scale_backend_#{port}.pid"
+          else
+            "/var/run/3scale/3scale_backend_#{port}.pid"
+          end
+        end
 
-      def auth_username
-        'user'
-      end
+        def method_missing(m, *args, &blk)
+          options = args.first
+          get_server(options[:server]).send(m.to_s.tr('-', '_'), options.merge(pid: pid_file(options[:Port])))
+        end
 
-      def auth_password
-        'password'
+        # the methods below are used by the Rack application for auth
+        def check_password(username, password)
+          username == ThreeScale::Backend::Server.auth_username &&
+            password == ThreeScale::Backend::Server.auth_password
+        end
+
+        def auth_username
+          'user'
+        end
+
+        def auth_password
+          'password'
+        end
+
+        private
+
+        def get_server(server_name)
+          server_name ||= :thin
+          server_name = server_name.to_s.tr('-', '_')
+          require "3scale/backend/server/#{server_name}"
+          class_name = server_name.split('_').map(&:capitalize).join
+          const_get(class_name)
+        rescue LoadError
+          require '3scale/backend/server/rack'
+          Rack
+        end
       end
 
     end

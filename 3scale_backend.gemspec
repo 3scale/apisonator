@@ -36,6 +36,7 @@ Gem::Specification.new do |s|
   s.files = Dir.glob('{lib,bin,app}/**/*')
   s.files << 'README.md'
   s.files << 'Rakefile'
+  s.files << 'config.ru'
   # Gemfile* and gemspec are included here to support
   # running Bundler at gem install time.
   s.files << 'Gemfile'
