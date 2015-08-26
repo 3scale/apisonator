@@ -1,5 +1,5 @@
 module ThreeScale
   module Backend
-    VERSION = '2.45.0'
+    VERSION = '2.46.0'
   end
 end
