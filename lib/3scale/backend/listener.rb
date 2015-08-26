@@ -589,6 +589,8 @@ module ThreeScale
         builder :application_referrer_filters
       end
 
+      # TODO Remove
+      # (when System switches to using internal API / Core for referrer filters
       post '/applications/:app_id/referrer_filters.xml' do
         @referrer_filter = application.create_referrer_filter(params[:referrer_filter])
 

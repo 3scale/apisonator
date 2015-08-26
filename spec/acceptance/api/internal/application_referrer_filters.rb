@@ -42,5 +42,27 @@ resource 'Application keys' do
     end
   end
 
+  post '/services/:service_id/applications/:app_id/referrer_filters' do
+    parameter :referrer_filter, 'Referrer filter to create', required: true
+
+    let(:service_id) { '7575' }
+    let(:app_id) { '100' }
+    let(:referrer_filter) { 'baz' }
+    let(:raw_post) { params.to_json }
+
+    example_request 'Create a referrer filter' do
+      status.should == 201
+      response_json['status'].should == 'created'
+
+      @app.referrer_filters.should == ['baz']
+    end
+
+    example 'Try updating Service with invalid data' do
+      do_request referrer_filter: ''
+
+      status.should == 400
+      response_json['error'].should =~ /referrer filter can't be blank/
+    end
+  end
 end
 
