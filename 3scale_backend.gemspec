@@ -29,8 +29,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'tilt',                      '1.4.1'
   s.add_dependency 'sinatra',                   '1.4.6'
   s.add_dependency 'sinatra-contrib',           '1.4.6'
-  s.add_dependency 'thin',                      '1.6.3'
-  s.add_dependency 'yajl-ruby',                 '1.1.0'
   s.add_dependency 'redis-namespace',           '1.5.1'
   s.add_dependency 'influxdb',                  '0.1.8'
   s.add_dependency 'cubert-client',             '0.0.10'

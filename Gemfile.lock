@@ -23,9 +23,7 @@ PATH
       resque (= 1.23.0)
       sinatra (= 1.4.6)
       sinatra-contrib (= 1.4.6)
-      thin (= 1.6.3)
       tilt (= 1.4.1)
-      yajl-ruby (= 1.1.0)
 
 GEM
   remote: https://rubygems.org/
@@ -232,4 +230,6 @@ DEPENDENCIES
   rspec_api_documentation (~> 2.0.0)
   source2swagger!
   sshkit
+  thin (= 1.6.3)
   timecop (~> 0.7.1)
+  yajl-ruby (= 1.1.0)
