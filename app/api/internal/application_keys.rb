@@ -14,7 +14,7 @@ module ThreeScale
 
         before do
           @app = Application.load(params[:service_id], params[:app_id])
-          respond_with_404("foo") unless @app
+          respond_with_404 'application not found' unless @app
         end
 
         get '/' do |service_id, app_id|

@@ -4,15 +4,15 @@ module ThreeScale
       internal_api '/services/:service_id/applications/:app_id/referrer_filters' do
         before do
           @app = Application.load params[:service_id], params[:app_id]
-          respond_with_404 "foo"  unless @app
+          respond_with_404 'application not found'  unless @app
         end
 
-        get '' do |service_id, app_id|
+        get '' do
           filters = @app.referrer_filters.sort
           {status: :found, referrer_filters: filters}.to_json
         end
 
-        post '' do |service_id, app_id|
+        post '' do
           begin
             value = params.fetch(:referrer_filter, nil)
             filter = @app.create_referrer_filter(value)
