@@ -75,9 +75,18 @@ module ThreeScale
             # Serving model settings here
             #
             # compute default workers and threads values
-            # currently just a cluster of CPUs + 1 workers
-            min_threads = max_threads = 1
-            workers = Process.respond_to?(:fork) ? (ThreeScale::Backend.number_of_cpus + 1) : 0
+            # We want to adapt workers and threads to our characteristics.
+            # Note that these values will likely need to be tweaked depending on
+            # the Ruby implementation and how our app behaves!
+            ncpus = ThreeScale::Backend.number_of_cpus
+            workers = Process.respond_to?(:fork) ? ncpus + 1 : 0
+            # if no workers but mt-safe, we spawn more threads.
+            min_threads, max_threads = if ThreeScale::Backend.thread_safe?
+                                         shift = workers.zero? ? 2 : 0
+                                         [ncpus << shift, ncpus << 1 + shift]
+                                       else
+                                         [1, 1]
+                                       end
 
             # overwrite some Puma defaults
             ::Puma::Configuration.class_eval do
@@ -111,6 +120,9 @@ module ThreeScale
                 # don't want this to be overriden with a puma config!
                 if opts[:environment] != ThreeScale::Backend.environment
                   raise "mismatched environment in Backend vs Puma config file"
+                end
+                if opts[:max_threads].to_i > 1 && !ThreeScale::Backend.thread_safe?
+                  raise "Puma was instructed to use multiple threads, but we are not MT-safe!"
                 end
                 # the log file parameter has precedence over other settings
                 if log_file
