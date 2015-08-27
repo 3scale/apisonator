@@ -11,8 +11,9 @@ module ThreeScale
   module Backend
     class Server
       class Puma
-        CONTROL_URL = 'unix:///tmp/3scale_backend.sock'
         STATE_PATH = '/tmp/3scale_backend.state'
+        CONTROL_URL = 'unix:///tmp/3scale_backend.sock'
+        CONTROL_AUTH_TOKEN = :none # set to :none, nil for random, or value
 
         class << self
           attr_reader :cli
@@ -28,20 +29,7 @@ module ThreeScale
 
             arg_add puma_argv, '--daemon', '-d', true unless options[:daemonize].nil?
             arg_add puma_argv, '--pidfile', options[:pid] unless options[:pid].nil?
-
-            # serving model settings here
-            #
-            # currently just a cluster of CPUs + 1 workers
-            arg_add puma_argv, '--threads', '-t', '1:1'
-            arg_add puma_argv, '--workers', '-w', Process.respond_to?(:fork) ? (ThreeScale::Backend.number_of_cpus + 1) : 0
-
-            # additional settings here
-            arg_add puma_argv, '--tag', (options[:tag] || name)
-            arg_add puma_argv, '--state', '-S', STATE_PATH
-            arg_add puma_argv, '--control', CONTROL_URL
-            arg_add puma_argv, '--dir', ThreeScale::Backend.root_dir
-            # this stops Puma from logging each request on its own in dev mode
-            arg_add puma_argv, '--quiet', '-q', true
+            arg_add puma_argv, '--tag', options[:tag] unless options[:tag].nil?
 
             # rackup file goes last
             puma_argv << [options[:config]] unless options[:config].nil?
@@ -69,15 +57,50 @@ module ThreeScale
 
           private
 
+          # Puma does not allow us to specify some settings from the CLI
+          # interface, so we are forced to override them. The problem is that by
+          # the time the config file is loaded and parsed, it is already too
+          # late for us to change anything.
+          #
+          # So basically we monkey patch some default values that we know we
+          # want IN CASE NO ONE SPECIFIED ANYTHING ELSE (ie. not in parameters,
+          # not in config file), and we also hook in just after having a final
+          # option set so that we can respect the log file parameter.
+          #
+          # For this to be really accurate, we check the version so that a human
+          # has actually looked at their code and made sure this will work.
           def puma_config_hack!(log_file, version)
-            # Puma does not allow us to specify some settings from the CLI
-            # interface, so we are forced to override them. The problem is that
-            # by the time the config file is loaded and parsed, it is already
-            # too late for us to change anything. So... basically we monkey
-            # patch it. For this to be really accurate, we check the version so
-            # that a human has actually looked at their code and made sure this
-            # works.
             raise 'Unknown Puma version' unless version == ::Puma::Const::VERSION
+
+            # Serving model settings here
+            #
+            # compute default workers and threads values
+            # currently just a cluster of CPUs + 1 workers
+            min_threads = max_threads = 1
+            workers = Process.respond_to?(:fork) ? (ThreeScale::Backend.number_of_cpus + 1) : 0
+
+            # overwrite some Puma defaults
+            ::Puma::Configuration.class_eval do
+              alias_method :old_default_options, :default_options
+              define_method :default_options do
+                old_default_options.merge!(
+                  min_threads: min_threads,
+                  max_threads: max_threads,
+                  workers: workers,
+                  # pick up the Backend env
+                  environment: ThreeScale::Backend.environment,
+                  # operate out of the Backend root dir by default
+                  directory: ThreeScale::Backend.root_dir,
+                  worker_directory: ThreeScale::Backend.root_dir,
+                  # default status and control settings
+                  state: STATE_PATH,
+                  control_url: CONTROL_URL,
+                  control_auth_token: CONTROL_AUTH_TOKEN,
+                  # stop Puma from logging each request on its own in dev mode
+                  quiet: true
+                )
+              end
+            end
 
             ::Puma::CLI.class_eval do
               alias_method :old_parse_options, :parse_options
@@ -85,13 +108,16 @@ module ThreeScale
                 old_parse_options
                 # config is a method with the config settings in Puma::CLI
                 opts = config.options
+                # don't want this to be overriden with a puma config!
+                if opts[:environment] != ThreeScale::Backend.environment
+                  raise "mismatched environment in Backend vs Puma config file"
+                end
+                # the log file parameter has precedence over other settings
                 if log_file
                   opts[:redirect_append] = true
                   opts[:redirect_stdout] = log_file
                   opts[:redirect_stderr] = log_file
                 end
-                # don't want this to be overriden with a puma config!
-                opts[:environment] = ThreeScale::Backend.environment
               end
             end
           end
