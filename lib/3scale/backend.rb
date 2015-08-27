@@ -66,6 +66,11 @@ module ThreeScale
   PIPELINED_SLICE_SIZE = 400
 
   module Backend
+    # Thread safety of our application. Turn this on if we ever are MT safe.
+    def self.thread_safe?
+      false
+    end
+
     def self.root_dir
       File.expand_path(__FILE__ + '/../../..')
     end
