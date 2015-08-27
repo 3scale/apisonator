@@ -19,7 +19,7 @@ resource 'Application keys' do
     let(:app_id)     { '100' }
 
     context 'when there are no referrer filters' do
-      example 'Getting application keys', document: false do
+      example 'Getting application keys' do
         do_request
 
         expect(response_status).to eq(200)
@@ -62,6 +62,34 @@ resource 'Application keys' do
 
       status.should == 400
       response_json['error'].should =~ /referrer filter can't be blank/
+    end
+  end
+
+  delete '/services/:service_id/applications/:app_id/referrer_filters/:filter' do
+    parameter :service_id, 'Service ID', required: true
+    parameter :app_id, 'Application ID', required: true
+
+    let(:service_id) { '7575' }
+    let(:app_id)     { '100' }
+    let(:filter)     { 'doopah' }
+
+    context 'when there are no referrer filters' do
+      example_request 'Trying to delete a filter' do
+        do_request
+
+        expect(response_status).to eq(200)
+      end
+    end
+
+    context 'when there are referrer filters' do
+      before do
+        @app.create_referrer_filter('doopah')
+      end
+
+      example_request 'Deleting a filter' do
+        expect(response_status).to eq(200)
+        expect(response_json['status']).to eq('deleted')
+      end
     end
   end
 end

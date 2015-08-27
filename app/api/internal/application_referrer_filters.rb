@@ -23,6 +23,17 @@ module ThreeScale
           end
         end
 
+        delete '/:value' do
+          filter = begin
+            Base64.urlsafe_decode64 params[:value]
+          rescue ArgumentError
+            params[:value]
+          end
+          @app.delete_referrer_filter filter
+
+          {status: :deleted}.to_json
+        end
+
       end
     end
   end
