@@ -66,7 +66,7 @@ module ThreeScale
   module Backend
     # Thread safety of our application. Turn this on if we ever are MT safe.
     def self.thread_safe?
-      false
+      true
     end
 
     def self.root_dir
