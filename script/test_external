@@ -4,6 +4,6 @@ SCRIPT_DIR=$(dirname "$(readlink -f $0)")
 . ${SCRIPT_DIR}/lib/functions
 
 start_services
-bundle exec ${SCRIPT_DIR}/../bin/3scale_backend -p 3000 start $@
+bundle exec 3scale_backend -p 3000 start $@
 stop_services
 
