@@ -38,6 +38,20 @@ module ThreeScale
 
             @cli = ::Puma::CLI.new(puma_argv.flatten)
 
+            # Puma makes a lot of assumptions regarding how it is being run. In
+            # particular, Puma::CLI thinks it is alone in the world. We have
+            # to override them, because otherwise it will try to restart us
+            # dropping the 3scale_backend's runner-specific arguments and using
+            # Puma's own knobs, which will obviously not work.
+            puma_restart_argv = @cli.instance_variable_get('@restart_argv')
+            arg_3scalebe = puma_restart_argv.reverse.find do |arg|
+              arg.end_with? '3scale_backend'
+            end
+            if arg_3scalebe
+              idx_3scalebe = puma_restart_argv.rindex(arg_3scalebe)
+              puma_restart_argv[idx_3scalebe+1..-1] = options[:original_argv] if idx_3scalebe
+            end
+
             self
           end
 
