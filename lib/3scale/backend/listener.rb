@@ -1,5 +1,4 @@
 require '3scale/backend/version'
-require 'base64'
 
 module ThreeScale
   module Backend
