@@ -18,7 +18,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version     = ">= 2.1.0"
   s.required_rubygems_version = ">= 1.3.7"
 
-  s.add_dependency 'rake',                      '10.1.0'
+  s.add_dependency 'rake',                      '10.4.2'
   s.add_dependency 'daemons',                   '1.1.9'
   s.add_dependency 'builder',                   '3.2.2'
   s.add_dependency 'hiredis',                   '0.6.0'
