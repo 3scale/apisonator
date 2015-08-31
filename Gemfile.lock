@@ -17,7 +17,7 @@ PATH
       hiredis (= 0.6.0)
       influxdb (= 0.1.8)
       rack (= 1.6.4)
-      rake (= 10.1.0)
+      rake (= 10.4.2)
       redis (= 3.2.1)
       redis-namespace (= 1.5.1)
       resque (= 1.23.0)
@@ -129,7 +129,7 @@ GEM
       rack
     rack-test (0.6.3)
       rack (>= 1.0)
-    rake (10.1.0)
+    rake (10.4.2)
     redis (3.2.1)
     redis-namespace (1.5.1)
       redis (~> 3.0, >= 3.0.4)
