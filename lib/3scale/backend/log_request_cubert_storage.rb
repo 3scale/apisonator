@@ -26,6 +26,10 @@ module ThreeScale
             connection.create_document(
               body: transaction, bucket: bucket_id, collection: collection
             )
+          rescue Cubert::Client::ServiceUnavailable
+            # Cubert infrastructure is not very stable yet and sometimes cubert
+            # servers are not available. By the moment, we can ignore these
+            # errors and discard the log.
           end
         end
       end
