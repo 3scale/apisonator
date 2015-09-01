@@ -528,8 +528,8 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Stats::Storage.enable!
     ## the flag to know if storage stats is enabled is memoized
     Memoizer.reset!
-    v.each do |item|
-      Stats::Aggregator.process([item])
+    Timecop.freeze(timestamp) do
+      v.each { |item| Stats::Aggregator.process([item]) }
     end
     assert_equal 1, Stats::Info.pending_buckets.size
 
