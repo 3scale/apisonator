@@ -1,4 +1,7 @@
 require '3scale/backend/version'
+# TODO Remove require of base64
+# (when System switches to using internal API / Core for referrer filters
+require 'base64'
 
 module ThreeScale
   module Backend
