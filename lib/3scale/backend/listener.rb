@@ -1,4 +1,6 @@
 require '3scale/backend/version'
+# TODO Remove require of base64
+# (when System switches to using internal API / Core for referrer filters
 require 'base64'
 
 module ThreeScale
@@ -590,11 +592,15 @@ module ThreeScale
         empty_response
       end
 
+      # TODO Remove
+      # (when System switches to using internal API / Core for referrer filters
       get '/applications/:app_id/referrer_filters.xml' do
         @referrer_filters = application.referrer_filters
         builder :application_referrer_filters
       end
 
+      # TODO Remove
+      # (when System switches to using internal API / Core for referrer filters
       post '/applications/:app_id/referrer_filters.xml' do
         @referrer_filter = application.create_referrer_filter(params[:referrer_filter])
 
@@ -603,17 +609,8 @@ module ThreeScale
         builder :create_application_referrer_filter
       end
 
-      # We need to be flexible with this url, because we need allow
-      # calls like these:
-      # "/applications/13fasdas2/referrer_filters/chrome-extension://dkmdamal"
-      # A better way to do that could be use a hash of the referrer
-      # filter instead of the value directly. If someday we create a
-      # new api version, we can do this.
-      #
-      # Be careful if we need add a new nested url with
-      # referrer_filters, like:
-      # "/applications/13fasaada/referrer_filters/foo.bar.com/edit"
-      # because we must put it before this route.
+      # TODO Remove
+      # (when System switches to using internal API / Core for referrer filters
       delete '/applications/:app_id/referrer_filters/*.xml' do
         referred_filter_param = params[:splat].join
         referred_filter_name  = begin
