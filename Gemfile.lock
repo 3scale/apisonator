@@ -9,10 +9,10 @@ GIT
 PATH
   remote: .
   specs:
-    3scale_backend (2.47.0)
+    3scale_backend (2.48.0)
       airbrake (= 4.3.0)
       builder (= 3.2.2)
-      cubert-client (= 0.0.10)
+      cubert-client (= 0.0.12)
       daemons (= 1.1.9)
       hiredis (= 0.6.0)
       influxdb (= 0.1.8)
@@ -71,7 +71,7 @@ GEM
     columnize (0.9.0)
     crack (0.4.2)
       safe_yaml (~> 1.0.0)
-    cubert-client (0.0.10)
+    cubert-client (0.0.12)
       rack (>= 1.4.5)
       vanguard (>= 0.0.5)
       virtus
