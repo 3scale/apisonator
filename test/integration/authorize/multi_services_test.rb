@@ -99,16 +99,11 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_3,
                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
-    get '/transactions/errors.xml', :provider_key => @provider_key
-
-    assert_equal 200, last_response.status
-
-    doc = Nokogiri::XML(last_response.body)
-    node = doc.search('errors error').first
-
-    assert_not_nil node
-    assert_equal 'application_not_found',   node['code']
-    assert_equal "application with id=\"#{@application_3.id}\" was not found", node.content
+    assert_error_in_transactions(
+      @service_1.id,
+      "application_not_found",
+      "application with id=\"#{@application_3.id}\" was not found"
+    )
   end
 
   test 'authorize with fake service_id and app_id' do
@@ -134,8 +129,13 @@ class MultiServicesTest < Test::Unit::TestCase
                                        :app_id       => @application_1.id,
                                        :service_id   => @service_3.id
     Resque.run!
-
     assert_equal 404, last_response.status
+
+    assert_error_in_transactions(
+      @service_3.id,
+      "application_not_found",
+      "application with id=\"#{@application_1.id}\" was not found"
+    )
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_3.id,
@@ -143,13 +143,22 @@ class MultiServicesTest < Test::Unit::TestCase
     Resque.run!
 
     assert_equal 404, last_response.status
+    assert_error_in_transactions(
+      @service_1.id,
+      "application_not_found",
+      "application with id=\"#{@application_3.id}\" was not found"
+    )
 
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application_3.id
+    get '/transactions/authorize.xml', provider_key: @provider_key,
+                                       app_id:       @application_3.id
     Resque.run!
 
     assert_equal 404, last_response.status
-    assert_not_errors_in_transactions
+    assert_error_in_transactions(
+      @service_1.id,
+      "application_not_found",
+      "application with id=\"#{@application_3.id}\" was not found"
+    )
   end
 
   test 'provider key with multiple services with authorize/report works with explicit/implicit service ids' do
@@ -211,7 +220,7 @@ class MultiServicesTest < Test::Unit::TestCase
                                                  @application_2.id,
                                                  @metric_id_2,
                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
-
+    
     post '/transactions.xml',
       :provider_key => @provider_key,
       :service_id   => @service_1.id,
@@ -521,7 +530,12 @@ class MultiServicesTest < Test::Unit::TestCase
 
     assert_not_nil error
     assert_equal 'application_not_found', error['code']
-    assert_not_errors_in_transactions
+
+    assert_error_in_transactions(
+      @service_1.id,
+      "application_not_found",
+      "application with id=\"#{@application_2.id}\" was not found"
+    )
   end
 
   test 'when service_id is not valid there is an error no matter if the provider key is valid with authorize' do
