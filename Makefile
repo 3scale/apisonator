@@ -5,7 +5,8 @@ PROJECT := $(notdir $(PROJECT_PATH))
 BENCH = bench.txt
 
 RUN = docker run --rm -v $(PROJECT_PATH)/test/reports:/home/ruby/backend/test/reports -v $(PROJECT_PATH)/spec/reports:/home/ruby/backend/spec/reports
-NAME = $(PROJECT)-build
+# docker does not allow '@' in container names (used by Jenkins)
+NAME = $(subst @,,$(PROJECT))-build
 
 .PHONY: test
 
