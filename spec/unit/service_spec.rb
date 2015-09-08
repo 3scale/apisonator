@@ -65,6 +65,22 @@ module ThreeScale
         end
       end
 
+      describe '.exists?' do
+        let(:service) do
+          Service.save!(provider_key: 'foo', id: '7001', referrer_filters_required: 1)
+        end
+        let(:existing_service_id) { service.id }
+        let(:non_existing_service_id) { service.id.to_i.succ.to_s }
+
+        it 'returns true when the service exists' do
+          Service.exists?(existing_service_id).should be_true
+        end
+
+        it 'returns false when the services does not exist' do
+          Service.exists?(non_existing_service_id).should be_false
+        end
+      end
+
       describe '.list' do
         it 'returns an array of IDs' do
           Service.save! provider_key: 'foo', id: '7001'
