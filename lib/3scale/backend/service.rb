@@ -73,6 +73,10 @@ module ThreeScale
           service.clear_cache
         end
 
+        def exists?(service_id)
+          storage.exists(storage_key(service_id, 'version'))
+        end
+
         def get_service(id)
           keys = ATTRIBUTES.map { |attr| storage_key(id, attr) }
           values = storage.mget(keys)
