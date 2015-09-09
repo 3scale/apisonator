@@ -67,7 +67,7 @@ module ThreeScale
 
       describe '.exists?' do
         let(:service) do
-          Service.save!(provider_key: 'foo', id: '7001', referrer_filters_required: 1)
+          Service.save!(provider_key: 'foo', id: '7001')
         end
         let(:existing_service_id) { service.id }
         let(:non_existing_service_id) { service.id.to_i.succ.to_s }
@@ -76,7 +76,7 @@ module ThreeScale
           Service.exists?(existing_service_id).should be_true
         end
 
-        it 'returns false when the services does not exist' do
+        it 'returns false when the service does not exist' do
           Service.exists?(non_existing_service_id).should be_false
         end
       end
