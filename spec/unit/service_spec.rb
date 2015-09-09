@@ -76,7 +76,7 @@ module ThreeScale
           Service.exists?(existing_service_id).should be_true
         end
 
-        it 'returns false when the services does not exist' do
+        it 'returns false when the service does not exist' do
           Service.exists?(non_existing_service_id).should be_false
         end
       end
