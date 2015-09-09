@@ -9,15 +9,9 @@ gemspec
 # implementations (ie. pure Ruby, java, etc).
 #
 platform :ruby do
+  gem 'thin', '= 1.6.3'
   gem 'yajl-ruby', '= 1.1.0'
   gem 'pry-byebug', '~> 3.2.0', groups: [:development, :test]
-end
-
-# Default server by platform
-gem 'puma', '= 2.13.4'
-
-platform :mri do
-  gem 'thin', '= 1.6.3', groups: [:development, :test]
 end
 
 group :test do
