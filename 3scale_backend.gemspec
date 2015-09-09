@@ -33,7 +33,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'influxdb',                  '0.1.8'
   s.add_dependency 'cubert-client',             '0.0.12'
 
-  s.files = Dir.glob('{lib,bin,app,config}/**/*')
+  s.files = Dir.glob('{lib,bin,app}/**/*')
   s.files << 'README.md'
   s.files << 'Rakefile'
   s.files << 'config.ru'

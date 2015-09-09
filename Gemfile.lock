@@ -124,7 +124,6 @@ GEM
     pry-doc (0.8.0)
       pry (~> 0.9)
       yard (~> 0.8)
-    puma (2.13.4)
     rack (1.6.4)
     rack-protection (1.5.3)
       rack
@@ -225,7 +224,6 @@ DEPENDENCIES
   pry (~> 0.10.1)
   pry-byebug (~> 3.2.0)
   pry-doc (~> 0.8.0)
-  puma (= 2.13.4)
   rack-test (~> 0.6.2)
   resque_spec (~> 0.15.0)
   resque_unit (~> 0.4.4)
