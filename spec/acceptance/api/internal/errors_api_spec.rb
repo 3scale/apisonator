@@ -25,8 +25,10 @@ resource 'Errors (prefix: /transactions/:service_id/errors)' do
     end
 
     context 'when there are errors but do not care about pagination' do
+      let(:test_time) { Time.utc(2010, 9, 3, 17, 9) }
+
       before do
-        Timecop.freeze(Time.utc(2010, 9, 3, 17, 9)) do
+        Timecop.freeze(test_time) do
           ThreeScale::Backend::ErrorStorage.store(
               service_id, ThreeScale::Backend::ApplicationNotFound.new('boo'))
         end
@@ -36,7 +38,7 @@ resource 'Errors (prefix: /transactions/:service_id/errors)' do
         error = response_json['errors'].first
         expect(error['code']).to eq ('application_not_found')
         expect(error['message']).to eq('application with id="boo" was not found')
-        expect(error['timestamp']).to eq('2010-09-03 17:09:00 UTC')
+        expect(error['timestamp']).to eq(test_time.to_s)
         expect(response_json['count']).to eq(1)
         expect(response_status).to eq(200)
       end
@@ -107,8 +109,6 @@ resource 'Errors (prefix: /transactions/:service_id/errors)' do
       end
 
       example 'Try specifying page with no elements' do
-        # The first page shows all the elements (there are less than 200),
-        # we ask for the 2nd page to check that it is empty.
         do_request(page: 2, per_page: test_errors.size + 1)
         expect(response_json['errors']).to be_empty
         expect(response_json['count']).to eq(test_errors.size)
