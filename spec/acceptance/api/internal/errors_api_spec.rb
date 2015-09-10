@@ -107,8 +107,6 @@ resource 'Errors (prefix: /transactions/:service_id/errors)' do
       end
 
       example 'Try specifying page with no elements' do
-        # The first page shows all the elements (there are less than 200),
-        # we ask for the 2nd page to check that it is empty.
         do_request(page: 2, per_page: test_errors.size + 1)
         expect(response_json['errors']).to be_empty
         expect(response_json['count']).to eq(test_errors.size)
