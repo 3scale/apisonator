@@ -31,6 +31,10 @@ module ThreeScale
           raw_items.map(&method(:decode))
         end
 
+        def delete_all(service_id)
+          storage.del(queue_key(service_id))
+        end
+
         private
 
         def queue_key(service_id)
