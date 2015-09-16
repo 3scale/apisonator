@@ -1,4 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require '3scale/backend/alert_limit'
 
 class LatestEventsTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
@@ -249,6 +250,8 @@ class LatestEventsTest < Test::Unit::TestCase
   private
 
   def internal_api
+    require_relative '../../app/api/api'
+
     Rack::Test::Session.new(
       Rack::MockSession.new(ThreeScale::Backend::API::Internal)
     )

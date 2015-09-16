@@ -1,4 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require '3scale/backend/alert_limit'
 
 class AlertsTest < Test::Unit::TestCase
   def setup
