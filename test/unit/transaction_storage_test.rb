@@ -147,4 +147,19 @@ class TransactionStorageTest < Test::Unit::TestCase
 
     assert_equal 59, TransactionStorage.list(@service_id).first[:usage][@metric_id]
   end
+
+  test '#delete_all' do
+    5.times do
+      TransactionStorage.store(
+          transaction(service_id: @service_id,
+                      usage: { @metric_id => 1 },
+                      timestamp: Time.now.getutc))
+    end
+
+    assert_equal 5, TransactionStorage.list(@service_id).size
+
+    TransactionStorage.delete_all(@service_id)
+    
+    assert_empty TransactionStorage.list(@service_id)
+  end
 end

@@ -34,6 +34,10 @@ module ThreeScale
           @@status
         end
 
+        def self.define_private_endpoints?
+          ThreeScale::Backend.test? || ThreeScale::Backend.development?
+        end
+
         private
 
         def parse_json_params(params)
