@@ -1,4 +1,5 @@
 require_relative '../spec_helper'
+require_relative '../../app/api/api'
 
 require 'rack/test'
 require 'rspec_api_documentation'

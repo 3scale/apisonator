@@ -1,3 +1,5 @@
+require '3scale/backend/use_cases/service_user_management_use_case'
+
 module ThreeScale
   module Backend
     class User
