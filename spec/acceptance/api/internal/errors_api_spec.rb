@@ -5,16 +5,16 @@ resource 'Errors (prefix: /transactions/:service_id/errors)' do
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
+  let(:service_id) { '7575' }
+  let(:service_id_non_existent) { service_id.to_i.succ.to_s }
+
   before do
-    ThreeScale::Backend::Service.save!(provider_key: 'foo', id: '7575')
-    ThreeScale::Backend::ErrorStorage.delete_all(service_id: '7575')
+    ThreeScale::Backend::Service.save!(provider_key: 'foo', id: service_id)
+    ThreeScale::Backend::ErrorStorage.delete_all(service_id)
   end
 
   get '/services/:service_id/errors/' do
     parameter :service_id, 'Service ID', required: true
-
-    let(:service_id) { '7575' }
-    let(:service_id_non_existent) { service_id.to_i.succ.to_s }
 
     context 'when there are no errors' do
       example_request 'Get errors by service ID' do
@@ -132,9 +132,6 @@ resource 'Errors (prefix: /transactions/:service_id/errors)' do
   delete '/services/:service_id/errors/' do
     parameter :service_id, 'Service ID', required: true
 
-    let(:service_id) { '7575' }
-    let(:service_id_non_existent) { service_id.to_i.succ.to_s }
-
     context 'when there are no errors' do
       example_request 'Delete all errors' do
         expect(response_status).to eq(200)
@@ -157,6 +154,46 @@ resource 'Errors (prefix: /transactions/:service_id/errors)' do
         do_request(service_id: service_id_non_existent)
         expect(response_status).to eq(404)
         expect(ThreeScale::Backend::ErrorStorage.list(service_id_non_existent)).to be_empty
+      end
+    end
+  end
+
+  post '/services/:service_id/errors/' do
+    parameter :service_id, 'Service ID', required: true
+    parameter :errors, 'Errors', required: false
+
+    let(:example_error_messages) do
+      %w(error_msg_#1, error_msg_#2, error_msg_#3)
+    end
+
+    define_method :raw_post do
+      params.to_json
+    end
+
+    context 'when the service exists' do
+      example 'Save errors' do
+        do_request(service_id: service_id, errors: example_error_messages)
+
+        saved_errors = ThreeScale::Backend::ErrorStorage.list(service_id)
+        expect(saved_errors.size).to eq(example_error_messages.size)
+        expect(saved_errors[0][:message]).to eq(example_error_messages[2])
+        expect(saved_errors[1][:message]).to eq(example_error_messages[1])
+        expect(saved_errors[2][:message]).to eq(example_error_messages[0])
+
+        expect(response_status).to eq(201)
+      end
+
+      example 'Try without specifying errors' do
+        do_request(service_id: service_id)
+        expect(response_status).to eq(400)
+      end
+    end
+
+    context 'when the service does not exist' do
+      example 'Try to save errors' do
+        do_request(service_id: service_id_non_existent,
+                   errors: example_error_messages)
+        expect(response_status).to eq(404)
       end
     end
   end
