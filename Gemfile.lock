@@ -9,7 +9,7 @@ GIT
 PATH
   remote: .
   specs:
-    3scale_backend (2.49.0)
+    3scale_backend (2.50.0)
       airbrake (= 4.3.0)
       builder (= 3.2.2)
       cubert-client (= 0.0.12)
@@ -233,3 +233,6 @@ DEPENDENCIES
   thin (= 1.6.3)
   timecop (~> 0.7.1)
   yajl-ruby (= 1.1.0)
+
+BUNDLED WITH
+   1.10.6
