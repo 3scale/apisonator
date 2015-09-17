@@ -14,7 +14,7 @@ module ThreeScale
       ## ------------ DOCS --------------
       ##~ sapi = source2swagger.namespace("Service Management API")
       ##~ sapi.basePath = "https://su1.3scale.net"
-      ##~ sapi.swagrVersion = "0.1a"
+      ##~ sapi.swaggerVersion = "0.1a"
       ##~ sapi.apiVersion = "1.0"
       ##
       ## ------------ DOCS COMMON -------
