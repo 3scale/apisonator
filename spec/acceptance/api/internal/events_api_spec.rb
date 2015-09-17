@@ -104,4 +104,49 @@ resource 'Events' do
       end
     end
   end
+
+  post '/events/' do
+    parameter :events, 'Events', required: false
+
+    let(:raw_post) { params.to_json }
+    let(:current_last_event_id) do
+      if ThreeScale::Backend::EventStorage.list.last
+        ThreeScale::Backend::EventStorage.list.last[:id]
+      else
+        nil
+      end
+    end
+    let(:example_events) do
+      [{ type: :first_traffic, object: first_traffic_event },
+       { type: :alert, object: alert_event }]
+    end
+
+    before do
+      if current_last_event_id
+        ThreeScale::Backend::EventStorage.delete(current_last_event_id)
+      end
+    end
+
+    context 'when some events are sent' do
+      example 'Save events' do
+        do_request(events: example_events)
+        events = ThreeScale::Backend::EventStorage.list
+
+        expect(events.size).to eq(example_events.size)
+
+        expect(events[0][:type]).to eq(example_events[0][:type].to_s)
+        expect(events[0][:object]).to eq(example_events[0][:object])
+        expect(events[1][:type]).to eq(example_events[1][:type].to_s)
+        expect(events[1][:object]).to eq(example_events[1][:object])
+
+        expect(response_status).to eq(201)
+      end
+    end
+
+    context 'when no events are sent' do
+      example_request 'Try to save events' do
+        expect(response_status).to eq(400)
+      end
+    end
+  end
 end
