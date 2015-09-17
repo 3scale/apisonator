@@ -19,6 +19,23 @@ module ThreeScale
           result = EventStorage.delete_range(params[:upto_id])
           { status: :deleted, num_events: result }.to_json
         end
+
+        if define_private_endpoints?
+          post '/' do
+            events = params[:events]
+
+            unless events
+              halt 400, { status: :error,
+                          error: 'missing parameter \'events\'' }.to_json
+            end
+
+            events.each do |event|
+              EventStorage.store(event[:type].to_sym, event[:object])
+            end
+
+            [201, headers, { status: :created }.to_json]
+          end
+        end
       end
     end
   end
