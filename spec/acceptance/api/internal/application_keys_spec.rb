@@ -19,6 +19,15 @@ resource 'Application keys' do
     let(:service_id) { '7575' }
     let(:app_id)     { '100' }
 
+    context 'with an invalid application id' do
+      example 'Getting application keys', document: false do
+        do_request(app_id: '400')
+
+        expect(response_status).to eq(404)
+        expect(response_json['error']).to eq("application not found")
+      end
+    end
+
     context 'when there are no application keys' do
       example 'Getting application keys', document: false do
         do_request
@@ -55,6 +64,15 @@ resource 'Application keys' do
     let(:app_id)     { '100' }
     let(:raw_post)   { params.to_json }
 
+    context 'with an invalid application id' do
+      example 'Trying to create an application key', document: false do
+        do_request(app_id: '400')
+
+        expect(response_status).to eq(404)
+        expect(response_json['error']).to eq("application not found")
+      end
+    end
+
     context 'with application key value' do
       let(:application_key) { { value: 'foo' } }
 
@@ -65,6 +83,8 @@ resource 'Application keys' do
     end
 
     context 'with no value for application key' do
+      before { expect(SecureRandom).to receive(:hex).and_return('random') }
+
       let(:application_key) { { } }
 
       example 'Add an application key', document: false do
@@ -72,6 +92,7 @@ resource 'Application keys' do
 
         expect(response_status).to eq(201)
         expect(response_json['status']).to eq('created')
+        expect(@app.has_key?('random')).to be_true
       end
     end
   end
@@ -83,6 +104,15 @@ resource 'Application keys' do
 
         expect(response_status).to eq(404)
         expect(response_json['status']).to eq('not_found')
+      end
+    end
+
+    context 'with an invalid application id' do
+      example 'Trying to delete an application key', document: false do
+        do_request(app_id: '400')
+
+        expect(response_status).to eq(404)
+        expect(response_json['error']).to eq("application not found")
       end
     end
 
@@ -100,6 +130,7 @@ resource 'Application keys' do
       example_request 'Delete an application key' do
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
+        expect(@app.has_key?("foo")).to be_false
       end
     end
   end

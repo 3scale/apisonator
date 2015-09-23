@@ -1,6 +1,6 @@
 require_relative '../../acceptance_spec_helper'
 
-resource 'Application keys' do
+resource 'Application Referrer Filters' do
   set_app ThreeScale::Backend::API::Internal
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
@@ -17,6 +17,15 @@ resource 'Application keys' do
 
     let(:service_id) { '7575' }
     let(:app_id)     { '100' }
+
+    context 'with an invalid application id' do
+      example 'Getting application keys' do
+        do_request(app_id: 400)
+
+        expect(response_status).to eq(404)
+        expect(response_json['error']).to eq("application not found")
+      end
+    end
 
     context 'when there are no referrer filters' do
       example 'Getting application keys' do
@@ -51,17 +60,25 @@ resource 'Application keys' do
     let(:raw_post) { params.to_json }
 
     example_request 'Create a referrer filter' do
-      status.should == 201
-      response_json['status'].should == 'created'
+      expect(response_status).to eq(201)
+      expect(response_json['status']).to eq("created")
 
       @app.referrer_filters.should == ['baz']
     end
 
-    example 'Try updating Service with invalid data' do
+    example 'Try updating a referrer filter with invalid application id' do
+      do_request app_id: '400'
+
+      expect(response_status).to eq(404)
+      expect(response_json['error']).to eq("application not found")
+    end
+
+
+    example 'Try updating a referrer filter with invalid data' do
       do_request referrer_filter: ''
 
-      status.should == 400
-      response_json['error'].should =~ /referrer filter can't be blank/
+      expect(response_status).to eq(400)
+      expect(response_json['error']).to eq("referrer filter can't be blank")
     end
   end
 
@@ -81,6 +98,20 @@ resource 'Application keys' do
       end
     end
 
+    context 'when there is a filter with special chars' do
+      before do
+        @value = 'chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm'
+        @app.create_referrer_filter(@value)
+      end
+
+      example 'Deleting a filter with special chars' do
+        do_request filter: Base64.urlsafe_encode64(@value)
+
+        expect(response_status).to eq(200)
+        expect(response_json['status']).to eq('deleted')
+      end
+    end
+
     context 'when there are referrer filters' do
       before do
         @app.create_referrer_filter('doopah')
@@ -93,4 +124,3 @@ resource 'Application keys' do
     end
   end
 end
-
