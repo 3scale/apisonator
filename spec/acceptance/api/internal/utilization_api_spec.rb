@@ -229,6 +229,65 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
         end
       end
 
+      # The stats field is a bit tricky, that is why I test it in a separated
+      # context. When the Transactor reports some transactions, they might not
+      # be immediately saved. As indicated in Alerts#update_utilization, the
+      # new transactions are only saved in the stats DB if at least an hour has
+      # passed since the latest stats DB update. Transactions that happen
+      # during the same hour are aggregated.
+      # Another important point is that the timestamps that we get in stats
+      # use this format: XXXX-XX-XX XX:00:00 UTC (minutes and seconds are 0)
+      #
+      # In order to test this, I report some transactions from 3h ago,
+      # then from 2h ago, and finally from 1h ago. At this point, the
+      # transactions from 2 and 3 hours ago are saved, but not the ones from
+      # 1 hour ago (we have not reported any other transactions so the stats
+      # DB has not been updated)
+      context 'with stats' do
+        let(:current_time) { Time.new(2015, 1, 10, 6, 0, 0) }
+        let(:hits_transaction_1h_ago) { 10 }
+        let(:hits_transaction_2h_ago) { 20 }
+        let(:hits_transaction_3h_ago) { 30 }
+        let(:transaction_batches) do
+          [{ 0 => { app_id: app_id, usage: { hits: hits_transaction_1h_ago } } },
+           { 0 => { app_id: app_id, usage: { hits: hits_transaction_2h_ago } } },
+           { 0 => { app_id: app_id, usage: { hits: hits_transaction_3h_ago } } }
+          ]
+        end
+
+        before do
+          ThreeScale::Backend::Worker.new
+          with_resque do
+            [3, 2, 1].each do |hours_ago|
+              Timecop.freeze(current_time - hours_ago*60*60) do
+                ThreeScale::Backend::Transactor.report(
+                    provider_key, service_id, transaction_batches[hours_ago - 1])
+                ThreeScale::Backend::Transactor.process_batch(0, all: true)
+              end
+            end
+          end
+        end
+
+        example_request 'Get utilization' do
+          utilization = response_json['utilization']
+          stats = utilization['stats']
+
+          # Careful when comparing the 'value' field. In this case, we are
+          # closer to the daily limit than the monthly limit. That is why
+          # 'value' contains hits per day.
+          expect(stats[0]['timestamp'])
+              .to eq((current_time - 3*60*60).getutc.to_s)
+          expect(stats[0]['usage'])
+              .to eq(hits_transaction_3h_ago)
+          expect(stats[1]['timestamp'])
+              .to eq((current_time - 2*60*60).getutc.to_s)
+          expect(stats[1]['usage'])
+              .to eq(hits_transaction_2h_ago + hits_transaction_3h_ago)
+
+          expect(response_status).to eq(200)
+        end
+      end
+
       context 'with application with unlimited plan' do
         example 'Get utilization' do
           do_request(app_id: unlimited_app_id)
