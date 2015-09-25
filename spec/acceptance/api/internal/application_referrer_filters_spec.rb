@@ -5,9 +5,12 @@ resource 'Application Referrer Filters' do
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
+  let(:service_id) { '7575' }
+  let(:app_id)     { '100' }
+
   before do
     @app = ThreeScale::Backend::Application.save(
-      service_id: '7575', id: '100', plan_id: '9', plan_name: 'plan',
+      service_id: service_id, id: '100', plan_id: '9', plan_name: 'plan',
       state: :active, redirect_url: 'https://3scale.net')
   end
 
@@ -15,8 +18,6 @@ resource 'Application Referrer Filters' do
     parameter :service_id, 'Service ID', required: true
     parameter :app_id, 'Application ID', required: true
 
-    let(:service_id) { '7575' }
-    let(:app_id)     { '100' }
 
     context 'with an invalid application id' do
       example 'Getting application keys' do
@@ -54,8 +55,6 @@ resource 'Application Referrer Filters' do
   post '/services/:service_id/applications/:app_id/referrer_filters' do
     parameter :referrer_filter, 'Referrer filter to create', required: true
 
-    let(:service_id) { '7575' }
-    let(:app_id) { '100' }
     let(:referrer_filter) { 'baz' }
     let(:raw_post) { params.to_json }
 
@@ -86,8 +85,6 @@ resource 'Application Referrer Filters' do
     parameter :service_id, 'Service ID', required: true
     parameter :app_id, 'Application ID', required: true
 
-    let(:service_id) { '7575' }
-    let(:app_id)     { '100' }
     let(:filter)     { 'doopah' }
 
     context 'when there are no referrer filters' do
@@ -99,13 +96,13 @@ resource 'Application Referrer Filters' do
     end
 
     context 'when there is a filter with special chars' do
+      let(:value) { 'chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm' }
       before do
-        @value = 'chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm'
-        @app.create_referrer_filter(@value)
+        @app.create_referrer_filter(value)
       end
 
       example 'Deleting a filter with special chars' do
-        do_request filter: Base64.urlsafe_encode64(@value)
+        do_request filter: Base64.urlsafe_encode64(value)
 
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
