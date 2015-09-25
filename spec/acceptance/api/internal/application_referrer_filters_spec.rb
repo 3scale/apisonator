@@ -19,9 +19,7 @@ resource 'Application keys' do
     let(:app_id)     { '100' }
 
     context 'when there are no referrer filters' do
-      example 'Getting application keys' do
-        do_request
-
+      example_request 'Getting application keys' do
         expect(response_status).to eq(200)
         expect(response_json['referrer_filters']).to eq([])
       end
@@ -75,8 +73,6 @@ resource 'Application keys' do
 
     context 'when there are no referrer filters' do
       example_request 'Trying to delete a filter' do
-        do_request
-
         expect(response_status).to eq(200)
       end
     end

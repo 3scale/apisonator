@@ -95,9 +95,7 @@ resource 'Events' do
     context 'when there are no errors to delete' do
       let(:upto_id) { 0 }
 
-      example "Delete Events by Range" do
-        do_request
-
+      example_request "Delete Events by Range" do
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
         expect(response_json['num_events']).to eq(0)
