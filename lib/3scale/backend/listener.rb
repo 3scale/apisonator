@@ -1,7 +1,4 @@
 require '3scale/backend/version'
-# TODO Remove require of base64
-# (when System switches to using internal API / Core for referrer filters
-require 'base64'
 require 'json'
 
 module ThreeScale
@@ -560,67 +557,11 @@ module ThreeScale
         builder :utilization
       end
 
-      # TODO Remove
-      get '/applications/:app_id/keys.xml' do
-        @keys = application.keys
-        builder :application_keys
-      end
-
       get '/applications/:app_id/utilization.xml' do
         ## FIXME: two ways of doing the same
         ## "/services/:service_id/applications/:app_id/utilization.xml"
         @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, application.id)
         builder :utilization
-      end
-
-      # TODO Remove
-      post '/applications/:app_id/keys.xml' do
-
-        if params[:key].nil? || params[:key].empty?
-          @key = application.create_key
-        else
-          @key = application.create_key(params[:key])
-        end
-
-        headers 'Location' => application_resource_url(application, :keys, @key)
-        status 201
-        builder :create_application_key
-      end
-
-      # TODO Remove
-      delete '/applications/:app_id/keys/:key.xml' do
-        application.delete_key(params[:key])
-        empty_response
-      end
-
-      # TODO Remove
-      # (when System switches to using internal API / Core for referrer filters
-      get '/applications/:app_id/referrer_filters.xml' do
-        @referrer_filters = application.referrer_filters
-        builder :application_referrer_filters
-      end
-
-      # TODO Remove
-      # (when System switches to using internal API / Core for referrer filters
-      post '/applications/:app_id/referrer_filters.xml' do
-        @referrer_filter = application.create_referrer_filter(params[:referrer_filter])
-
-        headers 'Location' => application_resource_url(application, :referrer_filters, @referrer_filter)
-        status 201
-        builder :create_application_referrer_filter
-      end
-
-      # TODO Remove
-      # (when System switches to using internal API / Core for referrer filters
-      delete '/applications/:app_id/referrer_filters/*.xml' do
-        referred_filter_param = params[:splat].join
-        referred_filter_name  = begin
-          Base64.urlsafe_decode64(referred_filter_param)
-        rescue ArgumentError
-          referred_filter_param
-        end
-        application.delete_referrer_filter(referred_filter_name)
-        empty_response
       end
 
       get '/check.txt' do

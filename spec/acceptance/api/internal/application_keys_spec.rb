@@ -5,8 +5,12 @@ resource 'Application keys' do
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
+  let(:service_id)     { '7575' }
+  let(:app_id)         { '100' }
+  let(:invalid_app_id) { '400' }
+
   before do
-    @app = ThreeScale::Backend::Application.save(service_id: '7575', id: '100',
+    @app = ThreeScale::Backend::Application.save(service_id: service_id, id: app_id,
                                                  plan_id: '9', plan_name: 'plan',
                                                  state: :active,
                                                  redirect_url: 'https://3scale.net')
@@ -16,8 +20,14 @@ resource 'Application keys' do
     parameter :service_id, 'Service ID', required: true
     parameter :app_id, 'Application ID', required: true
 
-    let(:service_id) { '7575' }
-    let(:app_id)     { '100' }
+    context 'with an invalid application id' do
+      example 'Getting application keys', document: false do
+        do_request(app_id: invalid_app_id)
+
+        expect(response_status).to eq(404)
+        expect(response_json['error']).to eq("application not found")
+      end
+    end
 
     context 'when there are no application keys' do
       example 'Getting application keys', document: false do
@@ -51,9 +61,16 @@ resource 'Application keys' do
     parameter :app_id, 'Application ID', required: true
     parameter :application_key, 'Application key value', required: false
 
-    let(:service_id) { '7575' }
-    let(:app_id)     { '100' }
     let(:raw_post)   { params.to_json }
+
+    context 'with an invalid application id' do
+      example 'Trying to create an application key', document: false do
+        do_request(app_id: invalid_app_id)
+
+        expect(response_status).to eq(404)
+        expect(response_json['error']).to eq("application not found")
+      end
+    end
 
     context 'with application key value' do
       let(:application_key) { { value: 'foo' } }
@@ -65,6 +82,8 @@ resource 'Application keys' do
     end
 
     context 'with no value for application key' do
+      before { expect(SecureRandom).to receive(:hex).and_return('random') }
+
       let(:application_key) { { } }
 
       example 'Add an application key', document: false do
@@ -72,6 +91,7 @@ resource 'Application keys' do
 
         expect(response_status).to eq(201)
         expect(response_json['status']).to eq('created')
+        expect(@app.has_key?('random')).to be_true
       end
     end
   end
@@ -86,6 +106,15 @@ resource 'Application keys' do
       end
     end
 
+    context 'with an invalid application id' do
+      example 'Trying to delete an application key', document: false do
+        do_request(app_id: invalid_app_id)
+
+        expect(response_status).to eq(404)
+        expect(response_json['error']).to eq("application not found")
+      end
+    end
+
     context 'with a valid application key' do
       before { @app.create_key("foo") }
 
@@ -93,13 +122,12 @@ resource 'Application keys' do
       parameter :app_id, 'Application ID', required: true
       parameter :value, 'Application key value', required: true
 
-      let(:service_id)     { '7575' }
-      let(:app_id)         { '100' }
       let(:value)          { 'foo' }
 
       example_request 'Delete an application key' do
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
+        expect(@app.has_key?("foo")).to be_false
       end
     end
   end

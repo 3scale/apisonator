@@ -1,13 +1,16 @@
 require_relative '../../acceptance_spec_helper'
 
-resource 'Application keys' do
+resource 'Application Referrer Filters' do
   set_app ThreeScale::Backend::API::Internal
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
+  let(:service_id) { '7575' }
+  let(:app_id)     { '100' }
+
   before do
     @app = ThreeScale::Backend::Application.save(
-      service_id: '7575', id: '100', plan_id: '9', plan_name: 'plan',
+      service_id: service_id, id: '100', plan_id: '9', plan_name: 'plan',
       state: :active, redirect_url: 'https://3scale.net')
   end
 
@@ -15,8 +18,15 @@ resource 'Application keys' do
     parameter :service_id, 'Service ID', required: true
     parameter :app_id, 'Application ID', required: true
 
-    let(:service_id) { '7575' }
-    let(:app_id)     { '100' }
+
+    context 'with an invalid application id' do
+      example 'Getting application keys' do
+        do_request(app_id: 400)
+
+        expect(response_status).to eq(404)
+        expect(response_json['error']).to eq("application not found")
+      end
+    end
 
     context 'when there are no referrer filters' do
       example_request 'Getting application keys' do
@@ -43,23 +53,29 @@ resource 'Application keys' do
   post '/services/:service_id/applications/:app_id/referrer_filters' do
     parameter :referrer_filter, 'Referrer filter to create', required: true
 
-    let(:service_id) { '7575' }
-    let(:app_id) { '100' }
     let(:referrer_filter) { 'baz' }
     let(:raw_post) { params.to_json }
 
     example_request 'Create a referrer filter' do
-      status.should == 201
-      response_json['status'].should == 'created'
+      expect(response_status).to eq(201)
+      expect(response_json['status']).to eq("created")
 
       @app.referrer_filters.should == ['baz']
     end
 
-    example 'Try updating Service with invalid data' do
+    example 'Try updating a referrer filter with invalid application id' do
+      do_request app_id: '400'
+
+      expect(response_status).to eq(404)
+      expect(response_json['error']).to eq("application not found")
+    end
+
+
+    example 'Try updating a referrer filter with invalid data' do
       do_request referrer_filter: ''
 
-      status.should == 400
-      response_json['error'].should =~ /referrer filter can't be blank/
+      expect(response_status).to eq(400)
+      expect(response_json['error']).to eq("referrer filter can't be blank")
     end
   end
 
@@ -67,13 +83,25 @@ resource 'Application keys' do
     parameter :service_id, 'Service ID', required: true
     parameter :app_id, 'Application ID', required: true
 
-    let(:service_id) { '7575' }
-    let(:app_id)     { '100' }
     let(:filter)     { 'doopah' }
 
     context 'when there are no referrer filters' do
       example_request 'Trying to delete a filter' do
         expect(response_status).to eq(200)
+      end
+    end
+
+    context 'when there is a filter with special chars' do
+      let(:value) { 'chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm' }
+      before do
+        @app.create_referrer_filter(value)
+      end
+
+      example 'Deleting a filter with special chars' do
+        do_request filter: Base64.urlsafe_encode64(value)
+
+        expect(response_status).to eq(200)
+        expect(response_json['status']).to eq('deleted')
       end
     end
 
@@ -89,4 +117,3 @@ resource 'Application keys' do
     end
   end
 end
-
