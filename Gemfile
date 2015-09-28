@@ -14,7 +14,7 @@ platform :ruby do
 end
 
 # Default server by platform
-gem 'puma', '= 2.13.4'
+gem 'puma', '= 2.14.0'
 
 platform :mri do
   gem 'thin', '= 1.6.3', groups: [:development, :test]

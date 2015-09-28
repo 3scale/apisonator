@@ -34,7 +34,7 @@ module ThreeScale
             # rackup file goes last
             puma_argv << [options[:config]] unless options[:config].nil?
 
-            puma_config_hack! options[:log_file], '2.13.4'
+            puma_config_hack! options[:log_file], '2.14.0'
 
             @cli = ::Puma::CLI.new(puma_argv.flatten)
 
