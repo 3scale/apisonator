@@ -49,6 +49,13 @@ module ThreeScale
             " max_value=#{max_value}" +
             " current_value=#{current_value}>"
           end
+
+          def to_h
+            { period: period,
+              metric_name: metric_name,
+              max_value: max_value,
+              current_value: current_value }
+          end
         end
 
         # This is the default field we respond with when using OAuth redirects
