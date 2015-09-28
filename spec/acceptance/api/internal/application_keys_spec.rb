@@ -9,11 +9,13 @@ resource 'Application keys' do
   let(:app_id)         { '100' }
   let(:invalid_app_id) { '400' }
 
-  before do
-    @app = ThreeScale::Backend::Application.save(service_id: service_id, id: app_id,
-                                                 plan_id: '9', plan_name: 'plan',
-                                                 state: :active,
-                                                 redirect_url: 'https://3scale.net')
+  let!(:example_app) do
+    ThreeScale::Backend::Application.save(service_id: service_id,
+                                          id: app_id,
+                                          plan_id: '9',
+                                          plan_name: 'plan',
+                                          state: :active,
+                                          redirect_url: 'https://3scale.net')
   end
 
   get '/services/:service_id/applications/:app_id/keys/' do
@@ -40,8 +42,8 @@ resource 'Application keys' do
 
     context 'when there are application keys' do
       before do
-        @app.create_key("foo")
-        @app.create_key("bar")
+        example_app.create_key("foo")
+        example_app.create_key("bar")
       end
 
       example_request 'Getting application keys' do
@@ -91,7 +93,7 @@ resource 'Application keys' do
 
         expect(response_status).to eq(201)
         expect(response_json['status']).to eq('created')
-        expect(@app.has_key?('random')).to be_true
+        expect(example_app.has_key?('random')).to be_true
       end
     end
   end
@@ -116,7 +118,7 @@ resource 'Application keys' do
     end
 
     context 'with a valid application key' do
-      before { @app.create_key("foo") }
+      before { example_app.create_key("foo") }
 
       parameter :service_id, 'Service ID', required: true
       parameter :app_id, 'Application ID', required: true
@@ -127,7 +129,7 @@ resource 'Application keys' do
       example_request 'Delete an application key' do
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
-        expect(@app.has_key?("foo")).to be_false
+        expect(example_app.has_key?("foo")).to be_false
       end
     end
   end

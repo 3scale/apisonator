@@ -8,10 +8,13 @@ resource 'Application Referrer Filters' do
   let(:service_id) { '7575' }
   let(:app_id)     { '100' }
 
-  before do
-    @app = ThreeScale::Backend::Application.save(
-      service_id: service_id, id: '100', plan_id: '9', plan_name: 'plan',
-      state: :active, redirect_url: 'https://3scale.net')
+  let!(:example_app) do
+    ThreeScale::Backend::Application.save(service_id: service_id,
+                                          id: '100',
+                                          plan_id: '9',
+                                          plan_name: 'plan',
+                                          state: :active,
+                                          redirect_url: 'https://3scale.net')
   end
 
   get '/services/:service_id/applications/:app_id/referrer_filters' do
@@ -37,8 +40,8 @@ resource 'Application Referrer Filters' do
 
     context 'when there are referrer filters' do
       before do
-        @app.create_referrer_filter('foo')
-        @app.create_referrer_filter('bar')
+        example_app.create_referrer_filter('foo')
+        example_app.create_referrer_filter('bar')
       end
 
       example_request 'Getting referrer filters' do
@@ -60,7 +63,7 @@ resource 'Application Referrer Filters' do
       expect(response_status).to eq(201)
       expect(response_json['status']).to eq("created")
 
-      @app.referrer_filters.should == ['baz']
+      example_app.referrer_filters.should == ['baz']
     end
 
     example 'Try updating a referrer filter with invalid application id' do
@@ -94,7 +97,7 @@ resource 'Application Referrer Filters' do
     context 'when there is a filter with special chars' do
       let(:value) { 'chrome-extension://fdmmgilgnpjigdojojpjoooidkmcomcm' }
       before do
-        @app.create_referrer_filter(value)
+        example_app.create_referrer_filter(value)
       end
 
       example 'Deleting a filter with special chars' do
@@ -107,7 +110,7 @@ resource 'Application Referrer Filters' do
 
     context 'when there are referrer filters' do
       before do
-        @app.create_referrer_filter('doopah')
+        example_app.create_referrer_filter('doopah')
       end
 
       example_request 'Deleting a filter' do

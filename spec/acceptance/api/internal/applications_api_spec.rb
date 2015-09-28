@@ -7,10 +7,12 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
 
   before do
     ThreeScale::Backend::Application.delete('7575', '100') rescue nil
-    @app = ThreeScale::Backend::Application.save(service_id: '7575', id: '100',
-                                                 plan_id: '9', plan_name: 'plan',
-                                                 state: :active,
-                                                 redirect_url: 'https://3scale.net')
+    ThreeScale::Backend::Application.save(service_id: '7575',
+                                          id: '100',
+                                          plan_id: '9',
+                                          plan_name: 'plan',
+                                          state: :active,
+                                          redirect_url: 'https://3scale.net')
   end
 
   get '/services/:service_id/applications/:id' do
