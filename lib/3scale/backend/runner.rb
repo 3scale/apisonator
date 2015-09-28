@@ -15,6 +15,7 @@ module ThreeScale
         myopts, serveropts = ARGV.join(' ').split(' -- ')
         command, options = parse!(myopts ? myopts.split : [])
         options[:argv] = serveropts ? serveropts.split : []
+        options[:original_argv] = ARGV.dup
         send command, options
       end
 
