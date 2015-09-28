@@ -13,27 +13,12 @@ module ThreeScale
         end
 
         get '/' do |service_id, app_id|
-          app_utilization = Transactor.utilization(service_id, app_id)
+          utilization = Transactor.utilization(service_id, app_id)
 
-          usage_report = app_utilization[0].map(&:to_h)
-
-          max_usage_report = max_utilization = nil
-          unless usage_report.empty?
-            max_usage_report = app_utilization[1].to_h
-            max_utilization = app_utilization[2]
-          end
-
-          stats = app_utilization[3].map do |stats_entry|
-            timestamp, usage = stats_entry.split(',')
-            { timestamp: timestamp, usage: usage.to_i }
-          end
-
-          { status: :found,
-            utilization: {
-              usage_report: usage_report,
-              max_usage_report: max_usage_report,
-              max_utilization: max_utilization,
-              stats: stats } }.to_json
+          # app_utilization is an Array with 4 elements. We just want need to
+          # return the first one as it is the only used in multi-tenant.
+          usage_reports = utilization[0].map(&:to_h)
+          { status: :found, utilization: usage_reports }.to_json
         end
       end
     end

@@ -22,9 +22,7 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
   let(:non_existing_app_id) { zero_limits_app_id.to_i.succ.to_s }
 
   # Plans
-  let(:test_plan) do
-    { id: '3333', name: 'my_plan' }
-  end
+  let(:test_plan) { { id: '3333', name: 'my_plan' } }
   let(:no_limits_plan) do
     { id: test_plan[:id].to_i.succ.to_s, name: 'no_limits' }
   end
@@ -33,7 +31,7 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
   end
 
   # Applications
-  let(:test_application) do
+  let(:test_app) do
     { service_id: service_id,
       id: app_id,
       state: :active,
@@ -41,7 +39,7 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
       plan_name: test_plan[:name] }
   end
 
-  let(:unlimited_plan_application) do
+  let(:unlimited_plan_app) do
     { service_id: service_id,
       id: unlimited_app_id,
       state: :active,
@@ -49,7 +47,7 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
       plan_name: no_limits_plan[:name] }
   end
 
-  let(:zero_limits_plan_application) do
+  let(:zero_limits_plan_app) do
     { service_id: service_id,
       id: zero_limits_app_id,
       state: :active,
@@ -89,6 +87,20 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
        month: 0 }]
   end
 
+  before do
+    ThreeScale::Backend::Service.save!(provider_key: provider_key,
+                                       id: service_id)
+    ThreeScale::Backend::TransactionStorage.delete_all(service_id)
+
+    [test_app, unlimited_plan_app, zero_limits_plan_app].each do |app|
+      ThreeScale::Backend::Application.save(app)
+    end
+
+    test_metrics.each { |metric| ThreeScale::Backend::Metric.save(metric) }
+    test_usage_limits.each { |limit| ThreeScale::Backend::UsageLimit.save(limit) }
+    usage_limits_with_zeros.each { |limit| ThreeScale::Backend::UsageLimit.save(limit) }
+  end
+
   def check_report(actual_report, expected_report)
     expect(actual_report['period']).to eq(expected_report[:period])
     expect(actual_report['metric_name']).to eq(expected_report[:metric_name])
@@ -100,230 +112,78 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
     parameter :service_id, 'Service ID', required: true
     parameter :app_id, 'Application ID', required: true
 
-    before do
-      ThreeScale::Backend::Service.save!(provider_key: provider_key,
-                                         id: service_id)
-      ThreeScale::Backend::TransactionStorage.delete_all(service_id)
-      ThreeScale::Backend::Application.save(test_application)
-      ThreeScale::Backend::Application.save(unlimited_plan_application)
-      ThreeScale::Backend::Application.save(zero_limits_plan_application)
-      test_metrics.each { |metric| ThreeScale::Backend::Metric.save(metric) }
-      test_usage_limits.each { |limit| ThreeScale::Backend::UsageLimit.save(limit) }
-      usage_limits_with_zeros.each { |limit| ThreeScale::Backend::UsageLimit.save(limit) }
+    context 'with application with limited plan' do
+      let(:hits_transaction_1) { 50 }
+      let(:hits_transaction_2) { 30 }
+      let(:foos_transaction_3) { 100 }
+      let(:test_transactions) do
+        { 0 => { app_id: app_id,
+                 usage: { hits: hits_transaction_1 },
+                 timestamp: Time.now.to_s },
+          1 => { app_id: app_id,
+                 usage: { hits: hits_transaction_2 },
+                 timestamp: Time.now.to_s },
+          2 => { app_id: app_id,
+                 usage: { foos: foos_transaction_3 },
+                 timestamp: Time.now.to_s } }
+      end
+
+      before do
+        ThreeScale::Backend::Worker.new
+        with_resque do
+          ThreeScale::Backend::Transactor.report(
+              provider_key, service_id, test_transactions)
+          ThreeScale::Backend::Transactor.process_batch(0, all: true)
+        end
+      end
+
+      example_request 'Get utilization' do
+        utilization = response_json['utilization']
+        expect(utilization.size).to eq(test_usage_limits.size)
+
+        check_report(utilization[0],
+                     { period: 'month',
+                       metric_name: 'hits',
+                       max_value: hits_monthly_limit,
+                       current_value: hits_transaction_1 + hits_transaction_2 })
+
+        check_report(utilization[1],
+                     { period: 'day',
+                       metric_name: 'hits',
+                       max_value: hits_daily_limit,
+                       current_value: hits_transaction_1 + hits_transaction_2 })
+
+        check_report(utilization[2],
+                     { period: 'day',
+                       metric_name: 'foos',
+                       max_value: foos_daily_limit,
+                       current_value: foos_transaction_3})
+
+        expect(response_status).to eq(200)
+      end
     end
 
-    context 'with valid service and app IDs' do
-      context 'max usage is day' do
-        let(:hits_transaction_1) { 50 }
-        let(:hits_transaction_2) { 30 }
-        let(:foos_transaction_3) { 100 }
-        let(:test_transactions) do
-          { 0 => { app_id: app_id,
-                   usage: { hits: hits_transaction_1 },
-                   timestamp: Time.now.to_s },
-            1 => { app_id: app_id,
-                   usage: { hits: hits_transaction_2 },
-                   timestamp: Time.now.to_s },
-            2 => { app_id: app_id,
-                   usage: { foos: foos_transaction_3 },
-                   timestamp: Time.now.to_s } }
-        end
-
-        before do
-          ThreeScale::Backend::Worker.new
-          with_resque do
-            ThreeScale::Backend::Transactor.report(
-                provider_key, service_id, test_transactions)
-            ThreeScale::Backend::Transactor.process_batch(0, all: true)
-          end
-        end
-
-        example_request 'Get utilization' do
-          utilization = response_json['utilization']
-
-          # Check usage reports
-          usage_reports = utilization['usage_report']
-          expect(usage_reports.size).to eq(test_usage_limits.size)
-
-          check_report(usage_reports[0],
-                       { period: 'month',
-                         metric_name: 'hits',
-                         max_value: hits_monthly_limit,
-                         current_value: hits_transaction_1 + hits_transaction_2 })
-
-          check_report(usage_reports[1],
-                       { period: 'day',
-                         metric_name: 'hits',
-                         max_value: hits_daily_limit,
-                         current_value: hits_transaction_1 + hits_transaction_2 })
-
-          check_report(usage_reports[2],
-                       { period: 'day',
-                         metric_name: 'foos',
-                         max_value: foos_daily_limit,
-                         current_value: foos_transaction_3})
-
-          # Check max usage report
-          check_report(utilization['max_usage_report'],
-                       { period: 'day',
-                         metric_name: 'hits',
-                         max_value: hits_daily_limit,
-                         current_value: hits_transaction_1 + hits_transaction_2 })
-
-          # Check max utilization
-          total_hits_registered = hits_transaction_1 + hits_transaction_2
-          expect(utilization['max_utilization'])
-              .to eq(total_hits_registered*100/hits_daily_limit)
-
-          # Check stats
-          expect(utilization['stats']).to be_empty
-
-          expect(response_status).to eq(200)
-        end
+    context 'with application with unlimited plan' do
+      example 'Get utilization' do
+        do_request(app_id: unlimited_app_id)
+        expect(response_json['utilization']).to be_empty
+        expect(response_status).to eq(200)
       end
+    end
 
-      context 'max usage is month' do
-        let(:hits_transaction_1) { 0 }
-        let(:hits_transaction_2) { 100 }
-        let(:test_transactions) do
-          { 0 => { app_id: app_id,
-                   usage: { hits: hits_transaction_1 },
-                   timestamp: Time.now.to_s },
-            1 => { app_id: app_id,
-                   usage: { hits: hits_transaction_2 },
-                   timestamp: Time.now - 60*60*24 } } #yesterday
-        end
+    context 'with application with zero limits plan' do
+      example 'Get utilization' do
+        do_request(app_id: zero_limits_app_id)
+        utilization = response_json['utilization']
 
-        before do
-          ThreeScale::Backend::Worker.new
-          with_resque do
-            ThreeScale::Backend::Transactor.report(
-                provider_key, service_id, test_transactions)
-            ThreeScale::Backend::Transactor.process_batch(0, all: true)
-          end
-        end
+        expect(utilization.size).to eq(usage_limits_with_zeros.size)
+        check_report(utilization[0],
+                     { period: 'month',
+                       metric_name: 'hits',
+                       max_value: usage_limits_with_zeros[0][:month],
+                       current_value: 0 })
 
-        example_request 'Get utilization' do
-          utilization = response_json['utilization']
-
-          # Check usage reports
-          usage_reports = utilization['usage_report']
-          expect(usage_reports.size).to eq(test_usage_limits.size)
-
-          # Check max usage report
-          check_report(utilization['max_usage_report'],
-                       { period: 'month',
-                         metric_name: 'hits',
-                         max_value: hits_monthly_limit,
-                         current_value: hits_transaction_1 + hits_transaction_2 })
-
-          # Check max utilization
-          total_hits_registered = hits_transaction_1 + hits_transaction_2
-          expect(utilization['max_utilization'])
-              .to eq(total_hits_registered*100/hits_monthly_limit)
-
-          # Check stats
-          expect(utilization['stats']).to be_empty
-
-          expect(response_status).to eq(200)
-        end
-      end
-
-      # The stats field is a bit tricky, that is why I test it in a separated
-      # context. When the Transactor reports some transactions, they might not
-      # be immediately saved. As indicated in Alerts#update_utilization, the
-      # new transactions are only saved in the stats DB if at least an hour has
-      # passed since the latest stats DB update. Transactions that happen
-      # during the same hour are aggregated.
-      # Another important point is that the timestamps that we get in stats
-      # use this format: XXXX-XX-XX XX:00:00 UTC (minutes and seconds are 0)
-      #
-      # In order to test this, I report some transactions from 3h ago,
-      # then from 2h ago, and finally from 1h ago. At this point, the
-      # transactions from 2 and 3 hours ago are saved, but not the ones from
-      # 1 hour ago (we have not reported any other transactions so the stats
-      # DB has not been updated)
-      context 'with stats' do
-        let(:current_time) { Time.new(2015, 1, 10, 6, 0, 0) }
-        let(:hits_transaction_1h_ago) { 10 }
-        let(:hits_transaction_2h_ago) { 20 }
-        let(:hits_transaction_3h_ago) { 30 }
-        let(:transaction_batches) do
-          [{ 0 => { app_id: app_id, usage: { hits: hits_transaction_1h_ago } } },
-           { 0 => { app_id: app_id, usage: { hits: hits_transaction_2h_ago } } },
-           { 0 => { app_id: app_id, usage: { hits: hits_transaction_3h_ago } } }
-          ]
-        end
-
-        before do
-          ThreeScale::Backend::Worker.new
-          with_resque do
-            [3, 2, 1].each do |hours_ago|
-              Timecop.freeze(current_time - hours_ago*60*60) do
-                ThreeScale::Backend::Transactor.report(
-                    provider_key, service_id, transaction_batches[hours_ago - 1])
-                ThreeScale::Backend::Transactor.process_batch(0, all: true)
-              end
-            end
-          end
-        end
-
-        example_request 'Get utilization' do
-          utilization = response_json['utilization']
-          stats = utilization['stats']
-
-          # Careful when comparing the 'value' field. In this case, we are
-          # closer to the daily limit than the monthly limit. That is why
-          # 'value' contains hits per day.
-          expect(stats[0]['timestamp'])
-              .to eq((current_time - 3*60*60).getutc.to_s)
-          expect(stats[0]['usage'])
-              .to eq(hits_transaction_3h_ago)
-          expect(stats[1]['timestamp'])
-              .to eq((current_time - 2*60*60).getutc.to_s)
-          expect(stats[1]['usage'])
-              .to eq(hits_transaction_2h_ago + hits_transaction_3h_ago)
-
-          expect(response_status).to eq(200)
-        end
-      end
-
-      context 'with application with unlimited plan' do
-        example 'Get utilization' do
-          do_request(app_id: unlimited_app_id)
-          utilization = response_json['utilization']
-          expect(utilization['usage_report']).to be_empty
-          expect(utilization['max_usage_report']).to be_nil
-          expect(utilization['max_utilization']).to be_nil
-          expect(utilization['stats']).to be_empty
-          expect(response_status).to eq(200)
-        end
-      end
-
-      context 'with application with zero limits plan' do
-        example 'Get utilization' do
-          do_request(app_id: zero_limits_app_id)
-          utilization = response_json['utilization']
-          usage_reports = utilization['usage_report']
-
-          expect(usage_reports.size).to eq(1)
-          check_report(usage_reports[0],
-                       { period: 'month',
-                         metric_name: 'hits',
-                         max_value: usage_limits_with_zeros[0][:month],
-                         current_value: 0 })
-
-          check_report(utilization['max_usage_report'],
-                       { period: 'month',
-                         metric_name: 'hits',
-                         max_value: usage_limits_with_zeros[0][:month],
-                         current_value: 0 })
-
-          expect(utilization['max_utilization']).to be_zero
-          expect(utilization['stats']).to be_empty
-
-          expect(response_status).to eq(200)
-        end
+        expect(response_status).to eq(200)
       end
     end
 
