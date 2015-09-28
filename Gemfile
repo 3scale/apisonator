@@ -14,13 +14,10 @@ platform :ruby do
 end
 
 # Default server by platform
-platform :mri do
-  gem 'thin', '= 1.6.3'
-  gem 'puma', '= 2.13.4', groups: [:development, :test]
-end
+gem 'puma', '= 2.13.4'
 
-platform :jruby, :rbx do
-  gem 'puma', '= 2.13.4'
+platform :mri do
+  gem 'thin', '= 1.6.3', groups: [:development, :test]
 end
 
 group :test do
