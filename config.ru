@@ -1,4 +1,4 @@
-require '3scale/backend'
+require_relative 'lib/3scale/backend'
 
 use Airbrake::Sinatra if Airbrake.configuration.api_key
 use ThreeScale::Backend::Logger::Middleware if ThreeScale::Backend::Server.log
