@@ -112,6 +112,16 @@
 # on_worker_boot do
 #   puts 'On worker boot...'
 # end
+on_worker_boot do |_idx|
+  require_relative '../lib/3scale/backend/version'
+  title = $0.dup
+  title << " [3scale_backend #{ThreeScale::Backend::VERSION}]"
+  if Process.respond_to? :setproctitle
+    Process.setproctitle title
+  else
+    $0 = title
+  end
+end
 
 # Code to run when a worker boots to setup the process after booting
 # the app.
@@ -147,6 +157,7 @@
 #
 # If you do not specify a tag, Puma will infer it. If you do not want Puma
 # to add a tag, use an empty string.
+tag ''
 
 # Change the default timeout of workers
 #
