@@ -22,6 +22,7 @@
 # The default is "config.ru".
 #
 # rackup '/u/apps/lolcat/config.ru'
+rackup 'config.ru'
 
 # Set the environment in which the rack's app will run. The value must be a string.
 #
@@ -57,7 +58,7 @@
 #
 # The default is "false".
 #
-# quiet
+quiet
 
 # Configure "min" to be the minimum number of threads to use to answer
 # requests and "max" the maximum.
@@ -144,7 +145,7 @@ end
 # is preserved across a phased-restart. (incompatible with preload_app)
 # (off by default)
 
-# prune_bundler
+prune_bundler
 
 # Preload the application before starting the workers; this conflicts with
 # phased restart feature. (off by default)
