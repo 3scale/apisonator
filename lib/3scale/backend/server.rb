@@ -30,20 +30,6 @@ module ThreeScale
           get_server(options[:server]).send(m.to_s.tr('-', '_'), options.merge(pid: pid_file(options[:Port])))
         end
 
-        # the methods below are used by the Rack application for auth
-        def check_password(username, password)
-          username == ThreeScale::Backend::Server.auth_username &&
-            password == ThreeScale::Backend::Server.auth_password
-        end
-
-        def auth_username
-          'user'
-        end
-
-        def auth_password
-          'password'
-        end
-
         private
 
         def get_server(server_name)
