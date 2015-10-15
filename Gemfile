@@ -43,3 +43,6 @@ group :development, :test do
   gem 'pry-doc',  '~> 0.8.0'
   gem 'rspec_api_documentation', '~> 2.0.0'
 end
+
+# gems required by the runner
+gem 'gli', '~> 2.13.2', require: nil
