@@ -29,6 +29,7 @@ require 'yaml'
 require 'digest/md5'
 
 require '3scale/backend/util'
+require '3scale/backend/manifest'
 require '3scale/backend/logger'
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
@@ -68,11 +69,6 @@ module ThreeScale
   PIPELINED_SLICE_SIZE = 400
 
   module Backend
-    # Thread safety of our application. Turn this on if we ever are MT safe.
-    def self.thread_safe?
-      false
-    end
-
     def self.environment
       ENV['RACK_ENV'] || 'development'
     end
