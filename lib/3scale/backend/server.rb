@@ -15,6 +15,16 @@ module ThreeScale
           File.basename(s)[0..-4]
         end
       end
+
+      module Utils
+        def argv_add(argv, option, switch, *arguments)
+          if option
+            argv << switch
+            arguments.each { |a| argv << a }
+          end
+          argv
+        end
+      end
     end
   end
 end
