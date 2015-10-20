@@ -20,8 +20,8 @@ begin
   bundler = Gem::Specification.find_by_name('bundler', *BUNDLER_REQUIREMENTS)
   bundler_version = bundler.version
   bundle_bin = bundler.bin_file 'bundle'
-  IO.popen(%W{#{bundle_bin} install --without development test --gemfile=#{File.join rootdir, 'Gemfile'}}) do |io|
-    STDOUT.puts "Running bundler #{bundler_version} with pid #{io.pid}"
+  IO.popen(%W{#{Gem.ruby} #{bundle_bin} install --without development test --gemfile=#{File.join rootdir, 'Gemfile'}}) do |io|
+    STDOUT.puts "Running bundler #{bundler_version} at #{bundle_bin} from #{Dir.pwd} with pid #{io.pid}"
     io.each_line { |l| puts l }
   end
   raise "bundle install failed: #{$?.inspect}" unless $?.success?
