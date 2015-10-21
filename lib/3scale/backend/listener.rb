@@ -143,6 +143,15 @@ module ThreeScale
         content_type 'application/vnd.3scale-v2.0+xml'
       end
 
+      # this is an HAProxy-specific endpoint
+      # returning 200 here means we're up
+      # returning 404 makes HAProxy consider us down soon(ish)
+      # if the code persists for some HAProxy-config-specific
+      # amount of time.
+      head '/haproxy' do
+        empty_response 200
+      end
+
       def do_api_method(method_name)
         normalize_non_empty_keys!
         unless valid_key_and_usage_params?
