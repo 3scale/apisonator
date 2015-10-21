@@ -28,6 +28,7 @@ require 'yajl'
 require 'yaml'
 require 'digest/md5'
 
+require '3scale/backend/util'
 require '3scale/backend/logger'
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
@@ -69,10 +70,6 @@ module ThreeScale
   PIPELINED_SLICE_SIZE = 400
 
   module Backend
-    def self.root_dir
-      File.expand_path(__FILE__ + '/../../..')
-    end
-
     def self.environment
       ENV['RACK_ENV'] || 'development'
     end
