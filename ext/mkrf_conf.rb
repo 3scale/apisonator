@@ -1,28 +1,37 @@
 # This extension is a hack to allow gem install to take Gemfile into account.
 #
 require 'rubygems'
-require 'rubygems/command.rb'
-require 'rubygems/dependency_installer.rb'
 require 'pathname'
 
+BUNDLER_GEM = 'bundler'
 BUNDLER_REQUIREMENTS = ['~> 1.10.6']
 
-begin
-  Gem::Command.build_args = ARGV
-rescue NoMethodError
+def gem_install_bundler
+  require 'rubygems/command'
+  require 'rubygems/commands/install_command'
+  begin
+    Gem::Command.build_args = ARGV
+  rescue NoMethodError
+  end
+
+  instcmd = Gem::Commands::InstallCommand.new
+  instcmd.handle_options ['-N', BUNDLER_GEM, '--version', *BUNDLER_REQUIREMENTS]
+  begin
+    instcmd.execute
+  rescue Gem::SystemExitException => e
+    raise e unless e.exit_code.zero?
+  end
+end
+
+def get_bundler
+  Gem::Specification.find_by_name(BUNDLER_GEM, *BUNDLER_REQUIREMENTS)
 end
 
 begin
   extdir = Pathname.new(__FILE__).dirname.realpath
   rootdir = File.expand_path('..', extdir)
-  bundler = begin
-              Gem::Specification.find_by_name('bundler', *BUNDLER_REQUIREMENTS)
-            rescue Gem::LoadError
-              inst = Gem::DependencyInstaller.new
-              inst.install('bundler', *BUNDLER_REQUIREMENTS).find do |gs|
-                gs.name == 'bundler'
-              end
-            end
+  gem_install_bundler
+  bundler = get_bundler
   bundler_version = bundler.version
   bundle_bin = bundler.bin_file 'bundle'
   IO.popen(%W{#{Gem.ruby} #{bundle_bin} install --without development test --gemfile=#{File.join rootdir, 'Gemfile'}}) do |io|
