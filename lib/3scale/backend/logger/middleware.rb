@@ -37,7 +37,7 @@ module ThreeScale
           k
         end)
 
-        def initialize(app, logger=nil)
+        def initialize(app, logger=STDOUT)
           @app = app
           @logger = logger
         end
@@ -61,7 +61,7 @@ module ThreeScale
           now = Time.now.getutc
           qs  = extract_query_string(env)
 
-          logger = @logger || env[STR_RACK_ERRORS]
+          logger = @logger || env[STR_RACK_ERRORS] || STDERR
           logger.write ERROR_FORMAT % [
             env[HTTP_X_FORWARDED_FOR] || env[REMOTE_ADDR] || STR_DASH,
             env[REMOTE_USER] || STR_DASH,
@@ -84,7 +84,7 @@ module ThreeScale
           cache    = ThreeScale::Backend::Cache.stats
           memoizer = ThreeScale::Backend::Memoizer.stats
 
-          logger = @logger || env[STR_RACK_ERRORS]
+          logger = @logger || env[STR_RACK_ERRORS] || STDERR
           logger.write FORMAT % [
             env[HTTP_X_FORWARDED_FOR] || env[REMOTE_ADDR] || STR_DASH,
             env[REMOTE_USER] || STR_DASH,
