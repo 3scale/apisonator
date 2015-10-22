@@ -17,6 +17,17 @@ module ThreeScale
         @@status = { status: :ok,
                      version: { backend: ThreeScale::Backend::VERSION } }.to_json
 
+        class << self
+          USERNAME = 'user'.freeze
+          PASSWORD = 'password'.freeze
+          private_constant :USERNAME, :PASSWORD
+
+          # the method below is used by the Rack application for auth
+          def check_password(username, password)
+            username == USERNAME && password == PASSWORD
+          end
+        end
+
         before do
           content_type 'application/json'
           parse_json_params params
