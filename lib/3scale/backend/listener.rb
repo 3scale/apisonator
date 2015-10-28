@@ -143,12 +143,14 @@ module ThreeScale
         content_type 'application/vnd.3scale-v2.0+xml'
       end
 
-      # this is an HAProxy-specific endpoint
-      # returning 200 here means we're up
-      # returning 404 makes HAProxy consider us down soon(ish)
-      # if the code persists for some HAProxy-config-specific
-      # amount of time.
-      head '/haproxy' do
+      # this is an HAProxy-specific endpoint, equivalent to
+      # their '/haproxy?monitor' one, just renamed to available.
+      # returning 200 here means we're up willing to take requests.
+      # returning 404 makes HAProxy consider us down soon(ish),
+      # taking into account that usually several HAProxies contain
+      # us in their listener pool and it takes for all of them to
+      # notice before no request is received.
+      head '/available' do
         empty_response 200
       end
 
