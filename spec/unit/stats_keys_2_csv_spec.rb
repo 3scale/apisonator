@@ -234,6 +234,31 @@ describe StatsKeys2CSV do
     end
   end
 
+  context 'when the input contains N/A and an error' do
+    let(:input_line) { '"stats/metric:N/A":"1"' }
+
+    let(:stats_key_to_csv) do
+      StatsKeys2CSV.new(input: StringIO.new(input_line),
+                        output: StringIO.new,
+                        error: StringIO.new)
+    end
+
+    before do
+      stats_key_to_csv.to_csv!
+    end
+
+    it 'output is empty' do
+      output_lines = stats_key_to_csv.output.string.split("\n")
+      expect(output_lines).to be_empty
+    end
+
+    it 'error contains the line with N/A' do
+      error_lines = stats_key_to_csv.error.string.split("\n")
+      expect(error_lines.count).to eq 1
+      expect(error_lines.first).to eq input_line
+    end
+  end
+
   describe '#errored?' do
     context 'when the input contains an error' do
       let(:stats_key_to_csv) do

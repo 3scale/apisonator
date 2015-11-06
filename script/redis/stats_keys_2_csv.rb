@@ -49,16 +49,18 @@ class StatsKeys2CSV
   def to_csv!
     @input.each_line do |line|
       line.chomp!
+      @line = line.dup
+
       # some keys have things like "field1:xxx/uinstance:N/A/field3:yyy" WTF.
       line.gsub!(/:N\/A/, ':'.freeze)
-      @line = line
+
       h = line2hash line
 
       if REQUIRED_COLS.all? { |col| h.has_key?(col) } && (h.keys - ALL_COLUMNS).empty?
         output.puts gen_csv(h)
       else
         @errored = true
-        error.puts line
+        error.puts @line
       end
     end
   end
