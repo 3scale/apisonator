@@ -1,49 +1,30 @@
+require '3scale/backend/util'
+
 module ThreeScale
   module Backend
-    class Server
-      class << self
-        attr_reader :log
+    module Server
+      def self.get(server_name)
+        server_file = server_name.tr('-', '_')
+        require "3scale/backend/server/#{server_file}"
+        server_class_name = server_file.tr('_', '').capitalize
+        ThreeScale::Backend::Server.const_get server_class_name
+      end
 
-        def start(options)
-          @log = !options[:daemonize] || options[:log_file]
-
-          options[:tag] = "3scale_backend #{ThreeScale::Backend::VERSION}"
-          options[:pid] = pid_file(options[:Port])
-          options[:config] = ThreeScale::Backend.root_dir + '/config.ru'
-
-          server = get_server(options[:server]).new options
-          server.start do |srv|
-            puts ">> Starting #{options[:tag]}. Let's roll!"
-          end
-        end
-
-        def pid_file(port)
-          if ThreeScale::Backend.development?
-            "/tmp/3scale_backend_#{port}.pid"
-          else
-            "/var/run/3scale/3scale_backend_#{port}.pid"
-          end
-        end
-
-        def method_missing(m, *args, &blk)
-          options = args.first
-          get_server(options[:server]).send(m.to_s.tr('-', '_'), options.merge(pid: pid_file(options[:Port])))
-        end
-
-        private
-
-        def get_server(server_name)
-          server_name ||= :thin
-          server_name = server_name.to_s.tr('-', '_')
-          require "3scale/backend/server/#{server_name}"
-          class_name = server_name.split('_').map(&:capitalize).join
-          const_get(class_name)
-        rescue LoadError
-          require '3scale/backend/server/rack'
-          Rack
+      def self.list
+        Dir[File.join(ThreeScale::Backend::Util.root_dir, 'lib', '3scale', 'backend', 'server', '*.rb')].map do |s|
+          File.basename(s)[0..-4]
         end
       end
 
+      module Utils
+        def argv_add(argv, option, switch, *arguments)
+          if option
+            argv << switch
+            arguments.each { |a| argv << a }
+          end
+          argv
+        end
+      end
     end
   end
 end

@@ -1,4 +1,217 @@
-#! /usr/bin/env ruby
+#!/usr/bin/env ruby
+require 'gli'
 
-require '3scale/backend'
-ThreeScale::Backend::Runner.run
+class Runner
+  class << self
+    def do_exit(code, global, msg='Unknown error')
+      Dir.chdir global[:original_dir]
+      exit_now! msg, code
+    end
+
+    def verbose(global_options, out=STDOUT)
+      out.puts(yield) if global_options[:verbose] || global_options[:'dry-run']
+    end
+
+    def exec(global_options)
+      Process.exec(*yield) unless global_options[:'dry-run']
+    end
+
+
+    def build_cmdline(cmd, global_options, options, args)
+      require '3scale/backend/server'
+      server = ThreeScale::Backend::Server.get global_options[:server]
+      server.send(cmd, global_options, options, args)
+    rescue => e
+      STDERR.puts "Error: #{e.message}#{"\n" + caller_locations(0).join("\n") if global_options[:verbose]}"
+    end
+
+    def do_command(cmd, global_options, options, args)
+      argv = build_cmdline cmd, global_options, options, args
+      do_exit 1, global_options, "can't build command line" unless argv
+      argv << global_options[:'extra-args'] if global_options[:'extra-args']
+      verbose(global_options) { "Executing: #{argv.join ' '}" }
+      exec(global_options) { argv }
+    end
+
+    def add_instance_id_options(c)
+      c.desc 'TCP port number where backend listens for connections'
+      c.arg_name 'NUMBER'
+      c.default_value '3000'
+      c.flag :p, :port
+      c.desc 'Filename where backend writes its PID'
+      c.arg_name 'FILENAME'
+      c.flag :pidfile
+    end
+  end
+
+  extend GLI::App
+
+  program_desc '3scale_backend launcher'
+
+  version '1.0.0'
+
+  CONFIG_FILE = '.backend_launcher.rc.yml'
+  EXPANDED_ROOT_PATH = File.expand_path(File.join('..', '..'), __FILE__)
+
+  config_file File.join(ENV['HOME'] || File.join('', 'tmp'), CONFIG_FILE)
+
+  subcommand_option_handling :normal
+  arguments :strict
+
+  desc 'Load Bundler when running'
+  default_value true
+  switch :b, :bundler
+
+  desc 'Do not actually run anything, just print what would be done'
+  default_value false
+  switch :n, :'dry-run'
+
+  desc 'Verbose mode'
+  default_value false
+  switch :v, :verbose
+
+  desc 'Directory where the app server will expect the code to be at'
+  arg_name 'DIRNAME'
+  flag :z, :directory
+
+  desc "Application server to use with backend"
+  default_value 'puma'
+  arg_name 'SERVER'
+  flag :s, :server
+
+  desc 'Environment backend will use'
+  arg_name 'ENVIRONMENT'
+  default_value 'development'
+  flag :e, :environment
+
+  desc 'Extra command arguments'
+  arg_name 'ARGS'
+  flag :X, :'extra-args'
+
+  pre do |global, command, options, args|
+    # Pre logic here
+    # Return true to proceed; false to abort and not call the
+    # chosen command
+    # Use skips_pre before a command to skip this block
+    # on that command only
+    global[:original_dir] = Dir.pwd
+    if global[:directory]
+      Dir.chdir global[:directory]
+    end
+    if global[:bundler]
+      begin
+        require 'bundler/setup'
+        if !Bundler::SharedHelpers.in_bundle?
+          # Gemfile not found, try with relative Gemfile from us
+          ENV['BUNDLE_GEMFILE'] = File.join(EXPANDED_ROOT_PATH, 'Gemfile')
+          require 'bundler'
+          Bundler.setup
+        end
+      rescue LoadError, Bundler::BundlerError => e
+        do_exit 64, global, "Unable to meet requirements: #{e.message}"
+      end
+    end
+    # manifest loading is not strictly necessary, so make it optional
+    begin
+      require '3scale/backend/manifest'
+      global[:manifest] = ThreeScale::Backend::Manifest.report
+    rescue LoadError, NameError, NoMethodError
+    end
+    true
+  end
+
+  post do |global,command,options,args|
+    # Post logic here
+    # Use skips_post before a command to skip this
+    # block on that command only
+    Dir.chdir global[:original_dir]
+  end
+
+  on_error do |exception|
+    # Error logic here
+    # return false to skip default error handling
+    true
+  end
+
+  desc 'Shows the capabilities of backend in its manifest'
+  command :manifest do |c|
+    c.action do |global_options, options, arg|
+      manifest = global_options[:manifest]
+      do_exit 65, global_options, "Could not load manifest: #{e.message}" unless manifest
+      STDOUT.puts(manifest.map do |k, v|
+        "#{"#{k[0..19]}:".ljust(21)} #{v.inspect}"
+      end.join "\n")
+    end
+  end
+
+  desc 'Starts the backend server'
+  command :start do |c|
+    c.desc 'Filename where backend will log requests to (default: stdout)'
+    c.arg_name 'FILENAME'
+    c.flag :l, :logfile
+    c.desc 'Filename where backend will log errors to, defaulting to --logfile value'
+    c.arg_name 'FILENAME'
+    c.flag :x, :errorfile
+    c.desc 'Daemonize the server'
+    c.default_value false
+    c.switch :d, :daemonize
+    add_instance_id_options c
+
+    c.action do |global_options, options, args|
+      options[:logfile] = nil if options[:logfile] == '-'
+      options[:errorfile] ||= options[:logfile]
+      options[:errorfile] = nil if options[:errorfile] == '-'
+      do_command :start, global_options, options, args
+    end
+  end
+
+  desc 'Stops the backend server'
+  command :stop do |c|
+    add_instance_id_options c
+
+    c.action do |global_options, options, args|
+      do_command :stop, global_options, options, args
+    end
+  end
+
+  desc 'Restarts the backend server'
+  command :restart do |c|
+    add_instance_id_options c
+
+    c.desc 'Perform a phased-restart where available to avoid downtime'
+    c.default_value true
+    c.switch :"phased-restart"
+
+    c.action do |global_options, options, args|
+      do_command :restart, global_options, options, args
+    end
+  end
+
+  desc 'Prints the status of the backend server'
+  command :status do |c|
+    add_instance_id_options c
+
+    c.action do |global_options, options, args|
+      do_command :status, global_options, options, args
+    end
+  end
+
+  desc 'Prints statistics of the backend server'
+  command :stats do |c|
+    add_instance_id_options c
+
+    c.action do |global_options, options, args|
+      do_command :stats, global_options, options, args
+    end
+  end
+
+  desc 'Print extra help from the application server'
+  command :'help-server' do |c|
+    c.action do |global_options, options, args|
+      server = ThreeScale::Backend::Server.get global_options[:server]
+      server.help(global_options, options, args)
+    end
+  end
+end
+
+exit Runner.run(ARGV)

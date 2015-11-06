@@ -9,9 +9,15 @@ gemspec
 # implementations (ie. pure Ruby, java, etc).
 #
 platform :ruby do
-  gem 'thin', '= 1.6.3'
   gem 'yajl-ruby', '= 1.1.0'
   gem 'pry-byebug', '~> 3.2.0', groups: [:development, :test]
+end
+
+# Default server by platform
+gem 'puma', github: 'unleashed/puma', tag: '3scale_backend'
+
+platform :mri do
+  gem 'thin', '= 1.6.3', groups: [:development, :test]
 end
 
 group :test do
@@ -37,3 +43,6 @@ group :development, :test do
   gem 'pry-doc',  '~> 0.8.0'
   gem 'rspec_api_documentation', '~> 2.0.0'
 end
+
+# gems required by the runner
+gem 'gli', '~> 2.13.2', require: nil

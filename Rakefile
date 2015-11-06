@@ -92,7 +92,7 @@ if testable_environment?
 
   desc 'Start the backend server in development'
   task :start do
-    system "ruby -Ilib bin/3scale_backend -p #{ENV['PORT'] || 3001} start"
+    system "ruby -Ilib bin/3scale_backend start -p #{ENV['PORT'] || 3001}"
   end
 
   desc 'Start a backend_worker in development'
