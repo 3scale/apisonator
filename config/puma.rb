@@ -160,9 +160,17 @@ prune_bundler
 # to add a tag, use an empty string.
 tag ''
 
-# Change the default timeout of workers
+# Verifies that all workers have checked in to the master process within
+# the given timeout. If not the worker process will be restarted. Default
+# value is 60 seconds.
 #
 # worker_timeout 60
+
+# Change the default worker timeout for booting
+#
+# If unspecified, this defaults to the value of worker_timeout.
+#
+# worker_boot_timeout 60
 
 # === Puma control rack application ===
 
