@@ -14,7 +14,7 @@ platform :ruby do
 end
 
 # Default server by platform
-gem 'puma', github: 'unleashed/puma', tag: '3scale_backend'
+gem 'puma', '= 2.15.3'
 
 platform :mri do
   gem 'thin', '= 1.6.3', groups: [:development, :test]
