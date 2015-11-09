@@ -1,11 +1,4 @@
 GIT
-  remote: git://github.com/unleashed/puma.git
-  revision: a0900ff20702fc64852a7ef6abc75f450dd77b8e
-  tag: 3scale_backend
-  specs:
-    puma (2.14.0)
-
-GIT
   remote: git://github.com/unleashed/source2swagger.git
   revision: e7a8cb18b2d52d5f4b791fd86b19622a7df3c444
   branch: master
@@ -57,7 +50,7 @@ GEM
       descendants_tracker (~> 0.0.4)
       ice_nine (~> 0.11.0)
       thread_safe (~> 0.3, >= 0.3.1)
-    backports (3.6.7)
+    backports (3.6.6)
     builder (3.2.2)
     byebug (5.0.0)
       columnize (= 0.9.0)
@@ -132,6 +125,7 @@ GEM
     pry-doc (0.8.0)
       pry (~> 0.9)
       yard (~> 0.8)
+    puma (2.15.3)
     rack (1.6.4)
     rack-protection (1.5.3)
       rack
@@ -233,7 +227,7 @@ DEPENDENCIES
   pry (~> 0.10.1)
   pry-byebug (~> 3.2.0)
   pry-doc (~> 0.8.0)
-  puma!
+  puma (= 2.15.3)
   rack-test (~> 0.6.2)
   resque_spec (~> 0.15.0)
   resque_unit (~> 0.4.4)
