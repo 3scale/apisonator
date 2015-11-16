@@ -200,7 +200,7 @@ module ThreeScale
 
     class ServiceLoadInconsistency < Error
       def initialize(service_id, other_service_id)
-        super %(service.load_by_id with id="#{service}" loaded the service with id="#{other_service_id}")
+        super %(service.load_by_id with id="#{service_id}" loaded the service with id="#{other_service_id}")
       end
     end
 
