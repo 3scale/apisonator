@@ -35,8 +35,26 @@ module ThreeScale
       # @raise [ReportTimestampNotwithinrange] if the timestamp isn't within
       #   the valid range.
       def ensure_on_time!
-        return true if (Time.now.getutc - timestamp) <= REPORT_DEADLINE
-        fail ReportTimestampNotWithinRange, REPORT_DEADLINE
+        # Temporary change: for now, we just want to send an Airbrake
+        # notification if we detect that the timestamp is further than
+        # REPORT_DEADLINE in the past or in the future, but we want to report
+        # all transactions even if they violate that rule.
+
+        now = Time.now.getutc
+        accepted_range = (now - REPORT_DEADLINE)..(now + REPORT_DEADLINE)
+        unless accepted_range.cover?(timestamp)
+          Airbrake.notify(ReportTimestampNotWithinRange.new(REPORT_DEADLINE),
+                          error_message: "service_id: #{service_id},"\
+                           " application_id: #{application_id},"\
+                           " user_id: #{user_id},"\
+                           " current_time: #{Time.now.utc},"\
+                           " reported_time: #{timestamp}")
+        end
+        true
+
+        # Old code. We will need it once we decide to limit the timestamps:
+        # return true if (Time.now.getutc - timestamp) <= REPORT_DEADLINE
+        # fail ReportTimestampNotWithinRange, REPORT_DEADLINE
       end
     end
   end

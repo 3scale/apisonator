@@ -25,7 +25,7 @@ module ThreeScale
               transaction = Transaction.new(transaction_attrs)
 
               ## check if the timestamps is within accepted range
-              # transaction.ensure_on_time!
+              transaction.ensure_on_time!
 
               transaction
             end
