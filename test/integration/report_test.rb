@@ -81,10 +81,10 @@ class ReportTest < Test::Unit::TestCase
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id    => @application.id,
                                 :usage     => {'hits' => 1},
-                                :timestamp => '2010-05-11 13:34:42'}}
+                                :timestamp => '2010-04-22 23:59:30'}}
       Resque.run!
 
-      key = service_key(@service_id, @metric_id, :hour, '2010051113')
+      key = service_key(@service_id, @metric_id, :hour, '2010042223')
       assert_equal 1, @storage.get(key).to_i
     end
   end
@@ -95,10 +95,10 @@ class ReportTest < Test::Unit::TestCase
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id    => @application.id,
                                 :usage     => {'hits' => 1},
-                                :timestamp => '2010-05-11 11:08:25 UTC'}}
+                                :timestamp => '2010-04-22 23:59:25 UTC'}}
       Resque.run!
 
-      key = service_key(@service_id, @metric_id, :hour, '2010051111')
+      key = service_key(@service_id, @metric_id, :hour, '2010042223')
       assert_equal 1, @storage.get(key).to_i
     end
   end
@@ -109,10 +109,10 @@ class ReportTest < Test::Unit::TestCase
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id    => @application.id,
                                 :usage     => {'hits' => 1},
-                                :timestamp => '2010-05-11 11:08:25 +0200'}}
+                                :timestamp => '2010-04-22 23:55:45 +0200'}}
       Resque.run!
 
-      key = service_key(@service_id, @metric_id, :hour, '2010051109')
+      key = service_key(@service_id, @metric_id, :hour, '2010042221')
       assert_equal 1, @storage.get(key).to_i
     end
   end
@@ -123,10 +123,10 @@ class ReportTest < Test::Unit::TestCase
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id    => @application.id,
                                 :usage     => {'hits' => 1},
-                                :timestamp => '2010-05-11 11:08:25 -02:00'}}
+                                :timestamp => '2010-04-22 21:00:25 -02:00'}}
       Resque.run!
 
-      key = service_key(@service_id, @metric_id, :hour, '2010051113')
+      key = service_key(@service_id, @metric_id, :hour, '2010042223')
       assert_equal 1, @storage.get(key).to_i
     end
   end
@@ -544,6 +544,9 @@ class ReportTest < Test::Unit::TestCase
                                                    @metric_id,
                                                    :day, '20100511')).to_i
 
+    end
+
+    Timecop.freeze(Time.utc(2012, 10, 01)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2012/10/01'}}
@@ -553,11 +556,17 @@ class ReportTest < Test::Unit::TestCase
                                                    @application.id,
                                                    @metric_id,
                                                    :month, '20121001')).to_i
+    end
 
+    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2012'}}
       Resque.run!
+
+      # This part is tricky. '2012' is an invalid timestamp, so it gets set to
+      # the current timestamp. As a result, month 20121001 is not incremented,
+      # but month 20100501 is.
 
       assert_equal 1, @storage.get(application_key(@service_id,
                                                    @application.id,
