@@ -559,6 +559,10 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2012'}}
       Resque.run!
 
+      # This part is tricky. '2012' is an invalid timestamp, so it gets set to
+      # the current timestamp. As a result, month 20121001 is not incremented,
+      # but month 20100501 is.
+
       assert_equal 1, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
