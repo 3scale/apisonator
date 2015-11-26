@@ -37,7 +37,12 @@ module ThreeScale
           let(:attrs) { { timestamp: Time.now - (48 * 3600) } }
           subject { Transaction.new(attrs).ensure_on_time! }
 
-          it { expect { subject }.to raise_error(ReportTimestampNotWithinRange) }
+          # Temporary change: For now, we want to send an Airbrake notification
+          # and return true.
+          it { expect(subject).to be_true }
+
+          # Previous code to restore when we decide to limit the timestamps:
+          # it { expect { subject }.to raise_error(ReportTimestampNotWithinRange) }
         end
 
         context 'when transaction timestamp is newer than 1 day' do
