@@ -13,6 +13,7 @@ NAME = $(subst @,,$(PROJECT))-build
 all: clean build test show_bench
 
 test:
+	- mkdir $(PROJECT_PATH)/test/reports $(PROJECT_PATH)/spec/reports
 	$(RUN) --name $(NAME) $(PROJECT)
 
 pull:
