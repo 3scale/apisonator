@@ -1,7 +1,8 @@
 SHELL = ./script/make_report_time.sh
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
-PROJECT := $(notdir $(PROJECT_PATH))
+# Jenkins runs the project in .../backend/workspace in its master. Strip that.
+PROJECT := $(notdir $(subst /workspace,,$(PROJECT_PATH)))
 BENCH = bench.txt
 
 RUN = docker run --rm -v $(PROJECT_PATH)/test/reports:/home/ruby/backend/test/reports -v $(PROJECT_PATH)/spec/reports:/home/ruby/backend/spec/reports
@@ -13,6 +14,7 @@ NAME = $(subst @,,$(PROJECT))-build
 all: clean build test show_bench
 
 test:
+	- mkdir $(PROJECT_PATH)/test/reports $(PROJECT_PATH)/spec/reports
 	$(RUN) --name $(NAME) $(PROJECT)
 
 pull:
