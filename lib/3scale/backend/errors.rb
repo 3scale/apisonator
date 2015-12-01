@@ -204,6 +204,8 @@ module ThreeScale
       end
     end
 
+    # FIXME: this has to be about the only service-related error without
+    # a service id in the reported message.
     class ServiceRequiresDefaultUserPlan < Error
       def initialize
         super 'Services without the need for registered users require a default user plan'
