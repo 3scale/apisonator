@@ -145,12 +145,12 @@ namespace :stats do
 
     desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
     task :disable_storage_stats => :environment do
-      puts ThreeScale::Backend::StorageStats.disable!
+      puts ThreeScale::Backend::Stats::Storage.disable!
     end
 
     desc 'Enable stats batch processing on storage stats'
     task :enable_storage_stats => :environment do
-      puts ThreeScale::Backend::StorageStats.enable!
+      puts ThreeScale::Backend::Stats::Storage.enable!
     end
 
     desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
@@ -181,22 +181,22 @@ namespace :stats do
 
   desc 'Activate saving to storage stats.'
   task :activate_saving_to_storage_stats => :environment do
-    puts ThreeScale::Backend::StorageStats.activate!
+    puts ThreeScale::Backend::Stats::Storage.activate!
   end
 
   desc 'Deactivate saving to storage stats. Do only if the storage stats is down or acting funny. Data is still saved in redis.'
   task :deactivate_saving_to_storage_stats => :environment do
-    puts ThreeScale::Backend::StorageStats.deactivate!
+    puts ThreeScale::Backend::Stats::Storage.deactivate!
   end
 
   desc 'Are stats saving to storage stats or just piling in redis?'
   task :storage_stats_saving_active? => :environment do
-    puts ThreeScale::Backend::StorageStats.active?
+    puts ThreeScale::Backend::Stats::Storage.active?
   end
 
   desc 'Is storage stats batch processing enabled?'
   task :storage_stats_enabled? => :environment do
-    puts ThreeScale::Backend::StorageStats.enabled?
+    puts ThreeScale::Backend::Stats::Storage.enabled?
   end
 
   desc 'Process failed buckets (one by one)'
@@ -206,7 +206,7 @@ namespace :stats do
       puts "No failed buckets!"
     else
       puts "Saving bucket: #{v.first} ..."
-      ThreeScale::Backend::StorageStats.save_changed_keys(v.first)
+      ThreeScale::Backend::Stats::Storage.save_changed_keys(v.first)
       puts "Done"
     end
   end
