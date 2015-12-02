@@ -45,7 +45,7 @@ module ThreeScale
             end
 
             if service.default_user_plan_id.nil? or service.default_user_plan_name.nil?
-              raise ServiceRequiresDefaultUserPlan, service.id
+              raise ServiceRequiresDefaultUserPlan
             end
 
             attributes = {
