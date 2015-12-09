@@ -407,7 +407,7 @@ module ThreeScale
           return
         end
 
-        Transactor.report(provider_key, params[:service_id], transactions)
+        Transactor.report(provider_key, params[:service_id], transactions, response_code: 202, request: request_info)
         empty_response 202
       end
 
