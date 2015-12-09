@@ -27,59 +27,59 @@ class TransactorTest < Test::Unit::TestCase
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
+
+    @context_info = {}
+    @raw_transactions = {
+      '0' => {
+        'app_id' => @application_one.id,
+        'usage'  => { 'hits' => 1 },
+      },
+      '1' => {
+        'app_id' => @application_two.id,
+        'usage'  => { 'hits' => 1 },
+      },
+    }
   end
 
   test 'report queues transactions to report' do
     Timecop.freeze(Time.utc(2011, 12, 12, 11, 48)) do
-      Transactor.report(@provider_key, nil, '0' => {'app_id' => @application_one.id,
-                                                'usage'  => {'hits' => 1}},
-                                              '1' => {'app_id' => @application_two.id,
-                                                'usage'  => {'hits' => 1}})
+      Transactor.report(@provider_key, nil, @raw_transactions)
 
       assert_queued Transactor::ReportJob,
                     [@service_id,
-                      {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
-                      '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
-                      Time.utc(2011, 12, 12, 11, 48).to_f]
-      end
-
+                     @raw_transactions,
+                     @context_info,
+                     Time.utc(2011, 12, 12, 11, 48).to_f]
+    end
   end
 
   test 'report queues transactions to report with explicit service id' do
     Timecop.freeze(Time.utc(2011, 12, 12, 11, 48)) do
-      Transactor.report(@provider_key, @service_id, '0' => {'app_id' => @application_one.id,
-                                                'usage'  => {'hits' => 1}},
-                                              '1' => {'app_id' => @application_two.id,
-                                                'usage'  => {'hits' => 1}})
+      Transactor.report(@provider_key, @service_id, @raw_transactions)
 
       assert_queued Transactor::ReportJob,
                     [@service_id,
-                      {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
-                      '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
-                      Time.utc(2011, 12, 12, 11, 48).to_f]
+                     @raw_transactions,
+                     @context_info,
+                     Time.utc(2011, 12, 12, 11, 48).to_f]
     end
   end
 
   test 'report raises an exception when provider key is invalid' do
     assert_raise ProviderKeyInvalid do
-      Transactor.report('booo', nil, '0' => {'app_id' => @application_one.id,
-                                        'usage'  => {'hits' => 1}})
+      Transactor.report('booo', nil, Hash[*@raw_transactions.first])
     end
   end
 
   test 'report raises an exception when provider key is invalid even with a valid service id' do
     assert_raise ProviderKeyInvalid do
-      Transactor.report('booo', @service_id, '0' => {'app_id' => @application_one.id,
-                                        'usage'  => {'hits' => 1}})
+      Transactor.report('booo', @service_id, Hash[*@raw_transactions.first])
     end
   end
 
   test 'report queues backend hit' do
     Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
-      Transactor.report(@provider_key, nil, '0' => {'app_id' => @application_one.id,
-                                               'usage'  => {'hits' => 1}},
-                                       '1' => {'app_id' => @application_two.id,
-                                               'usage'  => {'hits' => 1}})
+      Transactor.report(@provider_key, nil, @raw_transactions)
 
       ## processes all the pending notifyjobs.
       Transactor.process_batch(0,{:all => true})
@@ -95,10 +95,7 @@ class TransactorTest < Test::Unit::TestCase
 
   test 'report queues backend hit with explicit service id' do
     Timecop.freeze(Time.utc(2010, 7, 29, 11, 48)) do
-      Transactor.report(@provider_key, @service_id, '0' => {'app_id' => @application_one.id,
-                                               'usage'  => {'hits' => 1}},
-                                       '1' => {'app_id' => @application_two.id,
-                                               'usage'  => {'hits' => 1}})
+      Transactor.report(@provider_key, @service_id, @raw_transactions)
 
       ## processes all the pending notifyjobs.
       Transactor.process_batch(0,{:all => true})
