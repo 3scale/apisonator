@@ -5,43 +5,23 @@ module ThreeScale
   module Backend
     module Stats
       describe BucketReader.const_get(:LatestBucketReadMarker) do
-        let(:bucket_create_interval) { 10 }
         let(:storage) { ThreeScale::Backend::Storage.instance }
 
         subject { described_class.new(storage) }
 
-        describe '#latest_bucket_read= and #latest_bucket_read' do
-          let (:bucket_name) { '20150101000000' }
-
-          it 'the latest_bucket_read can be read after being set' do
-            subject.latest_bucket_read = bucket_name
-            expect(subject.latest_bucket_read).to eq bucket_name
-          end
-        end
-
-        describe '#all_buckets' do
-          context 'when there are not any buckets' do
-            it 'returns empty' do
-              expect(subject.all_buckets).to be_empty
+        describe '#latest_bucket_read' do
+          context 'when the latest bucket read has not been set' do
+            it 'returns nil' do
+              expect(subject.latest_bucket_read).to be_nil
             end
           end
 
-          context 'when there are some buckets' do
-            let(:first_bucket_saved) { '20150101000000' }
-            let(:buckets) do
-              [first_bucket_saved,
-               (first_bucket_saved.to_i + bucket_create_interval).to_s]
-            end
-            before do
-              buckets.each do |bucket|
-                # It would be nice to have a class responsible for storing
-                # buckets so we do not have to access 'storage' directly.
-                storage.zadd(Keys.changed_keys_key, bucket.to_i, bucket)
-              end
-            end
+          context 'when the latest bucket read has been set' do
+            let (:bucket_name) { '20150101000000' }
+            before { subject.latest_bucket_read = bucket_name }
 
-            it 'returns the buckets' do
-              expect(subject.all_buckets).to eq buckets
+            it 'returns the latest bucket read' do
+              expect(subject.latest_bucket_read).to eq bucket_name
             end
           end
         end
@@ -50,68 +30,100 @@ module ThreeScale
       describe BucketReader do
         let(:bucket_create_interval) { 10 }
         let(:storage) { ThreeScale::Backend::Storage.instance }
-        let(:first_bucket_saved) { '20150101000000' }
-        let(:buckets) do
-          # Careful here if you add more. The name of the bucket is a
-          # timestamp, so it is not enough to always add
-          # bucket_create_interval. Remember to apply mod 60.
-          [first_bucket_saved,
-           (first_bucket_saved.to_i + bucket_create_interval).to_s,
-           (first_bucket_saved.to_i + 2*bucket_create_interval).to_s]
+        let(:bucket_storage) { BucketStorage.new(storage) }
+
+        # Careful here if you add more. The name of the bucket is a
+        # timestamp, so it is not enough to always add
+        # bucket_create_interval. Remember to apply mod 60.
+        let(:first_bucket) { '20150101000000' }
+        let(:second_bucket) { (first_bucket.to_i + bucket_create_interval).to_s }
+        let(:third_bucket) { (first_bucket.to_i + 2*bucket_create_interval).to_s }
+
+        let(:buckets_and_events) do
+          { first_bucket => { 'event11' => 'value11',
+                              'event12' => 'value12' },
+            second_bucket =>  { 'event21' => 'value21',
+                                'event22' => 'value22' },
+            third_bucket => { 'event31' => 'value31',
+                              'event32' => 'value32' } }
         end
 
-        subject { described_class.new(bucket_create_interval, storage) }
+        let(:current_time) { DateTime.parse(third_bucket).to_time.utc }
+
+        subject { described_class.new(bucket_create_interval, bucket_storage, storage) }
 
         let(:last_bucket_read_marker) { subject.send(:latest_bucket_read_marker) }
 
-        describe '#pending_buckets' do
-          let(:test_time) { DateTime.parse(buckets.last).to_time.utc }
-
+        describe '#pending_events_in_buckets' do
           context 'when we have not read any buckets' do
             context 'when there are no buckets' do
-              it 'returns an empty array' do
-                expect(subject.pending_buckets.to_a).to be_empty
+              it 'returns an empty hash' do
+                expect(subject.pending_events_in_buckets(current_time)).to be_empty
               end
             end
 
             context 'when there are some buckets' do
-              before do
-                buckets.each do |bucket|
-                  storage.zadd(Keys.changed_keys_key, bucket.to_i, bucket)
-                end
-              end
+              before { save_buckets_and_events(buckets_and_events) }
 
-              it 'returns all the buckets' do
-                expect(subject.pending_buckets.to_a).to eq buckets
+              it 'returns all the events in the buckets' do
+                expect(subject.pending_events_in_buckets(current_time))
+                    .to eq buckets_and_events.values.reduce(&:merge)
               end
             end
           end
 
           context 'when we have read some buckets' do
-            let (:buckets_read) { 1 }
-            let (:latest_bucket_read) { buckets[buckets_read - 1] }
-
+            let (:latest_bucket_read) { first_bucket }
+            
             before do
+              save_buckets_and_events(buckets_and_events)
               last_bucket_read_marker.latest_bucket_read = latest_bucket_read
             end
 
-            it 'returns only the buckets that we have not read yet' do
-              pending_buckets = subject.pending_buckets(test_time)
-              expect(pending_buckets.to_a).to eq buckets[buckets_read..-1]
+            it 'returns the events of the buckets that we have not read yet' do
+              expect(subject.pending_events_in_buckets(current_time))
+                  .to eq (buckets_and_events[second_bucket]
+                              .merge(buckets_and_events[third_bucket]))
             end
           end
 
           context 'when latest_bucket_read has a name that belongs to a future timestamp' do
             let (:latest_bucket_read) do
-              (buckets.last.to_i + bucket_create_interval).to_s
+              (third_bucket.to_i + bucket_create_interval).to_s
             end
 
-            before do
-              last_bucket_read_marker.latest_bucket_read = latest_bucket_read
+            before { last_bucket_read_marker.latest_bucket_read = latest_bucket_read }
+
+            it 'returns an empty hash' do
+              expect(subject.pending_events_in_buckets(current_time)).to be_empty
+            end
+          end
+
+          context 'when some of the pending buckets contain repeated keys' do
+            let(:older_bucket) { first_bucket }
+            let(:newer_bucket) { second_bucket }
+            let(:buckets_and_events) do
+              { older_bucket => { 'event11' => '10', 'event12' => '30' },
+                newer_bucket => { 'event11' => '20', 'event13' => '40' } }
             end
 
-            it 'returns an empty list' do
-              expect(subject.pending_buckets(test_time).to_a).to be_empty
+            before { save_buckets_and_events(buckets_and_events) }
+
+            it 'returns the events with their latest values' do
+              expect(subject.pending_events_in_buckets(current_time))
+                  .to eq (buckets_and_events[older_bucket]
+                              .merge(buckets_and_events[newer_bucket]))
+            end
+          end
+        end
+
+        def save_buckets_and_events(buckets_and_events)
+          buckets_and_events.each do |bucket, events|
+            bucket_storage.create_bucket(bucket)
+
+            events.each do |event_key, event_value|
+              bucket_storage.put_in_bucket(event_key, bucket)
+              storage.set(event_key, event_value)
             end
           end
         end
