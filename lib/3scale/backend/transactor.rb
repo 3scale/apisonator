@@ -18,10 +18,10 @@ module ThreeScale
       include NotifyBatcher
       extend self
 
-      def report(provider_key, service_id, transactions)
+      def report(provider_key, service_id, transactions, context_info = {})
         service = load_service!(provider_key, service_id)
 
-        report_enqueue(service.id, transactions)
+        report_enqueue(service.id, transactions, context_info)
         notify(
           provider_key,
           'transactions/create_multiple' => 1,
@@ -162,7 +162,7 @@ module ThreeScale
         end
 
         if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
+          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})
           val = usage ? usage.size : 0
           ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
           notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
@@ -282,8 +282,8 @@ module ThreeScale
         return params
       end
 
-      def report_enqueue(service_id, data)
-        Resque.enqueue(ReportJob, service_id, data, Time.now.getutc.to_f)
+      def report_enqueue(service_id, data, context_info)
+        Resque.enqueue(ReportJob, service_id, data, context_info, Time.now.getutc.to_f)
       end
 
       def notify(provider_key, usage)

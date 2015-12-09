@@ -7,7 +7,7 @@ module ThreeScale
         @queue = :priority
 
         class << self
-          def perform_logged(service_id, raw_transactions, enqueue_time)
+          def perform_logged(service_id, raw_transactions, context_info, enqueue_time)
             transactions, logs = parse_transactions(service_id, raw_transactions)
             ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
             if !logs.nil? && !logs.empty? && request_logs_storage_enabled?(service_id)
@@ -16,13 +16,13 @@ module ThreeScale
 
             [true, "#{service_id} #{transactions.size} #{logs.size}"]
           rescue Error => error
-            ErrorStorage.store(service_id, error)
+            ErrorStorage.store(service_id, error, context_info)
             [false, "#{service_id} #{error}"]
           rescue Exception => error
             if error.class == ArgumentError &&
                 error.message == "invalid byte sequence in UTF-8"
 
-              ErrorStorage.store(service_id, NotValidData.new)
+              ErrorStorage.store(service_id, NotValidData.new, context_info)
               [false, "#{service_id} #{error}"]
             else
               raise error
