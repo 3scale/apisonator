@@ -172,7 +172,7 @@ module ThreeScale
         end
       rescue ThreeScale::Backend::Error => error
         begin
-          ErrorStorage.store(service_id, error, request: request_info)
+          ErrorStorage.store(service_id, error, response_code: 403, request: request_info)
         rescue ProviderKeyInvalid
           # This happens trying to load the service id
         ensure
