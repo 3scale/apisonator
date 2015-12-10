@@ -7,23 +7,13 @@ module ThreeScale
       describe BucketStorage do
         let(:storage) { ThreeScale::Backend::Storage.instance }
         let(:bucket) { '20150101000000' }
+        let(:event_key) { 'stats/{service:11}/metric:21/day:20151207' }
 
         subject { described_class.new(storage) }
 
-        describe '#create_bucket' do
-          it 'returns true' do
-            expect(subject.create_bucket(bucket)).to be_true
-          end
-
-          it 'creates the bucket' do
-            subject.create_bucket(bucket)
-            expect(subject.all_buckets).to include bucket
-          end
-        end
-
         describe '#delete_bucket' do
           context 'when the bucket exists' do
-            before { subject.create_bucket(bucket) }
+            before { subject.put_in_bucket(event_key, bucket) }
 
             it 'returns true' do
               expect(subject.delete_bucket(bucket)).to be_true
@@ -54,7 +44,9 @@ module ThreeScale
           context 'when there are some buckets' do
             let(:buckets) { %w(20150101000000 20150101000010) }
 
-            before { buckets.each { |bucket| subject.create_bucket(bucket) } }
+            before do
+              buckets.each { |bucket| subject.put_in_bucket(event_key, bucket) }
+            end
 
             it 'returns all the buckets' do
               expect(subject.all_buckets).to eq buckets
@@ -63,19 +55,11 @@ module ThreeScale
         end
 
         describe '#put_in_bucket' do
+          let(:event_value) { '10' }
+
+          before { storage.set(event_key, event_value) }
+
           context 'when the bucket exists' do
-            let(:event_key) { 'stats/{service:11}/metric:21/day:20151207' }
-            let(:event_value) { '10' }
-
-            before do
-              subject.create_bucket(bucket)
-              storage.set(event_key, event_value)
-            end
-
-            it 'returns true' do
-              expect(subject.put_in_bucket(event_key, bucket)).to be_true
-            end
-
             it 'puts the event in the bucket' do
               subject.put_in_bucket(event_key, bucket)
               expect(subject.bucket_content_with_values(bucket))
@@ -84,11 +68,17 @@ module ThreeScale
           end
 
           context 'when the bucket does not exist' do
-            let(:event_key) { 'stats/{service:11}/metric:21/day:20151207' }
-            let(:bucket) { 'invalid_bucket_name' }
+            let(:new_bucket) { (bucket.to_i + 10).to_s }
 
-            it 'returns false' do
-              expect(subject.put_in_bucket(event_key, bucket)).to be_false
+            it 'creates the bucket' do
+              subject.put_in_bucket(event_key, new_bucket)
+              expect(subject.all_buckets).to include new_bucket
+            end
+
+            it 'puts the event in the bucket' do
+              subject.put_in_bucket(event_key, new_bucket)
+              expect(subject.bucket_content_with_values(new_bucket))
+                  .to eq ({ event_key => event_value })
             end
           end
         end
@@ -101,7 +91,6 @@ module ThreeScale
             end
 
             before do
-              subject.create_bucket(bucket)
               events.each do |event_key, event_value|
                 subject.put_in_bucket(event_key, bucket)
                 storage.set(event_key, event_value)

@@ -119,8 +119,6 @@ module ThreeScale
 
         def save_buckets_and_events(buckets_and_events)
           buckets_and_events.each do |bucket, events|
-            bucket_storage.create_bucket(bucket)
-
             events.each do |event_key, event_value|
               bucket_storage.put_in_bucket(event_key, bucket)
               storage.set(event_key, event_value)

@@ -20,10 +20,6 @@ module ThreeScale
           @storage = storage
         end
 
-        def create_bucket(bucket)
-          storage.zadd(Keys.changed_keys_key, bucket, bucket)
-        end
-
         def delete_bucket(bucket)
           storage.zrem(Keys.changed_keys_key, bucket)
         end
@@ -32,8 +28,12 @@ module ThreeScale
           storage.zrange(Keys.changed_keys_key, 0, -1)
         end
 
+        # Puts a key in a bucket. The bucket is created if it does not exist.
+        # We could have decided to only fill the bucket if it existed, but that
+        # would affect performance, because we would need to get all the
+        # existing buckets to check if the given one exists in every call.
         def put_in_bucket(event_key, bucket)
-          return false unless exists?(bucket)
+          storage.zadd(Keys.changed_keys_key, bucket, bucket)
           storage.sadd(Keys.changed_keys_bucket_key(bucket), event_key)
         end
 
@@ -53,10 +53,6 @@ module ThreeScale
         private
 
         attr_reader :storage
-
-        def exists?(bucket)
-          all_buckets.include?(bucket)
-        end
 
         def bucket_content(bucket)
           storage.smembers(Keys.changed_keys_bucket_key(bucket))
