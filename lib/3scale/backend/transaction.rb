@@ -47,6 +47,7 @@ module ThreeScale
                           error_message: "service_id: #{service_id},"\
                            " application_id: #{application_id},"\
                            " user_id: #{user_id},"\
+                           " usage: #{usage},"\
                            " current_time: #{Time.now.utc},"\
                            " reported_time: #{timestamp}")
         end
