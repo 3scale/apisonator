@@ -54,6 +54,16 @@ module ThreeScale
 
         let(:last_bucket_read_marker) { subject.send(:latest_bucket_read_marker) }
 
+        it 'raises InvalidInterval when bucket_create_interval is negative' do
+          expect{described_class.new(-1, bucket_storage, storage)}
+            .to raise_error(BucketReader::InvalidInterval)
+        end
+
+        it 'raises InvalidInterval when bucket_create_interval does not divide 60' do
+          expect{described_class.new(90, bucket_storage, storage)}
+            .to raise_error(BucketReader::InvalidInterval)
+        end
+
         describe '#pending_events_in_buckets' do
           context 'when we have not read any buckets' do
             context 'when there are no buckets' do
