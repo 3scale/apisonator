@@ -283,7 +283,7 @@ module ThreeScale
       end
 
       def report_enqueue(service_id, data, context_info)
-        Resque.enqueue(ReportJob, service_id, data, context_info, Time.now.getutc.to_f)
+        Resque.enqueue(ReportJob, service_id, data, Time.now.getutc.to_f, context_info)
       end
 
       def notify(provider_key, usage)

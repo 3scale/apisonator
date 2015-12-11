@@ -48,8 +48,8 @@ class TransactorTest < Test::Unit::TestCase
       assert_queued Transactor::ReportJob,
                     [@service_id,
                      @raw_transactions,
-                     @context_info,
-                     Time.utc(2011, 12, 12, 11, 48).to_f]
+                     Time.utc(2011, 12, 12, 11, 48).to_f,
+                     @context_info]
     end
   end
 
@@ -60,8 +60,8 @@ class TransactorTest < Test::Unit::TestCase
       assert_queued Transactor::ReportJob,
                     [@service_id,
                      @raw_transactions,
-                     @context_info,
-                     Time.utc(2011, 12, 12, 11, 48).to_f]
+                     Time.utc(2011, 12, 12, 11, 48).to_f,
+                     @context_info]
     end
   end
 

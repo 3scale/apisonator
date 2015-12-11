@@ -25,7 +25,7 @@ module Transactor
                :user_id        => nil}])
 
       Transactor::ReportJob.perform(
-        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}}}, @context_info, Time.now.getutc.to_f)
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f, @context_info)
     end
 
     test 'does not process any transaction if at least one has invalid application id' do
@@ -64,28 +64,28 @@ module Transactor
       Transactor::ReportJob.perform(
         @service_id, {'0' => {'app_id' => @application_id},
                       '1' => {'app_id' => @application_id}},
-                     @context_info,
-                     Time.now.getutc.to_f)
+                      Time.now.getutc.to_f,
+                      @context_info)
     end
 
     test 'does not raise an exception on invalid application id' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
-          @service_id, {'0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}}}, @context_info, Time.now.getutc.to_f)
+          @service_id, {'0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f, @context_info)
       end
     end
 
     test 'does not raise an exception on invalid metric' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
-          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}}}, @context_info, Time.now.getutc.to_f)
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}}}, Time.now.getutc.to_f, @context_info)
       end
     end
 
     test 'does not raise an exception on invalid usage value' do
       assert_nothing_raised do
         Transactor::ReportJob.perform(
-          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}}}, @context_info, Time.now.getutc.to_f)
+          @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}}}, Time.now.getutc.to_f, @context_info)
       end
     end
 
@@ -93,21 +93,21 @@ module Transactor
       ErrorStorage.expects(:store).with(@service_id, is_a(ApplicationNotFound), {})
 
       Transactor::ReportJob.perform(
-        @service_id, {'0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}}}, @context_info, Time.now.getutc.to_f)
+        @service_id, {'0' => {'app_id' => 'boo', 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f, @context_info)
     end
 
     test 'reports error on invalid metric' do
       ErrorStorage.expects(:store).with(@service_id, is_a(MetricInvalid), {})
 
       Transactor::ReportJob.perform(
-        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}}}, @context_info, Time.now.getutc.to_f)
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'foos' => 1}}}, Time.now.getutc.to_f, @context_info)
     end
 
     test 'reports error on invalid usage value' do
       ErrorStorage.expects(:store).with(@service_id, is_a(UsageValueInvalid), {})
 
       Transactor::ReportJob.perform(
-        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}}}, @context_info, Time.now.getutc.to_f)
+        @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}}}, Time.now.getutc.to_f, @context_info)
     end
 
     # Legacy authentication
@@ -124,7 +124,7 @@ module Transactor
                :user_id        => nil}])
 
       Transactor::ReportJob.perform(
-        @service_id, {'0' => {'user_key' => user_key, 'usage' => {'hits' => 1}}}, @context_info, Time.now.getutc.to_f)
+        @service_id, {'0' => {'user_key' => user_key, 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f, @context_info)
     end
 
 
@@ -134,7 +134,7 @@ module Transactor
       ErrorStorage.expects(:store).with(@service_id, is_a(UserKeyInvalid), {})
 
       Transactor::ReportJob.perform(
-        @service_id, {'0' => {'user_key' => 'noway', 'usage' => {'hits' => 1}}}, @context_info, Time.now.getutc.to_f)
+        @service_id, {'0' => {'user_key' => 'noway', 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f, @context_info)
     end
   end
 end

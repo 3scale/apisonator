@@ -23,7 +23,7 @@ module ThreeScale
 
             it 'rescues the exception' do
               expect {
-                ReportJob.perform(service_id, raw_transactions, context_info, enqueue_time)
+                ReportJob.perform(service_id, raw_transactions, enqueue_time, context_info)
               }.to_not raise_error
             end
           end
@@ -37,7 +37,7 @@ module ThreeScale
 
             it 'rescues the exception' do
               expect {
-                ReportJob.perform(service_id, raw_transactions, context_info, enqueue_time)
+                ReportJob.perform(service_id, raw_transactions, enqueue_time, context_info)
               }.to_not raise_error
             end
           end
@@ -51,7 +51,7 @@ module ThreeScale
 
             it 'raises the exception' do
               expect {
-                ReportJob.perform(service_id, raw_transactions, context_info, enqueue_time)
+                ReportJob.perform(service_id, raw_transactions, enqueue_time, context_info)
               }.to raise_error(Exception)
             end
           end
@@ -91,7 +91,7 @@ module ThreeScale
 
                 it 'is enqueued' do
                   expect(LogRequestJob).to have_queue_size_of(0)
-                  Transactor::ReportJob.perform(@service_id, transactions, context_info, Time.now.getutc.to_f)
+                  Transactor::ReportJob.perform(@service_id, transactions, Time.now.getutc.to_f, context_info)
                   expect(LogRequestJob).to have_queue_size_of(1)
                 end
               end
@@ -100,7 +100,7 @@ module ThreeScale
                 expect(LogRequestJob).to have_queue_size_of(0)
 
                 Transactor::ReportJob.perform(
-                  @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, context_info, Time.now.getutc.to_f)
+                  @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, Time.now.getutc.to_f, context_info)
 
                 expect(LogRequestJob).to have_queue_size_of(1)
               end
@@ -113,7 +113,7 @@ module ThreeScale
 
               it 'is not queued' do
                 Transactor::ReportJob.perform(
-                  @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, context_info, Time.now.getutc.to_f)
+                  @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, Time.now.getutc.to_f, context_info)
                 expect(LogRequestJob).to have_queue_size_of(0)
               end
             end

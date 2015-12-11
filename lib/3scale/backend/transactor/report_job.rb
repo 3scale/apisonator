@@ -7,7 +7,7 @@ module ThreeScale
         @queue = :priority
 
         class << self
-          def perform_logged(service_id, raw_transactions, context_info, enqueue_time)
+          def perform_logged(service_id, raw_transactions, enqueue_time, context_info = {})
             transactions, logs = parse_transactions(service_id, raw_transactions)
             ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
             if !logs.nil? && !logs.empty? && request_logs_storage_enabled?(service_id)
@@ -30,6 +30,10 @@ module ThreeScale
           end
 
           private
+
+          def enqueue_time
+            @args[2]
+          end
 
           def parse_transactions(service_id, raw_transactions)
             transactions = []
