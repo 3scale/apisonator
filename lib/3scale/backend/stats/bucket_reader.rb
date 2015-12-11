@@ -43,14 +43,20 @@ module ThreeScale
           @latest_bucket_read_marker = LatestBucketReadMarker.new(storage)
         end
 
+        # Returns the pending events and the bucket of the most recent of the
+        # events sent. This allows the caller to call latest_bucket_read= when
+        # it has processed all the events.
         def pending_events_in_buckets(end_time_utc = Time.now.utc)
           # We can find the same key in different buckets. The reason is that
           # we create a new bucket every few seconds, a given
           # {service, app, metric, period, timestamp} could be updated several
           # times in an hour if period was 'hour', for example.
-          pending_buckets(end_time_utc).inject({}) do |res, pending_bucket|
+          pending_buckets = pending_buckets(end_time_utc).to_a
+          events = pending_buckets.inject({}) do |res, pending_bucket|
             res.merge!(bucket_storage.bucket_content_with_values(pending_bucket))
           end
+
+          { events: events, latest_bucket: pending_buckets.last }
         end
 
         def latest_bucket_read=(latest_bucket_read)

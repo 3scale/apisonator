@@ -67,17 +67,19 @@ module ThreeScale
         describe '#pending_events_in_buckets' do
           context 'when we have not read any buckets' do
             context 'when there are no buckets' do
-              it 'returns an empty hash' do
-                expect(subject.pending_events_in_buckets(current_time)).to be_empty
+              it 'returns a hash without events and with latest_bucket set to nil' do
+                expect(subject.pending_events_in_buckets(current_time))
+                    .to eq ({ events: {}, latest_bucket: nil })
               end
             end
 
             context 'when there are some buckets' do
               before { save_buckets_and_events(buckets_and_events) }
 
-              it 'returns all the events in the buckets' do
+              it 'returns a hash with all the events and the latest bucket read' do
                 expect(subject.pending_events_in_buckets(current_time))
-                    .to eq buckets_and_events.values.reduce(&:merge)
+                    .to eq ({ events: buckets_and_events.values.reduce(&:merge),
+                              latest_bucket: third_bucket })
               end
             end
           end
@@ -90,10 +92,11 @@ module ThreeScale
               last_bucket_read_marker.latest_bucket_read = latest_bucket_read
             end
 
-            it 'returns the events of the buckets that we have not read yet' do
+            it 'a hash with the pending events and the latest bucket read' do
               expect(subject.pending_events_in_buckets(current_time))
-                  .to eq (buckets_and_events[second_bucket]
-                              .merge(buckets_and_events[third_bucket]))
+                  .to eq ({ events: buckets_and_events[second_bucket]
+                                        .merge(buckets_and_events[third_bucket]),
+                            latest_bucket: third_bucket })
             end
           end
 
@@ -104,8 +107,9 @@ module ThreeScale
 
             before { last_bucket_read_marker.latest_bucket_read = latest_bucket_read }
 
-            it 'returns an empty hash' do
-              expect(subject.pending_events_in_buckets(current_time)).to be_empty
+            it 'returns a hash without events and with latest_bucket set to nil' do
+              expect(subject.pending_events_in_buckets(current_time))
+                  .to eq ({ events: {}, latest_bucket: nil })
             end
           end
 
@@ -119,10 +123,11 @@ module ThreeScale
 
             before { save_buckets_and_events(buckets_and_events) }
 
-            it 'returns the events with their latest values' do
+            it 'returns a hash with the latest values of the events and the latest bucket read' do
               expect(subject.pending_events_in_buckets(current_time))
-                  .to eq (buckets_and_events[older_bucket]
-                              .merge(buckets_and_events[newer_bucket]))
+                  .to eq ({ events: buckets_and_events[older_bucket]
+                                        .merge(buckets_and_events[newer_bucket]),
+                            latest_bucket: newer_bucket })
             end
           end
         end
