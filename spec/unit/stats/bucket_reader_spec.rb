@@ -127,6 +127,16 @@ module ThreeScale
           end
         end
 
+        describe '#latest_bucket_read=' do
+          let(:latest_bucket_read) { '20150101000000' }
+          let(:last_bucket_read_marker) { subject.send(:latest_bucket_read_marker) }
+
+          it 'sets the latest bucket read correctly' do
+            subject.latest_bucket_read = latest_bucket_read
+            expect(last_bucket_read_marker.latest_bucket_read).to eq latest_bucket_read
+          end
+        end
+
         def save_buckets_and_events(buckets_and_events)
           buckets_and_events.each do |bucket, events|
             events.each do |event_key, event_value|

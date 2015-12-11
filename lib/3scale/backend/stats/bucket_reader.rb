@@ -53,6 +53,10 @@ module ThreeScale
           end
         end
 
+        def latest_bucket_read=(latest_bucket_read)
+          latest_bucket_read_marker.latest_bucket_read = latest_bucket_read
+        end
+
         private
 
         attr_reader :bucket_create_interval, :bucket_storage, :latest_bucket_read_marker
