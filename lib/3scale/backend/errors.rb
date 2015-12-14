@@ -9,6 +9,11 @@ module ThreeScale
         xml.target!
       end
 
+      # Note: DON'T change this to http_status; Sinatra will pick it up and break!
+      def http_code
+        403
+      end
+
       def code
         self.class.code
       end
@@ -26,8 +31,17 @@ module ThreeScale
       end
     end
 
-    NotFound = Class.new(Error)
-    Invalid  = Class.new(Error)
+    class NotFound < Error
+      def http_code
+        404
+      end
+    end
+
+    class Invalid < Error
+      def http_code
+        422
+      end
+    end
 
     class ApplicationKeyInvalid < Error
       def initialize(key)
