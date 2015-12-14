@@ -19,6 +19,10 @@ module ThreeScale
 
       class << self
 
+        def token_too_big?(token)
+          token.size > MAXIMUM_TOKEN_SIZE
+        end
+
         # Creates OAuth Access Token association with the Application.
         #
         # Returns false in case of invalid params (negative TTL
@@ -27,7 +31,7 @@ module ThreeScale
         def create(service_id, app_id, token, user_id, ttl = nil)
           ##return false unless token =~ /\A(\w|-)+\Z/
           ##anything can go on an access token
-          return false if token.nil? || token.empty? || !token.is_a?(String) || token.size > MAXIMUM_TOKEN_SIZE
+          return false if token.nil? || token.empty? || !token.is_a?(String) || token_too_big?(token)
 
           key = token_key(service_id, token)
 
