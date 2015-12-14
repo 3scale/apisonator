@@ -9,18 +9,12 @@ module Rack
 
     def call(env)
       @app.call(env)
-    rescue TypeError => e
-      respond_with 400, prepare_body(ThreeScale::Backend::BadRequest.new.to_xml, env)
-    rescue ThreeScale::Backend::Invalid => e
-      delete_sinatra_error! env
-      respond_with 422, prepare_body(e.to_xml, env)
-    rescue ThreeScale::Backend::NotFound => e
-      delete_sinatra_error! env
-      respond_with 404, prepare_body(e.to_xml, env)
     rescue ThreeScale::Backend::Error => e
       delete_sinatra_error! env
-      respond_with 403, prepare_body(e.to_xml, env)
-    rescue Rack::Utils::InvalidParameterError => e
+      respond_with e.http_code, prepare_body(e.to_xml, env)
+    rescue TypeError
+      respond_with 400, prepare_body(ThreeScale::Backend::BadRequest.new.to_xml, env)
+    rescue Rack::Utils::InvalidParameterError
       delete_sinatra_error! env
       respond_with 400, ThreeScale::Backend::NotValidData.new.to_xml
     rescue Exception => e
