@@ -17,7 +17,7 @@ module ThreeScale
           end
 
           context 'when the latest bucket read has been set' do
-            let (:bucket_name) { '20150101000000' }
+            let(:bucket_name) { '20150101000000' }
             before { subject.latest_bucket_read = bucket_name }
 
             it 'returns the latest bucket read' do
@@ -48,7 +48,16 @@ module ThreeScale
                               'event32' => 'value32' } }
         end
 
-        let(:current_time) { DateTime.parse(third_bucket).to_time.utc }
+        let(:backup_seconds_read_bucket) do
+          described_class.const_get(:BACKUP_SECONDS_READ_BUCKET)
+        end
+
+        # We define 'current_time' so we know that the most recent bucket that
+        # we have defined ('third_bucket') is closed, meaning that it will not
+        # receive any more events.
+        let(:current_time) do
+          DateTime.parse(third_bucket).to_time.utc + backup_seconds_read_bucket
+        end
 
         subject { described_class.new(bucket_create_interval, bucket_storage, storage) }
 
@@ -73,7 +82,7 @@ module ThreeScale
               end
             end
 
-            context 'when there are some buckets' do
+            context 'when there are some buckets and all of them are closed' do
               before { save_buckets_and_events(buckets_and_events) }
 
               it 'returns a hash with all the events and the latest bucket read' do
@@ -82,10 +91,22 @@ module ThreeScale
                               latest_bucket: third_bucket })
               end
             end
+
+            context 'when there are some buckets but not all of them are closed' do
+              let(:current_time) { DateTime.parse(second_bucket).to_time.utc }
+
+              before { save_buckets_and_events(buckets_and_events) }
+
+              it 'returns a hash with the events from closed buckets and the latest bucket read' do
+                expect(subject.pending_events_in_buckets(current_time))
+                    .to eq ({ events: buckets_and_events[first_bucket],
+                              latest_bucket: first_bucket })
+              end
+            end
           end
 
           context 'when we have read some buckets' do
-            let (:latest_bucket_read) { first_bucket }
+            let(:latest_bucket_read) { first_bucket }
             
             before do
               save_buckets_and_events(buckets_and_events)
@@ -100,8 +121,24 @@ module ThreeScale
             end
           end
 
+          context 'when not enough time has passed to be sure that a bucket is closed' do
+            let(:latest_bucket_read) { first_bucket }
+            let(:current_time) { DateTime.parse(third_bucket).to_time.utc }
+
+            before do
+              save_buckets_and_events(buckets_and_events)
+              last_bucket_read_marker.latest_bucket_read = latest_bucket_read
+            end
+
+            it 'returns a hash without the events of the bucket that is not closed yet' do
+              expect(subject.pending_events_in_buckets(current_time))
+                  .to eq ({ events: buckets_and_events[second_bucket],
+                            latest_bucket: second_bucket })
+            end
+          end
+
           context 'when latest_bucket_read has a name that belongs to a future timestamp' do
-            let (:latest_bucket_read) do
+            let(:latest_bucket_read) do
               (third_bucket.to_i + bucket_create_interval).to_s
             end
 
@@ -116,6 +153,9 @@ module ThreeScale
           context 'when some of the pending buckets contain repeated keys' do
             let(:older_bucket) { first_bucket }
             let(:newer_bucket) { second_bucket }
+            let(:current_time) do
+              DateTime.parse(newer_bucket).to_time.utc + backup_seconds_read_bucket
+            end
             let(:buckets_and_events) do
               { older_bucket => { 'event11' => '10', 'event12' => '30' },
                 newer_bucket => { 'event11' => '20', 'event13' => '40' } }

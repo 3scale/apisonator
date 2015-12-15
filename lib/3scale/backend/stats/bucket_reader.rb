@@ -30,6 +30,18 @@ module ThreeScale
         end
         private_constant :LatestBucketReadMarker
 
+        # Before we read and mark a bucket as read, we need to make sure that
+        # it will not receive more events. Otherwise, there is the risk that
+        # we will miss some events.
+        # Buckets are created every 'bucket_create_interval' seconds, it is one
+        # of the parameters that 'initialize' receives. We should be able to
+        # read any bucket identified with a timestamp ts, where
+        # ts < Time.now - bucket_create_interval. However, in order to be sure
+        # that we will not miss any events, we are going to define a constant
+        # that will define some backup time.
+        BACKUP_SECONDS_READ_BUCKET = 10
+        private_constant :BACKUP_SECONDS_READ_BUCKET
+
         InvalidInterval = Class.new(ThreeScale::Backend::Error)
 
         def initialize(bucket_create_interval, bucket_storage, storage)
@@ -69,20 +81,30 @@ module ThreeScale
 
         def pending_buckets(end_time_utc = Time.now.utc)
           latest_bucket_read = latest_bucket_read_marker.latest_bucket_read
-          return bucket_storage.all_buckets if latest_bucket_read.nil?
+
+          if latest_bucket_read.nil?
+            return buckets_in_storage(end_time_utc - BACKUP_SECONDS_READ_BUCKET)
+          end
 
           start_time_utc = bucket_to_time(latest_bucket_read) + bucket_create_interval
-          buckets(start_time_utc, end_time_utc)
+          buckets(start_time_utc, end_time_utc - BACKUP_SECONDS_READ_BUCKET)
         end
 
         def buckets(start_time_utc, end_time_utc)
           # The number of buckets can be very large depending on the start
           # date. For that reason, we return an enumerator.
           Enumerator.new do |y|
-            (start_time_utc.to_i..end_time_utc.to_i).step(@bucket_create_interval) do |sec|
+            (start_time_utc.to_i..end_time_utc.to_i).step(bucket_create_interval) do |sec|
               y << time_to_bucket_name(Time.at(sec).utc)
             end
           end
+        end
+
+        def buckets_in_storage(end_time_utc)
+          all_buckets = bucket_storage.all_buckets
+          all_buckets.reverse.drop_while do |bucket|
+            end_time_utc < bucket_to_time(bucket)
+          end.reverse
         end
 
         def time_to_bucket_name(time_utc)
