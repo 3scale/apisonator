@@ -59,8 +59,9 @@ class WorkerTest < Test::Unit::TestCase
       assert_queued Transactor::ReportJob,
                   [@service_id,
                     {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
-                    '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
-                    Time.utc(2011, 12, 12, 11, 48).to_f]
+                     '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
+                    Time.utc(2011, 12, 12, 11, 48).to_f,
+                    {}]
 
       ## WARNING: we cannot do the call below, because worker fetches from redis, and resque_unit keeps it in
       ## memory. Get rid of resque_unit some time soon

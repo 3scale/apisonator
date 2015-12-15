@@ -6,7 +6,7 @@ class ErrorStorageTest < Test::Unit::TestCase
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb
-    
+
     @service_id = next_id
   end
 
@@ -27,12 +27,12 @@ class ErrorStorageTest < Test::Unit::TestCase
   end
 
   test '#list returns errors from the storage' do
-    @storage.rpush("errors/service_id:#{@service_id}", 
+    @storage.rpush("errors/service_id:#{@service_id}",
                    Yajl::Encoder.encode(:code      => 'application_not_found',
                                         :message   => 'application with id="foo" was not found',
                                         :timestamp => '2010-07-29 15:23:00 UTC'))
 
-    @storage.rpush("errors/service_id:#{@service_id}", 
+    @storage.rpush("errors/service_id:#{@service_id}",
                    Yajl::Encoder.encode(:code      => 'metric_invalid',
                                         :message   => 'metric "bars" is invalid',
                                         :timestamp => '2010-07-29 15:44:00 UTC'))
@@ -51,7 +51,7 @@ class ErrorStorageTest < Test::Unit::TestCase
     (ErrorStorage::MAX_NUM_ERRORS+10).times do |i|
       ErrorStorage.store(@service_id, ApplicationNotFound.new("boo_#{i}"))
     end
-    
+
     list = ErrorStorage.list(@service_id, {:page =>1, :per_page => ErrorStorage::MAX_NUM_ERRORS*2})
     assert_equal ErrorStorage::MAX_NUM_ERRORS, list.size
     assert_equal "application with id=\"boo_#{ErrorStorage::MAX_NUM_ERRORS+10-1}\" was not found", list.first[:message]
@@ -83,7 +83,7 @@ class ErrorStorageTest < Test::Unit::TestCase
     assert_equal Time.utc(2010, 9, 9, 10, 2), errors[0][:timestamp]
     assert_equal Time.utc(2010, 9, 9, 10, 1), errors[1][:timestamp]
   end
-  
+
   test '#list handles the last page' do
     start_time = Time.utc(2010, 9, 9, 10, 00)
 
@@ -121,7 +121,7 @@ class ErrorStorageTest < Test::Unit::TestCase
   end
 
   test '#delete_all deletes all errors from the storage' do
-    @storage.rpush("errors/service_id:#{@service_id}", 
+    @storage.rpush("errors/service_id:#{@service_id}",
                    Yajl::Encoder.encode(:code      => 'application_not_found',
                                         :message   => 'application with id="foo" was not found',
                                         :timestamp => '2010-09-03 17:15:00 UTC'))
@@ -129,12 +129,12 @@ class ErrorStorageTest < Test::Unit::TestCase
     ErrorStorage.delete_all(@service_id)
 
     values = @storage.lrange("errors/service_id:#{@service_id}", 0, -1)
-    
-    # Some redis versions return nil, some empty array. I care only that it 
+
+    # Some redis versions return nil, some empty array. I care only that it
     # does not contain any stuff.
     assert values.nil? || values.empty?
   end
-  
+
   test '#delete_all does not deletes errors of other services' do
     other_service_id = next_id
     ErrorStorage.store(other_service_id, ApplicationNotFound.new('foo'))
@@ -142,7 +142,7 @@ class ErrorStorageTest < Test::Unit::TestCase
 
     assert_equal 1, ErrorStorage.list(other_service_id).size
   end
-  
+
   # Semi-integration tests:
 
   test 'list returns previously stored errors' do
@@ -150,9 +150,10 @@ class ErrorStorageTest < Test::Unit::TestCase
       ErrorStorage.store(@service_id, ApplicationNotFound.new('boo'))
     end
 
-    assert_equal({:code      => 'application_not_found',
-                  :message   => 'application with id="boo" was not found',
-                  :timestamp => Time.utc(2010, 7, 29, 15, 59)},
+    assert_equal({:code         => 'application_not_found',
+                  :context_info => {},
+                  :message      => 'application with id="boo" was not found',
+                  :timestamp    => Time.utc(2010, 7, 29, 15, 59)},
                  ErrorStorage.list(@service_id).last)
   end
 

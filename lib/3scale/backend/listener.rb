@@ -172,7 +172,7 @@ module ThreeScale
         end
       rescue ThreeScale::Backend::Error => error
         begin
-          ErrorStorage.store(service_id, error)
+          ErrorStorage.store(service_id, error, response_code: 403, request: request_info)
         rescue ProviderKeyInvalid
           # This happens trying to load the service id
         ensure
@@ -407,7 +407,7 @@ module ThreeScale
           return
         end
 
-        Transactor.report(provider_key, params[:service_id], transactions)
+        Transactor.report(provider_key, params[:service_id], transactions, response_code: 202, request: request_info)
         empty_response 202
       end
 
@@ -667,6 +667,17 @@ module ThreeScale
         true
       end
 
+      def request_info
+        {
+          url: request.url,
+          method: request.request_method,
+          form_vars: request.env["rack.request.form_vars"],
+          user_agent: request.user_agent,
+          ip: request.ip,
+          content_type: request.content_type,
+          content_length: request.content_length,
+        }
+      end
     end
   end
 end
