@@ -87,6 +87,26 @@ module ThreeScale
                            value: value })
             end
           end
+
+          context 'with a key that has period = eternity' do
+            let(:key) do
+              "stats/{service:#{service}}/cinstance:#{cinstance}/metric:#{metric}/eternity"
+            end
+
+            it 'returns the correct hash' do
+              expect(subject.parse(key, value))
+                  .to eq({ service: service,
+                           cinstance: cinstance,
+                           metric: metric,
+                           period: 'eternity',
+                           year: nil,
+                           month: nil,
+                           day: nil,
+                           hour: nil,
+                           minute: nil,
+                           value: value })
+            end
+          end
         end
       end
     end

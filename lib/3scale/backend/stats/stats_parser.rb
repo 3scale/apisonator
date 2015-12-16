@@ -94,11 +94,15 @@ module ThreeScale
             period = hash.keys.find { |k| PERIODS.include? k }
             if period
               hash['period'.freeze] = period
-              period_val = hash[period].dup
-              hash['year'.freeze] = period_val.slice! 0, 4
-              ['month'.freeze, 'day'.freeze, 'hour'.freeze, 'minute'.freeze].each do |p|
-                hash[p] = period_val.slice! 0, 2
-                hash[p] = nil if hash[p].empty?
+              period_val = (period == 'eternity' ? '' : hash[period].dup)
+
+              DATE_COLS.each do |date_col|
+                hash[date_col] = if date_col == 'year'
+                                   period_val.slice! 0, 4
+                                 else
+                                   period_val.slice! 0, 2
+                                 end
+                hash[date_col] = nil if hash[date_col].empty?
               end
               NON_DATE_PERIODS.each { |ndp| hash.delete ndp }
             end
