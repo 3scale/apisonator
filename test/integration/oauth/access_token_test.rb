@@ -524,17 +524,16 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal 2, node.count
 
     ## order does not matter
-    if node[0].content == 'valid-token1'
-      assert_equal 'valid-token1', node[0].content
-      assert_equal 100, node[0].attribute('ttl').value.to_i
-      assert_equal 'valid-token2', node[1].content
-      assert_equal(-1, node[1].attribute('ttl').value.to_i)
+    node1, node2 = if node[0].content == 'valid-token1'
+      [node[0], node[1]]
     else
-      assert_equal 'valid-token1', node[1].content
-      assert_equal 100, node[1].attribute('ttl').value.to_i
-      assert_equal 'valid-token2', node[0].content
-      assert_equal(-1, node[0].attribute('ttl').value.to_i)
+      [node[1], node[0]]
     end
+
+    assert_equal 'valid-token1', node1.content
+    assert_equal 100, node1.attribute('ttl').value.to_i
+    assert_equal 'valid-token2', node2.content
+    assert_equal(-1, node2.attribute('ttl').value.to_i)
 
     get "/services/#{@service.id}/oauth_access_tokens/valid-token1.xml", :provider_key => @provider_key
 
