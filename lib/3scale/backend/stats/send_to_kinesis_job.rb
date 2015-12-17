@@ -16,12 +16,16 @@ module ThreeScale
         class << self
           def perform_logged(end_time_utc, bucket_reader, kinesis_adapter)
             pending_events = bucket_reader.pending_events_in_buckets(end_time_utc)
-            parsed_events = pending_events[:events].map do |k, v|
-              StatsParser.parse(k, v)
+
+            unless pending_events[:events].empty?
+              parsed_events = pending_events[:events].map do |k, v|
+                StatsParser.parse(k, v)
+              end
+
+              kinesis_adapter.send_events(parsed_events)
+              bucket_reader.latest_bucket_read = pending_events[:latest_bucket]
             end
 
-            kinesis_adapter.send_events(parsed_events)
-            bucket_reader.latest_bucket_read = pending_events[:latest_bucket]
             [true, msg_events_sent(pending_events[:events].size)]
           end
 
