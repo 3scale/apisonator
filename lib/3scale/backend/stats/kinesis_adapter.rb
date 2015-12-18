@@ -12,7 +12,6 @@ module ThreeScale
         #
         # We will try to optimize the batching process later. For now, I will
         # just put 300 events in each record. And batches of 5 records max.
-        # We will also handle Kinesis errors later.
 
         EVENTS_PER_RECORD = 300
         private_constant :EVENTS_PER_RECORD
@@ -34,11 +33,12 @@ module ThreeScale
             events_to_send = pending_events.take(EVENTS_PER_RECORD*MAX_RECORDS_PER_BATCH)
             events_not_to_send = pending_events[EVENTS_PER_RECORD*MAX_RECORDS_PER_BATCH..-1] || []
 
-            kinesis_client.put_record_batch(
+            kinesis_resp = kinesis_client.put_record_batch(
                 { delivery_stream_name: stream_name,
                   records: events_to_kinesis_records(events_to_send) })
 
-            self.pending_events = events_not_to_send
+            self.pending_events =
+                failed_events(kinesis_resp[:request_responses], events_to_send) + events_not_to_send
           end
         end
 
@@ -52,6 +52,21 @@ module ThreeScale
           # [{ data: "data_event_group_1" }, { data: "data_event_group_2" }]
           events.each_slice(EVENTS_PER_RECORD).map do |events_slice|
             { data: events_slice.to_json }
+          end
+        end
+
+        def failed_events(request_responses, events)
+          failed_records_indexes = failed_records_indexes(request_responses)
+          failed_records_indexes.flat_map do |failed_record_index|
+            events_index_start = failed_record_index*EVENTS_PER_RECORD
+            events_index_end = events_index_start + EVENTS_PER_RECORD - 1
+            events[events_index_start..events_index_end]
+          end
+        end
+
+        def failed_records_indexes(request_responses)
+          request_responses.each_index.reject do |index|
+            request_responses[index][:error_code].nil?
           end
         end
       end

@@ -29,7 +29,7 @@ module ThreeScale
             end
           end
 
-          context 'the number of events is enough to fill a record and can be send in 1 batch' do
+          context 'the number of events is enough to fill a record and can be sent in 1 batch' do
             let(:events) { Array.new(events_per_record, event) }
 
             before do
@@ -37,6 +37,8 @@ module ThreeScale
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: [{ data: events.to_json }] })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: [{ record_id: 'id' }])
             end
 
             it 'sends the events to Kinesis' do
@@ -49,7 +51,7 @@ module ThreeScale
             end
           end
 
-          context 'the number of events fills several records but can be send in 1 batch' do
+          context 'the number of events fills several records but can be sent in 1 batch' do
             let(:records) { 2 } # Assuming that a batch can contain at least 2 records
             let(:events) { Array.new(records*events_per_record, event) }
             let(:kinesis_records) do
@@ -61,6 +63,8 @@ module ThreeScale
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: kinesis_records })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: Array.new(records, { record_id: 'id' }))
             end
 
             it 'sends the events to Kinesis' do
@@ -86,6 +90,9 @@ module ThreeScale
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: kinesis_records })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: Array.new(max_records_per_batch,
+                                                                   { record_id: 'id' }))
             end
 
             it 'sends a batch to Kinesis' do
@@ -95,6 +102,32 @@ module ThreeScale
             it 'pending events includes the events that did not fit in the batch' do
               subject.send_events(events)
               expect(subject.send(:pending_events)).to eq Array.new(events_per_record, event)
+            end
+          end
+
+          context 'when Kinesis returns an error for some record' do
+            let(:first_record) do  # fake events to simplify
+              Array.new(events_per_record, { app: 'app1', value: 10 })
+            end
+            let(:second_record) do
+              Array.new(events_per_record, { app: 'app2', value: 20 })
+            end
+
+            before do
+              # return error for the second record
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: first_record.to_json },
+                                            { data: second_record.to_json }] })
+                          .and_return(failed_put_count: 1,
+                                      request_responses: [{ record_id: 'id' },
+                                                          { error_code: 'err' }])
+            end
+
+            it 'the events of the failed record are stored in pending events' do
+              subject.send_events(first_record + second_record)
+              expect(subject.send(:pending_events)).to eq second_record
             end
           end
         end
