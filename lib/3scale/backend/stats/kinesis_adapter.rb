@@ -12,6 +12,13 @@ module ThreeScale
         #
         # We will try to optimize the batching process later. For now, I will
         # just put 300 events in each record. And batches of 5 records max.
+        #
+        # When we receive a number of events not big enough to fill a record,
+        # those events are marked as pending events.
+        # Kinesis can return errors, when that happens, the events of the
+        # records that failed are re-enqueued as pending events.
+        # The list of pending events is stored in Redis, so we do not fail to
+        # process any events in case of downtime or errors.
 
         EVENTS_PER_RECORD = 300
         private_constant :EVENTS_PER_RECORD
@@ -19,14 +26,17 @@ module ThreeScale
         MAX_RECORDS_PER_BATCH = 5
         private_constant :MAX_RECORDS_PER_BATCH
 
-        def initialize(stream_name, kinesis_client)
+        KINESIS_PENDING_EVENTS_KEY = 'send_to_kinesis:pending_events'
+        private_constant :KINESIS_PENDING_EVENTS_KEY
+
+        def initialize(stream_name, kinesis_client, storage)
           @stream_name = stream_name
           @kinesis_client = kinesis_client
-          @pending_events = []
+          @storage = storage
         end
 
         def send_events(events)
-          self.pending_events += events
+          pending_events = stored_pending_events + events
 
           # Batch events until we can fill at least one record
           if pending_events.size >= EVENTS_PER_RECORD
@@ -37,15 +47,27 @@ module ThreeScale
                 { delivery_stream_name: stream_name,
                   records: events_to_kinesis_records(events_to_send) })
 
-            self.pending_events =
-                failed_events(kinesis_resp[:request_responses], events_to_send) + events_not_to_send
+            pending_events = pending_events_after_request(
+                kinesis_resp[:request_responses], events_to_send, events_not_to_send)
+          end
+
+          storage.pipelined do
+            storage.del(KINESIS_PENDING_EVENTS_KEY)
+            pending_events.each do |event|
+              storage.sadd(KINESIS_PENDING_EVENTS_KEY, event.to_json)
+            end
           end
         end
 
         private
 
-        attr_reader :stream_name, :kinesis_client
-        attr_accessor :pending_events
+        attr_reader :stream_name, :kinesis_client, :storage
+
+        def stored_pending_events
+          storage.smembers(KINESIS_PENDING_EVENTS_KEY).map do |pending_event|
+            JSON.parse(pending_event, symbolize_names: true)
+          end
+        end
 
         def events_to_kinesis_records(events)
           # Record format expected by Kinesis:
@@ -53,6 +75,10 @@ module ThreeScale
           events.each_slice(EVENTS_PER_RECORD).map do |events_slice|
             { data: events_slice.to_json }
           end
+        end
+
+        def pending_events_after_request(request_responses, events_to_send, events_not_to_send)
+          failed_events(request_responses, events_to_send) + events_not_to_send
         end
 
         def failed_events(request_responses, events)

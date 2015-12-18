@@ -7,15 +7,18 @@ module ThreeScale
       describe KinesisAdapter do
         let(:kinesis_client) { double }
         let(:stream_name) { 'backend_stream' }
+        let(:storage) { ThreeScale::Backend::Storage.instance }
         let(:events_per_record) { described_class.const_get(:EVENTS_PER_RECORD) }
         let(:max_records_per_batch) { described_class.const_get(:MAX_RECORDS_PER_BATCH) }
-        let(:event) { { service: 's', metric: 'm', period: 'year', year: '2015' } }
+        let(:kinesis_pending_events_key) do
+          described_class.const_get(:KINESIS_PENDING_EVENTS_KEY)
+        end
 
-        subject { described_class.new(stream_name, kinesis_client) }
+        subject { described_class.new(stream_name, kinesis_client, storage) }
 
         describe '#send_events' do
-          context 'the number of events is smaller than the number of events per record' do
-            let(:events) { Array.new(events_per_record - 1, event) }
+          context 'when the number of events is smaller than the number of events per record' do
+            let(:events) { generate_unique_events(events_per_record - 1) }
 
             before { expect(kinesis_client).not_to receive(:put_record_batch) }
 
@@ -23,14 +26,14 @@ module ThreeScale
               subject.send_events(events)
             end
 
-            it 'adds the events to the array of pending events' do
+            it 'adds the events as pending events' do
               subject.send_events(events)
-              expect(subject.send(:pending_events)).to eq events
+              expect(subject.send(:stored_pending_events)).to match_array events
             end
           end
 
-          context 'the number of events is enough to fill a record and can be sent in 1 batch' do
-            let(:events) { Array.new(events_per_record, event) }
+          context 'when the number of events is enough to fill just 1 record' do
+            let(:events) { generate_unique_events(events_per_record) }
 
             before do
               expect(kinesis_client)
@@ -47,15 +50,16 @@ module ThreeScale
 
             it 'pending events is empty' do
               subject.send_events(events)
-              expect(subject.send(:pending_events)).to be_empty
+              expect(subject.send(:stored_pending_events)).to be_empty
             end
           end
 
-          context 'the number of events fills several records but can be sent in 1 batch' do
+          context 'when the number of events fills several records but can be sent in 1 batch' do
             let(:records) { 2 } # Assuming that a batch can contain at least 2 records
-            let(:events) { Array.new(records*events_per_record, event) }
+            let(:events) { generate_unique_events(records*events_per_record) }
             let(:kinesis_records) do
-              Array.new(records, { data: Array.new(events_per_record, event).to_json })
+              [{ data: events[0..events_per_record - 1].to_json },
+               { data: events[events_per_record..-1].to_json }]
             end
 
             before do
@@ -73,16 +77,20 @@ module ThreeScale
 
             it 'pending events is empty' do
               subject.send_events(events)
-              expect(subject.send(:pending_events)).to be_empty
+              expect(subject.send(:stored_pending_events)).to be_empty
             end
           end
 
-          context 'the number of events is too big to be sent in just one batch' do
+          context 'when the number of events is too big to be sent in just one batch' do
             let(:records) { max_records_per_batch + 1 }
-            let(:events) { Array.new(records*events_per_record, event) }
+            let(:events) { generate_unique_events(records*events_per_record) }
+            let(:events_not_batched) do
+              events.last((records - max_records_per_batch)*events_per_record)
+            end
             let(:kinesis_records) do
-              Array.new(max_records_per_batch,
-                        { data: Array.new(events_per_record, event).to_json })
+              events.each_slice(events_per_record).map do |events_slice|
+                { data: events_slice.to_json }
+              end.take(max_records_per_batch)
             end
 
             before do
@@ -101,17 +109,15 @@ module ThreeScale
 
             it 'pending events includes the events that did not fit in the batch' do
               subject.send_events(events)
-              expect(subject.send(:pending_events)).to eq Array.new(events_per_record, event)
+              expect(subject.send(:stored_pending_events))
+                  .to match_array events_not_batched
             end
           end
 
           context 'when Kinesis returns an error for some record' do
-            let(:first_record) do  # fake events to simplify
-              Array.new(events_per_record, { app: 'app1', value: 10 })
-            end
-            let(:second_record) do
-              Array.new(events_per_record, { app: 'app2', value: 20 })
-            end
+            let(:events) { generate_unique_events(2*events_per_record) }
+            let(:first_record) { events[0..events_per_record - 1] }
+            let(:second_record) { events[events_per_record..-1] }
 
             before do
               # return error for the second record
@@ -127,8 +133,14 @@ module ThreeScale
 
             it 'the events of the failed record are stored in pending events' do
               subject.send_events(first_record + second_record)
-              expect(subject.send(:pending_events)).to eq second_record
+              expect(subject.send(:stored_pending_events)).to match_array second_record
             end
+          end
+        end
+
+        def generate_unique_events(n_events)
+          (1..n_events).map do |i|
+            { service: 's', metric: 'm', period: 'year', timestamp: '20150101', value: i }
           end
         end
       end
