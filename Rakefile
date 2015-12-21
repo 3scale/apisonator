@@ -168,4 +168,9 @@ namespace :stats do
   task :storage_stats_enabled? => :environment do
     puts ThreeScale::Backend::Stats::Storage.enabled?
   end
+
+  desc 'Send events to Kinesis'
+  task  :send_to_kinesis => :environment do
+    puts ThreeScale::Backend::Stats::Tasks.schedule_send_to_kinesis_job
+  end
 end
