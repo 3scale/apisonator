@@ -5,11 +5,24 @@ module ThreeScale
   module Backend
     module Stats
       describe SendToKinesisJob do
-        let(:end_time_utc) { Time.now.utc }
+        # I use to_i so we do not take into account milliseconds. Otherwise,
+        # the expectation of the mocks used below would fail
+        let(:end_time_utc) { Time.at(Time.now.to_i).utc }
         let(:bucket_reader) { double }
         let(:kinesis_adapter) { double }
 
         subject { SendToKinesisJob }
+
+        before do
+          # I use a mock for the bucket reader because otherwise, I would
+          # need to store buckets, the event keys, the value for each event,
+          # etc. That would complicate this test a lot and would duplicate
+          # work already done in the BucketReader tests. Same for the Kinesis
+          # adapter
+
+          allow(subject).to receive(:bucket_reader).and_return(bucket_reader)
+          allow(subject).to receive(:kinesis_adapter).and_return(kinesis_adapter)
+        end
 
         describe '.perform_logged' do
           context 'when there are pending events' do
@@ -20,10 +33,6 @@ module ThreeScale
             let(:bucket) { '20150101000000' }
 
             before do
-              # I use a mock for the bucket reader because otherwise, I would
-              # need to store buckets, the event keys, the value for each event,
-              # etc. That would complicate this test a lot and would duplicate
-              # work already done in the BucketReader tests.
               allow(bucket_reader)
                   .to receive(:pending_events_in_buckets)
                           .with(end_time_utc)
@@ -36,7 +45,7 @@ module ThreeScale
             end
 
             it 'returns array with format [true, msg]' do
-              expect(subject.perform_logged(end_time_utc, bucket_reader, kinesis_adapter))
+              expect(subject.perform_logged(end_time_utc.to_s))
                   .to eq [true, subject.send(:msg_events_sent, pending_events.size)]
             end
           end
@@ -51,16 +60,16 @@ module ThreeScale
 
             it 'does not send anything to the kinesis adapter' do
               expect(kinesis_adapter).not_to receive(:send_events)
-              subject.perform_logged(end_time_utc, bucket_reader, kinesis_adapter)
+              subject.perform_logged(end_time_utc.to_s)
             end
 
             it 'does not mark any bucket as the latest read' do
               expect(bucket_reader).not_to receive(:latest_bucket_read=)
-              subject.perform_logged(end_time_utc, bucket_reader, kinesis_adapter)
+              subject.perform_logged(end_time_utc.to_s)
             end
 
             it 'returns array with format [true, msg]' do
-              expect(subject.perform_logged(end_time_utc, bucket_reader, kinesis_adapter))
+              expect(subject.perform_logged(end_time_utc.to_s))
                   .to eq [true, subject.send(:msg_events_sent, 0)]
             end
           end
