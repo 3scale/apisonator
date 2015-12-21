@@ -33,6 +33,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'sinatra-contrib',           '1.4.6'
   s.add_dependency 'redis-namespace',           '1.5.1'
   s.add_dependency 'cubert-client',             '0.0.12'
+  s.add_dependency 'aws-sdk',                   '2.2.0'
 
   s.files = Dir.glob('{lib,bin,app,config}/**/*')
   s.files << 'README.md'
