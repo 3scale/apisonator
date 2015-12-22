@@ -18,7 +18,7 @@ test:
 	$(RUN) --name $(NAME) $(PROJECT)
 
 pull:
-	- docker pull quay.io/3scale/docker:dev-backend-2.2.2
+	- docker pull quay.io/3scale/docker:dev-backend-2.2.3
 
 bash:
 	$(RUN) -t -i -v $(PROJECT_PATH):/home/ruby/backend -u ruby $(PROJECT) bash
