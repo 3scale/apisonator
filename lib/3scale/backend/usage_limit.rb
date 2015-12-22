@@ -11,10 +11,10 @@ module ThreeScale
         Metric.load_name(service_id, metric_id)
       end
 
-      def validate(usage)
-        usage_value = usage[period]
-        usage_value &&= usage_value[metric_id].to_i
-        usage_value <= value
+      # NOTE: validate can ONLY be called with the guarantee that usage_data
+      # will have a matching period key.
+      def validate(usage_data)
+        usage_data[period][metric_id].to_i <= value
       end
 
       class << self
