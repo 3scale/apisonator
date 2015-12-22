@@ -4,7 +4,7 @@ require 'rubygems'
 require 'pathname'
 
 BUNDLER_GEM = 'bundler'
-BUNDLER_REQUIREMENTS = ['~> 1.10.6']
+BUNDLER_REQUIREMENTS = ['~> 1.11.2']
 
 def gem_install_bundler
   require 'rubygems/command'
