@@ -213,19 +213,17 @@ module ThreeScale
                 original_method.call.tap { Thread.stop }
               end
 
-              threads = []
-              threads << Thread.new { EventStorage.ping_if_not_empty }
-              threads << Thread.new { EventStorage.ping_if_not_empty }
-
-              threads.each do |thread|
-                sleep(0.1) while thread.status != 'sleep'
+              threads = 2.times.map do
+                Thread.new { EventStorage.ping_if_not_empty }
               end
 
-              threads.each { |thread| thread.run }
-              values = threads.map { |thread| thread.join.value }
+              threads.each do |thread|
+                sleep(0.01) while thread.status != 'sleep'
+              end
 
-              expect(values).to include(false)
-              expect(values).to include(true)
+              values = threads.each(&:wakeup).map { |thread| thread.join.value }
+
+              expect(values).to match_array([true, false])
             end
           end
 
