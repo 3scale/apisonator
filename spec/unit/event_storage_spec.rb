@@ -231,7 +231,7 @@ module ThreeScale
 
           context 'when there is no configuration for events_hook' do
             before do
-              ThreeScale::Backend.configuration.stub(:events_hook).and_return(nil)
+              ThreeScale::Backend::EventStorage.stub(:events_hook_configured?).and_return(false)
             end
             it { expect(subject).to be_false }
           end
