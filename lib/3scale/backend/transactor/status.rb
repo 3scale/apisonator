@@ -229,31 +229,32 @@ module ThreeScale
                 xml << "<period_start>" << report.period_start.strftime(TIME_FORMAT) << "</period_start>"
                 xml << "<period_end>" << report.period_end.strftime(TIME_FORMAT) << "</period_end>"
               end
-              xml << "<max_value>" << report.max_value.to_s << "</max_value>"
+              xml << '<max_value>' << report.max_value.to_s << '</max_value><current_value>'
 
               if not options[:anchors_for_caching]
                 if authorized? && usage && (usage_metric_name = usage[report.metric_name])
                   # this is a authrep request and therefore we should sum the usage
                   val = Helpers.get_value_of_set_if_exists(usage_metric_name)
                   if val.nil?
-                    xml << "<current_value>" << (report.current_value + usage_metric_name.to_i).to_s << "</current_value>"
+                    xml << (report.current_value + usage_metric_name.to_i).to_s
                   else
-                    xml << "<current_value>" << val.to_s << "</current_value>"
+                    xml << val.to_s
                   end
                 else
-                  xml << "<current_value>" << report.current_value.to_s << "</current_value>"
+                  xml << report.current_value.to_s
                 end
               else
                 ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
                 ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                xml << "<current_value>" << "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|" << "</current_value>"
+                xml << "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
               end
 
-              xml << "</usage_report>"
+              xml << '</current_value></usage_report>'
             end
             xml << "</#{xml_node_keys[report_type]}_reports>"
           end
-          return xml
+
+          xml
         end
       end
     end

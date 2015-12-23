@@ -25,15 +25,15 @@ module ThreeScale
         #   {1001 => 42, 1002 => 42}
         #
         def process_usage(raw_usage)
+          return {} unless raw_usage
           usage = parse_usage(raw_usage)
-          usage = process_ancestors(usage)
-          usage
+          process_ancestors(usage)
         end
 
         private
 
         def parse_usage(raw_usage)
-	  (raw_usage || {}).inject({}) do |usage, (name, value)|
+          raw_usage.inject({}) do |usage, (name, value)|
             name      = sanitize_name(name)
             metric_id = metric_id(name)
 
