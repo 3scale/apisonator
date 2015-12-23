@@ -38,7 +38,7 @@ module ThreeScale
         end
 
         def ping_if_not_empty
-          if pending_ping? && events_hook_configured?
+          if events_hook_configured? && pending_ping?
             begin
               request_to_events_hook
               return true
