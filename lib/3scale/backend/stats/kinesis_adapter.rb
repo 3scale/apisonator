@@ -40,22 +40,10 @@ module ThreeScale
 
           # Batch events until we can fill at least one record
           if pending_events.size >= EVENTS_PER_RECORD
-            events_to_send = pending_events.take(EVENTS_PER_RECORD*MAX_RECORDS_PER_BATCH)
-            events_not_to_send = pending_events[EVENTS_PER_RECORD*MAX_RECORDS_PER_BATCH..-1] || []
-
-            kinesis_resp = kinesis_client.put_record_batch(
-                { delivery_stream_name: stream_name,
-                  records: events_to_kinesis_records(events_to_send) })
-
-            pending_events = pending_events_after_request(
-                kinesis_resp[:request_responses], events_to_send, events_not_to_send)
-          end
-
-          storage.pipelined do
-            storage.del(KINESIS_PENDING_EVENTS_KEY)
-            pending_events.each do |event|
-              storage.sadd(KINESIS_PENDING_EVENTS_KEY, event.to_json)
-            end
+            failed_events = send_events_in_batches(pending_events)
+            store_pending_events(failed_events)
+          else
+            store_pending_events(pending_events)
           end
         end
 
@@ -69,16 +57,28 @@ module ThreeScale
           end
         end
 
+        # Returns the failed events
+        def send_events_in_batches(events)
+          failed_events = []
+          events_per_batch = EVENTS_PER_RECORD*MAX_RECORDS_PER_BATCH
+
+          events.each_slice(events_per_batch) do |events_slice|
+            kinesis_resp = kinesis_client.put_record_batch(
+                { delivery_stream_name: stream_name,
+                  records: events_to_kinesis_records(events_slice) })
+            failed_events << failed_events(kinesis_resp[:request_responses],
+                                           events_slice)
+          end
+
+          failed_events.flatten
+        end
+
         def events_to_kinesis_records(events)
           # Record format expected by Kinesis:
           # [{ data: "data_event_group_1" }, { data: "data_event_group_2" }]
           events.each_slice(EVENTS_PER_RECORD).map do |events_slice|
             { data: events_slice.to_json }
           end
-        end
-
-        def pending_events_after_request(request_responses, events_to_send, events_not_to_send)
-          failed_events(request_responses, events_to_send) + events_not_to_send
         end
 
         def failed_events(request_responses, events)
@@ -93,6 +93,15 @@ module ThreeScale
         def failed_records_indexes(request_responses)
           request_responses.each_index.reject do |index|
             request_responses[index][:error_code].nil?
+          end
+        end
+
+        def store_pending_events(events)
+          storage.pipelined do
+            storage.del(KINESIS_PENDING_EVENTS_KEY)
+            events.each do |event|
+              storage.sadd(KINESIS_PENDING_EVENTS_KEY, event.to_json)
+            end
           end
         end
       end

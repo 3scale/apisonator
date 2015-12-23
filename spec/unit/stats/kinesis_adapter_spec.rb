@@ -82,35 +82,43 @@ module ThreeScale
           end
 
           context 'when the number of events is too big to be sent in just one batch' do
-            let(:records) { max_records_per_batch + 1 }
+            let(:records) { max_records_per_batch + 1 } # Can be sent in 2 batches
             let(:events) { generate_unique_events(records*events_per_record) }
-            let(:events_not_batched) do
-              events.last((records - max_records_per_batch)*events_per_record)
-            end
             let(:kinesis_records) do
               events.each_slice(events_per_record).map do |events_slice|
                 { data: events_slice.to_json }
-              end.take(max_records_per_batch)
+              end
             end
 
+            let(:records_first_batch) { kinesis_records.take(max_records_per_batch) }
+            let(:records_second_batch) { [kinesis_records.last] }
+
             before do
+              # First batch
               expect(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
-                                  records: kinesis_records })
+                                  records: records_first_batch })
                           .and_return(failed_put_count: 0,
                                       request_responses: Array.new(max_records_per_batch,
                                                                    { record_id: 'id' }))
+
+              # Second batch
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_second_batch })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: Array.new(1, { record_id: 'id' }))
             end
 
-            it 'sends a batch to Kinesis' do
+            it 'sends the events to Kinesis' do
               subject.send_events(events)
             end
 
-            it 'pending events includes the events that did not fit in the batch' do
+            it 'pending events is empty' do
               subject.send_events(events)
-              expect(subject.send(:stored_pending_events))
-                  .to match_array events_not_batched
+              expect(subject.send(:stored_pending_events)).to be_empty
             end
           end
 
