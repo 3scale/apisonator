@@ -8,8 +8,10 @@ Gem::Specification.new do |s|
   s.name        = '3scale_backend'
   s.version     = ThreeScale::Backend::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ["Adam Ciganek", "Tiago Macedo", "Wojciech Ogrodowczyk", "Josep M. Pujol", "Toni Reina"]
-  s.email       = 'tiago@3scale.net'
+  s.authors     = ["Adam Ciganek", "Tiago Macedo", "Josep M. Pujol",
+                   "Toni Reina", "Wojciech Ogrodowczyk",
+                   "Alejandro Martinez Ruiz", "David Ortiz Lopez"]
+  s.email       = 'backend@3scale.net'
   s.homepage    = 'http://www.3scale.net'
   s.summary     = '3scale web service management system backend'
   s.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'

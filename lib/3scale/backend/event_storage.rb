@@ -38,7 +38,7 @@ module ThreeScale
         end
 
         def ping_if_not_empty
-          if pending_ping? && events_hook_configured?
+          if events_hook_configured? && pending_ping?
             begin
               request_to_events_hook
               return true
@@ -54,20 +54,21 @@ module ThreeScale
         private
 
         def events_queue_key
-          "events/queue"
+          "events/queue".freeze
         end
 
         def events_ping_key
-          "events/ping"
+          "events/ping".freeze
         end
 
         def events_id_key
-          "events/id"
+          "events/id".freeze
         end
 
         def events_hook_configured?
+          return @events_hook_configured unless @events_hook_configured.nil?
           events_hook = ThreeScale::Backend.configuration.events_hook
-          events_hook && !events_hook.empty?
+          @events_hook_configured = events_hook && !events_hook.empty?
         end
 
         def request_to_events_hook
@@ -93,7 +94,7 @@ module ThreeScale
             storage.incr(events_ping_key)
           end
 
-          return unless ping_key_value.to_i == 1
+          return false unless ping_key_value.to_i == 1
           expire_last_ping
           events_set_size > 0
         end
