@@ -217,14 +217,14 @@ class AccessTokenTest < Test::Unit::TestCase
     end
   end
 
-  test 'create oauth_access_token with invalid token returns 422' do
+  test 'create oauth_access_token returns 422 with invalid token or 400 with a huge one' do
     s = (0...OAuthAccessTokenStorage::MAXIMUM_TOKEN_SIZE+1).map { (65 + rand(25)).chr }.join
     ['', nil, [], {}, s].each do |token|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => token
 
-      assert_equal 422, last_response.status, "oauth access token '#{token.inspect}' should be invalid"
+      assert_equal token == s ? 400 : 422, last_response.status, "oauth access token '#{token.inspect}' should be invalid"
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
           :provider_key => @provider_key

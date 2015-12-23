@@ -28,6 +28,7 @@ require 'yajl'
 require 'yaml'
 require 'digest/md5'
 
+require '3scale/backend/errors'
 require '3scale/backend/util'
 require '3scale/backend/manifest'
 require '3scale/backend/logger'
@@ -62,7 +63,6 @@ require '3scale/backend/cache'
 require '3scale/backend/alerts'
 require '3scale/backend/event_storage'
 require '3scale/backend/worker'
-require '3scale/backend/errors'
 
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
