@@ -1,3 +1,9 @@
+require 'aws-sdk'
+require '3scale/backend/stats/bucket_reader'
+require '3scale/backend/stats/bucket_storage'
+require '3scale/backend/stats/kinesis_adapter'
+require '3scale/backend/stats/stats_parser'
+
 module ThreeScale
   module Backend
     module Stats
