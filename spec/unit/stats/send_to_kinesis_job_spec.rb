@@ -45,7 +45,7 @@ module ThreeScale
             end
 
             it 'returns array with format [true, msg]' do
-              expect(subject.perform_logged(end_time_utc.to_s))
+              expect(subject.perform_logged(end_time_utc.to_s, end_time_utc))
                   .to eq [true, subject.send(:msg_events_sent, pending_events.size)]
             end
           end
@@ -60,16 +60,16 @@ module ThreeScale
 
             it 'does not send anything to the kinesis adapter' do
               expect(kinesis_adapter).not_to receive(:send_events)
-              subject.perform_logged(end_time_utc.to_s)
+              subject.perform_logged(end_time_utc.to_s, end_time_utc)
             end
 
             it 'does not mark any bucket as the latest read' do
               expect(bucket_reader).not_to receive(:latest_bucket_read=)
-              subject.perform_logged(end_time_utc.to_s)
+              subject.perform_logged(end_time_utc.to_s, end_time_utc)
             end
 
             it 'returns array with format [true, msg]' do
-              expect(subject.perform_logged(end_time_utc.to_s))
+              expect(subject.perform_logged(end_time_utc.to_s, end_time_utc))
                   .to eq [true, subject.send(:msg_events_sent, 0)]
             end
           end

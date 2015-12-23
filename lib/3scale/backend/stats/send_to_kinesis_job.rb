@@ -14,7 +14,7 @@ module ThreeScale
         @queue = :stats
 
         class << self
-          def perform_logged(end_time_utc)
+          def perform_logged(end_time_utc, _)
             # end_time_utc will be a string when the worker processes this job.
             # The parameter is passed through Redis as a string. We need to
             # convert it back.
