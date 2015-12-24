@@ -169,8 +169,25 @@ namespace :stats do
     puts ThreeScale::Backend::Stats::Storage.enabled?
   end
 
-  desc 'Send events to Kinesis'
-  task  :send_to_kinesis => :environment do
-    puts ThreeScale::Backend::Stats::Tasks.schedule_send_to_kinesis_job
+  namespace :kinesis do
+    desc 'Is sending to Kinesis enabled?'
+    task :enabled? => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.enabled?
+    end
+
+    desc 'Enable sending to Kinesis'
+    task :enable => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.enable
+    end
+
+    desc 'Disable sending to Kinesis'
+    task :disable => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.disable
+    end
+
+    desc 'Schedule one job to send all pending events to Kinesis'
+    task :send_to_kinesis => :environment do
+      puts ThreeScale::Backend::Stats::Tasks.schedule_send_to_kinesis_job
+    end
   end
 end
