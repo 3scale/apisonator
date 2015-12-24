@@ -26,7 +26,9 @@ module ThreeScale
         end
 
         def schedule_send_to_kinesis_job
-          Resque.enqueue(SendToKinesisJob, Time.now.utc, Time.now.utc.to_f)
+          if SendToKinesis.enabled?
+            Resque.enqueue(SendToKinesisJob, Time.now.utc, Time.now.utc.to_f)
+          end
         end
 
         private
