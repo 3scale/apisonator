@@ -65,7 +65,6 @@ require '3scale/backend/worker'
 require '3scale/backend/errors'
 
 require '3scale/backend/stats/send_to_kinesis'
-require '3scale/backend/stats/send_to_kinesis_job'
 
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'

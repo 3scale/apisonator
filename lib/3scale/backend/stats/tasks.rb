@@ -2,7 +2,6 @@ require_relative '../storage'
 require_relative 'storage'
 require_relative 'keys'
 require_relative 'info'
-require_relative 'send_to_kinesis_job'
 
 module ThreeScale
   module Backend
@@ -23,12 +22,6 @@ module ThreeScale
             storage.del(changed_keys_bucket_key(bucket))
           end
           storage.del(changed_keys_key)
-        end
-
-        def schedule_send_to_kinesis_job
-          if SendToKinesis.enabled?
-            Resque.enqueue(SendToKinesisJob, Time.now.utc, Time.now.utc.to_f)
-          end
         end
 
         private

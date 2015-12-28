@@ -187,7 +187,7 @@ namespace :stats do
 
     desc 'Schedule one job to send all pending events to Kinesis'
     task :send_to_kinesis => :environment do
-      puts ThreeScale::Backend::Stats::Tasks.schedule_send_to_kinesis_job
+      puts ThreeScale::Backend::Stats::SendToKinesis.schedule_job
     end
   end
 end

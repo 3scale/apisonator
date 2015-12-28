@@ -1,3 +1,5 @@
+require_relative 'send_to_kinesis_job'
+
 module ThreeScale
   module Backend
     module Stats
@@ -16,6 +18,12 @@ module ThreeScale
 
           def enabled?
             storage.get(SEND_TO_KINESIS_ENABLED_KEY).to_i == 1
+          end
+
+          def schedule_job
+            if enabled?
+              Resque.enqueue(SendToKinesisJob, Time.now.utc, Time.now.utc.to_f)
+            end
           end
 
           private
