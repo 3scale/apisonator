@@ -47,6 +47,16 @@ module ThreeScale
           end
         end
 
+        # Sends the pending events to Kinesis, even if there are not enough of
+        # them to fill 1 record.
+        # Returns the number of events correctly sent to Kinesis
+        def flush
+          pending_events = stored_pending_events
+          failed_events = send_events_in_batches(pending_events)
+          store_pending_events(failed_events)
+          pending_events.size - failed_events.size
+        end
+
         private
 
         attr_reader :stream_name, :kinesis_client, :storage

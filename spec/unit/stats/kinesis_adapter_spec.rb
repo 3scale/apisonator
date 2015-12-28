@@ -146,6 +146,71 @@ module ThreeScale
           end
         end
 
+        describe '#flush' do
+          context 'when the number of pending events is not enough to fill 1 record' do
+            let(:events) { generate_unique_events(events_per_record - 1) }
+
+            before do
+              expect(subject).to receive(:stored_pending_events).and_return(events)
+
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events.to_json }] })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: [{ record_id: 'id' }])
+            end
+
+            it 'sends the events to Kinesis' do
+              subject.flush
+            end
+
+            it 'returns the number of events sent' do
+              expect(subject.flush).to eq events.size
+            end
+          end
+
+          context 'when the number of pending events it enough to fill 1 record' do
+            let(:events) { generate_unique_events(events_per_record) }
+
+            before do
+              expect(subject).to receive(:stored_pending_events).and_return(events)
+
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events.to_json }] })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: [{ record_id: 'id' }])
+            end
+
+            it 'sends the events to Kinesis' do
+              subject.flush
+            end
+
+            it 'returns the number of events sent' do
+              expect(subject.flush).to eq events.size
+            end
+          end
+
+          context 'when there are no pending events' do
+            let(:events) { [] }
+
+            before do
+              expect(subject).to receive(:stored_pending_events).and_return(events)
+              expect(kinesis_client).not_to receive(:put_record_batch)
+            end
+
+            it 'does not send the events to Kinesis' do
+              subject.flush
+            end
+
+            it 'returns 0' do
+              expect(subject.flush).to be_zero
+            end
+          end
+        end
+
         def generate_unique_events(n_events)
           (1..n_events).map do |i|
             { service: 's', metric: 'm', period: 'year', timestamp: '20150101', value: i }
