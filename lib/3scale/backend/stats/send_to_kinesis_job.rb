@@ -23,11 +23,7 @@ module ThreeScale
             pending_events = bucket_reader.pending_events_in_buckets(end_time)
 
             unless pending_events[:events].empty?
-              parsed_events = pending_events[:events].map do |k, v|
-                StatsParser.parse(k, v)
-              end
-
-              kinesis_adapter.send_events(parsed_events)
+              kinesis_adapter.send_events(parse_events(pending_events[:events]))
               bucket_reader.latest_bucket_read = pending_events[:latest_bucket]
             end
 
@@ -35,6 +31,10 @@ module ThreeScale
           end
 
           private
+
+          def parse_events(events)
+            events.map { |k, v| StatsParser.parse(k, v) }
+          end
 
           def msg_events_sent(n_events)
             "#{n_events} events have been sent to the Kinesis adapter"
