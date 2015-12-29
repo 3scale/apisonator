@@ -34,6 +34,64 @@ module ThreeScale
           end
         end
 
+        describe '#delete_range' do
+          let(:buckets) { %w(20150101000000 20150101000010 20150101000020 20150101000030) }
+
+          before do
+            buckets.each { |bucket| subject.put_in_bucket(event_key, bucket) }
+          end
+
+          context 'when the bucket exists' do
+            context 'when it is the first one' do
+              let(:bucket) { buckets.first }
+
+              it 'only deletes the first one' do
+                subject.delete_range(bucket)
+                expect(subject.all_buckets).to match_array buckets[1..-1]
+              end
+            end
+
+            context 'when it is the last one' do
+              let(:bucket) { buckets.last }
+
+              it 'deletes all the buckets' do
+                subject.delete_range(bucket)
+                expect(subject.all_buckets).to be_empty
+              end
+            end
+
+            context 'when it is one in the middle' do
+              let(:position) { 2 }
+              let(:bucket) { buckets[position] }
+
+              it 'deletes the bucket specified and all the previous ones' do
+                subject.delete_range(bucket)
+                expect(subject.all_buckets).to match_array buckets[(position + 1)..-1]
+              end
+            end
+          end
+
+          context 'when the bucket does not exist' do
+            context 'when it is a bucket created before the first one that exists' do
+              let (:bucket) { '20140101000000' }
+
+              it 'does not delete any buckets' do
+                subject.delete_range(bucket)
+                expect(subject.all_buckets).to match_array buckets
+              end
+            end
+
+            context 'when it is a bucket created after the last one that exists' do
+              let (:bucket) { (buckets.last.to_i + 10).to_s }
+
+              it 'deletes all the buckets' do
+                subject.delete_range(bucket)
+                expect(subject.all_buckets).to be_empty
+              end
+            end
+          end
+        end
+
         describe '#all_buckets' do
           context 'when there are no buckets' do
             it 'returns an empty list' do

@@ -24,6 +24,10 @@ module ThreeScale
           storage.zrem(Keys.changed_keys_key, bucket)
         end
 
+        def delete_range(last_bucket)
+          storage.zremrangebyscore(Keys.changed_keys_key, 0, last_bucket)
+        end
+
         def all_buckets
           storage.zrange(Keys.changed_keys_key, 0, -1)
         end
