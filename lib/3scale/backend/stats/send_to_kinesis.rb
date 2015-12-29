@@ -6,8 +6,19 @@ module ThreeScale
   module Backend
     module Stats
       class SendToKinesis
-        SEND_TO_KINESIS_ENABLED_KEY = 'send_to_kinesis:enabled'
+        SEND_TO_KINESIS_ENABLED_KEY = 'send_to_kinesis:enabled'.freeze
         private_constant :SEND_TO_KINESIS_ENABLED_KEY
+
+        # We want to avoid having two jobs running at the same time. That could
+        # lead to sending repeated events to Kinesis.
+        # We use Redis to ensure that, using the atomic operation incr.
+        JOB_RUNNING_KEY = 'send_to_kinesis:job_running'.freeze
+        private_constant :JOB_RUNNING_KEY
+
+        # If for some reason the job fails to set JOB_RUNNING_KEY to 0, other
+        # jobs will not be able to execute. We solve this setting a TTL.
+        TTL_JOB_RUNNING_KEY_SEC = 120
+        private_constant :TTL_JOB_RUNNING_KEY_SEC
 
         class << self
           def enable
@@ -23,13 +34,18 @@ module ThreeScale
           end
 
           def schedule_job
-            if enabled?
+            if enabled? && !job_running?
               Resque.enqueue(SendToKinesisJob, Time.now.utc, Time.now.utc.to_f)
             end
           end
 
           def flush_pending_events
             kinesis_adapter.flush if enabled?
+          end
+
+          # To be called by a kinesis job once it exits so other jobs can run
+          def job_finished
+            storage.del(JOB_RUNNING_KEY)
           end
 
           private
@@ -44,6 +60,16 @@ module ThreeScale
                 access_key_id: config.aws_access_key_id,
                 secret_access_key: config.aws_secret_access_key)
             KinesisAdapter.new(config.kinesis_stream_name, kinesis_client, storage)
+          end
+
+          def job_running?
+            job_running = (storage.incr(JOB_RUNNING_KEY).to_i != 1)
+
+            unless job_running
+              storage.expire(JOB_RUNNING_KEY, TTL_JOB_RUNNING_KEY_SEC)
+            end
+
+            job_running
           end
         end
       end

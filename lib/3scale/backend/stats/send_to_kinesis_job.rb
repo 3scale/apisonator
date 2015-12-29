@@ -22,49 +22,32 @@ module ThreeScale
         FILTERED_EVENT_PERIODS = %w(week eternity)
         private_constant :FILTERED_EVENT_PERIODS
 
-        # We want to avoid having two jobs running at the same time. That could
-        # lead to sending repeated events to Kinesis.
-        # We use Redis to ensure that, using the atomic operation incr.
-        JOB_RUNNING_KEY = 'send_to_kinesis:job_running'.freeze
-        private_constant :JOB_RUNNING_KEY
-
-        # If for some reason the job fails to set JOB_RUNNING_KEY to 0, other
-        # jobs will not be able to execute. We solve this setting a TTL.
-        TTL_JOB_RUNNING_KEY_SEC = 120
-        private_constant :TTL_JOB_RUNNING_KEY_SEC
-
         class << self
           def perform_logged(end_time_utc, _)
-            if job_running?
-              [true, msg_job_running]
-            else
-              self.job_running = true
+            # end_time_utc will be a string when the worker processes this job.
+            # The parameter is passed through Redis as a string. We need to
+            # convert it back.
+            end_time = DateTime.parse(end_time_utc).to_time.utc
 
-              # end_time_utc will be a string when the worker processes this job.
-              # The parameter is passed through Redis as a string. We need to
-              # convert it back.
-              end_time = DateTime.parse(end_time_utc).to_time.utc
+            events_sent = 0
+            pending_events = bucket_reader.pending_events_in_buckets(end_time)
 
-              events_sent = 0
-              pending_events = bucket_reader.pending_events_in_buckets(end_time)
+            unless pending_events[:events].empty?
+              parsed_events = parse_events(pending_events[:events])
+              filtered_events = filter_events(parsed_events)
+              kinesis_adapter.send_events(filtered_events)
+              bucket_reader.latest_bucket_read = pending_events[:latest_bucket]
 
-              unless pending_events[:events].empty?
-                parsed_events = parse_events(pending_events[:events])
-                filtered_events = filter_events(parsed_events)
-                kinesis_adapter.send_events(filtered_events)
-                bucket_reader.latest_bucket_read = pending_events[:latest_bucket]
+              events_sent = filtered_events.size
 
-                events_sent = filtered_events.size
-
-                # We might use a different strategy to delete buckets in the
-                # future, but for now, we are going to delete the buckets as they
-                # are read
-                bucket_storage.delete_range(pending_events[:latest_bucket])
-              end
-
-              self.job_running = false
-              [true, msg_events_sent(events_sent)]
+              # We might use a different strategy to delete buckets in the
+              # future, but for now, we are going to delete the buckets as they
+              # are read
+              bucket_storage.delete_range(pending_events[:latest_bucket])
             end
+
+            SendToKinesis.job_finished
+            [true, msg_events_sent(events_sent)]
           end
 
           private
@@ -81,27 +64,8 @@ module ThreeScale
             end
           end
 
-          def job_running?
-            storage.get(JOB_RUNNING_KEY).to_i == 1
-          end
-
-          def job_running=(value)
-            if value
-              storage.pipelined do
-                storage.incr(JOB_RUNNING_KEY)
-                storage.expire(JOB_RUNNING_KEY, TTL_JOB_RUNNING_KEY_SEC)
-              end
-            else
-              storage.del(JOB_RUNNING_KEY)
-            end
-          end
-
           def msg_events_sent(n_events)
             "#{n_events} events have been sent to the Kinesis adapter"
-          end
-
-          def msg_job_running
-            'another job is running'.freeze
           end
 
           def storage
