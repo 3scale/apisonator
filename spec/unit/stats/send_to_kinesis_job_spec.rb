@@ -28,29 +28,66 @@ module ThreeScale
 
         describe '.perform_logged' do
           context 'when there are pending events' do
-            let(:pending_events) do
+            let(:events_not_to_filter) do
               { 'stats/{service:s1}/metric:m1/day:20151210' => '10',
                 'stats/{service:s1}/metric:m1/day:20151211' => '20' }
             end
+            let(:parsed_events_not_to_filter) do
+              events_not_to_filter.map { |k, v| StatsParser.parse(k, v) }
+            end
             let(:bucket) { '20150101000000' }
 
-            before do
-              allow(bucket_reader)
-                  .to receive(:pending_events_in_buckets)
-                          .with(end_time_utc)
-                          .and_return({ events: pending_events, latest_bucket: bucket })
+            context 'when pending events does not contain events that need to be filtered' do
+              let(:pending_events) { events_not_to_filter }
+              let(:parsed_events) { parsed_events_not_to_filter }
 
-              allow(bucket_reader)
-                  .to receive(:latest_bucket_read=).with(bucket)
+              before do
+                allow(bucket_reader)
+                    .to receive(:pending_events_in_buckets)
+                            .with(end_time_utc)
+                            .and_return({ events: pending_events, latest_bucket: bucket })
 
-              allow(kinesis_adapter).to receive(:send_events)
+                allow(bucket_reader)
+                    .to receive(:latest_bucket_read=).with(bucket)
 
-              allow(bucket_storage).to receive(:delete_range).with(bucket)
+                allow(kinesis_adapter).to receive(:send_events).with(parsed_events)
+
+                allow(bucket_storage).to receive(:delete_range).with(bucket)
+              end
+
+              it 'returns array with format [true, msg]' do
+                expect(subject.perform_logged(end_time_utc.to_s, end_time_utc))
+                    .to eq [true, subject.send(:msg_events_sent, pending_events.size)]
+              end
             end
 
-            it 'returns array with format [true, msg]' do
-              expect(subject.perform_logged(end_time_utc.to_s, end_time_utc))
-                  .to eq [true, subject.send(:msg_events_sent, pending_events.size)]
+            context 'when pending events contains some events that need to be filtered' do
+              let(:events_to_filter) do
+                { 'stats/{service:s1}/metric:m1/eternity' => '10',
+                  'stats/{service:s1}/metric:m1/week:20151228' => '20' }
+              end
+              let(:pending_events) { events_not_to_filter.merge(events_to_filter) }
+
+              before do
+                allow(bucket_reader)
+                    .to receive(:pending_events_in_buckets)
+                            .with(end_time_utc)
+                            .and_return({ events: pending_events, latest_bucket: bucket })
+
+                allow(bucket_reader)
+                    .to receive(:latest_bucket_read=).with(bucket)
+
+                allow(kinesis_adapter)
+                    .to receive(:send_events).with(parsed_events_not_to_filter)
+
+                allow(bucket_storage).to receive(:delete_range).with(bucket)
+              end
+
+              it 'returns array with format [true, msg]' do
+                expect(subject.perform_logged(end_time_utc.to_s, end_time_utc))
+                    .to eq [true, subject.send(:msg_events_sent, events_not_to_filter.size)]
+              end
+
             end
           end
 

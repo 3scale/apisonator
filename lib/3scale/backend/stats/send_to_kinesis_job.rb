@@ -13,6 +13,9 @@ module ThreeScale
       class SendToKinesisJob < BackgroundJob
         @queue = :stats
 
+        FILTERED_EVENT_PERIODS = %w(week eternity)
+        private_constant :FILTERED_EVENT_PERIODS
+
         class << self
           def perform_logged(end_time_utc, _)
             # end_time_utc will be a string when the worker processes this job.
@@ -20,11 +23,16 @@ module ThreeScale
             # convert it back.
             end_time = DateTime.parse(end_time_utc).to_time.utc
 
+            events_sent = 0
             pending_events = bucket_reader.pending_events_in_buckets(end_time)
 
             unless pending_events[:events].empty?
-              kinesis_adapter.send_events(parse_events(pending_events[:events]))
+              parsed_events = parse_events(pending_events[:events])
+              filtered_events = filter_events(parsed_events)
+              kinesis_adapter.send_events(filtered_events)
               bucket_reader.latest_bucket_read = pending_events[:latest_bucket]
+
+              events_sent = filtered_events.size
 
               # We might use a different strategy to delete buckets in the
               # future, but for now, we are going to delete the buckets as they
@@ -32,13 +40,21 @@ module ThreeScale
               bucket_storage.delete_range(pending_events[:latest_bucket])
             end
 
-            [true, msg_events_sent(pending_events[:events].size)]
+            [true, msg_events_sent(events_sent)]
           end
 
           private
 
           def parse_events(events)
             events.map { |k, v| StatsParser.parse(k, v) }
+          end
+
+          # We do not want to send all the events to Kinesis.
+          # This method filters them.
+          def filter_events(events)
+            events.reject do |event|
+              FILTERED_EVENT_PERIODS.include?(event[:period])
+            end
           end
 
           def msg_events_sent(n_events)
