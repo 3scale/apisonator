@@ -25,6 +25,11 @@ module ThreeScale
             unless pending_events[:events].empty?
               kinesis_adapter.send_events(parse_events(pending_events[:events]))
               bucket_reader.latest_bucket_read = pending_events[:latest_bucket]
+
+              # We might use a different strategy to delete buckets in the
+              # future, but for now, we are going to delete the buckets as they
+              # are read
+              bucket_storage.delete_range(pending_events[:latest_bucket])
             end
 
             [true, msg_events_sent(pending_events[:events].size)]
@@ -48,8 +53,12 @@ module ThreeScale
             Backend.configuration
           end
 
+          def bucket_storage
+            BucketStorage.new(storage)
+          end
+
           def bucket_reader
-            BucketReader.new(config.stats.bucket_size, BucketStorage.new(storage), storage)
+            BucketReader.new(config.stats.bucket_size, bucket_storage, storage)
           end
 
           def kinesis_adapter

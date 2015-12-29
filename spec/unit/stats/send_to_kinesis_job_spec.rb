@@ -10,6 +10,7 @@ module ThreeScale
         let(:end_time_utc) { Time.at(Time.now.to_i).utc }
         let(:bucket_reader) { double }
         let(:kinesis_adapter) { double }
+        let(:bucket_storage) { double }
 
         subject { SendToKinesisJob }
 
@@ -22,6 +23,7 @@ module ThreeScale
 
           allow(subject).to receive(:bucket_reader).and_return(bucket_reader)
           allow(subject).to receive(:kinesis_adapter).and_return(kinesis_adapter)
+          allow(subject).to receive(:bucket_storage).and_return(bucket_storage)
         end
 
         describe '.perform_logged' do
@@ -42,6 +44,8 @@ module ThreeScale
                   .to receive(:latest_bucket_read=).with(bucket)
 
               allow(kinesis_adapter).to receive(:send_events)
+
+              allow(bucket_storage).to receive(:delete_range).with(bucket)
             end
 
             it 'returns array with format [true, msg]' do
@@ -65,6 +69,11 @@ module ThreeScale
 
             it 'does not mark any bucket as the latest read' do
               expect(bucket_reader).not_to receive(:latest_bucket_read=)
+              subject.perform_logged(end_time_utc.to_s, end_time_utc)
+            end
+
+            it 'does not delete any buckets' do
+              expect(bucket_storage).not_to receive(:delete_range)
               subject.perform_logged(end_time_utc.to_s, end_time_utc)
             end
 
