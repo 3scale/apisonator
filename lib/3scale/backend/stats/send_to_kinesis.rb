@@ -11,6 +11,8 @@ module ThreeScale
 
         # We want to avoid having two jobs running at the same time. That could
         # lead to sending repeated events to Kinesis.
+        # Similarly, we do not want to execute 2 flushes concurrently, or
+        # execute one when a kinesis job is running.
         # We use Redis to ensure that, using the atomic operation incr.
         JOB_RUNNING_KEY = 'send_to_kinesis:job_running'.freeze
         private_constant :JOB_RUNNING_KEY
@@ -40,7 +42,10 @@ module ThreeScale
           end
 
           def flush_pending_events
-            kinesis_adapter.flush if enabled?
+            if enabled? && !job_running?
+              kinesis_adapter.flush
+              job_finished # flush is not asynchronous
+            end
           end
 
           # To be called by a kinesis job once it exits so other jobs can run
