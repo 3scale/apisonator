@@ -8,7 +8,7 @@ module ThreeScale
         describe '.enable!' do
           it 'writes the key on redis enabling storage stats.' do
             Storage.enable!
-            expect(Storage.enabled?).to be_true
+            expect(Storage.enabled?).to be true
           end
         end
 
@@ -17,7 +17,7 @@ module ThreeScale
 
           it 'deletes the key on redis disabling storage stats.' do
             Storage.disable!
-            expect(Storage.enabled?).to be_false
+            expect(Storage.enabled?).to be false
           end
         end
       end

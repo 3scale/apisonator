@@ -45,11 +45,11 @@ resource "Services (prefix: /services)" do
 
       (service = ThreeScale::Backend::Service.load_by_id('1002')).should_not be_nil
       service.provider_key.should == 'foo'
-      service.referrer_filters_required?.should be_true
+      service.referrer_filters_required?.should be true
       service.backend_version.should == 'oauth'
       service.default_user_plan_name.should == 'default user plan name'
       service.default_user_plan_id.should == 'plan ID'
-      service.default_service?.should be_true
+      service.default_service?.should be true
     end
 
     example 'Try updating Service with invalid data' do
@@ -82,7 +82,7 @@ resource "Services (prefix: /services)" do
 
       (service = ThreeScale::Backend::Service.load_by_id('1001')).should_not be_nil
       service.provider_key.should == 'foo'
-      service.referrer_filters_required?.should be_true
+      service.referrer_filters_required?.should be true
       service.backend_version.should == 'oauth'
       service.default_user_plan_name.should == 'default user plan name'
       service.default_user_plan_id.should == 'plan ID'

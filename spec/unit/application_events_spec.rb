@@ -77,7 +77,7 @@ module ThreeScale
 
       describe '.ping' do
         before { expect(EventStorage).to receive(:ping_if_not_empty) }
-        it { expect(ApplicationEvents.ping).to be_true}
+        it { expect(ApplicationEvents.ping).to be true}
       end
     end
   end

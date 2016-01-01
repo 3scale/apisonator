@@ -93,7 +93,7 @@ resource 'Application keys' do
 
         expect(response_status).to eq(201)
         expect(response_json['status']).to eq('created')
-        expect(example_app.has_key?('random')).to be_true
+        expect(example_app.has_key?('random')).to be true
       end
     end
   end
@@ -129,7 +129,7 @@ resource 'Application keys' do
       example_request 'Delete an application key' do
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
-        expect(example_app.has_key?("foo")).to be_false
+        expect(example_app.has_key?("foo")).to be false
       end
     end
   end

@@ -35,7 +35,7 @@ module ThreeScale
         end
 
         it 'changes filters_required field to a Boolean' do
-          result.referrer_filters_required?.should be_true
+          result.referrer_filters_required?.should be true
         end
 
         describe 'user_registration_required' do
@@ -43,7 +43,7 @@ module ThreeScale
             service = Service.save!(provider_key: 'foo', id: '7001')
             result = Service.load_by_id(service.id)
 
-            result.user_registration_required?.should be_true
+            result.user_registration_required?.should be true
           end
 
           it 'changes to Boolean when set to Integer' do
@@ -51,7 +51,7 @@ module ThreeScale
               provider_key: 'foo', id: '7001', user_registration_required: 1)
             result = Service.load_by_id(service.id)
 
-            result.user_registration_required?.should be_true
+            result.user_registration_required?.should be true
           end
 
           it 'is false when set to false' do
@@ -60,7 +60,7 @@ module ThreeScale
               default_user_plan_name: "user_plan_name")
             result = Service.load_by_id(service.id)
 
-            result.user_registration_required?.should be_false
+            result.user_registration_required?.should be false
           end
         end
       end
@@ -73,11 +73,11 @@ module ThreeScale
         let(:non_existing_service_id) { service.id.to_i.succ.to_s }
 
         it 'returns true when the service exists' do
-          Service.exists?(existing_service_id).should be_true
+          Service.exists?(existing_service_id).should be true
         end
 
         it 'returns false when the service does not exist' do
-          Service.exists?(non_existing_service_id).should be_false
+          Service.exists?(non_existing_service_id).should be false
         end
       end
 
@@ -127,19 +127,19 @@ module ThreeScale
               user_registration_required: false, default_user_plan_id: '1001',
               default_user_plan_name: "user_plan_name")
 
-            Service.load_by_id(7001).user_registration_required?.should be_false
+            Service.load_by_id(7001).user_registration_required?.should be false
           end
 
           it 'sets the attibute to true when nil' do
             Service.save!(provider_key: 'foo', id: 7001, user_registration_required: nil)
 
-            Service.load_by_id(7001).user_registration_required?.should be_true
+            Service.load_by_id(7001).user_registration_required?.should be true
           end
 
           it 'sets the attibute to true when already true' do
             Service.save!(provider_key: 'foo', id: 7001, user_registration_required: true)
 
-            Service.load_by_id(7001).user_registration_required?.should be_true
+            Service.load_by_id(7001).user_registration_required?.should be true
           end
         end
       end
@@ -172,10 +172,10 @@ module ThreeScale
 
         it 'cleans service cache' do
           Service.default_id('foo')
-          Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo')).should be_true
+          Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo')).should be true
 
           service.save!
-          Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo')).should be_false
+          Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo')).should be false
         end
 
         it 'validates user_registration_required field' do

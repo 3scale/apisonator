@@ -13,7 +13,7 @@ module ThreeScale
           end
 
           it 'changes :usage to a string' do
-            LogRequestStorage.should_receive(:store_all).with do |args|
+            LogRequestStorage.should_receive(:store_all).with(any_args) do |args|
               args.first[:usage].should == "hits: 1, other: 6, "
             end
 
@@ -22,7 +22,7 @@ module ThreeScale
           end
 
           it 'changes missing fields to "N/A"' do
-            LogRequestStorage.should_receive(:store_all).with do |args|
+            LogRequestStorage.should_receive(:store_all).with(any_args) do |args|
               args.first[:usage].should == "N/A"
               args.first[:log]['code'].should == "N/A"
               args.first[:log]['request'].should == "N/A"
@@ -33,7 +33,7 @@ module ThreeScale
           end
 
           it 'passes non-empty data' do
-            LogRequestStorage.should_receive(:store_all).with do |args|
+            LogRequestStorage.should_receive(:store_all).with(any_args) do |args|
               args.first[:usage].should == "N/A"
               args.first[:log]['code'].should == '200'
               args.first[:log]['request'].should == "/request?bla=bla&"
@@ -52,7 +52,7 @@ module ThreeScale
               map{ ('a'..'z').to_a[rand(26)] }.join
             long_code = (0...LogRequestStorage::ENTRY_MAX_LEN_CODE+100).
               map{ ('a'..'z').to_a[rand(26)] }.join
-            LogRequestStorage.should_receive(:store_all).with do |args|
+            LogRequestStorage.should_receive(:store_all).with(any_args) do |args|
               args.first[:usage].should == "N/A"
               args.first[:log]['code'].should =~ /#{LogRequestStorage::TRUNCATED}/
               args.first[:log]['request'].should =~ /#{LogRequestStorage::TRUNCATED}/

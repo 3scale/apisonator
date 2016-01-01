@@ -19,7 +19,7 @@ module ThreeScale
         end
 
         it 'disables the service' do
-          expect(@service.enabled?).to be_false
+          expect(@service.enabled?).to be false
         end
       end
 
@@ -31,7 +31,7 @@ module ThreeScale
         end
 
         it 'enables service' do
-          expect(@service.enabled?).to be_true
+          expect(@service.enabled?).to be_truthy
         end
 
         it 'create a bucket if needed' do

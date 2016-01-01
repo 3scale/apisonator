@@ -272,7 +272,7 @@ describe StatsKeys2CSV do
       end
 
       it 'returns true' do
-        expect(stats_key_to_csv.errored?).to be_true
+        expect(stats_key_to_csv.errored?).to be true
       end
     end
 
@@ -288,7 +288,7 @@ describe StatsKeys2CSV do
       end
 
       it 'returns false' do
-        expect(stats_key_to_csv.errored?).to be_false
+        expect(stats_key_to_csv.errored?).to be false
       end
     end
   end

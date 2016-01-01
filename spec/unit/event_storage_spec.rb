@@ -4,8 +4,8 @@ module ThreeScale
       describe '.store' do
         context 'with valid event type' do
           it 'returns ok' do
-            expect(EventStorage.store(:alert, {})).to be_true
-            expect(EventStorage.store(:first_traffic, {})).to be_true
+            expect(EventStorage.store(:alert, {})).to be true
+            expect(EventStorage.store(:first_traffic, {})).to be true
           end
 
           context 'when event already exists' do
@@ -14,7 +14,7 @@ module ThreeScale
             before { EventStorage.store(:alert, event) }
 
             it 'returns ok' do
-              expect(EventStorage.store(:alert, event)).to be_true
+              expect(EventStorage.store(:alert, event)).to be true
             end
 
             it 'modifies the size of events set' do
@@ -193,7 +193,7 @@ module ThreeScale
                 EventStorage.ping_if_not_empty
               end
 
-              it { expect(subject).to be_true }
+              it { expect(subject).to be true }
             end
 
             context 'and ping TTL is not expired' do
@@ -202,7 +202,7 @@ module ThreeScale
                 EventStorage.ping_if_not_empty
               end
 
-              it { expect(subject).to be_false }
+              it { expect(subject).to be false }
             end
           end
 
@@ -231,7 +231,7 @@ module ThreeScale
             before do
               ThreeScale::Backend::EventStorage.stub(:events_hook_configured?).and_return(false)
             end
-            it { expect(subject).to be_false }
+            it { expect(subject).to be false }
           end
 
           context 'when hook notification fails' do
@@ -248,7 +248,7 @@ module ThreeScale
 
         context 'without events in set' do
           subject { EventStorage.ping_if_not_empty }
-          it { expect(subject).to be_false }
+          it { expect(subject).to be false }
         end
       end
     end
