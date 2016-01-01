@@ -27,6 +27,7 @@ group :test do
   gem 'resque_unit', '~> 0.4.4'
   gem 'resque_spec', '~> 0.15.0'
   gem 'timecop',     '~> 0.7.1'
+  gem 'rspec',       '~> 3.4.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.3.0', require: nil
   gem 'geminabox', require: false
   gem 'ci_reporter_test_unit', require: nil
@@ -41,7 +42,7 @@ end
 group :development, :test do
   gem 'pry',      '~> 0.10.1'
   gem 'pry-doc',  '~> 0.8.0'
-  gem 'rspec_api_documentation', '~> 2.0.0'
+  gem 'rspec_api_documentation', '~> 4.6.0'
 end
 
 # gems required by the runner
