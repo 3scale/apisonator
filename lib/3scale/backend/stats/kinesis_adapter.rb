@@ -87,8 +87,17 @@ module ThreeScale
           # Record format expected by Kinesis:
           # [{ data: "data_event_group_1" }, { data: "data_event_group_2" }]
           events.each_slice(EVENTS_PER_RECORD).map do |events_slice|
-            { data: events_slice.to_json }
+            { data: events_to_pseudo_json(events_slice) }
           end
+        end
+
+        # We want to send to Kinesis events that can be read by Redshift.
+        # Redshift expects events in JSON format without the '[]' and
+        # without separating them with commas.
+        # We put each event in a separated line, that will make their parsing
+        # easier, but it is not needed by Redshift.
+        def events_to_pseudo_json(events)
+          events.map { |event| event.to_json }.join("\n") + "\n"
         end
 
         def failed_events(request_responses, events)

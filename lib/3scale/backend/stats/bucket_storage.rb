@@ -47,10 +47,14 @@ module ThreeScale
           event_keys = bucket_content(bucket)
           event_keys_slices =  event_keys.each_slice(EVENTS_SLICE_CALL_TO_REDIS)
 
-          # values are stored as strings in Redis, but we want integers
+          # Values are stored as strings in Redis, but we want integers.
+          # There are some values that can be nil. This happens when the key
+          # has a TTL and we read it once it has expired. Right now, event keys
+          # with granularity = 'minute' expire after 180 s. We might need to
+          # increase that to make sure that we do not miss any values.
           event_values = event_keys_slices.flat_map do |event_keys_slice|
             storage.mget(event_keys_slice)
-          end.map { |value| Integer(value) }
+          end.map { |value| value ? Integer(value) : nil }
 
           Hash[event_keys.zip(event_values)]
         end

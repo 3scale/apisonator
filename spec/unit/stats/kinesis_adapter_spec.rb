@@ -34,12 +34,13 @@ module ThreeScale
 
           context 'when the number of events is enough to fill just 1 record' do
             let(:events) { generate_unique_events(events_per_record) }
+            let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
 
             before do
               expect(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
-                                  records: [{ data: events.to_json }] })
+                                  records: [{ data: events_pseudo_json }] })
                           .and_return(failed_put_count: 0,
                                       request_responses: [{ record_id: 'id' }])
             end
@@ -58,8 +59,10 @@ module ThreeScale
             let(:records) { 2 } # Assuming that a batch can contain at least 2 records
             let(:events) { generate_unique_events(records*events_per_record) }
             let(:kinesis_records) do
-              [{ data: events[0..events_per_record - 1].to_json },
-               { data: events[events_per_record..-1].to_json }]
+              [{ data: subject.send(:events_to_pseudo_json,
+                                    events[0..events_per_record - 1]) },
+               { data: subject.send(:events_to_pseudo_json,
+                                    events[events_per_record..-1]) }]
             end
 
             before do
@@ -86,7 +89,7 @@ module ThreeScale
             let(:events) { generate_unique_events(records*events_per_record) }
             let(:kinesis_records) do
               events.each_slice(events_per_record).map do |events_slice|
-                { data: events_slice.to_json }
+                { data: subject.send(:events_to_pseudo_json, events_slice) }
               end
             end
 
@@ -124,24 +127,31 @@ module ThreeScale
 
           context 'when Kinesis returns an error for some record' do
             let(:events) { generate_unique_events(2*events_per_record) }
-            let(:first_record) { events[0..events_per_record - 1] }
-            let(:second_record) { events[events_per_record..-1] }
+            let(:events_first_record) { events[0..events_per_record - 1] }
+            let(:events_second_record) { events[events_per_record..-1] }
+            let(:kinesis_first_record) do
+              subject.send(:events_to_pseudo_json, events_first_record)
+            end
+            let(:kinesis_second_record) do
+              subject.send(:events_to_pseudo_json, events_second_record)
+            end
 
             before do
               # return error for the second record
               expect(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
-                                  records: [{ data: first_record.to_json },
-                                            { data: second_record.to_json }] })
+                                  records: [{ data: kinesis_first_record },
+                                            { data: kinesis_second_record }] })
                           .and_return(failed_put_count: 1,
                                       request_responses: [{ record_id: 'id' },
                                                           { error_code: 'err' }])
             end
 
             it 'the events of the failed record are stored in pending events' do
-              subject.send_events(first_record + second_record)
-              expect(subject.send(:stored_pending_events)).to match_array second_record
+              subject.send_events(events_first_record + events_second_record)
+              expect(subject.send(:stored_pending_events))
+                  .to match_array events_second_record
             end
           end
         end
@@ -149,6 +159,7 @@ module ThreeScale
         describe '#flush' do
           context 'when the number of pending events is not enough to fill 1 record' do
             let(:events) { generate_unique_events(events_per_record - 1) }
+            let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
 
             before do
               expect(subject).to receive(:stored_pending_events).and_return(events)
@@ -156,7 +167,7 @@ module ThreeScale
               expect(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
-                                  records: [{ data: events.to_json }] })
+                                  records: [{ data: events_pseudo_json }] })
                           .and_return(failed_put_count: 0,
                                       request_responses: [{ record_id: 'id' }])
             end
@@ -172,6 +183,7 @@ module ThreeScale
 
           context 'when the number of pending events it enough to fill 1 record' do
             let(:events) { generate_unique_events(events_per_record) }
+            let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
 
             before do
               expect(subject).to receive(:stored_pending_events).and_return(events)
@@ -179,7 +191,7 @@ module ThreeScale
               expect(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
-                                  records: [{ data: events.to_json }] })
+                                  records: [{ data: events_pseudo_json }] })
                           .and_return(failed_put_count: 0,
                                       request_responses: [{ record_id: 'id' }])
             end
