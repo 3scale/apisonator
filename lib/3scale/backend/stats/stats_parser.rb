@@ -76,6 +76,8 @@ module ThreeScale
               raise StatsKeyValueInvalid, "Error parsing #{key_value}"
             end
 
+            date_cols_to_timestamp(h)
+
             Hash[result.map{ |k, v| [k.to_sym, v] }]
           end
 
@@ -109,6 +111,21 @@ module ThreeScale
             hash
           end
 
+          # Adds the 'timestamp' key to the hash. The value follows the format:
+          # YYYYMMDD HH:mm. This function also deletes all the date columns
+          # from the given hash
+          def date_cols_to_timestamp(hash)
+            hash['timestamp'.freeze] = timestamp(hash)
+            DATE_COLS.each { |date_col| hash.delete(date_col) }
+            hash
+          end
+
+          def timestamp(hash)
+            return '' if hash['period'] == 'eternity'
+            timestamp = hash['year'] + hash['month'] + hash['day'] + ' '
+            timestamp << (hash['hour'] ? hash['hour'] : '00')
+            timestamp << (hash['minute'] ? (':' + hash['minute']) : ':00')
+          end
         end
       end
     end
