@@ -113,7 +113,7 @@ module ThreeScale
         end
 
         describe '#put_in_bucket' do
-          let(:event_value) { '10' }
+          let(:event_value) { 10 }
 
           before { storage.set(event_key, event_value) }
 
@@ -144,8 +144,8 @@ module ThreeScale
         describe '#bucket_content_with_values' do
           context 'when the bucket exists' do
             let(:events) do
-              { 'stats/{service:11}/metric:21/day:20151207' => '10',
-                'stats/{service:12}/metric:22/day:20151208' => '20' }
+              { 'stats/{service:11}/metric:21/day:20151207' => 10,
+                'stats/{service:12}/metric:22/day:20151208' => 20 }
             end
 
             before do

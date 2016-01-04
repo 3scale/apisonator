@@ -40,12 +40,9 @@ module ThreeScale
         let(:third_bucket) { (first_bucket.to_i + 2*bucket_create_interval).to_s }
 
         let(:buckets_and_events) do
-          { first_bucket => { 'event11' => 'value11',
-                              'event12' => 'value12' },
-            second_bucket =>  { 'event21' => 'value21',
-                                'event22' => 'value22' },
-            third_bucket => { 'event31' => 'value31',
-                              'event32' => 'value32' } }
+          { first_bucket => { 'event11' => 11, 'event12' => 12 },
+            second_bucket =>  { 'event21' => 21, 'event22' => 22 },
+            third_bucket => { 'event31' => 31, 'event32' => 32 } }
         end
 
         let(:backup_seconds_read_bucket) do
@@ -157,8 +154,8 @@ module ThreeScale
               DateTime.parse(newer_bucket).to_time.utc + backup_seconds_read_bucket
             end
             let(:buckets_and_events) do
-              { older_bucket => { 'event11' => '10', 'event12' => '30' },
-                newer_bucket => { 'event11' => '20', 'event13' => '40' } }
+              { older_bucket => { 'event11' => 10, 'event12' => 30 },
+                newer_bucket => { 'event11' => 20, 'event13' => 40 } }
             end
 
             before { save_buckets_and_events(buckets_and_events) }
