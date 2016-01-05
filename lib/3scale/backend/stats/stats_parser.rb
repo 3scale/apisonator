@@ -97,18 +97,26 @@ module ThreeScale
             if period
               hash['period'.freeze] = period
               period_val = (period == 'eternity' ? '' : hash[period].dup)
-
-              DATE_COLS.each do |date_col|
-                hash[date_col] = if date_col == 'year'
-                                   period_val.slice! 0, 4
-                                 else
-                                   period_val.slice! 0, 2
-                                 end
-                hash[date_col] = nil if hash[date_col].empty?
-              end
+              fix_date_cols(hash, period_val)
               NON_DATE_PERIODS.each { |ndp| hash.delete ndp }
             end
             hash
+          end
+
+          def fix_date_cols(hash, period_val)
+            DATE_COLS.each do |date_col|
+              hash[date_col] = if date_col == 'year'
+                                 period_val.slice! 0, 4
+                               else
+                                 period_val.slice! 0, 2
+                               end
+
+              if hash[date_col].empty?
+                hash[date_col] = nil
+              elsif hash[date_col].length == 1 # because of 'compacted' times
+                hash[date_col] = hash[date_col] + '0'
+              end
+            end
           end
 
           # Adds the 'timestamp' key to the hash. The value follows the format:

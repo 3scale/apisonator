@@ -132,23 +132,65 @@ module ThreeScale
             # The parse method might get 'compacted' times. This is performed
             # by ThreeScale::Backend::TimeHacks.to_compact_s
             # For example, for the period 'hour', we might get '20160101' when
-            # hour = '00'
+            # hour = '00'. When period is 'hour' we might get '201601011' when
+            # hour = '10'. Yes, I hope we can get rid of that compact function
+            # some day...
             context 'and with a time that has been "compacted"' do
-              let(:period) { 'hour' }
-              let(:time) { '20160101' }
-              let(:key) do
-                stats_key(service: service, cinstance: cinstance, metric: metric,
-                          period: period, time: time)
+              context 'without hours or minutes but granularity hour' do
+                let(:period) { 'hour' }
+                let(:time) { '20160101' }
+                let(:key) do
+                  stats_key(service: service, cinstance: cinstance, metric: metric,
+                            period: period, time: time)
+                end
+
+                it 'returns the correct hash' do
+                  expect(subject.parse(key, value))
+                      .to eq({ service: service,
+                               cinstance: cinstance,
+                               metric: metric,
+                               period: period,
+                               timestamp: "#{time[0..7]} 00:00",
+                               value: value })
+                end
               end
 
-              it 'returns the correct hash' do
-                expect(subject.parse(key, value))
-                    .to eq({ service: service,
-                             cinstance: cinstance,
-                             metric: metric,
-                             period: period,
-                             timestamp: "#{time[0..7]} 00:00",
-                             value: value })
+              context 'with granularity hour and compacted hour (1 represents 10)' do
+                let(:period) { 'hour' }
+                let(:time) { '201601011' }
+                let(:key) do
+                  stats_key(service: service, cinstance: cinstance, metric: metric,
+                            period: period, time: time)
+                end
+
+                it 'returns the correct hash' do
+                  expect(subject.parse(key, value))
+                      .to eq({ service: service,
+                               cinstance: cinstance,
+                               metric: metric,
+                               period: period,
+                               timestamp: "#{time[0..7]} 10:00",
+                               value: value })
+                end
+              end
+
+              context 'with granularity minute and 1 digit minute' do
+                let(:period) { 'minute' }
+                let(:time) { '20160101103' }
+                let(:key) do
+                  stats_key(service: service, cinstance: cinstance, metric: metric,
+                            period: period, time: time)
+                end
+
+                it 'returns the correct hash' do
+                  expect(subject.parse(key, value))
+                      .to eq({ service: service,
+                               cinstance: cinstance,
+                               metric: metric,
+                               period: period,
+                               timestamp: "#{time[0..7]} 10:30",
+                               value: value })
+                end
               end
             end
           end
