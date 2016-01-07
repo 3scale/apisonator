@@ -75,6 +75,16 @@ module ThreeScale
       # Time.utc(2010, 5, 6, 17, 24, 00).to_compact_s # "201005061724"
       # Time.utc(2010, 5, 6, 17, 00, 00).to_compact_s # "2010050617"
       # Time.utc(2010, 5, 6, 00, 00, 00).to_compact_s # "20100506"
+      #
+      # Careful with cases where hours, minutes or seconds have 2 digits and
+      # the second one is a 0. You might find them a bit counter-intuitive
+      # (notice the missing 0 at the end of the resulting string):
+      # Time.utc(2016, 1, 2, 10, 11, 10).to_compact_s # "2016010210111"
+      # Time.utc(2016, 1, 2, 18, 10, 0).to_compact_s # "20160102181"
+      # Time.utc(2016, 1, 2, 10, 0, 0).to_compact_s # "201601021"
+      #
+      # That behavior does not happen with days ending with a 0:
+      # Time.utc(2016, 1, 20, 0, 0, 0).to_compact_s # "20160120"
       def to_compact_s
         strftime('%Y%m%d%H%M%S').sub(/0{0,6}$/, '')
       end
