@@ -16,6 +16,20 @@ module ThreeScale
       #      than once.
       # The events are sent in batches to Kinesis, but the component that does
       # that batching is the Kinesis adapter.
+      #
+      # Before sending the events to Kinesis, we attach a 'time_gen' attribute
+      # to each of them. This is a timestamp that indicates approximately when
+      # the event was generated based on the bucket where it was stored.
+      # We need this attribute because we will have repeated event keys in
+      # Redis and we will need to know which one contains the most updated
+      # value.
+      # Notice that we do not send all the events that are in the buckets to
+      # Kinesis. This job reads several buckets each time it runs. Some events
+      # can be repeated across those buckets. However, the job will only send
+      # to Kinesis the latest value (the one in the most recent bucket). This
+      # reduces the information that we need to parse, filter, and send.
+      # We need the extra field 'time_gen', because we cannot safely assume any
+      # order in S3 when sending events to Kinesis.
       class SendToKinesisJob < BackgroundJob
         @queue = :stats
 
