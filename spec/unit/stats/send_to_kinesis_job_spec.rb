@@ -28,36 +28,38 @@ module ThreeScale
 
         describe '.perform_logged' do
           context 'when there are pending events' do
-            let(:events_not_to_filter) do
+            let(:events) do
               { 'stats/{service:s1}/metric:m1/day:20151210' => '10',
                 'stats/{service:s1}/metric:m1/day:20151211' => '20' }
             end
-            let(:parsed_events_not_to_filter) do
-              events_not_to_filter.map { |k, v| StatsParser.parse(k, v) }
+
+            let(:bucket_timestamp) do
+              DateTime.parse(bucket).to_time.utc.strftime('%Y%m%d %H:%M:%S')
             end
+
+            let(:events_to_send) do
+              events.map do |k, v|
+                StatsParser.parse(k, v).merge!(time_gen: bucket_timestamp)
+              end
+            end
+
             let(:bucket) { '20150101000000' }
 
             context 'when pending events does not contain events that need to be filtered' do
-              let(:pending_events) { events_not_to_filter }
-              let(:parsed_events) { parsed_events_not_to_filter }
-
               before do
                 allow(bucket_reader)
                     .to receive(:pending_events_in_buckets)
                             .with(end_time_utc)
-                            .and_return({ events: pending_events, latest_bucket: bucket })
+                            .and_return({ events: events, latest_bucket: bucket })
 
-                allow(bucket_reader)
-                    .to receive(:latest_bucket_read=).with(bucket)
-
-                allow(kinesis_adapter).to receive(:send_events).with(parsed_events)
-
+                allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
+                allow(kinesis_adapter).to receive(:send_events).with(events_to_send)
                 allow(bucket_storage).to receive(:delete_range).with(bucket)
               end
 
               it 'returns array with format [true, msg]' do
                 expect(subject.perform_logged(end_time_utc.to_s, end_time_utc))
-                    .to eq [true, subject.send(:msg_events_sent, pending_events.size)]
+                    .to eq [true, subject.send(:msg_events_sent, events.size)]
               end
             end
 
@@ -66,7 +68,7 @@ module ThreeScale
                 { 'stats/{service:s1}/metric:m1/eternity' => '10',
                   'stats/{service:s1}/metric:m1/week:20151228' => '20' }
               end
-              let(:pending_events) { events_not_to_filter.merge(events_to_filter) }
+              let(:pending_events) { events.merge(events_to_filter) }
 
               before do
                 allow(bucket_reader)
@@ -74,20 +76,15 @@ module ThreeScale
                             .with(end_time_utc)
                             .and_return({ events: pending_events, latest_bucket: bucket })
 
-                allow(bucket_reader)
-                    .to receive(:latest_bucket_read=).with(bucket)
-
-                allow(kinesis_adapter)
-                    .to receive(:send_events).with(parsed_events_not_to_filter)
-
+                allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
+                allow(kinesis_adapter).to receive(:send_events).with(events_to_send)
                 allow(bucket_storage).to receive(:delete_range).with(bucket)
               end
 
               it 'returns array with format [true, msg]' do
                 expect(subject.perform_logged(end_time_utc.to_s, end_time_utc))
-                    .to eq [true, subject.send(:msg_events_sent, events_not_to_filter.size)]
+                    .to eq [true, subject.send(:msg_events_sent, events.size)]
               end
-
             end
           end
 
