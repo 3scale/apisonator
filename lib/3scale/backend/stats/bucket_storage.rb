@@ -54,7 +54,7 @@ module ThreeScale
           # increase that to make sure that we do not miss any values.
           event_values = event_keys_slices.flat_map do |event_keys_slice|
             storage.mget(event_keys_slice)
-          end.map { |value| value ? Integer(value) : nil }
+          end.map { |value| Integer(value) if value }
 
           Hash[event_keys.zip(event_values)]
         end
