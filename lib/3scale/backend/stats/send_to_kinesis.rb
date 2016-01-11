@@ -13,7 +13,21 @@ module ThreeScale
         # lead to sending repeated events to Kinesis.
         # Similarly, we do not want to execute 2 flushes concurrently, or
         # execute one when a kinesis job is running.
-        # We use Redis to ensure that, using the atomic operation incr.
+        #
+        # We use Redis to ensure that using the operation set nx. The locking
+        # algorithm is detailed here: http://redis.io/topics/distlock
+        # Basically, every time that we want to execute a job or a flush,
+        # we generate a random number and set a key (JOB_RUNNING_KEY) with that
+        # random number if its current value is null. If we could set the
+        # value, it means that no other job/flush is running. When the job/flush
+        # finishes, it sets JOB_RUNNING_KEY to null.
+        #
+        # The random number that we use is the current unix epoch in ms. This
+        # does not ensure 100% that two jobs will not be running at the same
+        # time. In our case, this is not a problem. We assume that we can have
+        # duplicated events in S3. Also, 2 jobs could be running at the same
+        # time if there is a problem with the Redis master, but again, this
+        # is not an issue for us.
         JOB_RUNNING_KEY = 'send_to_kinesis:job_running'.freeze
         private_constant :JOB_RUNNING_KEY
 
