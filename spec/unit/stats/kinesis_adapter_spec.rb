@@ -258,6 +258,12 @@ module ThreeScale
           end
         end
 
+        # The events that we use in these tests need to be unique. Using
+        # identical events has undesirable effects. For example, Redis stores
+        # failed events in a set. If we generate N unique events and all of
+        # them fail, we will find N events in the failed events set of Redis,
+        # as we would expect. However, if we send N identical events, we will
+        # just find one in Redis.
         def generate_unique_events(n_events)
           (1..n_events).map do |i|
             { service: 's', metric: 'm', period: 'year', timestamp: '20150101', value: i }
