@@ -26,6 +26,9 @@ module ThreeScale
         MAX_RECORDS_PER_BATCH = 5
         private_constant :MAX_RECORDS_PER_BATCH
 
+        EVENTS_PER_BATCH = EVENTS_PER_RECORD*MAX_RECORDS_PER_BATCH
+        private_constant :EVENTS_PER_BATCH
+
         KINESIS_PENDING_EVENTS_KEY = 'send_to_kinesis:pending_events'
         private_constant :KINESIS_PENDING_EVENTS_KEY
 
@@ -70,9 +73,8 @@ module ThreeScale
         # Returns the failed events
         def send_events_in_batches(events)
           failed_events = []
-          events_per_batch = EVENTS_PER_RECORD*MAX_RECORDS_PER_BATCH
 
-          events.each_slice(events_per_batch) do |events_slice|
+          events.each_slice(EVENTS_PER_BATCH) do |events_slice|
             kinesis_resp = kinesis_client.put_record_batch(
                 { delivery_stream_name: stream_name,
                   records: events_to_kinesis_records(events_slice) })
