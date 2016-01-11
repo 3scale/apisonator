@@ -78,8 +78,8 @@ module ThreeScale
             kinesis_resp = kinesis_client.put_record_batch(
                 { delivery_stream_name: stream_name,
                   records: events_to_kinesis_records(events_slice) })
-            failed_events << failed_events(kinesis_resp[:request_responses],
-                                           events_slice)
+            failed_events << failed_events_kinesis_resp(
+                kinesis_resp[:request_responses], events_slice)
           end
 
           failed_events.flatten
@@ -102,7 +102,7 @@ module ThreeScale
           events.map { |event| event.to_json }.join("\n") + "\n"
         end
 
-        def failed_events(request_responses, events)
+        def failed_events_kinesis_resp(request_responses, events)
           failed_records_indexes = failed_records_indexes(request_responses)
           failed_records_indexes.flat_map do |failed_record_index|
             events_index_start = failed_record_index*EVENTS_PER_RECORD
