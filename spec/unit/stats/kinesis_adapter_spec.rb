@@ -20,9 +20,8 @@ module ThreeScale
           context 'when the number of events is smaller than the number of events per record' do
             let(:events) { generate_unique_events(events_per_record - 1) }
 
-            before { expect(kinesis_client).not_to receive(:put_record_batch) }
-
             it 'does not send the events to Kinesis' do
+              expect(kinesis_client).not_to receive(:put_record_batch)
               subject.send_events(events)
             end
 
@@ -37,7 +36,7 @@ module ThreeScale
             let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
 
             before do
-              expect(kinesis_client)
+              allow(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: [{ data: events_pseudo_json }] })
@@ -46,6 +45,12 @@ module ThreeScale
             end
 
             it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .once
+
               subject.send_events(events)
             end
 
@@ -66,7 +71,7 @@ module ThreeScale
             end
 
             before do
-              expect(kinesis_client)
+              allow(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: kinesis_records })
@@ -75,6 +80,12 @@ module ThreeScale
             end
 
             it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: kinesis_records })
+                          .once
+
               subject.send_events(events)
             end
 
@@ -98,7 +109,7 @@ module ThreeScale
 
             before do
               # First batch
-              expect(kinesis_client)
+              allow(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: records_first_batch })
@@ -107,7 +118,7 @@ module ThreeScale
                                                                    { record_id: 'id' }))
 
               # Second batch
-              expect(kinesis_client)
+              allow(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: records_second_batch })
@@ -116,6 +127,18 @@ module ThreeScale
             end
 
             it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_first_batch })
+                          .once
+
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_second_batch })
+                          .once
+
               subject.send_events(events)
             end
 
@@ -164,7 +187,7 @@ module ThreeScale
             before do
               expect(subject).to receive(:stored_pending_events).and_return(events)
 
-              expect(kinesis_client)
+              allow(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: [{ data: events_pseudo_json }] })
@@ -173,6 +196,12 @@ module ThreeScale
             end
 
             it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .once
+
               subject.flush
             end
 
@@ -188,7 +217,7 @@ module ThreeScale
             before do
               expect(subject).to receive(:stored_pending_events).and_return(events)
 
-              expect(kinesis_client)
+              allow(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: [{ data: events_pseudo_json }] })
@@ -197,6 +226,12 @@ module ThreeScale
             end
 
             it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .once
+
               subject.flush
             end
 
@@ -210,10 +245,10 @@ module ThreeScale
 
             before do
               expect(subject).to receive(:stored_pending_events).and_return(events)
-              expect(kinesis_client).not_to receive(:put_record_batch)
             end
 
             it 'does not send the events to Kinesis' do
+              expect(kinesis_client).not_to receive(:put_record_batch)
               subject.flush
             end
 
