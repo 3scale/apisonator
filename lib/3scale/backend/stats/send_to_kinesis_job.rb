@@ -23,7 +23,7 @@ module ThreeScale
         private_constant :FILTERED_EVENT_PERIODS
 
         class << self
-          def perform_logged(end_time_utc, _)
+          def perform_logged(end_time_utc, lock_key, _)
             # end_time_utc will be a string when the worker processes this job.
             # The parameter is passed through Redis as a string. We need to
             # convert it back.
@@ -46,7 +46,7 @@ module ThreeScale
               bucket_storage.delete_range(pending_events[:latest_bucket])
             end
 
-            SendToKinesis.job_finished
+            SendToKinesis.job_finished(lock_key)
             [true, msg_events_sent(events_sent)]
           end
 

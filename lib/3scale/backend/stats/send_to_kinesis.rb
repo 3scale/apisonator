@@ -36,21 +36,29 @@ module ThreeScale
           end
 
           def schedule_job
-            if enabled? && !job_running?
-              Resque.enqueue(SendToKinesisJob, Time.now.utc, Time.now.utc.to_f)
+            if enabled?
+              lock_key = DateTime.now.strftime('%Q')
+              unless job_running?(lock_key)
+                Resque.enqueue(SendToKinesisJob, Time.now.utc, lock_key, Time.now.utc.to_f)
+              end
             end
           end
 
           def flush_pending_events
-            if enabled? && !job_running?
-              kinesis_adapter.flush
-              job_finished # flush is not asynchronous
+            if enabled?
+              lock_key = DateTime.now.strftime('%Q')
+              unless job_running?(lock_key)
+                kinesis_adapter.flush
+                job_finished(lock_key) # flush is not asynchronous
+              end
             end
           end
 
           # To be called by a kinesis job once it exits so other jobs can run
-          def job_finished
-            storage.del(JOB_RUNNING_KEY)
+          def job_finished(lock_key)
+            if storage.get(JOB_RUNNING_KEY) == lock_key
+              storage.del(JOB_RUNNING_KEY)
+            end
           end
 
           private
@@ -71,8 +79,8 @@ module ThreeScale
             KinesisAdapter.new(config.kinesis_stream_name, kinesis_client, storage)
           end
 
-          def job_running?
-            job_running = (storage.incr(JOB_RUNNING_KEY).to_i != 1)
+          def job_running?(lock_key)
+            job_running = !storage.setnx(JOB_RUNNING_KEY, lock_key)
 
             unless job_running
               storage.expire(JOB_RUNNING_KEY, TTL_JOB_RUNNING_KEY_SEC)
