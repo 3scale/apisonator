@@ -112,9 +112,11 @@ module ThreeScale
         end
 
         def failed_records_indexes(request_responses)
-          request_responses.each_index.reject do |index|
-            request_responses[index][:error_code].nil?
+          result = []
+          request_responses.each_with_index do |response, index|
+            result << index unless response[:error_code].nil?
           end
+          result
         end
 
         def store_pending_events(events)
