@@ -53,8 +53,13 @@ module ThreeScale
         # we have defined ('third_bucket') is closed, meaning that it will not
         # receive any more events.
         let(:current_time) do
-          DateTime.parse(third_bucket).to_time.utc + backup_seconds_read_bucket
+          DateTime.parse(third_bucket).to_time.utc +
+              bucket_create_interval +
+              backup_seconds_read_bucket
         end
+
+        before { Timecop.freeze(current_time) }
+        after { Timecop.return }
 
         subject { described_class.new(bucket_create_interval, bucket_storage, storage) }
 
@@ -90,7 +95,11 @@ module ThreeScale
             end
 
             context 'when there are some buckets but not all of them are closed' do
-              let(:current_time) { DateTime.parse(second_bucket).to_time.utc }
+              let(:current_time) do # Only the first bucket is closed
+                DateTime.parse(first_bucket).to_time.utc +
+                    bucket_create_interval +
+                    backup_seconds_read_bucket
+              end
 
               before { save_buckets_and_events(buckets_and_events) }
 
@@ -120,7 +129,11 @@ module ThreeScale
 
           context 'when not enough time has passed to be sure that a bucket is closed' do
             let(:latest_bucket_read) { first_bucket }
-            let(:current_time) { DateTime.parse(third_bucket).to_time.utc }
+            let(:current_time) do # Only the first and the second buckets are closed
+              DateTime.parse(second_bucket).to_time.utc +
+                  bucket_create_interval +
+                  backup_seconds_read_bucket
+            end
 
             before do
               save_buckets_and_events(buckets_and_events)
@@ -151,7 +164,9 @@ module ThreeScale
             let(:older_bucket) { first_bucket }
             let(:newer_bucket) { second_bucket }
             let(:current_time) do
-              DateTime.parse(newer_bucket).to_time.utc + backup_seconds_read_bucket
+              DateTime.parse(newer_bucket).to_time.utc +
+                  bucket_create_interval +
+                  backup_seconds_read_bucket
             end
             let(:buckets_and_events) do
               { older_bucket => { 'event11' => 10, 'event12' => 30 },

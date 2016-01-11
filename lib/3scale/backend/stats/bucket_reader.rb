@@ -81,13 +81,16 @@ module ThreeScale
 
         def pending_buckets(end_time_utc = Time.now.utc)
           latest_bucket_read = latest_bucket_read_marker.latest_bucket_read
+          end_time = end_time_with_backup(end_time_utc)
 
-          if latest_bucket_read.nil?
-            return buckets_in_storage(end_time_utc - BACKUP_SECONDS_READ_BUCKET)
-          end
+          return buckets_in_storage(end_time) if latest_bucket_read.nil?
 
           start_time_utc = bucket_to_time(latest_bucket_read) + bucket_create_interval
-          buckets(start_time_utc, end_time_utc - BACKUP_SECONDS_READ_BUCKET)
+          buckets(start_time_utc, end_time)
+        end
+
+        def end_time_with_backup(end_time_utc)
+          [end_time_utc, Time.now.utc - bucket_create_interval - BACKUP_SECONDS_READ_BUCKET].min
         end
 
         def buckets(start_time_utc, end_time_utc)
