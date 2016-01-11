@@ -113,11 +113,14 @@ module ThreeScale
             BucketReader.new(config.stats.bucket_size, bucket_storage, storage)
           end
 
-          def kinesis_adapter
-            kinesis_client = Aws::Firehose::Client.new(
+          def kinesis_client
+            Aws::Firehose::Client.new(
                 region: config.kinesis_region,
                 access_key_id: config.aws_access_key_id,
                 secret_access_key: config.aws_secret_access_key)
+          end
+
+          def kinesis_adapter
             KinesisAdapter.new(config.kinesis_stream_name, kinesis_client, storage)
           end
         end
