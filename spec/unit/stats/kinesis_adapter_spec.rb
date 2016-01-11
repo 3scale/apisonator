@@ -1,0 +1,275 @@
+require_relative '../../spec_helper'
+require_relative '../../../lib/3scale/backend/stats/kinesis_adapter'
+
+module ThreeScale
+  module Backend
+    module Stats
+      describe KinesisAdapter do
+        let(:kinesis_client) { double }
+        let(:stream_name) { 'backend_stream' }
+        let(:storage) { ThreeScale::Backend::Storage.instance }
+        let(:events_per_record) { described_class.const_get(:EVENTS_PER_RECORD) }
+        let(:max_records_per_batch) { described_class.const_get(:MAX_RECORDS_PER_BATCH) }
+        let(:kinesis_pending_events_key) do
+          described_class.const_get(:KINESIS_PENDING_EVENTS_KEY)
+        end
+
+        subject { described_class.new(stream_name, kinesis_client, storage) }
+
+        describe '#send_events' do
+          context 'when the number of events is smaller than the number of events per record' do
+            let(:events) { generate_unique_events(events_per_record - 1) }
+
+            it 'does not send the events to Kinesis' do
+              expect(kinesis_client).not_to receive(:put_record_batch)
+              subject.send_events(events)
+            end
+
+            it 'adds the events as pending events' do
+              subject.send_events(events)
+              expect(subject.send(:stored_pending_events)).to match_array events
+            end
+          end
+
+          context 'when the number of events is enough to fill just 1 record' do
+            let(:events) { generate_unique_events(events_per_record) }
+            let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
+
+            before do
+              allow(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: [{ record_id: 'id' }])
+            end
+
+            it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .once
+
+              subject.send_events(events)
+            end
+
+            it 'pending events is empty' do
+              subject.send_events(events)
+              expect(subject.send(:stored_pending_events)).to be_empty
+            end
+          end
+
+          context 'when the number of events fills several records but can be sent in 1 batch' do
+            let(:records) { 2 } # Assuming that a batch can contain at least 2 records
+            let(:events) { generate_unique_events(records*events_per_record) }
+            let(:kinesis_records) do
+              [{ data: subject.send(:events_to_pseudo_json,
+                                    events[0..events_per_record - 1]) },
+               { data: subject.send(:events_to_pseudo_json,
+                                    events[events_per_record..-1]) }]
+            end
+
+            before do
+              allow(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: kinesis_records })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: Array.new(records, { record_id: 'id' }))
+            end
+
+            it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: kinesis_records })
+                          .once
+
+              subject.send_events(events)
+            end
+
+            it 'pending events is empty' do
+              subject.send_events(events)
+              expect(subject.send(:stored_pending_events)).to be_empty
+            end
+          end
+
+          context 'when the number of events is too big to be sent in just one batch' do
+            let(:records) { max_records_per_batch + 1 } # Can be sent in 2 batches
+            let(:events) { generate_unique_events(records*events_per_record) }
+            let(:kinesis_records) do
+              events.each_slice(events_per_record).map do |events_slice|
+                { data: subject.send(:events_to_pseudo_json, events_slice) }
+              end
+            end
+
+            let(:records_first_batch) { kinesis_records.take(max_records_per_batch) }
+            let(:records_second_batch) { [kinesis_records.last] }
+
+            before do
+              # First batch
+              allow(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_first_batch })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: Array.new(max_records_per_batch,
+                                                                   { record_id: 'id' }))
+
+              # Second batch
+              allow(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_second_batch })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: Array.new(1, { record_id: 'id' }))
+            end
+
+            it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_first_batch })
+                          .once
+
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_second_batch })
+                          .once
+
+              subject.send_events(events)
+            end
+
+            it 'pending events is empty' do
+              subject.send_events(events)
+              expect(subject.send(:stored_pending_events)).to be_empty
+            end
+          end
+
+          context 'when Kinesis returns an error for some record' do
+            let(:events) { generate_unique_events(2*events_per_record) }
+            let(:events_first_record) { events[0..events_per_record - 1] }
+            let(:events_second_record) { events[events_per_record..-1] }
+            let(:kinesis_first_record) do
+              subject.send(:events_to_pseudo_json, events_first_record)
+            end
+            let(:kinesis_second_record) do
+              subject.send(:events_to_pseudo_json, events_second_record)
+            end
+
+            before do
+              # return error for the second record
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: kinesis_first_record },
+                                            { data: kinesis_second_record }] })
+                          .and_return(failed_put_count: 1,
+                                      request_responses: [{ record_id: 'id' },
+                                                          { error_code: 'err' }])
+            end
+
+            it 'the events of the failed record are stored in pending events' do
+              subject.send_events(events_first_record + events_second_record)
+              expect(subject.send(:stored_pending_events))
+                  .to match_array events_second_record
+            end
+          end
+        end
+
+        describe '#flush' do
+          context 'when the number of pending events is not enough to fill 1 record' do
+            let(:events) { generate_unique_events(events_per_record - 1) }
+            let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
+
+            before do
+              expect(subject).to receive(:stored_pending_events).and_return(events)
+
+              allow(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: [{ record_id: 'id' }])
+            end
+
+            it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .once
+
+              subject.flush
+            end
+
+            it 'returns the number of events sent' do
+              expect(subject.flush).to eq events.size
+            end
+          end
+
+          context 'when the number of pending events it enough to fill 1 record' do
+            let(:events) { generate_unique_events(events_per_record) }
+            let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
+
+            before do
+              expect(subject).to receive(:stored_pending_events).and_return(events)
+
+              allow(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: [{ record_id: 'id' }])
+            end
+
+            it 'sends the events to Kinesis' do
+              expect(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: [{ data: events_pseudo_json }] })
+                          .once
+
+              subject.flush
+            end
+
+            it 'returns the number of events sent' do
+              expect(subject.flush).to eq events.size
+            end
+          end
+
+          context 'when there are no pending events' do
+            let(:events) { [] }
+
+            before do
+              expect(subject).to receive(:stored_pending_events).and_return(events)
+            end
+
+            it 'does not send the events to Kinesis' do
+              expect(kinesis_client).not_to receive(:put_record_batch)
+              subject.flush
+            end
+
+            it 'returns 0' do
+              expect(subject.flush).to be_zero
+            end
+          end
+        end
+
+        # The events that we use in these tests need to be unique. Using
+        # identical events has undesirable effects. For example, Redis stores
+        # failed events in a set. If we generate N unique events and all of
+        # them fail, we will find N events in the failed events set of Redis,
+        # as we would expect. However, if we send N identical events, we will
+        # just find one in Redis.
+        def generate_unique_events(n_events)
+          (1..n_events).map do |i|
+            { service: 's', metric: 'm', period: 'year', timestamp: '20150101', value: i }
+          end
+        end
+      end
+    end
+  end
+end
