@@ -20,7 +20,6 @@ module ThreeScale
 
       COMBINATION_TTL       = 3600 # 1 hour
       STATUS_TTL            = 60   # 1 minute, this is too short but we need minute information on the output :-(
-      SERVICE_ID_CACHE_TTL  = 300  # 5 minutes
 
       CACHING_ENABLED_KEY = 'settings/caching_enabled'.freeze
       private_constant :CACHING_ENABLED_KEY
