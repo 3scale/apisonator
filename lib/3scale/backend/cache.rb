@@ -85,12 +85,9 @@ module ThreeScale
 
         isknown = if service_id
           key_version = signature(action, params)
-          application_id = params[:app_id]
-          application_id = params[:user_key] if application_id.nil?
 
-          username = params[:user_id]
+          application_id = params[:app_id] || params[:user_key] || ''
 
-          application_id = "" if application_id.nil?
           application_id_cached = application_id.clone
           application_id_cached << ":"
           application_id_cached << params[:app_key] unless params[:app_key].nil?
@@ -100,12 +97,14 @@ module ThreeScale
           # FIXME: this needs to be done for redirect_url(??)
 
           mget_query = [
-              key_version,
-              Service.storage_key(service_id, :version),
-              Application.storage_key(service_id,application_id,:version),
-              caching_key(service_id, :application, application_id_cached),
-              "settings/caching_enabled"
+            key_version,
+            Service.storage_key(service_id, :version),
+            Application.storage_key(service_id, application_id, :version),
+            caching_key(service_id, :application, application_id_cached),
+            "settings/caching_enabled"
           ]
+
+          username = params[:user_id]
 
           mget_query.push(User.storage_key(service_id, username, :version),
                           caching_key(service_id, :user, username)) if username
@@ -147,16 +146,13 @@ module ThreeScale
       end
 
       def combination_save(data)
-
         unless data.nil? || data[:key].nil? || data[:current_version].nil?
           storage.pipelined do
-            storage.set(data[:key],data[:current_version])
-            storage.expire(data[:key],COMBINATION_TTL)
+            storage.set(data[:key], data[:current_version])
+            storage.expire(data[:key], COMBINATION_TTL)
           end
         end
-
       end
-
 
       ## this one is hacky, handle with care. This updates the cached xml so that we can increment
       ## the current_usage. TODO: we can do limit checking here, however, the non-cached authrep does not
@@ -256,7 +252,6 @@ module ThreeScale
 
         store_keys_in_cache(status, keys, content)
       end
-
 
       def set_status_in_cache(key, status, options ={})
         options[:anchors_for_caching] = true

@@ -151,14 +151,14 @@ module ThreeScale
         status, _, status_result, service, application, user, service_id = ret
 
         if application.nil?
-          application_id = params[:app_id]
-          application_id = params[:user_key] if params[:app_id].nil?
+          application_id = params[:app_id] || params[:user_key]
           username = params[:user_id]
         else
           service_id = service.id
           application_id = application.id
-          username = nil
-          username = user.username unless user.nil?
+          username = unless user.nil?
+                       user.username
+                     end
         end
 
         if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
