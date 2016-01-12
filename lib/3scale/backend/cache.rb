@@ -31,20 +31,20 @@ module ThreeScale
       end
 
       def stats=(s)
-        @@stats=s
+        @@stats = s
       end
 
       def report_cache_hit
         @@stats ||= {:count => 0, :hits => 0, :last => nil}
-        @@stats[:count]+=1
-        @@stats[:hits]+=1
-        @@stats[:last]=1
+        @@stats[:count] += 1
+        @@stats[:hits] += 1
+        @@stats[:last] = 1
       end
 
       def report_cache_miss
         @@stats ||= {:count => 0, :hits => 0, :last => nil}
-        @@stats[:count]+=1
-        @@stats[:last]=0
+        @@stats[:count] += 1
+        @@stats[:last] = 0
       end
 
       def caching_enable
@@ -134,9 +134,6 @@ module ThreeScale
 
           ## else something has changed in service, user, application, metric, plan, etc.
           current_version == version
-        else
-          # not known
-          false
         end
 
         combination_data = {:key => key_version, :current_version => current_version}
@@ -166,10 +163,10 @@ module ThreeScale
       ## (benchmarked)
 
       def clean_cached_xml(app_xml_str, user_xml_str, options = {})
-        split_app_xml  = split_xml(app_xml_str)
-        split_user_xml = split_xml(user_xml_str)
-        authorized     = xml_authorized?(split_app_xml, split_user_xml)
-        merged_xml     = merge_xmls(authorized, split_app_xml, split_user_xml)
+        split_app_xml     = split_xml(app_xml_str)
+        split_user_xml    = split_xml(user_xml_str)
+        authorized        = xml_authorized?(split_app_xml, split_user_xml)
+        merged_xml        = merge_xmls(authorized, split_app_xml, split_user_xml)
 
         v = merged_xml.split("|.|")
         newxmlstr = ""
@@ -243,13 +240,13 @@ module ThreeScale
 
         application.referrer_filters.each do |referrer|
           tmp_keys.each do |item|
-            keys << caching_key(service_id,:application,"#{item}:#{referrer}")
+            keys << caching_key(service_id, :application, "#{item}:#{referrer}")
           end
         end
 
         if application.referrer_filters.empty?
           tmp_keys.each do |item|
-            keys << caching_key(service_id,:application,"#{item}:")
+            keys << caching_key(service_id, :application, "#{item}:")
           end
         end
 
