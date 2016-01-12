@@ -92,9 +92,9 @@ module ThreeScale
           application_id = params[:app_id] || params[:user_key] || ''
 
           application_id_cached = application_id.clone
-          application_id_cached << ":"
+          application_id_cached << ':'.freeze
           application_id_cached << params[:app_key] unless params[:app_key].nil?
-          application_id_cached << ":"
+          application_id_cached << ':'.freeze
           application_id_cached << params[:referrer] unless params[:referrer].nil?
 
           # FIXME: this needs to be done for redirect_url(??)
@@ -140,7 +140,7 @@ module ThreeScale
 
         ## the default of settings/caching_enabled results on true, to disable caching set
         ## settings/caching_enabled to 0
-        caching_enabled = caching_enabled != "0"
+        caching_enabled = caching_enabled != '0'.freeze
 
         [isknown, service_id, combination_data, dirty_app_xml, dirty_user_xml, caching_enabled]
       end
@@ -168,8 +168,8 @@ module ThreeScale
         authorized        = xml_authorized?(split_app_xml, split_user_xml)
         merged_xml        = merge_xmls(authorized, split_app_xml, split_user_xml)
 
-        v = merged_xml.split("|.|")
-        newxmlstr = ""
+        v = merged_xml.split('|.|'.freeze)
+        newxmlstr = ''
         limit_violation_without_usage = false
         limit_violation_with_usage = false
 
@@ -177,7 +177,7 @@ module ThreeScale
           newxmlstr << uninteresting
 
           if str
-            _, metric, curr_value, max_value = str.split(",")
+            _, metric, curr_value, max_value = str.split(','.freeze)
             curr_value = curr_value.to_i
             max_value = max_value.to_i
             inc = 0
@@ -303,19 +303,19 @@ module ThreeScale
           keys.each do |key|
             storage.set(key, content)
             storage.expire(key, STATUS_TTL - now)
-            storage.send op, 'limit_violations_set', key
+            storage.send op, 'limit_violations_set'.freeze, key
           end
         end
       end
 
       def split_xml(xml_str)
-        xml_str.split("<__separator__/>") if xml_str
+        xml_str.split('<__separator__/>'.freeze) if xml_str
       end
 
       def xml_authorized?(split_app_xml, split_user_xml = nil)
         # a node is authorized if it is != '0'
         split_app_xml.first != '0' &&
-          (split_user_xml.nil? || split_user_xml.first != '0')
+          (split_user_xml.nil? || split_user_xml.first != '0'.freeze)
       end
 
       def merge_xmls(authorized, split_app_xml, split_user_xml = nil)
@@ -331,7 +331,7 @@ module ThreeScale
         end
 
         ## better that v.join()
-        result = ""
+        result = ''
         (1...split_app_xml.size).each do |i|
           result << split_app_xml[i].to_s
         end
