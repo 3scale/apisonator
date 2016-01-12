@@ -22,6 +22,9 @@ module ThreeScale
       STATUS_TTL            = 60   # 1 minute, this is too short but we need minute information on the output :-(
       SERVICE_ID_CACHE_TTL  = 300  # 5 minutes
 
+      CACHING_ENABLED_KEY = 'settings/caching_enabled'.freeze
+      private_constant :CACHING_ENABLED_KEY
+
       def stats
         @@stats ||= {:count => 0, :hits => 0, :last => nil}
         @@stats
@@ -45,15 +48,15 @@ module ThreeScale
       end
 
       def caching_enable
-        storage.set("settings/caching_enabled",1)
+        storage.set(CACHING_ENABLED_KEY, 1)
       end
 
       def caching_disable
-        storage.set("settings/caching_enabled",0)
+        storage.set(CACHING_ENABLED_KEY, 0)
       end
 
       def caching_enabled?
-        storage.get("settings/caching_enabled")!="0"
+        storage.get(CACHING_ENABLED_KEY) != '0'.freeze
       end
 
       def signature(action, params)
@@ -101,7 +104,7 @@ module ThreeScale
             Service.storage_key(service_id, :version),
             Application.storage_key(service_id, application_id, :version),
             caching_key(service_id, :application, application_id_cached),
-            "settings/caching_enabled"
+            CACHING_ENABLED_KEY
           ]
 
           username = params[:user_id]
