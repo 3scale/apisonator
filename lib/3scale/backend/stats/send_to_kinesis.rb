@@ -59,6 +59,10 @@ module ThreeScale
             Backend::Storage.instance
           end
 
+          def config
+            Backend.configuration
+          end
+
           def kinesis_adapter
             kinesis_client = Aws::Firehose::Client.new(
                 region: config.kinesis_region,
