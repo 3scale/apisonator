@@ -66,8 +66,8 @@ module ThreeScale
     end
 
     class AccessTokenInvalid < NotFound
-      def initialize(id = nil, user_id = nil)
-        super %(access_token "#{id}" is invalid#{" for user_id=#{user_id}" if user_id}: expired or never defined)
+      def initialize(id = nil)
+        super %(access_token "#{id}" is invalid: expired or never defined)
       end
     end
 
