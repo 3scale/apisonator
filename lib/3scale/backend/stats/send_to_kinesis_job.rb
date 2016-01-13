@@ -68,7 +68,7 @@ module ThreeScale
           def prepare_events(bucket, events)
             parsed_events = parse_events(events)
             filtered_events = filter_events(parsed_events)
-            add_time_gen_to_events(filtered_events, bucket)
+            add_time_gen_to_events(filtered_events, bucket_to_timestamp(bucket))
           end
 
           def parse_events(events)
@@ -83,10 +83,8 @@ module ThreeScale
             end
           end
 
-          def add_time_gen_to_events(events, bucket)
-            events.each do |event|
-              event[:time_gen] = bucket_to_timestamp(bucket)
-            end
+          def add_time_gen_to_events(events, time_gen)
+            events.each { |event| event[:time_gen] = time_gen }
           end
 
           def bucket_to_timestamp(bucket)
