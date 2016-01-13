@@ -178,7 +178,6 @@ module ThreeScale
             raise UserKeyInvalid, user_key if app_id.nil?
           elsif access_token
             app_id = OAuthAccessTokenStorage.get_app_id service_id, access_token, user_id
-            raise AccessTokenInvalid, access_token, user_id if app_id.nil?
           else
             raise ApplicationNotFound
           end
