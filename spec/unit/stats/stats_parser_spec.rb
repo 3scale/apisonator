@@ -16,117 +16,56 @@ module ThreeScale
 
           subject { StatsParser }
 
+          shared_examples 'key with all required params' do |period, time|
+            let(:key) do
+              stats_key(service: service, cinstance: cinstance, metric: metric,
+                        period: period, time: time)
+            end
+
+            let(:expected_timestamp) do
+              if %w(year month week day).include? period
+                time + ' 00:00'
+              elsif period == 'hour'
+                "#{time[0..7]} #{time[8..9]}:00"
+              elsif period == 'minute'
+                "#{time[0..7]} #{time[8..9]}:#{time[10..11]}"
+              end
+            end
+
+            it 'returns the correct hash' do
+              expect(subject.parse(key, value))
+                  .to eq({ service: service,
+                           cinstance: cinstance,
+                           metric: metric,
+                           period: period,
+                           timestamp: expected_timestamp,
+                           value: value })
+            end
+          end
+
           context 'with a key that contains all the required params' do
             context 'and with period = year' do
-              let(:period) { 'year' }
-              let(:time) { '20160101' }
-              let(:key) do
-                stats_key(service: service, cinstance: cinstance, metric: metric,
-                          period: period, time: time)
-              end
-
-              it 'returns the correct hash' do
-                expect(subject.parse(key, value))
-                    .to eq({ service: service,
-                             cinstance: cinstance,
-                             metric: metric,
-                             period: period,
-                             timestamp: time + ' 00:00',
-                             value: value })
-              end
+              include_examples 'key with all required params', 'year', '20160101'
             end
 
             context 'and with period = month' do
-              let(:period) { 'month' }
-              let(:time) { '20160101' }
-              let(:key) do
-                stats_key(service: service, cinstance: cinstance, metric: metric,
-                          period: period, time: time)
-              end
-
-              it 'returns the correct hash' do
-                expect(subject.parse(key, value))
-                    .to eq({ service: service,
-                             cinstance: cinstance,
-                             metric: metric,
-                             period: period,
-                             timestamp: time + ' 00:00',
-                             value: value })
-              end
+              include_examples 'key with all required params', 'month', '20160101'
             end
 
             context 'and with period = week' do
-              let(:period) { 'week' }
-              let(:time) { '20160101' }
-              let(:key) do
-                stats_key(service: service, cinstance: cinstance, metric: metric,
-                          period: period, time: time)
-              end
-
-              it 'returns the correct hash' do
-                expect(subject.parse(key, value))
-                    .to eq({ service: service,
-                             cinstance: cinstance,
-                             metric: metric,
-                             period: period,
-                             timestamp: time + ' 00:00',
-                             value: value })
-              end
+              include_examples 'key with all required params', 'week', '20160101'
             end
 
             context 'and with period = day' do
-              let(:key) do
-                stats_key(service: service, cinstance: cinstance, metric: metric,
-                          period: period, time: time)
-              end
-
-              it 'returns the correct hash' do
-                expect(subject.parse(key, value))
-                    .to eq({ service: service,
-                             cinstance: cinstance,
-                             metric: metric,
-                             period: period,
-                             timestamp: time + ' 00:00',
-                             value: value })
-              end
+              include_examples 'key with all required params', 'day', '20160101'
             end
 
             context 'and with period = hour' do
-              let(:period) { 'hour' }
-              let(:time) { '2016010411' }
-              let(:key) do
-                stats_key(service: service, cinstance: cinstance, metric: metric,
-                          period: period, time: time)
-              end
-
-              it 'returns the correct hash' do
-                expect(subject.parse(key, value))
-                    .to eq({ service: service,
-                             cinstance: cinstance,
-                             metric: metric,
-                             period: period,
-                             timestamp: "#{time[0..7]} #{time[8..9]}:00",
-                             value: value })
-              end
+              include_examples 'key with all required params', 'hour', '2016010411'
             end
 
             context 'and with period = minute' do
-              let(:period) { 'minute' }
-              let(:time) { '201601041145' }
-              let(:key) do
-                stats_key(service: service, cinstance: cinstance, metric: metric,
-                          period: period, time: time)
-              end
-
-              it 'returns the correct hash' do
-                expect(subject.parse(key, value))
-                    .to eq({ service: service,
-                             cinstance: cinstance,
-                             metric: metric,
-                             period: period,
-                             timestamp: "#{time[0..7]} #{time[8..9]}:#{time[10..11]}",
-                             value: value })
-              end
+              include_examples 'key with all required params', 'minute', '201601041145'
             end
 
             # The parse method might get 'compacted' times. This is performed
