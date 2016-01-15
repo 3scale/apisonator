@@ -17,9 +17,10 @@ things like that. However, we need to decide on reasonable time frames for
 those two situations.
 
 What we propose is:
-1) Limit past transactions to 24h in the past.
-2) Limit future transactions to 1h in the future.
-3) When a client reports a transaction with a timestamp that falls outside the
+
+1. Limit past transactions to 24h in the past.
+2. Limit future transactions to 1h in the future.
+3. When a client reports a transaction with a timestamp that falls outside the
    limits established, he will receive an integration error.
 
 # Motivation
