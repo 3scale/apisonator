@@ -11,8 +11,7 @@ module ThreeScale
 
         describe '.enable' do
           it 'makes .enabled? return true' do
-            subject.enable
-            expect(subject.enabled?).to be_true
+            expect { subject.enable }.to change(subject, :enabled?).from(false).to(true)
           end
         end
 
@@ -20,8 +19,7 @@ module ThreeScale
           before { subject.enable }
 
           it 'makes .enabled? return false' do
-            subject.disable
-            expect(subject.enabled?).to be_false
+            expect { subject.disable }.to change(subject, :enabled?).from(true).to(false)
           end
         end
 
