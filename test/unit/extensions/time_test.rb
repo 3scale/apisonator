@@ -157,6 +157,9 @@ module Extensions
       assert_equal '20091103',       Time.utc(2009, 11,  3,  0,  0,  0).to_compact_s
       assert_equal '20091110',       Time.utc(2009, 11, 10,  0,  0,  0).to_compact_s
       assert_equal '21000101',       Time.utc(2100, 1, 1,  0,  0,  0).to_compact_s
+      assert_equal '2016010210111',  Time.utc(2016, 1, 2, 10, 11, 10).to_compact_s
+      assert_equal '20160102181',    Time.utc(2016, 1, 2, 18, 10, 0).to_compact_s
+      assert_equal '201601021',      Time.utc(2016, 1, 2, 10, 0, 0).to_compact_s
     end
 
     def test_end_of_cycle_with_to_compact_s
