@@ -232,8 +232,8 @@ module ThreeScale
               xml << "<usage_report #{attributes}>"
 
               if report.period != :eternity
-                xml << "<period_start>" << report.period_start.strftime(TIME_FORMAT) << "</period_start>"
-                xml << "<period_end>" << report.period_end.strftime(TIME_FORMAT) << "</period_end>"
+                xml << '<period_start>' << report.period_start.strftime(TIME_FORMAT) << '</period_start>'
+                xml << '<period_end>' << report.period_end.strftime(TIME_FORMAT) << '</period_end>'
               end
               xml << '<max_value>' << report.max_value.to_s << '</max_value><current_value>'
 
