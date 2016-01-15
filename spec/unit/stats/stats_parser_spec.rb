@@ -44,28 +44,16 @@ module ThreeScale
           end
 
           context 'with a key that contains all the required params' do
-            context 'and with period = year' do
-              include_examples 'key with all required params', 'year', '20160101'
-            end
-
-            context 'and with period = month' do
-              include_examples 'key with all required params', 'month', '20160101'
-            end
-
-            context 'and with period = week' do
-              include_examples 'key with all required params', 'week', '20160101'
-            end
-
-            context 'and with period = day' do
-              include_examples 'key with all required params', 'day', '20160101'
-            end
-
-            context 'and with period = hour' do
-              include_examples 'key with all required params', 'hour', '2016010411'
-            end
-
-            context 'and with period = minute' do
-              include_examples 'key with all required params', 'minute', '201601041145'
+            { year: '20160101',
+              month: '20160101',
+              week: '20160101',
+              day: '20160101',
+              hour: '2016010411',
+              minute: '201601041145'
+            }.each do |period, time|
+              context "and with period = #{period}" do
+                include_examples 'key with all required params', period.to_s, time
+              end
             end
 
             # The parse method might get 'compacted' times. This is performed
