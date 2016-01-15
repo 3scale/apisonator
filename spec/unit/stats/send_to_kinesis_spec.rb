@@ -7,9 +7,9 @@ module ThreeScale
       describe SendToKinesis do
         subject { SendToKinesis }
 
-        before { expect(subject.enabled?).to be_false }
-
         describe '.enable' do
+          before { subject.disable }
+
           it 'makes .enabled? return true' do
             expect { subject.enable }.to change(subject, :enabled?).from(false).to(true)
           end
@@ -47,6 +47,8 @@ module ThreeScale
           end
 
           context 'when kinesis is disabled' do
+            before { subject.disable }
+
             it 'does not schedule a kinesis job' do
               expect(Resque).not_to receive(:enqueue)
               subject.schedule_job
@@ -84,6 +86,8 @@ module ThreeScale
           end
 
           context 'when kinesis is disabled' do
+            before { subject.disable }
+
             it 'does not flush the pending events' do
               expect(kinesis_adapter).not_to receive(:flush)
               subject.flush_pending_events
