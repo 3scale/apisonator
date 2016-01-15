@@ -168,4 +168,35 @@ namespace :stats do
   task :storage_stats_enabled? => :environment do
     puts ThreeScale::Backend::Stats::Storage.enabled?
   end
+
+  namespace :kinesis do
+    desc 'Is sending to Kinesis enabled?'
+    task :enabled? => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.enabled?
+    end
+
+    desc 'Enable sending to Kinesis'
+    task :enable => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.enable
+    end
+
+    desc 'Disable sending to Kinesis'
+    task :disable => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.disable
+    end
+
+    desc 'Schedule one job to send all pending events to Kinesis'
+    task :send_to_kinesis => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.schedule_job
+    end
+
+    # Pending events are the ones that were read but the buckets but have not
+    # been sent to Kinesis for one of the following reasons:
+    #   1) There was an error while sending them to Kinesis.
+    #   2) There were not enough events to send a whole batch.
+    desc 'Send pending events to Kinesis - events that were read from the buckets, but not sent'
+    task :flush => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.flush_pending_events
+    end
+  end
 end

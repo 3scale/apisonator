@@ -64,6 +64,8 @@ require '3scale/backend/event_storage'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
 
+require '3scale/backend/stats/send_to_kinesis'
+
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
   PIPELINED_SLICE_SIZE = 400
