@@ -165,7 +165,7 @@ module ThreeScale
         split_app_xml     = split_xml(app_xml_str)
         split_user_xml    = split_xml(user_xml_str)
         cached_auth       = xml_authorized?(split_app_xml, split_user_xml)
-        merged_xml        = merge_xmls(cached_auth, split_app_xml, split_user_xml)
+        merged_xml        = merge_xmls(split_app_xml, split_user_xml)
 
         v = merged_xml.split('|.|'.freeze)
         newxmlstr = ''
@@ -317,7 +317,7 @@ module ThreeScale
           (split_user_xml.nil? || split_user_xml.first != '0'.freeze)
       end
 
-      def merge_xmls(authorized, split_app_xml, split_user_xml = nil)
+      def merge_xmls(split_app_xml, split_user_xml = nil)
         if split_user_xml
           ## add the user usage_report segment
           split_app_xml    = split_app_xml.insert(3, split_user_xml[2])
