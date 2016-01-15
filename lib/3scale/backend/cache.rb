@@ -164,13 +164,13 @@ module ThreeScale
       def clean_cached_xml(app_xml_str, user_xml_str, options = {})
         split_app_xml     = split_xml(app_xml_str)
         split_user_xml    = split_xml(user_xml_str)
-        authorized        = xml_authorized?(split_app_xml, split_user_xml)
-        merged_xml        = merge_xmls(authorized, split_app_xml, split_user_xml)
+        cached_auth       = xml_authorized?(split_app_xml, split_user_xml)
+        merged_xml        = merge_xmls(cached_auth, split_app_xml, split_user_xml)
 
         v = merged_xml.split('|.|'.freeze)
         newxmlstr = ''
-        limit_violation_without_usage = false
-        limit_violation_with_usage = false
+        currently_violating = false
+        usage_violation = false
 
         v.each_slice(2) do |uninteresting, str|
           newxmlstr << uninteresting
@@ -187,16 +187,16 @@ module ThreeScale
               val = Helpers.get_value_of_set_if_exists(options[:usage][metric])
             end
 
-            limit_violation_without_usage ||= curr_value > max_value
-            limit_violation_with_usage ||=
+            usage_violation ||=
               if val
                 val.to_i > max_value
               elsif inc > 0
                 curr_value + inc > max_value
               end
+            currently_violating ||= curr_value > max_value
 
             newxmlstr <<
-              if authorized && options[:add_usage_on_report]
+              if cached_auth && options[:add_usage_on_report]
                 ## only increase if asked explicity via options[:add_usage_on_report] and if the status was
                 ## authorized to begin with, otherwise we might increment on a status that is not authorized
                 ## and that would look weird for the user
@@ -214,13 +214,13 @@ module ThreeScale
         # a violation on the limits with usage depends on whether status is authorized
         # if no violation with usage, just look if we have a violation wo usage
         # if we end up with a violation, forget the cache and compute it properly
-        violation = if limit_violation_with_usage
-          authorized
+        violation = if usage_violation
+          cached_auth
         else
-          limit_violation_without_usage
+          currently_violating
         end
 
-        [newxmlstr, authorized, violation]
+        [newxmlstr, cached_auth, violation]
       end
 
 
