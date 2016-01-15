@@ -90,7 +90,6 @@ module ThreeScale
         attr_accessor :redirect_uri_field
         attr_reader :usage
         attr_accessor :values
-        attr_reader :predicted_values
         attr_accessor :user
         attr_accessor :user_values
 
