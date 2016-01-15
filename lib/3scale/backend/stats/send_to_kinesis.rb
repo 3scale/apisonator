@@ -97,13 +97,7 @@ module ThreeScale
           end
 
           def job_running?(lock_key)
-            job_running = !storage.setnx(JOB_RUNNING_KEY, lock_key)
-
-            unless job_running
-              storage.expire(JOB_RUNNING_KEY, TTL_JOB_RUNNING_KEY_SEC)
-            end
-
-            job_running
+            !storage.set(JOB_RUNNING_KEY, lock_key, nx: true, ex: TTL_JOB_RUNNING_KEY_SEC)
           end
         end
       end
