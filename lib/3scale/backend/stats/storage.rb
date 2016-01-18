@@ -1,5 +1,4 @@
 require_relative '../storage'
-require_relative '../storage_influxdb'
 require_relative 'keys'
 
 module ThreeScale
@@ -8,10 +7,6 @@ module ThreeScale
       class Storage
         class << self
           include Memoizer::Decorator
-
-          def instance(reset = false)
-            StorageInfluxDB.instance(reset)
-          end
 
           def enabled?
             storage.get("stats:enabled").to_i == 1
