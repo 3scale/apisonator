@@ -1,7 +1,6 @@
 require '3scale/backend/cache'
 require '3scale/backend/stats/storage'
 require '3scale/backend/stats/keys'
-require '3scale/backend/stats/replicate_job'
 require '3scale/backend/application_events'
 require '3scale/backend/transaction'
 require '3scale/backend/stats/aggregators/response_code'
