@@ -102,6 +102,16 @@ module ThreeScale
       ## the call to master)
       config.notification_batch = 10000
 
+      # This setting controls whether the listener can create event buckets in
+      # Redis. We do not want all the listeners creating buckets yet, as we do
+      # not know exactly the rate at which we can send events to Kinesis
+      # without problems.
+      # By default, we will allow creating buckets in any environment that is
+      # not 'production'.
+      # Notice that in order to create buckets, you also need to execute this
+      # rake task: stats:panic_mode:enable_storage_stats.
+      config.can_create_event_buckets = !production?
+
       # Load configuration from a file.
       config.load!
     end

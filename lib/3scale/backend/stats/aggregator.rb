@@ -20,7 +20,7 @@ module ThreeScale
           def process(transactions)
             current_bucket = nil
 
-            if Storage.enabled?
+            if Storage.enabled? && configuration.can_create_event_buckets
               current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
               prepare_stats_buckets(current_bucket)
             end
