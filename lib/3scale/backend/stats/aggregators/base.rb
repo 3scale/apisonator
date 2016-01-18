@@ -55,22 +55,12 @@ module ThreeScale
           # @param [String] raw_value
           # @return [Symbol] the Redis command
           def storage_cmd(raw_value)
-            Helpers.get_value_of_set_if_exists(raw_value) ? :set : :incrby
-          end
-
-          # Parse 'raw_value' and return it as a integer.
-          # It take that raw_value can start with a '#' into consideration.
-          #
-          # @param [String] raw_value
-          # @return [Integer] the parsed value
-          def parse_usage_value(raw_value)
-            (Helpers.get_value_of_set_if_exists(raw_value) || raw_value).to_i
+            Helpers.is_usage_set?(raw_value) ? :set : :incrby
           end
 
           def storage
             Backend::Storage.instance
           end
-
 
           protected
 

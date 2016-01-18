@@ -22,7 +22,7 @@ module ThreeScale
               transaction.usage.each do |metric_id, raw_value|
                 metric_keys = Keys.transaction_keys(transaction, :metric, metric_id)
                 cmd         = storage_cmd(raw_value)
-                value       = parse_usage_value(raw_value)
+                value       = Helpers.get_usage_from raw_value
 
                 aggregate_values(value, transaction.timestamp, metric_keys, cmd, bucket_key)
               end
