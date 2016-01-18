@@ -105,11 +105,12 @@ module ThreeScale
           #   updated (application or used) and the transaction's service_id.
           #   The key of the hash is the transaction value of that relation attr.
           def touched_relation(relation, transaction)
-            relation_value = transaction.send("#{relation}_id")
+            relation_id = "#{relation}_id"
+            relation_value = transaction.send(relation_id)
             {
               relation_value => {
-                                 :"#{relation}_id" => relation_value,
-                                 :service_id       => transaction.service_id,
+                relation_id.to_sym => relation_value,
+                :service_id        => transaction.service_id,
               },
             }
           end

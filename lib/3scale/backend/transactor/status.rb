@@ -61,6 +61,10 @@ module ThreeScale
         # This is the default field we respond with when using OAuth redirects
         # We only use 'redirect_uri' if a request sent such a param. See #397.
         REDIRECT_URI_FIELD = 'redirect_url'.freeze
+        private_constant :REDIRECT_URI_FIELD
+
+        XML_SEPARATOR = '<__separator__/>'.freeze
+        private_constant :XML_SEPARATOR
 
         def initialize(attributes = {})
           @service     = attributes[:service]
@@ -86,7 +90,6 @@ module ThreeScale
         attr_accessor :redirect_uri_field
         attr_reader :usage
         attr_accessor :values
-        attr_reader :predicted_values
         attr_accessor :user
         attr_accessor :user_values
 
@@ -151,14 +154,15 @@ module ThreeScale
 
         ## WARNING/CAUTION: any change in to_xml must be reflected in cache.rb/clean_cached_xml !!!
         def to_xml(options = {})
-          xml = ""
-          xml << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" unless options[:skip_instruct]
-          xml << "<status>"
+          xml = ''
+          xml << '<?xml version="1.0" encoding="UTF-8"?>'.freeze unless options[:skip_instruct]
+          xml << '<status><authorized>'.freeze
 
           if authorized?
-            xml << "<authorized>true</authorized>"
+            xml << 'true</authorized>'.freeze
           else
-            xml << "<authorized>false</authorized><reason>" << rejection_reason_text << "</reason>"
+            xml << 'false</authorized><reason>'.freeze
+            xml << rejection_reason_text << '</reason>'.freeze
           end
 
           if oauth
@@ -170,29 +174,29 @@ module ThreeScale
                    '</application>'
           end
 
+          anchors = options[:anchors_for_caching]
           if !@application.nil? && !options[:exclude_application]
-            xml << "<__separator__/>" if options[:anchors_for_caching]
-            xml << "<plan>" << plan_name.to_s.encode(xml: :text) << "</plan>"
+            xml << XML_SEPARATOR if anchors
+            xml << '<plan>'.freeze
+            xml << plan_name.to_s.encode(xml: :text) << '</plan>'.freeze
             xml << aux_reports_to_xml(:application, application_usage_reports, options)
           end
           if !@user.nil? && !options[:exclude_user]
-            xml << "<__separator__/>" if options[:anchors_for_caching]
-            xml << "<user_plan>" << user_plan_name.to_s.encode(xml: :text) << "</user_plan>"
+            xml << XML_SEPARATOR if anchors
+            xml << '<user_plan>'.freeze
+            xml << user_plan_name.to_s.encode(xml: :text) << '</user_plan>'.freeze
             xml << aux_reports_to_xml(:user, user_usage_reports, options)
           end
 
-          xml << "<__separator__/>" if options[:anchors_for_caching]
-          xml << "</status>"
+          xml << XML_SEPARATOR if anchors
+          xml << '</status>'.freeze
 
-          if options[:anchors_for_caching]
-            ## little hack to avoid parsing for <authorized> to know the state. Not very nice but leave it like this.
-            s = authorized? ? "1<__separator__/>" : "0<__separator__/>"
-            s << xml
-            return s
-          else
-            return xml
-          end
+          return xml unless anchors
 
+          ## little hack to avoid parsing for <authorized> to know the state. Not very nice but leave it like this.
+          s = authorized? ? '1' : '0'
+          s << XML_SEPARATOR
+          s << xml
         end
 
         private
@@ -212,13 +216,15 @@ module ThreeScale
         end
 
         def aux_reports_to_xml(report_type, reports, options)
-          xml_node_keys = {
-            application: "usage",
-            user:        "user_usage",
-          }
-          xml = ""
+          xml = ''
           unless reports.empty?
-            xml << "<#{xml_node_keys[report_type]}_reports>"
+            xml_node = if report_type == :application
+                         'usage_reports>'.freeze
+                       else
+                         'user_usage_reports>'.freeze
+                       end
+            xml << '<'.freeze
+            xml << xml_node
             reports.each do |report|
               attributes = "metric=\"#{report.metric_name}\" " \
                            "period=\"#{report.period}\""
@@ -226,8 +232,8 @@ module ThreeScale
               xml << "<usage_report #{attributes}>"
 
               if report.period != :eternity
-                xml << "<period_start>" << report.period_start.strftime(TIME_FORMAT) << "</period_start>"
-                xml << "<period_end>" << report.period_end.strftime(TIME_FORMAT) << "</period_end>"
+                xml << '<period_start>' << report.period_start.strftime(TIME_FORMAT) << '</period_start>'
+                xml << '<period_end>' << report.period_end.strftime(TIME_FORMAT) << '</period_end>'
               end
               xml << '<max_value>' << report.max_value.to_s << '</max_value><current_value>'
 
@@ -249,9 +255,10 @@ module ThreeScale
                 xml << "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
               end
 
-              xml << '</current_value></usage_report>'
+              xml << '</current_value></usage_report>'.freeze
             end
-            xml << "</#{xml_node_keys[report_type]}_reports>"
+            xml << '</'.freeze
+            xml << xml_node
           end
 
           xml
