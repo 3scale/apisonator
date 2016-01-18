@@ -179,32 +179,22 @@ module ThreeScale
             _, metric, curr_value, max_value = str.split(','.freeze)
             curr_value = curr_value.to_i
             max_value = max_value.to_i
-            inc = 0
-            val = nil
+            updated_value = nil
+            usage = options[:usage]
 
-            if options[:usage]
-              inc = options[:usage][metric].to_i
-              val = Helpers.get_value_of_set_if_exists(options[:usage][metric])
+            if usage && usage_metric = usage[metric]
+              updated_value = Helpers.get_usage_from usage_metric, curr_value
+              usage_violation ||= updated_value > max_value
             end
 
-            usage_violation ||=
-              if val
-                val.to_i > max_value
-              elsif inc > 0
-                curr_value + inc > max_value
-              end
             currently_violating ||= curr_value > max_value
 
             newxmlstr <<
-              if cached_auth && options[:add_usage_on_report]
+              if updated_value && cached_auth && options[:add_usage_on_report]
                 ## only increase if asked explicity via options[:add_usage_on_report] and if the status was
                 ## authorized to begin with, otherwise we might increment on a status that is not authorized
                 ## and that would look weird for the user
-                if val.nil?
-                  curr_value + inc
-                else
-                  val
-                end
+                updated_value
               else
                 curr_value
               end.to_s
