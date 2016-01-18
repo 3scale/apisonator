@@ -62,31 +62,6 @@ module ThreeScale
           end
         end
 
-        describe '#get_old_buckets_to_process' do
-          context "without pending buckets" do
-            subject { Info.get_old_buckets_to_process }
-            it { expect(subject).to be_empty }
-          end
-
-          context "with pending buckets" do
-            before do
-              storage.zadd(Keys.changed_keys_key, 0, "foo")
-              storage.zadd(Keys.changed_keys_key, 1, "bar")
-              storage.zadd(Keys.changed_keys_key, 2, "foobar")
-            end
-
-            context "when passes a normal bucket" do
-              subject { Info.get_old_buckets_to_process("bar:2") }
-              it { expect(subject).to eql(["foo", "bar"]) }
-            end
-
-            context "when passes a special bucket inf" do
-              subject { Info.get_old_buckets_to_process("inf") }
-              it { expect(subject).to eql(["foo", "bar", "foobar"])}
-            end
-          end
-        end
-
         describe '#failed_buckets' do
           subject { Info.failed_buckets }
 
