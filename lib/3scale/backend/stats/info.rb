@@ -13,14 +13,6 @@ module ThreeScale
           storage.zrange(changed_keys_key, 0, -1)
         end
 
-        def failed_buckets
-          storage.smembers(failed_save_to_storage_stats_key)
-        end
-
-        def failed_buckets_at_least_once
-          storage.smembers(failed_save_to_storage_stats_at_least_once_key)
-        end
-
         def pending_buckets_size
           storage.zcard(changed_keys_key)
         end

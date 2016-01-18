@@ -69,14 +69,6 @@ module ThreeScale
           "keys_changed_set"
         end
 
-        def failed_save_to_storage_stats_key
-          "stats:failed"
-        end
-
-        def failed_save_to_storage_stats_at_least_once_key
-          "stats:failed_at_least_once"
-        end
-
         def transaction_keys(transaction, item, value)
           service_key     = service_key_prefix(transaction.service_id)
           application_key = application_key_prefix(service_key,

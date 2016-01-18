@@ -61,40 +61,6 @@ module ThreeScale
             it { expect(subject).to include("foo" => 2) }
           end
         end
-
-        describe '#failed_buckets' do
-          subject { Info.failed_buckets }
-
-          context 'without failed buckets' do
-            it { expect(subject).to be_empty }
-          end
-
-          context 'with failed buckets' do
-            before do
-              storage.sadd(Keys.failed_save_to_storage_stats_key, "foo")
-              storage.sadd(Keys.failed_save_to_storage_stats_key, "bar")
-            end
-
-            it { expect(subject).to include("foo", "bar") }
-          end
-        end
-
-        describe '#failed_buckets_at_least_once' do
-          subject { Info.failed_buckets_at_least_once }
-
-          context 'without failed buckets' do
-            it { expect(subject).to be_empty }
-          end
-
-          context 'with failed buckets' do
-            before do
-              storage.sadd(Keys.failed_save_to_storage_stats_at_least_once_key, "foo")
-              storage.sadd(Keys.failed_save_to_storage_stats_at_least_once_key, "bar")
-            end
-
-            it { expect(subject).to include("foo", "bar") }
-          end
-        end
       end
     end
   end

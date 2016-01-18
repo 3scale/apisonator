@@ -53,21 +53,12 @@ module ThreeScale
             clear_bucket_keys(bucket)
           rescue Exception => exception
             Airbrake.notify(exception, parameters: { bucket: bucket })
-            register_failed_bucket(bucket)
           end
 
           private
 
-          def register_failed_bucket(bucket)
-            storage.sadd(failed_save_to_storage_stats_at_least_once_key, bucket)
-            storage.sadd(failed_save_to_storage_stats_key, bucket)
-          end
-
           def clear_bucket_keys(bucket)
-            storage.pipelined do
-              storage.del(changed_keys_bucket_key(bucket))
-              storage.srem(failed_save_to_storage_stats_key, bucket)
-            end
+            storage.del(changed_keys_bucket_key(bucket))
           end
 
           # @note Check if we should use sscan instead of smembers.
