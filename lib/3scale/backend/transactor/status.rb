@@ -240,7 +240,7 @@ module ThreeScale
               xml << if not options[:anchors_for_caching]
                 if authorized? && usage && (usage_metric_name = usage[report.metric_name])
                   # this is a authrep request and therefore we should sum the usage
-                  Helpers.get_usage_from usage_metric_name, report.current_value
+                  Usage.get_from usage_metric_name, report.current_value
                 else
                   report.current_value
                 end.to_s

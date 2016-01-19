@@ -183,7 +183,7 @@ module ThreeScale
             usage = options[:usage]
 
             if usage && usage_metric = usage[metric]
-              updated_value = Helpers.get_usage_from usage_metric, curr_value
+              updated_value = Usage.get_from usage_metric, curr_value
               usage_violation ||= updated_value > max_value
             end
 

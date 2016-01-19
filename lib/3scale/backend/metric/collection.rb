@@ -47,7 +47,7 @@ module ThreeScale
         def process_ancestors(usage)
           usage.keys.inject(usage.dup) do |memo, id|
             ancestor_id(id).each do |ancestor_id|
-              if Helpers.is_usage_set? memo[id]
+              if Usage.is_set? memo[id]
                 memo[ancestor_id] = memo[id]
               else
                 memo[ancestor_id] ||= 0

@@ -45,7 +45,7 @@ module ThreeScale
         def increment_or_set(values, usage)
           usage.inject(values) do |memo, (metric_id, value)|
             memo.keys.each do |period|
-              memo[period][metric_id] = Helpers.get_usage_from value, memo[period][metric_id].to_i
+              memo[period][metric_id] = Usage.get_from value, memo[period][metric_id].to_i
             end
 
             memo

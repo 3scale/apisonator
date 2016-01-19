@@ -55,7 +55,7 @@ module ThreeScale
           # @param [String] raw_value
           # @return [Symbol] the Redis command
           def storage_cmd(raw_value)
-            Helpers.is_usage_set?(raw_value) ? :set : :incrby
+            Backend::Usage.is_set?(raw_value) ? :set : :incrby
           end
 
           def storage
