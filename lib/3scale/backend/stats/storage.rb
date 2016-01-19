@@ -9,16 +9,16 @@ module ThreeScale
           include Memoizer::Decorator
 
           def enabled?
-            storage.get("stats:enabled").to_i == 1
+            storage.get('stats:enabled').to_i == 1
           end
           memoize :enabled?
 
           def enable!
-            storage.set("stats:enabled", "1")
+            storage.set('stats:enabled', '1')
           end
 
           def disable!
-            storage.del("stats:enabled")
+            storage.del('stats:enabled')
           end
 
           private
