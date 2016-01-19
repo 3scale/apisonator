@@ -23,6 +23,13 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     ## stubbing the Airbrake, not working on tests
     Airbrake.stubs(:notify).returns(true)
+
+    # I noticed that there are a bunch of variables that are not initialized.
+    # The tests seem to run OK, but let's give them a value. For our sanity.
+    @provider_key = 'test_provider_key'
+    @plan_id = 'test_plan_id'
+    @plan_name = 'test_plan_name'
+    @metric_id = 'test_metric_id'
   end
 
   def stats_bucket_size
@@ -100,60 +107,54 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     transaction = Transaction.new(service_id:     service.id,
                                   application_id: application.id,
                                   timestamp:      timestamp,
-                                  usage:          { @metric_hits.id => 5 },
+                                  usage:          { @metric_id => 5 },
                                   user_id:        'user_id_xyz')
 
     Stats::Aggregator.process([transaction])
 
     assert_equal '5', @storage.get(
-        application_key(service.id, application.id, @metric_hits.id, :hour, '2010050713'))
+        application_key(service.id, application.id, @metric_id, :hour, '2010050713'))
     assert_equal '5', @storage.get(
-        application_key(service.id, application.id, @metric_hits.id, :month, '20100501'))
+        application_key(service.id, application.id, @metric_id, :month, '20100501'))
     assert_equal '5', @storage.get(
-        application_key(service.id, application.id, @metric_hits.id, :eternity))
+        application_key(service.id, application.id, @metric_id, :eternity))
+
+    assert_equal '5', @storage.get(service_key(service.id, @metric_id, :hour, '2010050713'))
+    assert_equal '5', @storage.get(service_key(service.id, @metric_id, :month, '20100501'))
+    assert_equal '5', @storage.get(service_key(service.id, @metric_id, :eternity))
 
     assert_equal '5', @storage.get(
-        service_key(service.id, @metric_hits.id, :hour, '2010050713'))
+        end_user_key(service.id, 'user_id_xyz', @metric_id, :hour, '2010050713'))
     assert_equal '5', @storage.get(
-        service_key(service.id, @metric_hits.id, :month, '20100501'))
+        end_user_key(service.id, 'user_id_xyz', @metric_id, :month, '20100501'))
     assert_equal '5', @storage.get(
-        service_key(service.id, @metric_hits.id, :eternity))
-
-    assert_equal '5', @storage.get(
-        end_user_key(service.id, 'user_id_xyz', @metric_hits.id, :hour, '2010050713'))
-    assert_equal '5', @storage.get(
-        end_user_key(service.id, 'user_id_xyz', @metric_hits.id, :month, '20100501'))
-    assert_equal '5', @storage.get(
-        end_user_key(service.id, 'user_id_xyz', @metric_hits.id, :eternity))
+        end_user_key(service.id, 'user_id_xyz', @metric_id, :eternity))
 
     transaction = Transaction.new(service_id:     service.id,
                                   application_id: application.id,
                                   timestamp:      timestamp,
-                                  usage:          { @metric_hits.id => 4 },
+                                  usage:          { @metric_id => 4 },
                                   user_id:        'another_user_id_xyz')
 
     Stats::Aggregator.process([transaction])
 
     assert_equal '9', @storage.get(
-        application_key(service.id, application.id, @metric_hits.id, :hour, '2010050713'))
+        application_key(service.id, application.id, @metric_id, :hour, '2010050713'))
     assert_equal '9', @storage.get(
-        application_key(service.id, application.id, @metric_hits.id, :month, '20100501'))
+        application_key(service.id, application.id, @metric_id, :month, '20100501'))
     assert_equal '9', @storage.get(
-        application_key(service.id, application.id, @metric_hits.id, :eternity))
+        application_key(service.id, application.id, @metric_id, :eternity))
 
-    assert_equal '9', @storage.get(
-        service_key(service.id, @metric_hits.id, :hour,   '2010050713'))
-    assert_equal '9', @storage.get(
-        service_key(service.id, @metric_hits.id, :month,   '20100501'))
-    assert_equal '9', @storage.get(
-        service_key(service.id, @metric_hits.id, :eternity))
+    assert_equal '9', @storage.get(service_key(service.id, @metric_id, :hour, '2010050713'))
+    assert_equal '9', @storage.get(service_key(service.id, @metric_id, :month, '20100501'))
+    assert_equal '9', @storage.get(service_key(service.id, @metric_id, :eternity))
 
     assert_equal '4', @storage.get(
-        end_user_key(service.id, 'another_user_id_xyz', @metric_hits.id, :hour, '2010050713'))
+        end_user_key(service.id, 'another_user_id_xyz', @metric_id, :hour, '2010050713'))
     assert_equal '4', @storage.get(
-        end_user_key(service.id, 'another_user_id_xyz', @metric_hits.id, :month, '20100501'))
+        end_user_key(service.id, 'another_user_id_xyz', @metric_id, :month, '20100501'))
     assert_equal '4', @storage.get(
-        end_user_key(service.id, 'another_user_id_xyz', @metric_hits.id, :eternity))
+        end_user_key(service.id, 'another_user_id_xyz', @metric_id, :eternity))
   end
 
 
@@ -181,7 +182,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     transaction = Transaction.new(service_id:     service.id,
                                   application_id: application.id,
                                   timestamp:      timestamp,
-                                  usage:          { @metric_hits.id => 1 },
+                                  usage:          { @metric_id => 1 },
                                   response_code:  200,
                                   user_id:        'user_id_xyz')
 
