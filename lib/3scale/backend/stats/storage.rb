@@ -13,24 +13,12 @@ module ThreeScale
           end
           memoize :enabled?
 
-          def active?
-            storage.get("stats:active").to_i == 1
-          end
-
           def enable!
             storage.set("stats:enabled", "1")
           end
 
-          def activate!
-            storage.set("stats:active", "1")
-          end
-
           def disable!
             storage.del("stats:enabled")
-          end
-
-          def deactivate!
-            storage.del("stats:active")
           end
 
           private
