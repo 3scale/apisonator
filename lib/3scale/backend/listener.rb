@@ -653,8 +653,15 @@ module ThreeScale
         end
       end
 
+      def filter_known_big_params(params)
+        params.lazy.reject do |k, v|
+          # exclude RequestLogs params
+          v.is_a?(Hash) && k == 'log'.freeze
+        end
+      end
+
       def validate_params_length!
-        raise ParamsTooBig if has_too_big_params?(params)
+        raise ParamsTooBig if has_too_big_params?(filter_known_big_params params)
       end
 
       def blank?(object)
