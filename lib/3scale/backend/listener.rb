@@ -155,7 +155,6 @@ module ThreeScale
       end
 
       def do_api_method(method_name)
-        validate_params_length!
         normalize_non_empty_keys!
         unless valid_key_and_usage_params?
           empty_response 403
@@ -384,7 +383,6 @@ module ThreeScale
       ##
       ##
       post '/transactions.xml' do
-        validate_params_length!
         provider_key = params[:provider_key]
         ## return error code 400 (Bad request) if the parameters are not there
         ## I put 403 (Forbidden) for consitency however it should be 400
@@ -416,7 +414,6 @@ module ThreeScale
       ## OAUTH ACCESS TOKENS
 
       post '/services/:service_id/oauth_access_tokens.xml' do
-        validate_params_length!
         require_params! :provider_key, :service_id, :token
 
         # TODO: this should directly respond rather than raise
@@ -460,7 +457,6 @@ module ThreeScale
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-        validate_params_length!
         require_params! :provider_key, :service_id, :app_id
 
         # TODO: this should directly respond rather than raise
@@ -481,7 +477,6 @@ module ThreeScale
       end
 
       get '/services/:service_id/oauth_access_tokens/:token.xml' do
-        validate_params_length!
         require_params! :provider_key, :service_id, :token
 
         unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
@@ -498,7 +493,6 @@ module ThreeScale
       ## TRANSACTIONS & ERRORS
 
       get '/transactions/errors.xml' do
-        validate_params_length!
         @errors = ErrorStorage.list(service_id, :page     => params[:page],
                                                 :per_page => params[:per_page])
         builder :transaction_errors
@@ -510,13 +504,11 @@ module ThreeScale
       end
 
       get '/transactions/errors/count.xml' do
-        validate_params_length!
         @count = ErrorStorage.count(service_id)
         builder :transaction_error_count
       end
 
       get '/transactions/latest.xml' do
-        validate_params_length!
         @transactions = TransactionStorage.list(service_id)
         builder :latest_transactions
       end
@@ -524,13 +516,11 @@ module ThreeScale
       ## LOG REQUESTS
 
       get '/services/:service_id/applications/:app_id/log_requests.xml' do
-        validate_params_length!
         @list = LogRequestStorage.list_by_application(service_id, application.id)
         builder :log_requests
       end
 
       get '/applications/:app_id/log_requests.xml' do
-        validate_params_length!
         ## FIXME: two ways of doing the same
         ## get '/services/:service_id/applications/:app_id/log_requests.xml'
         @list = LogRequestStorage.list_by_application(service_id, application.id)
@@ -538,21 +528,18 @@ module ThreeScale
       end
 
       get '/services/:service_id/log_requests.xml' do
-        validate_params_length!
         @list = LogRequestStorage.list_by_service(service_id)
         builder :log_requests
       end
 
       # TODO: This one's not used by System, safe for removal
       get '/services/:service_id/applications/:app_id/log_requests/count.xml' do
-        validate_params_length!
         @count = LogRequestStorage.count_by_application(service_id, application.id)
         builder :log_requests_count
       end
 
       # TODO: This one's not used by System, safe for removal
       get '/services/:service_id/log_requests/count.xml' do
-        validate_params_length!
         @count = LogRequestStorage.count_by_service(service_id)
         builder :log_requests_count
       end
@@ -577,13 +564,11 @@ module ThreeScale
       ## ALERTS & VIOLATIONS
 
       get "/services/:service_id/applications/:app_id/utilization.xml" do
-        validate_params_length!
         @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, application.id)
         builder :utilization
       end
 
       get '/applications/:app_id/utilization.xml' do
-        validate_params_length!
         ## FIXME: two ways of doing the same
         ## "/services/:service_id/applications/:app_id/utilization.xml"
         @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, application.id)
@@ -611,51 +596,6 @@ module ThreeScale
       end
 
       private
-
-      class ParamsTooBig < ThreeScale::Backend::Error
-        def initialize
-          super 'At least one parameter or its value is too big'
-        end
-
-        def http_code
-          400
-        end
-      end
-      private_constant :ParamsTooBig
-
-      MAX_PARAM_LENGTH = 512
-
-      # has_too_big_params helper
-      #
-      # Should not be used directly - use validate_params_length! instead.
-      #
-      # Checks whether the given params collection contains at least one
-      # parameter of unreasonable size. This protects our code from malicious
-      # requests and errors that would have unwanted consequences in the rest
-      # of our code, such as sending huge keys to Redis which could ECONNRESET.
-      #
-      # A parameter is considered too big if one or more of the following is true:
-      #
-      # * Its key is over MAX_PARAM_LENGTH (we use keys in our codebase).
-      # * It is a collection of parameters (ie. Array or Hash) and at least one
-      #   of them is too big according to these rules.
-      # * Its value is over MAX_PARAM_LENGTH and one or more of the following is true:
-      #   * It is not an OAuth token parameter (ends with 'token')
-      #   * OAuthAccessTokenStorage module thinks the value is too big
-      #
-      def has_too_big_params?(params)
-        params.any? do |k, v|
-          k.size > MAX_PARAM_LENGTH ||
-            v.respond_to?(:each) && has_too_big_params?(v) ||
-            v && v.size > MAX_PARAM_LENGTH &&
-            (!k.end_with?('token'.freeze) ||
-             OAuthAccessTokenStorage.token_too_big?(v))
-        end
-      end
-
-      def validate_params_length!
-        raise ParamsTooBig if has_too_big_params?(params)
-      end
 
       def blank?(object)
         !object || object.respond_to?(:empty?) && object.empty?
