@@ -77,13 +77,6 @@ class ListenerTest < Test::Unit::TestCase
     assert_not_too_big
   end
 
-  def test_big_param_on_request_log_is_ignored
-    get "/transactions/authrep.xml?usage[hits]=1&log[request]=#{'x' * (TOOBIGSIZE_PARAM)}&log[response]=#{'x' * (TOOBIGSIZE_PARAM)}&log[code]=#{'x' * (TOOBIGSIZE_PARAM)}"
-    assert_not_too_big
-    get "/transactions/authrep.xml?usage[hits]=1&other[log][request]=#{'x' * (TOOBIGSIZE_PARAM)}&other[log][response]=#{'x' * (TOOBIGSIZE_PARAM)}&other[log][code]=#{'x' * (TOOBIGSIZE_PARAM)}"
-    assert_too_big
-  end
-
   def test_on_invalid_path_responds_with_404
     post '/foo.html'
     assert_equal 404, last_response.status
