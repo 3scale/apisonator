@@ -12,8 +12,7 @@ module ThreeScale
             include Base
 
             # Aggregates the usage of a transaction. If a bucket time is specified,
-            # all new or updated stats keys will be stored in a Redis Set with a name
-            # composed by 'keys_changed' + bucket.
+            # all new or updated stats keys will be stored in a Redis Set.
             #
             # @param [Transaction] transaction
             # @param [String, Nil] bucket
