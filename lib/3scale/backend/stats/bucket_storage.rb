@@ -13,8 +13,19 @@ module ThreeScale
       # Currently, the Aggregator class is responsible for creating the
       # buckets, but we would like to change that in a future refactoring.
       class BucketStorage
-        EVENTS_SLICE_CALL_TO_REDIS = 200
-        private_constant :EVENTS_SLICE_CALL_TO_REDIS
+        KEYS_SLICE_CALL_TO_REDIS = 200
+        private_constant :KEYS_SLICE_CALL_TO_REDIS
+
+        # If we have not read buckets for a long time, we might deal with lots
+        # of keys in the union operation. This is why we define a constant that
+        # limits the number of buckets that we send to the union op.
+        #
+        # Currently, we are running a Kinesis job every 2 min and the buckets
+        # are being created every 10s. We could set the constant to 12
+        # (120/10 = 12), but to be sure that we will call union just once on
+        # each job, we are going to set it to 15.
+        MAX_BUCKETS_REDIS_UNION = 15
+        private_constant :MAX_BUCKETS_REDIS_UNION
 
         def initialize(storage)
           @storage = storage
@@ -41,30 +52,30 @@ module ThreeScale
           storage.sadd(Keys.changed_keys_bucket_key(bucket), event_key)
         end
 
-        # This function returns a Hash with the keys that are present in the
-        # bucket and their values
-        def bucket_content_with_values(bucket)
-          event_keys = bucket_content(bucket)
-          event_keys_slices =  event_keys.each_slice(EVENTS_SLICE_CALL_TO_REDIS)
-
+        def buckets_content_with_values(buckets)
           # Values are stored as strings in Redis, but we want integers.
           # There are some values that can be nil. This happens when the key
           # has a TTL and we read it once it has expired. Right now, event keys
           # with granularity = 'minute' expire after 180 s. We might need to
           # increase that to make sure that we do not miss any values.
-          event_values = event_keys_slices.flat_map do |event_keys_slice|
-            storage.mget(event_keys_slice)
+
+          keys = unique_keys_in_buckets(buckets)
+          values = keys.each_slice(KEYS_SLICE_CALL_TO_REDIS).flat_map do |keys_slice|
+            storage.mget(keys_slice)
           end.map { |value| Integer(value) if value }
 
-          Hash[event_keys.zip(event_values)]
+          Hash[keys.zip(values)]
         end
 
         private
 
         attr_reader :storage
 
-        def bucket_content(bucket)
-          storage.smembers(Keys.changed_keys_bucket_key(bucket))
+        def unique_keys_in_buckets(buckets)
+          buckets.each_slice(MAX_BUCKETS_REDIS_UNION).inject([]) do |res, buckets_slice|
+            bucket_keys = buckets_slice.map { |bucket| Keys.changed_keys_bucket_key(bucket) }
+            (res + storage.sunion(bucket_keys))
+          end.uniq
         end
       end
     end

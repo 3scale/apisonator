@@ -120,7 +120,7 @@ module ThreeScale
           context 'when the bucket exists' do
             it 'puts the event in the bucket' do
               subject.put_in_bucket(event_key, bucket)
-              expect(subject.bucket_content_with_values(bucket))
+              expect(subject.buckets_content_with_values([bucket]))
                   .to eq ({ event_key => event_value })
             end
           end
@@ -135,36 +135,54 @@ module ThreeScale
 
             it 'puts the event in the bucket' do
               subject.put_in_bucket(event_key, new_bucket)
-              expect(subject.bucket_content_with_values(new_bucket))
+              expect(subject.buckets_content_with_values([new_bucket]))
                   .to eq ({ event_key => event_value })
             end
           end
         end
 
-        describe '#bucket_content_with_values' do
-          context 'when the bucket exists' do
-            let(:events) do
-              { 'stats/{service:11}/metric:21/day:20151207' => 10,
-                'stats/{service:12}/metric:22/day:20151208' => 20 }
-            end
+        describe '#buckets_content_with_values' do
+          context 'when no buckets are received' do
+            let(:buckets) { [] }
 
-            before do
-              events.each do |event_key, event_value|
-                subject.put_in_bucket(event_key, bucket)
-                storage.set(event_key, event_value)
-              end
-            end
-
-            it 'returns a hash with the contents of the bucket and their values' do
-              expect(subject.bucket_content_with_values(bucket)).to eq events
+            it 'returns an empty hash' do
+              expect(subject.buckets_content_with_values(buckets)).to be_empty
             end
           end
 
-          context 'when the bucket does not exist' do
-            let(:bucket) { 'invalid_bucket_name' }
+          context 'when some buckets are received' do
+            # I am going to use fake bucket names and invalid event keys to
+            # simplify the example.
+            # In each bucket, I am going to save 1 event that is only found
+            # in that particular bucket, plus an event that can be found in all
+            # of them. This is useful to check that union works properly and
+            # does not return duplicated events.
+            let(:n_buckets) { described_class.const_get(:MAX_BUCKETS_REDIS_UNION) + 1 }
+            let(:unique_events) do
+              (0...n_buckets).map { |event_num| { "unique_event_#{event_num}" => event_num } }
+            end
+            let(:repeated_event) { { 'repeated_event_0' => 0 } }
+            let(:all_events) { unique_events << repeated_event }
 
-            it 'returns an empty hash' do
-              expect(subject.bucket_content_with_values(bucket)).to be_empty
+            let(:buckets) do
+              (0...n_buckets).inject({}) do |res, bucket_index|
+                bucket_events = unique_events[bucket_index].merge(repeated_event)
+                res.merge!(bucket_index.to_s => bucket_events)
+              end
+            end
+
+            before do
+              buckets.each do |bucket, events|
+                events.each do |event_key, event_value|
+                  subject.put_in_bucket(event_key, bucket)
+                  storage.set(event_key, event_value)
+                end
+              end
+            end
+
+            it 'returns a hash with all the keys in the buckets and their values' do
+              expect(subject.buckets_content_with_values(buckets.keys))
+                  .to eq unique_events.reduce(:merge).merge(repeated_event)
             end
           end
         end
