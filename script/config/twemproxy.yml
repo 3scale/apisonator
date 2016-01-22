@@ -1,6 +1,7 @@
 alpha:
   listen: 127.0.0.1:22121
   hash: fnv1a_64
+  hash_tag: "{}"
   distribution: ketama
   auto_eject_hosts: true
   redis: true
