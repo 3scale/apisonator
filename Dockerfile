@@ -1,4 +1,4 @@
-FROM quay.io/3scale/docker:dev-backend-2.2.3
+FROM quay.io/3scale/docker:dev-backend-${RUBY_VERSION}
 MAINTAINER Toni Reina <toni@3scale.net>
 
 USER ruby
