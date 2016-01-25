@@ -1,7 +1,6 @@
 require '3scale/backend/cache'
 require '3scale/backend/stats/storage'
 require '3scale/backend/stats/keys'
-require '3scale/backend/stats/replicate_job'
 require '3scale/backend/application_events'
 require '3scale/backend/transaction'
 require '3scale/backend/stats/aggregators/response_code'
@@ -71,10 +70,7 @@ module ThreeScale
           def prepare_stats_buckets(current_bucket)
             store_changed_keys(current_bucket)
 
-            if prior_bucket.nil?
-              self.prior_bucket = current_bucket
-            elsif current_bucket != prior_bucket
-              enqueue_stats_job(prior_bucket)
+            if prior_bucket.nil? || current_bucket != prior_bucket
               self.prior_bucket = current_bucket
             end
           end
@@ -86,11 +82,6 @@ module ThreeScale
 
           def stats_bucket_size
             @stats_bucket_size ||= (configuration.stats.bucket_size || 5)
-          end
-
-          def enqueue_stats_job(bucket)
-            return unless Storage.enabled?
-            Resque.enqueue(ReplicateJob, bucket, Time.now.getutc.to_f)
           end
 
           def storage

@@ -91,10 +91,6 @@ module ThreeScale
       config.add_section(:redis, :proxy, :nodes, :backup_file)
       config.add_section(:hoptoad, :api_key)
       config.add_section(:stats, :bucket_size)
-      config.add_section(:influxdb, :hosts, :database,
-                         :username, :password, :retry,
-                         :write_timeout, :read_timeout
-                        )
       config.add_section(:cubert, :host)
 
       # Default config

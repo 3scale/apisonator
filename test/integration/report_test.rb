@@ -32,17 +32,6 @@ class ReportTest < Test::Unit::TestCase
 
   end
 
-  def storage_stats_setup
-    Stats::Storage.enable!
-    Stats::Storage.activate!
-
-    @storage_stats = Stats::Storage.instance(true)
-    @storage_stats.drop_all_series
-
-    Resque.reset!
-    reset_aggregator_prior_bucket!
-  end
-
   test 'options request returns list of allowed methods' do
     request '/transactions.xml', :method => 'OPTIONS'
 
@@ -577,110 +566,6 @@ class ReportTest < Test::Unit::TestCase
                                                    @application.id,
                                                    @metric_id,
                                                    :month, '20100501')).to_i
-    end
-  end
-
-  test 'successful report aggregates backend hit with storage stats' do
-    storage_stats_setup
-
-    application2 = Application.save(:service_id => @service_id,
-                                    :id         => next_id,
-                                    :plan_id    => @plan_id,
-                                    :state      => :active)
-
-    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      10.times do |i|
-        post '/transactions.xml',
-          :provider_key => @provider_key,
-          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
-        post '/transactions.xml',
-            :provider_key => @provider_key,
-            :transactions => {0 => {:app_id => application2.id, :usage => {'hits' => 1}}}
-        Resque.run!
-
-        Backend::Transactor.process_batch(0, all: true)
-        Resque.run!
-
-        assert_equal 2*(i+1), @storage.get(application_key(@master_service_id,
-                                                     @provider_application_id,
-                                                     @master_hits_id,
-                                                     :month, '20100501')).to_i
-
-        assert_equal 2*(i+1), @storage.get(application_key(@master_service_id,
-                                                     @provider_application_id,
-                                                     @master_reports_id,
-                                                     :month, '20100501')).to_i
-      end
-    end
-
-    Stats::Tasks.schedule_one_stats_job
-    Resque.run!
-
-    timestamp = Time.parse_to_utc('20100501')
-
-    assert_equal 2*10, @storage_stats.get(@master_service_id,
-                                          @master_hits_id,
-                                          :month, timestamp,
-                                          application: @provider_application_id)
-
-
-    assert_equal 2*10, @storage_stats.get(@master_service_id,
-                                          @master_reports_id,
-                                          :month,
-                                          timestamp,
-                                          application: @provider_application_id)
-
-    assert_equal 10, @storage.get(application_key(@service_id,
-                                                 @application.id,
-                                                 @metric_id,
-                                                 :month, '20100501')).to_i
-
-    assert_equal 10, @storage.get(application_key(@service_id,
-                                                 application2.id,
-                                                 @metric_id,
-                                                 :month, '20100501')).to_i
-
-    assert_equal 10, @storage_stats.get(@service_id, @metric_id, :month, timestamp, application: @application.id)
-    assert_equal 10, @storage_stats.get(@service_id, @metric_id, :month, timestamp, application: application2.id)
-  end
-
-  test 'check counter rake method' do
-    storage_stats_setup
-
-    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      10.times do |i|
-        post '/transactions.xml',
-          :provider_key => @provider_key,
-          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-        Resque.run!
-
-        Backend::Transactor.process_batch(0, all: true)
-        Resque.run!
-
-        assert_equal (i+1), @storage.get(application_key(@master_service_id,
-                                                     @provider_application_id,
-                                                     @master_hits_id,
-                                                     :month, '20100501')).to_i
-        assert_equal (i+1), @storage.get(application_key(@service_id,
-                                                     @application.id,
-                                                     @metric_id,
-                                                     :month, '20100501')).to_i
-      end
-    end
-
-    Stats::Tasks.schedule_one_stats_job
-    Resque.run!
-
-    values = Stats::Tasks.check_values(@service_id,
-                                                 @application.id,
-                                                 @metric_id,
-                                                 Time.utc(2010, 5, 12, 13, 33),
-                                                )
-
-    [:month, :day, :hour, :week].each do |gra|
-      assert_equal 10, values[:redis][gra].to_i
-      assert_equal 10, values[:influxdb][gra]
     end
   end
 

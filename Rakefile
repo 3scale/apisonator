@@ -152,11 +152,6 @@ namespace :stats do
     task :enable_storage_stats => :environment do
       puts ThreeScale::Backend::Stats::Storage.enable!
     end
-
-    desc 'Schedule a StatsJob, will process all pending buckets including current (that should be done automatically)'
-    task :insert_stats_job => :environment do
-      puts ThreeScale::Backend::Stats::Tasks.schedule_one_stats_job
-    end
   end
 
   desc 'Number of stats buckets active in Redis'
@@ -169,70 +164,8 @@ namespace :stats do
     puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
   end
 
-  desc 'Buckets currently failing to be processed'
-  task :failed_buckets => :environment do
-    puts ThreeScale::Backend::Stats::Info.failed_buckets
-  end
-
-  desc 'All buckets that failed to be processed at least once, even if ok now'
-  task :failed_buckets_once => :environment do
-    puts ThreeScale::Backend::Stats::Info.failed_buckets_at_least_once
-  end
-
-  desc 'Activate saving to storage stats.'
-  task :activate_saving_to_storage_stats => :environment do
-    puts ThreeScale::Backend::Stats::Storage.activate!
-  end
-
-  desc 'Deactivate saving to storage stats. Do only if the storage stats is down or acting funny. Data is still saved in redis.'
-  task :deactivate_saving_to_storage_stats => :environment do
-    puts ThreeScale::Backend::Stats::Storage.deactivate!
-  end
-
-  desc 'Are stats saving to storage stats or just piling in redis?'
-  task :storage_stats_saving_active? => :environment do
-    puts ThreeScale::Backend::Stats::Storage.active?
-  end
-
   desc 'Is storage stats batch processing enabled?'
   task :storage_stats_enabled? => :environment do
     puts ThreeScale::Backend::Stats::Storage.enabled?
-  end
-
-  desc 'Process failed buckets (one by one)'
-  task :process_failed => :environment do
-    v = ThreeScale::Backend::Stats::Info.failed_buckets
-    if v.size==0
-      puts "No failed buckets!"
-    else
-      puts "Saving bucket: #{v.first} ..."
-      ThreeScale::Backend::Stats::Storage.save_changed_keys(v.first)
-      puts "Done"
-    end
-  end
-
-  desc 'check counter values for influxdb and redis, params: service_id, application_id, metric_id, time (optional)'
-  task :check_counters, [:service_id, :app_id, :metric_id, :timestamp] => :environment do |t, args|
-    timestamp    = Time.parse_to_utc(args[:timestamp]) || Time.now.utc
-    info_message = "Params: service_id: #{args[:service_id]}, " +
-                   "application_id: #{args[:application_id]}, " +
-                   "metric_id #{args[:metric_id]}, timestamp #{timestamp}"
-
-    puts info_message
-
-    if args[:service_id].nil? || args[:app_id].nil? || args[:metric_id].nil? || timestamp.nil?
-      ex_message = "Incorrect parameters: you must pass:" +
-                   "service_id application_id metric_id timestamp (in full)." +
-                   "For instance: service_id app_id metric_id \"2010-05-07 17:28:12'\""
-
-      raise ArgumentError.new(ex_message)
-    end
-
-    values = ThreeScale::Backend::Stats::Tasks.check_values(args[:service_id],
-                                                                      args[:app_id],
-                                                                      args[:metric_id],
-                                                                      timestamp)
-
-    puts values.inspect
   end
 end

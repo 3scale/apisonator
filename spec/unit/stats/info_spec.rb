@@ -61,65 +61,6 @@ module ThreeScale
             it { expect(subject).to include("foo" => 2) }
           end
         end
-
-        describe '#get_old_buckets_to_process' do
-          context "without pending buckets" do
-            subject { Info.get_old_buckets_to_process }
-            it { expect(subject).to be_empty }
-          end
-
-          context "with pending buckets" do
-            before do
-              storage.zadd(Keys.changed_keys_key, 0, "foo")
-              storage.zadd(Keys.changed_keys_key, 1, "bar")
-              storage.zadd(Keys.changed_keys_key, 2, "foobar")
-            end
-
-            context "when passes a normal bucket" do
-              subject { Info.get_old_buckets_to_process("bar:2") }
-              it { expect(subject).to eql(["foo", "bar"]) }
-            end
-
-            context "when passes a special bucket inf" do
-              subject { Info.get_old_buckets_to_process("inf") }
-              it { expect(subject).to eql(["foo", "bar", "foobar"])}
-            end
-          end
-        end
-
-        describe '#failed_buckets' do
-          subject { Info.failed_buckets }
-
-          context 'without failed buckets' do
-            it { expect(subject).to be_empty }
-          end
-
-          context 'with failed buckets' do
-            before do
-              storage.sadd(Keys.failed_save_to_storage_stats_key, "foo")
-              storage.sadd(Keys.failed_save_to_storage_stats_key, "bar")
-            end
-
-            it { expect(subject).to include("foo", "bar") }
-          end
-        end
-
-        describe '#failed_buckets_at_least_once' do
-          subject { Info.failed_buckets_at_least_once }
-
-          context 'without failed buckets' do
-            it { expect(subject).to be_empty }
-          end
-
-          context 'with failed buckets' do
-            before do
-              storage.sadd(Keys.failed_save_to_storage_stats_at_least_once_key, "foo")
-              storage.sadd(Keys.failed_save_to_storage_stats_at_least_once_key, "bar")
-            end
-
-            it { expect(subject).to include("foo", "bar") }
-          end
-        end
       end
     end
   end
