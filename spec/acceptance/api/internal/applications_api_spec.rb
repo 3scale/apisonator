@@ -194,7 +194,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
       expect(status).to eq 200
       expect(response_json['status']).to eq 'deleted'
       expect(ThreeScale::Backend::Application.
-        load_id_by_key(service_id, user_key)).to be_nil
+        load_id_by_key(service_id, user_key)).to be nil
     end
   end
 end

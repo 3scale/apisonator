@@ -16,9 +16,9 @@ module ThreeScale
 
           context 'when a backend exception is raised' do
             before do
-              ReportJob.should_receive(:parse_transactions) {
-                raise ThreeScale::Backend::ServiceIdInvalid.new(service_id)
-              }
+              expect(ReportJob)
+                  .to receive(:parse_transactions)
+                          .and_raise(Backend::ServiceIdInvalid.new(service_id))
             end
 
             it 'rescues the exception' do
@@ -30,9 +30,9 @@ module ThreeScale
 
           context 'when a core exception is raised' do
             before do
-              ReportJob.should_receive(:parse_transactions) {
-                raise ThreeScale::Backend::ServiceRequiresRegisteredUser.new(service_id)
-              }
+              expect(ReportJob)
+                  .to receive(:parse_transactions)
+                          .and_raise(Backend::ServiceRequiresRegisteredUser.new(service_id))
             end
 
             it 'rescues the exception' do
@@ -44,9 +44,7 @@ module ThreeScale
 
           context 'when a generic exception is raised' do
             before do
-              ReportJob.should_receive(:parse_transactions) {
-                raise Exception.new
-              }
+              expect(ReportJob).to receive(:parse_transactions).and_raise(Exception.new)
             end
 
             it 'raises the exception' do

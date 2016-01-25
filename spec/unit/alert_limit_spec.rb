@@ -28,7 +28,7 @@ module ThreeScale
         context 'with an invalid value' do
           subject { AlertLimit.save(service_id, 'foo') }
 
-          it { expect(subject).to be_nil }
+          it { expect(subject).to be nil }
         end
 
         context 'with a valid value' do

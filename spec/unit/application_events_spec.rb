@@ -10,12 +10,12 @@ module ThreeScale
 
           context 'with empty array' do
             let(:applications) { [] }
-            it { expect(subject).to be_nil }
+            it { expect(subject).to be nil }
           end
 
           context 'with nil value' do
             let(:applications) { nil }
-            it { expect(subject).to be_nil }
+            it { expect(subject).to be nil }
           end
         end
 

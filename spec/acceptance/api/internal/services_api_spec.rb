@@ -183,8 +183,8 @@ resource "Services (prefix: /services)" do
       do_request id: 1001
       expect(status).to eq(200)
       expect(response_json['status']).to eq('deleted')
-      expect(ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket).
-        to be_nil
+      expect(ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket)
+          .to be nil
     end
   end
 

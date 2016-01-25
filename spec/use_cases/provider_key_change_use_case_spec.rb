@@ -29,18 +29,18 @@ module ThreeScale
       end
 
       it 'changes the provider key of existing services' do
-        Service.list('bar').should == ['7001', '7002']
-        Service.load_by_id(7001).provider_key.should == 'bar'
-        Service.load_by_id(7002).provider_key.should == 'bar'
+        expect(Service.list('bar')).to eq ['7001', '7002']
+        expect(Service.load_by_id(7001).provider_key).to eq 'bar'
+        expect(Service.load_by_id(7002).provider_key).to eq 'bar'
       end
 
       it 'sets the default service for the new provider key' do
-        Service.default_id('bar').should == '7001'
+        expect(Service.default_id('bar')).to eq '7001'
       end
 
       it 'removes (old) provider key data' do
-        Service.default_id('foo').should == nil
-        Service.list('foo').should == []
+        expect(Service.default_id('foo')).to be nil
+        expect(Service.list('foo')).to be_empty
       end
     end
   end
