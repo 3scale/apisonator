@@ -63,7 +63,7 @@ resource 'Application Referrer Filters' do
       expect(response_status).to eq(201)
       expect(response_json['status']).to eq("created")
 
-      example_app.referrer_filters.should == ['baz']
+      expect(example_app.referrer_filters).to eq ['baz']
     end
 
     example 'Try updating a referrer filter with invalid application id' do
