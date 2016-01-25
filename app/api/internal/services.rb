@@ -14,8 +14,10 @@ module ThreeScale
         end
 
         post '/' do
+          attributes = params[:service]
+          halt 400, { status: :error, error: 'missing parameter \'service\'' }.to_json unless attributes
           begin
-            service = Service.save!(params[:service])
+            service = Service.save!(attributes)
             [201, headers, {service: service.to_hash, status: :created}.to_json]
           rescue ServiceRequiresDefaultUserPlan => e
             respond_with_400 e
