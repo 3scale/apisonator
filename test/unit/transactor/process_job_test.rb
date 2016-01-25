@@ -34,19 +34,6 @@ module Transactor
       }
     end
 
-    def test_aggregates_failure_due_to_report_after_deadline
-      Airbrake.stubs(:notify).returns(true)
-      if false
-        assert_raise ReportTimestampNotWithinRange do
-          Transactor::ProcessJob.perform([default_transaction_attributes,
-                                          default_transaction_attributes.merge(
-                                            'application_id' => @application_id_two
-                                          )])
-        end
-      end
-      Airbrake.unstub(:notify)
-    end
-
     def test_aggregates
       Timecop.freeze(Time.utc(2010, 7, 25, 14, 5)) do
         Stats::Aggregator.expects(:process).with do |transactions|
