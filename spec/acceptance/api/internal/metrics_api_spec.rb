@@ -21,21 +21,21 @@ resource 'Metrics (prefix: /services/:service_id/metrics)' do
     let(:id_non_existent) { id.to_i.succ.to_s }
 
     example_request 'Get Metric by ID' do
-      response_json['metric']['id'].should == id
-      response_json['metric']['service_id'].should == service_id
-      status.should == 200
+      expect(response_json['metric']['id']).to eq id
+      expect(response_json['metric']['service_id']).to eq service_id
+      expect(status).to eq 200
     end
 
     example 'Try to get a Metric by non-existent ID' do
       do_request id: id_non_existent
-      status.should == 404
-      response_json['error'].should =~ /metric not found/i
+      expect(status).to eq 404
+      expect(response_json['error']).to match /metric not found/i
     end
 
     example 'Try to get a Metric by non-existent service ID' do
       do_request service_id: service_id_non_existent
-      status.should == 404
-      response_json['error'].should =~ /metric not found/i
+      expect(status).to eq 404
+      expect(response_json['error']).to match /metric not found/i
     end
   end
 
@@ -57,13 +57,13 @@ resource 'Metrics (prefix: /services/:service_id/metrics)' do
     let(:raw_post){ params.to_json }
 
     example_request 'Create a Metric' do
-      status.should == 201
-      response_json['status'].should == 'created'
+      expect(status).to eq 201
+      expect(response_json['status']).to eq 'created'
 
-      (metric = ThreeScale::Backend::Metric.load(service_id, id)).should_not be_nil
-      metric.id.should == id
-      metric.service_id.should == service_id
-      metric.name.should == name
+      metric = ThreeScale::Backend::Metric.load(service_id, id)
+      expect(metric.id).to eq id
+      expect(metric.service_id).to eq service_id
+      expect(metric.name).to eq name
     end
 
   end
@@ -86,13 +86,13 @@ resource 'Metrics (prefix: /services/:service_id/metrics)' do
     let(:raw_post){ params.to_json }
 
     example_request 'Update Metric by ID' do
-      status.should == 200
-      response_json['status'].should == 'modified'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'modified'
 
-      (metric = ThreeScale::Backend::Metric.load(service_id, id)).should_not be_nil
-      metric.id.should == id
-      metric.service_id.should == service_id
-      metric.name.should == name
+      metric = ThreeScale::Backend::Metric.load(service_id, id)
+      expect(metric.id).to eq id
+      expect(metric.service_id).to eq service_id
+      expect(metric.name).to eq name
     end
 
   end
@@ -104,8 +104,8 @@ resource 'Metrics (prefix: /services/:service_id/metrics)' do
     let(:service_id) { '7575' }
     let(:id) { '100' }
     example_request 'Deleting a Metric' do
-      status.should == 200
-      response_json['status'].should == 'deleted'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'deleted'
     end
 
   end

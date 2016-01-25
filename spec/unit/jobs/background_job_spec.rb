@@ -24,15 +24,15 @@ module ThreeScale
         end
 
         it 'logs class name' do
-          @log.read.should =~ /FooJob/
+          expect(@log.read).to match /FooJob/
         end
 
         it 'logs job message' do
-          @log.read.should =~ /job was successful/
+          expect(@log.read).to match /job was successful/
         end
 
         it 'logs execution time' do
-          @log.read.should =~ /0\.15/
+          expect(@log.read).to match /0\.15/
         end
       end
 

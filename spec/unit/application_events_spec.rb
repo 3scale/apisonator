@@ -10,12 +10,12 @@ module ThreeScale
 
           context 'with empty array' do
             let(:applications) { [] }
-            it { expect(subject).to be_nil }
+            it { expect(subject).to be nil }
           end
 
           context 'with nil value' do
             let(:applications) { nil }
-            it { expect(subject).to be_nil }
+            it { expect(subject).to be nil }
           end
         end
 
@@ -77,7 +77,7 @@ module ThreeScale
 
       describe '.ping' do
         before { expect(EventStorage).to receive(:ping_if_not_empty) }
-        it { expect(ApplicationEvents.ping).to be_true}
+        it { expect(ApplicationEvents.ping).to be true}
       end
     end
   end

@@ -40,7 +40,7 @@ module ThreeScale
           it "doesn't run when the service usage flag is disabled" do
             doc_id = LogRequestCubertStorage.store(disabled_service_log)
 
-            expect(doc_id).to be_nil
+            expect(doc_id).to be nil
           end
         end
 
@@ -50,7 +50,7 @@ module ThreeScale
           it "doesn't store logs" do
             doc_id = LogRequestCubertStorage.store(enabled_service_log)
 
-            expect(doc_id).to be_nil
+            expect(doc_id).to be nil
           end
         end
       end

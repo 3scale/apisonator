@@ -39,24 +39,24 @@ resource 'Users (prefix: /services/:service_id/users)' do
     parameter :username, 'User name', required: true
 
     example_request 'Get User' do
-      status.should == 200
-      response_json['user']['username'].should == username
-      response_json['user']['service_id'].should == service_id
-      response_json['user']['state'].should == state.to_s
-      response_json['user']['plan_id'].should == plan_id
-      response_json['user']['plan_name'].should == plan_name
+      expect(status).to eq 200
+      expect(response_json['user']['username']).to eq username
+      expect(response_json['user']['service_id']).to eq service_id
+      expect(response_json['user']['state']).to eq state.to_s
+      expect(response_json['user']['plan_id']).to eq plan_id
+      expect(response_json['user']['plan_name']).to eq plan_name
     end
 
     example 'Try to get a User by non-existent username' do
       do_request username: username_non_existent
-      [400, 404].should include(status)
-      response_json['error'].should =~ /not found/i
+      expect([400, 404]).to include status
+      expect(response_json['error']).to match /not found/i
     end
 
     example 'Try to get a User by non-existent service ID' do
       do_request service_id: service_id_non_existent
-      [400, 404].should include(status)
-      response_json['error'].should =~ /not found/i
+      expect([400, 404]).to include status
+      expect(response_json['error']).to match /not found/i
     end
   end
 
@@ -68,15 +68,15 @@ resource 'Users (prefix: /services/:service_id/users)' do
     let(:raw_post) { params.to_json }
 
     example_request 'Create a User' do
-      status.should == 201
-      response_json['status'].should == 'created'
+      expect(status).to eq 201
+      expect(response_json['status']).to eq 'created'
 
-      (user = ThreeScale::Backend::User.load(service_id, username)).should_not be_nil
-      user.username.should == username
-      user.service_id.should == service_id
-      user.state.should == state
-      user.plan_id.should == plan_id
-      user.plan_name.should == plan_name
+      user = ThreeScale::Backend::User.load(service_id, username)
+      expect(user.username).to eq username
+      expect(user.service_id).to eq service_id
+      expect(user.state).to eq state
+      expect(user.plan_id).to eq plan_id
+      expect(user.plan_name).to eq plan_name
     end
   end
 
@@ -92,15 +92,15 @@ resource 'Users (prefix: /services/:service_id/users)' do
 
     example 'Update User' do
       do_request user: modified_user
-      status.should == 200
-      response_json['status'].should == 'modified'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'modified'
 
-      (user = ThreeScale::Backend::User.load(service_id, username)).should_not be_nil
-      user.username.should == username
-      user.service_id.should == service_id
-      user.state.should == state
-      user.plan_id.should == plan_id
-      user.plan_name.should == modified_plan_name
+      user = ThreeScale::Backend::User.load(service_id, username)
+      expect(user.username).to eq username
+      expect(user.service_id).to eq service_id
+      expect(user.state).to eq state
+      expect(user.plan_id).to eq plan_id
+      expect(user.plan_name).to eq modified_plan_name
     end
   end
 
@@ -109,9 +109,9 @@ resource 'Users (prefix: /services/:service_id/users)' do
     parameter :username, 'User name', required: true
 
     example_request 'Deleting a User' do
-      status.should == 200
-      response_json['status'].should == 'deleted'
-      ThreeScale::Backend::User.load(service_id, username).should be_nil
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'deleted'
+      expect(ThreeScale::Backend::User.load(service_id, username)).to be nil
     end
   end
 

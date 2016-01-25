@@ -4,8 +4,8 @@ module ThreeScale
       describe '.store' do
         context 'with valid event type' do
           it 'returns ok' do
-            expect(EventStorage.store(:alert, {})).to be_true
-            expect(EventStorage.store(:first_traffic, {})).to be_true
+            expect(EventStorage.store(:alert, {})).to be true
+            expect(EventStorage.store(:first_traffic, {})).to be true
           end
 
           context 'when event already exists' do
@@ -14,7 +14,7 @@ module ThreeScale
             before { EventStorage.store(:alert, event) }
 
             it 'returns ok' do
-              expect(EventStorage.store(:alert, event)).to be_true
+              expect(EventStorage.store(:alert, event)).to be true
             end
 
             it 'modifies the size of events set' do
@@ -175,8 +175,8 @@ module ThreeScale
 
       describe '.ping_if_not_empty' do
         before do
-          ThreeScale::Backend.configuration.stub(:events_hook).and_return("foo")
-          Net::HTTP.stub(:post_form).and_return(true)
+          allow(ThreeScale::Backend.configuration).to receive(:events_hook).and_return("foo")
+          allow(Net::HTTP).to receive(:post_form).and_return(true)
         end
 
         context 'with events in set' do
@@ -193,7 +193,7 @@ module ThreeScale
                 EventStorage.ping_if_not_empty
               end
 
-              it { expect(subject).to be_true }
+              it { expect(subject).to be true }
             end
 
             context 'and ping TTL is not expired' do
@@ -202,14 +202,14 @@ module ThreeScale
                 EventStorage.ping_if_not_empty
               end
 
-              it { expect(subject).to be_false }
+              it { expect(subject).to be false }
             end
           end
 
           context 'with two calls in same moment (race condition)' do
             it 'returns false the second time' do
               original_method = EventStorage.method(:pending_ping?)
-              EventStorage.stub(:pending_ping?) do
+              allow(EventStorage).to receive(:pending_ping?) do
                 original_method.call.tap { Thread.stop }
               end
 
@@ -229,26 +229,29 @@ module ThreeScale
 
           context 'when there is no configuration for events_hook' do
             before do
-              ThreeScale::Backend::EventStorage.stub(:events_hook_configured?).and_return(false)
+              allow(ThreeScale::Backend::EventStorage)
+                  .to receive(:events_hook_configured?).and_return(false)
             end
-            it { expect(subject).to be_false }
+            it { expect(subject).to be false }
           end
 
           context 'when hook notification fails' do
+            let(:Aibrake) { class_double }
+
             before do
-              Net::HTTP.stub(:post_form).and_raise(:BOOOM)
-              Airbrake.stub(:notify)
+              allow(Net::HTTP).to receive(:post_form).and_raise(:BOOOM)
+              allow(Airbrake).to receive(:notify)
             end
 
             subject { EventStorage.ping_if_not_empty }
 
-            it { expect(subject).to be_nil }
+            it { expect(subject).to be nil }
           end
         end
 
         context 'without events in set' do
           subject { EventStorage.ping_if_not_empty }
-          it { expect(subject).to be_false }
+          it { expect(subject).to be false }
         end
       end
     end

@@ -32,11 +32,11 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
       @metric_h.each do |m, periods|
         periods.each do |period, value|
           do_request metric_id: m.id, period: period
-          response_json['usagelimit']['service_id'].should == service_id
-          response_json['usagelimit']['plan_id'].should == plan_id
-          response_json['usagelimit']['metric_id'].should == m.id
-          response_json['usagelimit'][period.to_s].should == value
-          status.should == 200
+          expect(response_json['usagelimit']['service_id']).to eq service_id
+          expect(response_json['usagelimit']['plan_id']).to eq plan_id
+          expect(response_json['usagelimit']['metric_id']).to eq m.id
+          expect(response_json['usagelimit'][period.to_s]).to eq value
+          expect(status).to eq 200
         end
       end
     end
@@ -58,15 +58,15 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
       @metric_h.each do |m, periods|
         periods.each do |p, value|
           do_request(metric_id: m.id, period: p, usagelimit: { p.to_sym => value.succ.to_s })
-          response_json['usagelimit']['service_id'].should == service_id
-          response_json['usagelimit']['plan_id'].should == plan_id
-          response_json['usagelimit']['metric_id'].should == m.id
-          response_json['usagelimit'][p.to_s].should == value.succ.to_s
-          response_json['status'].should == 'modified'
-          status.should == 200
+          expect(response_json['usagelimit']['service_id']).to eq service_id
+          expect(response_json['usagelimit']['plan_id']).to eq plan_id
+          expect(response_json['usagelimit']['metric_id']).to eq m.id
+          expect(response_json['usagelimit'][p.to_s]).to eq value.succ.to_s
+          expect(response_json['status']).to eq 'modified'
+          expect(status).to eq 200
 
-          ThreeScale::Backend::UsageLimit.load_value(service_id, plan_id, m.id, p).
-            should == value.succ
+          expect(ThreeScale::Backend::UsageLimit.load_value(service_id, plan_id, m.id, p))
+              .to eq value.succ
         end
       end
     end
@@ -82,11 +82,11 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
       @metric_h.each do |m, periods|
         periods.each do |period, value|
           do_request metric_id: m.id, period: period
-          response_json['status'].should == 'deleted'
-          status.should == 200
+          expect(response_json['status']).to eq 'deleted'
+          expect(status).to eq 200
 
-          ThreeScale::Backend::UsageLimit.load_value(service_id, plan_id, m.id, period).
-            should be_nil
+          expect(ThreeScale::Backend::UsageLimit.load_value(service_id, plan_id, m.id, period))
+              .to be nil
         end
       end
     end

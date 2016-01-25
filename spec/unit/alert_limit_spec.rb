@@ -28,7 +28,7 @@ module ThreeScale
         context 'with an invalid value' do
           subject { AlertLimit.save(service_id, 'foo') }
 
-          it { expect(subject).to be_nil } 
+          it { expect(subject).to be nil }
         end
 
         context 'with a valid value' do
@@ -45,14 +45,14 @@ module ThreeScale
 
           subject { AlertLimit.delete(service_id, alert_limit.value) }
 
-          it { expect(subject).to be_true }
+          it { expect(subject).to be true }
           it { expect(AlertLimit.load_all(service_id)).to be_empty }
         end
 
         context 'with missing value' do
           subject { AlertLimit.delete(service_id, '50') }
 
-          it { expect(subject).to be_false }
+          it { expect(subject).to be false }
         end
 
         context 'with nil value' do
@@ -60,7 +60,7 @@ module ThreeScale
 
           subject { AlertLimit.delete(service_id, nil) }
 
-          it { expect(subject).to be_false }
+          it { expect(subject).to be_falsey }
         end
 
         context 'with wrong value' do
@@ -68,7 +68,7 @@ module ThreeScale
 
           subject { AlertLimit.delete(service_id, "fooo") }
 
-          it { expect(subject).to be_false }
+          it { expect(subject).to be_falsey }
         end
       end
 
@@ -77,7 +77,7 @@ module ThreeScale
 
         subject { alert_limit.save }
 
-        it { expect(subject).to be_true }
+        it { expect(subject).to be true }
       end
     end
   end

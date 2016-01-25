@@ -8,7 +8,7 @@ module ThreeScale
         before { Service.storage.set('service/provider_key:foo/id', '7001') }
 
         it 'returns an ID' do
-          Service.default_id('foo').should == '7001'
+          expect(Service.default_id('foo')).to eq '7001'
         end
       end
 
@@ -21,21 +21,21 @@ module ThreeScale
         let(:result){ Service.load_by_id(service.id) }
 
         it 'returns a Service object' do
-          result.should be_a(Service)
+          expect(result).to be_a(Service)
         end
 
         it 'returns nil when ID not found' do
-          Service.load_by_id('1234').should be_nil
+          expect(Service.load_by_id('1234')).to be nil
         end
 
         it 'loads correct data' do
-          result.provider_key.should == 'foo'
-          result.id.should == '7001'
-          result.backend_version.should be_nil
+          expect(result.provider_key).to eq 'foo'
+          expect(result.id).to eq '7001'
+          expect(result.backend_version).to be nil
         end
 
         it 'changes filters_required field to a Boolean' do
-          result.referrer_filters_required?.should be_true
+          expect(result.referrer_filters_required?).to be true
         end
 
         describe 'user_registration_required' do
@@ -43,7 +43,7 @@ module ThreeScale
             service = Service.save!(provider_key: 'foo', id: '7001')
             result = Service.load_by_id(service.id)
 
-            result.user_registration_required?.should be_true
+            expect(result.user_registration_required?).to be true
           end
 
           it 'changes to Boolean when set to Integer' do
@@ -51,7 +51,7 @@ module ThreeScale
               provider_key: 'foo', id: '7001', user_registration_required: 1)
             result = Service.load_by_id(service.id)
 
-            result.user_registration_required?.should be_true
+            expect(result.user_registration_required?).to be true
           end
 
           it 'is false when set to false' do
@@ -60,7 +60,7 @@ module ThreeScale
               default_user_plan_name: "user_plan_name")
             result = Service.load_by_id(service.id)
 
-            result.user_registration_required?.should be_false
+            expect(result.user_registration_required?).to be false
           end
         end
       end
@@ -73,11 +73,11 @@ module ThreeScale
         let(:non_existing_service_id) { service.id.to_i.succ.to_s }
 
         it 'returns true when the service exists' do
-          Service.exists?(existing_service_id).should be_true
+          expect(Service.exists?(existing_service_id)).to be true
         end
 
         it 'returns false when the service does not exist' do
-          Service.exists?(non_existing_service_id).should be_false
+          expect(Service.exists?(non_existing_service_id)).to be false
         end
       end
 
@@ -86,23 +86,23 @@ module ThreeScale
           Service.save! provider_key: 'foo', id: '7001'
           Service.save! provider_key: 'foo', id: '7002'
 
-          Service.list('foo').should == ['7001', '7002']
+          expect(Service.list('foo')).to eq ['7001', '7002']
         end
 
         it 'returns an empty array when none found' do
-          Service.list('foo').should == []
+          expect(Service.list('foo')).to be_empty
         end
       end
 
       describe '.save!' do
         it 'returns a Service object' do
-          Service.save!(provider_key: 'foo', id: 7001).should be_a(Service)
+          expect(Service.save!(provider_key: 'foo', id: 7001)).to be_a(Service)
         end
 
         it 'stores Service data' do
           Service.save! provider_key: 'foo', id: 7001
 
-          Service.load_by_id(7001).provider_key.should == 'foo'
+          expect(Service.load_by_id(7001).provider_key).to eq 'foo'
         end
 
         describe 'default service' do
@@ -111,13 +111,13 @@ module ThreeScale
           it 'is updated when requested' do
             Service.save! id: 7002, provider_key: 'foo', default_service: true
 
-            Service.default_id('foo').should == '7002'
+            expect(Service.default_id('foo')).to eq '7002'
           end
 
           it 'isn\'t changed if not set' do
             Service.save! id: 7002, provider_key: 'foo'
 
-            Service.default_id('foo').should == '7001'
+            expect(Service.default_id('foo')).to eq '7001'
           end
         end
 
@@ -127,19 +127,19 @@ module ThreeScale
               user_registration_required: false, default_user_plan_id: '1001',
               default_user_plan_name: "user_plan_name")
 
-            Service.load_by_id(7001).user_registration_required?.should be_false
+            expect(Service.load_by_id(7001).user_registration_required?).to be false
           end
 
           it 'sets the attibute to true when nil' do
             Service.save!(provider_key: 'foo', id: 7001, user_registration_required: nil)
 
-            Service.load_by_id(7001).user_registration_required?.should be_true
+            expect(Service.load_by_id(7001).user_registration_required?).to be true
           end
 
           it 'sets the attibute to true when already true' do
             Service.save!(provider_key: 'foo', id: 7001, user_registration_required: true)
 
-            Service.load_by_id(7001).user_registration_required?.should be_true
+            expect(Service.load_by_id(7001).user_registration_required?).to be true
           end
         end
       end
@@ -148,34 +148,34 @@ module ThreeScale
         let(:service){ Service.new(provider_key: 'foo', id: '7001') }
 
         it 'returns a Service object' do
-          service.save!.should be_a(Service)
+          expect(service.save!).to be_a(Service)
         end
 
         it 'persists data' do
           service.save!
 
-          Service.load_by_id(service.id).provider_key.should == 'foo'
+          expect(Service.load_by_id(service.id).provider_key).to eq 'foo'
         end
 
         it 'sets as default when none exists' do
           service.save!
 
-          Service.default_id('foo').should == service.id
+          expect(Service.default_id('foo')).to eq service.id
         end
 
         it 'doesn\'t set as default when one exists' do
           Service.save!(provider_key: 'foo', id: '7002')
           service.save!
 
-          Service.default_id('foo').should_not == service.id
+          expect(Service.default_id('foo')).not_to eq service.id
         end
 
         it 'cleans service cache' do
           Service.default_id('foo')
-          Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo')).should be_true
+          expect(Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo'))).to be true
 
           service.save!
-          Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo')).should be_false
+          expect(Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo'))).to be false
         end
 
         it 'validates user_registration_required field' do
@@ -191,21 +191,21 @@ module ThreeScale
           Service.save! id: 7002, provider_key: 'foo', default_service: true
           Service.delete_by_id service.id
 
-          Service.load_by_id(service.id).should be_nil
-          Service.default_id(service.provider_key).should == '7002'
+          expect(Service.load_by_id(service.id)).to be nil
+          expect(Service.default_id(service.provider_key)).to eq '7002'
         end
 
         it 'raises an exception if you try to delete a default service' do
           expect { Service.delete_by_id(service.id) }.to raise_error(ServiceIsDefaultService)
 
-          Service.load_by_id(service.id).should_not be_nil
+          expect(Service.load_by_id(service.id)).not_to be nil
         end
 
         it 'raises an exception if you try to delete an invalid service' do
           invalid_id = service.id + 1
           expect { Service.delete_by_id(invalid_id) }.to raise_error(ServiceIdInvalid)
 
-          Service.load_by_id(invalid_id).should be_nil
+          expect(Service.load_by_id(invalid_id)).to be nil
         end
       end
 

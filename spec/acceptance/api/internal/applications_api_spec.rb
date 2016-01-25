@@ -25,21 +25,21 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
     let(:id_non_existent) { id.to_i.succ.to_s }
 
     example_request 'Get Application by ID' do
-      response_json['application']['id'].should == id
-      response_json['application']['service_id'].should == service_id
-      status.should == 200
+      expect(response_json['application']['id']).to eq id
+      expect(response_json['application']['service_id']).to eq service_id
+      expect(status).to eq 200
     end
 
     example 'Try to get an Application by non-existent ID' do
       do_request id: id_non_existent
-      status.should == 404
-      response_json['error'].should =~ /application not found/i
+      expect(status).to eq 404
+      expect(response_json['error']).to match /application not found/i
     end
 
     example 'Try to get an Application by non-existent service ID' do
       do_request service_id: service_id_non_existent
-      status.should == 404
-      response_json['error'].should =~ /application not found/i
+      expect(status).to eq 404
+      expect(response_json['error']).to match /application not found/i
     end
   end
 
@@ -67,17 +67,17 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
     let(:raw_post){ params.to_json }
 
     example_request 'Create an Application' do
-      status.should == 201
-      response_json['status'].should == 'created'
+      expect(status).to eq 201
+      expect(response_json['status']).to eq 'created'
 
-      (app = ThreeScale::Backend::Application.load(service_id, id)).should_not be_nil
-      app.id.should == id
-      app.service_id.should == service_id
-      app.state.should == state
-      app.plan_id.should == plan_id
-      app.plan_name.should == plan_name
-      app.redirect_url.should == redirect_url
-      app.version.should == '1'
+      app = ThreeScale::Backend::Application.load(service_id, id)
+      expect(app.id).to eq id
+      expect(app.service_id).to eq service_id
+      expect(app.state).to eq state
+      expect(app.plan_id).to eq plan_id
+      expect(app.plan_name).to eq plan_name
+      expect(app.redirect_url).to eq redirect_url
+      expect(app.version).to eq '1'
     end
 
   end
@@ -106,18 +106,18 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
     let(:raw_post){ params.to_json }
 
     example_request 'Update Service by ID' do
-      status.should == 200
-      response_json['status'].should == 'modified'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'modified'
 
-      (app = ThreeScale::Backend::Application.load(service_id, id)).should_not be_nil
-      app.id.should == id
-      app.service_id.should == service_id
-      app.state.should == state
-      app.plan_id.should == plan_id
-      app.plan_name.should == plan_name
-      app.redirect_url.should == redirect_url
+      app = ThreeScale::Backend::Application.load(service_id, id)
+      expect(app.id).to eq id
+      expect(app.service_id).to eq service_id
+      expect(app.state).to eq state
+      expect(app.plan_id).to eq plan_id
+      expect(app.plan_name).to eq plan_name
+      expect( app.redirect_url).to eq redirect_url
       # since we've just modified an App, we should get version 2
-      app.version.should == '2'
+      expect(app.version).to eq '2'
     end
 
   end
@@ -129,8 +129,8 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
     let(:service_id) { '7575' }
     let(:id) { '100' }
     example_request 'Deleting an application' do
-      status.should == 200
-      response_json['status'].should == 'deleted'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'deleted'
     end
 
   end
@@ -148,15 +148,15 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
     example 'Get existing ID of Application with service and key' do
       ThreeScale::Backend::Application.save_id_by_key(service_id, user_key, id)
       do_request
-      status.should == 200
-      response_json['application']['id'].should == id
+      expect(status).to eq 200
+      expect(response_json['application']['id']).to eq id
     end
 
     example 'Try to get an Application ID from a non-existing key' do
       ThreeScale::Backend::Application.delete_id_by_key(service_id, nonexistent_key)
       do_request user_key: nonexistent_key
-      status.should == 404
-      response_json['error'].should =~ /not found/i
+      expect(status).to eq 404
+      expect(response_json['error']).to match /not found/i
     end
   end
 
@@ -173,10 +173,10 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
     example 'Change the key for an Application' do
       ThreeScale::Backend::Application.save_id_by_key(service_id, user_key, id)
       do_request user_key: another_key
-      status.should == 200
-      response_json['status'].should == 'modified'
-      ThreeScale::Backend::Application.
-        load_id_by_key(service_id, another_key).should == id
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'modified'
+      expect(ThreeScale::Backend::Application.
+        load_id_by_key(service_id, another_key)).to eq id
     end
   end
 
@@ -191,10 +191,10 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
     example 'Delete an Application\'s user key' do
       ThreeScale::Backend::Application.save_id_by_key(service_id, user_key, id)
       do_request
-      status.should == 200
-      response_json['status'].should == 'deleted'
-      ThreeScale::Backend::Application.
-        load_id_by_key(service_id, user_key).should be_nil
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'deleted'
+      expect(ThreeScale::Backend::Application.
+        load_id_by_key(service_id, user_key)).to be nil
     end
   end
 end

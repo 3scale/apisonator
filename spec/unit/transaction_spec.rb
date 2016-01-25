@@ -39,7 +39,7 @@ module ThreeScale
 
           # Temporary change: For now, we want to send an Airbrake notification
           # and return true.
-          it { expect(subject).to be_true }
+          it { expect(subject).to be true }
 
           # Previous code to restore when we decide to limit the timestamps:
           # it { expect { subject }.to raise_error(ReportTimestampNotWithinRange) }
@@ -49,7 +49,7 @@ module ThreeScale
           let(:attrs) { { timestamp: Time.now - 3600 } }
           subject { Transaction.new(attrs).ensure_on_time! }
 
-          it { expect(subject).to be_true }
+          it { expect(subject).to be true }
         end
       end
     end

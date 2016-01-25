@@ -13,13 +13,13 @@ resource "Services (prefix: /services)" do
     parameter :id, "Service ID", required: true
 
     example_request "Get Service by ID", :id => 1001 do
-      response_json['id'].should == '1001'
-      status.should == 200
+      expect(response_json['id']).to eq '1001'
+      expect(status).to eq 200
     end
 
     example_request 'Try to get a Service by non-existent ID', id: 1002 do
-      status.should == 404
-      response_json['error'].should =~ /not_found/
+      expect(status).to eq 404
+      expect(response_json['error']).to match /not_found/
     end
   end
 
@@ -40,23 +40,25 @@ resource "Services (prefix: /services)" do
     let(:raw_post){ params.to_json }
 
     example_request 'Create a Service' do
-      status.should == 201
-      response_json['status'].should == 'created'
+      expect(status).to eq 201
+      expect(response_json['status']).to eq 'created'
 
-      (service = ThreeScale::Backend::Service.load_by_id('1002')).should_not be_nil
-      service.provider_key.should == 'foo'
-      service.referrer_filters_required?.should be_true
-      service.backend_version.should == 'oauth'
-      service.default_user_plan_name.should == 'default user plan name'
-      service.default_user_plan_id.should == 'plan ID'
-      service.default_service?.should be_true
+      service = ThreeScale::Backend::Service.load_by_id('1002')
+      expect(service.provider_key).to eq 'foo'
+      expect(service.referrer_filters_required?).to be true
+      expect(service.backend_version).to eq 'oauth'
+      expect(service.default_user_plan_name).to eq 'default user plan name'
+      expect(service.default_user_plan_id).to eq 'plan ID'
+      expect(service.default_service?).to be true
     end
 
-    example 'Try updating Service with invalid data' do
-      do_request service: {user_registration_required: false}
+    example 'Try creating a Service with invalid data' do
+      do_request(service: { user_registration_required: false,
+                            default_user_plan_name: nil,
+                            default_user_plan_id: nil })
 
-      status.should == 400
-      response_json['error'].should =~ /require a default user plan/
+      expect(status).to eq 400
+      expect(response_json['error']).to match /require a default user plan/
     end
   end
 
@@ -77,22 +79,24 @@ resource "Services (prefix: /services)" do
     let(:raw_post){ params.to_json }
 
     example_request 'Update Service by ID' do
-      status.should == 200
-      response_json['status'].should == 'ok'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'ok'
 
-      (service = ThreeScale::Backend::Service.load_by_id('1001')).should_not be_nil
-      service.provider_key.should == 'foo'
-      service.referrer_filters_required?.should be_true
-      service.backend_version.should == 'oauth'
-      service.default_user_plan_name.should == 'default user plan name'
-      service.default_user_plan_id.should == 'plan ID'
+      service = ThreeScale::Backend::Service.load_by_id('1001')
+      expect(service.provider_key).to eq  'foo'
+      expect(service.referrer_filters_required?).to be true
+      expect(service.backend_version).to eq 'oauth'
+      expect(service.default_user_plan_name).to eq 'default user plan name'
+      expect(service.default_user_plan_id).to eq 'plan ID'
     end
 
     example 'Try updating Service with invalid data' do
-      do_request service: {user_registration_required: false}
+      do_request(service: { user_registration_required: false,
+                            default_user_plan_name: nil,
+                            default_user_plan_id: nil })
 
-      status.should == 400
-      response_json['error'].should =~ /require a default user plan/
+      expect(status).to eq 400
+      expect(response_json['error']).to match /require a default user plan/
     end
   end
 
@@ -105,26 +109,26 @@ resource "Services (prefix: /services)" do
     let(:raw_post) { params.to_json }
 
     example_request 'Changing a provider key'do
-      status.should == 200
-      response_json['status'].should == 'ok'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'ok'
     end
 
     example_request 'Trying to change a provider key to empty', new_key: '' do
-      status.should == 400
-      response_json['error'].should =~ /keys are not valid/
+      expect(status).to eq 400
+      expect(response_json['error']).to match /keys are not valid/
     end
 
     example 'Trying to change a provider key to an existing one' do
       ThreeScale::Backend::Service.save! id: 7002, provider_key: 'bar'
       do_request new_key: 'bar'
 
-      status.should == 400
-      response_json['error'].should =~ /already exists/
+      expect(status).to eq 400
+      expect(response_json['error']).to match /already exists/
     end
 
     example_request 'Trying to change a non-existent provider key', key: 'baz' do
-      status.should == 400
-      response_json['error'].should =~ /does not exist/
+      expect(status).to eq 400
+      expect(response_json['error']).to match /does not exist/
     end
   end
 
@@ -134,16 +138,16 @@ resource "Services (prefix: /services)" do
     let(:raw_post) { params.to_json }
 
     example_request 'Deleting a default service', id: 1001 do
-      status.should == 400
-      response_json['error'].should =~ /cannot be removed/
+      expect(status).to eq 400
+      expect(response_json['error']).to match /cannot be removed/
     end
 
     example 'Deleting a non-default service' do
       ThreeScale::Backend::Service.save!(provider_key: 'foo', id: 1002)
       do_request id: 1002
 
-      status.should == 200
-      response_json['status'].should == 'deleted'
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'deleted'
     end
   end
 
@@ -179,8 +183,8 @@ resource "Services (prefix: /services)" do
       do_request id: 1001
       expect(status).to eq(200)
       expect(response_json['status']).to eq('deleted')
-      expect(ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket).
-        to be_nil
+      expect(ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket)
+          .to be nil
     end
   end
 

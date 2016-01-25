@@ -15,11 +15,11 @@ module ThreeScale
         end
 
         it 'deletes the bucket' do
-          expect(@service.bucket).to be_nil
+          expect(@service.bucket).to be nil
         end
 
         it 'disables the service' do
-          expect(@service.enabled?).to be_false
+          expect(@service.enabled?).to be false
         end
       end
 
@@ -31,11 +31,11 @@ module ThreeScale
         end
 
         it 'enables service' do
-          expect(@service.enabled?).to be_true
+          expect(@service.enabled?).to be_truthy
         end
 
         it 'create a bucket if needed' do
-          expect(@service.bucket).not_to be_nil
+          expect(@service.bucket).not_to be nil
         end
 
         it 'assigns a specified bucket' do
@@ -52,8 +52,8 @@ module ThreeScale
         end
 
         it 'removes all the keys' do
-          expect(storage.get use_case.global_lock_key).to be_nil
-          expect(use_case.new(enabled_service).bucket).to be_nil
+          expect(storage.get use_case.global_lock_key).to be nil
+          expect(use_case.new(enabled_service).bucket).to be nil
         end
       end
 
