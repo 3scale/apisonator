@@ -52,8 +52,10 @@ resource "Services (prefix: /services)" do
       service.default_service?.should be true
     end
 
-    example 'Try updating Service with invalid data' do
-      do_request service: {user_registration_required: false}
+    example 'Try creating a Service with invalid data' do
+      do_request(service: { user_registration_required: false,
+                            default_user_plan_name: nil,
+                            default_user_plan_id: nil })
 
       status.should == 400
       response_json['error'].should =~ /require a default user plan/
@@ -89,7 +91,9 @@ resource "Services (prefix: /services)" do
     end
 
     example 'Try updating Service with invalid data' do
-      do_request service: {user_registration_required: false}
+      do_request(service: { user_registration_required: false,
+                            default_user_plan_name: nil,
+                            default_user_plan_id: nil })
 
       status.should == 400
       response_json['error'].should =~ /require a default user plan/
