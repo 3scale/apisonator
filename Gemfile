@@ -25,7 +25,7 @@ group :test do
   gem 'nokogiri',    '~> 1.6.2'
   gem 'rack-test',   '~> 0.6.2'
   gem 'resque_unit', '~> 0.4.4'
-  gem 'resque_spec', '~> 0.15.0'
+  gem 'resque_spec', '~> 0.17.0'
   gem 'timecop',     '~> 0.7.1'
   gem 'rspec',       '~> 3.4.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.3.0', require: nil
