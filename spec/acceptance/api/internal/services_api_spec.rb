@@ -60,6 +60,13 @@ resource "Services (prefix: /services)" do
       expect(status).to eq 400
       expect(response_json['error']).to match /require a default user plan/
     end
+
+    example 'Try creating a Service without specifying the service parameter in the body' do
+      do_request(service: nil)
+
+      expect(status).to eq 400
+      expect(response_json['error']).to match /missing parameter 'service'/
+    end
   end
 
   put '/services/:id' do
