@@ -49,114 +49,124 @@ class SetUsageTest < Test::Unit::TestCase
   end
 
   test 'basic set of usage with report and authorize' do
-    Timecop.freeze(Time.utc(2011, 1, 1)) do
+    time = Time.utc(2011, 1, 1)
+    Timecop.freeze(time) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => '#3'}}}
       Resque.run!
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 2)) do
+    time = Time.utc(2011, 1, 2)
+    Timecop.freeze(time) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits_child_2' => 2}}}
       Resque.run!
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 1, 13, 0, 0)) do
+    time = Time.utc(2011, 1, 1, 13, 0, 0)
+    Timecop.freeze(time) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id
 
-      assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits', 'day', 3, 100)
-      assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits_child_2', 'day', 0, 50)
-      assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits_child_1', 'day', 0, 50)
+      assert_usage_report(time, 'hits', 'day', 3, 100)
+      assert_usage_report(time, 'hits_child_2', 'day', 0, 50)
+      assert_usage_report(time, 'hits_child_1', 'day', 0, 50)
 
-      assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits', 'month', 5, 1000)
-      assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits_child_2', 'month', 2, 500)
-      assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits_child_1', 'month', 0, 500)
+      assert_usage_report(time, 'hits', 'month', 5, 1000)
+      assert_usage_report(time, 'hits_child_2', 'month', 2, 500)
+      assert_usage_report(time, 'hits_child_1', 'month', 0, 500)
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 2, 0, 0, 0)) do
+    time = Time.utc(2011, 1, 2, 0, 0, 0)
+    Timecop.freeze(time) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id
 
-      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits', 'day', 2, 100)
-      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits_child_2', 'day', 2, 50)
-      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits_child_1', 'day', 0, 50)
+      assert_usage_report(time, 'hits', 'day', 2, 100)
+      assert_usage_report(time, 'hits_child_2', 'day', 2, 50)
+      assert_usage_report(time, 'hits_child_1', 'day', 0, 50)
 
-      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits', 'month', 5, 1000)
-      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits_child_2', 'month', 2, 500)
-      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits_child_1', 'month', 0, 500)
+      assert_usage_report(time, 'hits', 'month', 5, 1000)
+      assert_usage_report(time, 'hits_child_2', 'month', 2, 500)
+      assert_usage_report(time, 'hits_child_1', 'month', 0, 500)
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 2)) do
+    time = Time.utc(2011, 1, 2)
+    Timecop.freeze(time) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits_child_2' => '#10'}}}
       Resque.run!
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 2, 13, 0, 0)) do
+    time = Time.utc(2011, 1, 2, 13, 0, 0)
+    Timecop.freeze(time) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 10, 100)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'day', 10, 50)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'day', 0, 50)
+      assert_usage_report(time, 'hits', 'day', 10, 100)
+      assert_usage_report(time, 'hits_child_2', 'day', 10, 50)
+      assert_usage_report(time, 'hits_child_1', 'day', 0, 50)
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 10, 1000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'month', 10, 500)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'month', 0, 500)
+      assert_usage_report(time, 'hits', 'month', 10, 1000)
+      assert_usage_report(time, 'hits_child_2', 'month', 10, 500)
+      assert_usage_report(time, 'hits_child_1', 'month', 0, 500)
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 2)) do
+    time = Time.utc(2011, 1, 2)
+    Timecop.freeze(time) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits_child_1' => '#6'}}}
       Resque.run!
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 2, 13, 0, 0)) do
+    time = Time.utc(2011, 1, 2, 13, 0, 0)
+    Timecop.freeze(time) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 6, 100)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'day', 10, 50)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'day', 6, 50)
+      assert_usage_report(time, 'hits', 'day', 6, 100)
+      assert_usage_report(time, 'hits_child_2', 'day', 10, 50)
+      assert_usage_report(time, 'hits_child_1', 'day', 6, 50)
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 6, 1000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'month', 10, 500)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'month', 6, 500)
+      assert_usage_report(time, 'hits', 'month', 6, 1000)
+      assert_usage_report(time, 'hits_child_2', 'month', 10, 500)
+      assert_usage_report(time, 'hits_child_1', 'month', 6, 500)
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'eternity', 6, 10000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'eternity', 10, 5000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'eternity', 6, 5000)
+      assert_usage_report(time, 'hits', 'eternity', 6, 10000)
+      assert_usage_report(time, 'hits_child_2', 'eternity', 10, 5000)
+      assert_usage_report(time, 'hits_child_1', 'eternity', 6, 5000)
     end
 
     ## this case is problematic, since the set on the hits will be the value of the last child evaluated, going to increase
     ## WTF factor
-    Timecop.freeze(Time.utc(2011, 1, 2)) do
+    time = Time.utc(2011, 1, 2)
+    Timecop.freeze(time) do
       post '/transactions.xml',
         :provider_key => @provider_key,
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits_child_1' => '#11', 'hits_child_2' => '#12'}}}
       Resque.run!
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 2, 13, 0, 0)) do
+    time = Time.utc(2011, 1, 2, 13, 0, 0)
+    Timecop.freeze(time) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 12, 100)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'day', 12, 50)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'day', 11, 50)
+      assert_usage_report(time, 'hits', 'day', 12, 100)
+      assert_usage_report(time, 'hits_child_2', 'day', 12, 50)
+      assert_usage_report(time, 'hits_child_1', 'day', 11, 50)
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 12, 1000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'month', 12, 500)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'month', 11, 500)
+      assert_usage_report(time, 'hits', 'month', 12, 1000)
+      assert_usage_report(time, 'hits_child_2', 'month', 12, 500)
+      assert_usage_report(time, 'hits_child_1', 'month', 11, 500)
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'eternity', 12, 10000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'eternity', 12, 5000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'eternity', 11, 5000)
+      assert_usage_report(time, 'hits', 'eternity', 12, 10000)
+      assert_usage_report(time, 'hits_child_2', 'eternity', 12, 5000)
+      assert_usage_report(time, 'hits_child_1', 'eternity', 11, 5000)
     end
   end
 
