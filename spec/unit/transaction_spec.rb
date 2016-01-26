@@ -28,7 +28,18 @@ module ThreeScale
           it { expect(subject.to_i).to eq(original_time.to_i) }
         end
 
-        context 'with invalid time string as a parameter' do
+        context 'with invalid timestamp string as a parameter' do
+          let(:current_time) { Time.now }
+          let(:invalid_timestamp) { 'i_am_not_a_timestamp' }
+          before do
+            Timecop.freeze(current_time) do
+              transaction.timestamp = invalid_timestamp
+            end
+          end
+
+          it 'sets the timestamp to the current time' do
+            expect(transaction.timestamp).to eq(current_time)
+          end
         end
       end
 
