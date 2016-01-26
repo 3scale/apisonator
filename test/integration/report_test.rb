@@ -723,9 +723,36 @@ class ReportTest < Test::Unit::TestCase
 
       assert_equal 1, ErrorStorage.count(@service_id)
       error = ErrorStorage.list(@service_id).last
-
       assert_equal TransactionTimestampTooOld.code, error[:code]
       assert_equal TransactionTimestampTooOld.new(past_limit).message, error[:message]
+    end
+  end
+
+  test 'reporting transactions with a timestamp too far in the future' do
+    future_limit = Transaction.const_get(:REPORT_DEADLINE_FUTURE)
+    current_time = Time.utc(2016, 2, 1)
+    current_month = current_time.strftime('%Y%m01')
+    transaction_time = current_time + future_limit + 1
+    transactions =
+        { 0 => { app_id: @application.id,
+                 usage: { 'hits' => 1 },
+                 timestamp: transaction_time },
+          1 => { app_id: @application.id,
+                 usage: { 'hits' => 2 },
+                 timestamp: transaction_time } }
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml', provider_key: @provider_key, transactions: transactions
+
+      Resque.run!
+
+      assert_equal 0, @storage.get(
+          application_key(@service_id, @application.id, @metric_id, :month, current_month)).to_i
+
+      assert_equal 1, ErrorStorage.count(@service_id)
+      error = ErrorStorage.list(@service_id).last
+      assert_equal TransactionTimestampTooNew.code, error[:code]
+      assert_equal TransactionTimestampTooNew.new(future_limit).message, error[:message]
     end
   end
 
