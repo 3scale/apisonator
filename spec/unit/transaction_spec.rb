@@ -33,23 +33,61 @@ module ThreeScale
       end
 
       describe '#ensure_on_time!' do
-        context 'when transaction timestamp is older than 1 day' do
-          let(:attrs) { { timestamp: Time.now - (48 * 3600) } }
-          subject { Transaction.new(attrs).ensure_on_time! }
+        context 'when transaction timestamp is the current time' do
+          let(:current_time) { Time.now }
+          let(:transaction_attrs) { { timestamp: current_time } }
 
-          # Temporary change: For now, we want to send an Airbrake notification
-          # and return true.
-          it { expect(subject).to be true }
-
-          # Previous code to restore when we decide to limit the timestamps:
-          # it { expect { subject }.to raise_error(ReportTimestampNotWithinRange) }
+          it 'returns true' do
+            Timecop.freeze(current_time) do
+              expect(Transaction.new(transaction_attrs).ensure_on_time!).to be true
+            end
+          end
         end
 
-        context 'when transaction timestamp is newer than 1 day' do
-          let(:attrs) { { timestamp: Time.now - 3600 } }
-          subject { Transaction.new(attrs).ensure_on_time! }
+        context 'when transaction timestamp is not now, but is within the allowed limits' do
+          let(:past_limit) { described_class.const_get(:REPORT_DEADLINE_PAST) }
+          let(:current_time) { Time.now }
+          let(:transaction_attrs) { { timestamp: current_time - past_limit + 1 } }
 
-          it { expect(subject).to be true }
+          it 'returns true' do
+            Timecop.freeze(current_time) do
+              expect(Transaction.new(transaction_attrs).ensure_on_time!).to be true
+            end
+          end
+        end
+
+        context 'when transaction timestamp is not specified explicitly' do
+          # The transaction timestamp is assigned the current time by default,
+          # so it is within the allowed limits
+          it 'returns true' do
+            expect(Transaction.new.ensure_on_time!).to be true
+          end
+        end
+
+        context 'when transaction timestamp is older than allowed' do
+          let(:limit) { described_class.const_get(:REPORT_DEADLINE_PAST) }
+          let(:current_time) { Time.now }
+          let(:transaction_attrs) { { timestamp: current_time - limit - 1 } }
+
+          it 'raises ReportTimestampTooOld' do
+            Timecop.freeze(current_time) do
+              expect { Transaction.new(transaction_attrs).ensure_on_time! }
+                  .to raise_error(TransactionTimestampTooOld)
+            end
+          end
+        end
+
+        context 'when transaction timestamp is newer than allowed' do
+          let(:limit) { described_class.const_get(:REPORT_DEADLINE_FUTURE) }
+          let(:current_time) { Time.now }
+          let(:transaction_attrs) { { timestamp: current_time + limit + 1 } }
+
+          it 'raises ReportTimestampTooNew' do
+            Timecop.freeze(current_time) do
+              expect { Transaction.new(transaction_attrs).ensure_on_time! }
+                  .to raise_error(TransactionTimestampTooNew)
+            end
+          end
         end
       end
     end
