@@ -37,15 +37,23 @@ class LatestTransactionsTest < Test::Unit::TestCase
   end
 
   test 'GET /transactions/latest.xml returns list of latest transactions' do
-    Timecop.freeze(Time.utc(2010, 9, 9, 0, 0)) do
-      Transactor.report(@provider_key, @service_id, 0 => {'app_id'    => @application_id,
-                                            'usage'     => {'foos' => 1},
-                                            'timestamp' => '2010-09-09 11:00:00'})
+    first_transaction_time = Time.parse('2010-09-09 11:00:00 +0000')
+    second_transaction_time = first_transaction_time + 5
+    current_time = first_transaction_time + 30
+
+    Timecop.freeze(current_time) do
+      Transactor.report(@provider_key,
+                        @service_id,
+                        0 => { 'app_id' => @application_id,
+                               'usage' => { 'foos' => 1 },
+                               'timestamp' => first_transaction_time.to_s })
       Resque.run!
 
-      Transactor.report(@provider_key, @service_id, 0 => {'app_id'    => @application_id,
-                                            'usage'     => {'bars' => 2},
-                                            'timestamp' => '2010-09-09 12:00:00'})
+      Transactor.report(@provider_key,
+                        @service_id,
+                        0 => { 'app_id' => @application_id,
+                               'usage' => { 'bars' => 2 },
+                               'timestamp' => second_transaction_time.to_s })
       Resque.run!
 
       get '/transactions/latest.xml', :provider_key => @provider_key
@@ -57,20 +65,22 @@ class LatestTransactionsTest < Test::Unit::TestCase
 
       assert_equal 2, nodes.size
 
-      assert_equal @application_id,             nodes[0]['application_id']
-      assert_equal '2010-09-09 12:00:00 +0000', nodes[0]['timestamp']
+      assert_equal @application_id, nodes[0]['application_id']
+      assert_equal second_transaction_time.to_s, nodes[0]['timestamp']
       assert_equal '2', nodes[0].at("value[metric_id = \"#{@bars_id}\"]").content
 
-      assert_equal @application_id,             nodes[1]['application_id']
-      assert_equal '2010-09-09 11:00:00 +0000', nodes[1]['timestamp']
+      assert_equal @application_id, nodes[1]['application_id']
+      assert_equal first_transaction_time.to_s, nodes[1]['timestamp']
       assert_equal '1', nodes[1].at("value[metric_id = \"#{@foos_id}\"]").content
     end
   end
 
   test 'GET /transactions/latest.xml returns at most 50 transactions' do
     60.times do
-      Transactor.report(@provider_key, nil, 0 => {'app_id'    => @application_id,
-                                             'usage'     => {'bars' => 2}})
+      Transactor.report(@provider_key,
+                        nil,
+                        0 => { 'app_id' => @application_id,
+                               'usage' => { 'bars' => 2 }})
     end
     Resque.run!
 
