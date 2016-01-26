@@ -700,6 +700,30 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
+  test 'reporting transactions with a timestamp within the allowed range does not create errors' do
+    past_limit = Transaction.const_get(:REPORT_DEADLINE_PAST)
+    current_time = Time.utc(2016, 2, 10)
+    current_month = current_time.strftime('%Y%m01')
+    transaction_time = current_time - past_limit + 1
+    transactions =
+        { 0 => { app_id: @application.id,
+                 usage: { 'hits' => 1 },
+                 timestamp: transaction_time },
+          1 => { app_id: @application.id,
+                 usage: { 'hits' => 2 },
+                 timestamp: transaction_time } }
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml', provider_key: @provider_key, transactions: transactions
+
+      Resque.run!
+
+      assert_equal 3, @storage.get(
+          application_key(@service_id, @application.id, @metric_id, :month, current_month)).to_i
+      assert_equal 0, ErrorStorage.count(@service_id)
+    end
+  end
+
   test 'reporting transactions with a timestamp too old' do
     past_limit = Transaction.const_get(:REPORT_DEADLINE_PAST)
     current_time = Time.utc(2016, 2, 1)
