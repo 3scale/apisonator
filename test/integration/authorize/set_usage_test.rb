@@ -76,17 +76,17 @@ class SetUsageTest < Test::Unit::TestCase
       assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits_child_1', 'month', 0, 500)
     end
 
-    Timecop.freeze(Time.utc(2011, 1, 2, 13, 0, 0)) do
+    Timecop.freeze(Time.utc(2011, 1, 2, 0, 0, 0)) do
       get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 2, 100)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'day', 2, 50)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'day', 0, 50)
+      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits', 'day', 2, 100)
+      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits_child_2', 'day', 2, 50)
+      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits_child_1', 'day', 0, 50)
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 5, 1000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'month', 2, 500)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'month', 0, 500)
+      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits', 'month', 5, 1000)
+      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits_child_2', 'month', 2, 500)
+      assert_usage_report(Time.utc(2011, 1, 2, 0, 0, 0), 'hits_child_1', 'month', 0, 500)
     end
 
     Timecop.freeze(Time.utc(2011, 1, 2)) do

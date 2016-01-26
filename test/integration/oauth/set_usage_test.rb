@@ -80,7 +80,7 @@ class SetUsageTest < Test::Unit::TestCase
       assert_usage_report(time, 'hits_child_1', 'month', 0, 500)
     end
 
-    time = Time.utc(2011, 1, 2, 13, 0, 0)
+    time = Time.utc(2011, 1, 2, 0, 0, 0)
     Timecop.freeze(time) do
       get '/transactions/oauth_authorize.xml',
           :provider_key => @provider_key,

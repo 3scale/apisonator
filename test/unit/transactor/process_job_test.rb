@@ -29,83 +29,85 @@ module Transactor
       {
         'service_id'     => @service_id,
         'application_id' => @application_id_one,
-        'timestamp'      => '2010-07-26 12:05:00',
         'usage'          => { @metric_id => 1 },
       }
     end
 
     def test_aggregates
-      Timecop.freeze(Time.utc(2010, 7, 25, 14, 5)) do
+      transaction_time = Time.utc(2010, 7, 25, 14, 4, 0)
+      current_time = transaction_time + 30
+
+      Timecop.freeze(current_time) do
         Stats::Aggregator.expects(:process).with do |transactions|
           transactions.all? do |t|
-            t.is_a?(Transaction) && t.timestamp == Time.utc(2010, 7, 26, 12, 5)
+            t.is_a?(Transaction) && t.timestamp == transaction_time
           end
           transactions.first.application_id == @application_id_one
           transactions.last.application_id  == @application_id_two
         end
 
-        Transactor::ProcessJob.perform([default_transaction_attributes,
-                                        default_transaction_attributes.merge(
-                                          'application_id' => @application_id_two,
-                                        )])
+        Transactor::ProcessJob.perform(
+            [default_transaction_attributes.merge('timestamp' => transaction_time.to_s),
+             default_transaction_attributes.merge('application_id' => @application_id_two,
+                                                  'timestamp' => transaction_time.to_s)])
       end
     end
 
     def test_stores
-      timestamp = '2010-09-10 16:49:00'
+      transaction_time = Time.utc(2010, 9, 9, 23, 55, 45)
+      current_time = transaction_time + 30
 
-      Timecop.freeze(Time.utc(2010, 9, 10, 00, 00)) do
+      Timecop.freeze(current_time) do
         TransactionStorage.expects(:store_all).with do |transactions|
           transactions.all? do |t|
-            t.is_a?(Transaction) && t.timestamp == Time.utc(2010, 9, 10, 16, 49)
+            t.is_a?(Transaction) && t.timestamp == transaction_time
           end
         end
 
         Transactor::ProcessJob.perform(
-          [default_transaction_attributes.merge('timestamp' => timestamp)]
-        )
+          [default_transaction_attributes.merge('timestamp' => transaction_time.to_s)])
       end
     end
 
     def test_handles_transactions_with_utc_timestamps
-      timestamp = '2010-05-07 18:11:25'
+      transaction_time = Time.utc(2010, 5, 7, 18, 11, 25)
+      current_time = transaction_time + 30
 
-      Timecop.freeze(Time.utc(2010, 5, 7, 17, 12, 25)) do
+      Timecop.freeze(current_time) do
         Stats::Aggregator.expects(:process).with do |transactions|
-          transactions.first.timestamp == Time.utc(2010, 5, 7, 18, 11, 25)
+          transactions.first.timestamp == transaction_time
         end
 
         Transactor::ProcessJob.perform(
-          [default_transaction_attributes.merge('timestamp' => timestamp)]
-        )
+          [default_transaction_attributes.merge('timestamp' => transaction_time.to_s)])
       end
     end
 
     def test_handles_transactions_with_local_timestamps
-      timestamp = '2010-05-07 18:11:25 +07:00'
+      transaction_time = Time.parse('2010-05-06 19:11:20 +07:00')
+      current_time = transaction_time + 30
 
-      Timecop.freeze(Time.utc(2010, 5, 6, 12, 11, 25)) do
+      Timecop.freeze(current_time) do
         Stats::Aggregator.expects(:process).with do |transactions|
-          transactions.first.timestamp == Time.utc(2010, 5, 7, 11, 11, 25)
+          transactions.first.timestamp == transaction_time.utc
         end
 
         Transactor::ProcessJob.perform(
-          [default_transaction_attributes.merge('timestamp' => timestamp)]
-        )
+          [default_transaction_attributes.merge('timestamp' => transaction_time.to_s)])
       end
     end
 
     def test_handles_transactions_with_blank_timestamps
       timestamp = ''
+      current_time = Time.utc(2016, 1, 26, 9, 30, 20)
 
-      Timecop.freeze(Time.utc(2010, 8, 19, 11, 43)) do
+      Timecop.freeze(current_time) do
         Stats::Aggregator.expects(:process).with do |transactions|
-          transactions.first.timestamp == Time.utc(2010, 8, 19, 11, 43)
+          transactions.first.timestamp == current_time
         end
 
         Transactor::ProcessJob.perform(
-          [default_transaction_attributes.merge('timestamp' => timestamp)]
-        )
+          [default_transaction_attributes.merge('timestamp' => timestamp)])
       end
     end
   end
