@@ -231,7 +231,7 @@ class SetUsageTest < Test::Unit::TestCase
          Resque.run!
        end
 
-       10.times do |cont|
+       10.times do
          get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id,
                                          :usage      => {'hits' => 2}
