@@ -16,7 +16,7 @@ module ThreeScale
             before { subject.put_in_bucket(event_key, bucket) }
 
             it 'returns true' do
-              expect(subject.delete_bucket(bucket)).to be_true
+              expect(subject.delete_bucket(bucket)).to be true
             end
 
             it 'deletes the bucket' do
@@ -29,7 +29,7 @@ module ThreeScale
             let(:bucket) { 'invalid_bucket_name' }
 
             it 'returns false' do
-              expect(subject.delete_bucket(bucket)).to be_false
+              expect(subject.delete_bucket(bucket)).to be false
             end
           end
         end
