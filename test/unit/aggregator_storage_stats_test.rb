@@ -214,12 +214,10 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     end
 
     assert_equal 5, @storage.keys('keys_changed:*').size
-    assert_equal 0, @storage.keys('copied:*').size
     assert_equal 5, Stats::Info.pending_buckets.size
 
     Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!(silent: true)
 
-    assert_equal 0, @storage.keys('copied:*').size
     assert_equal 0, @storage.keys('keys_changed:*').size
     assert_equal 0, Stats::Info.pending_buckets.size
   end
