@@ -37,9 +37,22 @@ Follow the directions according to what you want to use.
 
 #### With Docker
 
-1. Build the container: `make build`.
-2. Enter the container: `make bash`.
-3. Your project is available in `~/backend`.
+This requires GNU Make and has a single step:
+
+1. Run: `make dev`
+
+This command will take care of downloading and building all dependencies. Once
+that is done, the process will be way faster the next time.
+
+The project's source code will be available in `~/backend` and sync'ed with your
+local backend directory, so you can edit files in your preferred environment and
+still be able to run whatever you need inside the Docker container.
+
+This Docker container is persistent, so your changes will be kept the next time
+you enter it. If you want to use a temporary, throw-away container you'd just
+run `make bash`, since it will autoremove the container on exit.
+
+Getting rid of the persistent container is done with `make devclean`.
 
 #### Maintain your dependencies up-to-date
 
