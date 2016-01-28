@@ -52,14 +52,6 @@ GEM
     builder (3.2.2)
     byebug (5.0.0)
       columnize (= 0.9.0)
-    ci_reporter (2.0.0)
-      builder (>= 2.1.2)
-    ci_reporter_rspec (1.0.0)
-      ci_reporter (~> 2.0)
-      rspec (>= 2.14, < 4)
-    ci_reporter_test_unit (1.0.0)
-      ci_reporter (~> 2.0)
-      test-unit (~> 2.5.5)
     codeclimate-test-reporter (0.3.0)
       simplecov (>= 0.7.1, < 1.0.0)
     coderay (1.1.0)
@@ -180,7 +172,6 @@ GEM
       colorize (>= 0.7.0)
       net-scp (>= 1.1.2)
       net-ssh (>= 2.8.0)
-    test-unit (2.5.5)
     thin (1.6.3)
       daemons (~> 1.0, >= 1.0.9)
       eventmachine (~> 1.0)
@@ -211,8 +202,6 @@ PLATFORMS
 
 DEPENDENCIES
   3scale_backend!
-  ci_reporter_rspec
-  ci_reporter_test_unit
   codeclimate-test-reporter (~> 0.3.0)
   geminabox
   gli (~> 2.13.2)

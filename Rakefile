@@ -7,11 +7,6 @@ Airbrake.configure do |config|
   config.rescue_rake_exceptions = true
 end
 
-if ENV['CI']
-  require 'ci/reporter/rake/rspec'
-  require 'ci/reporter/rake/test_unit'
-end
-
 load 'lib/3scale/tasks/swagger.rake'
 load 'lib/3scale/tasks/cubert.rake'
 
@@ -30,7 +25,6 @@ if testable_environment?
   task :default => [:test, :spec]
 
   test_task_dependencies = ['test:unit', 'test:integration']
-  test_task_dependencies.unshift('ci:setup:testunit') if ENV['CI']
 
   desc 'Run unit and integration tests'
   task :test => test_task_dependencies
@@ -58,7 +52,6 @@ if testable_environment?
   require 'rspec/core/rake_task'
   desc 'Run specs'
   RSpec::Core::RakeTask.new
-  task :spec => 'ci:setup:rspec' if ENV['CI']
 
   desc 'Generate API request documentation from API specs'
   RSpec::Core::RakeTask.new('docs:generate') do |t|

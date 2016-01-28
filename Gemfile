@@ -30,8 +30,6 @@ group :test do
   gem 'rspec',       '~> 3.4.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.3.0', require: nil
   gem 'geminabox', require: false
-  gem 'ci_reporter_test_unit', require: nil
-  gem 'ci_reporter_rspec', require: nil
 end
 
 group :development do
