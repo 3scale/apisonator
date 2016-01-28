@@ -20,20 +20,6 @@ Next cd into the directory, `cd backend`.
 #### Prerequisites
 
 * Docker (tested with version 1.9.1)
-* Vagrant (optional, tested with version 1.7.4)
-
-Vagrant provides a couple of nice features on top of Docker for ease of
-configuration, which is why we recommend it. However as we migrate more projects
-and Docker gets better we might consider switching to Docker alone in the
-future.
-
-Follow the directions according to what you want to use.
-
-#### With Vagrant
-
-1. Build the container: `vagrant up`.
-2. Enter the container: `vagrant ssh`.
-3. Your project is available in `/vagrant`. Run `cd /vagrant`.
 
 #### With Docker
 

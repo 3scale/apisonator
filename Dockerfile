@@ -30,8 +30,4 @@ RUN chown -R ruby:ruby /home/ruby/backend
 USER ruby
 RUN bundle install
 
-# this is needed for Vagrant to launch sshd
-USER root
-
-# and this is needed to switch to an unprivileged user for running the suite
-CMD ["/bin/bash", "-c", "cd /home/ruby/backend && su ruby -c 'script/ci'"]
+CMD ["script/ci"]
