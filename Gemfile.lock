@@ -172,6 +172,7 @@ GEM
       colorize (>= 0.7.0)
       net-scp (>= 1.1.2)
       net-ssh (>= 2.8.0)
+    test-unit (2.5.5)
     thin (1.6.3)
       daemons (~> 1.0, >= 1.0.9)
       eventmachine (~> 1.0)
@@ -218,6 +219,7 @@ DEPENDENCIES
   rspec_api_documentation (~> 4.6.0)
   source2swagger!
   sshkit
+  test-unit (= 2.5.5)
   thin (= 1.6.3)
   timecop (~> 0.7.1)
   yajl-ruby (= 1.1.0)
