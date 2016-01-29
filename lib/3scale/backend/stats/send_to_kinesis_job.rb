@@ -36,6 +36,11 @@ module ThreeScale
         FILTERED_EVENT_PERIODS = %w(week eternity)
         private_constant :FILTERED_EVENT_PERIODS
 
+        FILTERED_EVENT_PERIODS_STR = FILTERED_EVENT_PERIODS.map do |period|
+          "/#{period}".freeze
+        end.freeze
+        private_constant :FILTERED_EVENT_PERIODS_STR
+
         class << self
           def perform_logged(end_time_utc, lock_key, _)
             # end_time_utc will be a string when the worker processes this job.
@@ -66,9 +71,9 @@ module ThreeScale
           private
 
           def prepare_events(bucket, events)
+            filter_events(events)
             parsed_events = parse_events(events.lazy)
-            filtered_events = filter_events(parsed_events)
-            add_time_gen_to_events(filtered_events, bucket_to_timestamp(bucket)).force
+            add_time_gen_to_events(parsed_events, bucket_to_timestamp(bucket)).force
           end
 
           def parse_events(events)
@@ -78,8 +83,10 @@ module ThreeScale
           # We do not want to send all the events to Kinesis.
           # This method filters them.
           def filter_events(events)
-            events.reject do |event|
-              FILTERED_EVENT_PERIODS.include?(event[:period])
+            events.reject! do |event|
+              FILTERED_EVENT_PERIODS_STR.any? do |filtered_period|
+                event.include?(filtered_period)
+              end
             end
           end
 
