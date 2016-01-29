@@ -20,7 +20,7 @@ module ThreeScale
         # The list of pending events is stored in Redis, so we do not fail to
         # process any events in case of downtime or errors.
 
-        EVENTS_PER_RECORD = 300
+        EVENTS_PER_RECORD = 1000
         private_constant :EVENTS_PER_RECORD
 
         MAX_RECORDS_PER_BATCH = 5

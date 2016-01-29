@@ -5,6 +5,37 @@ module ThreeScale
   module Backend
     module Stats
       describe KinesisAdapter do
+        # EVENTS_PER_RECORD is set to a value optimized for running in
+        # production. The tests run very slow if we use the same value.
+        # Moreover, there is no benefit in using a big value that constant
+        # when testing. For that reason, we modify its value and the constant
+        # that depends on it before running these tests, and restore the
+        # original values at the end.
+
+        original_events_per_record = described_class.const_get(:EVENTS_PER_RECORD)
+        original_events_per_batch =
+            original_events_per_record*described_class.const_get(:MAX_RECORDS_PER_BATCH)
+
+        tests_events_per_record = 10
+        tests_events_per_batch =
+            tests_events_per_record*described_class.const_get(:MAX_RECORDS_PER_BATCH)
+
+        before(:all) do
+          described_class.send(:remove_const, :EVENTS_PER_RECORD)
+          described_class.const_set(:EVENTS_PER_RECORD, tests_events_per_record)
+
+          described_class.send(:remove_const, :EVENTS_PER_BATCH)
+          described_class.const_set(:EVENTS_PER_BATCH, tests_events_per_batch)
+        end
+
+        after(:all) do
+          described_class.send(:remove_const, :EVENTS_PER_RECORD)
+          described_class.const_set(:EVENTS_PER_RECORD, original_events_per_record)
+
+          described_class.send(:remove_const, :EVENTS_PER_BATCH)
+          described_class.const_set(:EVENTS_PER_BATCH, original_events_per_batch)
+        end
+
         let(:kinesis_client) { double }
         let(:stream_name) { 'backend_stream' }
         let(:storage) { ThreeScale::Backend::Storage.instance }
