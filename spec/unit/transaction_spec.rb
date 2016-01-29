@@ -48,9 +48,9 @@ module ThreeScale
           let(:current_time) { Time.now }
           let(:transaction_attrs) { { timestamp: current_time } }
 
-          it 'returns true' do
+          it 'does not raise' do
             Timecop.freeze(current_time) do
-              expect(Transaction.new(transaction_attrs).ensure_on_time!).to be true
+              expect { Transaction.new(transaction_attrs).ensure_on_time! }.to_not raise_error
             end
           end
         end
@@ -60,9 +60,9 @@ module ThreeScale
           let(:current_time) { Time.now }
           let(:transaction_attrs) { { timestamp: current_time - past_limit + 1 } }
 
-          it 'returns true' do
+          it 'does not raise' do
             Timecop.freeze(current_time) do
-              expect(Transaction.new(transaction_attrs).ensure_on_time!).to be true
+              expect { Transaction.new(transaction_attrs).ensure_on_time! }.to_not raise_error
             end
           end
         end
@@ -70,8 +70,8 @@ module ThreeScale
         context 'when transaction timestamp is not specified explicitly' do
           # The transaction timestamp is assigned the current time by default,
           # so it is within the allowed limits
-          it 'returns true' do
-            expect(Transaction.new.ensure_on_time!).to be true
+          it 'does not raise' do
+            expect { Transaction.new.ensure_on_time! }.to_not raise_error
           end
         end
 
@@ -80,10 +80,17 @@ module ThreeScale
           let(:current_time) { Time.now }
           let(:transaction_attrs) { { timestamp: current_time - limit - 1 } }
 
-          it 'raises ReportTimestampTooOld' do
+          it 'raises TransactionTimestampTooOld' do
             Timecop.freeze(current_time) do
               expect { Transaction.new(transaction_attrs).ensure_on_time! }
                   .to raise_error(TransactionTimestampTooOld)
+            end
+          end
+
+          it 'raises TransactionTimestampNotWithinRange' do
+            Timecop.freeze(current_time) do
+              expect { Transaction.new(transaction_attrs).ensure_on_time! }
+                  .to raise_error(TransactionTimestampNotWithinRange)
             end
           end
         end
@@ -93,10 +100,17 @@ module ThreeScale
           let(:current_time) { Time.now }
           let(:transaction_attrs) { { timestamp: current_time + limit + 1 } }
 
-          it 'raises ReportTimestampTooNew' do
+          it 'raises TransactionTimestampTooNew' do
             Timecop.freeze(current_time) do
               expect { Transaction.new(transaction_attrs).ensure_on_time! }
                   .to raise_error(TransactionTimestampTooNew)
+            end
+          end
+
+          it 'raises TransactionTimestampNotWithinRange' do
+            Timecop.freeze(current_time) do
+              expect { Transaction.new(transaction_attrs).ensure_on_time! }
+                  .to raise_error(TransactionTimestampNotWithinRange)
             end
           end
         end

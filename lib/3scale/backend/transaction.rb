@@ -10,7 +10,7 @@ module ThreeScale
       private_constant :REPORT_DEADLINE_FUTURE
 
       # We can define an allowed range assuming Time.now = 0
-      DEADLINE_RANGE = -REPORT_DEADLINE_PAST..REPORT_DEADLINE_FUTURE
+      DEADLINE_RANGE = (-REPORT_DEADLINE_PAST..REPORT_DEADLINE_FUTURE).freeze
       private_constant :DEADLINE_RANGE
 
       ATTRIBUTES = [:service_id, :application_id, :user_id, :timestamp,
@@ -42,17 +42,18 @@ module ThreeScale
 
       # Validates if transaction timestamp is within accepted range
       #
-      # @return [true] if the timestamp is within the valid range.
-      # @raise [ReportTimestampTooOld] if the timestamp is too old
-      # @raise [ReportTimestampTooNew] if the timestamp is too new
+      # @return [unspecified] if the timestamp is within the valid range.
+      # @raise [TransactionTimestampTooOld] if the timestamp is too old
+      # @raise [TransactionTimestampTooNew] if the timestamp is too new
       def ensure_on_time!
         time_diff_sec = timestamp.to_i - Time.now.to_i
-        return true if DEADLINE_RANGE.cover?(time_diff_sec)
 
-        if time_diff_sec < 0
-          fail(TransactionTimestampTooOld, REPORT_DEADLINE_PAST)
-        else
-          fail(TransactionTimestampTooNew, REPORT_DEADLINE_FUTURE)
+        unless DEADLINE_RANGE.cover?(time_diff_sec)
+          if time_diff_sec < 0
+            fail(TransactionTimestampTooOld, REPORT_DEADLINE_PAST)
+          else
+            fail(TransactionTimestampTooNew, REPORT_DEADLINE_FUTURE)
+          end
         end
       end
     end
