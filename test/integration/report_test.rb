@@ -700,43 +700,108 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
-  test 'report cannot use an explicit timestamp older than 24 hours' do
-    Airbrake.stubs(:notify).returns(true)
-    if false
-    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      post '/transactions.xml',
-        :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:01'},
-                          1 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:02'},
-                          2 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-12 10:00:03'}}
+  test 'reporting a transaction with a past timestamp within the limits does not generate errors' do
+    past_limit = Transaction.const_get(:REPORT_DEADLINE_PAST)
+    current_time = Time.utc(2016, 2, 10)
+    current_month = current_time.strftime('%Y%m01')
+    transaction_time = current_time - past_limit
+    transactions =
+        { 0 => { app_id: @application.id,
+                 usage: { 'hits' => 1 },
+                 timestamp: transaction_time },
+          1 => { app_id: @application.id,
+                 usage: { 'hits' => 2 },
+                 timestamp: transaction_time } }
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml', provider_key: @provider_key, transactions: transactions
+
       Resque.run!
 
-      assert_equal 3, @storage.get(application_key(@service_id,
-                                                   @application.id,
-                                                   @metric_id,
-                                                  :month, '20100501')).to_i
-      assert_equal 0, ErrorStorage.list(@service_id).count
+      assert_equal 3, @storage.get(
+          application_key(@service_id, @application.id, @metric_id, :month, current_month)).to_i
+      assert_equal 0, ErrorStorage.count(@service_id)
+    end
+  end
 
-      post '/transactions.xml',
-        :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:01'},
-                          1 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:02'},
-                          2 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2010-05-11 10:00:03'}}
+  test 'reporting a transaction with a future timestamp within the limits does not generate errors' do
+    future_limit = Transaction.const_get(:REPORT_DEADLINE_FUTURE)
+    current_time = Time.utc(2016, 2, 10)
+    current_month = current_time.strftime('%Y%m01')
+    transaction_time = current_time + future_limit
+    transactions =
+        { 0 => { app_id: @application.id,
+                 usage: { 'hits' => 1 },
+                 timestamp: transaction_time },
+          1 => { app_id: @application.id,
+                 usage: { 'hits' => 2 },
+                 timestamp: transaction_time } }
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml', provider_key: @provider_key, transactions: transactions
+
       Resque.run!
 
-      assert_equal 3, @storage.get(application_key(@service_id,
-                                                   @application.id,
-                                                   @metric_id,
-                                                  :month, '20100501')).to_i
-      assert_equal 1, ErrorStorage.list(@service_id).count
+      assert_equal 3, @storage.get(
+          application_key(@service_id, @application.id, @metric_id, :month, current_month)).to_i
+      assert_equal 0, ErrorStorage.count(@service_id)
+    end
+  end
 
+  test 'reporting transactions with a timestamp too old' do
+    past_limit = Transaction.const_get(:REPORT_DEADLINE_PAST)
+    current_time = Time.utc(2016, 2, 1)
+    current_month = current_time.strftime('%Y%m01')
+    transaction_time = current_time - past_limit - 1
+    transactions =
+        { 0 => { app_id: @application.id,
+                 usage: { 'hits' => 1 },
+                 timestamp: transaction_time },
+          1 => { app_id: @application.id,
+                 usage: { 'hits' => 2 },
+                 timestamp: transaction_time } }
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml', provider_key: @provider_key, transactions: transactions
+
+      Resque.run!
+
+      assert_equal 0, @storage.get(
+          application_key(@service_id, @application.id, @metric_id, :month, current_month)).to_i
+
+      assert_equal 1, ErrorStorage.count(@service_id)
       error = ErrorStorage.list(@service_id).last
-      assert_not_nil error
-      assert_equal 'report_timestamp_not_within_range', error[:code]
-      assert_equal "report jobs cannot update metrics older than #{Transaction::REPORT_DEADLINE} seconds", error[:message]
+      assert_equal TransactionTimestampTooOld.code, error[:code]
+      assert_equal TransactionTimestampTooOld.new(past_limit).message, error[:message]
     end
+  end
+
+  test 'reporting transactions with a timestamp too far in the future' do
+    future_limit = Transaction.const_get(:REPORT_DEADLINE_FUTURE)
+    current_time = Time.utc(2016, 2, 1)
+    current_month = current_time.strftime('%Y%m01')
+    transaction_time = current_time + future_limit + 1
+    transactions =
+        { 0 => { app_id: @application.id,
+                 usage: { 'hits' => 1 },
+                 timestamp: transaction_time },
+          1 => { app_id: @application.id,
+                 usage: { 'hits' => 2 },
+                 timestamp: transaction_time } }
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml', provider_key: @provider_key, transactions: transactions
+
+      Resque.run!
+
+      assert_equal 0, @storage.get(
+          application_key(@service_id, @application.id, @metric_id, :month, current_month)).to_i
+
+      assert_equal 1, ErrorStorage.count(@service_id)
+      error = ErrorStorage.list(@service_id).last
+      assert_equal TransactionTimestampTooNew.code, error[:code]
+      assert_equal TransactionTimestampTooNew.new(future_limit).message, error[:message]
     end
-    Airbrake.unstub(:notify)
   end
 
   test 'regression test for parameter encoding issue' do

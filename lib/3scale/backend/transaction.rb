@@ -1,7 +1,18 @@
 module ThreeScale
   module Backend
     class Transaction
-      REPORT_DEADLINE = 24 * 3600
+      # We accept transactions with a timestamp ts where ts:
+      # now - REPORT_DEADLINE_PAST <= ts <= now + REPORT_DEADLINE_FUTURE
+      REPORT_DEADLINE_PAST = 24*60*60
+      private_constant :REPORT_DEADLINE_PAST
+
+      REPORT_DEADLINE_FUTURE = 60*60
+      private_constant :REPORT_DEADLINE_FUTURE
+
+      # We can define an allowed range assuming Time.now = 0
+      DEADLINE_RANGE = (-REPORT_DEADLINE_PAST..REPORT_DEADLINE_FUTURE).freeze
+      private_constant :DEADLINE_RANGE
+
       ATTRIBUTES = [:service_id, :application_id, :user_id, :timestamp,
                     :log, :usage, :response_code]
 
@@ -31,31 +42,19 @@ module ThreeScale
 
       # Validates if transaction timestamp is within accepted range
       #
-      # @return [true] if the timestamp is within the valid range.
-      # @raise [ReportTimestampNotwithinrange] if the timestamp isn't within
-      #   the valid range.
+      # @return [unspecified] if the timestamp is within the valid range.
+      # @raise [TransactionTimestampTooOld] if the timestamp is too old
+      # @raise [TransactionTimestampTooNew] if the timestamp is too new
       def ensure_on_time!
-        # Temporary change: for now, we just want to send an Airbrake
-        # notification if we detect that the timestamp is further than
-        # REPORT_DEADLINE in the past or in the future, but we want to report
-        # all transactions even if they violate that rule.
+        time_diff_sec = timestamp.to_i - Time.now.to_i
 
-        now = Time.now.getutc
-        accepted_range = (now - REPORT_DEADLINE)..(now + REPORT_DEADLINE)
-        unless accepted_range.cover?(timestamp)
-          Airbrake.notify(ReportTimestampNotWithinRange.new(REPORT_DEADLINE),
-                          error_message: "service_id: #{service_id},"\
-                           " application_id: #{application_id},"\
-                           " user_id: #{user_id},"\
-                           " usage: #{usage},"\
-                           " current_time: #{Time.now.utc},"\
-                           " reported_time: #{timestamp}")
+        unless DEADLINE_RANGE.cover?(time_diff_sec)
+          if time_diff_sec < 0
+            fail(TransactionTimestampTooOld, REPORT_DEADLINE_PAST)
+          else
+            fail(TransactionTimestampTooNew, REPORT_DEADLINE_FUTURE)
+          end
         end
-        true
-
-        # Old code. We will need it once we decide to limit the timestamps:
-        # return true if (Time.now.getutc - timestamp) <= REPORT_DEADLINE
-        # fail ReportTimestampNotWithinRange, REPORT_DEADLINE
       end
     end
   end
