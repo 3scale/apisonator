@@ -33,8 +33,8 @@ define docker_run_disposable
 	docker run --rm -t -i $(DOCKER_EXTRA_VOLUMES) $2 $1 $3
 endef
 
-define docker_run_cmd
-	docker run --name $2 $(DOCKER_EXTRA_VOLUMES) $1
+define docker_run_container
+	docker run --name $2 $1
 endef
 
 define docker_run
