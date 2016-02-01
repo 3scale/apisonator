@@ -75,11 +75,15 @@ module ThreeScale
           failed_events = []
 
           events.each_slice(EVENTS_PER_BATCH) do |events_slice|
-            kinesis_resp = kinesis_client.put_record_batch(
-                { delivery_stream_name: stream_name,
-                  records: events_to_kinesis_records(events_slice) })
-            failed_events << failed_events_kinesis_resp(
-                kinesis_resp[:request_responses], events_slice)
+            begin
+              kinesis_resp = kinesis_client.put_record_batch(
+                  { delivery_stream_name: stream_name,
+                    records: events_to_kinesis_records(events_slice) })
+              failed_events << failed_events_kinesis_resp(
+                  kinesis_resp[:request_responses], events_slice)
+            rescue Aws::Firehose::Errors::ServiceError
+              failed_events << events_slice
+            end
           end
 
           failed_events.flatten
