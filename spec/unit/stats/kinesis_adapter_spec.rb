@@ -208,6 +208,46 @@ module ThreeScale
                   .to match_array events_second_record
             end
           end
+
+          context 'when the Kinesis client raises an exception in some batch' do
+            let(:records) { max_records_per_batch + 1 } # Can be sent in 2 batches
+            let(:events) { generate_unique_events(records*events_per_record) }
+            let(:events_second_batch) do
+              events[events_per_record*max_records_per_batch..-1]
+            end
+            let(:kinesis_records) do
+              events.each_slice(events_per_record).map do |events_slice|
+                { data: subject.send(:events_to_pseudo_json, events_slice) }
+              end
+            end
+
+            let(:records_first_batch) { kinesis_records.take(max_records_per_batch) }
+            let(:records_second_batch) { [kinesis_records.last] }
+
+            before do
+              # First batch
+              allow(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_first_batch })
+                          .and_return(failed_put_count: 0,
+                                      request_responses: Array.new(max_records_per_batch,
+                                                                   { record_id: 'id' }))
+
+              # Second batch
+              allow(kinesis_client)
+                  .to receive(:put_record_batch)
+                          .with({ delivery_stream_name: stream_name,
+                                  records: records_second_batch })
+                          .and_raise(Aws::Firehose::Errors::LimitExceededException.new(nil, nil))
+            end
+
+            it 'the events of the failed batch are stored in pending events' do
+              subject.send_events(events)
+              expect(subject.send(:stored_pending_events))
+                  .to match_array events_second_batch
+            end
+          end
         end
 
         describe '#flush' do
