@@ -327,6 +327,82 @@ module ThreeScale
               expect(subject.flush).to be_zero
             end
           end
+
+          context 'when limit > 0' do
+            let(:n_events) { 2 }
+            let(:events) { generate_unique_events(n_events) }
+
+            before do
+              expect(subject).to receive(:stored_pending_events).and_return(events)
+            end
+
+            context 'when limit is greater than the number of events to be sent' do
+              let(:limit) { events.count + 1 }
+              let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
+
+              before do
+                allow(kinesis_client)
+                    .to receive(:put_record_batch)
+                            .with({ delivery_stream_name: stream_name,
+                                    records: [{ data: events_pseudo_json }] })
+                            .and_return(failed_put_count: 0,
+                                        request_responses: [{ record_id: 'id' }])
+              end
+
+              it 'sends to Kinesis all the events' do
+                expect(kinesis_client)
+                    .to receive(:put_record_batch)
+                            .with({ delivery_stream_name: stream_name,
+                                    records: [{ data: events_pseudo_json }] })
+                            .once
+
+                subject.flush(limit)
+              end
+
+              it 'returns the number of events sent' do
+                expect(subject.flush(limit)).to eq [limit, n_events].min
+              end
+            end
+
+            context 'when limit is lesser than the number of events to be sent' do
+              let(:limit) { events.count - 1 }
+              let(:events_pseudo_json) do
+                subject.send(:events_to_pseudo_json, events.take(limit))
+              end
+
+              before do
+                allow(kinesis_client)
+                    .to receive(:put_record_batch)
+                            .with({ delivery_stream_name: stream_name,
+                                    records: [{ data: events_pseudo_json }] })
+                            .and_return(failed_put_count: 0,
+                                        request_responses: [{ record_id: 'id' }])
+              end
+
+              it 'sends to Kinesis only the number of events specified in the limit' do
+                expect(kinesis_client)
+                    .to receive(:put_record_batch)
+                            .with({ delivery_stream_name: stream_name,
+                                    records: [{ data: events_pseudo_json }] })
+                            .once
+
+                subject.flush(limit)
+              end
+
+              it 'returns the number of events sent' do
+                expect(subject.flush(limit)).to eq [limit, n_events].min
+              end
+            end
+          end
+
+          context 'when limit < 0' do
+            let(:limit) { -1 }
+            let(:events) { generate_unique_events(1) }
+
+            it 'raises an ArgumentError' do
+              expect { subject.flush(limit) }.to raise_error ArgumentError
+            end
+          end
         end
 
         # The events that we use in these tests need to be unique. Using
