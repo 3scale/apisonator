@@ -15,6 +15,7 @@ module ThreeScale
 
       ATTRIBUTES = [:service_id, :application_id, :user_id, :timestamp,
                     :log, :usage, :response_code]
+      private_constant :ATTRIBUTES
 
       class_eval { attr_accessor *ATTRIBUTES }
 
