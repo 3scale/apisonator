@@ -192,7 +192,7 @@ module ThreeScale
 
             before do
               # return error for the second record
-              expect(kinesis_client)
+              allow(kinesis_client)
                   .to receive(:put_record_batch)
                           .with({ delivery_stream_name: stream_name,
                                   records: [{ data: kinesis_first_record },
@@ -248,6 +248,40 @@ module ThreeScale
                   .to match_array events_second_batch
             end
           end
+
+          context 'when the limit of pending events has been reached' do
+            let(:events) { [] } # Does not matter, because the stubbing in the before clause
+            let(:limit_reached_msg) do
+              described_class.const_get(:MAX_PENDING_EVENTS_REACHED_MSG)
+            end
+
+            before do
+              allow(subject).to receive(:limit_pending_events_reached?).and_return true
+            end
+
+            it 'disables bucket creation' do
+              expect(Storage).to receive(:disable!)
+              subject.send_events(events)
+            end
+
+            it 'logs a message' do
+              expect(Backend.logger).to receive(:info).with(limit_reached_msg)
+              subject.send_events(events)
+            end
+          end
+
+          context 'when the number of pending events has not been reached' do
+            let(:events) { [] } # Does not matter, because the stubbing in the before clause
+
+            before do
+              allow(subject).to receive(:limit_pending_events_reached?).and_return false
+            end
+
+            it 'does not disable bucket creation' do
+              expect(Storage).not_to receive(:disable!)
+              subject.send_events(events)
+            end
+          end
         end
 
         describe '#flush' do
@@ -256,7 +290,7 @@ module ThreeScale
             let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
 
             before do
-              expect(subject).to receive(:stored_pending_events).and_return(events)
+              allow(subject).to receive(:stored_pending_events).and_return(events)
 
               allow(kinesis_client)
                   .to receive(:put_record_batch)
@@ -281,12 +315,12 @@ module ThreeScale
             end
           end
 
-          context 'when the number of pending events it enough to fill 1 record' do
+          context 'when the number of pending events is enough to fill 1 record' do
             let(:events) { generate_unique_events(events_per_record) }
             let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
 
             before do
-              expect(subject).to receive(:stored_pending_events).and_return(events)
+              allow(subject).to receive(:stored_pending_events).and_return(events)
 
               allow(kinesis_client)
                   .to receive(:put_record_batch)
@@ -315,7 +349,7 @@ module ThreeScale
             let(:events) { [] }
 
             before do
-              expect(subject).to receive(:stored_pending_events).and_return(events)
+              allow(subject).to receive(:stored_pending_events).and_return(events)
             end
 
             it 'does not send the events to Kinesis' do
@@ -333,7 +367,7 @@ module ThreeScale
             let(:events) { generate_unique_events(n_events) }
 
             before do
-              expect(subject).to receive(:stored_pending_events).and_return(events)
+              allow(subject).to receive(:stored_pending_events).and_return(events)
             end
 
             context 'when limit is greater than the number of events to be sent' do

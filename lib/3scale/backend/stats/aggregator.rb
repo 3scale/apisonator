@@ -22,6 +22,10 @@ module ThreeScale
         MAX_BUCKETS = 60
         private_constant :MAX_BUCKETS
 
+        MAX_BUCKETS_CREATED_MSG =
+            'Bucket creation has been disabled. Max number of stats buckets reached'.freeze
+        private_constant :MAX_BUCKETS_CREATED_MSG
+
         class << self
           include Backend::StorageKeyHelpers
           include Configurable
@@ -34,6 +38,7 @@ module ThreeScale
 
             if buckets_limit_exceeded?
               Storage.disable!
+              log_bucket_creation_disabled
             elsif configuration.can_create_event_buckets && Storage.enabled?
               current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
               prepare_stats_buckets(current_bucket)
@@ -122,6 +127,10 @@ module ThreeScale
 
           def buckets_limit_exceeded?
             Info.pending_buckets_size > MAX_BUCKETS
+          end
+
+          def log_bucket_creation_disabled
+            Backend.logger.info(MAX_BUCKETS_CREATED_MSG)
           end
         end
       end
