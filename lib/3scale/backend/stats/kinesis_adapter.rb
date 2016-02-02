@@ -11,7 +11,7 @@ module ThreeScale
         # accepts a maximum of 4MB.
         #
         # We will try to optimize the batching process later. For now, I will
-        # just put 300 events in each record. And batches of 5 records max.
+        # just put 1000 events in each record. And batches of 5 records max.
         #
         # When we receive a number of events not big enough to fill a record,
         # those events are marked as pending events.
@@ -32,6 +32,19 @@ module ThreeScale
         KINESIS_PENDING_EVENTS_KEY = 'send_to_kinesis:pending_events'
         private_constant :KINESIS_PENDING_EVENTS_KEY
 
+        # We need to limit the number of pending events stored in Redis.
+        # The Redis database can grow very quickly if a few consecutive jobs
+        # fail. I am going to limit the number of pending events to 600k
+        # (10 jobs approx.). If that limit is reached, we will disable the
+        # creation of buckets in the system, but we will continue trying to
+        # send the failed events. We will lose data, but that is better than
+        # collapsing the whole Redis.
+        # We will try to find a better alternative once we cannot afford to
+        # miss events. Right now, we are just deleting the stats keys with
+        # period = minute, so we can restore everything else.
+        MAX_PENDING_EVENTS = 600_000
+        private_constant :MAX_PENDING_EVENTS
+
         def initialize(stream_name, kinesis_client, storage)
           @stream_name = stream_name
           @kinesis_client = kinesis_client
@@ -40,6 +53,8 @@ module ThreeScale
 
         def send_events(events)
           pending_events = stored_pending_events + events
+
+          Storage.disable! if limit_pending_events_reached?(pending_events.size)
 
           # Batch events until we can fill at least one record
           if pending_events.size >= EVENTS_PER_RECORD
@@ -68,6 +83,10 @@ module ThreeScale
           storage.smembers(KINESIS_PENDING_EVENTS_KEY).map do |pending_event|
             JSON.parse(pending_event, symbolize_names: true)
           end
+        end
+
+        def limit_pending_events_reached?(count)
+          count > MAX_PENDING_EVENTS
         end
 
         # Returns the failed events

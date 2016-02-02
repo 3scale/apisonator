@@ -248,6 +248,32 @@ module ThreeScale
                   .to match_array events_second_batch
             end
           end
+
+          context 'when the limit of pending events has been reached' do
+            let(:events) { [] } # Does not matter, because the stubbing in the before clause
+
+            before do
+              allow(subject).to receive(:limit_pending_events_reached?).and_return true
+            end
+
+            it 'disables bucket creation' do
+              expect(Storage).to receive(:disable!)
+              subject.send_events(events)
+            end
+          end
+
+          context 'when the number of pending events has not been reached' do
+            let(:events) { [] } # Does not matter, because the stubbing in the before clause
+
+            before do
+              allow(subject).to receive(:limit_pending_events_reached?).and_return false
+            end
+
+            it 'does not disable bucket creation' do
+              expect(Storage).not_to receive(:disable!)
+              subject.send_events(events)
+            end
+          end
         end
 
         describe '#flush' do
