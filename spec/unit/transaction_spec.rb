@@ -43,6 +43,70 @@ module ThreeScale
         end
       end
 
+      describe '#extract_response_code' do
+        before { transaction.response_code = response_code }
+
+        shared_examples 'transaction_with_invalid_response_code' do |response_code|
+          let(:response_code) { response_code }
+
+          it 'returns false' do
+            expect(transaction.extract_response_code).to be false
+          end
+        end
+
+        context 'when response code is a string' do
+          context 'and it has 3 characters that represent a positive number' do
+            let(:response_code) { '400' }
+
+            it 'returns the parsed response code' do
+              expect(transaction.extract_response_code).to eq response_code.to_i
+            end
+          end
+
+          context 'and it has 3 characters that represent a negative number' do
+            include_examples 'transaction_with_invalid_response_code', '-40'
+          end
+
+          context 'and it represents a negative number of 3 digits' do
+            include_examples 'transaction_with_invalid_response_code', '-400'
+          end
+
+          context 'and it has less than 3 characters' do
+            include_examples 'transaction_with_invalid_response_code', '40'
+          end
+
+          context 'and it has more than 3 characters' do
+            include_examples 'transaction_with_invalid_response_code', '4000'
+          end
+
+          context 'and it has 3 characters that do not represent a number' do
+            include_examples 'transaction_with_invalid_response_code', 'a40'
+          end
+        end
+
+        context 'when response code is an integer' do
+          context 'and it has 3 digits' do
+            let(:response_code) { 400 }
+
+            it 'returns the response code' do
+              expect(transaction.extract_response_code).to eq response_code
+            end
+          end
+
+          context 'and it has less than 3 digits' do
+            include_examples 'transaction_with_invalid_response_code', 40
+          end
+
+          context 'and it has more than 3 digits' do
+            include_examples 'transaction_with_invalid_response_code', 4000
+          end
+
+          context 'and it is negative' do
+            include_examples 'transaction_with_invalid_response_code', -400
+          end
+        end
+      end
+
       describe '#ensure_on_time!' do
         context 'when transaction timestamp is the current time' do
           let(:current_time) { Time.now }
