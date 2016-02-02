@@ -45,6 +45,10 @@ module ThreeScale
         MAX_PENDING_EVENTS = 600_000
         private_constant :MAX_PENDING_EVENTS
 
+        MAX_PENDING_EVENTS_REACHED_MSG =
+            'Bucket creation has been disabled. Max pending events reached'.freeze
+        private_constant :MAX_PENDING_EVENTS_REACHED_MSG
+
         def initialize(stream_name, kinesis_client, storage)
           @stream_name = stream_name
           @kinesis_client = kinesis_client
@@ -54,7 +58,10 @@ module ThreeScale
         def send_events(events)
           pending_events = stored_pending_events + events
 
-          Storage.disable! if limit_pending_events_reached?(pending_events.size)
+          if limit_pending_events_reached?(pending_events.size)
+            Storage.disable!
+            log_bucket_creation_disabled
+          end
 
           # Batch events until we can fill at least one record
           if pending_events.size >= EVENTS_PER_RECORD
@@ -87,6 +94,10 @@ module ThreeScale
 
         def limit_pending_events_reached?(count)
           count > MAX_PENDING_EVENTS
+        end
+
+        def log_bucket_creation_disabled
+          Backend.logger.info(MAX_PENDING_EVENTS_REACHED_MSG)
         end
 
         # Returns the failed events

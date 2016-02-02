@@ -251,6 +251,9 @@ module ThreeScale
 
           context 'when the limit of pending events has been reached' do
             let(:events) { [] } # Does not matter, because the stubbing in the before clause
+            let(:limit_reached_msg) do
+              described_class.const_get(:MAX_PENDING_EVENTS_REACHED_MSG)
+            end
 
             before do
               allow(subject).to receive(:limit_pending_events_reached?).and_return true
@@ -258,6 +261,11 @@ module ThreeScale
 
             it 'disables bucket creation' do
               expect(Storage).to receive(:disable!)
+              subject.send_events(events)
+            end
+
+            it 'logs a message' do
+              expect(Backend.logger).to receive(:info).with(limit_reached_msg)
               subject.send_events(events)
             end
           end
