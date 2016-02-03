@@ -41,7 +41,7 @@ module ThreeScale
         let(:storage) { ThreeScale::Backend::Storage.instance }
         let(:events_per_record) { described_class.const_get(:EVENTS_PER_RECORD) }
         let(:max_records_per_batch) { described_class.const_get(:MAX_RECORDS_PER_BATCH) }
-        let(:kinesis_pending_events_key) do
+        let(:pending_events_key) do
           described_class.const_get(:KINESIS_PENDING_EVENTS_KEY)
         end
 
@@ -85,7 +85,7 @@ module ThreeScale
               subject.send_events(events)
             end
 
-            it 'pending events is empty' do
+            it 'leaves pending events empty' do
               subject.send_events(events)
               expect(subject.send(:stored_pending_events)).to be_empty
             end
@@ -120,7 +120,7 @@ module ThreeScale
               subject.send_events(events)
             end
 
-            it 'pending events is empty' do
+            it 'leaves pending events empty' do
               subject.send_events(events)
               expect(subject.send(:stored_pending_events)).to be_empty
             end
@@ -173,7 +173,7 @@ module ThreeScale
               subject.send_events(events)
             end
 
-            it 'pending events is empty' do
+            it 'leaves pending events empty' do
               subject.send_events(events)
               expect(subject.send(:stored_pending_events)).to be_empty
             end
@@ -202,7 +202,7 @@ module ThreeScale
                                                           { error_code: 'err' }])
             end
 
-            it 'the events of the failed record are stored in pending events' do
+            it 'marks the events of the failed record as pending events' do
               subject.send_events(events_first_record + events_second_record)
               expect(subject.send(:stored_pending_events))
                   .to match_array events_second_record
@@ -242,7 +242,7 @@ module ThreeScale
                           .and_raise(Aws::Firehose::Errors::LimitExceededException.new(nil, nil))
             end
 
-            it 'the events of the failed batch are stored in pending events' do
+            it 'marks the events of the failed batch as pending events' do
               subject.send_events(events)
               expect(subject.send(:stored_pending_events))
                   .to match_array events_second_batch
@@ -313,6 +313,11 @@ module ThreeScale
             it 'returns the number of events sent' do
               expect(subject.flush).to eq events.size
             end
+
+            it 'leaves pending events empty' do
+              subject.flush
+              expect(storage.smembers(pending_events_key)).to be_empty
+            end
           end
 
           context 'when the number of pending events is enough to fill 1 record' do
@@ -343,15 +348,14 @@ module ThreeScale
             it 'returns the number of events sent' do
               expect(subject.flush).to eq events.size
             end
+
+            it 'leaves pending events empty' do
+              subject.flush
+              expect(storage.smembers(pending_events_key)).to be_empty
+            end
           end
 
           context 'when there are no pending events' do
-            let(:events) { [] }
-
-            before do
-              allow(subject).to receive(:stored_pending_events).and_return(events)
-            end
-
             it 'does not send the events to Kinesis' do
               expect(kinesis_client).not_to receive(:put_record_batch)
               subject.flush
@@ -359,6 +363,11 @@ module ThreeScale
 
             it 'returns 0' do
               expect(subject.flush).to be_zero
+            end
+
+            it 'leaves pending events empty' do
+              subject.flush
+              expect(storage.smembers(pending_events_key)).to be_empty
             end
           end
 
@@ -370,8 +379,8 @@ module ThreeScale
               allow(subject).to receive(:stored_pending_events).and_return(events)
             end
 
-            context 'when limit is greater than the number of events to be sent' do
-              let(:limit) { events.count + 1 }
+            context 'and greater than the number of events to be sent' do
+              let(:limit) { events.size + 1 }
               let(:events_pseudo_json) { subject.send(:events_to_pseudo_json, events) }
 
               before do
@@ -396,10 +405,15 @@ module ThreeScale
               it 'returns the number of events sent' do
                 expect(subject.flush(limit)).to eq [limit, n_events].min
               end
+
+              it 'leaves pending events empty' do
+                subject.flush(limit)
+                expect(storage.smembers(pending_events_key)).to be_empty
+              end
             end
 
-            context 'when limit is lesser than the number of events to be sent' do
-              let(:limit) { events.count - 1 }
+            context 'and lesser than the number of events to be sent' do
+              let(:limit) { events.size - 1 }
               let(:events_pseudo_json) do
                 subject.send(:events_to_pseudo_json, events.take(limit))
               end
@@ -426,6 +440,49 @@ module ThreeScale
               it 'returns the number of events sent' do
                 expect(subject.flush(limit)).to eq [limit, n_events].min
               end
+
+              it 'marks the events that have not been flushed as pending events' do
+                subject.flush(limit)
+                expect(storage.smembers(pending_events_key).size)
+                    .to eq events.size - limit
+              end
+            end
+
+            context 'and sending a batch to kinesis fails' do
+              let(:limit) { events.size - 1 }
+              let(:events_pseudo_json) do
+                subject.send(:events_to_pseudo_json, events.take(limit))
+              end
+
+              before do
+                allow(kinesis_client)
+                    .to receive(:put_record_batch)
+                            .with({ delivery_stream_name: stream_name,
+                                    records: [{ data: events_pseudo_json }] })
+                            .and_return(failed_put_count: 1,
+                                        request_responses: [{ record_id: 'id' },
+                                                            { error_code: 'err' }])
+              end
+
+              it 'sends to Kinesis only the number of events specified in the limit' do
+                expect(kinesis_client)
+                    .to receive(:put_record_batch)
+                            .with({ delivery_stream_name: stream_name,
+                                    records: [{ data: events_pseudo_json }] })
+                            .once
+
+                subject.flush(limit)
+              end
+
+              it 'returns 0' do
+                expect(subject.flush(limit)).to be_zero
+              end
+
+              it 'marks the events that have not been flushed as pending events' do
+                subject.flush(limit)
+                expect(storage.smembers(pending_events_key).size).to eq events.size
+              end
+
             end
           end
 
