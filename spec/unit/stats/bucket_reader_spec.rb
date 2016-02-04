@@ -119,7 +119,7 @@ module ThreeScale
               last_bucket_read_marker.latest_bucket_read = latest_bucket_read
             end
 
-            it 'a hash with the pending events and the latest bucket read' do
+            it 'returns a hash with the pending events and the latest bucket read' do
               expect(subject.pending_events_in_buckets(current_time))
                   .to eq ({ events: buckets_and_events[second_bucket]
                                         .merge(buckets_and_events[third_bucket]),
