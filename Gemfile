@@ -41,4 +41,4 @@ group :development, :test do
 end
 
 # gems required by the runner
-gem 'gli', '~> 2.13.2', require: nil
+gem 'gli', '~> 2.13.4', require: nil
