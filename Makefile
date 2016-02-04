@@ -22,7 +22,7 @@ include $(PROJECT_PATH)/docker/docker.mk
 # this is used to build our image
 define build_dockerfile
 	($(call docker_build_dockerfile)) && \
-		(sleep 4 && rm -f $(DOCKERFILE) &) && \
+		(sleep 5 && rm -f $(DOCKERFILE) &) && \
 		($(call docker_build, $(PROJECT):$(RUBY_VERSION), -f $(DOCKERFILE), $(PROJECT_PATH)))
 endef
 
