@@ -13,9 +13,6 @@ platform :ruby do
   gem 'pry-byebug', '~> 3.3.0', groups: [:development]
 end
 
-# Default server by platform
-gem 'puma', '= 2.15.3'
-
 group :test do
   gem 'mocha',       '~> 1.1.0'
   gem 'nokogiri',    '~> 1.6.7'
@@ -40,6 +37,8 @@ group :development, :test do
   gem 'rspec_api_documentation', '~> 4.7.0'
 end
 
+# Default server by platform
+gem 'puma', '= 2.15.3'
 # gems required by the runner
 gem 'gli', '~> 2.13.4', require: nil
 # Cubert client
