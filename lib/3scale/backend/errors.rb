@@ -194,18 +194,9 @@ module ThreeScale
       end
     end
 
-    class TransactionTimestampNotWithinRange < Error
-    end
-
-    class TransactionTimestampTooOld < TransactionTimestampNotWithinRange
+    class ReportTimestampNotWithinRange < Error
       def initialize(max_seconds)
-        super %(reporting transactions older than #{max_seconds} seconds is not allowed)
-      end
-    end
-
-    class TransactionTimestampTooNew < TransactionTimestampNotWithinRange
-      def initialize(max_seconds)
-        super %(reporting transactions more than #{max_seconds} seconds in the future is not allowed)
+        super %(report jobs cannot update metrics older than #{max_seconds} seconds)
       end
     end
 
