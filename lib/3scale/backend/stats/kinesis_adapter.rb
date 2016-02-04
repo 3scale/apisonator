@@ -76,10 +76,11 @@ module ThreeScale
         # them to fill 1 record.
         # Returns the number of events correctly sent to Kinesis
         def flush(limit = nil)
-          events = limit ? stored_pending_events.take(limit) : stored_pending_events
-          failed_events = send_events_in_batches(events)
-          store_pending_events(failed_events)
-          events.size - failed_events.size
+          pending_events = stored_pending_events
+          events_to_flush = limit ? pending_events.take(limit) : pending_events
+          failed_events = send_events_in_batches(events_to_flush)
+          store_pending_events(pending_events - events_to_flush + failed_events)
+          events_to_flush.size - failed_events.size
         end
 
         private
