@@ -43,6 +43,21 @@ gem 'puma', '= 2.15.3'
 gem 'gli', '~> 2.13.4', require: nil
 # Cubert client
 gem 'cubert-client', '= 0.0.12', source: 'https://geminabox'
+# Workers
+gem 'daemons', '= 1.1.9'
 
 # Production gems
+gem 'rake', '= 10.4.2'
+gem 'builder', '= 3.2.2'
+gem 'hiredis', '= 0.6.1'
+gem 'redis', '= 3.2.2'
+gem 'redis-namespace', '= 1.5.2'
+gem 'resque', '= 1.23.0'
+gem 'rack', '= 1.6.4'
+gem 'airbrake', '= 4.3.0'
+gem 'tilt', '= 1.4.1'
+gem 'sinatra', '= 1.4.7'
+gem 'sinatra-contrib', '= 1.4.6'
+gem 'aws-sdk', '= 2.2.0'
+gem 'whenever', '= 0.9.4'
 gem 'pg', '= 0.18.4'
