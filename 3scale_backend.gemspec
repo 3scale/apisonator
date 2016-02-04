@@ -30,7 +30,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'rack',                      '1.6.4'
   s.add_dependency 'airbrake',                  '4.3.0'
   s.add_dependency 'tilt',                      '1.4.1'
-  s.add_dependency 'sinatra',                   '1.4.6'
+  s.add_dependency 'sinatra',                   '1.4.7'
   s.add_dependency 'sinatra-contrib',           '1.4.6'
   s.add_dependency 'cubert-client',             '0.0.12'
   s.add_dependency 'aws-sdk',                   '2.2.0'
