@@ -105,21 +105,53 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
     end
     let(:raw_post){ params.to_json }
 
-    example_request 'Update Service by ID' do
-      expect(status).to eq 200
-      expect(response_json['status']).to eq 'modified'
+    context 'with an application that exists' do
+      example_request 'updating the application' do
+        expect(status).to eq 200
+        expect(response_json['status']).to eq 'modified'
 
-      app = ThreeScale::Backend::Application.load(service_id, id)
-      expect(app.id).to eq id
-      expect(app.service_id).to eq service_id
-      expect(app.state).to eq state
-      expect(app.plan_id).to eq plan_id
-      expect(app.plan_name).to eq plan_name
-      expect( app.redirect_url).to eq redirect_url
-      # since we've just modified an App, we should get version 2
-      expect(app.version).to eq '2'
+        app = ThreeScale::Backend::Application.load(service_id, id)
+        expect(app.id).to eq id
+        expect(app.service_id).to eq service_id
+        expect(app.state).to eq state
+        expect(app.plan_id).to eq plan_id
+        expect(app.plan_name).to eq plan_name
+        expect( app.redirect_url).to eq redirect_url
+        # since we've just modified an App, we should get version 2
+        expect(app.version).to eq '2'
+      end
     end
 
+    context 'with an application that does not exist' do
+      let(:non_existing_id) { '101' }
+
+      example 'creating the application' do
+        do_request(id: non_existing_id)
+
+        expect(status).to eq 200
+        expect(response_json['status']).to eq 'created'
+
+        app = ThreeScale::Backend::Application.load(service_id, non_existing_id)
+        expect(app.id).to eq non_existing_id
+        expect(app.service_id).to eq service_id
+        expect(app.state).to eq state
+        expect(app.plan_id).to eq plan_id
+        expect(app.plan_name).to eq plan_name
+        expect( app.redirect_url).to eq redirect_url
+        # since we've just modified an App, we should get version 2
+        expect(app.version).to eq '1'
+      end
+    end
+
+    context 'without specifying the application' do
+      let(:application) { nil }
+
+      example_request 'trying to update the application' do
+        expect(status).to eq 400
+        expect(response_json['status']).to eq 'error'
+        expect(response_json['error']).to match /missing parameter/i
+      end
+    end
   end
 
   delete '/services/:service_id/applications/:id' do
