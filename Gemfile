@@ -16,10 +16,6 @@ end
 # Default server by platform
 gem 'puma', '= 2.15.3'
 
-platform :mri do
-  gem 'thin', '= 1.6.3', groups: [:development, :test]
-end
-
 group :test do
   gem 'mocha',       '~> 1.1.0'
   gem 'nokogiri',    '~> 1.6.7'
