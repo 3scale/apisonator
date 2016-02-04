@@ -71,13 +71,9 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
       expect(response_json['status']).to eq 'created'
 
       app = ThreeScale::Backend::Application.load(service_id, id)
-      expect(app.id).to eq id
-      expect(app.service_id).to eq service_id
-      expect(app.state).to eq state
-      expect(app.plan_id).to eq plan_id
-      expect(app.plan_name).to eq plan_name
-      expect(app.redirect_url).to eq redirect_url
-      expect(app.version).to eq '1'
+      expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
+      expect(app.to_hash).to eq application.merge(user_required: false,
+                                                  version: '1')
     end
 
   end
@@ -111,14 +107,10 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(response_json['status']).to eq 'modified'
 
         app = ThreeScale::Backend::Application.load(service_id, id)
-        expect(app.id).to eq id
-        expect(app.service_id).to eq service_id
-        expect(app.state).to eq state
-        expect(app.plan_id).to eq plan_id
-        expect(app.plan_name).to eq plan_name
-        expect( app.redirect_url).to eq redirect_url
-        # since we've just modified an App, we should get version 2
-        expect(app.version).to eq '2'
+        expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
+        # Since the app has been modified, version should be '2'
+        expect(app.to_hash).to eq application.merge(user_required: false,
+                                                    version: '2')
       end
     end
 
@@ -132,14 +124,10 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(response_json['status']).to eq 'created'
 
         app = ThreeScale::Backend::Application.load(service_id, non_existing_id)
-        expect(app.id).to eq non_existing_id
-        expect(app.service_id).to eq service_id
-        expect(app.state).to eq state
-        expect(app.plan_id).to eq plan_id
-        expect(app.plan_name).to eq plan_name
-        expect( app.redirect_url).to eq redirect_url
-        # since we've just modified an App, we should get version 2
-        expect(app.version).to eq '1'
+        expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
+        expect(app.to_hash).to eq application.merge(id: non_existing_id,
+                                                    user_required: false,
+                                                    version: '1')
       end
     end
 
