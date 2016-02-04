@@ -66,21 +66,32 @@ module ThreeScale
           context 'when kinesis is enabled' do
             before { subject.enable }
 
-            context 'when there is at least one job already running' do
+            context 'and there is at least one job already running' do
               before { allow(subject).to receive(:job_running?).and_return true }
 
               it 'does not flush the pending events' do
                 expect(kinesis_adapter).not_to receive(:flush)
                 subject.flush_pending_events
               end
+
+              it 'returns 0' do
+                expect(subject.flush_pending_events).to be_zero
+              end
             end
 
-            context 'when there are not any jobs running' do
+            context 'and there are not any jobs running' do
               before { allow(subject).to receive(:job_running?).and_return false }
 
+              let(:events_to_flush) { 5 }
+
               it 'flushes the pending events' do
-                expect(kinesis_adapter).to receive(:flush)
+                expect(kinesis_adapter).to receive(:flush).and_return(events_to_flush)
                 subject.flush_pending_events
+              end
+
+              it 'returns the number of events flushed' do
+                expect(kinesis_adapter).to receive(:flush).and_return(events_to_flush)
+                expect(subject.flush_pending_events).to eq events_to_flush
               end
             end
           end
@@ -91,6 +102,10 @@ module ThreeScale
             it 'does not flush the pending events' do
               expect(kinesis_adapter).not_to receive(:flush)
               subject.flush_pending_events
+            end
+
+            it 'returns 0' do
+              expect(subject.flush_pending_events).to be_zero
             end
           end
         end

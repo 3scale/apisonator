@@ -59,13 +59,15 @@ module ThreeScale
           end
 
           def flush_pending_events(limit = nil)
+            flushed_events = 0
             if enabled?
               lock_key = DateTime.now.strftime('%Q')
               unless job_running?(lock_key)
-                kinesis_adapter.flush(limit)
+                flushed_events = kinesis_adapter.flush(limit)
                 job_finished(lock_key) # flush is not asynchronous
               end
             end
+            flushed_events
           end
 
           # To be called by a kinesis job once it exits so other jobs can run
