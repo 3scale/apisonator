@@ -20,7 +20,7 @@ group :test do
   gem 'mocha',       '~> 1.1.0'
   gem 'nokogiri',    '~> 1.6.7'
   gem 'rack-test',   '~> 0.6.2'
-  gem 'resque_unit', '~> 0.4.4'
+  gem 'resque_unit', '~> 0.4.4', source: 'https://rubygems.org'
   gem 'test-unit',   '= 2.5.5'
   gem 'resque_spec', '~> 0.17.0'
   gem 'timecop',     '~> 0.8.0'
@@ -42,3 +42,5 @@ end
 
 # gems required by the runner
 gem 'gli', '~> 2.13.4', require: nil
+# Cubert client
+gem 'cubert-client', '= 0.0.12', source: 'https://geminabox'

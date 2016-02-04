@@ -13,7 +13,6 @@ PATH
       airbrake (= 4.3.0)
       aws-sdk (= 2.2.0)
       builder (= 3.2.2)
-      cubert-client (= 0.0.12)
       daemons (= 1.1.9)
       hiredis (= 0.6.1)
       rack (= 1.6.4)
@@ -28,6 +27,7 @@ PATH
 
 GEM
   remote: https://rubygems.org/
+  remote: https://geminabox/
   specs:
     abstract_type (0.0.7)
     activesupport (4.2.5.1)
@@ -207,6 +207,7 @@ PLATFORMS
 DEPENDENCIES
   3scale_backend!
   codeclimate-test-reporter (~> 0.3.0)
+  cubert-client (= 0.0.12)!
   geminabox
   gli (~> 2.13.4)
   mocha (~> 1.1.0)
@@ -217,7 +218,7 @@ DEPENDENCIES
   puma (= 2.15.3)
   rack-test (~> 0.6.2)
   resque_spec (~> 0.17.0)
-  resque_unit (~> 0.4.4)
+  resque_unit (~> 0.4.4)!
   rspec (~> 3.4.0)
   rspec_api_documentation (~> 4.7.0)
   source2swagger!
