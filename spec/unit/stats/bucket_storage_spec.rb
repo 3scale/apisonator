@@ -19,9 +19,14 @@ module ThreeScale
               expect(subject.delete_bucket(bucket)).to be true
             end
 
-            it 'deletes the bucket' do
+            it 'deletes the bucket from the set' do
               subject.delete_bucket(bucket)
               expect(subject.all_buckets).not_to include bucket
+            end
+
+            it 'deletes the contents of the bucket' do
+              subject.delete_bucket(bucket)
+              expect(subject.buckets_content_with_values([bucket])).to be_empty
             end
           end
 
@@ -36,27 +41,46 @@ module ThreeScale
 
         describe '#delete_range' do
           let(:buckets) { %w(20150101000000 20150101000010 20150101000020 20150101000030) }
+          let(:event_keys) do # One event in each bucket
+            ['stats/{service:11}/metric:21/day:20151207',
+             'stats/{service:11}/metric:21/day:20151208',
+             'stats/{service:11}/metric:21/day:20151209',
+             'stats/{service:11}/metric:21/day:20151210']
+          end
 
           before do
-            buckets.each { |bucket| subject.put_in_bucket(event_key, bucket) }
+            buckets.each_with_index do |bucket, index|
+              subject.put_in_bucket(event_keys[index], bucket)
+            end
           end
 
           context 'when the bucket exists' do
             context 'when it is the first one' do
               let(:bucket) { buckets.first }
 
-              it 'only deletes the first one' do
+              it 'only deletes the first one from the set of buckets' do
                 subject.delete_range(bucket)
                 expect(subject.all_buckets).to match_array buckets[1..-1]
+              end
+
+              it 'only deletes the content of the first bucket' do
+                subject.delete_range(bucket)
+                expect(subject.buckets_content_with_values(buckets).keys)
+                    .to match_array event_keys[1..-1]
               end
             end
 
             context 'when it is the last one' do
               let(:bucket) { buckets.last }
 
-              it 'deletes all the buckets' do
+              it 'deletes all the buckets from the set of buckets' do
                 subject.delete_range(bucket)
                 expect(subject.all_buckets).to be_empty
+              end
+
+              it 'deletes the contents of all the buckets' do
+                subject.delete_range(bucket)
+                expect(subject.buckets_content_with_values(buckets)).to be_empty
               end
             end
 
@@ -64,15 +88,21 @@ module ThreeScale
               let(:position) { 2 }
               let(:bucket) { buckets[position] }
 
-              it 'deletes the bucket specified and all the previous ones' do
+              it 'deletes the bucket and the previous ones from the set of buckets' do
                 subject.delete_range(bucket)
                 expect(subject.all_buckets).to match_array buckets[(position + 1)..-1]
+              end
+
+              it 'deletes the contents of the given bucket and the previous ones' do
+                subject.delete_range(bucket)
+                expect(subject.buckets_content_with_values(buckets).keys)
+                    .to match_array event_keys[(position + 1)..-1]
               end
             end
           end
 
           context 'when the bucket does not exist' do
-            context 'when it is a bucket created before the first one that exists' do
+            context 'and it has a name that says it was created before the first one that exists' do
               let (:bucket) { '20140101000000' }
 
               it 'does not delete any buckets' do
@@ -81,12 +111,17 @@ module ThreeScale
               end
             end
 
-            context 'when it is a bucket created after the last one that exists' do
+            context 'and it has a name that says it was created after the last one that exists' do
               let (:bucket) { (buckets.last.to_i + 10).to_s }
 
-              it 'deletes all the buckets' do
+              it 'deletes all the buckets from the set of buckets' do
                 subject.delete_range(bucket)
                 expect(subject.all_buckets).to be_empty
+              end
+
+              it 'deletes the contents of all the buckets' do
+                subject.delete_range(bucket)
+                expect(subject.buckets_content_with_values(buckets)).to be_empty
               end
             end
           end
