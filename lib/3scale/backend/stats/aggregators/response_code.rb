@@ -11,7 +11,8 @@ module ThreeScale
             include Keys
             include Base
 
-            TRACKED_CODES = [200,404,403,500,503]
+            TRACKED_CODES = [200, 404, 403, 500, 503].freeze
+            private_constant :TRACKED_CODES
 
             def aggregate(transaction, bucket = nil)
               keys_for_multiple_codes = keys_for_response_code(transaction)
@@ -30,7 +31,7 @@ module ThreeScale
               return {} unless response_code
               values = values_to_inc(response_code)
               values.flat_map do |code|
-                Keys.transaction_keys(transaction, :response_code,  code)
+                Keys.transaction_keys(transaction, :response_code, code)
               end
             end
 
