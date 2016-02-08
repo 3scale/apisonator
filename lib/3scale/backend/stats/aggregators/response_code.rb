@@ -16,9 +16,10 @@ module ThreeScale
             def aggregate(transaction, bucket = nil)
               keys_for_multiple_codes = keys_for_response_code(transaction)
               timestamp = transaction.timestamp
+              bucket_key = bucket ? Keys.changed_keys_bucket_key(bucket) : nil
 
               keys_for_multiple_codes.each do |keys|
-                aggregate_values(1, timestamp, keys, :incrby, bucket)
+                aggregate_values(1, timestamp, keys, :incrby, bucket_key)
               end
             end
 
