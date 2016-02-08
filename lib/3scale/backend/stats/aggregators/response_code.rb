@@ -11,14 +11,22 @@ module ThreeScale
             include Keys
             include Base
 
-            TRACKED_CODES = [200,404,403,500,503]
+            TRACKED_CODES = [200, 404, 403, 500, 503].freeze
+            private_constant :TRACKED_CODES
 
             def aggregate(transaction, bucket = nil)
               keys_for_multiple_codes = keys_for_response_code(transaction)
               timestamp = transaction.timestamp
 
+              # For now, we are not interested in storing response codes in
+              # buckets, that is the reason why set bucket_key to nil.
+              # Once we define a use case that requires us to store them,
+              # uncomment the line below.
+              # bucket_key = bucket ? Keys.changed_keys_bucket_key(bucket) : nil
+              bucket_key = nil
+
               keys_for_multiple_codes.each do |keys|
-                aggregate_values(1, timestamp, keys, :incrby, bucket)
+                aggregate_values(1, timestamp, keys, :incrby, bucket_key)
               end
             end
 
@@ -29,7 +37,7 @@ module ThreeScale
               return {} unless response_code
               values = values_to_inc(response_code)
               values.flat_map do |code|
-                Keys.transaction_keys(transaction, :response_code,  code)
+                Keys.transaction_keys(transaction, :response_code, code)
               end
             end
 
