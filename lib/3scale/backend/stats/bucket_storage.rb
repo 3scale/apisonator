@@ -31,11 +31,17 @@ module ThreeScale
           @storage = storage
         end
 
+        # Deletes a bucket from the set, and also deletes its contents
         def delete_bucket(bucket)
+          delete_bucket_content(bucket)
           storage.zrem(Keys.changed_keys_key, bucket)
         end
 
+        # For each of the buckets in the range, deletes it from the set, and
+        # also deletes its contents.
         def delete_range(last_bucket)
+          buckets = storage.zrangebyscore(Keys.changed_keys_key, 0, last_bucket)
+          buckets.each { |bucket| delete_bucket_content(bucket) }
           storage.zremrangebyscore(Keys.changed_keys_key, 0, last_bucket)
         end
 
@@ -76,6 +82,10 @@ module ThreeScale
             bucket_keys = buckets_slice.map { |bucket| Keys.changed_keys_bucket_key(bucket) }
             (res + storage.sunion(bucket_keys))
           end.uniq
+        end
+
+        def delete_bucket_content(bucket)
+          storage.del(Keys.changed_keys_bucket_key(bucket))
         end
       end
     end
