@@ -4,6 +4,13 @@ module ThreeScale
       module Aggregators
         module Base
 
+          SERVICE_GRANULARITIES = [:eternity, :month, :week, :day, :hour].freeze
+          private_constant :SERVICE_GRANULARITIES
+
+          # For applications and users
+          EXPANDED_GRANULARITIES = (SERVICE_GRANULARITIES + [:year, :minute]).freeze
+          private_constant :EXPANDED_GRANULARITIES
+
           GRANULARITY_EXPIRATION_TIME = { minute: 180 }.freeze
           private_constant :GRANULARITY_EXPIRATION_TIME
 
@@ -17,10 +24,8 @@ module ThreeScale
           # @param [Symbol] cmd
           # @param [String, Nil] bucket_key
           def aggregate_values(value, timestamp, keys, cmd, bucket_key = nil)
-            service_granularities = [:eternity, :month, :week, :day, :hour]
-            expanded_granularities = service_granularities + [:year, :minute]
             keys.each do |metric_type, prefix_key|
-              granularities = ( metric_type == :service) ? service_granularities : expanded_granularities
+              granularities = ( metric_type == :service) ? SERVICE_GRANULARITIES : EXPANDED_GRANULARITIES
 
               granularities.each do |granularity|
                 key = counter_key(prefix_key, granularity, timestamp)
