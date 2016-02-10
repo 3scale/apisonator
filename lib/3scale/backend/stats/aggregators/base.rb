@@ -25,9 +25,7 @@ module ThreeScale
           # @param [String, Nil] bucket_key
           def aggregate_values(value, timestamp, keys, cmd, bucket_key = nil)
             keys.each do |metric_type, prefix_key|
-              granularities = ( metric_type == :service) ? SERVICE_GRANULARITIES : EXPANDED_GRANULARITIES
-
-              granularities.each do |granularity|
+              granularities(metric_type).each do |granularity|
                 key = counter_key(prefix_key, granularity, timestamp)
                 expire_time = expire_time_for_granularity(granularity)
 
@@ -62,6 +60,10 @@ module ThreeScale
 
 
           protected
+
+          def granularities(metric_type)
+            metric_type == :service ? SERVICE_GRANULARITIES : EXPANDED_GRANULARITIES
+          end
 
           def store_key(cmd, key, value, expire_time = nil)
             storage.send(cmd, key, value)
