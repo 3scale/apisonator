@@ -30,6 +30,8 @@ module ThreeScale
           # @param [Symbol] cmd
           # @param [String, Nil] bucket_key
           def aggregate_values(value, timestamp, keys, cmd, bucket_key = nil)
+            keys_for_bucket = []
+
             keys.each do |metric_type, prefix_key|
               granularities(metric_type).each do |granularity|
                 key = counter_key(prefix_key, granularity, timestamp)
@@ -38,10 +40,12 @@ module ThreeScale
                 store_key(cmd, key, value, expire_time)
 
                 unless EXCLUDED_FOR_BUCKETS.include?(granularity)
-                  store_in_changed_keys(key, bucket_key)
+                  keys_for_bucket << key
                 end
               end
             end
+
+            store_in_changed_keys(keys_for_bucket, bucket_key)
           end
 
           # Return Redis command depending on raw_value.
@@ -83,9 +87,9 @@ module ThreeScale
             GRANULARITY_EXPIRATION_TIME[granularity]
           end
 
-          def store_in_changed_keys(key, bucket_key = nil)
+          def store_in_changed_keys(keys, bucket_key = nil)
             return unless bucket_key
-            storage.sadd(bucket_key, key)
+            storage.sadd(bucket_key, keys)
           end
 
         end
