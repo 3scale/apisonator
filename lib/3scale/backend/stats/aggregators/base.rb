@@ -4,9 +4,8 @@ module ThreeScale
       module Aggregators
         module Base
 
-          GRANULARITY_EXPIRATION_TIME = {
-            minute: 180,
-          }
+          GRANULARITY_EXPIRATION_TIME = { minute: 180 }.freeze
+          private_constant :GRANULARITY_EXPIRATION_TIME
 
           # Aggregates a value in a timestamp for all given keys using a specific
           # Redis command to store them. If a bucket_key is specified, each key will
