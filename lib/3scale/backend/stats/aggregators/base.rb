@@ -4,9 +4,21 @@ module ThreeScale
       module Aggregators
         module Base
 
-          GRANULARITY_EXPIRATION_TIME = {
-            minute: 180,
-          }
+          SERVICE_GRANULARITIES = [:eternity, :month, :week, :day, :hour].freeze
+          private_constant :SERVICE_GRANULARITIES
+
+          # For applications and users
+          EXPANDED_GRANULARITIES = (SERVICE_GRANULARITIES + [:year, :minute]).freeze
+          private_constant :EXPANDED_GRANULARITIES
+
+          GRANULARITY_EXPIRATION_TIME = { minute: 180 }.freeze
+          private_constant :GRANULARITY_EXPIRATION_TIME
+
+          # We are not going to send metrics with granularity 'eternity' or
+          # 'week' to Kinesis, so there is no point in storing them in Redis
+          # buckets.
+          EXCLUDED_FOR_BUCKETS = [:eternity, :week].freeze
+          private_constant :EXCLUDED_FOR_BUCKETS
 
           # Aggregates a value in a timestamp for all given keys using a specific
           # Redis command to store them. If a bucket_key is specified, each key will
@@ -14,23 +26,26 @@ module ThreeScale
           #
           # @param [Integer] value
           # @param [Time] timestamp
-          # @param [Array] keys  is an array of {(service|application) => "key"}
+          # @param [Array] keys array of {(service|application|user) => "key"}
           # @param [Symbol] cmd
           # @param [String, Nil] bucket_key
           def aggregate_values(value, timestamp, keys, cmd, bucket_key = nil)
-            service_granularities = [:eternity, :month, :week, :day, :hour]
-            expanded_granularities = service_granularities + [:year, :minute]
-            keys.each do |metric_type, prefix_key|
-              granularities = ( metric_type == :service) ? service_granularities : expanded_granularities
+            keys_for_bucket = []
 
-              granularities.each do |granularity|
+            keys.each do |metric_type, prefix_key|
+              granularities(metric_type).each do |granularity|
                 key = counter_key(prefix_key, granularity, timestamp)
                 expire_time = expire_time_for_granularity(granularity)
 
                 store_key(cmd, key, value, expire_time)
-                store_in_changed_keys(key, bucket_key)
+
+                unless EXCLUDED_FOR_BUCKETS.include?(granularity)
+                  keys_for_bucket << key
+                end
               end
             end
+
+            store_in_changed_keys(keys_for_bucket, bucket_key)
           end
 
           # Return Redis command depending on raw_value.
@@ -59,6 +74,10 @@ module ThreeScale
 
           protected
 
+          def granularities(metric_type)
+            metric_type == :service ? SERVICE_GRANULARITIES : EXPANDED_GRANULARITIES
+          end
+
           def store_key(cmd, key, value, expire_time = nil)
             storage.send(cmd, key, value)
             storage.expire(key, expire_time) if expire_time
@@ -68,9 +87,9 @@ module ThreeScale
             GRANULARITY_EXPIRATION_TIME[granularity]
           end
 
-          def store_in_changed_keys(key, bucket_key = nil)
+          def store_in_changed_keys(keys, bucket_key = nil)
             return unless bucket_key
-            storage.sadd(bucket_key, key)
+            storage.sadd(bucket_key, keys)
           end
 
         end
