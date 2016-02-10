@@ -20,7 +20,7 @@ module ThreeScale
           #
           # @param [Integer] value
           # @param [Time] timestamp
-          # @param [Array] keys  is an array of {(service|application) => "key"}
+          # @param [Array] keys array of {(service|application|user) => "key"}
           # @param [Symbol] cmd
           # @param [String, Nil] bucket_key
           def aggregate_values(value, timestamp, keys, cmd, bucket_key = nil)
