@@ -61,8 +61,15 @@ module ThreeScale
           key
         end
 
+        # We want all the buckets to go to the same Redis shard.
+        # The reason is that SUNION support in Twemproxy requires that the
+        # supplied keys hash to the same server.
+        # We are already using a hash tag in the Twemproxy config file: "{}".
+        # For that reason, if we specify a key that contains something like
+        # "{stats_bucket}", we can be sure that all of them will be in the same
+        # shard.
         def changed_keys_bucket_key(bucket)
-          "keys_changed:#{bucket}"
+          "{stats_bucket}:#{bucket}"
         end
 
         def changed_keys_key

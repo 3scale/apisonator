@@ -213,12 +213,12 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       timestamp += stats_bucket_size
     end
 
-    assert_equal 5, @storage.keys('keys_changed:*').size
+    assert_equal 5, @storage.keys('{stats_bucket}:*').size
     assert_equal 5, Stats::Info.pending_buckets.size
 
     Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!(silent: true)
 
-    assert_equal 0, @storage.keys('keys_changed:*').size
+    assert_equal 0, @storage.keys('{stats_bucket}:*').size
     assert_equal 0, Stats::Info.pending_buckets.size
   end
 
@@ -242,5 +242,15 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     assert ttl >  0
     assert ttl <= 180
+  end
+
+  test 'process does not open a new stats buckets & writes log when the limit has been exceeded' do
+    Stats::Info.expects(:pending_buckets_size)
+        .returns(Stats::Aggregator.const_get(:MAX_BUCKETS) + 1)
+
+    Stats::Aggregator.expects(:prepare_stats_buckets).never
+    Backend.logger.expects(:info).with(Stats::Aggregator.const_get(:MAX_BUCKETS_CREATED_MSG))
+
+    Stats::Aggregator.process([default_transaction])
   end
 end

@@ -64,6 +64,10 @@ require '3scale/backend/event_storage'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
 
+require '3scale/backend/stats/send_to_kinesis'
+
+require '3scale/backend/stats/send_to_kinesis_job'
+
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
   PIPELINED_SLICE_SIZE = 400
@@ -99,6 +103,16 @@ module ThreeScale
       ## this means that there will be a NotifyJob for every X notifications (this is
       ## the call to master)
       config.notification_batch = 10000
+
+      # This setting controls whether the listener can create event buckets in
+      # Redis. We do not want all the listeners creating buckets yet, as we do
+      # not know exactly the rate at which we can send events to Kinesis
+      # without problems.
+      # By default, we will allow creating buckets in any environment that is
+      # not 'production'.
+      # Notice that in order to create buckets, you also need to execute this
+      # rake task: stats:panic_mode:enable_storage_stats.
+      config.can_create_event_buckets = !production?
 
       # Load configuration from a file.
       config.load!

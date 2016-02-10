@@ -1,6 +1,7 @@
 require '3scale/backend/cache'
 require '3scale/backend/stats/storage'
 require '3scale/backend/stats/keys'
+require '3scale/backend/stats/info'
 require '3scale/backend/application_events'
 require '3scale/backend/transaction'
 require '3scale/backend/stats/aggregators/response_code'
@@ -10,6 +11,22 @@ module ThreeScale
   module Backend
     module Stats
       class Aggregator
+        # We need to limit the number of buckets stored in the system.
+        # The reason is that our Redis can grow VERY quickly if we start
+        # creating buckets and we never delete them.
+        # When the max defined is reached, I simply disable the option
+        # to save the stats keys in buckets. Yes, we will lose data,
+        # but that is better than the alternative. We will try to find
+        # a better alternative once we cannot afford to lose data.
+        # Right now, we are just deleting the stats keys with
+        # period = minute, so we can restore everything else.
+        MAX_BUCKETS = 60
+        private_constant :MAX_BUCKETS
+
+        MAX_BUCKETS_CREATED_MSG =
+            'Bucket creation has been disabled. Max number of stats buckets reached'.freeze
+        private_constant :MAX_BUCKETS_CREATED_MSG
+
         class << self
           include Backend::StorageKeyHelpers
           include Configurable
@@ -20,7 +37,10 @@ module ThreeScale
           def process(transactions)
             current_bucket = nil
 
-            if Storage.enabled?
+            if buckets_limit_exceeded?
+              Storage.disable!
+              log_bucket_creation_disabled
+            elsif configuration.can_create_event_buckets && Storage.enabled?
               current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
               prepare_stats_buckets(current_bucket)
             end
@@ -104,6 +124,14 @@ module ThreeScale
                 :service_id        => transaction.service_id,
               },
             }
+          end
+
+          def buckets_limit_exceeded?
+            Info.pending_buckets_size > MAX_BUCKETS
+          end
+
+          def log_bucket_creation_disabled
+            Backend.logger.info(MAX_BUCKETS_CREATED_MSG)
           end
         end
       end
