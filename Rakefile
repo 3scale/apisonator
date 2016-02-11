@@ -143,7 +143,11 @@ namespace :stats do
 
     desc 'Enable stats batch processing on storage stats'
     task :enable_storage_stats => :environment do
-      puts ThreeScale::Backend::Stats::Storage.enable!
+      if ThreeScale::Backend::Stats::SendToKinesis.enabled?
+        puts ThreeScale::Backend::Stats::Storage.enable!
+      else
+        puts 'Error: enable Kinesis first. Otherwise, buckets will start accumulating in Redis.'
+      end
     end
   end
 
@@ -175,7 +179,11 @@ namespace :stats do
 
     desc 'Disable sending to Kinesis'
     task :disable => :environment do
-      puts ThreeScale::Backend::Stats::SendToKinesis.disable
+      if ThreeScale::Backend::Stats::Storage.enabled?
+        puts 'Error: disable bucket creation first. Otherwise, they will start accumulating.'
+      else
+        puts ThreeScale::Backend::Stats::SendToKinesis.disable
+      end
     end
 
     desc 'Schedule one job to send all pending events to Kinesis'
