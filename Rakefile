@@ -131,23 +131,23 @@ end
 
 namespace :stats do
   namespace :buckets do
-    desc 'Number of stats buckets active in Redis'
-    task :buckets_size => :environment do
+    desc 'Show number of pending buckets'
+    task :size => :environment do
       puts ThreeScale::Backend::Stats::Info.pending_buckets_size
     end
 
-    desc 'Number of keys in each stats bucket in Redis'
-    task :buckets_info => :environment do
+    desc 'List pending buckets and their contents'
+    task :list => :environment do
       puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
     end
 
-    desc 'Is storage stats batch processing enabled?'
-    task :storage_stats_enabled? => :environment do
+    desc 'Is bucket storage enabled?'
+    task :enabled? => :environment do
       puts ThreeScale::Backend::Stats::Storage.enabled?
     end
 
-    desc 'Enable stats batch processing on storage stats'
-    task :enable_storage_stats => :environment do
+    desc 'Enable bucket storage'
+    task :enable => :environment do
       if ThreeScale::Backend::Stats::SendToKinesis.enabled?
         puts ThreeScale::Backend::Stats::Storage.enable!
       else
@@ -155,13 +155,13 @@ namespace :stats do
       end
     end
 
-    desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
-    task :disable_storage_stats => :environment do
+    desc 'Disable bucket storage'
+    task :disable! => :environment do
       puts ThreeScale::Backend::Stats::Storage.disable!
     end
 
-    desc '!!! Delete all time buckets and keys after disabling storage stats'
-    task :delete_all_buckets_and_keys => :environment do
+    desc 'Delete all the pending buckets'
+    task :delete! => :environment do
       puts ThreeScale::Backend::Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!
     end
   end
@@ -187,7 +187,7 @@ namespace :stats do
     end
 
     desc 'Schedule one job to send all pending events to Kinesis'
-    task :send_to_kinesis => :environment do
+    task :send => :environment do
       puts ThreeScale::Backend::Stats::SendToKinesis.schedule_job
     end
 
