@@ -45,6 +45,19 @@ module ThreeScale
           storage.zremrangebyscore(Keys.changed_keys_key, 0, last_bucket)
         end
 
+        def delete_all_buckets_and_keys(options = {})
+          Storage.disable!
+
+          all_buckets.each do |bucket|
+            keys = storage.smembers(Keys.changed_keys_bucket_key(bucket))
+            unless options[:silent] == true
+              puts "Deleting bucket: #{bucket}, containing #{keys.size} keys"
+            end
+            storage.del(Keys.changed_keys_bucket_key(bucket))
+          end
+          storage.del(Keys.changed_keys_key)
+        end
+
         def all_buckets
           storage.zrange(Keys.changed_keys_key, 0, -1)
         end

@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
-require_relative '../../lib/3scale/backend/stats/tasks'
 
 class AggregatorStorageStatsTest < Test::Unit::TestCase
   include TestHelpers::StorageKeys
@@ -216,7 +215,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal 5, @storage.keys('{stats_bucket}:*').size
     assert_equal 5, Stats::Info.pending_buckets.size
 
-    Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!(silent: true)
+    Stats::BucketStorage.new(@storage).delete_all_buckets_and_keys(silent: true)
 
     assert_equal 0, @storage.keys('{stats_bucket}:*').size
     assert_equal 0, Stats::Info.pending_buckets.size

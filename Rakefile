@@ -12,7 +12,6 @@ load 'lib/3scale/tasks/cubert.rake'
 
 task :environment do
   require '3scale/backend'
-  require '3scale/backend/stats/tasks'
 end
 
 def testable_environment?
@@ -162,7 +161,9 @@ namespace :stats do
 
     desc 'Delete all the pending buckets'
     task :delete! => :environment do
-      puts ThreeScale::Backend::Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!
+      puts ThreeScale::Backend::Stats::BucketStorage
+               .new(ThreeScale::Backend::Storage.instance)
+               .delete_all_buckets_and_keys
     end
   end
 
