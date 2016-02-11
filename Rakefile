@@ -56,7 +56,7 @@ if testable_environment?
   desc 'Generate API request documentation from API specs'
   RSpec::Core::RakeTask.new('docs:generate') do |t|
     t.pattern = 'spec/acceptance/**/*_spec.rb'
-    t.rspec_opts = ["--format RspecApiDocumentation::ApiFormatter"]
+    t.rspec_opts = ['--format RspecApiDocumentation::ApiFormatter']
   end
 
   desc 'Tag and push the current version'
@@ -69,18 +69,18 @@ if testable_environment?
     end
 
     task :push do
-      system "git push --tags"
+      system 'git push --tags'
     end
   end
 
   desc 'Seed, put info into redis using data/postfile3, plan :default'
   task :seed do
-    system "ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3"
+    system 'ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3'
   end
 
   desc 'Seed, put info into redis using data/postfile3, plan :user'
   task :seed_user do
-    system "ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3"
+    system 'ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3'
   end
 
   desc 'Start the backend server in development'
@@ -90,17 +90,17 @@ if testable_environment?
 
   desc 'Start a backend_worker in development'
   task :start_worker do
-    system "ruby -Ilib bin/3scale_backend_worker_no_daemon"
+    system 'ruby -Ilib bin/3scale_backend_worker_no_daemon'
   end
 
   desc 'Stop a backend_worker in development'
   task :stop_worker do
-    system "ruby -Ilib bin/3scale_backend_worker stop"
+    system 'ruby -Ilib bin/3scale_backend_worker stop'
   end
 
   desc 'Restart a backend_worker in development'
   task :restart_worker do
-    system "ruby -Ilib bin/3scale_backend_worker restart"
+    system 'ruby -Ilib bin/3scale_backend_worker restart'
   end
 end
 
