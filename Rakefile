@@ -56,7 +56,7 @@ if testable_environment?
   desc 'Generate API request documentation from API specs'
   RSpec::Core::RakeTask.new('docs:generate') do |t|
     t.pattern = 'spec/acceptance/**/*_spec.rb'
-    t.rspec_opts = ["--format RspecApiDocumentation::ApiFormatter"]
+    t.rspec_opts = ['--format RspecApiDocumentation::ApiFormatter']
   end
 
   desc 'Tag and push the current version'
@@ -69,18 +69,18 @@ if testable_environment?
     end
 
     task :push do
-      system "git push --tags"
+      system 'git push --tags'
     end
   end
 
   desc 'Seed, put info into redis using data/postfile3, plan :default'
   task :seed do
-    system "ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3"
+    system 'ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3'
   end
 
   desc 'Seed, put info into redis using data/postfile3, plan :user'
   task :seed_user do
-    system "ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3"
+    system 'ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3'
   end
 
   desc 'Start the backend server in development'
@@ -90,17 +90,17 @@ if testable_environment?
 
   desc 'Start a backend_worker in development'
   task :start_worker do
-    system "ruby -Ilib bin/3scale_backend_worker_no_daemon"
+    system 'ruby -Ilib bin/3scale_backend_worker_no_daemon'
   end
 
   desc 'Stop a backend_worker in development'
   task :stop_worker do
-    system "ruby -Ilib bin/3scale_backend_worker stop"
+    system 'ruby -Ilib bin/3scale_backend_worker stop'
   end
 
   desc 'Restart a backend_worker in development'
   task :restart_worker do
-    system "ruby -Ilib bin/3scale_backend_worker restart"
+    system 'ruby -Ilib bin/3scale_backend_worker restart'
   end
 end
 
@@ -130,36 +130,40 @@ namespace :cache do
 end
 
 namespace :stats do
-  namespace :panic_mode do
-    desc '!!! Delete all time buckets and keys after disabling storage stats'
-    task :delete_all_buckets_and_keys => :environment do
-      puts ThreeScale::Backend::Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!
+  namespace :buckets do
+    desc 'Show number of pending buckets'
+    task :size => :environment do
+      puts ThreeScale::Backend::Stats::Info.pending_buckets_size
     end
 
-    desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
-    task :disable_storage_stats => :environment do
+    desc 'List pending buckets and their contents'
+    task :list => :environment do
+      puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
+    end
+
+    desc 'Is bucket storage enabled?'
+    task :enabled? => :environment do
+      puts ThreeScale::Backend::Stats::Storage.enabled?
+    end
+
+    desc 'Enable bucket storage'
+    task :enable => :environment do
+      if ThreeScale::Backend::Stats::SendToKinesis.enabled?
+        puts ThreeScale::Backend::Stats::Storage.enable!
+      else
+        puts 'Error: enable Kinesis first. Otherwise, buckets will start accumulating in Redis.'
+      end
+    end
+
+    desc 'Disable bucket storage'
+    task :disable! => :environment do
       puts ThreeScale::Backend::Stats::Storage.disable!
     end
 
-    desc 'Enable stats batch processing on storage stats'
-    task :enable_storage_stats => :environment do
-      puts ThreeScale::Backend::Stats::Storage.enable!
+    desc 'Delete all the pending buckets'
+    task :delete! => :environment do
+      puts ThreeScale::Backend::Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!
     end
-  end
-
-  desc 'Number of stats buckets active in Redis'
-  task :buckets_size => :environment do
-    puts ThreeScale::Backend::Stats::Info.pending_buckets_size
-  end
-
-  desc 'Number of keys in each stats bucket in Redis'
-  task :buckets_info => :environment do
-    puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
-  end
-
-  desc 'Is storage stats batch processing enabled?'
-  task :storage_stats_enabled? => :environment do
-    puts ThreeScale::Backend::Stats::Storage.enabled?
   end
 
   namespace :kinesis do
@@ -175,11 +179,15 @@ namespace :stats do
 
     desc 'Disable sending to Kinesis'
     task :disable => :environment do
-      puts ThreeScale::Backend::Stats::SendToKinesis.disable
+      if ThreeScale::Backend::Stats::Storage.enabled?
+        puts 'Error: disable bucket creation first. Otherwise, they will start accumulating.'
+      else
+        puts ThreeScale::Backend::Stats::SendToKinesis.disable
+      end
     end
 
     desc 'Schedule one job to send all pending events to Kinesis'
-    task :send_to_kinesis => :environment do
+    task :send => :environment do
       puts ThreeScale::Backend::Stats::SendToKinesis.schedule_job
     end
 
