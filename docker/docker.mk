@@ -4,6 +4,10 @@
 # DOCKER_PROJECT_PATH = path to project's root inside Docker
 # RUBY_VERSION = the Ruby version to build the image with
 #
+# Optionally overrideable:
+# DOCKERFILE_WAIT_PROGRAM = Program receiving as first argument a Dockerfile and
+# waiting for it to be accessed. This should work like Linux's inotify.
+#
 DOCKERFILE := $(shell mktemp -u -p $(PROJECT_PATH) Dockerfile_$(RUBY_VERSION)_XXXXXXXXXX)
 DOCKER_REPO := quay.io/3scale/docker
 DOCKER_BASE_IMG := dev-backend-$(RUBY_VERSION)
@@ -12,6 +16,23 @@ DOCKER_EXTRA_VOLUMES := -v $(PROJECT_PATH):$(DOCKER_PROJECT_PATH)
 
 RUN = docker run
 RUN_RM = $(RUN) --rm
+
+# Set this to your own program that waits until a Dockerfile specified as
+# argument is fully read. inotifywait works in Linux unless a docker used mmap.
+DOCKERFILE_WAIT_PROGRAM := $(shell command -v inotifywait && \
+	echo "$(command -v inotifywait) -qq -e access -t $(DOCKERFILE_MAXWAIT_SECS)")
+
+ifndef DOCKERFILE_WAIT_PROGRAM
+define docker_wait_until_read_dockerfile
+	(test $$(uname -s) = 'Linux' && \
+		echo '*** Install inotify-tools to better handle tmp Dockerfiles' >&2; \
+		sleep $2)
+endef
+else
+define docker_wait_until_read_dockerfile
+	($(DOCKERFILE_WAIT_PROGRAM) $1)
+endef
+endif
 
 define docker_build_dockerfile
 	sed -e 's/\$${RUBY_VERSION}/$(RUBY_VERSION)/g' $(PROJECT_PATH)/Dockerfile > $(DOCKERFILE)
