@@ -130,15 +130,20 @@ namespace :cache do
 end
 
 namespace :stats do
-  namespace :panic_mode do
-    desc '!!! Delete all time buckets and keys after disabling storage stats'
-    task :delete_all_buckets_and_keys => :environment do
-      puts ThreeScale::Backend::Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!
+  namespace :buckets do
+    desc 'Number of stats buckets active in Redis'
+    task :buckets_size => :environment do
+      puts ThreeScale::Backend::Stats::Info.pending_buckets_size
     end
 
-    desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
-    task :disable_storage_stats => :environment do
-      puts ThreeScale::Backend::Stats::Storage.disable!
+    desc 'Number of keys in each stats bucket in Redis'
+    task :buckets_info => :environment do
+      puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
+    end
+
+    desc 'Is storage stats batch processing enabled?'
+    task :storage_stats_enabled? => :environment do
+      puts ThreeScale::Backend::Stats::Storage.enabled?
     end
 
     desc 'Enable stats batch processing on storage stats'
@@ -149,21 +154,16 @@ namespace :stats do
         puts 'Error: enable Kinesis first. Otherwise, buckets will start accumulating in Redis.'
       end
     end
-  end
 
-  desc 'Number of stats buckets active in Redis'
-  task :buckets_size => :environment do
-    puts ThreeScale::Backend::Stats::Info.pending_buckets_size
-  end
+    desc 'Disable stats batch processing on storage stats. Stops saving to storage stats and to redis'
+    task :disable_storage_stats => :environment do
+      puts ThreeScale::Backend::Stats::Storage.disable!
+    end
 
-  desc 'Number of keys in each stats bucket in Redis'
-  task :buckets_info => :environment do
-    puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
-  end
-
-  desc 'Is storage stats batch processing enabled?'
-  task :storage_stats_enabled? => :environment do
-    puts ThreeScale::Backend::Stats::Storage.enabled?
+    desc '!!! Delete all time buckets and keys after disabling storage stats'
+    task :delete_all_buckets_and_keys => :environment do
+      puts ThreeScale::Backend::Stats::Tasks.delete_all_buckets_and_keys_only_as_rake!
+    end
   end
 
   namespace :kinesis do
