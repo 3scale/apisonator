@@ -13,7 +13,7 @@ module ThreeScale
       # Currently, the Aggregator class is responsible for creating the
       # buckets, but we would like to change that in a future refactoring.
       class BucketStorage
-        KEYS_SLICE_CALL_TO_REDIS = 1000
+        KEYS_SLICE_CALL_TO_REDIS = 200
         private_constant :KEYS_SLICE_CALL_TO_REDIS
 
         # If we have not read buckets for a long time, we might deal with lots
