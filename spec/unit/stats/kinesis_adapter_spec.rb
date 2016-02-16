@@ -496,6 +496,25 @@ module ThreeScale
           end
         end
 
+        describe '#num_pending_events' do
+          context 'when there are no pending events' do
+            it 'returns 0' do
+              expect(subject.num_pending_events).to be_zero
+            end
+          end
+
+          context 'when there are some pending events' do
+            let(:num_events) { 2 }
+            let(:events) { generate_unique_events(num_events) }
+
+            before { subject.send(:store_pending_events, events) }
+
+            it 'returns the number of pending events' do
+              expect(subject.num_pending_events).to eq num_events
+            end
+          end
+        end
+
         # The events that we use in these tests need to be unique. Using
         # identical events has undesirable effects. For example, Redis stores
         # failed events in a set. If we generate N unique events and all of
