@@ -109,6 +109,20 @@ module ThreeScale
             end
           end
         end
+
+        describe '.num_pending_events' do
+          let(:kinesis_adapter) { double }
+          let(:pending_events) { 2 }
+
+          before do
+            allow(subject).to receive(:kinesis_adapter).and_return kinesis_adapter
+            allow(kinesis_adapter).to receive(:num_pending_events).and_return pending_events
+          end
+
+          it 'return the number of pending events' do
+            expect(subject.num_pending_events).to eq pending_events
+          end
+        end
       end
     end
   end

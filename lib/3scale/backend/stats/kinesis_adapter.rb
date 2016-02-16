@@ -83,6 +83,10 @@ module ThreeScale
           events_to_flush.size - failed_events.size
         end
 
+        def num_pending_events
+          storage.scard(KINESIS_PENDING_EVENTS_KEY)
+        end
+
         private
 
         attr_reader :stream_name, :kinesis_client, :storage

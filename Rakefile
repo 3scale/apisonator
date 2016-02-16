@@ -196,7 +196,12 @@ namespace :stats do
     # been sent to Kinesis for one of the following reasons:
     #   1) There was an error while sending them to Kinesis.
     #   2) There were not enough events to send a whole batch.
-    desc 'Send pending events to Kinesis - events that were read from the buckets, but not sent'
+    desc 'Count number of pending events - were read from the buckets, but not sent'
+    task :pending_events => :environment do
+      puts ThreeScale::Backend::Stats::SendToKinesis.num_pending_events
+    end
+
+    desc 'Send pending events to Kinesis'
     task :flush, [:limit] => :environment do |_, args|
       limit = args.limit ? args.limit.to_i : nil
       puts ThreeScale::Backend::Stats::SendToKinesis.flush_pending_events(limit)
