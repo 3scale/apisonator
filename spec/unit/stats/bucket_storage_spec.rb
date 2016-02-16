@@ -127,6 +127,37 @@ module ThreeScale
           end
         end
 
+        describe '#delete_all_buckets_and_keys' do
+          let(:buckets) { %w(20150101000000 20150101000010) }
+          let(:event_keys) do # One event in each bucket
+            ['stats/{service:11}/metric:21/day:20151207',
+             'stats/{service:11}/metric:21/day:20151208']
+          end
+
+          before do
+            buckets.each_with_index do |bucket, index|
+              subject.put_in_bucket(event_keys[index], bucket)
+            end
+          end
+
+          it 'disables the bucket storage' do
+            Storage.enable!
+            subject.delete_all_buckets_and_keys(silent: true)
+            Memoizer.reset! # Needed because Storage.enabled? is memoized
+            expect(Storage.enabled?).to be false
+          end
+
+          it 'deletes all the buckets from the set of buckets' do
+            subject.delete_all_buckets_and_keys(silent: true)
+            expect(subject.all_buckets).to be_empty
+          end
+
+          it 'deletes the contents of all the buckets' do
+            subject.delete_all_buckets_and_keys(silent: true)
+            expect(subject.buckets_content_with_values(buckets)).to be_empty
+          end
+        end
+
         describe '#all_buckets' do
           context 'when there are no buckets' do
             it 'returns an empty list' do
