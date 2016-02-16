@@ -70,6 +70,10 @@ module ThreeScale
             flushed_events
           end
 
+          def num_pending_events
+            kinesis_adapter.num_pending_events
+          end
+
           # To be called by a kinesis job once it exits so other jobs can run
           def job_finished(lock_key)
             if storage.get(JOB_RUNNING_KEY) == lock_key
