@@ -50,7 +50,7 @@ module ThreeScale
 
           all_buckets.each do |bucket|
             keys = storage.smembers(Keys.changed_keys_bucket_key(bucket))
-            unless options[:silent] == true
+            unless options[:silent]
               puts "Deleting bucket: #{bucket}, containing #{keys.size} keys"
             end
             storage.del(Keys.changed_keys_bucket_key(bucket))
