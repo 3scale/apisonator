@@ -79,8 +79,15 @@ module ThreeScale
       def reserve
         @queues ||= QUEUES.map { |q| "queue:#{q}" }
         stuff = redis.blpop(*@queues, timeout: redis_timeout)
-
-        !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
+        begin
+          !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
+        rescue Resque::Helpers::DecodeException
+          nil
+          # If the DecodeException is not rescued, the worker crashes.
+          # This is a quick fix to avoid a disaster. Find a proper fix later.
+          # Log the problematic jobs, Airbrake them, put them in a different
+          # queue, but do not crash or ignore them.
+        end
       end
 
       def perform(job)
