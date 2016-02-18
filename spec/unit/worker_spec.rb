@@ -1,7 +1,6 @@
 module ThreeScale
   module Backend
     describe Worker do
-
       # It is a private method, I know, but it was causing an important bug
       # (workers crashing when decoding non-utf8 arguments for jobs), so it
       # makes sense to test it.
