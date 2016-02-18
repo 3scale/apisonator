@@ -47,9 +47,6 @@ module ThreeScale
       def work
         register_worker
 
-        ## there is some corner cases in which the job would blow and not go to resque:failed,
-        ## for instance if the data contained unprocessable data. For those cases a begin rescue
-        ## can be added to the outer loop. Param issues with enconding were solved like this.
         loop do
           break if @shutdown
 
