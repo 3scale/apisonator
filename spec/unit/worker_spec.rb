@@ -15,7 +15,7 @@ module ThreeScale
               'args' => ['100',
                          { '0' => { 'app_id' => '123', 'usage' => { 'hits' => 1 } } },
                          1455783230,
-                         {  }] }
+                         { }] }
           end
 
           let(:job_info) { [resque_queue, subject.encode(enqueued_job)] }
@@ -32,12 +32,13 @@ module ThreeScale
         end
 
         context 'when the arguments of the job contain non-valid UTF8 characters' do
+          let(:log_invalid_encoding) { { 'log' => "\xf0\x90\x28\xbc" } }
           let(:enqueued_job) do
             { 'class' => 'ThreeScale::Backend::Transactor::ReportJob',
               'args' => ['100',
                          { '0' => { 'app_id' => '123', 'usage' => { 'hits' => 1 } } },
                          1455783230,
-                         { 'log' => "\xf0\x90\x28\xbc" }] }
+                         log_invalid_encoding] }
           end
 
           let(:job_info) { [resque_queue, subject.encode(enqueued_job)] }
