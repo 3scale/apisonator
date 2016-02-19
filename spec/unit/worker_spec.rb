@@ -48,7 +48,35 @@ module ThreeScale
           end
 
           it 'returns nil' do
-            expect(subject.send(:reserve)).to be_nil
+            expect(subject.send(:reserve)).to be nil
+          end
+        end
+
+        context 'when the object we get from Resque queue is nil' do
+          before { allow(subject.redis).to receive(:blpop).and_return(nil) }
+
+          it 'returns nil' do
+            expect(subject.send(:reserve)).to be nil
+          end
+        end
+
+        context 'when the object we get from the Resque queue is empty' do
+          before { allow(subject.redis).to receive(:blpop).and_return([]) }
+
+          it 'returns nil' do
+            expect(subject.send(:reserve)).to be nil
+          end
+        end
+
+        context 'when the object we get from the Resque queue is not a well-formed JSON' do
+          let(:invalid_enqueued_job) { [resque_queue, '{}}'] }
+
+          before do
+            allow(subject.redis).to receive(:blpop).and_return(invalid_enqueued_job)
+          end
+
+          it 'returns nil' do
+            expect(subject.send(:reserve)).to be nil
           end
         end
       end
