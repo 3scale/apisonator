@@ -75,12 +75,13 @@ module ThreeScale
 
       def reserve
         @queues ||= QUEUES.map { |q| "queue:#{q}" }
-        stuff = redis.blpop(*@queues, timeout: redis_timeout)
+        encoded_job = redis.blpop(*@queues, timeout: redis_timeout)
 
-        return nil if stuff.nil? || stuff.empty?
+        return nil if encoded_job.nil? || encoded_job.empty?
 
         begin
-          Resque::Job.new(stuff[0], Yajl::Parser.parse(stuff[1], check_utf8: false))
+          Resque::Job.new(encoded_job[0],
+                          Yajl::Parser.parse(encoded_job[1], check_utf8: false))
         rescue Yajl::ParseError => e
           Airbrake.notify(e) # To know if we are storing bad data in Resque
           nil
