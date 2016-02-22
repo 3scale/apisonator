@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.homepage    = 'http://www.3scale.net'
   s.summary     = '3scale web service management system backend'
   s.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'
-  s.license     = 'Propietary'
+  s.license     = 'Proprietary'
 
   s.required_ruby_version     = ">= 2.1.0"
   s.required_rubygems_version = ">= 1.3.7"
