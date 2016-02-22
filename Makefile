@@ -13,6 +13,13 @@ NAME = $(subst @,,$(PROJECT))-build_$(RUBY_VERSION)
 DEV_NAME := dev_$(PROJECT)_$(RUBY_VERSION)
 DOCKER_PROJECT_PATH := /home/$(RUBY_USER)/$(PROJECT)
 
+# Sleep at most this much before giving up on docker reading Dockerfile
+# This is used because currently we generate the final form of the Dockerfile on
+# the fly, and we don't want to have them lying around or really hitting the
+# disk. This hack should be removed if at any point Docker is able to properly
+# support STDIN-fed Dockerfiles.
+DOCKERFILE_MAXWAIT_SECS := 15
+
 .PHONY: all bash build build_test clean default dev devclean pull show_bench test
 
 default: | clean test show_bench
@@ -21,9 +28,11 @@ include $(PROJECT_PATH)/docker/docker.mk
 
 # this is used to build our image
 define build_dockerfile
-	($(call docker_build_dockerfile)) && \
-		(sleep 8 && rm -f $(DOCKERFILE) &) && \
-		($(call docker_build, $(PROJECT):$(RUBY_VERSION), -f $(DOCKERFILE), $(PROJECT_PATH)))
+	($(call docker_build_dockerfile) && \
+		((($(call docker_wait_until_read_dockerfile, $(DOCKERFILE), $(DOCKERFILE_MAXWAIT_SECS)) || \
+		echo '*** Docker appears to be TOO SLOW. Maybe use a higher timeout?' >&2) ; \
+		echo '*** Removing tmp Dockerfile' >&2; rm -f $(DOCKERFILE)) &) && \
+		$(call docker_build, $(PROJECT):$(RUBY_VERSION), -f $(DOCKERFILE), $(PROJECT_PATH)))
 endef
 
 pull:
