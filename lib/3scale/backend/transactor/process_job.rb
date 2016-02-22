@@ -7,9 +7,8 @@ module ThreeScale
 
       ## WARNING: This is not a resque job, the .perform is called by another
       ## job, either Report or NotifyJob it's meant to be like this in case we
-      ## want to deatach it further
+      ## want to detach it further
       class ProcessJob
-        # @queue = :main
 
         class << self
           def perform(transactions, options = {})
@@ -23,14 +22,12 @@ module ThreeScale
           def preprocess(transactions)
             transactions.map do |transaction_attrs|
               transaction = Transaction.new(transaction_attrs)
-
-              ## check if the timestamps is within accepted range
               transaction.ensure_on_time!
-
               transaction
             end
           end
         end
+
       end
     end
   end
