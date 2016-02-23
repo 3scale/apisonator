@@ -75,15 +75,19 @@ module ThreeScale
 
       def reserve
         @queues ||= QUEUES.map { |q| "queue:#{q}" }
-        stuff = redis.blpop(*@queues, timeout: redis_timeout)
+        encoded_job = redis.blpop(*@queues, timeout: redis_timeout)
+
+        return nil if encoded_job.nil? || encoded_job.empty?
+
         begin
-          !stuff.nil? && !stuff.empty? && Resque::Job.new(stuff[0], decode(stuff[1]))
-        rescue Resque::Helpers::DecodeException
+          Resque::Job.new(encoded_job[0],
+                          Yajl::Parser.parse(encoded_job[1], check_utf8: false))
+        rescue Exception => e
+          # I think that the only exception that can be raised here is
+          # Yajl::ParseError. However, this is a critical part of the code so
+          # we will capture all of them just to be safe.
+          Airbrake.notify(e)
           nil
-          # If the DecodeException is not rescued, the worker crashes.
-          # This is a quick fix to avoid a disaster. Find a proper fix later.
-          # Log the problematic jobs, Airbrake them, put them in a different
-          # queue, but do not crash or ignore them.
         end
       end
 
