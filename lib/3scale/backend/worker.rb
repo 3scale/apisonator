@@ -82,8 +82,11 @@ module ThreeScale
         begin
           Resque::Job.new(encoded_job[0],
                           Yajl::Parser.parse(encoded_job[1], check_utf8: false))
-        rescue Yajl::ParseError => e
-          Airbrake.notify(e) # To know if we are storing bad data in Resque
+        rescue Exception => e
+          # I think that the only exception that can be raised here is
+          # Yajl::ParseError. However, this is a critical part of the code so
+          # we will capture all of them just to be safe.
+          Airbrake.notify(e)
           nil
         end
       end
