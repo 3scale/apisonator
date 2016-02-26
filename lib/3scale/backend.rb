@@ -112,7 +112,7 @@ module ThreeScale
       # By default, we will allow creating buckets in any environment that is
       # not 'production'.
       # Notice that in order to create buckets, you also need to execute this
-      # rake task: stats:panic_mode:enable_storage_stats.
+      # rake task: stats:buckets:enable
       config.can_create_event_buckets = !production?
 
       # Load configuration from a file.
