@@ -96,6 +96,7 @@ module ThreeScale
       config.add_section(:hoptoad, :api_key)
       config.add_section(:stats, :bucket_size)
       config.add_section(:cubert, :host)
+      config.add_section(:redshift, :host, :port, :dbname, :user, :password)
 
       # Default config
       config.master_service_id  = 1
