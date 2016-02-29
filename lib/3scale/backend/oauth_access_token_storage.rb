@@ -116,10 +116,10 @@ module ThreeScale
           results
         end
 
-        def get_app_id(service_id, token, user_id)
-          app_id = get_app_for_key(token_key(service_id, token), user_id)
+        def get_app_id(service_id, token)
+          app_id = get_app_for_key(token_key(service_id, token), nil)
           raise AccessTokenInvalid, token if app_id.nil?
-          app_id
+          [app_id, nil]
         end
 
         # triggered by Application deletion (maybe User deletion too)

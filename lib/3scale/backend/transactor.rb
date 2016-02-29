@@ -103,7 +103,7 @@ module ThreeScale
           if app_id.nil? or app_id.empty?
             access_token = params[:access_token]
             raise ApplicationNotFound.new(app_id) if access_token.nil? or access_token.empty?
-            app_id = OAuthAccessTokenStorage.get_app_id(service.id, access_token, user_id)
+            app_id, _user_id = OAuthAccessTokenStorage.get_app_id(service.id, access_token)
           end
           validators = OAUTH_VALIDATORS
         else

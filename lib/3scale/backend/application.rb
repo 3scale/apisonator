@@ -177,7 +177,7 @@ module ThreeScale
             app_id = load_id_by_key(service_id, user_key)
             raise UserKeyInvalid, user_key if app_id.nil?
           elsif access_token
-            app_id = OAuthAccessTokenStorage.get_app_id service_id, access_token, user_id
+            app_id, _user_id = OAuthAccessTokenStorage.get_app_id service_id, access_token
           else
             raise ApplicationNotFound
           end

@@ -38,7 +38,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                                                              :token => @access_token,
                                                              :ttl => 60
     assert_equal 200, last_response.status
-    assert_equal @application.id, OAuthAccessTokenStorage.get_app_id(@service.id, @access_token, nil)
+    assert_equal [@application.id, nil], OAuthAccessTokenStorage.get_app_id(@service.id, @access_token)
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
@@ -46,7 +46,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                                                              :user_id => @user.username,
                                                              :ttl => 60
     assert_equal 200, last_response.status
-    assert_equal @application.id, OAuthAccessTokenStorage.get_app_id(@service.id, @access_token_user, @user.username)
+    assert_equal [@application.id, nil], OAuthAccessTokenStorage.get_app_id(@service.id, @access_token_user)
   end
 
   test 'successful authorize responds with 200' do
