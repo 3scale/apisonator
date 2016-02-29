@@ -80,11 +80,18 @@ module ThreeScale
         S3_EVENTS_BASE_PATH = "s3://#{S3_BUCKET}/".freeze
         private_constant :S3_EVENTS_BASE_PATH
 
+        REQUIRED_TABLES = [TABLES[:events], TABLES[:latest_s3_path_read]].freeze
+        private_constant :REQUIRED_TABLES
+
+        MissingRequiredTables = Class.new(ThreeScale::Backend::Error)
+        MissingLatestS3PathRead = Class.new(ThreeScale::Backend::Error)
+
         class << self
 
           def insert_data(silent = false)
-            pending_times_utc = S3EventPaths.pending_paths(latest_timestamp_read)
+            check_redshift_tables
 
+            pending_times_utc = S3EventPaths.pending_paths(latest_timestamp_read)
             pending_times_utc.each do |pending_time_utc|
               puts "Loading events generated in hour: #{pending_time_utc}" unless silent
 
@@ -114,6 +121,28 @@ module ThreeScale
             redshift_connection.exec(command)
           end
 
+          def check_redshift_tables
+            unless required_tables_exist?
+              raise MissingRequiredTables, 'Some of the required tables are not in Redshift.'
+            end
+
+            unless latest_timestamp_read_exists?
+              raise MissingLatestS3PathRead,
+                    "The 'latest read' table does not contain any values"
+            end
+          end
+
+          def existing_tables
+            execute_command(existing_tables_sql)
+          end
+
+          def required_tables_exist?
+            db_tables = existing_tables
+            REQUIRED_TABLES.all? do |required_table|
+              db_tables.include?(required_table)
+            end
+          end
+
           def import_s3_path(time_utc)
             execute_command(create_temp_table_sql)
             path = s3_path(time_utc)
@@ -138,6 +167,17 @@ module ThreeScale
 
           def latest_timestamp_read
             execute_command(latest_timestamp_read_sql).first['s3_path']
+          end
+
+          def latest_timestamp_read_exists?
+            execute_command(latest_timestamp_read_sql).ntuples > 0
+          end
+
+          def existing_tables_sql
+            "SELECT DISTINCT tablename
+             FROM pg_table_def
+             WHERE schemaname = 'public'
+             ORDER BY tablename;"
           end
 
           def create_temp_table_sql
@@ -214,8 +254,8 @@ module ThreeScale
           end
 
           def store_timestamp_read_sql(timestamp)
-            "DELETE FROM latest_s3_path_read;
-             INSERT INTO latest_s3_path_read VALUES ('#{timestamp}');"
+            "DELETE FROM #{TABLES[:latest_s3_path_read]};
+             INSERT INTO #{TABLES[:latest_s3_path_read]} VALUES ('#{timestamp}');"
           end
 
           def latest_timestamp_read_sql

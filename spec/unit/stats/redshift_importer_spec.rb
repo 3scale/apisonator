@@ -77,6 +77,58 @@ module ThreeScale
               Timecop.freeze(current_time) { subject.insert_data(true) }
             end
           end
+
+          context 'when the events table does not exist in Redshift' do
+            before do
+              allow(redshift_connection)
+                  .to receive(:exec)
+                  .with(subject.send(:existing_tables_sql))
+                  .and_return [subject.const_get(:TABLES)[:latest_s3_path_read]]
+            end
+
+            it 'raises MissingRequiredTables exception' do
+              expect { subject.insert_data }
+                  .to raise_error subject::MissingRequiredTables
+            end
+          end
+
+          context 'when the latest_s3_path_read table does not exist in Redshift' do
+            before do
+              allow(redshift_connection)
+                  .to receive(:exec)
+                  .with(subject.send(:existing_tables_sql))
+                  .and_return [subject.const_get(:TABLES)[:events]]
+            end
+
+            it 'raises MissingRequiredTables exception' do
+              expect { subject.insert_data }
+                  .to raise_error subject::MissingRequiredTables
+            end
+          end
+
+          context 'when the required tables exist but latest_s3_path_read is empty' do
+            let(:existing_tables) do
+              [subject.const_get(:TABLES)[:events],
+               subject.const_get(:TABLES)[:latest_s3_path_read]]
+            end
+
+            before do
+              allow(redshift_connection)
+                  .to receive(:exec)
+                  .with(subject.send(:existing_tables_sql))
+                  .and_return existing_tables
+
+              allow(redshift_connection)
+                  .to receive(:exec)
+                  .with(subject.send(:latest_timestamp_read_sql))
+                  .and_return double(:query_result, ntuples: 0)
+            end
+
+            it 'raises MissingLatestS3PathRead exception' do
+              expect { subject.insert_data }
+                  .to raise_error subject::MissingLatestS3PathRead
+            end
+          end
         end
       end
     end
