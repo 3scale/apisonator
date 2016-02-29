@@ -55,6 +55,33 @@ module Validators
       assert_equal 'usage limits are exceeded', status.rejection_reason_text
     end
 
+    test 'succeeds when a set does not exceed the limits' do
+      UsageLimit.save(:service_id => @service.id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :day        => 10)
+
+      status = Transactor::Status.new(:service     => @service,
+                                      :application => @application,
+                                      :values      => {:day => {@metric_id => 3}})
+      assert Limits.apply(status, :usage => {'hits' => '#10'})
+    end
+
+    test 'fails when a set exceeds the limits' do
+      UsageLimit.save(:service_id => @service.id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => @metric_id,
+                      :day        => 10)
+
+      status = Transactor::Status.new(:service     => @service,
+                                      :application => @application,
+                                      :values      => {:day => {@metric_id => 3}})
+      assert !Limits.apply(status, :usage => {'hits' => '#11'})
+
+      assert_equal 'limits_exceeded',           status.rejection_reason_code
+      assert_equal 'usage limits are exceeded', status.rejection_reason_text
+    end
+
     test 'fails when current usage + predicted usage exceeds the limits' do
       UsageLimit.save(:service_id => @service.id,
                       :plan_id    => @plan_id,
