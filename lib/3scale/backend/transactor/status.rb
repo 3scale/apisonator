@@ -237,22 +237,17 @@ module ThreeScale
               end
               xml << '<max_value>' << report.max_value.to_s << '</max_value><current_value>'
 
-              if not options[:anchors_for_caching]
+              xml << if not options[:anchors_for_caching]
                 if authorized? && usage && (usage_metric_name = usage[report.metric_name])
                   # this is a authrep request and therefore we should sum the usage
-                  val = Helpers.get_value_of_set_if_exists(usage_metric_name)
-                  if val.nil?
-                    xml << (report.current_value + usage_metric_name.to_i).to_s
-                  else
-                    xml << val.to_s
-                  end
+                  Usage.get_from usage_metric_name, report.current_value
                 else
-                  xml << report.current_value.to_s
-                end
+                  report.current_value
+                end.to_s
               else
                 ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
                 ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                xml << "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
+                "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
               end
 
               xml << '</current_value></usage_report>'.freeze

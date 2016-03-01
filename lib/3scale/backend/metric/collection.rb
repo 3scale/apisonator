@@ -47,17 +47,15 @@ module ThreeScale
         def process_ancestors(usage)
           usage.keys.inject(usage.dup) do |memo, id|
             ancestor_id(id).each do |ancestor_id|
-
-              val = Helpers.get_value_of_set_if_exists(memo[id])
-              if val.nil?
+              if Usage.is_set? memo[id]
+                memo[ancestor_id] = memo[id]
+              else
                 memo[ancestor_id] ||= 0
-                # need to do the to_i here because the value can be a string if the ancestor is passed
-                # explictly on the usage. Can't do on parse_usage coz value might not bea Fixnum but at
-                # '#'Fixnum
+                # need the to_i here instead of in parse_usage because the value
+                # can be a string if the ancestor is passed explictly on the
+                # usage since the value might not be a Fixnum but a '#'Fixnum
                 memo[ancestor_id] = memo[ancestor_id].to_i
                 memo[ancestor_id] += memo[id].to_i
-              else
-                memo[ancestor_id] = memo[id]
               end
             end
 
