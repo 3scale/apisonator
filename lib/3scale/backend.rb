@@ -35,7 +35,6 @@ require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
 require '3scale/backend/storage_key_helpers'
 require '3scale/backend/storable'
-require '3scale/backend/helpers'
 require '3scale/backend/usage'
 
 require '3scale/backend/rack_exception_catcher'

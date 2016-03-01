@@ -2,8 +2,6 @@ module ThreeScale
   module Backend
     class Service
       include Storable
-      include Backend::Helpers
-      extend Backend::Helpers
 
       ATTRIBUTES = %w(referrer_filters_required backend_version
         user_registration_required default_user_plan_id default_user_plan_name
@@ -123,8 +121,8 @@ module ThreeScale
         private
 
         def massage_service_attrs(id, service_attrs)
-          service_attrs['referrer_filters_required'] = int_to_bool(
-            service_attrs['referrer_filters_required'])
+          service_attrs['referrer_filters_required'] =
+            service_attrs['referrer_filters_required'].to_i > 0
           service_attrs['user_registration_required'] = massage_get_user_registration_required(
             service_attrs['user_registration_required'])
           service_attrs['version'] = massage_version(id, service_attrs['version'])
@@ -134,7 +132,7 @@ module ThreeScale
 
         # nil => true, 1 => true, '1' => true, 0 => false, '0' => false
         def massage_get_user_registration_required(value)
-          value.nil? ? true : int_to_bool(value)
+          value.nil? ? true : value.to_i > 0
         end
 
         def massage_set_user_registration_required(attributes)
@@ -264,10 +262,8 @@ module ThreeScale
       end
 
       def persist_attributes
-        persist_attribute :referrer_filters_required,
-          bool_to_int(referrer_filters_required?)
-        persist_attribute :user_registration_required,
-          bool_to_int(user_registration_required?)
+        persist_attribute :referrer_filters_required, referrer_filters_required? ? 1 : 0
+        persist_attribute :user_registration_required, user_registration_required? ? 1 : 0
         persist_attribute :default_user_plan_id, default_user_plan_id, true
         persist_attribute :default_user_plan_name, default_user_plan_name, true
         persist_attribute :backend_version, backend_version, true
