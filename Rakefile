@@ -209,6 +209,21 @@ namespace :stats do
   end
 
   namespace :redshift do
+    desc 'Is Redshift importing enabled?'
+    task :enabled? => :environment do
+      puts ThreeScale::Backend::Stats::RedshiftImporter.enabled?
+    end
+
+    desc 'Enable Redshift importing'
+    task :enable => :environment do
+      puts ThreeScale::Backend::Stats::RedshiftImporter.enable
+    end
+
+    desc 'Disable Redshift importing'
+    task :disable => :environment do
+      puts ThreeScale::Backend::Stats::RedshiftImporter.disable
+    end
+
     desc 'Import S3 events in Redshift'
     task :import => :environment do
       puts ThreeScale::Backend::Stats::RedshiftImporter.schedule_job
