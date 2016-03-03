@@ -101,6 +101,7 @@ module ThreeScale
               clean_temp_tables
               store_timestamp_read(pending_time_utc.strftime('%Y%m%d%H'))
             end
+            pending_times_utc.last
           end
 
           private
