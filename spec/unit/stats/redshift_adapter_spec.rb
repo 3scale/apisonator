@@ -83,7 +83,7 @@ module ThreeScale
               allow(redshift_connection)
                   .to receive(:exec)
                   .with(subject.send(:existing_tables_sql))
-                  .and_return [subject.const_get(:TABLES)[:latest_s3_path_read]]
+                  .and_return [{ 'tablename' => subject.const_get(:TABLES)[:latest_s3_path_read] }]
             end
 
             it 'raises MissingRequiredTables exception' do
@@ -97,7 +97,7 @@ module ThreeScale
               allow(redshift_connection)
                   .to receive(:exec)
                   .with(subject.send(:existing_tables_sql))
-                  .and_return [subject.const_get(:TABLES)[:events]]
+                  .and_return [{ 'tablename' => subject.const_get(:TABLES)[:events] }]
             end
 
             it 'raises MissingRequiredTables exception' do
@@ -116,7 +116,7 @@ module ThreeScale
               allow(redshift_connection)
                   .to receive(:exec)
                   .with(subject.send(:existing_tables_sql))
-                  .and_return existing_tables
+                  .and_return (existing_tables.map { |table| { 'tablename' => table } })
 
               allow(redshift_connection)
                   .to receive(:exec)

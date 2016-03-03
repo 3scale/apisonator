@@ -134,7 +134,7 @@ module ThreeScale
           end
 
           def existing_tables
-            execute_command(existing_tables_sql)
+            execute_command(existing_tables_sql).map { |row| row['tablename'] }
           end
 
           def required_tables_exist?
