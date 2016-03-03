@@ -24,7 +24,7 @@ module ThreeScale
       #  3) Inside a transaction, delete all the events that are in the temp
       #     table from the final table. Next, insert the ones in the temp
       #     table into the final table. Finally, remove the temp table.
-      class RedshiftImporter
+      class RedshiftAdapter
 
         # This private class is the responsible for calculating the S3 paths
         # that we have not imported to Redshift yet.

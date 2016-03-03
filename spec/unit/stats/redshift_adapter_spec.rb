@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 module ThreeScale
   module Backend
     module Stats
-      describe RedshiftImporter.const_get(:S3EventPaths) do
+      describe RedshiftAdapter.const_get(:S3EventPaths) do
         subject { described_class }
 
         describe '.pending_paths' do
@@ -34,7 +34,7 @@ module ThreeScale
         end
       end
 
-      describe RedshiftImporter do
+      describe RedshiftAdapter do
         subject { described_class }
 
         let(:redshift_connection) { double }
