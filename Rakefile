@@ -209,9 +209,9 @@ namespace :stats do
   end
 
   namespace :redshift do
-    desc 'Import S3 events to Redshift'
+    desc 'Import S3 events in Redshift'
     task :import => :environment do
-      puts ThreeScale::Backend::Stats::RedshiftAdapter.insert_data
+      puts ThreeScale::Backend::Stats::RedshiftImporter.schedule_job
     end
   end
 end
