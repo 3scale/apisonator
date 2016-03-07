@@ -8,11 +8,28 @@ module ThreeScale
 
         describe '.schedule_job' do
           context 'when the importer is enabled' do
-            before { subject.enable }
+            context 'and backend is running in production' do
+              before do
+                allow(Backend).to receive(:production?).and_return true
+                subject.enable
+              end
 
-            it 'schedules a Redshift job' do
-              expect(Resque).to receive(:enqueue)
-              subject.schedule_job
+              it 'schedules a Redshift job' do
+                expect(Resque).to receive(:enqueue)
+                subject.schedule_job
+              end
+            end
+
+            context 'and backend is not running in production' do
+              before do
+                allow(Backend).to receive(:production?).and_return false
+                subject.enable
+              end
+
+              it 'does not schedule a Redshift job' do
+                expect(Resque).not_to receive(:enqueue)
+                subject.schedule_job
+              end
             end
           end
 

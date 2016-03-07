@@ -24,7 +24,7 @@ module ThreeScale
 
         class << self
           def schedule_job
-            if enabled?
+            if enabled? && Backend.production?
               lock_key = DateTime.now.strftime('%Q')
               unless job_running?(lock_key)
                 Resque.enqueue(RedshiftJob, lock_key, Time.now.utc.to_f)
