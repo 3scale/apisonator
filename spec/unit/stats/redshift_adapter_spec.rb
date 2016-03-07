@@ -61,14 +61,14 @@ module ThreeScale
 
             it 'executes the necessary queries to perform an UPSERT' do
               expected_sql_queries =
-                [subject.send(:create_temp_table_sql),
-                 subject.send(:import_s3_path_sql,
-                              subject.send(:s3_path, pending_paths.first)),
-                 subject.send(:create_view_unique_imported_events_sql),
-                 subject.send(:insert_imported_events_sql),
-                 subject.send(:clean_temp_tables_sql),
-                 subject.send(:store_timestamp_read_sql,
-                              pending_paths.first.strftime('%Y%m%d%H'))]
+                [subject::SQL::CREATE_TEMP_TABLE,
+                 subject::SQL.import_s3_path(
+                     subject.send(:s3_path, pending_paths.first), '', ''),
+                 subject::SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS,
+                 subject::SQL::INSERT_IMPORTED_EVENTS,
+                 subject::SQL::CLEAN_TEMP_TABLES,
+                 subject::SQL.store_timestamp_read(
+                     pending_paths.first.strftime('%Y%m%d%H'))]
 
               expected_sql_queries.each do |query|
                 expect(redshift_connection).to receive(:exec).with(query).once
@@ -82,8 +82,8 @@ module ThreeScale
             before do
               allow(redshift_connection)
                   .to receive(:exec)
-                  .with(subject.send(:existing_tables_sql))
-                  .and_return [{ 'tablename' => subject.const_get(:TABLES)[:latest_s3_path_read] }]
+                  .with(subject::SQL::EXISTING_TABLES)
+                  .and_return [{ 'tablename' => subject::SQL::TABLES[:latest_s3_path_read] }]
             end
 
             it 'raises MissingRequiredTables exception' do
@@ -96,8 +96,8 @@ module ThreeScale
             before do
               allow(redshift_connection)
                   .to receive(:exec)
-                  .with(subject.send(:existing_tables_sql))
-                  .and_return [{ 'tablename' => subject.const_get(:TABLES)[:events] }]
+                  .with(subject::SQL::EXISTING_TABLES)
+                  .and_return [{ 'tablename' => subject::SQL::TABLES[:events] }]
             end
 
             it 'raises MissingRequiredTables exception' do
@@ -108,19 +108,19 @@ module ThreeScale
 
           context 'when the required tables exist but latest_s3_path_read is empty' do
             let(:existing_tables) do
-              [subject.const_get(:TABLES)[:events],
-               subject.const_get(:TABLES)[:latest_s3_path_read]]
+              [subject::SQL::TABLES[:events],
+               subject::SQL::TABLES[:latest_s3_path_read]]
             end
 
             before do
               allow(redshift_connection)
                   .to receive(:exec)
-                  .with(subject.send(:existing_tables_sql))
+                  .with(subject::SQL::EXISTING_TABLES)
                   .and_return (existing_tables.map { |table| { 'tablename' => table } })
 
               allow(redshift_connection)
                   .to receive(:exec)
-                  .with(subject.send(:latest_timestamp_read_sql))
+                  .with(subject::SQL::LATEST_TIMESTAMP_READ)
                   .and_return double(:query_result, ntuples: 0)
             end
 
