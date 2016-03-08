@@ -43,3 +43,6 @@ gem 'puma', '= 2.15.3'
 gem 'gli', '~> 2.13.4', require: nil
 # Cubert client
 gem 'cubert-client', '= 0.0.12', source: 'https://geminabox'
+
+# Production gems
+gem 'pg', '= 0.18.4'

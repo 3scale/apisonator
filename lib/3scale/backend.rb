@@ -65,8 +65,8 @@ require '3scale/backend/worker'
 require '3scale/backend/errors'
 
 require '3scale/backend/stats/send_to_kinesis'
-
 require '3scale/backend/stats/send_to_kinesis_job'
+require '3scale/backend/stats/redshift_importer'
 
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
@@ -96,6 +96,7 @@ module ThreeScale
       config.add_section(:hoptoad, :api_key)
       config.add_section(:stats, :bucket_size)
       config.add_section(:cubert, :host)
+      config.add_section(:redshift, :host, :port, :dbname, :user, :password)
 
       # Default config
       config.master_service_id  = 1
@@ -111,7 +112,7 @@ module ThreeScale
       # By default, we will allow creating buckets in any environment that is
       # not 'production'.
       # Notice that in order to create buckets, you also need to execute this
-      # rake task: stats:panic_mode:enable_storage_stats.
+      # rake task: stats:buckets:enable
       config.can_create_event_buckets = !production?
 
       # Load configuration from a file.
