@@ -9,7 +9,7 @@ GIT
 PATH
   remote: .
   specs:
-    3scale_backend (2.58.0)
+    3scale_backend (2.58.1)
       airbrake (= 4.3.0)
       aws-sdk (= 2.2.0)
       builder (= 3.2.2)
