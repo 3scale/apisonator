@@ -195,6 +195,11 @@ module ThreeScale
             pending_times_utc.last
           end
 
+          # Returns a timestamp with format 'YYYYMMDDHH'
+          def latest_timestamp_read
+            execute_command(SQL::LATEST_TIMESTAMP_READ).first['s3_path']
+          end
+
           private
 
           def config
@@ -240,10 +245,6 @@ module ThreeScale
             path = s3_path(time_utc)
             execute_command(SQL.import_s3_path(
                 path, config.aws_access_key_id, config.aws_secret_access_key))
-          end
-
-          def latest_timestamp_read
-            execute_command(SQL::LATEST_TIMESTAMP_READ).first['s3_path']
           end
 
           def latest_timestamp_read_exists?
