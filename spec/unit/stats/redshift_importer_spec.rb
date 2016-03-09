@@ -43,6 +43,23 @@ module ThreeScale
           end
         end
 
+        describe 'latest_imported_events_time' do
+          let(:latest_timestamp_redshift) { '2016030912' }
+          let(:latest_time_redshift) do
+            DateTime.parse(latest_timestamp_redshift).to_time.utc
+          end
+
+          before do
+            allow(RedshiftAdapter)
+                .to receive(:latest_timestamp_read)
+                .and_return(latest_timestamp_redshift)
+          end
+
+          it 'returns the UTC time when the newest events imported in Redshift were generated' do
+            expect(subject.latest_imported_events_time).to eq latest_time_redshift
+          end
+        end
+
         describe '.enable' do
           before { subject.disable }
 
