@@ -228,5 +228,10 @@ namespace :stats do
     task :import => :environment do
       puts ThreeScale::Backend::Stats::RedshiftImporter.schedule_job
     end
+
+    desc 'Show generation time (hour) of latest events imported in Redshift'
+    task :latest => :environment do
+      puts ThreeScale::Backend::Stats::RedshiftImporter.latest_imported_events_time
+    end
   end
 end
