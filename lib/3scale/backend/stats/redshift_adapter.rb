@@ -24,6 +24,13 @@ module ThreeScale
       #  3) Inside a transaction, delete all the events that are in the temp
       #     table from the final table. Next, insert the ones in the temp
       #     table into the final table. Finally, remove the temp table.
+      #  4) Last, we perform a vacuum, because Redshift does not automatically
+      #     reclaim and reuse space that has been freed after deletes or
+      #     updates. The vacuum operation also leaves the table sorted.
+      #     More info:
+      #     http://docs.aws.amazon.com/redshift/latest/dg/t_Reclaiming_storage_space202.html
+      #     Right now, we are going to vacuum every time we insert new data,
+      #     we will see if for performance reasons we need to do it less often.
       class RedshiftAdapter
 
         module SQL
@@ -67,6 +74,8 @@ module ThreeScale
               "DROP TABLE #{TABLES[:temp]};".freeze
 
           LATEST_TIMESTAMP_READ = "SELECT s3_path FROM #{TABLES[:latest_s3_path_read]}".freeze
+
+          VACUUM = "VACUUM FULL #{TABLES[:events]}".freeze
 
           # In order to get unique events, I use an inner-join with the same
           # table. There might be several rows with the same {service, instance,
@@ -191,6 +200,7 @@ module ThreeScale
               execute_command(SQL::CLEAN_TEMP_TABLES)
               execute_command(SQL.store_timestamp_read(
                   pending_time_utc.strftime('%Y%m%d%H')))
+              execute_command(SQL::VACUUM)
             end
             pending_times_utc.last
           end

@@ -68,7 +68,8 @@ module ThreeScale
                  subject::SQL::INSERT_IMPORTED_EVENTS,
                  subject::SQL::CLEAN_TEMP_TABLES,
                  subject::SQL.store_timestamp_read(
-                     pending_paths.first.strftime('%Y%m%d%H'))]
+                     pending_paths.first.strftime('%Y%m%d%H')),
+                 subject::SQL::VACUUM]
 
               expected_sql_queries.each do |query|
                 expect(redshift_connection).to receive(:exec).with(query).once
