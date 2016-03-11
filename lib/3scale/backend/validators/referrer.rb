@@ -25,7 +25,7 @@ module ThreeScale
             pattern = Regexp.quote(pattern)
             pattern = pattern.gsub('\*', '.*')
 
-            /#{pattern}/ =~ value
+            /\A#{pattern}\z/ =~ value
           end
         end
       end

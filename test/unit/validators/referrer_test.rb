@@ -82,6 +82,21 @@ module Validators
       assert !Referrer.apply(@status, :referrer => 'forexample.org')
     end
 
+    test 'fails if the referrer matches the filter but with extra chars at the beginning' do
+      @application.create_referrer_filter('1.2.3.4')
+      assert !Referrer.apply(@status, :referrer => '231.2.3.4')
+    end
+
+    test 'fails if the referrer matches the filter but with extra chars at the end' do
+      @application.create_referrer_filter('1.2.3.4')
+      assert !Referrer.apply(@status, :referrer => '1.2.3.456')
+    end
+
+    test 'fails if the referrer matches the filter but with an extra \n' do
+      @application.create_referrer_filter('1.2.3.4')
+      assert !Referrer.apply(@status, :referrer => "1.2.3.4\n")
+    end
+
     # TODO: maybe filters like the ones in the following tests should not even be allowed.
 
     test 'filter is not a regular expression' do
