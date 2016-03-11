@@ -113,5 +113,25 @@ module Validators
 
       assert Referrer.apply(@status, :referrer => '(example.org')
     end
+
+    # this mostly is for documentation purposes but also to notice changes in
+    # semantics.
+    test 'filter works in stupid edge cases even though we would want to fix em some day' do
+      @application.create_referrer_filter('194.179.*.10')
+      @application.create_referrer_filter('8.8.8.*')
+      @application.create_referrer_filter('*.3scale.net')
+
+      assert Referrer.apply(@status, :referrer => '194.179..10')
+      assert Referrer.apply(@status, :referrer => '194.179.OlaKeAse.10')
+      assert Referrer.apply(@status, :referrer => '194.179.10.10.10.10')
+      assert Referrer.apply(@status, :referrer => '194.179.999.10')
+
+      assert Referrer.apply(@status, :referrer => '8.8.8.amazon-aws.com')
+      assert Referrer.apply(@status, :referrer => '8.8.8.8:443')
+      assert Referrer.apply(@status, :referrer => '8.8.8.8/some/path?qs=lol')
+
+      assert Referrer.apply(@status, :referrer => '.3scale.net')
+      assert Referrer.apply(@status, :referrer => 'https://OlaKeAse.3scale.net')
+    end
   end
 end
