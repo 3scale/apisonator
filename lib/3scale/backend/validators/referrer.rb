@@ -2,7 +2,8 @@ module ThreeScale
   module Backend
     module Validators
       class Referrer < Base
-        BYPASS = '*'
+        BYPASS = '*'.freeze
+        private_constant :BYPASS
 
         def apply
           if application.has_referrer_filters?
@@ -22,10 +23,10 @@ module ThreeScale
           if value == BYPASS
             true
           else
-            pattern = Regexp.quote(pattern)
+            pattern = Regexp.escape(pattern)
             pattern = pattern.gsub('\*', '.*')
 
-            /#{pattern}/ =~ value
+            /\A#{pattern}\z/ =~ value
           end
         end
       end
