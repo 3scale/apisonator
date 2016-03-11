@@ -2,7 +2,8 @@ module ThreeScale
   module Backend
     module Validators
       class Referrer < Base
-        BYPASS = '*'
+        BYPASS = '*'.freeze
+        private_constant :BYPASS
 
         def apply
           if application.has_referrer_filters?
