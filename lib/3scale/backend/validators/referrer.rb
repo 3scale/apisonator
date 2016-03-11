@@ -23,7 +23,7 @@ module ThreeScale
           if value == BYPASS
             true
           else
-            pattern = Regexp.quote(pattern)
+            pattern = Regexp.escape(pattern)
             pattern = pattern.gsub('\*', '.*')
 
             /\A#{pattern}\z/ =~ value
