@@ -28,6 +28,7 @@ module ThreeScale
       attr_writer :children
 
       def save
+        old_name = self.class.load_name(service_id, id)
         storage.pipelined do
           save_attributes
           save_to_list
@@ -35,6 +36,7 @@ module ThreeScale
           # a metric with N children and each children with M additional
           # children increases the version by N*M...
           Service.incr_version(service_id)
+          remove_reverse_mapping(service_id, old_name) if old_name != name
         end
 
         # can't include this in the pipeline since it is a potentially
@@ -134,6 +136,10 @@ module ThreeScale
       end
 
       private
+
+      def remove_reverse_mapping(service_id, name)
+        storage.del id_key(service_id, name)
+      end
 
       def save_attributes
         storage.set(id_key(service_id, name), id)
