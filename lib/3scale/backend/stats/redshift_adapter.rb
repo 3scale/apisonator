@@ -77,6 +77,9 @@ module ThreeScale
 
           VACUUM = "VACUUM FULL #{TABLES[:events]}".freeze
 
+          # Service id to get events for
+          MASTER = 12345678
+
           # In order to get unique events, I use an inner-join with the same
           # table. There might be several rows with the same {service, instance,
           # uinstance, metric, period, timestamp} and different time_gen and
@@ -88,6 +91,11 @@ module ThreeScale
           # The way to solve this is as follows: find out the max time_gen
           # grouping the 'repeated' events, and then perform an inner-join to
           # select the row with the most recent data.
+          #
+          # Note that we are only getting events with period != 'minute' and
+          # service = MASTER. This is required for the dashboard project.
+          # We will need to change this when we start importing data to a
+          # Redshift cluster used as a source for the stats API.
           CREATE_VIEW_UNIQUE_IMPORTED_EVENTS =
               "CREATE VIEW #{TABLES[:unique_imported_events]} AS "\
               'SELECT e.service, e.cinstance, e.uinstance, e.metric, e.period, '\
@@ -96,7 +104,7 @@ module ThreeScale
               '(SELECT service, cinstance, uinstance, metric, period, '\
                   'MAX(time_gen) AS max_time_gen, timestamp '\
                 "FROM #{TABLES[:temp]} "\
-                "WHERE period != 'minute' /* minutes not needed for the dashboard project */ "\
+                "WHERE period != 'minute' AND service = '#{MASTER}' /* Specific for dashboard project */ "\
                 'GROUP BY service, cinstance, uinstance, metric, period, timestamp) AS e1 '\
                 "INNER JOIN #{TABLES[:temp]} e "\
                   'ON (e.service = e1.service) '\
