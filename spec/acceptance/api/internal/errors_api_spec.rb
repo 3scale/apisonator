@@ -1,6 +1,6 @@
 require_relative '../../acceptance_spec_helper'
 
-resource 'Errors (prefix: /transactions/:service_id/errors)' do
+resource 'Errors (prefix: /services/:service_id/errors)' do
   set_app ThreeScale::Backend::API::Internal
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
