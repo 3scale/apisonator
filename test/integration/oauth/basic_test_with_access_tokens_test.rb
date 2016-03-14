@@ -46,7 +46,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                                                              :user_id => @user.username,
                                                              :ttl => 60
     assert_equal 200, last_response.status
-    assert_equal [@application.id, nil], OAuthAccessTokenStorage.get_app_id(@service.id, @access_token_user)
+    assert_equal [@application.id, @user.username], OAuthAccessTokenStorage.get_app_id(@service.id, @access_token_user)
   end
 
   test 'successful authorize responds with 200' do
@@ -57,12 +57,12 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
-  test 'authorization with a user token with no user specified fails' do
+  test 'authorization with a user token with no user specified succeeds' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :access_token => @access_token_user,
                                              :log          => @apilog
 
-    assert_equal 404, last_response.status
+    assert_equal 200, last_response.status
   end
 
   test 'authorization with a user token with user specified succeeds' do
@@ -74,13 +74,23 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
-  test 'authorization with a global token with user specified fails' do
+  test 'authorization with a user token with a made up user specified succeeds' do
+    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
+                                             :access_token => @access_token_user,
+                                             :user_id      => 'invented_user',
+                                             :log          => @apilog
+
+    assert_equal 200, last_response.status
+  end
+
+  test 'authorization with a global token with user specified succeeds' do
+    # specifying user_id should make no difference to the OAuth token code
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :access_token => @access_token,
                                              :user_id      => @user.username,
                                              :log          => @apilog
 
-    assert_equal 404, last_response.status
+    assert_equal 200, last_response.status
   end
 
   test 'successful authorize with no body responds with 200' do
