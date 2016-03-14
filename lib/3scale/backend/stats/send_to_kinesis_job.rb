@@ -42,7 +42,7 @@ module ThreeScale
         private_constant :FILTERED_EVENT_PERIODS_STR
 
         class << self
-          def perform_logged(end_time_utc, lock_key, _)
+          def perform_logged(end_time_utc, lock_key, _enqueue_time)
             # end_time_utc will be a string when the worker processes this job.
             # The parameter is passed through Redis as a string. We need to
             # convert it back.

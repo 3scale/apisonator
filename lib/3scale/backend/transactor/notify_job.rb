@@ -8,7 +8,7 @@ module ThreeScale
         @queue = :main
 
         class << self
-          def perform_logged(provider_key, usage, timestamp, enqueue_time)
+          def perform_logged(provider_key, usage, timestamp, _enqueue_time)
             application_id = Application.load_id_by_key(master_service_id, provider_key)
 
             if application_id && Application.exists?(master_service_id, application_id)

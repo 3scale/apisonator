@@ -7,7 +7,7 @@ module ThreeScale
         @queue = :main
 
         class << self
-          def perform_logged(service_id, logs, enqueue_time)
+          def perform_logged(service_id, logs, _enqueue_time)
             logs = preprocess(logs)
             LogRequestStorage.store_all(logs)
             LogRequestCubertStorage.store_all(logs)

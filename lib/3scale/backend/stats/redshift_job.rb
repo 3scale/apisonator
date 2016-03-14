@@ -7,7 +7,7 @@ module ThreeScale
         @queue = :stats
 
         class << self
-          def perform_logged(lock_key, _)
+          def perform_logged(lock_key, _enqueue_time)
             begin
               latest_time_inserted = RedshiftAdapter.insert_data
               ok = true
