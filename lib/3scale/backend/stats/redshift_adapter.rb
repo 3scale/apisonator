@@ -34,18 +34,19 @@ module ThreeScale
       class RedshiftAdapter
 
         module SQL
+          SCHEMA = 'backend'.freeze
+
           # This importer relies on some tables or views that are created in
           # Redshift to function correctly.
-          TABLES = { events: 'events'.freeze,
-                     latest_s3_path_read: 'latest_s3_path_read'.freeze,
-                     temp: 'temp_events'.freeze,
-                     unique_imported_events: 'unique_imported_events'.freeze }.freeze
+          TABLES = { events: "#{SCHEMA}.events".freeze,
+                     latest_s3_path_read: "#{SCHEMA}.latest_s3_path_read".freeze,
+                     temp: "#{SCHEMA}.temp_events".freeze,
+                     unique_imported_events: "#{SCHEMA}.unique_imported_events".freeze }.freeze
 
           EXISTING_TABLES =
-              'SELECT DISTINCT tablename '\
-              'FROM pg_table_def '\
-              "WHERE schemaname = 'public' "\
-              'ORDER BY tablename;'.freeze
+              'SELECT table_name '\
+              'FROM information_schema.tables '\
+              "WHERE table_schema = '#{SCHEMA}';".freeze
 
           CREATE_TEMP_TABLE =
               "DROP TABLE IF EXISTS #{TABLES[:temp]} CASCADE; "\
@@ -65,8 +66,8 @@ module ThreeScale
                   "AND (#{TABLES[:events]}.period = u.period) "\
                   "AND (#{TABLES[:events]}.timestamp = u.timestamp) "\
                   "AND (#{TABLES[:events]}.time_gen < u.time_gen); "\
-                'INSERT INTO events '\
-                  'SELECT * FROM unique_imported_events; '\
+                "INSERT INTO #{TABLES[:events]} "\
+                  "SELECT * FROM #{TABLES[:unique_imported_events]};" \
               'END TRANSACTION;'.freeze
 
           CLEAN_TEMP_TABLES =
@@ -248,13 +249,17 @@ module ThreeScale
           end
 
           def existing_tables
-            execute_command(SQL::EXISTING_TABLES).map { |row| row['tablename'] }
+            execute_command(SQL::EXISTING_TABLES).map { |row| row['table_name'] }
+          end
+
+          def existing_tables_with_schema
+            existing_tables.map { |table| "#{SQL::SCHEMA}.#{table}" }
           end
 
           def required_tables_exist?
-            db_tables = existing_tables
+            db_tables_with_schema = existing_tables_with_schema
             REQUIRED_TABLES.all? do |required_table|
-              db_tables.include?(required_table)
+              db_tables_with_schema.include?(required_table)
             end
           end
 

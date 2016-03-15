@@ -81,10 +81,15 @@ module ThreeScale
 
           context 'when the events table does not exist in Redshift' do
             before do
+              # The `tables` hash contains all the names with the schema
+              # included. However, the result of the query that checks the
+              # existing tables in a schema does not contain it. This is
+              # why we need to call `table_name_without_schema`.
               allow(redshift_connection)
                   .to receive(:exec)
                   .with(subject::SQL::EXISTING_TABLES)
-                  .and_return [{ 'tablename' => subject::SQL::TABLES[:latest_s3_path_read] }]
+                  .and_return [{ 'table_name' => table_name_without_schema(
+                      subject::SQL::TABLES[:latest_s3_path_read]) }]
             end
 
             it 'raises MissingRequiredTables exception' do
@@ -98,7 +103,8 @@ module ThreeScale
               allow(redshift_connection)
                   .to receive(:exec)
                   .with(subject::SQL::EXISTING_TABLES)
-                  .and_return [{ 'tablename' => subject::SQL::TABLES[:events] }]
+                  .and_return [{ 'table_name' => table_name_without_schema(
+                      subject::SQL::TABLES[:events]) }]
             end
 
             it 'raises MissingRequiredTables exception' do
@@ -109,15 +115,15 @@ module ThreeScale
 
           context 'when the required tables exist but latest_s3_path_read is empty' do
             let(:existing_tables) do
-              [subject::SQL::TABLES[:events],
-               subject::SQL::TABLES[:latest_s3_path_read]]
+              [table_name_without_schema(subject::SQL::TABLES[:events]),
+               table_name_without_schema(subject::SQL::TABLES[:latest_s3_path_read])]
             end
 
             before do
               allow(redshift_connection)
                   .to receive(:exec)
                   .with(subject::SQL::EXISTING_TABLES)
-                  .and_return (existing_tables.map { |table| { 'tablename' => table } })
+                  .and_return (existing_tables.map { |table| { 'table_name' => table } })
 
               allow(redshift_connection)
                   .to receive(:exec)
@@ -145,6 +151,12 @@ module ThreeScale
           it 'returns the latest S3 path read' do
             expect(subject.latest_timestamp_read).to eq latest_s3_path_read
           end
+        end
+
+        private
+
+        def table_name_without_schema(name)
+          name.sub(/^#{subject::SQL::SCHEMA}\./, '')
         end
       end
     end
