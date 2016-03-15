@@ -51,9 +51,6 @@ module ThreeScale
           encoded = Yajl::Encoder.encode({:provider_key => provider_key, :usage => usage, :time => encode_time(tt)})
           num_elements = storage.rpush(key_for_notifications_batch, encoded)
 
-          ## HACK: TO REMOVE, this is so that tests pass right aways, a batch of 1
-          ##configuration.notification_batch = 1
-
           if (num_elements  % configuration.notification_batch) == 0
             ## we have already a full batch, we have to create the NotifyJobs for the backend 
             process_batch(num_elements)
