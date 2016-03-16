@@ -203,8 +203,9 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
   test 'delete all buckets and keys' do
     timestamp = Time.now.utc - 1000
+    n_buckets = 5
 
-    5.times do
+    n_buckets.times do
       Timecop.freeze(timestamp) do
         Stats::Aggregator.process([default_transaction])
       end
@@ -212,8 +213,8 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
       timestamp += stats_bucket_size
     end
 
-    assert_equal 5, @storage.keys('{stats_bucket}:*').size
-    assert_equal 5, Stats::BucketStorage.new(@storage).pending_buckets_size
+    assert_equal n_buckets, @storage.keys('{stats_bucket}:*').size
+    assert_equal n_buckets, Stats::BucketStorage.new(@storage).pending_buckets_size
 
     Stats::BucketStorage.new(@storage).delete_all_buckets_and_keys(silent: true)
 
