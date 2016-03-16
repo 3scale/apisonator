@@ -13,10 +13,6 @@ module ThreeScale
           storage.zrange(changed_keys_key, 0, -1)
         end
 
-        def pending_buckets_size
-          storage.zcard(changed_keys_key)
-        end
-
         def pending_keys_by_bucket
           result = {}
           pending_buckets.each do |b|

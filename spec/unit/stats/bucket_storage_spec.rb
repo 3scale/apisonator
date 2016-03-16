@@ -178,6 +178,30 @@ module ThreeScale
           end
         end
 
+        describe '#pending_buckets_size' do
+          context 'when there are no pending buckets' do
+            it 'returns 0' do
+              expect(subject.pending_buckets_size).to be_zero
+            end
+          end
+
+          context 'when there are pending buckets' do
+            let(:buckets) { %w(20150101000000 20150101000010) }
+            let(:event_keys) do
+              ['stats/{service:11}/metric:21/day:20151207',
+               'stats/{service:11}/metric:21/day:20151208']
+            end
+
+            before do
+              buckets.each { |bucket| subject.put_in_bucket(event_key, bucket) }
+            end
+
+            it 'returns the number of pending buckets' do
+              expect(subject.pending_buckets_size).to eq buckets.size
+            end
+          end
+        end
+
         describe '#put_in_bucket' do
           let(:event_value) { 10 }
 

@@ -79,7 +79,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Memoizer.reset! # the flag to know if storage stats is enabled is memoized
 
     Stats::Aggregator.process(Array.new(10, default_transaction))
-    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 0, Stats::BucketStorage.new(@storage).pending_buckets_size
   end
 
   test 'applications with end user plans (user_id) get recorded properly' do
@@ -213,12 +213,12 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     end
 
     assert_equal 5, @storage.keys('{stats_bucket}:*').size
-    assert_equal 5, Stats::Info.pending_buckets.size
+    assert_equal 5, Stats::BucketStorage.new(@storage).pending_buckets_size
 
     Stats::BucketStorage.new(@storage).delete_all_buckets_and_keys(silent: true)
 
     assert_equal 0, @storage.keys('{stats_bucket}:*').size
-    assert_equal 0, Stats::Info.pending_buckets.size
+    assert_equal 0, Stats::BucketStorage.new(@storage).pending_buckets_size
   end
 
   test 'process updates application set' do
@@ -244,8 +244,12 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
   end
 
   test 'process does not open a new stats buckets & writes log when the limit has been exceeded' do
-    Stats::Info.expects(:pending_buckets_size)
-        .returns(Stats::Aggregator.const_get(:MAX_BUCKETS) + 1)
+    n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
+
+    mocked_bucket_storage = Object.new
+    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
+
+    Stats::Aggregator.expects(:bucket_storage).returns(mocked_bucket_storage)
 
     Stats::Aggregator.expects(:prepare_stats_buckets).never
     Backend.logger.expects(:info).with(Stats::Aggregator.const_get(:MAX_BUCKETS_CREATED_MSG))

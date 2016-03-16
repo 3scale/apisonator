@@ -1,11 +1,11 @@
 require '3scale/backend/cache'
 require '3scale/backend/stats/storage'
 require '3scale/backend/stats/keys'
-require '3scale/backend/stats/info'
 require '3scale/backend/application_events'
 require '3scale/backend/transaction'
 require '3scale/backend/stats/aggregators/response_code'
 require '3scale/backend/stats/aggregators/usage'
+require '3scale/backend/stats/bucket_storage'
 
 module ThreeScale
   module Backend
@@ -108,6 +108,10 @@ module ThreeScale
             Backend::Storage.instance
           end
 
+          def bucket_storage
+            @bucket_storage ||= BucketStorage.new(storage)
+          end
+
           # Return a Hash with needed info to update the cached XMLs
           #
           # @param [Symbol] relation
@@ -127,7 +131,7 @@ module ThreeScale
           end
 
           def buckets_limit_exceeded?
-            Info.pending_buckets_size > MAX_BUCKETS
+            bucket_storage.pending_buckets_size > MAX_BUCKETS
           end
 
           def log_bucket_creation_disabled
