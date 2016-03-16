@@ -20,7 +20,7 @@ module ThreeScale
         # a better alternative once we cannot afford to lose data.
         # Right now, we are just deleting the stats keys with
         # period = minute, so we can restore everything else.
-        MAX_BUCKETS = 60
+        MAX_BUCKETS = 360
         private_constant :MAX_BUCKETS
 
         MAX_BUCKETS_CREATED_MSG =
