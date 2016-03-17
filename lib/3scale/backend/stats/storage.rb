@@ -8,17 +8,20 @@ module ThreeScale
         class << self
           include Memoizer::Decorator
 
+          STATS_ENABLED_KEY = 'stats:enabled'.freeze
+          private_constant :STATS_ENABLED_KEY
+
           def enabled?
-            storage.get('stats:enabled').to_i == 1
+            storage.get(STATS_ENABLED_KEY).to_i == 1
           end
           memoize :enabled?
 
           def enable!
-            storage.set('stats:enabled', '1')
+            storage.set(STATS_ENABLED_KEY, '1')
           end
 
           def disable!
-            storage.del('stats:enabled')
+            storage.del(STATS_ENABLED_KEY)
           end
 
           private
