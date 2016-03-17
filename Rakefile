@@ -132,7 +132,9 @@ namespace :stats do
   namespace :buckets do
     desc 'Show number of pending buckets'
     task :size => :environment do
-      puts ThreeScale::Backend::Stats::Info.pending_buckets_size
+      puts ThreeScale::Backend::Stats::BucketStorage
+               .new(ThreeScale::Backend::Storage.instance)
+               .pending_buckets_size
     end
 
     desc 'List pending buckets and their contents'

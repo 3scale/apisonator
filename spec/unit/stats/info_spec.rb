@@ -26,23 +26,6 @@ module ThreeScale
           end
         end
 
-        describe '#pending_buckets_size' do
-          subject { Info.pending_buckets_size }
-
-          context 'without pending buckets' do
-            it { expect(subject).to be(0) }
-          end
-
-          context 'with pending buckets' do
-            before do
-              storage.zadd(Keys.changed_keys_key, 0, "foo")
-              storage.zadd(Keys.changed_keys_key, 1, "bar")
-            end
-
-            it { expect(subject).to be(2) }
-          end
-        end
-
         describe '#pending_keys_by_bucket' do
           subject { Info.pending_keys_by_bucket }
 

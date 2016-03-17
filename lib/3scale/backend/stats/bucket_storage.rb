@@ -62,6 +62,10 @@ module ThreeScale
           storage.zrange(Keys.changed_keys_key, 0, -1)
         end
 
+        def pending_buckets_size
+          storage.zcard(Keys.changed_keys_key)
+        end
+
         # Puts a key in a bucket. The bucket is created if it does not exist.
         # We could have decided to only fill the bucket if it existed, but that
         # would affect performance, because we would need to get all the
