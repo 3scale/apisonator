@@ -244,16 +244,23 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert ttl <= 180
   end
 
-  test 'process does not open a new stats buckets & writes log when the limit has been exceeded' do
+  test 'does not open a new stats buckets when the limit has been exceeded' do
     n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
     mocked_bucket_storage = Object.new
     mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
-
     Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
 
     Stats::Aggregator.expects(:prepare_stats_buckets).never
-    Backend.logger.expects(:info).with(Stats::Aggregator.const_get(:MAX_BUCKETS_CREATED_MSG))
+    Stats::Aggregator.process([default_transaction])
+  end
 
+  test 'writes log when the limit has been exceeded' do
+    n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
+    mocked_bucket_storage = Object.new
+    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
+    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
+
+    Backend.logger.expects(:info).with(Stats::Aggregator.const_get(:MAX_BUCKETS_CREATED_MSG))
     Stats::Aggregator.process([default_transaction])
   end
 
