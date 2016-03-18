@@ -167,6 +167,11 @@ namespace :stats do
                .new(ThreeScale::Backend::Storage.instance)
                .delete_all_buckets_and_keys
     end
+
+    desc 'Was the latest disable automatic to avoid filling Redis?'
+    task :emergency? => :environment do
+      puts ThreeScale::Backend::Stats::Storage.last_disable_was_emergency?
+    end
   end
 
   namespace :kinesis do
