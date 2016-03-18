@@ -58,8 +58,10 @@ module ThreeScale
         def send_events(events)
           pending_events = stored_pending_events + events
 
-          if limit_pending_events_reached?(pending_events.size)
-            Storage.disable!
+          # Only disable indicating emergency if bucket storage is enabled.
+          # We do not want to indicate emergency if it was disabled manually.
+          if limit_pending_events_reached?(pending_events.size) && Storage.enabled?
+            Storage.disable!(true)
             log_bucket_creation_disabled
           end
 

@@ -259,14 +259,38 @@ module ThreeScale
               allow(subject).to receive(:limit_pending_events_reached?).and_return true
             end
 
-            it 'disables bucket creation' do
-              expect(Storage).to receive(:disable!)
-              subject.send_events(events)
+            context 'and bucket storage is enabled' do
+              before { Storage.enable! }
+
+              it 'disables bucket storage indicating emergency' do
+                subject.send_events(events)
+                Memoizer.reset!
+
+                expect(Storage.enabled?).to be false
+                expect(Storage.last_disable_was_emergency?).to be true
+              end
+
+              it 'logs a message' do
+                expect(Backend.logger).to receive(:info).with(limit_reached_msg)
+                subject.send_events(events)
+              end
             end
 
-            it 'logs a message' do
-              expect(Backend.logger).to receive(:info).with(limit_reached_msg)
-              subject.send_events(events)
+            context 'and bucket storage is not enabled' do
+              before { Storage.disable! }
+
+              it 'does not mark that bucket storage was disabled because of an emergency' do
+                subject.send_events(events)
+                Memoizer.reset!
+
+                expect(Storage.enabled?).to be false
+                expect(Storage.last_disable_was_emergency?).to be false
+              end
+
+              it 'does not log a message' do
+                expect(Backend.logger).not_to receive(:info)
+                subject.send_events(events)
+              end
             end
           end
 
