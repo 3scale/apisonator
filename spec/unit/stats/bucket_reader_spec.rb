@@ -79,7 +79,7 @@ module ThreeScale
           context 'when we have not read any buckets' do
             context 'when there are no buckets' do
               it 'returns a hash without events and with latest_bucket set to nil' do
-                expect(subject.pending_events_in_buckets(current_time))
+                expect(subject.pending_events_in_buckets(end_time_utc: current_time))
                     .to eq ({ events: {}, latest_bucket: nil })
               end
             end
@@ -88,7 +88,7 @@ module ThreeScale
               before { save_buckets_and_events(buckets_and_events) }
 
               it 'returns a hash with all the events and the latest bucket read' do
-                expect(subject.pending_events_in_buckets(current_time))
+                expect(subject.pending_events_in_buckets(end_time_utc: current_time))
                     .to eq ({ events: buckets_and_events.values.reduce(&:merge),
                               latest_bucket: third_bucket })
               end
@@ -104,7 +104,7 @@ module ThreeScale
               before { save_buckets_and_events(buckets_and_events) }
 
               it 'returns a hash with the events from closed buckets and the latest bucket read' do
-                expect(subject.pending_events_in_buckets(current_time))
+                expect(subject.pending_events_in_buckets(end_time_utc: current_time))
                     .to eq ({ events: buckets_and_events[first_bucket],
                               latest_bucket: first_bucket })
               end
@@ -120,7 +120,7 @@ module ThreeScale
             end
 
             it 'returns a hash with the pending events and the latest bucket read' do
-              expect(subject.pending_events_in_buckets(current_time))
+              expect(subject.pending_events_in_buckets(end_time_utc: current_time))
                   .to eq ({ events: buckets_and_events[second_bucket]
                                         .merge(buckets_and_events[third_bucket]),
                             latest_bucket: third_bucket })
@@ -141,7 +141,7 @@ module ThreeScale
             end
 
             it 'returns a hash without the events of the bucket that is not closed yet' do
-              expect(subject.pending_events_in_buckets(current_time))
+              expect(subject.pending_events_in_buckets(end_time_utc: current_time))
                   .to eq ({ events: buckets_and_events[second_bucket],
                             latest_bucket: second_bucket })
             end
@@ -155,7 +155,7 @@ module ThreeScale
             before { last_bucket_read_marker.latest_bucket_read = latest_bucket_read }
 
             it 'returns a hash without events and with latest_bucket set to nil' do
-              expect(subject.pending_events_in_buckets(current_time))
+              expect(subject.pending_events_in_buckets(end_time_utc: current_time))
                   .to eq ({ events: {}, latest_bucket: nil })
             end
           end
@@ -176,10 +176,45 @@ module ThreeScale
             before { save_buckets_and_events(buckets_and_events) }
 
             it 'returns a hash with the latest values of the events and the latest bucket read' do
-              expect(subject.pending_events_in_buckets(current_time))
+              expect(subject.pending_events_in_buckets(end_time_utc: current_time))
                   .to eq ({ events: buckets_and_events[older_bucket]
                                         .merge(buckets_and_events[newer_bucket]),
                             latest_bucket: newer_bucket })
+            end
+          end
+
+          context 'when specifying a limit for the number of buckets to read' do
+            before { save_buckets_and_events(buckets_and_events) }
+
+            context 'and the limit is 0' do
+              it 'returns a hash without events and with latest_bucket set to nil' do
+                expect(subject.pending_events_in_buckets(end_time_utc: current_time,
+                                                         max_buckets: 0))
+                    .to eq ({ events: {}, latest_bucket: nil })
+              end
+            end
+
+            context 'and the limit is lesser than the number of existing buckets' do
+              let(:limit) { 2 } # We have defined 3 buckets
+
+              it 'returns a hash with the events of the first n buckets, where n is the limit' do
+                expect(subject.pending_events_in_buckets(end_time_utc: current_time,
+                                                         max_buckets: limit))
+                    .to eq ({ events: buckets_and_events[first_bucket]
+                                          .merge(buckets_and_events[second_bucket]),
+                              latest_bucket: second_bucket })
+              end
+            end
+
+            context 'and the limit is higher than the number of existing buckets' do
+              let(:limit) { buckets_and_events.size + 1 }
+
+              it 'returns a hash with all the events and the latest bucket read' do
+                expect(subject.pending_events_in_buckets(end_time_utc: current_time,
+                                                         max_buckets: limit))
+                    .to eq ({ events: buckets_and_events.values.reduce(&:merge),
+                              latest_bucket: third_bucket })
+              end
             end
           end
         end

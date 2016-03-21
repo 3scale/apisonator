@@ -49,7 +49,7 @@ module ThreeScale
             events_sent = 0
 
             end_time = DateTime.parse(end_time_utc).to_time.utc
-            pending_events = bucket_reader.pending_events_in_buckets(end_time)
+            pending_events = bucket_reader.pending_events_in_buckets(end_time_utc: end_time)
 
             unless pending_events[:events].empty?
               events = prepare_events(pending_events[:latest_bucket],

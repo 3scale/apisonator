@@ -58,10 +58,15 @@ module ThreeScale
         # Returns the pending events and the bucket of the most recent of the
         # events sent. This allows the caller to call latest_bucket_read= when
         # it has processed all the events.
-        def pending_events_in_buckets(end_time_utc = Time.now.utc)
-          pending_buckets = pending_buckets(end_time_utc).to_a
-          events = bucket_storage.buckets_content_with_values(pending_buckets)
-          { events: events, latest_bucket: pending_buckets.last }
+        def pending_events_in_buckets(end_time_utc: Time.now.utc, max_buckets: nil)
+          buckets = if max_buckets
+                      pending_buckets(end_time_utc).take(max_buckets)
+                    else
+                      pending_buckets(end_time_utc).to_a
+                    end
+
+          events = bucket_storage.buckets_content_with_values(buckets)
+          { events: events, latest_bucket: buckets.last }
         end
 
         def latest_bucket_read=(latest_bucket_read)

@@ -50,7 +50,7 @@ module ThreeScale
               before do
                 allow(bucket_reader)
                     .to receive(:pending_events_in_buckets)
-                            .with(end_time_utc)
+                            .with(end_time_utc: end_time_utc)
                             .and_return({ events: events, latest_bucket: bucket })
 
                 allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
@@ -74,7 +74,7 @@ module ThreeScale
               before do
                 allow(bucket_reader)
                     .to receive(:pending_events_in_buckets)
-                            .with(end_time_utc)
+                            .with(end_time_utc: end_time_utc)
                             .and_return({ events: pending_events, latest_bucket: bucket })
 
                 allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
@@ -93,7 +93,7 @@ module ThreeScale
             before do
               allow(bucket_reader)
                   .to receive(:pending_events_in_buckets)
-                          .with(end_time_utc)
+                          .with(end_time_utc: end_time_utc)
                           .and_return({ events: { }, latest_bucket: nil })
             end
 
