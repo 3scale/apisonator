@@ -5,6 +5,8 @@ module ThreeScale
   module Backend
     module Stats
       describe SendToKinesisJob do
+        subject { SendToKinesisJob }
+
         # I use to_i so we do not take into account milliseconds. Otherwise,
         # the expectation of the mocks used below would fail
         let(:end_time_utc) { Time.at(Time.now.to_i).utc }
@@ -12,8 +14,7 @@ module ThreeScale
         let(:kinesis_adapter) { double }
         let(:bucket_storage) { double }
         let(:lock_key) { '123' } # Does not matter for these tests
-
-        subject { SendToKinesisJob }
+        let(:max_buckets) { subject.const_get(:MAX_BUCKETS) }
 
         before do
           # I use a mock for the bucket reader because otherwise, I would
@@ -50,7 +51,7 @@ module ThreeScale
               before do
                 allow(bucket_reader)
                     .to receive(:pending_events_in_buckets)
-                            .with(end_time_utc: end_time_utc)
+                            .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
                             .and_return({ events: events, latest_bucket: bucket })
 
                 allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
@@ -74,7 +75,7 @@ module ThreeScale
               before do
                 allow(bucket_reader)
                     .to receive(:pending_events_in_buckets)
-                            .with(end_time_utc: end_time_utc)
+                            .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
                             .and_return({ events: pending_events, latest_bucket: bucket })
 
                 allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
@@ -93,7 +94,7 @@ module ThreeScale
             before do
               allow(bucket_reader)
                   .to receive(:pending_events_in_buckets)
-                          .with(end_time_utc: end_time_utc)
+                          .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
                           .and_return({ events: { }, latest_bucket: nil })
             end
 
