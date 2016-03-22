@@ -48,7 +48,7 @@ module ThreeScale
         def delete_all_buckets_and_keys(options = {})
           Storage.disable!
 
-          all_buckets.each do |bucket|
+          buckets.each do |bucket|
             keys = storage.smembers(Keys.changed_keys_bucket_key(bucket))
             unless options[:silent]
               puts "Deleting bucket: #{bucket}, containing #{keys.size} keys"
@@ -58,8 +58,8 @@ module ThreeScale
           storage.del(Keys.changed_keys_key)
         end
 
-        def all_buckets
-          storage.zrange(Keys.changed_keys_key, 0, -1)
+        def buckets(first: '-inf', last: '+inf')
+          storage.zrangebyscore(Keys.changed_keys_key, first, last)
         end
 
         def pending_buckets_size

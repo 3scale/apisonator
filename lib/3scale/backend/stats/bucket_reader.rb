@@ -58,10 +58,15 @@ module ThreeScale
         # Returns the pending events and the bucket of the most recent of the
         # events sent. This allows the caller to call latest_bucket_read= when
         # it has processed all the events.
-        def pending_events_in_buckets(end_time_utc = Time.now.utc)
-          pending_buckets = pending_buckets(end_time_utc).to_a
-          events = bucket_storage.buckets_content_with_values(pending_buckets)
-          { events: events, latest_bucket: pending_buckets.last }
+        def pending_events_in_buckets(end_time_utc: Time.now.utc, max_buckets: nil)
+          buckets = if max_buckets
+                      pending_buckets(end_time_utc).take(max_buckets)
+                    else
+                      pending_buckets(end_time_utc).to_a
+                    end
+
+          events = bucket_storage.buckets_content_with_values(buckets)
+          { events: events, latest_bucket: buckets.last }
         end
 
         def latest_bucket_read=(latest_bucket_read)
@@ -74,33 +79,22 @@ module ThreeScale
 
         def pending_buckets(end_time_utc = Time.now.utc)
           latest_bucket_read = latest_bucket_read_marker.latest_bucket_read
+          start_time = unless latest_bucket_read.nil?
+                         bucket_to_time(latest_bucket_read) + bucket_create_interval
+                       end
           end_time = end_time_with_backup(end_time_utc)
-
-          return buckets_in_storage(end_time) if latest_bucket_read.nil?
-
-          start_time_utc = bucket_to_time(latest_bucket_read) + bucket_create_interval
-          buckets(start_time_utc, end_time)
+          stored_buckets(start_time, end_time)
         end
 
         def end_time_with_backup(end_time_utc)
           [end_time_utc, Time.now.utc - bucket_create_interval - BACKUP_SECONDS_READ_BUCKET].min
         end
 
-        def buckets(start_time_utc, end_time_utc)
-          # The number of buckets can be very large depending on the start
-          # date. For that reason, we return an enumerator.
-          Enumerator.new do |y|
-            (start_time_utc.to_i..end_time_utc.to_i).step(bucket_create_interval) do |sec|
-              y << time_to_bucket_name(Time.at(sec).utc)
-            end
-          end
-        end
-
-        def buckets_in_storage(end_time_utc)
-          all_buckets = bucket_storage.all_buckets
-          all_buckets.reverse.drop_while do |bucket|
-            end_time_utc < bucket_to_time(bucket)
-          end.reverse
+        def stored_buckets(start_time_utc, end_time_utc)
+          range = { }
+          range[:first] = time_to_bucket_name(start_time_utc) if start_time_utc
+          range[:last] = time_to_bucket_name(end_time_utc)
+          bucket_storage.buckets(range)
         end
 
         def time_to_bucket_name(time_utc)

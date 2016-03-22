@@ -36,6 +36,13 @@ module ThreeScale
         FILTERED_EVENT_PERIODS = %w(week eternity)
         private_constant :FILTERED_EVENT_PERIODS
 
+        # We need to limit the amount of buckets that a job can process.
+        # Otherwise, there is the possibility that the job would not finish
+        # before its expiration time, and the next one would start processing
+        # the same buckets.
+        MAX_BUCKETS = 60
+        private_constant :MAX_BUCKETS
+
         FILTERED_EVENT_PERIODS_STR = FILTERED_EVENT_PERIODS.map do |period|
           "/#{period}".freeze
         end.freeze
@@ -49,7 +56,8 @@ module ThreeScale
             events_sent = 0
 
             end_time = DateTime.parse(end_time_utc).to_time.utc
-            pending_events = bucket_reader.pending_events_in_buckets(end_time)
+            pending_events = bucket_reader.pending_events_in_buckets(
+                end_time_utc: end_time, max_buckets: MAX_BUCKETS)
 
             unless pending_events[:events].empty?
               events = prepare_events(pending_events[:latest_bucket],

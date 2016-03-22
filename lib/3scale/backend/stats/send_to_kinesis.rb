@@ -33,7 +33,7 @@ module ThreeScale
 
         # If for some reason the job fails to set JOB_RUNNING_KEY to 0, other
         # jobs will not be able to execute. We solve this setting a TTL.
-        TTL_JOB_RUNNING_KEY_SEC = 120
+        TTL_JOB_RUNNING_KEY_SEC = 360
         private_constant :TTL_JOB_RUNNING_KEY_SEC
 
         class << self

@@ -21,7 +21,7 @@ module ThreeScale
 
             it 'deletes the bucket from the set' do
               subject.delete_bucket(bucket)
-              expect(subject.all_buckets).not_to include bucket
+              expect(subject.buckets).not_to include bucket
             end
 
             it 'deletes the contents of the bucket' do
@@ -60,7 +60,7 @@ module ThreeScale
 
               it 'only deletes the first one from the set of buckets' do
                 subject.delete_range(bucket)
-                expect(subject.all_buckets).to match_array buckets[1..-1]
+                expect(subject.buckets).to match_array buckets[1..-1]
               end
 
               it 'only deletes the content of the first bucket' do
@@ -75,7 +75,7 @@ module ThreeScale
 
               it 'deletes all the buckets from the set of buckets' do
                 subject.delete_range(bucket)
-                expect(subject.all_buckets).to be_empty
+                expect(subject.buckets).to be_empty
               end
 
               it 'deletes the contents of all the buckets' do
@@ -90,7 +90,7 @@ module ThreeScale
 
               it 'deletes the bucket and the previous ones from the set of buckets' do
                 subject.delete_range(bucket)
-                expect(subject.all_buckets).to match_array buckets[(position + 1)..-1]
+                expect(subject.buckets).to match_array buckets[(position + 1)..-1]
               end
 
               it 'deletes the contents of the given bucket and the previous ones' do
@@ -107,7 +107,7 @@ module ThreeScale
 
               it 'does not delete any buckets' do
                 subject.delete_range(bucket)
-                expect(subject.all_buckets).to match_array buckets
+                expect(subject.buckets).to match_array buckets
               end
             end
 
@@ -116,7 +116,7 @@ module ThreeScale
 
               it 'deletes all the buckets from the set of buckets' do
                 subject.delete_range(bucket)
-                expect(subject.all_buckets).to be_empty
+                expect(subject.buckets).to be_empty
               end
 
               it 'deletes the contents of all the buckets' do
@@ -149,7 +149,7 @@ module ThreeScale
 
           it 'deletes all the buckets from the set of buckets' do
             subject.delete_all_buckets_and_keys(silent: true)
-            expect(subject.all_buckets).to be_empty
+            expect(subject.buckets).to be_empty
           end
 
           it 'deletes the contents of all the buckets' do
@@ -158,22 +158,64 @@ module ThreeScale
           end
         end
 
-        describe '#all_buckets' do
-          context 'when there are no buckets' do
+        describe '#buckets' do
+          context 'when there are not any buckets' do
             it 'returns an empty list' do
-              expect(subject.all_buckets).to be_empty
+              expect(subject.buckets).to be_empty
             end
           end
 
           context 'when there are some buckets' do
-            let(:buckets) { %w(20150101000000 20150101000010) }
-
-            before do
-              buckets.each { |bucket| subject.put_in_bucket(event_key, bucket) }
+            let(:buckets) { %w(20150101000000 20150101000010 20150101000020 20150101000030) }
+            let(:event_keys) do # One event in each bucket
+              ['stats/{service:11}/metric:21/day:20151207',
+               'stats/{service:11}/metric:21/day:20151208',
+               'stats/{service:11}/metric:21/day:20151209',
+               'stats/{service:11}/metric:21/day:20151210']
             end
 
-            it 'returns all the buckets' do
-              expect(subject.all_buckets).to eq buckets
+            before do
+              buckets.each_with_index do |bucket, index|
+                subject.put_in_bucket(event_keys[index], bucket)
+              end
+            end
+
+            context 'and first is not specified' do
+              let(:last_index) { buckets.size - 2 }
+              let(:last) { buckets[last_index] }
+
+              it 'returns the buckets that are older or equal than last' do
+                expect(subject.buckets(last: last))
+                    .to match_array buckets[0..last_index]
+              end
+            end
+
+            context 'and last is not specified' do
+              let(:first_index) { 1 }
+              let(:first) { buckets[first_index] }
+
+              it 'returns the buckets that are newer or equal than first' do
+                expect(subject.buckets(first: first))
+                    .to match_array buckets[first_index..-1]
+              end
+            end
+
+            context 'and neither first or last are specified' do
+              it 'returns all the buckets' do
+                expect(subject.buckets).to match_array buckets
+              end
+            end
+
+            context 'and both first and last are specified' do
+              let(:first_index) { 1 }
+              let(:last_index) { buckets.size - 2 }
+              let(:first) { buckets[first_index] }
+              let(:last) { buckets[last_index] }
+
+              it 'returns the buckets that are newer than first and older than last (inclusive)' do
+                expect(subject.buckets(first: first, last: last))
+                    .to match_array buckets[first_index..last_index]
+              end
             end
           end
         end
@@ -220,7 +262,7 @@ module ThreeScale
 
             it 'creates the bucket' do
               subject.put_in_bucket(event_key, new_bucket)
-              expect(subject.all_buckets).to include new_bucket
+              expect(subject.buckets).to include new_bucket
             end
 
             it 'puts the event in the bucket' do
