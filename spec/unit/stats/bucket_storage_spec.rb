@@ -178,6 +178,68 @@ module ThreeScale
           end
         end
 
+        describe '#buckets' do
+          context 'when there are not any buckets' do
+            it 'returns an empty list' do
+              expect(subject.buckets).to be_empty
+            end
+          end
+
+          context 'when there are some buckets' do
+            let(:buckets) { %w(20150101000000 20150101000010 20150101000020 20150101000030) }
+            let(:event_keys) do # One event in each bucket
+              ['stats/{service:11}/metric:21/day:20151207',
+               'stats/{service:11}/metric:21/day:20151208',
+               'stats/{service:11}/metric:21/day:20151209',
+               'stats/{service:11}/metric:21/day:20151210']
+            end
+
+            before do
+              buckets.each_with_index do |bucket, index|
+                subject.put_in_bucket(event_keys[index], bucket)
+              end
+            end
+
+            context 'and first is not specified' do
+              let(:last_index) { buckets.size - 2 }
+              let(:last) { buckets[last_index] }
+
+              it 'returns the buckets that are older or equal than last' do
+                expect(subject.buckets(last: last))
+                    .to match_array buckets[0..last_index]
+              end
+            end
+
+            context 'and last is not specified' do
+              let(:first_index) { 1 }
+              let(:first) { buckets[first_index] }
+
+              it 'returns the buckets that are newer or equal than first' do
+                expect(subject.buckets(first: first))
+                    .to match_array buckets[first_index..-1]
+              end
+            end
+
+            context 'and neither first or last are specified' do
+              it 'returns all the buckets' do
+                expect(subject.buckets).to match_array buckets
+              end
+            end
+
+            context 'and both first and last are specified' do
+              let(:first_index) { 1 }
+              let(:last_index) { buckets.size - 2 }
+              let(:first) { buckets[first_index] }
+              let(:last) { buckets[last_index] }
+
+              it 'returns the buckets that are newer than first and older than last (inclusive)' do
+                expect(subject.buckets(first: first, last: last))
+                    .to match_array buckets[first_index..last_index]
+              end
+            end
+          end
+        end
+
         describe '#pending_buckets_size' do
           context 'when there are no pending buckets' do
             it 'returns 0' do

@@ -62,6 +62,10 @@ module ThreeScale
           storage.zrange(Keys.changed_keys_key, 0, -1)
         end
 
+        def buckets(first: '-inf', last: '+inf')
+          storage.zrangebyscore(Keys.changed_keys_key, first, last)
+        end
+
         def pending_buckets_size
           storage.zcard(Keys.changed_keys_key)
         end
