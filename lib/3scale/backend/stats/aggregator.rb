@@ -34,13 +34,21 @@ module ThreeScale
 
           attr_accessor :prior_bucket
 
+          # This method stores the events in buckets if that option is enabled
+          # or if it was disable because of an emergency (not because a user
+          # did it manually), and Kinesis has already consumed all the pending
+          # buckets.
           def process(transactions)
             current_bucket = nil
 
-            if buckets_limit_exceeded?
-              Storage.disable!
+            # Only disable indicating emergency if bucket storage is enabled.
+            # Otherwise, we might indicate emergency when a user manually
+            # disabled it previously.
+            if Storage.enabled? && buckets_limit_exceeded?
+              Storage.disable!(true)
               log_bucket_creation_disabled
-            elsif configuration.can_create_event_buckets && Storage.enabled?
+            elsif save_in_bucket?
+              Storage.enable! unless Storage.enabled?
               current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
               prepare_stats_buckets(current_bucket)
             end
@@ -84,6 +92,16 @@ module ThreeScale
           def aggregate_all(transaction, bucket)
             [Aggregators::ResponseCode, Aggregators::Usage].each do |aggregator|
               aggregator.aggregate(transaction, bucket)
+            end
+          end
+
+          def save_in_bucket?
+            return false unless configuration.can_create_event_buckets
+
+            if Storage.enabled?
+              true
+            else
+              Storage.last_disable_was_emergency? && bucket_storage.pending_buckets_size == 0
             end
           end
 

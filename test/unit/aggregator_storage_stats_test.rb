@@ -244,17 +244,82 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert ttl <= 180
   end
 
-  test 'process does not open a new stats buckets & writes log when the limit has been exceeded' do
+  test 'does not open a new stats buckets when the limit has been exceeded' do
     n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
-
     mocked_bucket_storage = Object.new
     mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
-
-    Stats::Aggregator.expects(:bucket_storage).returns(mocked_bucket_storage)
+    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
 
     Stats::Aggregator.expects(:prepare_stats_buckets).never
+    Stats::Aggregator.process([default_transaction])
+  end
+
+  test 'writes log when the limit has been exceeded' do
+    n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
+    mocked_bucket_storage = Object.new
+    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
+    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
+
     Backend.logger.expects(:info).with(Stats::Aggregator.const_get(:MAX_BUCKETS_CREATED_MSG))
+    Stats::Aggregator.process([default_transaction])
+  end
+
+  test 'disables bucket storage if buckets limit has been exceeded' do
+    n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
+    mocked_bucket_storage = Object.new
+    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
+    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
 
     Stats::Aggregator.process([default_transaction])
+
+    Memoizer.reset! # because Stats::Storage.enabled? is memoized
+    assert_false Stats::Storage.enabled?
+    assert_true Stats::Storage.last_disable_was_emergency?
+  end
+
+  test 'does not disable bucket storage if already disabled even if bucket limit is exceeded' do
+    Stats::Storage.disable!
+
+    Stats::Storage.expects(:disable!).never
+    Stats::Aggregator.process([default_transaction])
+  end
+
+  test 'does not store buckets if the option was disabled manually' do
+    Stats::Storage.disable!
+
+    Stats::Storage.expects(:prepare_stats_buckets).never
+    Stats::Aggregator.process([default_transaction])
+  end
+
+  test 'does not store buckets if option disabled because an emergency and pending buckets > 0' do
+    mocked_bucket_storage = Object.new
+    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { 1 }
+    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
+    Stats::Storage.disable!(true)
+
+    Stats::Aggregator.expects(:prepare_stats_buckets).never
+    Stats::Aggregator.process([default_transaction])
+  end
+
+  test 'stores buckets if option disabled because an emergency and there are no pending buckets' do
+    mocked_bucket_storage = Object.new
+    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { 0 }
+    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
+    Stats::Storage.disable!(true)
+
+    Stats::Aggregator.expects(:prepare_stats_buckets).once
+    Stats::Aggregator.process([default_transaction])
+  end
+
+  test 're-enables bucket storage if disabled because emergency and there are no pending buckets' do
+    mocked_bucket_storage = Object.new
+    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { 0 }
+    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
+    Stats::Storage.disable!(true)
+
+    Stats::Aggregator.process([default_transaction])
+
+    Memoizer.reset! # because Stats::Storage.enabled? is memoized
+    assert_true Stats::Storage.enabled?
   end
 end
