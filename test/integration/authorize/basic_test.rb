@@ -164,6 +164,24 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                           :code    => 'application_not_found'
   end
 
+  test 'fails when the application exists but in a different provider' do
+    diff_provider_key = next_id
+    service = Service.save!(:provider_key => diff_provider_key, :id => next_id)
+    application = Application.save(:service_id => service.id,
+                                   :id         => next_id,
+                                   :state      => :active,
+                                   :plan_id    => next_id,
+                                   :plan_name  => 'free')
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :service_id   => service.id,
+                                       :app_id       => application.id
+
+    assert_error_response :status  => 403,
+                          :code    => 'service_id_invalid',
+                          :message => "service id \"#{service.id}\" is invalid"
+  end
+
   test 'does not authorize on inactive application' do
     @application.state = :suspended
     @application.save

@@ -232,7 +232,10 @@ module ThreeScale
         id = Service.default_id!(provider_key) if id.nil? || id.empty?
         service = Service.load_by_id(id.split('-').last) || Service.load_by_id!(id)
 
-        raise ProviderKeyInvalid, provider_key if service.provider_key != provider_key
+        if service.provider_key != provider_key
+          Service.default_id!(provider_key) # no need to check anything, raises if invalid provider
+          raise ServiceIdInvalid, id
+        end
 
         service
       end
