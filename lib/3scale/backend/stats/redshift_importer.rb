@@ -33,9 +33,11 @@ module ThreeScale
           end
 
           # Returns a UTC time that represents the hour when the newest events
-          # imported in Redshift were generated
+          # imported in Redshift were generated or nil if nothing has been
+          # imported.
           def latest_imported_events_time
             latest_timestamp = RedshiftAdapter.latest_timestamp_read
+            return nil if latest_timestamp.nil?
             DateTime.parse(latest_timestamp).to_time.utc
           end
 

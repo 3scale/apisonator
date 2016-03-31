@@ -214,9 +214,12 @@ module ThreeScale
             pending_times_utc.last
           end
 
-          # Returns a timestamp with format 'YYYYMMDDHH'
+          # Returns a timestamp with format 'YYYYMMDDHH' or nil if the latest
+          # timestamp read does not exist in the DB.
           def latest_timestamp_read
-            execute_command(SQL::LATEST_TIMESTAMP_READ).first['s3_path']
+            query_result = execute_command(SQL::LATEST_TIMESTAMP_READ)
+            return nil if query_result.ntuples == 0
+            query_result.first['s3_path']
           end
 
           private
