@@ -812,27 +812,30 @@ class ReportTest < Test::Unit::TestCase
     assert_equal '', last_response.body
   end
 
-  test 'regression test for parameter encoding issue' do
-    post '/transactions.xml',
-      :transactions => "\xf0\x90\x28\xbc"
+  test 'returns 403 when no provider key is given, even if other params have an invalid encoding' do
+    post '/transactions.xml', :transactions => "\xf0\x90\x28\xbc"
 
     assert_equal 403, last_response.status
     assert_equal '', last_response.body
+  end
 
+  test 'returns 400 when transactions is not a hash' do
     post '/transactions.xml',
-      :transactions => "\xf0\x90\x28\xbc",
-      :provider_key => @provider_key
+      :provider_key => @provider_key,
+      :transactions => "\xf0\x90\x28\xbc"
 
     assert_equal 400, last_response.status
     assert_equal '', last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => 'blablabla'
+      :transactions => 'i_am_a_string_with_valid_encoding'
 
     assert_equal 400, last_response.status
     assert_equal '', last_response.body
+  end
 
+  test 'returns 400 and not valid data msg when params have an invalid encoding' do
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {"\xf0\x90\x28\xbc" => {:app_id => @application.id}}
