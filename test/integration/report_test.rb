@@ -838,14 +838,14 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {"\xf0\x90\x28\xbc" => {:app_id => @application.id}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {'0' => {:app_id => @application.id, :usage => {"\xf0\x90\x28\xbc" => 1}}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -853,20 +853,20 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {'0' => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => "\xf0\x90\x28\xbc"}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {'0' => {:app_id => @application.id, :usage => {'hits' => "\xf0\x90\x28\xbc"}}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
   end
 end
