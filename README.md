@@ -19,7 +19,7 @@ Next cd into the directory, `cd backend`.
 
 #### Prerequisites
 
-* Docker (tested with version 1.9.1)
+* Docker (requires version 1.10.0 or later)
 
 #### With Docker
 
