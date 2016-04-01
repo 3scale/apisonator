@@ -803,6 +803,15 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
+  test 'returns 403 if provider key is missing' do
+    post '/transactions.xml',
+         :transactions => { '0' => { :app_id => @application.id,
+                                     :usage => { 'hits' => 1 } } }
+
+    assert_equal 403, last_response.status
+    assert_equal '', last_response.body
+  end
+
   test 'regression test for parameter encoding issue' do
     post '/transactions.xml',
       :transactions => "\xf0\x90\x28\xbc"
