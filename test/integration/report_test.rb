@@ -818,7 +818,6 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 403, last_response.status
     assert_equal '', last_response.body
-    Resque.run!
 
     post '/transactions.xml',
       :transactions => "\xf0\x90\x28\xbc",
@@ -826,7 +825,6 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 400, last_response.status
     assert_equal '', last_response.body
-    Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -834,7 +832,6 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 400, last_response.status
     assert_equal '', last_response.body
-    Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -842,7 +839,6 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -850,7 +846,6 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -859,7 +854,6 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -867,7 +861,6 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -875,8 +868,5 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
-
-    assert_equal 0, ErrorStorage.list(@service_id).count
   end
 end
