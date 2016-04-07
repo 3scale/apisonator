@@ -239,6 +239,25 @@ class AccessTokenTest < Test::Unit::TestCase
     assert node.attribute('ttl').value.to_i > 0, 'TTL should be positive'
   end
 
+  test 'create and read oauth_access_token with expiring TTL supplied' do
+    minimum_ttl = 1 # we have to sleep at least one second :(
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'EXPIRING-TOKEN',
+                                                             :ttl => minimum_ttl
+    assert_equal 200, last_response.status
+
+    sleep minimum_ttl
+
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+
+    assert node.nil?
+  end
 
   test 'create oauth_access_token with invalid TTL returns 422' do
     [ -666, 0, '', 'adbc'].each do |ttl|
