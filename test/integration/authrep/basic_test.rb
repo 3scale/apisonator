@@ -159,6 +159,24 @@ class AuthrepBasicTest < Test::Unit::TestCase
                           :message => 'application with id="boo" was not found'
   end
 
+  test_authrep 'fails when the application exists but in a different provider' do |e|
+    diff_provider_key = next_id
+    service = Service.save!(:provider_key => diff_provider_key, :id => next_id)
+    application = Application.save(:service_id => service.id,
+                                   :id         => next_id,
+                                   :state      => :active,
+                                   :plan_id    => next_id,
+                                   :plan_name  => 'free')
+
+    get e, :provider_key => @provider_key,
+           :service_id   => service.id,
+           :app_id       => application.id
+
+    assert_error_response :status  => 403,
+                          :code    => 'service_id_invalid',
+                          :message => "service id \"#{service.id}\" is invalid"
+  end
+
   test_authrep 'fails on invalid application id with no body' do |e|
     get e, :provider_key => @provider_key,
            :app_id       => 'boo',

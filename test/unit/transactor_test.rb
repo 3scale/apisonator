@@ -271,6 +271,24 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
+  test 'authorize raises ServiceIdInvalid when the service exists but in other provider' do
+    diff_provider_key = next_id
+    service = Service.save!(:provider_key => diff_provider_key, :id => next_id)
+
+    assert_raise ServiceIdInvalid do
+      Transactor.authorize(@provider_key, :service_id => service.id)
+    end
+  end
+
+  test 'oauth_authorize raises ServiceIdInvalid when the service exists but in other provider' do
+    diff_provider_key = next_id
+    service = Service.save!(:provider_key => diff_provider_key, :id => next_id)
+
+    assert_raise ServiceIdInvalid do
+      Transactor.oauth_authorize(@provider_key, :service_id => service.id)
+    end
+  end
+
   test_authrep 'returns status object without usage reports if the plan has no usage limits' do |_, method|
     status, status_xml, status_result = Transactor.send(method, @provider_key, :app_id => @application_one.id)
     if not status.nil?
@@ -349,6 +367,15 @@ class TransactorTest < Test::Unit::TestCase
 
     assert_raise UserKeyInvalid do
       Transactor.send(method, @provider_key, :user_key => 'eatthis')
+    end
+  end
+
+  test_authrep 'raises ServiceIdInvalid when service exists but in other provider' do |_, method|
+    diff_provider_key = next_id
+    service = Service.save!(:provider_key => diff_provider_key, :id => next_id)
+
+    assert_raise ServiceIdInvalid do
+      Transactor.send(method, @provider_key, :service_id => service.id)
     end
   end
 end
