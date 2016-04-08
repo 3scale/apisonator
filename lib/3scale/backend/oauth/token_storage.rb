@@ -16,7 +16,17 @@ module ThreeScale
             include Backend::StorageHelpers
 
             def create(token, service_id, app_id, user_id, ttl = nil)
-              store_token(token, service_id, app_id, user_id, ttl)
+              return false if token.nil? || token.empty? || !token.is_a?(String) || token.size > MAXIMUM_TOKEN_SIZE
+
+              key = Key.for token, service_id
+              raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
+
+              value = Value.for(app_id, user_id)
+              token_set = Key::Set.for(service_id, app_id)
+
+              if store_token token, token_set, key, value, ttl
+                ensure_stored! token, token_set, key, value
+              end
             end
 
             # Deletes a token
@@ -217,13 +227,9 @@ module ThreeScale
               end
             end
 
-            # Associate the specified app and user ids to a token
-            def store_token(token, service_id, app_id, user_id, ttl = nil)
-              return false if token.nil? || token.empty? || !token.is_a?(String) || token.size > MAXIMUM_TOKEN_SIZE
-
-              key = Key.for token, service_id
-              raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
-
+            # Store the specified token in Redis
+            #
+            def store_token(token, token_set, key, value, ttl)
               # build the storage command so that we can pipeline everything cleanly
               command = :set
               args = [key]
@@ -235,28 +241,32 @@ module ThreeScale
                 args << ttl
               end
 
-              args << Value.for(app_id, user_id)
-
-              token_set = Key::Set.for(service_id, app_id)
+              args << value
 
               storage.pipelined do
                 storage.send(command, *args)
                 storage.sadd(token_set, token)
               end
+            end
 
-              # Now make sure everything ended up there
-              #
-              # Note that we have a sharding proxy and pipelines can't be guaranteed
-              # to behave like transactions, since we might have one non-working
-              # shard. Instead of relying on proxy-specific responses, we just check
-              # that the data we should have in the store is really there.
+
+            # Make sure everything ended up there
+            #
+            # TODO: review and possibly reimplement trying to leave it
+            # consistent as much as possible.
+            #
+            # Note that we have a sharding proxy and pipelines can't be guaranteed
+            # to behave like transactions, since we might have one non-working
+            # shard. Instead of relying on proxy-specific responses, we just check
+            # that the data we should have in the store is really there.
+            def ensure_stored!(token, token_set, key, value)
               results = storage.pipelined do
                 storage.get(key)
                 storage.sismember(token_set, token)
               end
 
-              results.shift == args.last && results.all? { |x| x == true } ||
-                raise(AccessTokenStorageError.new token)
+              results.last && results.first == value ||
+                raise(AccessTokenStorageError, token)
             end
           end
         end
