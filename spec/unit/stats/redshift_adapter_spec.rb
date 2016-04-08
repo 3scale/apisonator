@@ -141,15 +141,31 @@ module ThreeScale
         describe '.latest_timestamp_read' do
           let(:latest_s3_path_read) { '2016030912' }
 
-          before do
-            allow(redshift_connection)
-                .to receive(:exec)
-                .with(subject::SQL::LATEST_TIMESTAMP_READ)
-                .and_return double(first: { 's3_path' => latest_s3_path_read })
+          context 'when there is a latest read' do
+            before do
+              allow(redshift_connection)
+                  .to receive(:exec)
+                  .with(subject::SQL::LATEST_TIMESTAMP_READ)
+                  .and_return double(ntuples: 1,
+                                     first: { 's3_path' => latest_s3_path_read })
+            end
+
+            it 'returns the latest S3 path read' do
+              expect(subject.latest_timestamp_read).to eq latest_s3_path_read
+            end
           end
 
-          it 'returns the latest S3 path read' do
-            expect(subject.latest_timestamp_read).to eq latest_s3_path_read
+          context 'when there is not a latest read' do
+            before do
+              allow(redshift_connection)
+                  .to receive(:exec)
+                  .with(subject::SQL::LATEST_TIMESTAMP_READ)
+                  .and_return double(ntuples: 0)
+            end
+
+            it 'returns nil' do
+              expect(subject.latest_timestamp_read).to be_nil
+            end
           end
         end
 
