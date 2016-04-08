@@ -42,15 +42,16 @@ module ThreeScale
         context 'when application had has traffic for first time' do
           subject { ApplicationEvents.generate([application]) }
           let(:application) { { service_id: 3, application_id: 5 } }
+          let(:current_time) { Time.now.utc }
 
           before do
-            Timecop.travel(Time.now.utc - 24*60*60) do
+            Timecop.travel(current_time - 24*60*60) do
               ApplicationEvents.generate([application])
             end
           end
 
           context 'with daily traffic for first time' do
-            let(:event) { application.merge(timestamp: Time.now.utc.to_s) }
+            let(:event) { application.merge(timestamp: current_time.to_s) }
 
             before do
               expect(EventStorage).to_not receive(:store).with(:first_traffic, event)
@@ -59,7 +60,7 @@ module ThreeScale
               expect_any_instance_of(Storage).to receive(:incr).and_call_original
             end
 
-            it { expect(subject) }
+            it { Timecop.freeze(current_time) { expect(subject) } }
           end
 
           context 'with daily traffic for second time' do
