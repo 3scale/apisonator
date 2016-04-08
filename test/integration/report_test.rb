@@ -803,6 +803,18 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
+  test 'returns error if any of the reported transactions are nil' do
+    post '/transactions.xml',
+         :provider_key => @provider_key,
+         :transactions => { 0 => { app_id: @application.id,
+                                   usage: { 'hits' => 1 },
+                                   timestamp: Time.now.utc },
+                            1 => nil }
+
+    assert_equal 400, last_response.status
+    assert_equal '', last_response.body
+  end
+
   test 'returns 403 if provider key is missing' do
     post '/transactions.xml',
          :transactions => { '0' => { :app_id => @application.id,

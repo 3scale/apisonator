@@ -399,6 +399,11 @@ module ThreeScale
           return
         end
 
+        if transactions.any? { |_id, data| data.nil? }
+          empty_response 400
+          return
+        end
+
         ## not very proud of this but... this is to cover for those cases that it does not blow on
         ## rack_exception_catcher
         if !transactions.valid_encoding?
