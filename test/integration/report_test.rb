@@ -803,45 +803,52 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
-  test 'regression test for parameter encoding issue' do
+  test 'returns 403 if provider key is missing' do
     post '/transactions.xml',
-      :transactions => "\xf0\x90\x28\xbc"
+         :transactions => { '0' => { :app_id => @application.id,
+                                     :usage => { 'hits' => 1 } } }
 
     assert_equal 403, last_response.status
     assert_equal '', last_response.body
-    Resque.run!
+  end
 
+  test 'returns 403 when no provider key is given, even if other params have an invalid encoding' do
+    post '/transactions.xml', :transactions => "\xf0\x90\x28\xbc"
+
+    assert_equal 403, last_response.status
+    assert_equal '', last_response.body
+  end
+
+  test 'returns 400 when transactions is not a hash' do
     post '/transactions.xml',
-      :transactions => "\xf0\x90\x28\xbc",
-      :provider_key => @provider_key
+      :provider_key => @provider_key,
+      :transactions => "\xf0\x90\x28\xbc"
 
     assert_equal 400, last_response.status
     assert_equal '', last_response.body
-    Resque.run!
 
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => 'blablabla'
+      :transactions => 'i_am_a_string_with_valid_encoding'
 
     assert_equal 400, last_response.status
     assert_equal '', last_response.body
-    Resque.run!
+  end
 
+  test 'returns 400 and not valid data msg when params have an invalid encoding' do
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {"\xf0\x90\x28\xbc" => {:app_id => @application.id}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {'0' => {:app_id => @application.id, :usage => {"\xf0\x90\x28\xbc" => 1}}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
@@ -849,25 +856,20 @@ class ReportTest < Test::Unit::TestCase
       :transactions => {'0' => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => "\xf0\x90\x28\xbc"}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {'0' => {:app_id => @application.id, :usage => {'hits' => "\xf0\x90\x28\xbc"}}}
 
     assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new().to_xml, last_response.body
-    Resque.run!
-
-    assert_equal 0, ErrorStorage.list(@service_id).count
+    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
   end
 end
