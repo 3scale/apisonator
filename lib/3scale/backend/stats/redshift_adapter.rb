@@ -202,9 +202,20 @@ module ThreeScale
             pending_times_utc = S3EventPaths.pending_paths(latest_timestamp_read)
             pending_times_utc.each do |pending_time_utc|
               puts "Loading events generated in hour: #{pending_time_utc}" unless silent
-              save_in_redshift(pending_time_utc)
+              save_in_redshift(s3_path(pending_time_utc))
+              save_latest_read(pending_time_utc)
             end
             pending_times_utc.last
+          end
+
+          # This method import a specific S3 path into Redshift.
+          # Right now, its main use case consists of uploading past events to
+          # a path and importing only that path.
+          def insert_path(path)
+            # Need to check that the 'events' table exists. Do not care about
+            # 'latest_s3_path_read' in this case.
+            existing_tables_with_schema.include?(SQL::TABLES[:events])
+            save_in_redshift("#{S3_EVENTS_BASE_PATH}#{path}")
           end
 
           # Returns a timestamp with format 'YYYYMMDDHH' or nil if the latest
@@ -264,13 +275,15 @@ module ThreeScale
             execute_command(SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS)
             execute_command(SQL::INSERT_IMPORTED_EVENTS)
             execute_command(SQL::CLEAN_TEMP_TABLES)
-            execute_command(SQL.store_timestamp_read(path.strftime('%Y%m%d%H')))
             execute_command(SQL::VACUUM)
           end
 
-          def import_s3_path(time_utc)
+          def save_latest_read(time_utc)
+            execute_command(SQL.store_timestamp_read(time_utc.strftime('%Y%m%d%H')))
+          end
+
+          def import_s3_path(path)
             execute_command(SQL::CREATE_TEMP_TABLE)
-            path = s3_path(time_utc)
             execute_command(SQL.import_s3_path(
                 path, config.aws_access_key_id, config.aws_secret_access_key))
           end

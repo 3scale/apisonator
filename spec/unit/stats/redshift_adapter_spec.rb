@@ -67,9 +67,9 @@ module ThreeScale
                  subject::SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS,
                  subject::SQL::INSERT_IMPORTED_EVENTS,
                  subject::SQL::CLEAN_TEMP_TABLES,
+                 subject::SQL::VACUUM,
                  subject::SQL.store_timestamp_read(
-                     pending_paths.first.strftime('%Y%m%d%H')),
-                 subject::SQL::VACUUM]
+                     pending_paths.first.strftime('%Y%m%d%H'))]
 
               expected_sql_queries.each do |query|
                 expect(redshift_connection).to receive(:exec).with(query).once
@@ -134,6 +134,49 @@ module ThreeScale
             it 'raises MissingLatestS3PathRead exception' do
               expect { subject.insert_data }
                   .to raise_error subject::MissingLatestS3PathRead
+            end
+          end
+        end
+
+        describe '.insert_path' do
+          context 'when the events table does not exist in Redshift' do
+            before do
+              allow(redshift_connection)
+                  .to receive(:exec)
+                  .with(subject::SQL::EXISTING_TABLES)
+                  .and_return []
+            end
+
+            it 'raises MissingRequiredTables exception' do
+              expect { subject.insert_data }
+                  .to raise_error subject::MissingRequiredTables
+            end
+          end
+
+          context 'when the events table exists in Redshift' do
+            let(:path) { 'a_path' }
+
+            before do
+              allow(subject)
+                  .to receive(:existing_tables_with_schema)
+                  .and_return [subject::SQL::TABLES[:events]]
+            end
+
+            it 'executes the necessary queries to perform an UPSERT' do
+              expected_sql_queries =
+                  [subject::SQL::CREATE_TEMP_TABLE,
+                   subject::SQL.import_s3_path(
+                       "#{subject.const_get(:S3_EVENTS_BASE_PATH)}#{path}", '', ''),
+                   subject::SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS,
+                   subject::SQL::INSERT_IMPORTED_EVENTS,
+                   subject::SQL::CLEAN_TEMP_TABLES,
+                   subject::SQL::VACUUM]
+
+              expected_sql_queries.each do |query|
+                expect(redshift_connection).to receive(:exec).with(query).once
+              end
+
+              subject.insert_path(path)
             end
           end
         end
