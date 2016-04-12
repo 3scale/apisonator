@@ -196,7 +196,7 @@ module ThreeScale
 
         class << self
 
-          def insert_data(silent = false)
+          def insert_pending_events(silent = false)
             check_redshift_tables
 
             pending_times_utc = S3EventPaths.pending_paths(latest_timestamp_read)
