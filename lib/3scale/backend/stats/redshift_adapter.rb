@@ -202,14 +202,7 @@ module ThreeScale
             pending_times_utc = S3EventPaths.pending_paths(latest_timestamp_read)
             pending_times_utc.each do |pending_time_utc|
               puts "Loading events generated in hour: #{pending_time_utc}" unless silent
-
-              import_s3_path(pending_time_utc)
-              execute_command(SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS)
-              execute_command(SQL::INSERT_IMPORTED_EVENTS)
-              execute_command(SQL::CLEAN_TEMP_TABLES)
-              execute_command(SQL.store_timestamp_read(
-                  pending_time_utc.strftime('%Y%m%d%H')))
-              execute_command(SQL::VACUUM)
+              save_in_redshift(pending_time_utc)
             end
             pending_times_utc.last
           end
@@ -264,6 +257,15 @@ module ThreeScale
             REQUIRED_TABLES.all? do |required_table|
               db_tables_with_schema.include?(required_table)
             end
+          end
+
+          def save_in_redshift(path)
+            import_s3_path(path)
+            execute_command(SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS)
+            execute_command(SQL::INSERT_IMPORTED_EVENTS)
+            execute_command(SQL::CLEAN_TEMP_TABLES)
+            execute_command(SQL.store_timestamp_read(path.strftime('%Y%m%d%H')))
+            execute_command(SQL::VACUUM)
           end
 
           def import_s3_path(time_utc)
