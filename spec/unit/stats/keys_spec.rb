@@ -4,10 +4,21 @@ module ThreeScale
   module Backend
     module Stats
       describe Keys do
-        let(:service_id)     { 1000 }
-        let(:application_id) { 10 }
+        def self.currify(m, *args)
+          Keys.method(m).curry.call(*args)
+        end
+        private_class_method :currify
+
+        Application = Struct.new(:service_id, :id)
+        User = Struct.new(:service_id, :username)
+        app = Application.new 1000, 10
+        user = User.new 1000, 20
+
+        let(:app)            { app }
+        let(:service_id)     { app.service_id }
+        let(:application_id) { app.id }
         let(:metric_id)      { 100 }
-        let(:user_id)        { 20 }
+        let(:user_id)        { user.username }
         let(:time)           { Time.utc(2014, 7, 29, 18, 25) }
 
         describe '.service_key_prefix' do
@@ -55,60 +66,36 @@ module ThreeScale
           end
         end
 
-        describe '.usage_value_key' do
-          let(:app) {
-            double("application", service_id: service_id, id: application_id)
-          }
-
+        shared_examples_for 'usage keys' do |method, expected_key_part|
           context 'with eternity granularity' do
             let(:result) {
-              Keys.usage_value_key(app, metric_id, :eternity, time)
+              method.call(metric_id, :eternity, time)
             }
 
             it 'returns a composed key not including a timestamp' do
-              expected = "stats/{service:1000}/cinstance:10/metric:100/eternity"
+              expected = "stats/{service:1000}/#{expected_key_part}/metric:#{metric_id}/eternity"
               expect(result).to eq(expected)
             end
           end
 
           context 'with hour granularity' do
             let(:result) {
-              Keys.usage_value_key(app, metric_id, :hour, time)
+              method.call(metric_id, :hour, time)
             }
 
             it 'returns a composed key including a timestamp' do
-              expected = "stats/{service:1000}/cinstance:10/metric:100/hour:2014072918"
+              expected = "stats/{service:1000}/#{expected_key_part}/metric:#{metric_id}/hour:2014072918"
               expect(result).to eq(expected)
             end
           end
         end
 
+        describe '.usage_value_key' do
+          it_behaves_like 'usage keys', currify(:usage_value_key, app.service_id, app.id), "cinstance:#{app.id}"
+        end
+
         describe '.user_usage_value_key' do
-          let(:user) {
-            double("user", service_id: service_id, username: user_id)
-          }
-
-          context 'with eternity granularity' do
-            let(:result) {
-              Keys.user_usage_value_key(user, metric_id, :eternity, time)
-            }
-
-            it 'returns a composed key not including a timestamp' do
-              expected = "stats/{service:1000}/uinstance:20/metric:100/eternity"
-              expect(result).to eq(expected)
-            end
-          end
-
-          context 'with hour granularity' do
-            let(:result) {
-              Keys.user_usage_value_key(user, metric_id, :hour, time)
-            }
-
-            it 'returns a composed key including a timestamp' do
-              expected = "stats/{service:1000}/uinstance:20/metric:100/hour:2014072918"
-              expect(result).to eq(expected)
-            end
-          end
+          it_behaves_like 'usage keys', currify(:user_usage_value_key, app.service_id, user.username), "uinstance:#{user.username}"
         end
 
         describe '.counter_key' do
