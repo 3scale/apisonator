@@ -72,7 +72,7 @@ module ThreeScale
                      pending_paths.first.strftime('%Y%m%d%H'))]
 
               expected_sql_queries.each do |query|
-                expect(redshift_connection).to receive(:exec).with(query).once
+                expect(redshift_connection).to receive(:exec).with(query).once.ordered
               end
 
               Timecop.freeze(current_time) { subject.insert_pending_events(true) }
@@ -173,7 +173,7 @@ module ThreeScale
                    subject::SQL::VACUUM]
 
               expected_sql_queries.each do |query|
-                expect(redshift_connection).to receive(:exec).with(query).once
+                expect(redshift_connection).to receive(:exec).with(query).once.ordered
               end
 
               subject.insert_path(path)
