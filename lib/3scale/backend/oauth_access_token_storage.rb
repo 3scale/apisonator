@@ -13,7 +13,7 @@ module ThreeScale
           OAuth::Token::Storage.create token, service_id, app_id, user_id, ttl
         end
 
-        def delete(service_id, user_id, token)
+        def delete(service_id, token)
           (OAuth::Token::Storage.delete token, service_id) ? :deleted : :notfound
         end
 
