@@ -91,19 +91,11 @@ module ThreeScale
         end
 
         describe '.usage_value_key' do
-          it_behaves_like 'usage keys', currify(:usage_value_key, app), "cinstance:#{app.id}"
-        end
-
-        describe '.usage_value_key_with_ids' do
-          it_behaves_like 'usage keys', currify(:usage_value_key_with_ids, app.service_id, app.id), "cinstance:#{app.id}"
+          it_behaves_like 'usage keys', currify(:usage_value_key, app.service_id, app.id), "cinstance:#{app.id}"
         end
 
         describe '.user_usage_value_key' do
-          it_behaves_like 'usage keys', currify(:user_usage_value_key, user), "uinstance:#{user.username}"
-        end
-
-        describe '.user_usage_value_key_with_ids' do
-          it_behaves_like 'usage keys', currify(:user_usage_value_key_with_ids, app.service_id, user.username), "uinstance:#{user.username}"
+          it_behaves_like 'usage keys', currify(:user_usage_value_key, app.service_id, user.username), "uinstance:#{user.username}"
         end
 
         describe '.counter_key' do

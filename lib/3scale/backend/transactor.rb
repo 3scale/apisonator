@@ -336,13 +336,13 @@ module ThreeScale
 
       def load_user_usage(user, ts)
         load_usage user do |metric_id, period|
-          Stats::Keys.user_usage_value_key(user, metric_id, period, ts)
+          Stats::Keys.user_usage_value_key(user.service_id, user.username, metric_id, period, ts)
         end
       end
 
       def load_application_usage(application, ts)
         load_usage application do |metric_id, period|
-          Stats::Keys.usage_value_key(application, metric_id, period, ts)
+          Stats::Keys.usage_value_key(application.service_id, application.id, metric_id, period, ts)
         end
       end
 
