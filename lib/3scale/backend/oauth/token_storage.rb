@@ -4,6 +4,7 @@ module ThreeScale
       class Token
         module Storage
           MAXIMUM_TOKEN_SIZE = 1024
+          private_constant :MAXIMUM_TOKEN_SIZE
           TOKEN_MAX_REDIS_SLICE_SIZE = 500
           private_constant :TOKEN_MAX_REDIS_SLICE_SIZE
 
