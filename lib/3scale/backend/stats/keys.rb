@@ -37,16 +37,24 @@ module ThreeScale
         end
 
         def usage_value_key(application, metric_id, period, time)
-          service_key = service_key_prefix(application.service_id)
-          app_key     = application_key_prefix(service_key, application.id)
+          usage_value_key_with_ids(application.service_id, application.id, metric_id, period, time)
+        end
+
+        def usage_value_key_with_ids(service_id, app_id, metric_id, period, time)
+          service_key = service_key_prefix(service_id)
+          app_key     = application_key_prefix(service_key, app_id)
           metric_key  = metric_key_prefix(app_key, metric_id)
 
           encode_key(counter_key(metric_key, period, time))
         end
 
         def user_usage_value_key(user, metric_id, period, time)
-          service_key = service_key_prefix(user.service_id)
-          user_key    = user_key_prefix(service_key, user.username)
+          user_usage_value_key_with_ids(user.service_id, user.username, metric_id, period, time)
+        end
+
+        def user_usage_value_key_with_ids(service_id, user_id, metric_id, period, time)
+          service_key = service_key_prefix(service_id)
+          user_key    = user_key_prefix(service_key, user_id)
           metric_key  = metric_key_prefix(user_key, metric_id)
 
           encode_key(counter_key(metric_key, period, time))
