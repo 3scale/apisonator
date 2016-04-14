@@ -432,7 +432,7 @@ module ThreeScale
         end
 
         # Users do not need to exist, since they can be "created" on-demand.
-        if OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token], params[:user_id], params[:ttl])
+        if OAuth::Token::Storage.create(params[:token], service_id, params[:app_id], params[:user_id], params[:ttl])
           empty_response 200
         else
           empty_response 422
@@ -447,12 +447,13 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        case OAuthAccessTokenStorage.delete(service_id, params[:token])
-        when :deleted
-          empty_response 200
-        else
-          empty_response 404
-        end
+        # TODO: perhaps improve this to list the deleted tokens?
+        code = if OAuth::Token::Storage.delete(params[:token], service_id)
+                 200
+               else
+                 404
+               end
+        empty_response code
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
@@ -471,7 +472,7 @@ module ThreeScale
           return
         end
 
-        @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id, params[:user_id])
+        @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id, params[:user_id]
         builder :oauth_access_tokens
       end
 
