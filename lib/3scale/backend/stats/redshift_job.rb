@@ -9,7 +9,7 @@ module ThreeScale
         class << self
           def perform_logged(lock_key, _enqueue_time)
             begin
-              latest_time_inserted = RedshiftAdapter.insert_data
+              latest_time_inserted = RedshiftAdapter.insert_pending_events
               ok = true
               msg = job_ok_msg(latest_time_inserted)
             rescue Exception => e
