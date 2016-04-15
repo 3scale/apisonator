@@ -96,8 +96,8 @@ module ThreeScale
           end
         end
 
-        def extract_id!(service_id, app_id, user_key, access_token, user_id = nil)
-          with_app_id_from_params service_id, app_id, user_key, access_token, user_id do |appid|
+        def extract_id!(service_id, app_id, user_key, access_token)
+          with_app_id_from_params service_id, app_id, user_key, access_token do |appid|
             exists? service_id, appid and appid
           end
         end
@@ -119,7 +119,7 @@ module ThreeScale
           raise ApplicationNotFound, id unless exists?(service_id, id)
           delete_data service_id, id
           clear_cache service_id, id
-          OAuthAccessTokenStorage.remove_app_tokens(service_id, id)
+          OAuth::Token::Storage.remove_tokens(service_id, id)
         end
 
         def delete_data(service_id, id)
@@ -170,15 +170,14 @@ module ThreeScale
           )
         end
 
-        def with_app_id_from_params(service_id, app_id, user_key, access_token = nil, user_id = nil)
+        def with_app_id_from_params(service_id, app_id, user_key, access_token = nil)
           if app_id
             raise AuthenticationError unless user_key.nil?
           elsif user_key
             app_id = load_id_by_key(service_id, user_key)
             raise UserKeyInvalid, user_key if app_id.nil?
           elsif access_token
-            app_id = OAuthAccessTokenStorage.get_app_id service_id, access_token, user_id
-            raise AccessTokenInvalid, access_token, user_id if app_id.nil?
+            app_id, * = OAuth::Token::Storage.get_credentials access_token, service_id
           else
             raise ApplicationNotFound
           end

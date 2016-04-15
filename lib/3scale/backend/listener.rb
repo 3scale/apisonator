@@ -431,12 +431,8 @@ module ThreeScale
           return
         end
 
-        if !params[:user_id].blank? && !User.exists?(params[:service_id], params[:user_id])
-          empty_response 404
-          return
-        end
-
-        if OAuthAccessTokenStorage.create(service_id, params[:app_id], params[:token], params[:user_id], params[:ttl])
+        # Users do not need to exist, since they can be "created" on-demand.
+        if OAuth::Token::Storage.create(params[:token], service_id, params[:app_id], params[:user_id], params[:ttl])
           empty_response 200
         else
           empty_response 422
@@ -451,14 +447,13 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        case OAuthAccessTokenStorage.delete(service_id, params[:user_id], params[:token])
-        when :deleted
-          empty_response 200
-        when :forbidden
-          empty_response 403
-        else
-          empty_response 404
-        end
+        # TODO: perhaps improve this to list the deleted tokens?
+        code = if OAuth::Token::Storage.delete(params[:token], service_id)
+                 200
+               else
+                 404
+               end
+        empty_response code
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
@@ -477,7 +472,7 @@ module ThreeScale
           return
         end
 
-        @tokens = OAuthAccessTokenStorage.all_by_service_and_app(service_id, app_id, params[:user_id])
+        @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id, params[:user_id]
         builder :oauth_access_tokens
       end
 
@@ -488,9 +483,9 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        @token_to_app_id = OAuthAccessTokenStorage.get_app_id(params[:service_id], params[:token], params[:user_id])
-
-        raise AccessTokenInvalid.new(params[:token], params[:user_id]) if @token_to_app_id.nil?
+        @token_to_app_id, @token_to_user_id = OAuth::Token::Storage.get_credentials(
+          params[:token], params[:service_id]
+        )
 
         builder :oauth_app_id_by_token
       end
