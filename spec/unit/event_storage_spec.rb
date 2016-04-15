@@ -236,7 +236,7 @@ module ThreeScale
           end
 
           context 'when hook notification fails' do
-            let(:Aibrake) { class_double }
+            let(:Airbrake) { class_double }
 
             before do
               allow(Net::HTTP).to receive(:post_form).and_raise(:BOOOM)
