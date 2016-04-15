@@ -45,6 +45,10 @@ def redshift_adapter
   ThreeScale::Backend::Stats::RedshiftAdapter
 end
 
+def invalid_key
+  ThreeScale::Backend::Stats::StatsParser::StatsKeyValueInvalid
+end
+
 def config
   ThreeScale::Backend.configuration
 end
@@ -117,7 +121,11 @@ def write_parsed_events_to_file(out_file_name, time_gen)
   File.open(out_file_name, 'w') do |out|
     STDIN.each_line do |line|
       if parse_line?(line)
-        event = parsed_event(line, time_gen)
+        begin
+          event = parsed_event(line, time_gen)
+        rescue invalid_key
+          next
+        end
         out.puts event.to_json unless filter_event?(event)
       end
     end
