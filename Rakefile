@@ -105,8 +105,16 @@ end
 
 desc 'Reschedule failed jobs'
 task :reschedule_failed_jobs => :environment do
-  count = Resque::Failure.count
-  (Resque::Failure.count-1).downto(0).each { |i| Resque::Failure.requeue(i) }
+  # There might be several workers trying to requeue failed jobs at the same
+  # time. This can result in a 'NoMethodError' if one of them calls
+  # Resque::Failure.requeue with an index that is no longer valid.
+  begin
+    count = Resque::Failure.count
+    (count - 1).downto(0) { |i| Resque::Failure.requeue(i) }
+  rescue NoMethodError
+    retry
+  end
+
   Resque::Failure.clear
   puts "resque:failed size: #{Resque::Failure.count} (from #{count})"
 end
