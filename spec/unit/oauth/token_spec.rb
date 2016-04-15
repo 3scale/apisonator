@@ -21,8 +21,7 @@ module ThreeScale
 
         # build combinations of parameters
         constructors_w_params = tokens.product(app_ids, user_ids)
-          .inject({}) do |acc, (token, app_id, user_id)|
-            acc[:new] ||= []
+          .inject({:new => []}) do |acc, (token, app_id, user_id)|
             acc[:new] << [
               Token.new(token, service_id, app_id, user_id, ttl),
               token, app_id, user_id
