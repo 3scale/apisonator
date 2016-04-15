@@ -5,8 +5,6 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
 
-  include Backend::OAuthAccessTokenStorage
-
   def setup
     @storage = Storage.instance(true)
     @storage.flushdb

@@ -645,7 +645,7 @@ class AccessTokenTest < Test::Unit::TestCase
     application2, user2 = setup_app_with_user_tokens
 
     # remove 1 user token
-    OAuthAccessTokenStorage.remove_app_tokens(@service.id, application2.id, @user.username)
+    OAuth::Token::Storage.remove_tokens(@service.id, application2.id, @user.username)
 
     get "/services/#{@service.id}/applications/#{application2.id}/oauth_access_tokens.xml",
         :provider_key => @provider_key
@@ -671,7 +671,7 @@ class AccessTokenTest < Test::Unit::TestCase
     assert_equal 2, xml.at('oauth_access_tokens').element_children.size
 
     # remove all remaining tokens for this app
-    OAuthAccessTokenStorage.remove_app_tokens(@service.id, application2.id)
+    OAuth::Token::Storage.remove_tokens(@service.id, application2.id)
 
     check_app_with_user_tokens_deleted application2, user2 do
       assert_equal 200, last_response.status

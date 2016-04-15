@@ -92,20 +92,22 @@ module ThreeScale
                 end
             end
 
-            # This removes tokens whose user_id match. Note that if user_id is
-            # nil it WILL NOT remove tokens associated to specific users!
+            # Remove tokens by app_id and optionally user_id.
             #
-            # Use remove_all_tokens to remove all tokens of a service and app.
-            def remove_tokens(service_id, app_id, user_id)
-              remove_tokens_by service_id, app_id do |_t, _k, v, _ttl|
+            # If user_id is nil or unspecified, this will remove all app tokens
+            #
+            # Triggered by Application deletion.
+            #
+            # TODO: we could expose the ability to delete all tokens for a given
+            # user_id, but we are currently not doing that.
+            #
+            def remove_tokens(service_id, app_id, user_id = nil)
+              filter = lambda do |_t, _k, v, _ttl|
                 user_id == Value.from(v).last
-              end
+              end if user_id
+              remove_tokens_by service_id, app_id, &filter
             end
 
-            # MUST... PRESS... BIG... RED... BRIGHT... BUTTON...
-            def remove_all_tokens(service_id, app_id)
-              remove_tokens_by service_id, app_id
-            end
 
             private
 

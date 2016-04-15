@@ -119,7 +119,7 @@ module ThreeScale
           raise ApplicationNotFound, id unless exists?(service_id, id)
           delete_data service_id, id
           clear_cache service_id, id
-          OAuthAccessTokenStorage.remove_app_tokens(service_id, id)
+          OAuth::Token::Storage.remove_tokens(service_id, id)
         end
 
         def delete_data(service_id, id)
