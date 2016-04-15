@@ -59,22 +59,35 @@ module ThreeScale
             end
 
             # This is used to list tokens by service, app and possibly user.
+            #
+            # Note: this deletes tokens that have not been found from the set of
+            # tokens for the given app - those have to be expired tokens.
             def all_by_service_and_app(service_id, app_id, user_id = nil)
               token_set = Key::Set.for(service_id, app_id)
-              iter = tokens_n_values_flat(token_set, service_id)
-              if user_id
-                iter = iter.select do |(_token, _key, value, _ttl)|
-                  _app_id, uid = Value.from value
-                  uid == user_id
+              deltokens = []
+              tokens_n_values_flat(token_set, service_id)
+                .select do |(token, _key, value, _ttl)|
+                  app_id, uid = Value.from value
+                  if app_id.nil?
+                    deltokens << token
+                    false
+                  else
+                    !user_id || uid == user_id
+                  end
                 end
-              end
-              iter.map do |(token, _key, value, ttl)|
-                if user_id
-                  Token.new token, service_id, app_id, user_id, ttl
-                else
-                  Token.from_value token, service_id, value, ttl
+                .map do |(token, _key, value, ttl)|
+                  if user_id
+                    Token.new token, service_id, app_id, user_id, ttl
+                  else
+                    Token.from_value token, service_id, value, ttl
+                  end
                 end
-              end.force
+                .force.tap do
+                  # delete expired tokens (nil values) from token set
+                  deltokens.each_slice(TOKEN_MAX_REDIS_SLICE_SIZE) do |delgrp|
+                    storage.srem token_set, delgrp
+                  end
+                end
             end
 
             # This removes tokens whose user_id match. Note that if user_id is
