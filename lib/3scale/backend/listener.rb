@@ -483,8 +483,8 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        @token_to_app_id, @token_to_user_id = OAuthAccessTokenStorage.get_app_id(
-          params[:service_id], params[:token]
+        @token_to_app_id, @token_to_user_id = OAuth::Token::Storage.get_credentials(
+          params[:token], params[:service_id]
         )
 
         builder :oauth_app_id_by_token

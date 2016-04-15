@@ -121,9 +121,8 @@ module ThreeScale
             raise ApplicationNotFound.new nil if app_id.nil?
           else
             begin
-              token_appid, token_uid = OAuthAccessTokenStorage.get_app_id(
-                service.id,
-                access_token
+              token_appid, token_uid = OAuth::Token::Storage.get_credentials(
+                access_token, service.id
               )
             rescue AccessTokenInvalid => e
               # Yep, well, er. Someone specified that it is OK to have an

@@ -55,7 +55,9 @@ module ThreeScale
 
             # Get a token's associated [app_id, user_id]
             def get_credentials(token, service_id)
-              Value.from(storage.get(Key.for(token, service_id)))
+              ids = Value.from(storage.get(Key.for(token, service_id)))
+              raise AccessTokenInvalid.new token if ids.first.nil?
+              ids
             end
 
             # This is used to list tokens by service, app and possibly user.
