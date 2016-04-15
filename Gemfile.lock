@@ -169,7 +169,7 @@ GEM
     test-unit (2.5.5)
     thread_safe (0.3.5)
     tilt (1.4.1)
-    timecop (0.8.0)
+    timecop (0.8.1)
     tzinfo (1.2.2)
       thread_safe (~> 0.1)
     vanguard (0.0.5)
