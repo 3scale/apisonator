@@ -117,9 +117,12 @@ module ThreeScale
               # No block? Just remove everything and smile!
               if blk.nil?
                 remove_whole_token_set(token_set, service_id)
-                return
+              else
+                remove_token_set_by(token_set, service_id, &blk)
               end
+            end
 
+            def remove_token_set_by(token_set, service_id, &blk)
               # Get tokens. Filter them. Group them into manageable groups.
               # Extract tokens and keys into separate arrays, one for each.
               # Remove tokens from token set (they are keys in a set) and token
