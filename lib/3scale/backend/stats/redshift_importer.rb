@@ -4,18 +4,6 @@ module ThreeScale
   module Backend
     module Stats
       class RedshiftImporter
-
-        # We want to ensure that only 1 Redshift job can be running at a time.
-        # In order to do that, we apply the same kind of distributed locking
-        # that we are already applying in the SendToKinesis class.
-        JOB_RUNNING_KEY = 'redshift:job_running'.freeze
-        private_constant :JOB_RUNNING_KEY
-
-        # If for some reason the job fails to set JOB_RUNNING_KEY to 0, other
-        # jobs will not be able to execute. We solve this setting a TTL.
-        # Importing events into Redshift can take a long time. I will use a
-        # long TTL at least until we have a clear understanding of what the
-        # process takes in production with real data.
         TTL_JOB_RUNNING_KEY_SEC = 60*60
         private_constant :TTL_JOB_RUNNING_KEY_SEC
 
@@ -25,8 +13,8 @@ module ThreeScale
         class << self
           def schedule_job
             if enabled? && Backend.production?
-              lock_key = DateTime.now.strftime('%Q')
-              unless job_running?(lock_key)
+              lock_key = dist_lock.lock
+              if lock_key
                 Resque.enqueue(RedshiftJob, lock_key, Time.now.utc.to_f)
               end
             end
@@ -55,9 +43,7 @@ module ThreeScale
 
           # To be called by from a Redshift job once it exits so other jobs can run
           def job_finished(lock_key)
-            if storage.get(JOB_RUNNING_KEY) == lock_key
-              storage.del(JOB_RUNNING_KEY)
-            end
+            dist_lock.unlock if lock_key == dist_lock.current_lock_key
           end
 
           private
@@ -66,8 +52,8 @@ module ThreeScale
             Backend::Storage.instance
           end
 
-          def job_running?(lock_key)
-            !storage.set(JOB_RUNNING_KEY, lock_key, nx: true, ex: TTL_JOB_RUNNING_KEY_SEC)
+          def dist_lock
+            @dist_lock ||= DistributedLock.new(self.name, TTL_JOB_RUNNING_KEY_SEC, storage)
           end
         end
       end
