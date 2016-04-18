@@ -9,9 +9,6 @@ module ThreeScale
         SEND_TO_KINESIS_ENABLED_KEY = 'send_to_kinesis:enabled'.freeze
         private_constant :SEND_TO_KINESIS_ENABLED_KEY
 
-        JOB_RUNNING_KEY = 'send_to_kinesis:job_running'.freeze
-        private_constant :JOB_RUNNING_KEY
-
         TTL_JOB_RUNNING_KEY_SEC = 360
         private_constant :TTL_JOB_RUNNING_KEY_SEC
 
@@ -30,8 +27,8 @@ module ThreeScale
 
           def schedule_job
             if enabled?
-              lock_key = DateTime.now.strftime('%Q')
-              unless job_running?(lock_key)
+              lock_key = dist_lock.lock
+              if lock_key
                 Resque.enqueue(SendToKinesisJob, Time.now.utc, lock_key, Time.now.utc.to_f)
               end
             end
@@ -40,8 +37,8 @@ module ThreeScale
           def flush_pending_events(limit = nil)
             flushed_events = 0
             if enabled?
-              lock_key = DateTime.now.strftime('%Q')
-              unless job_running?(lock_key)
+              lock_key = dist_lock.lock
+              if lock_key
                 flushed_events = kinesis_adapter.flush(limit)
                 job_finished(lock_key) # flush is not asynchronous
               end
@@ -55,9 +52,7 @@ module ThreeScale
 
           # To be called by a kinesis job once it exits so other jobs can run
           def job_finished(lock_key)
-            if storage.get(JOB_RUNNING_KEY) == lock_key
-              storage.del(JOB_RUNNING_KEY)
-            end
+            dist_lock.unlock if lock_key == dist_lock.current_lock_key
           end
 
           private
@@ -81,8 +76,8 @@ module ThreeScale
             KinesisAdapter.new(config.kinesis_stream_name, kinesis_client, storage)
           end
 
-          def job_running?(lock_key)
-            !storage.set(JOB_RUNNING_KEY, lock_key, nx: true, ex: TTL_JOB_RUNNING_KEY_SEC)
+          def dist_lock
+            @dist_lock ||= DistributedLock.new(self.name, TTL_JOB_RUNNING_KEY_SEC, storage)
           end
         end
       end

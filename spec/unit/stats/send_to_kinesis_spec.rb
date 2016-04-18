@@ -28,7 +28,8 @@ module ThreeScale
             before { subject.enable }
 
             context 'when there is at least one job already running' do
-              before { allow(subject).to receive(:job_running?).and_return true }
+              let(:dist_lock) { double('dist_lock', lock: nil) }
+              before { allow(subject).to receive(:dist_lock).and_return dist_lock }
 
               it 'does not schedule a kinesis job' do
                 expect(Resque).not_to receive(:enqueue)
@@ -37,7 +38,10 @@ module ThreeScale
             end
 
             context 'when there are not any jobs running' do
-              before { allow(subject).to receive(:job_running?).and_return false }
+              let(:dist_lock) do
+                double('dist_lock', lock: '123', current_lock_key: '123', unlock: true)
+              end
+              before { allow(subject).to receive(:dist_lock).and_return dist_lock }
 
               it 'schedules a kinesis job' do
                 expect(Resque).to receive(:enqueue)
@@ -67,7 +71,8 @@ module ThreeScale
             before { subject.enable }
 
             context 'and there is at least one job already running' do
-              before { allow(subject).to receive(:job_running?).and_return true }
+              let(:dist_lock) { double('dist_lock', lock: nil) }
+              before { allow(subject).to receive(:dist_lock).and_return dist_lock }
 
               it 'does not flush the pending events' do
                 expect(kinesis_adapter).not_to receive(:flush)
@@ -80,7 +85,10 @@ module ThreeScale
             end
 
             context 'and there are not any jobs running' do
-              before { allow(subject).to receive(:job_running?).and_return false }
+              let(:dist_lock) do
+                double('dist_lock', lock: '123', current_lock_key: '123', unlock: true)
+              end
+              before { allow(subject).to receive(:dist_lock).and_return dist_lock }
 
               let(:events_to_flush) { 5 }
 
