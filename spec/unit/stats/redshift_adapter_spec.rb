@@ -61,10 +61,11 @@ module ThreeScale
 
             it 'executes the necessary queries to perform an UPSERT' do
               expected_sql_queries =
-                [subject::SQL::CREATE_TEMP_TABLE,
+                [subject::SQL::CREATE_TEMP_TABLES,
                  subject::SQL.import_s3_path(
                      subject.send(:s3_path, pending_paths.first), '', ''),
-                 subject::SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS,
+                 subject::SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS,
+                 subject::SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS,
                  subject::SQL::INSERT_IMPORTED_EVENTS,
                  subject::SQL::CLEAN_TEMP_TABLES,
                  subject::SQL::VACUUM,
@@ -164,10 +165,11 @@ module ThreeScale
 
             it 'executes the necessary queries to perform an UPSERT' do
               expected_sql_queries =
-                  [subject::SQL::CREATE_TEMP_TABLE,
+                  [subject::SQL::CREATE_TEMP_TABLES,
                    subject::SQL.import_s3_path(
                        "#{subject.const_get(:S3_EVENTS_BASE_PATH)}#{path}", '', ''),
-                   subject::SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS,
+                   subject::SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS,
+                   subject::SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS,
                    subject::SQL::INSERT_IMPORTED_EVENTS,
                    subject::SQL::CLEAN_TEMP_TABLES,
                    subject::SQL::VACUUM]

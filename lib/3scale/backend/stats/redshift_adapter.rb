@@ -48,9 +48,11 @@ module ThreeScale
               'FROM information_schema.tables '\
               "WHERE table_schema = '#{SCHEMA}';".freeze
 
-          CREATE_TEMP_TABLE =
+          CREATE_TEMP_TABLES =
               "DROP TABLE IF EXISTS #{TABLES[:temp]} CASCADE; "\
               "CREATE TABLE #{TABLES[:temp]} (LIKE #{TABLES[:events]}); "\
+              "DROP TABLE IF EXISTS #{TABLES[:unique_imported_events]} CASCADE; "\
+              "CREATE TABLE #{TABLES[:unique_imported_events]} (LIKE #{TABLES[:events]}); "\
               'COMMIT;'.freeze
 
           INSERT_IMPORTED_EVENTS =
@@ -71,7 +73,7 @@ module ThreeScale
               'END TRANSACTION;'.freeze
 
           CLEAN_TEMP_TABLES =
-              "DROP VIEW #{TABLES[:unique_imported_events]}; "\
+              "DROP TABLE #{TABLES[:unique_imported_events]}; "\
               "DROP TABLE #{TABLES[:temp]};".freeze
 
           LATEST_TIMESTAMP_READ = "SELECT s3_path FROM #{TABLES[:latest_s3_path_read]}".freeze
@@ -97,8 +99,8 @@ module ThreeScale
           # service = MASTER. This is required for the dashboard project.
           # We will need to change this when we start importing data to a
           # Redshift cluster used as a source for the stats API.
-          CREATE_VIEW_UNIQUE_IMPORTED_EVENTS =
-              "CREATE VIEW #{TABLES[:unique_imported_events]} AS "\
+          FILL_TABLE_UNIQUE_IMPORTED_EVENTS =
+              "INSERT INTO #{TABLES[:unique_imported_events]} "\
               'SELECT e.service, e.cinstance, e.uinstance, e.metric, e.period, '\
                 'e.timestamp, e.time_gen, e.value '\
               'FROM '\
@@ -117,6 +119,23 @@ module ThreeScale
                   'AND (e.period = e1.period) '\
                   'AND (e.timestamp = e1.timestamp) '\
                   'AND (e.time_gen = e1.max_time_gen);'.freeze
+
+          # Once we have imported some events and have made sure that we have
+          # selected only the ones that are more recent, we need to delete the
+          # ones that do not need to be imported. Those are the ones that have
+          # a time_gen older than that of the same event in the events table.
+          DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS =
+              "DELETE FROM #{TABLES[:unique_imported_events]} "\
+                "USING #{TABLES[:events]} e "\
+                "WHERE #{TABLES[:unique_imported_events]}.service = e.service "\
+                  "AND (#{TABLES[:unique_imported_events]}.cinstance = e.cinstance "\
+                    "OR (#{TABLES[:unique_imported_events]}.cinstance IS NULL AND e.cinstance IS NULL)) "\
+                  "AND (#{TABLES[:unique_imported_events]}.uinstance = e.uinstance "\
+                    "OR (#{TABLES[:unique_imported_events]}.uinstance IS NULL AND e.uinstance IS NULL)) "\
+                  "AND (#{TABLES[:unique_imported_events]}.metric = e.metric) "\
+                  "AND (#{TABLES[:unique_imported_events]}.period = e.period) "\
+                  "AND (#{TABLES[:unique_imported_events]}.timestamp = e.timestamp) "\
+                  "AND (#{TABLES[:unique_imported_events]}.time_gen <= e.time_gen);".freeze
 
           def self.import_s3_path(path, access_key_id, secret_access_key)
             "COPY #{TABLES[:temp]} "\
@@ -272,7 +291,8 @@ module ThreeScale
 
           def save_in_redshift(path)
             import_s3_path(path)
-            execute_command(SQL::CREATE_VIEW_UNIQUE_IMPORTED_EVENTS)
+            execute_command(SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS)
+            execute_command(SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS)
             execute_command(SQL::INSERT_IMPORTED_EVENTS)
             execute_command(SQL::CLEAN_TEMP_TABLES)
             execute_command(SQL::VACUUM)
@@ -283,7 +303,7 @@ module ThreeScale
           end
 
           def import_s3_path(path)
-            execute_command(SQL::CREATE_TEMP_TABLE)
+            execute_command(SQL::CREATE_TEMP_TABLES)
             execute_command(SQL.import_s3_path(
                 path, config.aws_access_key_id, config.aws_secret_access_key))
           end
