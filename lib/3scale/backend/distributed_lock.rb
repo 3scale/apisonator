@@ -27,10 +27,14 @@ module ThreeScale
     #   1) Do all the work and just lock for committing.
     #   2) Use large values as TTLs as much as possible.
     class DistributedLock
+      MAX_RANDOM = 1_000_000_000
+      private_constant :MAX_RANDOM
+
       def initialize(resource, ttl, storage)
         @resource = resource
         @ttl = ttl
         @storage = storage
+        @random = Random.new
       end
 
       # Returns key to unlock if the lock is acquired. Nil otherwise.
@@ -49,10 +53,10 @@ module ThreeScale
 
       private
 
-      attr_reader :resource, :ttl, :storage
+      attr_reader :resource, :ttl, :storage, :random
 
       def lock_key
-        DateTime.now.strftime('%Q')
+        random.rand(MAX_RANDOM).to_s
       end
 
       def lock_storage_key
