@@ -32,12 +32,12 @@ GEM
       abstract_type (~> 0.0.7)
       adamantium (~> 0.1)
       equalizer (~> 0.0.8)
-    aws-sdk (2.2.0)
-      aws-sdk-resources (= 2.2.0)
-    aws-sdk-core (2.2.0)
+    aws-sdk (2.2.35)
+      aws-sdk-resources (= 2.2.35)
+    aws-sdk-core (2.2.35)
       jmespath (~> 1.0)
-    aws-sdk-resources (2.2.0)
-      aws-sdk-core (= 2.2.0)
+    aws-sdk-resources (2.2.35)
+      aws-sdk-core (= 2.2.35)
     axiom-types (0.1.1)
       descendants_tracker (~> 0.0.4)
       ice_nine (~> 0.11.0)
@@ -196,7 +196,7 @@ PLATFORMS
 DEPENDENCIES
   3scale_backend!
   airbrake (= 4.3.0)
-  aws-sdk (= 2.2.0)
+  aws-sdk (= 2.2.35)
   builder (= 3.2.2)
   codeclimate-test-reporter (~> 0.3.0)
   cubert-client (= 0.0.12)!
