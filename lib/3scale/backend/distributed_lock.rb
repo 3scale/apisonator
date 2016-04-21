@@ -10,19 +10,22 @@ module ThreeScale
     # value is null. If we could set the value, it means that we could get the
     # lock. To release it, we just need to set to delete the same key.
     #
-    # The random number that we use is the current unix epoch in ms. This does
-    # not ensure 100% that the locking algorithm works correctly. Also, the
-    # implementation used in this class does not ensure a correct behavior if
-    # for some reason one of the Redis masters fails and a slave takes its
-    # place. However, in the jobs where we are currently using a distributed
-    # lock, this is not an issue. For example, in the case of Kinesis jobs,
-    # we assume that we can have duplicated events in S3. It is not a problem
-    # because the way those events are later imported into Redshift ensures
-    # that they are not imported twice.
+    # The implementation used in this class has some limitations.
+    # This is limited to a single Redis instance (through Twemproxy), and if
+    # the master goes off the mutual exclusion basically does not exist
+    # anymore. But there is another thing that breaks the mutual exclusion:
+    # whatever we do within the lock critical section is racing against the
+    # TTL, and we cannot guarantee that the section will be finished within the
+    # limit of the TTL. It can be the case that even if we actually locked
+    # Redis, the TTL would have expired before we got the response (think about
+    # really bad network conditions or scheduling issues in the computer that
+    # is running the critical section). So the lock acts more as an "advisory"
+    # lock than a real lock: whatever we execute inside the critical section is
+    # "probably going to be with mutual exclusion, but no guarantees".
     #
-    # If for some reason we fail to delete the key associated to the lock in
-    # the storage, there is the risk of not releasing the lock ever.
-    # We solve this setting a TTL.
+    # Possible ways to minimize the window of this race condition:
+    #   1) Do all the work and just lock for committing.
+    #   2) Use large values as TTLs as much as possible.
     class DistributedLock
       def initialize(resource, ttl, storage)
         @resource = resource

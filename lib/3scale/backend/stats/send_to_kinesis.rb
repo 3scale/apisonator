@@ -5,6 +5,17 @@ require_relative 'kinesis_adapter'
 module ThreeScale
   module Backend
     module Stats
+
+      # The main responsibility of this class is to schedule Kinesis jobs.
+      # We know that the distributed locking algorithm that we are using
+      # guarantees that two jobs will not be running at the same time except
+      # in some corner cases, like in the case of a failure of one of the Redis
+      # masters. However, this is not a problem in our case. If two Kinesis
+      # jobs run at the same time, they will probably export the same events to
+      # Kinesis. However, they will not be imported twice into Redshift because
+      # the import method that we use detects that two events are the same and
+      # only imports one. This detection is done using the 'time_gen' field
+      # that we attach to each event before they are send to Kinesis.
       class SendToKinesis
         SEND_TO_KINESIS_ENABLED_KEY = 'send_to_kinesis:enabled'.freeze
         private_constant :SEND_TO_KINESIS_ENABLED_KEY

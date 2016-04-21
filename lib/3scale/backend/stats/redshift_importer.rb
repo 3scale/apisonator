@@ -3,6 +3,17 @@ require '3scale/backend/stats/redshift_job'
 module ThreeScale
   module Backend
     module Stats
+
+      # The main responsibility of this class is to schedule jobs that import
+      # events that are stored in S3 into Redshift.
+      # We know that the distributed locking algorithm that we are using
+      # guarantees that two jobs will not be running at the same time except
+      # in some corner cases, like in the case of a failure of one of the Redis
+      # masters. However, this is not a problem in our case. If two Redshift
+      # jobs run at the same time, they will try to import the same S3 paths
+      # from Redshift. This is not a problem because the import method that
+      # we use ensures that we do not import duplicates into Redshift.
+      # Check the RedshiftAdapter class for more details on this.
       class RedshiftImporter
         TTL_JOB_RUNNING_KEY_SEC = 60*60
         private_constant :TTL_JOB_RUNNING_KEY_SEC
