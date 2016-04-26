@@ -25,7 +25,7 @@ module ThreeScale
               retry
             end
 
-            Resque::Failure.clear
+            count.times { Resque::Failure.remove(0) }
             dist_lock.unlock if key == dist_lock.current_lock_key
           end
 
