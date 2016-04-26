@@ -59,7 +59,7 @@ define docker_run_container
 endef
 
 define docker_run
-	docker run --name $2 -h $(shell echo '$2' | sed -e 's/[.\s]/_/g') -t -i $(DOCKER_EXTRA_VOLUMES) $3 $1 $4
+	docker run --name $2 -h $(shell echo '$2' | sed -e 's/[^a-zA-Z0-9\-]/-/g' -e 's/^-//') -t -i $(DOCKER_EXTRA_VOLUMES) $3 $1 $4
 endef
 
 define docker_build
