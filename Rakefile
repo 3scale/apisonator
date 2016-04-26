@@ -106,7 +106,7 @@ end
 desc 'Reschedule failed jobs'
 task :reschedule_failed_jobs => :environment do
   result = ThreeScale::Backend::FailedJobsScheduler.reschedule_failed_jobs
-  puts "resque:failed size: #{result[:failed_current]} (from #{result[:failed_before]})"
+  puts "Rescheduled: #{result[:rescheduled]}. Pending failed jobs: #{result[:failed_current]}."
 end
 
 namespace :cache do

@@ -15,7 +15,7 @@ module ThreeScale
           end
 
           Resque::Failure.clear
-          { failed_current: Resque::Failure.count, failed_before: count}
+          { failed_current: Resque::Failure.count, rescheduled: count }
         end
 
       end
