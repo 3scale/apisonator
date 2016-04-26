@@ -172,6 +172,9 @@ module ThreeScale
                    "<key>#{application.keys.first}</key>" \
                    "<#{@redirect_uri_field}>#{redirect_uri}</#{@redirect_uri_field}>" \
                    '</application>'
+            if !@user.nil?
+              xml << "<user><id>#{@user.username}</id></user>"
+            end
           end
 
           anchors = options[:anchors_for_caching]
