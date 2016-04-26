@@ -9,8 +9,9 @@ RUBY_USER := ruby
 RUBY_VERSION := $(shell cat $(PROJECT_PATH)/.ruby-version)
 
 # docker does not allow '@' in container names (used by Jenkins)
-NAME = $(subst @,,$(PROJECT))-build_$(RUBY_VERSION)
-DEV_NAME := dev_$(PROJECT)_$(RUBY_VERSION)
+DOCKER_NAME = $(subst @,,$(PROJECT))
+NAME = $(DOCKER_NAME)-build_$(RUBY_VERSION)
+DEV_NAME := dev_$(DOCKER_NAME)_$(RUBY_VERSION)
 DOCKER_PROJECT_PATH := /home/$(RUBY_USER)/$(PROJECT)
 
 # Sleep at most this much before giving up on docker reading Dockerfile
@@ -18,7 +19,7 @@ DOCKER_PROJECT_PATH := /home/$(RUBY_USER)/$(PROJECT)
 # the fly, and we don't want to have them lying around or really hitting the
 # disk. This hack should be removed if at any point Docker is able to properly
 # support STDIN-fed Dockerfiles.
-DOCKERFILE_MAXWAIT_SECS := 15
+DOCKERFILE_MAXWAIT_SECS := 30
 
 .PHONY: all bash build build_test clean default dev devclean pull show_bench test
 
