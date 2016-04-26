@@ -76,3 +76,4 @@ $(DOCKERFILE): $(PROJECT_PATH)/Dockerfile
 	@ $(call docker_build_dockerfile)
 
 dockerfile: $(DOCKERFILE)
+	@echo $(DOCKERFILE)
