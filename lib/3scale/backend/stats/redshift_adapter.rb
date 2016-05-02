@@ -125,7 +125,10 @@ module ThreeScale
           # a time_gen older than that of the same event in the events table.
           DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS =
               "DELETE FROM #{TABLES[:unique_imported_events]} "\
-                "USING #{TABLES[:events]} e "\
+                'USING (SELECT * '\
+                  "FROM #{TABLES[:events]} e "\
+                  'WHERE e.time_gen >= (SELECT MIN(time_gen) '\
+                    "FROM #{TABLES[:unique_imported_events]})) AS e "\
                 "WHERE #{TABLES[:unique_imported_events]}.service = e.service "\
                   "AND (#{TABLES[:unique_imported_events]}.cinstance = e.cinstance) "\
                   "AND (#{TABLES[:unique_imported_events]}.uinstance = e.uinstance) "\
