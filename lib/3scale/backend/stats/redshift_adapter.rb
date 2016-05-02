@@ -63,10 +63,8 @@ module ThreeScale
                 "DELETE FROM #{TABLES[:events]} "\
                 "USING #{TABLES[:unique_imported_events]} u "\
                 "WHERE #{TABLES[:events]}.service = u.service "\
-                  "AND (#{TABLES[:events]}.cinstance = u.cinstance "\
-                    "OR (#{TABLES[:events]}.cinstance IS NULL AND u.cinstance IS NULL)) "\
-                  "AND (#{TABLES[:events]}.uinstance = u.uinstance "\
-                    "OR (#{TABLES[:events]}.uinstance IS NULL AND u.uinstance IS NULL)) "\
+                  "AND (#{TABLES[:events]}.cinstance = u.cinstance) "\
+                  "AND (#{TABLES[:events]}.uinstance = u.uinstance) "\
                   "AND (#{TABLES[:events]}.metric = u.metric) "\
                   "AND (#{TABLES[:events]}.period = u.period) "\
                   "AND (#{TABLES[:events]}.timestamp = u.timestamp) "\
@@ -114,10 +112,8 @@ module ThreeScale
                 'GROUP BY service, cinstance, uinstance, metric, period, timestamp) AS e1 '\
                 "INNER JOIN #{TABLES[:temp]} e "\
                   'ON (e.service = e1.service) '\
-                  'AND (e.cinstance = e1.cinstance '\
-                    'OR (e.cinstance IS NULL AND e1.cinstance IS NULL)) '\
-                  'AND (e.uinstance = e1.uinstance '\
-                    'OR (e.uinstance IS NULL AND e1.uinstance IS NULL)) '\
+                  'AND (e.cinstance = e1.cinstance) '\
+                  'AND (e.uinstance = e1.uinstance) '\
                   'AND (e.metric = e1.metric) '\
                   'AND (e.period = e1.period) '\
                   'AND (e.timestamp = e1.timestamp) '\
@@ -131,10 +127,8 @@ module ThreeScale
               "DELETE FROM #{TABLES[:unique_imported_events]} "\
                 "USING #{TABLES[:events]} e "\
                 "WHERE #{TABLES[:unique_imported_events]}.service = e.service "\
-                  "AND (#{TABLES[:unique_imported_events]}.cinstance = e.cinstance "\
-                    "OR (#{TABLES[:unique_imported_events]}.cinstance IS NULL AND e.cinstance IS NULL)) "\
-                  "AND (#{TABLES[:unique_imported_events]}.uinstance = e.uinstance "\
-                    "OR (#{TABLES[:unique_imported_events]}.uinstance IS NULL AND e.uinstance IS NULL)) "\
+                  "AND (#{TABLES[:unique_imported_events]}.cinstance = e.cinstance) "\
+                  "AND (#{TABLES[:unique_imported_events]}.uinstance = e.uinstance) "\
                   "AND (#{TABLES[:unique_imported_events]}.metric = e.metric) "\
                   "AND (#{TABLES[:unique_imported_events]}.period = e.period) "\
                   "AND (#{TABLES[:unique_imported_events]}.timestamp = e.timestamp) "\
