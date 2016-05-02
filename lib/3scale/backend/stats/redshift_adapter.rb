@@ -46,6 +46,8 @@ module ThreeScale
                      temp: "#{SCHEMA}.temp_events".freeze,
                      unique_imported_events: "#{SCHEMA}.unique_imported_events".freeze }.freeze
 
+          EVENT_ATTRS = %w(service cinstance uinstance metric period timestamp time_gen).freeze
+
           EXISTING_TABLES =
               'SELECT table_name '\
               'FROM information_schema.tables '\
@@ -77,8 +79,7 @@ module ThreeScale
               "USING #{TABLES[:unique_imported_events]} u "\
               "WHERE #{TABLES[:events]}.timestamp >= "\
                   "(SELECT MIN(timestamp) FROM #{TABLES[:unique_imported_events]}) "\
-                "AND #{join_comparisons(
-                  TABLES[:events], 'u', %w(service cinstance uinstance metric period timestamp))}"\
+                "AND #{join_comparisons(TABLES[:events], 'u', EVENT_ATTRS - ['time_gen'])} "\
                 "AND (#{TABLES[:events]}.time_gen < u.time_gen); "\
               "INSERT INTO #{TABLES[:events]} "\
                 "SELECT * FROM #{TABLES[:unique_imported_events]};" \
@@ -112,9 +113,7 @@ module ThreeScale
                     "WHERE period != 'minute' AND service = '#{MASTER}' /* Specific for dashboard project */ "\
                     'GROUP BY service, cinstance, uinstance, metric, period, timestamp) AS e1 '\
                   "INNER JOIN #{TABLES[:temp]} e "\
-                    "ON #{join_comparisons(
-                        'e', 'e1',
-                        %w(service cinstance uinstance metric period timestamp))} "\
+                    "ON #{join_comparisons('e', 'e1', EVENT_ATTRS - ['time_gen'])} "\
                       'AND e.time_gen = e1.max_time_gen'.freeze
             end
 
@@ -129,8 +128,7 @@ module ThreeScale
                 'WHERE e.time_gen >= (SELECT MIN(time_gen) '\
                   "FROM #{TABLES[:unique_imported_events]})) AS e "\
               "WHERE #{join_comparisons(
-                  TABLES[:unique_imported_events], 'e',
-                  %w(service cinstance uinstance metric period timestamp))}"\
+                  TABLES[:unique_imported_events], 'e', EVENT_ATTRS - ['time_gen'])} "\
                 "AND (#{TABLES[:unique_imported_events]}.time_gen <= e.time_gen);".freeze
             end
 
