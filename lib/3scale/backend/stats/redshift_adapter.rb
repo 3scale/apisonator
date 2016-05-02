@@ -19,6 +19,9 @@ module ThreeScale
       # The process is as follows:
       #  1) Create a temporary table with the data imported from S3, including
       #     duplicates.
+      #     Two attributes can have nulls: cinstance and uinstance. We replace
+      #     those nulls with ''. I have observed substantial performance gains
+      #     because of this.
       #  2) Perform the necessary operations in the temp table to remove
       #     duplicates. (In our case this basically consists of an inner-join).
       #  3) Inside a transaction, delete all the events that are in the temp
@@ -146,6 +149,13 @@ module ThreeScale
             "TIMEFORMAT 'auto';"
           end
 
+          def self.delete_nulls_from_imported
+            attrs_with_nulls = %w(cinstance uinstance)
+            attrs_with_nulls.map do |attr|
+              replace_nulls(TABLES[:temp], attr, '')
+            end.join(' ')
+          end
+
           def self.store_timestamp_read(timestamp)
             "DELETE FROM #{TABLES[:latest_s3_path_read]}; "\
             "INSERT INTO #{TABLES[:latest_s3_path_read]} VALUES ('#{timestamp}');"
@@ -156,6 +166,12 @@ module ThreeScale
           def self.amazon_credentials(access_key_id, secret_access_key)
             "aws_access_key_id=#{access_key_id};"\
             "aws_secret_access_key=#{secret_access_key}"
+          end
+
+          def self.replace_nulls(table, attr, value)
+            "UPDATE #{table} "\
+            "SET #{attr} = '#{value}' "\
+            "WHERE #{attr} IS NULL;"
           end
 
         end
@@ -291,6 +307,7 @@ module ThreeScale
 
           def save_in_redshift(path)
             import_s3_path(path)
+            execute_command(SQL.delete_nulls_from_imported)
             execute_command(SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS)
             execute_command(SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS)
             execute_command(SQL::INSERT_IMPORTED_EVENTS)
