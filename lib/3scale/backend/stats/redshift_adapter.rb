@@ -304,12 +304,12 @@ module ThreeScale
 
           def save_in_redshift(path)
             import_s3_path(path)
-            execute_command(SQL.delete_nulls_from_imported)
-            execute_command(SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS)
-            execute_command(SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS)
-            execute_command(SQL::INSERT_IMPORTED_EVENTS)
-            execute_command(SQL::CLEAN_TEMP_TABLES)
-            execute_command(SQL::VACUUM)
+            [SQL.delete_nulls_from_imported,
+             SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS,
+             SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS,
+             SQL::INSERT_IMPORTED_EVENTS,
+             SQL::CLEAN_TEMP_TABLES,
+             SQL::VACUUM].each { |command| execute_command(command) }
           end
 
           def save_latest_read(time_utc)
