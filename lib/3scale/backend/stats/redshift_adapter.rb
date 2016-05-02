@@ -58,23 +58,6 @@ module ThreeScale
               "CREATE TABLE #{TABLES[:unique_imported_events]} (LIKE #{TABLES[:events]}); "\
               'COMMIT;'.freeze
 
-          INSERT_IMPORTED_EVENTS =
-              'BEGIN TRANSACTION; '\
-                "DELETE FROM #{TABLES[:events]} "\
-                "USING #{TABLES[:unique_imported_events]} u "\
-                "WHERE #{TABLES[:events]}.timestamp >= "\
-                    "(SELECT MIN(timestamp) FROM #{TABLES[:unique_imported_events]}) "\
-                  "AND #{TABLES[:events]}.service = u.service "\
-                  "AND (#{TABLES[:events]}.cinstance = u.cinstance) "\
-                  "AND (#{TABLES[:events]}.uinstance = u.uinstance) "\
-                  "AND (#{TABLES[:events]}.metric = u.metric) "\
-                  "AND (#{TABLES[:events]}.period = u.period) "\
-                  "AND (#{TABLES[:events]}.timestamp = u.timestamp) "\
-                  "AND (#{TABLES[:events]}.time_gen < u.time_gen); "\
-                "INSERT INTO #{TABLES[:events]} "\
-                  "SELECT * FROM #{TABLES[:unique_imported_events]};" \
-              'END TRANSACTION;'.freeze
-
           CLEAN_TEMP_TABLES =
               "DROP TABLE #{TABLES[:unique_imported_events]}; "\
               "DROP TABLE #{TABLES[:temp]};".freeze
@@ -85,6 +68,20 @@ module ThreeScale
 
           # Service id to get events for
           MASTER = 12345678
+
+          def self.insert_imported_events
+            'BEGIN TRANSACTION; '\
+            "DELETE FROM #{TABLES[:events]} "\
+            "USING #{TABLES[:unique_imported_events]} u "\
+            "WHERE #{TABLES[:events]}.timestamp >= "\
+                "(SELECT MIN(timestamp) FROM #{TABLES[:unique_imported_events]}) "\
+              "AND #{join_comparisons(
+                TABLES[:events], 'u', %w(service cinstance uinstance metric period timestamp))}"\
+              "AND (#{TABLES[:events]}.time_gen < u.time_gen); "\
+            "INSERT INTO #{TABLES[:events]} "\
+              "SELECT * FROM #{TABLES[:unique_imported_events]};" \
+            'END TRANSACTION;'.freeze
+          end
 
           # In order to get unique events, I use an inner-join with the same
           # table. There might be several rows with the same {service, instance,
@@ -102,42 +99,38 @@ module ThreeScale
           # service = MASTER. This is required for the dashboard project.
           # We will need to change this when we start importing data to a
           # Redshift cluster used as a source for the stats API.
-          FILL_TABLE_UNIQUE_IMPORTED_EVENTS =
-              "INSERT INTO #{TABLES[:unique_imported_events]} "\
+          def self.fill_table_unique_imported
+            "INSERT INTO #{TABLES[:unique_imported_events]} "\
               'SELECT e.service, e.cinstance, e.uinstance, e.metric, e.period, '\
                 'e.timestamp, e.time_gen, e.value '\
               'FROM '\
-              '(SELECT service, cinstance, uinstance, metric, period, '\
-                  'MAX(time_gen) AS max_time_gen, timestamp '\
-                "FROM #{TABLES[:temp]} "\
-                "WHERE period != 'minute' AND service = '#{MASTER}' /* Specific for dashboard project */ "\
-                'GROUP BY service, cinstance, uinstance, metric, period, timestamp) AS e1 '\
+                '(SELECT service, cinstance, uinstance, metric, period, '\
+                    'MAX(time_gen) AS max_time_gen, timestamp '\
+                  "FROM #{TABLES[:temp]} "\
+                  "WHERE period != 'minute' AND service = '#{MASTER}' /* Specific for dashboard project */ "\
+                  'GROUP BY service, cinstance, uinstance, metric, period, timestamp) AS e1 '\
                 "INNER JOIN #{TABLES[:temp]} e "\
-                  'ON (e.service = e1.service) '\
-                  'AND (e.cinstance = e1.cinstance) '\
-                  'AND (e.uinstance = e1.uinstance) '\
-                  'AND (e.metric = e1.metric) '\
-                  'AND (e.period = e1.period) '\
-                  'AND (e.timestamp = e1.timestamp) '\
-                  'AND (e.time_gen = e1.max_time_gen);'.freeze
+                  "ON #{join_comparisons(
+                      'e', 'e1',
+                      %w(service cinstance uinstance metric period timestamp))} "\
+                    'AND e.time_gen = e1.max_time_gen'.freeze
+          end
 
           # Once we have imported some events and have made sure that we have
           # selected only the ones that are more recent, we need to delete the
           # ones that do not need to be imported. Those are the ones that have
           # a time_gen older than that of the same event in the events table.
-          DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS =
-              "DELETE FROM #{TABLES[:unique_imported_events]} "\
-                'USING (SELECT * '\
-                  "FROM #{TABLES[:events]} e "\
-                  'WHERE e.time_gen >= (SELECT MIN(time_gen) '\
-                    "FROM #{TABLES[:unique_imported_events]})) AS e "\
-                "WHERE #{TABLES[:unique_imported_events]}.service = e.service "\
-                  "AND (#{TABLES[:unique_imported_events]}.cinstance = e.cinstance) "\
-                  "AND (#{TABLES[:unique_imported_events]}.uinstance = e.uinstance) "\
-                  "AND (#{TABLES[:unique_imported_events]}.metric = e.metric) "\
-                  "AND (#{TABLES[:unique_imported_events]}.period = e.period) "\
-                  "AND (#{TABLES[:unique_imported_events]}.timestamp = e.timestamp) "\
-                  "AND (#{TABLES[:unique_imported_events]}.time_gen <= e.time_gen);".freeze
+          def self.delete_outdated_from_unique_imported
+            "DELETE FROM #{TABLES[:unique_imported_events]} "\
+            'USING (SELECT * '\
+              "FROM #{TABLES[:events]} e "\
+              'WHERE e.time_gen >= (SELECT MIN(time_gen) '\
+                "FROM #{TABLES[:unique_imported_events]})) AS e "\
+            "WHERE #{join_comparisons(
+                TABLES[:unique_imported_events], 'e',
+                %w(service cinstance uinstance metric period timestamp))}"\
+              "AND (#{TABLES[:unique_imported_events]}.time_gen <= e.time_gen);".freeze
+          end
 
           def self.import_s3_path(path, access_key_id, secret_access_key)
             "COPY #{TABLES[:temp]} "\
@@ -173,6 +166,15 @@ module ThreeScale
             "WHERE #{attr} IS NULL;"
           end
 
+          # Given 2 tables and an array of attributes, generates a string
+          # like this:
+          # table1.attr1 = table2.attr1 AND table1.attr2 = table2.attr2 AND ...
+          # This is helpful to build the WHERE clauses of certain JOINs.
+          def self.join_comparisons(table1, table2, attrs)
+            attrs.map do |attr|
+              "#{table1}.#{attr} = #{table2}.#{attr}"
+            end.join(' AND ') + ' '
+          end
         end
 
         # This private class is the responsible for calculating the S3 paths
@@ -307,9 +309,9 @@ module ThreeScale
           def save_in_redshift(path)
             import_s3_path(path)
             [SQL.delete_nulls_from_imported,
-             SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS,
-             SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS,
-             SQL::INSERT_IMPORTED_EVENTS,
+             SQL.fill_table_unique_imported,
+             SQL.delete_outdated_from_unique_imported,
+             SQL.insert_imported_events,
              SQL::CLEAN_TEMP_TABLES,
              SQL::VACUUM].each { |command| execute_command(command) }
           end
