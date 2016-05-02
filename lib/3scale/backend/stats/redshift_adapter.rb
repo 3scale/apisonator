@@ -62,7 +62,9 @@ module ThreeScale
               'BEGIN TRANSACTION; '\
                 "DELETE FROM #{TABLES[:events]} "\
                 "USING #{TABLES[:unique_imported_events]} u "\
-                "WHERE #{TABLES[:events]}.service = u.service "\
+                "WHERE #{TABLES[:events]}.timestamp >= "\
+                    "(SELECT MIN(timestamp) FROM #{TABLES[:unique_imported_events]}) "\
+                  "AND #{TABLES[:events]}.service = u.service "\
                   "AND (#{TABLES[:events]}.cinstance = u.cinstance) "\
                   "AND (#{TABLES[:events]}.uinstance = u.uinstance) "\
                   "AND (#{TABLES[:events]}.metric = u.metric) "\
