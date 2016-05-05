@@ -187,9 +187,17 @@
               "description": "Service id. Required only if you have more than one service."
             },
             {
-              "name": "app_id",
+              "name": "access_token",
               "dataType": "string",
               "required": true,
+              "paramType": "query",
+              "threescale_name": "access_tokens",
+              "description": "OAuth token used for authorizing."
+            },
+            {
+              "name": "app_id",
+              "dataType": "string",
+              "required": false,
               "paramType": "query",
               "threescale_name": "app_ids",
               "description": "Client Id (identifier of the application if the auth. pattern is OAuth, note that client_id == app_id)"
@@ -205,7 +213,7 @@
               "name": "user_id",
               "dataType": "string",
               "paramType": "query",
-              "description": "User id. String identifying an end user. Required only when the application is rate limiting end users. The End User plans feature is not available in all 3scale plans."
+              "description": "User id. String identifying an end user. Used only when the application is rate limiting end users and the specified token is not associated to a user. The End User plans feature is not available in all 3scale plans."
             },
             {
               "name": "usage",
@@ -480,9 +488,17 @@
               "description": "Service id. Required only if you have more than one service."
             },
             {
-              "name": "app_id",
+              "name": "access_token",
               "dataType": "string",
               "required": true,
+              "paramType": "query",
+              "threescale_name": "access_tokens",
+              "description": "OAuth token used for authorizing."
+            },
+            {
+              "name": "app_id",
+              "dataType": "string",
+              "required": false,
               "paramType": "query",
               "threescale_name": "app_ids",
               "description": "Client Id (identifier of the application if the auth. pattern is OAuth, note that client_id == app_id)"
@@ -498,7 +514,7 @@
               "name": "user_id",
               "dataType": "string",
               "paramType": "query",
-              "description": "User id. String identifying an end user. Required only when the application is rate limiting end users. The End User plans feature is not available in all 3scale plans."
+              "description": "User id. String identifying an end user. Used only when the application is rate limiting end users and the specified token is not associated to a user. The End User plans feature is not available in all 3scale plans."
             },
             {
               "name": "usage",
@@ -830,7 +846,7 @@
                 {
                   "name": "app_id",
                   "dataType": "string",
-                  "required": true,
+                  "required": false,
                   "paramType": "query",
                   "threescale_name": "app_ids",
                   "description": "Client Id (identifier of the application if the auth. pattern is OAuth, note that client_id == app_id)",
