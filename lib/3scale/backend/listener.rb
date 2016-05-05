@@ -26,6 +26,9 @@ module ThreeScale
       ##~ @parameter_app_id_inline = @parameter_app_id.clone
       ##~ @parameter_app_id_inline["description_inline"] = true
       ##
+      ##~ @parameter_access_token = {"name" => "access_token", "dataType" => "string", "required" => false, "paramType" => "query", "threescale_name" => "access_tokens"}
+      ##~ @parameter_access_token["description"] = "OAuth token used for authorizing if you don't use client_id with client_secret."
+      ##
       ##~ @parameter_client_id = {"name" => "app_id", "dataType" => "string", "required" => true, "paramType" => "query", "threescale_name" => "app_ids"}
       ##~ @parameter_client_id["description"] = "Client Id (identifier of the application if the auth. pattern is OAuth, note that client_id == app_id)"
       ##~ @parameter_client_id_inline = @parameter_client_id.clone
@@ -250,6 +253,7 @@ module ThreeScale
       ##
       ##~ op.parameters.add @parameter_provider_key
       ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
@@ -323,6 +327,7 @@ module ThreeScale
       ##
       ##~ op.parameters.add @parameter_provider_key
       ##~ op.parameters.add @parameter_service_id
+      ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
