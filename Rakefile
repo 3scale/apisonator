@@ -110,7 +110,14 @@ task :reschedule_failed_jobs => :environment do
   # Resque::Failure.requeue with an index that is no longer valid.
   begin
     count = Resque::Failure.count
-    (count - 1).downto(0) { |i| Resque::Failure.requeue(i) }
+    (count - 1).downto(0) do |i|
+      begin
+        Resque::Failure.requeue(i)
+      rescue Resque::Helpers::DecodeException
+        # Do nothing. The job will not be re-queued and will be deleted from
+        # the queue in the call to 'clear' below. Find a better solution later.
+      end
+    end
   rescue NoMethodError
     retry
   end
