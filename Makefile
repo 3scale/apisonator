@@ -33,28 +33,28 @@ define build_dockerfile
 		((($(call docker_wait_until_read_dockerfile, $(DOCKERFILE), $(DOCKERFILE_MAXWAIT_SECS)) || \
 		echo '*** Docker appears to be TOO SLOW. Maybe use a higher timeout?' >&2) ; \
 		echo '*** Removing tmp Dockerfile' >&2; rm -f $(DOCKERFILE)) &) && \
-		$(call docker_build, $(PROJECT):$(RUBY_VERSION), -f $(DOCKERFILE), $(PROJECT_PATH)))
+		$(call docker_build, $(DOCKER_NAME):$(RUBY_VERSION), -f $(DOCKERFILE), $(PROJECT_PATH)))
 endef
 
 pull:
 	@ $(call docker_ensure_image, $(DOCKER_REPO):$(DOCKER_BASE_IMG))
 
 test: build_test
-	@ $(call docker_run_container, $(PROJECT):$(RUBY_VERSION), $(NAME))
+	@ $(call docker_run_container, $(DOCKER_NAME):$(RUBY_VERSION), $(NAME))
 
 # bash creates a temporary test container from the Dockerfile each time it is run
 # use dev target to keep a persistent container suitable for development
 bash: build_test
-	@ $(call docker_run_disposable, $(PROJECT):$(RUBY_VERSION), -u $(RUBY_USER), /bin/bash)
+	@ $(call docker_run_disposable, $(DOCKER_NAME):$(RUBY_VERSION), -u $(RUBY_USER), /bin/bash)
 
 dev: build
 	@ ($(call docker_start_n_exec, $(DEV_NAME), -u $(RUBY_USER), /bin/bash)) || \
-		($(call docker_run, $(PROJECT):$(RUBY_VERSION), $(DEV_NAME), -u $(RUBY_USER), /bin/bash))
+		($(call docker_run, $(DOCKER_NAME):$(RUBY_VERSION), $(DEV_NAME), -u $(RUBY_USER), /bin/bash))
 
 # we wait just enough for docker to pick up the temporary Dockerfile and remove
 # it (limitation in Docker, as it does not do anything useful with STDIN).
 build: pull
-	@ ($(call docker_check_image, $(PROJECT):$(RUBY_VERSION))) || \
+	@ ($(call docker_check_image, $(DOCKER_NAME):$(RUBY_VERSION))) || \
 		($(call build_dockerfile))
 
 # when testing, we always want to make sure the docker image is up-to-date with
