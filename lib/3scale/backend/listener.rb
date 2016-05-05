@@ -586,7 +586,7 @@ module ThreeScale
                    version: { backend: ThreeScale::Backend::VERSION } }.to_json
 
       get '/status' do
-        content_type 'application/json'
+        content_type 'application/json'.freeze
         @@status
       end
 
