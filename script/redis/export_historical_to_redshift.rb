@@ -75,7 +75,10 @@ def parsed_line(line)
 end
 
 def filter_event?(event)
-  FILTERED_PERIODS.include?(event[:period])
+  # Right now we only want to export events that have a 'metric_field'.
+  # Not all of them have that field, for example events that refer to
+  # response codes have a 'response_code' field instead.
+  FILTERED_PERIODS.include?(event[:period]) || event[:metric].nil?
 end
 
 def exit_invalid_time_gen
