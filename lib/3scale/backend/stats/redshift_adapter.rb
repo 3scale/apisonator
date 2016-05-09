@@ -114,7 +114,9 @@ module ThreeScale
                     'GROUP BY service, cinstance, uinstance, metric, period, timestamp) AS e1 '\
                   "INNER JOIN #{TABLES[:temp]} e "\
                     "ON #{join_comparisons('e', 'e1', EVENT_ATTRS - ['time_gen'])} "\
-                      'AND e.time_gen = e1.max_time_gen'.freeze
+                      'AND e.time_gen = e1.max_time_gen ' \
+                'GROUP BY e.service, e.cinstance, e.uinstance, e.metric, e.period, '\
+                  'e.timestamp, e.time_gen, e.value'.freeze
             end
 
             # Once we have imported some events and have made sure that we have
