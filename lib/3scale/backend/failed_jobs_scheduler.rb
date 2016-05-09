@@ -23,6 +23,11 @@ module ThreeScale
               # cases. This can result in a 'NoMethodError' if requeue is
               # called with an index that is no longer valid.
               retry
+            rescue Resque::Helpers::DecodeException
+              # This means we tried to dequeue a job with invalid encoding.
+              # We just want to delete it from the queue. Although this might
+              # change in the future. Marking it as non-rescheduled is enough.
+              rescheduled -= 1
             end
 
             count.times { failed_queue.remove(0) }

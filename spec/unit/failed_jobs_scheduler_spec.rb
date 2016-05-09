@@ -38,9 +38,16 @@ module ThreeScale
             failed_jobs.push(elem)
           end
 
-          def requeue(_index)
+          def requeue(index)
             # Resque would enqueue a new job with the info stored in the object
             # at _index, but we do not need to do anything.
+
+            # We need to simulate cases where Resque::Helpers::DecodeException
+            # is raised. In order to do so, to simplify, we will raise that if
+            # the job is the string 'invalid'.
+            if failed_jobs[index] == 'invalid'
+              raise Resque::Helpers::DecodeException
+            end
           end
 
           private
@@ -113,6 +120,34 @@ module ThreeScale
             it 'returns a hash with failed_current = 0 and rescheduled = number of failed before' do
               expect(subject.reschedule_failed_jobs)
                   .to eq({ failed_current: 0, rescheduled: failed_jobs.size })
+            end
+          end
+
+          context 'and a job in the queue has invalid encoding (raises DecodeException)' do
+            let(:failed_jobs) { %w(job1 job2 invalid job3) }
+            let(:invalid_index) { failed_jobs.find_index('invalid') } # Assuming there is 1
+
+            before do
+              failed_jobs.each { |job| subject.failed_queue.enqueue(job) }
+            end
+
+            it 'tries to requeue all the jobs in the queue including the invalid ones' do
+              expect(subject.failed_queue)
+                  .to receive(:requeue)
+                  .exactly(failed_jobs.size).times
+
+              subject.reschedule_failed_jobs
+            end
+
+            # This behavior might change in the future
+            it 'removes all the jobs from the queue including the invalid ones' do
+              subject.reschedule_failed_jobs
+              expect(subject.failed_queue.count).to be_zero
+            end
+
+            it 'returns a hash with the current failed jobs and the rescheduled ones' do
+              expect(subject.reschedule_failed_jobs)
+                  .to eq({ failed_current: 0, rescheduled: failed_jobs.size - 1 })
             end
           end
         end
