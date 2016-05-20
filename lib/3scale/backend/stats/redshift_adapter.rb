@@ -255,7 +255,10 @@ module ThreeScale
           def insert_path(path)
             # Need to check that the 'events' table exists. Do not care about
             # 'latest_s3_path_read' in this case.
-            existing_tables_with_schema.include?(SQL::TABLES[:events])
+            unless existing_tables_with_schema.include?(SQL::TABLES[:events])
+              raise MissingRequiredTables, 'Events table is missing'
+            end
+
             save_in_redshift("#{S3_EVENTS_BASE_PATH}#{path}")
           end
 
