@@ -11,42 +11,42 @@ module ThreeScale
     # will no longer be necessary. See
     # https://github.com/resque/resque/commit/18ae5b223fe20583b85be2b5dd23abd4c2314dbb
     module ResqueHacks
-      
-        def before_hooks(job)
-          memoized_methods(job).grep(/^before_perform/).sort
-        end
+      # A method becomes a resque hook if its name starts with a determined
+      # prefix.
+      HOOKS = { before_hooks: 'before_perform'.freeze,
+                around_hooks: 'around_perform'.freeze,
+                after_hooks: 'after_perform'.freeze,
+                failure_hooks: 'on_failure'.freeze,
+                after_enqueue_hooks: 'after_enqueue'.freeze }.freeze
+      private_constant(:HOOKS)
 
-        # Given an object, returns a list `around_perform` hook names.
-        def around_hooks(job)
-          memoized_methods(job).grep(/^around_perform/).sort
+      HOOKS.keys.each do |hook_type|
+        define_method(hook_type) do |job|
+          memoized_methods(job)[hook_type]
         end
+      end
 
-        # Given an object, returns a list `after_perform` hook names.
-        def after_hooks(job)
-          memoized_methods(job).grep(/^after_perform/).sort
-        end
+      private
 
-        # Given an object, returns a list `on_failure` hook names.
-        def failure_hooks(job)
-          
-         memoized_methods(job).grep(/^on_failure/).sort
+      def memoized_methods(job)
+        @@methods ||= Hash.new
+        methods = @@methods[job.to_s]
+        if methods.nil?
+          methods = categorized_hooks(job.methods)
+          @@methods[job.to_s] = methods
         end
+        methods
+      end
 
-        # Given an object, returns a list `after_enqueue` hook names.
-        def after_enqueue_hooks(job)
-          memoized_methods(job).grep(/^after_enqueue/).sort
+      def categorized_hooks(methods)
+        HOOKS.inject({}) do |res, (hook, prefix)|
+          res[hook] = methods.select do |method|
+            method.to_s.start_with?(prefix)
+          end.sort
+          res
         end
-
-        def memoized_methods(job)
-          @@methods ||= Hash.new
-          methods = @@methods[job.to_s]
-          if methods.nil?
-            methods = job.methods
-            @@methods[job.to_s] = methods
-          end
-          methods
-        end
-    end    
+      end
+    end
   end
 end
 
