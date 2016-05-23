@@ -189,10 +189,10 @@
             {
               "name": "access_token",
               "dataType": "string",
-              "required": true,
+              "required": false,
               "paramType": "query",
               "threescale_name": "access_tokens",
-              "description": "OAuth token used for authorizing."
+              "description": "OAuth token used for authorizing if you don't use client_id with client_secret."
             },
             {
               "name": "app_id",
@@ -490,10 +490,10 @@
             {
               "name": "access_token",
               "dataType": "string",
-              "required": true,
+              "required": false,
               "paramType": "query",
               "threescale_name": "access_tokens",
-              "description": "OAuth token used for authorizing."
+              "description": "OAuth token used for authorizing if you don't use client_id with client_secret."
             },
             {
               "name": "app_id",
