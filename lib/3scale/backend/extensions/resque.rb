@@ -1,5 +1,15 @@
 module ThreeScale
   module Backend
+    # This module was introduced because of performance reasons.
+    # Resque allows us to define some methods that can act like hooks. Those
+    # can be executed before a resque job, after it, etc.
+    # The problem is that in old versions of Resque, .methods was called on a
+    # job class each time a resque job of that class was executed to find those
+    # hook methods. If we assume that the methods of a job class will not
+    # change in runtime, this seems pretty inefficient.
+    # This was solved in a newer version of Resque. Once we update, this module
+    # will no longer be necessary. See
+    # https://github.com/resque/resque/commit/18ae5b223fe20583b85be2b5dd23abd4c2314dbb
     module ResqueHacks
       
         def before_hooks(job)
@@ -40,7 +50,7 @@ module ThreeScale
   end
 end
 
-module Resque  
+module Resque
   module Plugin
     extend(ThreeScale::Backend::ResqueHacks)
     include(ThreeScale::Backend::ResqueHacks)
