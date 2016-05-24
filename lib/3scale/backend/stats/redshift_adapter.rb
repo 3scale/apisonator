@@ -68,9 +68,6 @@ module ThreeScale
 
           VACUUM = "VACUUM FULL #{TABLES[:events]}".freeze
 
-          # Service id to get events for
-          MASTER = 12345678
-
           class << self
 
             def insert_imported_events
@@ -99,7 +96,7 @@ module ThreeScale
             # select the row with the most recent data.
             #
             # Note that we are only getting events with period != 'minute' and
-            # service = MASTER. This is required for the dashboard project.
+            # service = master. This is what is required for the dashboard project.
             # We will need to change this when we start importing data to a
             # Redshift cluster used as a source for the stats API.
             def fill_table_unique_imported
@@ -110,7 +107,7 @@ module ThreeScale
                   '(SELECT service, cinstance, uinstance, metric, period, '\
                       'MAX(time_gen) AS max_time_gen, timestamp '\
                     "FROM #{TABLES[:temp]} "\
-                    "WHERE period != 'minute' AND service = '#{MASTER}' /* Specific for dashboard project */ "\
+                    "WHERE period != 'minute' AND service = '#{master_service}' "\
                     'GROUP BY service, cinstance, uinstance, metric, period, timestamp) AS e1 '\
                   "INNER JOIN #{TABLES[:temp]} e "\
                     "ON #{join_comparisons('e', 'e1', EVENT_ATTRS - ['time_gen'])} "\
@@ -176,6 +173,10 @@ module ThreeScale
               attrs.map do |attr|
                 "#{table1}.#{attr} = #{table2}.#{attr}"
               end.join(' AND ') + ' '
+            end
+
+            def master_service
+              Backend.configuration.master_service_id
             end
 
           end
