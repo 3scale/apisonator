@@ -28,8 +28,12 @@ namespace :docs do
       task all: [:service_management]
 
       task :service_management do
-       cmd = 'curl -v -X PUT -F "body=@docs/active_docs/Service Management API.json" "https://active_docs_url?provider_key=pkey"'
-       run_command cmd
+        require 'uri' unless Kernel.const_defined? :URI
+        endpoint = URI.encode(
+          File.readlines('docs/active_docs/endpoint').find do |line|
+            line !~ /\A\s*(#.*)?\n?\z/
+          end.chomp)
+        run_command 'curl -v -X PUT -F "body=@docs/active_docs/Service Management API.json" ' + "\"#{endpoint}\""
       end
     end
   end
