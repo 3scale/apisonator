@@ -5,6 +5,8 @@ module ThreeScale
     module Transactor
       class Status
         class UsageReport
+          attr_reader :type
+
           def initialize(parent, usage_limit, type)
             @parent      = parent
             @usage_limit = usage_limit
@@ -44,10 +46,12 @@ module ThreeScale
           end
 
           def inspect
-            "#<#{self.class.name} period=#{period}" +
-            " metric_name=#{metric_name}" +
-            " max_value=#{max_value}" +
-            " current_value=#{current_value}>"
+            "#<#{self.class.name} " \
+            "type=#{type} " \
+            "period=#{period} " \
+            "metric_name=#{metric_name} " \
+            "max_value=#{max_value} " \
+            "current_value=#{current_value}>"
           end
 
           def to_h
