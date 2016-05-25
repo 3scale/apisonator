@@ -160,7 +160,8 @@ module ThreeScale
             xml << 'true</authorized>'.freeze
           else
             xml << 'false</authorized><reason>'.freeze
-            xml << rejection_reason_text << '</reason>'.freeze
+            xml << rejection_reason_text
+            xml << '</reason>'.freeze
           end
 
           if oauth
