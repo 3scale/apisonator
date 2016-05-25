@@ -159,53 +159,13 @@ module ThreeScale
             xml << '<'.freeze
             xml << xml_node
             reports.each do |report|
-              add_report(xml, report)
+              xml << report.to_xml
             end
             xml << '</'.freeze
             xml << xml_node
           end
 
           xml
-        end
-
-        def add_report(xml, report)
-          # Node header
-          add_report_head(xml, report)
-          # Node content
-          add_report_period(xml, report) if report.period != :eternity
-          add_report_values(xml, report)
-          # Node closing
-          add_report_tail(xml)
-        end
-
-        def add_report_head(xml, report)
-          xml << '<usage_report metric="'.freeze
-          xml << report.metric_name << '" period="'.freeze
-          xml << report.period.to_s << '"'.freeze
-          xml << (report.exceeded? ? ' exceeded="true">'.freeze : '>'.freeze)
-        end
-
-        def add_report_period(xml, report)
-          xml << '<period_start>'.freeze
-          xml << report.period_start.strftime(TIME_FORMAT) << '</period_start>'.freeze
-          xml << '<period_end>'.freeze
-          xml << report.period_end.strftime(TIME_FORMAT) << '</period_end>'.freeze
-        end
-
-        def add_report_values(xml, report)
-          xml << '<max_value>'.freeze
-          xml << report.max_value.to_s << '</max_value><current_value>'.freeze
-          xml << if authorized? && usage && (usage_metric_name = usage[report.metric_name])
-                     # this is a authrep request and therefore we should sum the usage
-                     Usage.get_from usage_metric_name, report.current_value
-                   else
-                     report.current_value
-                   end.to_s
-          xml << '</current_value>'
-        end
-
-        def add_report_tail(xml)
-          xml << '</usage_report>'.freeze
         end
 
       end
