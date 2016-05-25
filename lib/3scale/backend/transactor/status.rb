@@ -212,16 +212,19 @@ module ThreeScale
             xml << '<'.freeze
             xml << xml_node
             reports.each do |report|
-              attributes = "metric=\"#{report.metric_name}\" " \
-                           "period=\"#{report.period}\""
-              attributes << " exceeded=\"true\"" if report.exceeded?
-              xml << "<usage_report #{attributes}>"
+              xml << '<usage_report metric="'.freeze
+              xml << report.metric_name << '" period="'.freeze
+              xml << report.period.to_s << '"'.freeze
+              xml << (report.exceeded? ? ' exceeded="true">'.freeze : '>'.freeze)
 
               if report.period != :eternity
-                xml << '<period_start>' << report.period_start.strftime(TIME_FORMAT) << '</period_start>'
-                xml << '<period_end>' << report.period_end.strftime(TIME_FORMAT) << '</period_end>'
+                xml << '<period_start>'.freeze
+                xml << report.period_start.strftime(TIME_FORMAT) << '</period_start>'.freeze
+                xml << '<period_end>'.freeze
+                xml << report.period_end.strftime(TIME_FORMAT) << '</period_end>'.freeze
               end
-              xml << '<max_value>' << report.max_value.to_s << '</max_value><current_value>'
+              xml << '<max_value>'.freeze
+              xml << report.max_value.to_s << '</max_value><current_value>'.freeze
 
               xml << if authorized? && usage && (usage_metric_name = usage[report.metric_name])
                        # this is a authrep request and therefore we should sum the usage
