@@ -37,7 +37,7 @@ module ThreeScale
           end
 
           def current_value
-            @status.value_for_usage_limit(@usage_limit, @type)
+            @current_value ||= @status.value_for_usage_limit(@usage_limit, @type)
           end
 
           def usage
