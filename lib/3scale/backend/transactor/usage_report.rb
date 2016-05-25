@@ -5,18 +5,19 @@ module ThreeScale
         class UsageReport
           attr_reader :type
 
-          def initialize(parent, usage_limit, type)
-            @parent      = parent
+          def initialize(status, usage_limit, type)
+            @status      = status
             @usage_limit = usage_limit
             @type        = type
           end
 
           def metric_name
-            if @type==:application
-              @parent.application.metric_name(@usage_limit.metric_id)
-            else
-              @parent.user.metric_name(@usage_limit.metric_id)
-            end
+            @metric_name ||=
+              if @type == :application
+                @status.application.metric_name(@usage_limit.metric_id)
+              else
+                @status.user.metric_name(@usage_limit.metric_id)
+              end
           end
 
           def period
@@ -24,11 +25,11 @@ module ThreeScale
           end
 
           def period_start
-            @parent.timestamp.beginning_of_cycle(period)
+            @status.timestamp.beginning_of_cycle(period)
           end
 
           def period_end
-            @parent.timestamp.end_of_cycle(period)
+            @status.timestamp.end_of_cycle(period)
           end
 
           def max_value
@@ -36,11 +37,19 @@ module ThreeScale
           end
 
           def current_value
-            @parent.value_for_usage_limit(@usage_limit,@type)
+            @status.value_for_usage_limit(@usage_limit, @type)
+          end
+
+          def usage
+            @status.usage
           end
 
           def exceeded?
             current_value > max_value
+          end
+
+          def authorized?
+            @status.authorized?
           end
 
           def inspect
