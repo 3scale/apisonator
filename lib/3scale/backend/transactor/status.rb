@@ -124,11 +124,11 @@ module ThreeScale
         end
 
         def application_usage_reports
-          @usage_report ||= load_application_usage_reports
+          @usage_report ||= load_usage_reports @application, :application
         end
 
         def user_usage_reports
-          @user_usage_report ||= load_user_usage_reports
+          @user_usage_report ||= load_usage_reports @user, :user
         end
 
 
@@ -191,17 +191,10 @@ module ThreeScale
 
         private
 
-        def load_application_usage_reports
-          return [] if @application.nil?
-          @application.usage_limits.map do |usage_limit|
-            UsageReport.new(self, usage_limit, :application)
-          end
-        end
-
-        def load_user_usage_reports
-          return [] if @user.nil?
-          @user.usage_limits.map do |usage_limit|
-            UsageReport.new(self, usage_limit, :user)
+        def load_usage_reports(what, type)
+          return [] if what.nil?
+          what.usage_limits.map do |usage_limit|
+            UsageReport.new self, usage_limit, type
           end
         end
 
