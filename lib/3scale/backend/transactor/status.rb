@@ -176,13 +176,11 @@ module ThreeScale
           end
 
           if !@application.nil? && !options[:exclude_application]
-            xml << '<plan>'.freeze
-            xml << plan_name.to_s.encode(xml: :text) << '</plan>'.freeze
+            add_plan(xml, 'plan'.freeze, plan_name)
             xml << aux_reports_to_xml(:application, application_usage_reports, options)
           end
           if !@user.nil? && !options[:exclude_user]
-            xml << '<user_plan>'.freeze
-            xml << user_plan_name.to_s.encode(xml: :text) << '</user_plan>'.freeze
+            add_plan(xml, 'user_plan'.freeze, user_plan_name)
             xml << aux_reports_to_xml(:user, user_usage_reports, options)
           end
 
@@ -190,6 +188,11 @@ module ThreeScale
         end
 
         private
+
+        def add_plan(xml, tag, plan_name)
+          xml << "<#{tag}>"
+          xml << plan_name.to_s.encode(xml: :text) << "</#{tag}>"
+        end
 
         def load_usage_reports(what, type)
           return [] if what.nil?

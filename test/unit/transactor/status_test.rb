@@ -140,6 +140,7 @@ module Transactor
         assert_not_nil root
 
         assert_equal 'true',     root.at('authorized').content
+        assert_not_nil root.at('plan')
         assert_equal @plan_name, root.at('plan').content
 
         usage_reports = root.at('usage_reports')
