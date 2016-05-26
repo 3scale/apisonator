@@ -1,5 +1,6 @@
 require 'rspec'
 require 'resque_spec'
+require 'simplecov' if ENV['TEST_COVERAGE']
 
 require_relative '../lib/3scale/backend.rb'
 require_relative '../test/test_helpers/sequences.rb'

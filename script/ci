@@ -3,7 +3,7 @@
 set -e
 
 export CODECLIMATE_REPO_TOKEN=codeclimate_token
-export REPORT_CODECLIMATE=1
+export TEST_COVERAGE=1
 export CODECLIMATE_TO_FILE=1
 
 export CI=jenkins
