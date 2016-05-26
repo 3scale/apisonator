@@ -158,7 +158,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
              :usage        => {'hitssssss' => '55'}
       Resque.run!
 
-      assert_error_response :code => 'metric_invalid',
+      assert_error_response :code => 'metric_invalid', :status => 404,
                             :message => 'metric "hitssssss" is invalid'
     end
 
@@ -168,7 +168,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
              :usage        => {'hitssssss' => '55'}
       Resque.run!
 
-      assert_error_response :code => 'metric_invalid',
+      assert_error_response :code => 'metric_invalid', :status => 404,
                             :message => 'metric "hitssssss" is invalid'
     end
   end

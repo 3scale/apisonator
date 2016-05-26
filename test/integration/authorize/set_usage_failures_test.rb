@@ -179,7 +179,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
                                              :app_id     => @application.id,
                                              :usage      => {'hitssssss' => '55'}
 
-       assert_error_response :code => 'metric_invalid',
+       assert_error_response :code => 'metric_invalid', :status => 404,
                              :message => 'metric "hitssssss" is invalid'
      end
 
@@ -188,7 +188,7 @@ class SetUsageFailuresTest < Test::Unit::TestCase
                                               :app_id     => @application.id,
                                               :usage      => {'hitssssss' => '55'}
 
-        assert_error_response :code => 'metric_invalid',
+        assert_error_response :code => 'metric_invalid', :status => 404,
                               :message => 'metric "hitssssss" is invalid'
       end
    end
