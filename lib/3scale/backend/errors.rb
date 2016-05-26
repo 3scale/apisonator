@@ -125,7 +125,7 @@ module ThreeScale
       end
     end
 
-    class MetricInvalid < Error
+    class MetricInvalid < NotFound
       def initialize(metric_name)
         super %(metric "#{metric_name}" is invalid)
       end

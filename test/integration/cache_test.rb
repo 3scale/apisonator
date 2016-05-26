@@ -282,7 +282,7 @@ class CacheTest < Test::Unit::TestCase
     Resque.run!
 
     doc   = Nokogiri::XML(last_response.body)
-    assert_equal 403, last_response.status
+    assert_equal 404, last_response.status
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                         :app_id       => @application.id,
@@ -290,7 +290,7 @@ class CacheTest < Test::Unit::TestCase
     Resque.run!
 
     doc   = Nokogiri::XML(last_response.body)
-    assert_equal 403, last_response.status
+    assert_equal 404, last_response.status
     assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 2
 
@@ -318,7 +318,7 @@ class CacheTest < Test::Unit::TestCase
     Resque.run!
 
     doc   = Nokogiri::XML(last_response.body)
-    assert_equal 403, last_response.status
+    assert_equal 404, last_response.status
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                         :app_id       => @application.id,
@@ -326,7 +326,7 @@ class CacheTest < Test::Unit::TestCase
     Resque.run!
 
     doc   = Nokogiri::XML(last_response.body)
-    assert_equal 403, last_response.status
+    assert_equal 404, last_response.status
     assert_equal Transactor.stats[:hits], 1
     assert_equal Transactor.stats[:count], 6
 
