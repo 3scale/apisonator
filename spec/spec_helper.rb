@@ -1,6 +1,16 @@
 require 'rspec'
 require 'resque_spec'
-require 'simplecov' if ENV['TEST_COVERAGE']
+
+if ENV['TEST_COVERAGE']
+  require 'simplecov'
+
+  if ENV['CODECLIMATE_REPO_TOKEN']
+    require 'codeclimate-test-reporter'
+    SimpleCov.at_exit do
+      CodeClimate::TestReporter::Formatter.new.format(SimpleCov.result)
+    end
+  end
+end
 
 require_relative '../lib/3scale/backend.rb'
 require_relative '../test/test_helpers/sequences.rb'
