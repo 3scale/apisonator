@@ -2,9 +2,16 @@
 
 set -e
 
-export CODECLIMATE_REPO_TOKEN=codeclimate_token
 export TEST_COVERAGE=1
-
 export CI=jenkins
+
+if test "$(git rev-parse HEAD)" = "$(git rev-parse origin/master)"; then
+  # CodeClimate test reporter is not able to know that HEAD is master and
+  # identify it as such so hack this here -- note: we're already on master, so
+  # the only thing this does is resetting the HEAD pointer to origin/master
+  # (ie. no actual working copy changes).
+  git checkout -q -b master origin/master || git checkout -q master
+  export CODECLIMATE_REPO_TOKEN=codeclimate_token
+fi
 
 exec script/test
