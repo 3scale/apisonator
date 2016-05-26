@@ -64,9 +64,10 @@ module ThreeScale
                 [subject::SQL::CREATE_TEMP_TABLES,
                  subject::SQL.import_s3_path(
                      subject.send(:s3_path, pending_paths.first), '', ''),
-                 subject::SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS,
-                 subject::SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS,
-                 subject::SQL::INSERT_IMPORTED_EVENTS,
+                 subject::SQL.delete_nulls_from_imported,
+                 subject::SQL.fill_table_unique_imported,
+                 subject::SQL.delete_outdated_from_unique_imported,
+                 subject::SQL.insert_imported_events,
                  subject::SQL::CLEAN_TEMP_TABLES,
                  subject::SQL::VACUUM,
                  subject::SQL.store_timestamp_read(
@@ -168,9 +169,10 @@ module ThreeScale
                   [subject::SQL::CREATE_TEMP_TABLES,
                    subject::SQL.import_s3_path(
                        "#{subject.const_get(:S3_EVENTS_BASE_PATH)}#{path}", '', ''),
-                   subject::SQL::FILL_TABLE_UNIQUE_IMPORTED_EVENTS,
-                   subject::SQL::DELETE_OUTDATED_FROM_UNIQUE_IMPORTED_EVENTS,
-                   subject::SQL::INSERT_IMPORTED_EVENTS,
+                   subject::SQL.delete_nulls_from_imported,
+                   subject::SQL.fill_table_unique_imported,
+                   subject::SQL.delete_outdated_from_unique_imported,
+                   subject::SQL.insert_imported_events,
                    subject::SQL::CLEAN_TEMP_TABLES,
                    subject::SQL::VACUUM]
 
