@@ -47,6 +47,7 @@ module ThreeScale
                      unique_imported_events: "#{SCHEMA}.unique_imported_events".freeze }.freeze
 
           EVENT_ATTRS = %w(service cinstance uinstance metric period timestamp time_gen).freeze
+          JOIN_EVENT_ATTRS = (EVENT_ATTRS - ['time_gen']).freeze
 
           EXISTING_TABLES =
               'SELECT table_name '\
@@ -76,7 +77,7 @@ module ThreeScale
               "USING #{TABLES[:unique_imported_events]} u "\
               "WHERE #{TABLES[:events]}.timestamp >= "\
                   "(SELECT MIN(timestamp) FROM #{TABLES[:unique_imported_events]}) "\
-                "AND #{join_comparisons(TABLES[:events], 'u', EVENT_ATTRS - ['time_gen'])} "\
+                "AND #{join_comparisons(TABLES[:events], 'u', JOIN_EVENT_ATTRS)} "\
                 "AND (#{TABLES[:events]}.time_gen < u.time_gen); "\
               "INSERT INTO #{TABLES[:events]} "\
                 "SELECT * FROM #{TABLES[:unique_imported_events]};" \
@@ -110,7 +111,7 @@ module ThreeScale
                     "WHERE period != 'minute' AND service = '#{master_service}' "\
                     'GROUP BY service, cinstance, uinstance, metric, period, timestamp) AS e1 '\
                   "INNER JOIN #{TABLES[:temp]} e "\
-                    "ON #{join_comparisons('e', 'e1', EVENT_ATTRS - ['time_gen'])} "\
+                    "ON #{join_comparisons('e', 'e1', JOIN_EVENT_ATTRS)} "\
                       'AND e.time_gen = e1.max_time_gen ' \
                 'GROUP BY e.service, e.cinstance, e.uinstance, e.metric, e.period, '\
                   'e.timestamp, e.time_gen, e.value'.freeze
@@ -127,7 +128,7 @@ module ThreeScale
                 'WHERE e.time_gen >= (SELECT MIN(time_gen) '\
                   "FROM #{TABLES[:unique_imported_events]})) AS e "\
               "WHERE #{join_comparisons(
-                  TABLES[:unique_imported_events], 'e', EVENT_ATTRS - ['time_gen'])} "\
+                  TABLES[:unique_imported_events], 'e', JOIN_EVENT_ATTRS)} "\
                 "AND (#{TABLES[:unique_imported_events]}.time_gen <= e.time_gen);".freeze
             end
 
@@ -255,7 +256,10 @@ module ThreeScale
           def insert_path(path)
             # Need to check that the 'events' table exists. Do not care about
             # 'latest_s3_path_read' in this case.
-            existing_tables_with_schema.include?(SQL::TABLES[:events])
+            unless existing_tables_with_schema.include?(SQL::TABLES[:events])
+              raise MissingRequiredTables, 'Events table is missing'
+            end
+
             save_in_redshift("#{S3_EVENTS_BASE_PATH}#{path}")
           end
 
