@@ -306,5 +306,12 @@ module ThreeScale
         super %(user key "#{key}" is invalid)
       end
     end
+
+    # Bad Requests
+    class ContentTypeInvalid < BadRequest
+      def initialize(content_type)
+        super %(invalid Content-Type: #{content_type})
+      end
+    end
   end
 end
