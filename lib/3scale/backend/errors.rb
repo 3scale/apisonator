@@ -31,6 +31,16 @@ module ThreeScale
       end
     end
 
+    class BadRequest < Error
+      def initialize(msg = 'request contains syntax errors, should not be repeated without modification'.freeze)
+        super msg
+      end
+
+      def http_code
+        400
+      end
+    end
+
     class NotFound < Error
       def http_code
         404
@@ -137,12 +147,6 @@ module ThreeScale
     class NotValidData < Invalid
       def initialize
         super 'all data must be valid UTF8'
-      end
-    end
-
-    class BadRequest < Invalid
-      def initialize
-        super 'request contains syntax errors, should not be repeated without modification'
       end
     end
 
