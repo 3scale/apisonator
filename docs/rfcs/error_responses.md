@@ -132,6 +132,12 @@ ie. parameter X is missing or not matching criteria Y.
       The request contains syntax errors.
     - `access_token_already_exists`:
       OAuth access token is already registered in the system.
+    - `content_type_invalid`:
+      A request was performed with an invalid Content-Type header. This usually
+      happens when POST'ing with a header with anything other than either
+      `application/x-www-form-urlencoded` or `multipart/form-data`. We default
+      to the former correct Content-Type if no header is present, so it is ok to
+      not send one as long as the body is properly encoded.
 * `forbidden`:
   [403] A resource can not be used because of authorization or being disabled.
     - `application_not_active`:
