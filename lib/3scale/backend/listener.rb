@@ -391,6 +391,8 @@ module ThreeScale
       ##
       ##
       post '/transactions.xml' do
+        check_post_content_type!
+
         provider_key = params[:provider_key]
         ## return error code 400 (Bad request) if the parameters are not there
         ## I put 403 (Forbidden) for consitency however it should be 400
@@ -427,6 +429,7 @@ module ThreeScale
       ## OAUTH ACCESS TOKENS
 
       post '/services/:service_id/oauth_access_tokens.xml' do
+        check_post_content_type!
         require_params! :provider_key, :service_id, :token
 
         # TODO: this should directly respond rather than raise
@@ -624,6 +627,13 @@ module ThreeScale
           thisparam = params[p]
           params[p] = nil if !thisparam.nil? && (thisparam.class != String || thisparam.strip.empty?)
         end
+      end
+
+      def check_post_content_type!
+        ctype = request.media_type
+        raise ContentTypeInvalid, ctype if ctype && !ctype.empty? &&
+          ctype != 'application/x-www-form-urlencoded'.freeze &&
+          ctype != 'multipart/form-data'.freeze
       end
 
       def application
