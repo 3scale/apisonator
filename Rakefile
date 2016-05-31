@@ -105,25 +105,8 @@ end
 
 desc 'Reschedule failed jobs'
 task :reschedule_failed_jobs => :environment do
-  # There might be several workers trying to requeue failed jobs at the same
-  # time. This can result in a 'NoMethodError' if one of them calls
-  # Resque::Failure.requeue with an index that is no longer valid.
-  begin
-    count = Resque::Failure.count
-    (count - 1).downto(0) do |i|
-      begin
-        Resque::Failure.requeue(i)
-      rescue Resque::Helpers::DecodeException
-        # Do nothing. The job will not be re-queued and will be deleted from
-        # the queue in the call to 'clear' below. Find a better solution later.
-      end
-    end
-  rescue NoMethodError
-    retry
-  end
-
-  Resque::Failure.clear
-  puts "resque:failed size: #{Resque::Failure.count} (from #{count})"
+  result = ThreeScale::Backend::FailedJobsScheduler.reschedule_failed_jobs
+  puts "Rescheduled: #{result[:rescheduled]}. Pending failed jobs: #{result[:failed_current]}."
 end
 
 namespace :cache do
