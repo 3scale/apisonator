@@ -63,6 +63,8 @@ require '3scale/backend/alerts'
 require '3scale/backend/event_storage'
 require '3scale/backend/worker'
 require '3scale/backend/errors'
+require '3scale/backend/service_token'
+
 require '3scale/backend/distributed_lock'
 require '3scale/backend/failed_jobs_scheduler'
 
