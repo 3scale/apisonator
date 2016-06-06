@@ -660,13 +660,6 @@ module ThreeScale
         true
       end
 
-      def check_if_master()
-        service_id = Service.default_id!(params[:provider_key])
-
-        return true if !service_id.nil? && (service_id.to_i==ThreeScale::Backend.configuration.master_service_id.to_i)
-        raise ProviderKeyInvalid, params[:provider_key]
-      end
-
       ## FIXME: this has to be refactored when the api supports json all the way
       def error_response(e)
         content_type 'application/json'
