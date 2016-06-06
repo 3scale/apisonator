@@ -162,9 +162,19 @@ module ThreeScale
 
       def do_api_method(method_name)
         normalize_non_empty_keys!
-        halt 403 unless valid_key_and_usage_params?
 
-        authorization, cached_authorization_text, cached_authorization_result = Transactor.send method_name, params[:provider_key], params
+        halt 403 if params.nil?
+
+        provider_key = params[:provider_key] ||
+            provider_key_from(params[:service_token], params[:service_id])
+
+        halt 403 if blank?(provider_key) || !valid_usage_params?
+
+        # As params is passed to other methods, we need to overwrite the
+        # provider key. Just in case it is used somewhere.
+        params[:provider_key] = provider_key
+
+        authorization, cached_authorization_text, cached_authorization_result = Transactor.send method_name, provider_key, params
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
           status(authorization.authorized? ? 200 : 409)
@@ -594,8 +604,8 @@ module ThreeScale
         !object || object.respond_to?(:empty?) && object.empty?
       end
 
-      def valid_key_and_usage_params?
-        params && !blank?(params[:provider_key]) && (params[:usage].nil? || params[:usage].is_a?(Hash))
+      def valid_usage_params?
+        params[:usage].nil? || params[:usage].is_a?(Hash)
       end
 
       def require_params!(*keys)

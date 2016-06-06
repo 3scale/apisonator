@@ -456,4 +456,81 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     end
   end
 
+  test 'auth using registered (service_token, service_id) instead of provider key responds 200' do
+    service_token = 'a_token'
+    service_id = @service_id
+
+    ServiceToken.save(service_token, service_id)
+
+    get '/transactions/authorize.xml', :service_token => service_token,
+                                       :service_id => service_id,
+                                       :app_id => @application.id
+
+    assert_equal 200, last_response.status
+  end
+
+  test 'auth using valid service token and blank service ID responds with 403' do
+    service_token = 'a_token'
+    blank_service_ids = ['', nil]
+
+    blank_service_ids.each do |blank_service_id|
+      get '/transactions/authorize.xml', :service_token => service_token,
+                                         :service_id => blank_service_id,
+                                         :app_id => @application.id
+
+      assert_equal 403, last_response.status
+    end
+  end
+
+  test 'auth using blank service token and valid service ID responds with 403' do
+    service_id = @service_id
+    blank_service_tokens = ['', nil]
+
+    blank_service_tokens.each do |blank_service_token|
+      get '/transactions/authorize.xml', :service_token => blank_service_token,
+                                         :service_id => service_id,
+                                         :app_id => @application.id
+
+      assert_equal 403, last_response.status
+    end
+  end
+
+  test 'auth using registered token but with non-existing service ID responds with 403' do
+    service_token = 'a_token'
+    service_id = 'id_non_existing_service'
+
+    ServiceToken.save(service_token, service_id)
+
+    get '/transactions/authorize.xml', :service_token => service_token,
+                                       :service_id => service_id,
+                                       :app_id => @application.id
+
+    assert_equal 403, last_response.status
+  end
+
+  test 'auth using valid provider key and blank service token responds with 200' do
+    provider_key = @provider_key
+    service_token = nil
+
+    get '/transactions/authorize.xml', :provider_key => provider_key,
+                                       :service_token => service_token,
+                                       :app_id => @application.id
+
+    assert_equal 200, last_response.status
+  end
+
+  test 'auth using non-existing provider key and saved (service token, service id) responds 403' do
+    provider_key = 'non_existing_key'
+    service_token = 'a_token'
+    service_id = @service_id
+
+    ServiceToken.save(service_token, service_id)
+
+    get '/transactions/authorize.xml', :provider_key => provider_key,
+                                       :service_token => service_token,
+                                       :service_id => service_id,
+                                       :app_id => @application.id
+
+    assert_equal 403, last_response.status
+  end
 end
