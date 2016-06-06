@@ -391,12 +391,15 @@ module ThreeScale
       post '/transactions.xml' do
         check_post_content_type!
 
-        provider_key = params[:provider_key]
         ## return error code 400 (Bad request) if the parameters are not there
         ## I put 403 (Forbidden) for consitency however it should be 400
         ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
+        halt 403 if params.nil?
 
-        halt 403 if params.nil? || blank?(provider_key)
+        provider_key = params[:provider_key] ||
+            provider_key_from(params[:service_token], params[:service_id])
+
+        halt 403 if blank?(provider_key)
 
         transactions = params[:transactions]
 
@@ -653,6 +656,16 @@ module ThreeScale
           content_type: request.content_type,
           content_length: request.content_length,
         }
+      end
+
+      def provider_key_from(service_token, service_id)
+        if blank?(service_token) ||
+            blank?(service_id) ||
+            !ServiceToken.exists?(service_token, service_id)
+          nil
+        else
+          Service.provider_key_for(service_id)
+        end
       end
     end
   end

@@ -884,4 +884,91 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 400, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
   end
+
+  test 'report using registered (service_token, service_id) instead of provider key responds 202' do
+    service_token = 'a_token'
+    service_id = @service_id
+
+    ServiceToken.save(service_token, service_id)
+
+    post '/transactions.xml',
+         :service_token => service_token,
+         :service_id => service_id,
+         :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
+
+    assert_equal 202, last_response.status
+  end
+
+  test 'report using valid service token and blank service ID responds with 403' do
+    service_token = 'a_token'
+    blank_service_ids = ['', nil]
+
+    blank_service_ids.each do |blank_service_id|
+      post '/transactions.xml',
+           :service_token => service_token,
+           :service_id => blank_service_id,
+           :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
+
+      assert_equal 403, last_response.status
+    end
+  end
+
+  test 'report using blank service token and valid service ID responds with 403' do
+    service_id = @service_id
+    blank_service_tokens = ['', nil]
+
+    blank_service_tokens.each do |blank_service_token|
+      post '/transactions.xml',
+           :service_token => blank_service_token,
+           :service_id => service_id,
+           :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
+
+      assert_equal 403, last_response.status
+    end
+  end
+
+  test 'report using registered token but with non-existing service ID responds with 403' do
+    service_token = 'a_token'
+    service_id = 'id_non_existing_service'
+
+    ServiceToken.save(service_token, service_id)
+
+    post '/transactions.xml',
+         :service_token => service_token,
+         :service_id => service_id,
+         :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
+
+    assert_equal 403, last_response.status
+  end
+
+  # For the next two tests, it is important to bear in mind that when both
+  # provider key and service token are found in the parameters of the request,
+  # the former has preference.
+  test 'report using valid provider key and blank service token responds with 202' do
+    provider_key = @provider_key
+    service_token = nil
+
+    post '/transactions.xml',
+         :provider_key => provider_key,
+         :service_token => service_token,
+         :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
+
+    assert_equal 202, last_response.status
+  end
+
+  test 'report with non-existing provider key and saved (service token, service id) responds 403' do
+    provider_key = 'non_existing_key'
+    service_token = 'a_token'
+    service_id = @service_id
+
+    ServiceToken.save(service_token, service_id)
+
+    post '/transactions.xml',
+         :provider_key => provider_key,
+         :service_token => service_token,
+         :service_id => service_id,
+         :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
+
+    assert_equal 403, last_response.status
+  end
 end
