@@ -661,13 +661,13 @@ module ThreeScale
         @application ||= Application.load_by_id_or_user_key!(service_id, params[:app_id], params[:user_key])
       end
 
-      # FIXME: this operations can be done more efficiently, without loading the whole service
       def service_id
         if params[:service_id].nil? || params[:service_id].empty?
           @service_id ||= Service.default_id!(params[:provider_key])
         else
-          service = Service.load_by_id(params[:service_id])
-          raise ProviderKeyInvalid, params[:provider_key] if service.nil? || service.provider_key!=params[:provider_key]
+          unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
+            raise ProviderKeyInvalid, params[:provider_key]
+          end
           @service_id ||= params[:service_id]
         end
       end
