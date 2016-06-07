@@ -5,7 +5,8 @@ module ThreeScale
 
       ATTRIBUTES = %w(referrer_filters_required backend_version
         user_registration_required default_user_plan_id default_user_plan_name
-        provider_key version)
+        provider_key version).freeze
+      private_constant :ATTRIBUTES
 
       attr_accessor :provider_key, :id, :backend_version,
         :default_user_plan_id, :default_user_plan_name
