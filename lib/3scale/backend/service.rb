@@ -86,7 +86,6 @@ module ThreeScale
           result
         end
 
-        # TODO: Is it used?
         def list(provider_key)
           storage.smembers(storage_key_by_provider(provider_key, :ids)) || []
         end
