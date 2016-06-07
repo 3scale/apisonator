@@ -433,17 +433,24 @@ module ThreeScale
 
       post '/services/:service_id/oauth_access_tokens.xml' do
         check_post_content_type!
-        require_params! :provider_key, :service_id, :token
+        require_params! :service_id, :token
 
-        # TODO: this should directly respond rather than raise
-        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid, params[:provider_key]
+        provider_key = params[:provider_key] ||
+            provider_key_from(params[:service_token], params[:service_id])
+
+        if params[:provider_key]
+          # TODO: this should directly respond rather than raise
+          unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
+            raise ProviderKeyInvalid, params[:provider_key]
+          end
+        elsif blank?(provider_key)
+          halt 403
         end
 
         halt 404 unless Application.exists?(params[:service_id], params[:app_id])
 
         # Users do not need to exist, since they can be "created" on-demand.
-        if OAuth::Token::Storage.create(params[:token], service_id, params[:app_id], params[:user_id], params[:ttl])
+        if OAuth::Token::Storage.create(params[:token], params[:service_id] , params[:app_id], params[:user_id], params[:ttl])
           200
         else
           422
@@ -451,23 +458,37 @@ module ThreeScale
       end
 
       delete '/services/:service_id/oauth_access_tokens/:token.xml' do
-        require_params! :provider_key, :service_id, :token
+        require_params! :service_id, :token
 
-        # TODO: this should directly respond rather than raise
-        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid, params[:provider_key]
+        provider_key = params[:provider_key] ||
+            provider_key_from(params[:service_token], params[:service_id])
+
+        if params[:provider_key]
+          # TODO: this should directly respond rather than raise
+          unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
+            raise ProviderKeyInvalid, params[:provider_key]
+          end
+        elsif blank?(provider_key)
+          halt 403
         end
 
         # TODO: perhaps improve this to list the deleted tokens?
-        OAuth::Token::Storage.delete(params[:token], service_id) ? 200 : 404
+        OAuth::Token::Storage.delete(params[:token], params[:service_id]) ? 200 : 404
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-        require_params! :provider_key, :service_id, :app_id
+        require_params! :service_id, :app_id
 
-        # TODO: this should directly respond rather than raise
-        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid, params[:provider_key]
+        provider_key = params[:provider_key] ||
+            provider_key_from(params[:service_token], params[:service_id])
+
+        if params[:provider_key]
+          # TODO: this should directly respond rather than raise
+          unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
+            raise ProviderKeyInvalid, params[:provider_key]
+          end
+        elsif blank?(provider_key)
+          halt 403
         end
 
         service_id = params[:service_id]
@@ -480,10 +501,18 @@ module ThreeScale
       end
 
       get '/services/:service_id/oauth_access_tokens/:token.xml' do
-        require_params! :provider_key, :service_id, :token
+        require_params! :service_id, :token
 
-        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid, params[:provider_key]
+        provider_key = params[:provider_key] ||
+            provider_key_from(params[:service_token], params[:service_id])
+
+        if params[:provider_key]
+          # TODO: this should directly respond rather than raise
+          unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
+            raise ProviderKeyInvalid, params[:provider_key]
+          end
+        elsif blank?(provider_key)
+          halt 403
         end
 
         @token_to_app_id, @token_to_user_id = OAuth::Token::Storage.get_credentials(

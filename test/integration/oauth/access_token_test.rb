@@ -689,6 +689,112 @@ class AccessTokenTest < Test::Unit::TestCase
     end
   end
 
+  test 'auth for CR(-)D access token using saved service token instead of provider key succeeds' do
+    service_id = @service.id
+    service_token = 'valid_service_token'
+    app_id = @application.id
+    access_token = 'a_valid_token'
+
+    ServiceToken.save(service_token, service_id)
+
+    oauth_access_tokens_endpoints(service_id, app_id, access_token).each do |endpoint|
+      send("#{endpoint[:action]}",
+           "#{endpoint[:path]}",
+           service_token: service_token,
+           app_id: app_id,
+           token: access_token)
+
+      # We do not care about the exact status code. We just need to check that
+      # there is not an authentication problem (403, 422)
+      assert_not_equal 403, last_response.status
+      assert_not_equal 422, last_response.status
+    end
+  end
+
+  test 'CR(-)D access token using a blank service token responds with 403' do
+    service_id = @service.id
+    blank_service_tokens = ['', nil]
+    app_id = @application.id
+    access_token = 'a_valid_token'
+
+    blank_service_tokens.each do |blank_service_token|
+      oauth_access_tokens_endpoints(service_id, app_id, access_token).each do |endpoint|
+        send("#{endpoint[:action]}",
+             "#{endpoint[:path]}",
+             service_token: blank_service_token,
+             app_id: app_id,
+             token: access_token)
+
+        assert_equal 403, last_response.status
+      end
+    end
+  end
+
+  test 'CR(-)D access token using service token associated with other service ID responds 403' do
+    service_id = @service.id
+    associated_service_id = service_id.succ
+    service_token = 'valid_service_token'
+    app_id = @application.id
+    access_token = 'a_valid_token'
+
+    ServiceToken.save(service_token, associated_service_id)
+
+    oauth_access_tokens_endpoints(service_id, app_id, access_token).each do |endpoint|
+      send("#{endpoint[:action]}",
+           "#{endpoint[:path]}",
+           service_token: service_token,
+           app_id: app_id,
+           token: access_token)
+
+      assert_equal 403, last_response.status
+    end
+  end
+
+  # Reminder: provider key has preference over service token
+  test 'auth for CR(-)D access token with valid provider key and blank service token succeeds' do
+    service_id = @service.id
+    service_token = ''
+    app_id = @application.id
+    access_token = 'a_valid_token'
+    provider_key = @provider_key
+
+    oauth_access_tokens_endpoints(service_id, app_id, access_token).each do |endpoint|
+      send("#{endpoint[:action]}",
+           "#{endpoint[:path]}",
+           provider_key: provider_key,
+           service_token: service_token,
+           app_id: app_id,
+           token: access_token)
+
+      # We do not care about the exact status code. We just need to check that
+      # there is not an authentication problem (403, 422)
+      assert_not_equal 403, last_response.status
+      assert_not_equal 422, last_response.status
+    end
+  end
+
+  # Reminder: provider key has preference over service token
+  test 'CR(-)D access token with invalid provider key and valid service token responds 403' do
+    service_id = @service.id
+    service_token = 'valid_service_token'
+    app_id = @application.id
+    access_token = 'a_valid_token'
+    provider_key = 'invalid_provider_key'
+
+    ServiceToken.save(service_token, @service.id)
+
+    oauth_access_tokens_endpoints(service_id, app_id, access_token).each do |endpoint|
+      send("#{endpoint[:action]}",
+           "#{endpoint[:path]}",
+           provider_key: provider_key,
+           service_token: service_token,
+           app_id: app_id,
+           token: access_token)
+
+      assert_equal 403, last_response.status
+    end
+  end
+
   # TODO: more test covering multiservice cases (there is only one right now)
 
   private
@@ -773,5 +879,16 @@ class AccessTokenTest < Test::Unit::TestCase
         :provider_key => @provider_key
 
     blk.call
+  end
+
+  def oauth_access_tokens_endpoints(service_id, app_id, access_token)
+    [{ action: :post,
+       path: "/services/#{service_id}/oauth_access_tokens.xml" },
+     { action: :delete,
+       path: "/services/#{service_id}/oauth_access_tokens/#{access_token}.xml" },
+     { action: :get,
+       path: "/services/#{service_id}/applications/#{app_id}/oauth_access_tokens.xml" },
+     { action: :get,
+       path: "/services/#{service_id}/oauth_access_tokens/#{access_token}.xml" }]
   end
 end
