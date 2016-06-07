@@ -209,6 +209,26 @@ module ThreeScale
         end
       end
 
+      describe '.provider_key_for' do
+        context 'when the service exists' do
+          let(:provider_key) { 'abc' }
+          let(:service_id) { 123 }
+
+          before { Service.save!(id: service_id, provider_key: provider_key) }
+
+          it 'returns its provider key' do
+            expect(Service.provider_key_for(service_id)).to eq provider_key
+          end
+        end
+
+        context 'when the service does not exist' do
+          let(:non_existing_service_id) { 321 }
+
+          it 'returns nil' do
+            expect(Service.provider_key_for(non_existing_service_id)).to be nil
+          end
+        end
+      end
     end
   end
 end

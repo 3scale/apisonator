@@ -23,7 +23,7 @@ module ThreeScale
         # that key without loading the whole object.
         #
         def authenticate_service_id(service_id, provider_key)
-          provider_key == storage.get(storage_key(service_id, 'provider_key'))
+          provider_key == provider_key_for(service_id)
         end
         memoize :authenticate_service_id
 
@@ -112,10 +112,16 @@ module ThreeScale
                     default_id: provider_key_arg,
                     load: provider_key_arg,
                     load_by_id: [id],
-                    list: provider_key_arg
-                                              )
+                    list: provider_key_arg,
+                    provider_key_for: [id])
           Memoizer.clear keys
         end
+
+        # Gets the provider key without loading the whole service
+        def provider_key_for(service_id)
+          storage.get(storage_key(service_id, 'provider_key'.freeze))
+        end
+        memoize :provider_key_for
 
         private
 
