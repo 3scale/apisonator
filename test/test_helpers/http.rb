@@ -6,7 +6,7 @@ module TestHelpers
 
     module ClassMethods
       VALID_CTYPES = ['application/x-www-form-urlencoded', 'multipart/form-data', '', nil].freeze
-      INVALID_CTYPES = ['image/invalid', 'some_content_type', 'application/xml+invalid']
+      INVALID_CTYPES = ['image/invalid', 'some_content_type', 'application/xml+invalid'].freeze
       private_constant :VALID_CTYPES, :INVALID_CTYPES
 
       private
