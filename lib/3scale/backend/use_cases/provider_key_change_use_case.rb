@@ -50,7 +50,8 @@ module ThreeScale
           provider_cache_keys(@new_key) +
           service_ids.map{ |id| Memoizer.build_key(Service, :load_by_id, id) } +
           authentication_cache_keys(@old_key, service_ids) +
-          authentication_cache_keys(@new_key, service_ids)
+          authentication_cache_keys(@new_key, service_ids) +
+          provider_keys_cache_keys(service_ids)
 
         Memoizer.clear keys
       end
@@ -66,6 +67,10 @@ module ThreeScale
       def authentication_cache_keys(key, service_ids)
         service_ids.map{ |id| Memoizer.build_key(Service,
                                     :authenticate_service_id, id, key) }
+      end
+
+      def provider_keys_cache_keys(service_ids)
+        service_ids.map { |id| Memoizer.build_key(Service, :provider_key_for, id) }
       end
 
     end

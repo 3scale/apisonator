@@ -42,6 +42,11 @@ module ThreeScale
         expect(Service.default_id('foo')).to be nil
         expect(Service.list('foo')).to be_empty
       end
+
+      it 'changes the provider key associated with the affected services' do
+        expect(Service.provider_key_for(7001)).to eq 'bar'
+        expect(Service.provider_key_for(7002)).to eq 'bar'
+      end
     end
   end
 end

@@ -5,7 +5,8 @@ module ThreeScale
 
       ATTRIBUTES = %w(referrer_filters_required backend_version
         user_registration_required default_user_plan_id default_user_plan_name
-        provider_key version)
+        provider_key version).freeze
+      private_constant :ATTRIBUTES
 
       attr_accessor :provider_key, :id, :backend_version,
         :default_user_plan_id, :default_user_plan_name
@@ -23,7 +24,7 @@ module ThreeScale
         # that key without loading the whole object.
         #
         def authenticate_service_id(service_id, provider_key)
-          provider_key == storage.get(storage_key(service_id, 'provider_key'))
+          provider_key == provider_key_for(service_id)
         end
         memoize :authenticate_service_id
 
@@ -86,7 +87,6 @@ module ThreeScale
           result
         end
 
-        # TODO: Is it used?
         def list(provider_key)
           storage.smembers(storage_key_by_provider(provider_key, :ids)) || []
         end
@@ -113,10 +113,16 @@ module ThreeScale
                     default_id: provider_key_arg,
                     load: provider_key_arg,
                     load_by_id: [id],
-                    list: provider_key_arg
-                                              )
+                    list: provider_key_arg,
+                    provider_key_for: [id])
           Memoizer.clear keys
         end
+
+        # Gets the provider key without loading the whole service
+        def provider_key_for(service_id)
+          storage.get(storage_key(service_id, 'provider_key'.freeze))
+        end
+        memoize :provider_key_for
 
         private
 
