@@ -8,12 +8,36 @@ module ThreeScale
                    provider_key_exists: ProviderKeyExists,
                    provider_key_not_found: ProviderKeyNotFound }
 
+        invalid_keys = [nil, '']
+
         let(:a_provider_key) { '123' }
 
         context 'when the provider keys are invalid' do
           it "raises #{formatted_name(errors[:invalid_provider_keys])}" do
             expect { ProviderKeyChangeUseCase.new(a_provider_key, a_provider_key) }
                 .to raise_error(errors[:invalid_provider_keys])
+          end
+        end
+
+        context 'when the old provider key is invalid' do
+          invalid_keys.each do |invalid_key|
+            context "because it is #{invalid_key.inspect}" do
+              it "raises #{formatted_name(errors[:invalid_provider_keys])}" do
+                expect { ProviderKeyChangeUseCase.new(invalid_key, a_provider_key) }
+                    .to raise_error(errors[:invalid_provider_keys])
+              end
+            end
+          end
+        end
+
+        context 'when the new provider key is invalid' do
+          invalid_keys.each do |invalid_key|
+            context "because it is #{invalid_key.inspect}" do
+              it "raises #{formatted_name(errors[:invalid_provider_keys])}" do
+                expect { ProviderKeyChangeUseCase.new(a_provider_key, invalid_key) }
+                    .to raise_error(errors[:invalid_provider_keys])
+              end
+            end
           end
         end
 
