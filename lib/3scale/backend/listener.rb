@@ -660,14 +660,6 @@ module ThreeScale
         true
       end
 
-      ## FIXME: this has to be refactored when the api supports json all the way
-      def error_response(e)
-        content_type 'application/json'
-        status 403
-        body Yajl::Encoder.encode({:error => {:code => e.code, :message => e.message}})
-        true
-      end
-
       def request_info
         {
           url: request.url,
