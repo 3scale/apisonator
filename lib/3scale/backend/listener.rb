@@ -354,6 +354,7 @@ module ThreeScale
       ##~ @report_desc = @report_desc + " processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same"
       ##~ @report_desc = @report_desc + " service, <em>service_id</em> is at the same level that <em>provider_key</em>. Multiple report calls will have to be issued to report"
       ##~ @report_desc = @report_desc + " transactions to different services."
+      ##~ @report_desc = @report_desc + "<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect."
       ##
       ##~ op.description = @report_desc
       ##~ op.group = "report"
