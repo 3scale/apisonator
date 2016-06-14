@@ -293,6 +293,24 @@ module ThreeScale
       end
     end
 
+    class ProviderKeyOrServiceTokenRequired < Error
+      def initialize
+        super 'Provider key or service token are required'.freeze
+      end
+    end
+
+    class ServiceIdMissing < Invalid
+      def initialize
+        super 'Service ID is missing'.freeze
+      end
+    end
+
+    class ServiceTokenInvalid < Error
+      def initialize(token)
+        super %(service token "#{token}" is invalid)
+      end
+    end
+
     # Legacy API support
 
     class AuthenticationError < Error
