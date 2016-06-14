@@ -73,9 +73,10 @@ Backend responses:
   requested does not exist.
 * `409 Conflict`:
   - The request's reported usage goes over the limits set for that specific
-  application or user. Note that *this is not an application error* but the
-  reporting of a normal request telling the client that the usage exceeds
-  limits.
+  application or user or some other condition for this application (not enabled
+  or invalid/missing key) or service (not OAuth-enabled). Note that *this is not
+  an application or client error* but the reporting of a normal request telling
+  the client that the usage exceeds limits.
 * `422 Unprocessable entity`:
   - One or more required parameters are missing or have invalid data.
 * `500 Internal Server Error`:
@@ -134,16 +135,8 @@ ie. parameter X is missing or not matching criteria Y.
       OAuth access token is already registered in the system.
 * `forbidden`:
   [403] A resource can not be used because of authorization or being disabled.
-    - `application_not_active`:
-      The specified application is not active.
-    - `application_key_invalid`:
-      Application key is missing or invalid
-    - `oauth_not_enabled`:
-      OAuth is not enabled for this provider.
     - `provider_key_invalid`:
       The specified provider key is unauthorized.
-    - `referrer_not_allowed`:
-      The referrer specified does not match allowed referrers.
     - `user_requires_registration`:
       The specified user is missing or is not registered with the service.
     - `user_key_invalid`:
@@ -161,14 +154,26 @@ ie. parameter X is missing or not matching criteria Y.
       The specified service id was not found.
     - `metric_invalid`:
       The specified metric was not found.
+* `authorization_failed`:
+  [409] Authorization denied because of rate limiting or wrong credentials
+    - `limits_exceeded`:
+      The limit for a current period on a reported metric has been exceeded.
+    - `oauth_not_enabled`:
+      The service does not have OAuth enabled.
+    - `redirect_uri_invalid`:
+      The redirect URI does not match the one configured.
+    - `redirect_url_invalid`:
+      See `redirect_uri_invalid`.
+    - `application_not_active`:
+      The specified application is not active.
+    - `application_key_invalid`:
+      Application key is missing or invalid
+    - `referrer_not_allowed`:
+      The referrer specified does not match allowed referrers.
 * `invalid`:
   [422] One or more parameters contain invalid data or format.
     - `application_has_inconsistent_data`:
       Application has inconsistent data and can't be saved.
-    - `redirect_uri_invalid`:
-      The redirect URI specified is missing or invalid.
-    - `redirect_url_invalid`:
-      See `redirect_uri_invalid`.
     - `referrer_filter_invalid`:
       The referrer filter is missing or blank.
     - `required_params_missing`:
