@@ -27,5 +27,11 @@ module TestHelpers
       assert_equal options[:code],    node['code'] if options[:code]
       assert_equal options[:message], node.content if options[:message]
     end
+
+    def assert_error_resp_with_exc(exception)
+      assert_error_response(status: exception.http_code,
+                            code: exception.code,
+                            message: exception.message)
+    end
   end
 end
