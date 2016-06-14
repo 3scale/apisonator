@@ -157,15 +157,12 @@ module ThreeScale
       # us in their listener pool and it takes for all of them to
       # notice before no request is received.
       head '/available' do
-        empty_response 200
+        200
       end
 
       def do_api_method(method_name)
         normalize_non_empty_keys!
-        unless valid_key_and_usage_params?
-          empty_response 403
-          return
-        end
+        halt 403 unless valid_key_and_usage_params?
 
         authorization, cached_authorization_text, cached_authorization_result = Transactor.send method_name, params[:provider_key], params
 
@@ -396,32 +393,24 @@ module ThreeScale
         ## I put 403 (Forbidden) for consitency however it should be 400
         ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
 
-        if params.nil? || blank?(provider_key)
-          empty_response 403
-          return
-        end
+        halt 403 if params.nil? || blank?(provider_key)
 
         transactions = params[:transactions]
-        if blank?(transactions) || !transactions.is_a?(Hash)
-          empty_response 400
-          return
-        end
 
-        if transactions.any? { |_id, data| data.nil? }
-          empty_response 400
-          return
+        if blank?(transactions) ||
+            !transactions.is_a?(Hash) ||
+            transactions.any? { |_id, data| data.nil? }
+          halt 400
         end
 
         ## not very proud of this but... this is to cover for those cases that it does not blow on
         ## rack_exception_catcher
-        if !transactions.valid_encoding?
-          status 400
-          body ThreeScale::Backend::NotValidData.new().to_xml
-          return
+        unless transactions.valid_encoding?
+          halt 400, ThreeScale::Backend::NotValidData.new.to_xml
         end
 
         Transactor.report(provider_key, params[:service_id], transactions, response_code: 202, request: request_info)
-        empty_response 202
+        202
       end
 
       ## OAUTH ACCESS TOKENS
@@ -434,16 +423,13 @@ module ThreeScale
           raise ProviderKeyInvalid, params[:provider_key]
         end
 
-        unless Application.exists?(params[:service_id], params[:app_id])
-          empty_response 404
-          return
-        end
+        halt 404 unless Application.exists?(params[:service_id], params[:app_id])
 
         # Users do not need to exist, since they can be "created" on-demand.
         if OAuth::Token::Storage.create(params[:token], service_id, params[:app_id], params[:user_id], params[:ttl])
-          empty_response 200
+          200
         else
-          empty_response 422
+          422
         end
       end
 
@@ -456,12 +442,7 @@ module ThreeScale
         end
 
         # TODO: perhaps improve this to list the deleted tokens?
-        code = if OAuth::Token::Storage.delete(params[:token], service_id)
-                 200
-               else
-                 404
-               end
-        empty_response code
+        OAuth::Token::Storage.delete(params[:token], service_id) ? 200 : 404
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
@@ -475,10 +456,7 @@ module ThreeScale
         service_id = params[:service_id]
         app_id = params[:app_id]
 
-        unless Application.exists?(service_id, app_id)
-          empty_response 404
-          return
-        end
+        halt 404 unless Application.exists?(service_id, app_id)
 
         @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id, params[:user_id]
         builder :oauth_access_tokens
@@ -508,7 +486,7 @@ module ThreeScale
 
       delete '/transactions/errors.xml' do
         ErrorStorage.delete_all(service_id)
-        empty_response
+        200
       end
 
       get '/transactions/errors/count.xml' do
@@ -554,19 +532,19 @@ module ThreeScale
 
       delete '/services/:service_id/applications/:app_id/log_requests.xml' do
         LogRequestStorage.delete_by_application(service_id, application.id)
-        empty_response
+        200
       end
 
       delete '/applications/:app_id/log_requests.xml' do
         ## FIXME: two ways of doing the same
         ## delete '/services/:service_id/applications/:app_id/log_requests.xml'
         LogRequestStorage.delete_by_application(service_id, application.id)
-        empty_response
+        200
       end
 
       delete '/services/:service_id/log_requests.xml' do
         LogRequestStorage.delete_by_service(service_id)
-        empty_response
+        200
       end
 
       ## ALERTS & VIOLATIONS
@@ -652,20 +630,6 @@ module ThreeScale
         url = "#{protocol}://#{server}#{path}"
         url += "?provider_key=#{params[:provider_key]}" if params[:provider_key]
         url
-      end
-
-      def empty_response(code = 200)
-        status code
-        body nil
-        true
-      end
-
-      ## FIXME: this has to be refactored when the api supports json all the way
-      def error_response(e)
-        content_type 'application/json'
-        status 403
-        body Yajl::Encoder.encode({:error => {:code => e.code, :message => e.message}})
-        true
       end
 
       def request_info
