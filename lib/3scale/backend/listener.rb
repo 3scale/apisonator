@@ -168,7 +168,8 @@ module ThreeScale
         provider_key = params[:provider_key] ||
             provider_key_from(params[:service_token], params[:service_id])
 
-        halt 403 if blank?(provider_key) || !valid_usage_params?
+        raise_provider_key_error(params) if blank?(provider_key)
+        halt 403 unless valid_usage_params?
 
         # As params is passed to other methods, we need to overwrite the
         # provider key. Just in case it is used somewhere.
@@ -409,7 +410,7 @@ module ThreeScale
         provider_key = params[:provider_key] ||
             provider_key_from(params[:service_token], params[:service_id])
 
-        halt 403 if blank?(provider_key)
+        raise_provider_key_error(params) if blank?(provider_key)
 
         transactions = params[:transactions]
 
@@ -438,13 +439,13 @@ module ThreeScale
         provider_key = params[:provider_key] ||
             provider_key_from(params[:service_token], params[:service_id])
 
+        raise_provider_key_error(params) if blank?(provider_key)
+
         if params[:provider_key]
           # TODO: this should directly respond rather than raise
           unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
             raise ProviderKeyInvalid, params[:provider_key]
           end
-        elsif blank?(provider_key)
-          halt 403
         end
 
         halt 404 unless Application.exists?(params[:service_id], params[:app_id])
@@ -463,13 +464,13 @@ module ThreeScale
         provider_key = params[:provider_key] ||
             provider_key_from(params[:service_token], params[:service_id])
 
+        raise_provider_key_error(params) if blank?(provider_key)
+
         if params[:provider_key]
           # TODO: this should directly respond rather than raise
           unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
             raise ProviderKeyInvalid, params[:provider_key]
           end
-        elsif blank?(provider_key)
-          halt 403
         end
 
         # TODO: perhaps improve this to list the deleted tokens?
@@ -482,13 +483,13 @@ module ThreeScale
         provider_key = params[:provider_key] ||
             provider_key_from(params[:service_token], params[:service_id])
 
+        raise_provider_key_error(params) if blank?(provider_key)
+
         if params[:provider_key]
           # TODO: this should directly respond rather than raise
           unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
             raise ProviderKeyInvalid, params[:provider_key]
           end
-        elsif blank?(provider_key)
-          halt 403
         end
 
         service_id = params[:service_id]
@@ -506,13 +507,13 @@ module ThreeScale
         provider_key = params[:provider_key] ||
             provider_key_from(params[:service_token], params[:service_id])
 
+        raise_provider_key_error(params) if blank?(provider_key)
+
         if params[:provider_key]
           # TODO: this should directly respond rather than raise
           unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
             raise ProviderKeyInvalid, params[:provider_key]
           end
-        elsif blank?(provider_key)
-          halt 403
         end
 
         @token_to_app_id, @token_to_user_id = OAuth::Token::Storage.get_credentials(
@@ -705,6 +706,18 @@ module ThreeScale
         else
           Service.provider_key_for(service_id)
         end
+      end
+
+      # Raises the appropriate error when provider key is blank.
+      # Provider key is blank only when these 2 conditions are met:
+      #   1) It is not received by parameter (params[:provider_key] is nil)
+      #   2) It cannot be obtained using a service token and a service ID.
+      #      This can happen when these 2 are not received or when the pair is
+      #      not associated with a provider key.
+      def raise_provider_key_error(params)
+        raise ProviderKeyOrServiceTokenRequired if blank?(params[:service_token])
+        raise ServiceIdMissing if blank?(params[:service_id])
+        raise ServiceTokenInvalid, params[:service_token]
       end
     end
   end

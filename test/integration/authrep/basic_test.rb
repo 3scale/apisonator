@@ -664,7 +664,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
-  test_authrep 'authrep using valid service token and blank service ID responds with 403' do |e|
+  test_authrep 'authrep using valid service token and blank service ID fails' do |e|
     service_token = 'a_token'
     blank_service_ids = ['', nil]
 
@@ -673,11 +673,11 @@ class AuthrepBasicTest < Test::Unit::TestCase
              :service_id => blank_service_id,
              :app_id => @application.id
 
-      assert_equal 403, last_response.status
+      assert_error_resp_with_exc(ThreeScale::Backend::ServiceIdMissing.new)
     end
   end
 
-  test_authrep 'authrep using blank service token and valid service ID responds with 403' do |e|
+  test_authrep 'authrep using blank service token and valid service ID fails' do |e|
     service_id = @service_id
     blank_service_tokens = ['', nil]
 
@@ -686,11 +686,11 @@ class AuthrepBasicTest < Test::Unit::TestCase
              :service_id => service_id,
              :app_id => @application.id
 
-      assert_equal 403, last_response.status
+      assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyOrServiceTokenRequired.new)
     end
   end
 
-  test_authrep 'authrep using registered token with non-existing service ID responds with 403' do |e|
+  test_authrep 'authrep using registered token with non-existing service ID fails' do |e|
     service_token = 'a_token'
     service_id = 'id_non_existing_service'
 
@@ -700,7 +700,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
            :service_id => service_id,
            :app_id => @application.id
 
-    assert_equal 403, last_response.status
+    assert_error_resp_with_exc(ThreeScale::Backend::ServiceTokenInvalid.new(service_token))
   end
 
   test_authrep 'authrep using valid provider key and blank service token responds with 200' do |e|
@@ -714,7 +714,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
-  test_authrep 'authrep using non-existing provider key and saved (service token, service id) responds 403' do |e|
+  test_authrep 'authrep using non-existing provider key and saved (service token, service id) fails' do |e|
     provider_key = 'non_existing_key'
     service_token = 'a_token'
     service_id = @service_id
@@ -726,6 +726,6 @@ class AuthrepBasicTest < Test::Unit::TestCase
            :service_id => service_id,
            :app_id => @application.id
 
-    assert_equal 403, last_response.status
+    assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyInvalid.new(provider_key))
   end
 end

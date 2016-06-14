@@ -820,15 +820,13 @@ class ReportTest < Test::Unit::TestCase
          :transactions => { '0' => { :app_id => @application.id,
                                      :usage => { 'hits' => 1 } } }
 
-    assert_equal 403, last_response.status
-    assert_equal '', last_response.body
+    assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyOrServiceTokenRequired.new)
   end
 
   test 'returns 403 when no provider key is given, even if other params have an invalid encoding' do
     post '/transactions.xml', :transactions => "\xf0\x90\x28\xbc"
 
-    assert_equal 403, last_response.status
-    assert_equal '', last_response.body
+    assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyOrServiceTokenRequired.new)
   end
 
   test 'returns 400 when transactions is not a hash' do
@@ -899,7 +897,7 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 202, last_response.status
   end
 
-  test 'report using valid service token and blank service ID responds with 403' do
+  test 'report using valid service token and blank service ID fails' do
     service_token = 'a_token'
     blank_service_ids = ['', nil]
 
@@ -909,11 +907,11 @@ class ReportTest < Test::Unit::TestCase
            :service_id => blank_service_id,
            :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
 
-      assert_equal 403, last_response.status
+      assert_error_resp_with_exc(ThreeScale::Backend::ServiceIdMissing.new)
     end
   end
 
-  test 'report using blank service token and valid service ID responds with 403' do
+  test 'report using blank service token and valid service ID fails' do
     service_id = @service_id
     blank_service_tokens = ['', nil]
 
@@ -923,11 +921,11 @@ class ReportTest < Test::Unit::TestCase
            :service_id => service_id,
            :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
 
-      assert_equal 403, last_response.status
+      assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyOrServiceTokenRequired.new)
     end
   end
 
-  test 'report using registered token but with non-existing service ID responds with 403' do
+  test 'report using registered token but with non-existing service ID fails' do
     service_token = 'a_token'
     service_id = 'id_non_existing_service'
 
@@ -938,7 +936,7 @@ class ReportTest < Test::Unit::TestCase
          :service_id => service_id,
          :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
 
-    assert_equal 403, last_response.status
+    assert_error_resp_with_exc(ThreeScale::Backend::ServiceTokenInvalid.new(service_token))
   end
 
   # For the next two tests, it is important to bear in mind that when both
@@ -956,7 +954,7 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 202, last_response.status
   end
 
-  test 'report with non-existing provider key and saved (service token, service id) responds 403' do
+  test 'report with non-existing provider key and saved (service token, service id) fails' do
     provider_key = 'non_existing_key'
     service_token = 'a_token'
     service_id = @service_id
@@ -969,6 +967,6 @@ class ReportTest < Test::Unit::TestCase
          :service_id => service_id,
          :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
 
-    assert_equal 403, last_response.status
+    assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyInvalid.new(provider_key))
   end
 end

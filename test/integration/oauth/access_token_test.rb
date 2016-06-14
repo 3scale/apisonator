@@ -711,7 +711,7 @@ class AccessTokenTest < Test::Unit::TestCase
     end
   end
 
-  test 'CR(-)D access token using a blank service token responds with 403' do
+  test 'CR(-)D access token using a blank service token fails' do
     service_id = @service.id
     blank_service_tokens = ['', nil]
     app_id = @application.id
@@ -725,12 +725,12 @@ class AccessTokenTest < Test::Unit::TestCase
              app_id: app_id,
              token: access_token)
 
-        assert_equal 403, last_response.status
+        assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyOrServiceTokenRequired.new)
       end
     end
   end
 
-  test 'CR(-)D access token using service token associated with other service ID responds 403' do
+  test 'CR(-)D access token using service token associated with other service ID fails' do
     service_id = @service.id
     associated_service_id = service_id.succ
     service_token = 'valid_service_token'
@@ -746,7 +746,7 @@ class AccessTokenTest < Test::Unit::TestCase
            app_id: app_id,
            token: access_token)
 
-      assert_equal 403, last_response.status
+      assert_error_resp_with_exc(ThreeScale::Backend::ServiceTokenInvalid.new(service_token))
     end
   end
 
@@ -774,7 +774,7 @@ class AccessTokenTest < Test::Unit::TestCase
   end
 
   # Reminder: provider key has preference over service token
-  test 'CR(-)D access token with invalid provider key and valid service token responds 403' do
+  test 'CR(-)D access token with invalid provider key and valid service token fails' do
     service_id = @service.id
     service_token = 'valid_service_token'
     app_id = @application.id
@@ -791,7 +791,7 @@ class AccessTokenTest < Test::Unit::TestCase
            app_id: app_id,
            token: access_token)
 
-      assert_equal 403, last_response.status
+      assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyInvalid.new(provider_key))
     end
   end
 
