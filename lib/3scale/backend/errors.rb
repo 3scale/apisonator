@@ -46,7 +46,7 @@ module ThreeScale
     class ApplicationKeyInvalid < Error
       def initialize(key)
         if key.blank?
-          super %(application key is missing)
+          super 'application key is missing'.freeze
         else
           super %(application key "#{key}" is invalid)
         end
@@ -85,13 +85,13 @@ module ThreeScale
 
     class ApplicationNotActive < Error
       def initialize
-        super %(application is not active)
+        super 'application is not active'.freeze
       end
     end
 
     class OauthNotEnabled < Error
       def initialize
-        super %(oauth is not enabled)
+        super 'oauth is not enabled'.freeze
       end
     end
 
@@ -109,7 +109,7 @@ module ThreeScale
 
     class LimitsExceeded < Error
       def initialize
-        super %(usage limits are exceeded)
+        super 'usage limits are exceeded'.freeze
       end
     end
 
@@ -136,26 +136,26 @@ module ThreeScale
 
     class NotValidData < Invalid
       def initialize
-        super 'all data must be valid UTF8'
+        super 'all data must be valid UTF8'.freeze
       end
     end
 
     class BadRequest < Invalid
       def initialize
-        super 'request contains syntax errors, should not be repeated without modification'
+        super 'request contains syntax errors, should not be repeated without modification'.freeze
       end
     end
 
     class ReferrerFiltersMissing < Error
       def initialize
-        super 'referrer filters are missing'
+        super 'referrer filters are missing'.freeze
       end
     end
 
     class ReferrerNotAllowed < Error
       def initialize(referrer)
         if referrer.blank?
-          super %(referrer is missing)
+          super 'referrer is missing'.freeze
         else
           super %(referrer "#{referrer}" is not allowed)
         end
@@ -164,13 +164,13 @@ module ThreeScale
 
     class RequiredParamsMissing < Invalid
       def initialize
-        super 'missing required parameters'
+        super 'missing required parameters'.freeze
       end
     end
 
     class BucketMissing < Invalid
       def initialize
-        super 'bucket is missing'
+        super 'bucket is missing'.freeze
       end
     end
 
@@ -231,7 +231,7 @@ module ThreeScale
     # a service id in the reported message.
     class ServiceRequiresDefaultUserPlan < Error
       def initialize
-        super 'Services without the need for registered users require a default user plan'
+        super 'Services without the need for registered users require a default user plan'.freeze
       end
     end
 
@@ -249,25 +249,25 @@ module ThreeScale
 
     class UserRequiresUsername < Error
       def initialize
-        super %(User requires username)
+        super 'User requires username'.freeze
       end
     end
 
     class UserRequiresValidService < Error
       def initialize
-        super %(User requires a valid service, the service does not exist)
+        super 'User requires a valid service, the service does not exist'.freeze
       end
     end
 
     class UserRequiresDefinedPlan < Error
       def initialize
-        super %(User requires a defined plan)
+        super 'User requires a defined plan'.freeze
       end
     end
 
     class InvalidProviderKeys < Error
       def initialize
-        super %(Provider keys are not valid, must be not nil and different)
+        super 'Provider keys are not valid, must be not nil and different'.freeze
       end
     end
 
@@ -293,7 +293,7 @@ module ThreeScale
 
     class AuthenticationError < Error
       def initialize
-        super %(either app_id or user_key is allowed, not both)
+        super 'either app_id or user_key is allowed, not both'.freeze
       end
     end
 
