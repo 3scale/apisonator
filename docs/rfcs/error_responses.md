@@ -149,6 +149,10 @@ ie. parameter X is missing or not matching criteria Y.
       The specified user key is invalid.
     - `authentication_error`:
       The application requires a user_key but it is missing.
+    - `provider_key_or_service_token_required`:
+      A provider key or a service token are required, but neither were given.
+    - `service_token_invalid`:
+      The specified service token is unauthorized.
 * `not_found`:
   [404] A resource could not be found. This is never included if the error
   refers to a non-existing endpoint (such as Sinatra not matching a route).
@@ -188,6 +192,8 @@ ie. parameter X is missing or not matching criteria Y.
       One or more usage values for a given metric are missing or invalid.
     - `user_not_defined`:
       The application requires a user_id parameter but it is missing or invalid.
+    - `service_id_missing`:
+      The service ID is missing or blank.
 
 # Drawbacks
 [drawbacks]: #drawbacks
