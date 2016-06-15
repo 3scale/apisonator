@@ -39,3 +39,9 @@ RSpec.configure do |config|
     ThreeScale::Backend::Memoizer.reset!
   end
 end
+
+# Converts the full name of an exception like
+# ThreeScale::Backend::InvalidProviderKeys to InvalidProviderKeys
+def formatted_name(exception)
+  exception.name.split(':').last
+end
