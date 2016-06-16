@@ -444,4 +444,82 @@ class OauthBasicTest < Test::Unit::TestCase
 
     assert_equal 403, last_response.status
   end
+
+  test 'auth using registered (service_token, service_id) instead of provider key responds 200' do
+    service_token = 'a_token'
+    service_id = @service_id
+
+    ServiceToken.save(service_token, service_id)
+
+    get '/transactions/oauth_authorize.xml', :service_token => service_token,
+                                             :service_id => service_id,
+                                             :app_id => @application.id
+
+    assert_equal 200, last_response.status
+  end
+
+  test 'auth using valid service token and blank service ID fails' do
+    service_token = 'a_token'
+    blank_service_ids = ['', nil]
+
+    blank_service_ids.each do |blank_service_id|
+      get '/transactions/oauth_authorize.xml', :service_token => service_token,
+                                               :service_id => blank_service_id,
+                                               :app_id => @application.id
+
+      assert_error_resp_with_exc(ThreeScale::Backend::ServiceIdMissing.new)
+    end
+  end
+
+  test 'auth using blank service token and valid service ID fails' do
+    service_id = @service_id
+    blank_service_tokens = ['', nil]
+
+    blank_service_tokens.each do |blank_service_token|
+      get '/transactions/oauth_authorize.xml', :service_token => blank_service_token,
+                                               :service_id => service_id,
+                                               :app_id => @application.id
+
+      assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyOrServiceTokenRequired.new)
+    end
+  end
+
+  test 'auth using registered token but with non-existing service ID fails' do
+    service_token = 'a_token'
+    service_id = 'id_non_existing_service'
+
+    ServiceToken.save(service_token, service_id)
+
+    get '/transactions/oauth_authorize.xml', :service_token => service_token,
+                                             :service_id => service_id,
+                                             :app_id => @application.id
+
+    assert_error_resp_with_exc(ThreeScale::Backend::ServiceTokenInvalid.new(service_token))
+  end
+
+  test 'auth using valid provider key and invalid service token responds with 200' do
+    provider_key = @provider_key
+    service_token = nil
+
+    get '/transactions/oauth_authorize.xml', :provider_key => provider_key,
+                                             :service_token => service_token,
+                                             :app_id => @application.id
+
+    assert_equal 200, last_response.status
+  end
+
+  test 'auth using non-existing provider key and saved (service token, service id) fails' do
+    provider_key = 'non_existing_key'
+    service_token = 'a_token'
+    service_id = @service_id
+
+    ServiceToken.save(service_token, service_id)
+
+    get '/transactions/oauth_authorize.xml', :provider_key => provider_key,
+                                             :service_token => service_token,
+                                             :service_id => service_id,
+                                             :app_id => @application.id
+
+    assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyInvalid.new(provider_key))
+  end
 end

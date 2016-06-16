@@ -162,9 +162,20 @@ module ThreeScale
 
       def do_api_method(method_name)
         normalize_non_empty_keys!
-        halt 403 unless valid_key_and_usage_params?
 
-        authorization, cached_authorization_text, cached_authorization_result = Transactor.send method_name, params[:provider_key], params
+        halt 403 if params.nil?
+
+        provider_key = params[:provider_key] ||
+            provider_key_from(params[:service_token], params[:service_id])
+
+        raise_provider_key_error(params) if blank?(provider_key)
+        halt 403 unless valid_usage_params?
+
+        # As params is passed to other methods, we need to overwrite the
+        # provider key. Just in case it is used somewhere.
+        params[:provider_key] = provider_key
+
+        authorization, cached_authorization_text, cached_authorization_result = Transactor.send method_name, provider_key, params
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
           status(authorization.authorized? ? 200 : 409)
@@ -391,12 +402,15 @@ module ThreeScale
       post '/transactions.xml' do
         check_post_content_type!
 
-        provider_key = params[:provider_key]
         ## return error code 400 (Bad request) if the parameters are not there
         ## I put 403 (Forbidden) for consitency however it should be 400
         ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
+        halt 403 if params.nil?
 
-        halt 403 if params.nil? || blank?(provider_key)
+        provider_key = params[:provider_key] ||
+            provider_key_from(params[:service_token], params[:service_id])
+
+        raise_provider_key_error(params) if blank?(provider_key)
 
         transactions = params[:transactions]
 
@@ -420,17 +434,14 @@ module ThreeScale
 
       post '/services/:service_id/oauth_access_tokens.xml' do
         check_post_content_type!
-        require_params! :provider_key, :service_id, :token
+        require_params! :service_id, :token
 
-        # TODO: this should directly respond rather than raise
-        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid, params[:provider_key]
-        end
+        ensure_authenticated!(params[:provider_key], params[:service_token], params[:service_id])
 
         halt 404 unless Application.exists?(params[:service_id], params[:app_id])
 
         # Users do not need to exist, since they can be "created" on-demand.
-        if OAuth::Token::Storage.create(params[:token], service_id, params[:app_id], params[:user_id], params[:ttl])
+        if OAuth::Token::Storage.create(params[:token], params[:service_id] , params[:app_id], params[:user_id], params[:ttl])
           200
         else
           422
@@ -438,24 +449,18 @@ module ThreeScale
       end
 
       delete '/services/:service_id/oauth_access_tokens/:token.xml' do
-        require_params! :provider_key, :service_id, :token
+        require_params! :service_id, :token
 
-        # TODO: this should directly respond rather than raise
-        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid, params[:provider_key]
-        end
+        ensure_authenticated!(params[:provider_key], params[:service_token], params[:service_id])
 
         # TODO: perhaps improve this to list the deleted tokens?
-        OAuth::Token::Storage.delete(params[:token], service_id) ? 200 : 404
+        OAuth::Token::Storage.delete(params[:token], params[:service_id]) ? 200 : 404
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-        require_params! :provider_key, :service_id, :app_id
+        require_params! :service_id, :app_id
 
-        # TODO: this should directly respond rather than raise
-        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid, params[:provider_key]
-        end
+        ensure_authenticated!(params[:provider_key], params[:service_token], params[:service_id])
 
         service_id = params[:service_id]
         app_id = params[:app_id]
@@ -467,11 +472,9 @@ module ThreeScale
       end
 
       get '/services/:service_id/oauth_access_tokens/:token.xml' do
-        require_params! :provider_key, :service_id, :token
+        require_params! :service_id, :token
 
-        unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
-          raise ProviderKeyInvalid, params[:provider_key]
-        end
+        ensure_authenticated!(params[:provider_key], params[:service_token], params[:service_id])
 
         @token_to_app_id, @token_to_user_id = OAuth::Token::Storage.get_credentials(
           params[:token], params[:service_id]
@@ -591,8 +594,8 @@ module ThreeScale
         !object || object.respond_to?(:empty?) && object.empty?
       end
 
-      def valid_key_and_usage_params?
-        params && !blank?(params[:provider_key]) && (params[:usage].nil? || params[:usage].is_a?(Hash))
+      def valid_usage_params?
+        params[:usage].nil? || params[:usage].is_a?(Hash)
       end
 
       def require_params!(*keys)
@@ -619,13 +622,13 @@ module ThreeScale
         @application ||= Application.load_by_id_or_user_key!(service_id, params[:app_id], params[:user_key])
       end
 
-      # FIXME: this operations can be done more efficiently, without loading the whole service
       def service_id
         if params[:service_id].nil? || params[:service_id].empty?
           @service_id ||= Service.default_id!(params[:provider_key])
         else
-          service = Service.load_by_id(params[:service_id])
-          raise ProviderKeyInvalid, params[:provider_key] if service.nil? || service.provider_key!=params[:provider_key]
+          unless Service.authenticate_service_id(params[:service_id], params[:provider_key])
+            raise ProviderKeyInvalid, params[:provider_key]
+          end
           @service_id ||= params[:service_id]
         end
       end
@@ -653,6 +656,37 @@ module ThreeScale
           content_type: request.content_type,
           content_length: request.content_length,
         }
+      end
+
+      def provider_key_from(service_token, service_id)
+        if blank?(service_token) ||
+            blank?(service_id) ||
+            !ServiceToken.exists?(service_token, service_id)
+          nil
+        else
+          Service.provider_key_for(service_id)
+        end
+      end
+
+      # Raises the appropriate error when provider key is blank.
+      # Provider key is blank only when these 2 conditions are met:
+      #   1) It is not received by parameter (params[:provider_key] is nil)
+      #   2) It cannot be obtained using a service token and a service ID.
+      #      This can happen when these 2 are not received or when the pair is
+      #      not associated with a provider key.
+      def raise_provider_key_error(params)
+        raise ProviderKeyOrServiceTokenRequired if blank?(params[:service_token])
+        raise ServiceIdMissing if blank?(params[:service_id])
+        raise ServiceTokenInvalid, params[:service_token]
+      end
+
+      def ensure_authenticated!(provider_key, service_token, service_id)
+        if blank?(provider_key)
+          key = provider_key_from(service_token, service_id)
+          raise_provider_key_error(params) if blank?(key)
+        elsif !Service.authenticate_service_id(service_id, provider_key)
+          raise ProviderKeyInvalid, provider_key
+        end
       end
     end
   end
