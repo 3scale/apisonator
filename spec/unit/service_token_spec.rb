@@ -3,8 +3,8 @@ require_relative '../spec_helper'
 module ThreeScale
   module Backend
     describe ServiceToken do
-      INVALID_SERVICE_TOKEN_EXC = described_class::InvalidServiceToken.to_s.split(':').last
-      INVALID_SERVICE_ID_EXC = described_class::InvalidServiceId.to_s.split(':').last
+      invalid_service_token_exc = described_class::InvalidServiceToken.to_s.split(':').last
+      invalid_service_id_exc = described_class::InvalidServiceId.to_s.split(':').last
 
       subject { ServiceToken }
 
@@ -26,7 +26,7 @@ module ThreeScale
         context 'when service_token is invalid' do
           ['', nil].each do |invalid_service_token|
             context "because it is #{invalid_service_token.inspect}" do
-              it "raises #{INVALID_SERVICE_TOKEN_EXC}" do
+              it "raises #{invalid_service_token_exc}" do
                 expect { subject.save(invalid_service_token, service_id) }
                     .to raise_error invalid_service_token_error
               end
@@ -37,7 +37,7 @@ module ThreeScale
         context 'when service_id is invalid' do
           ['', nil].each do |invalid_service_id|
             context "because it is #{invalid_service_id.inspect}" do
-              it "raises #{INVALID_SERVICE_ID_EXC}" do
+              it "raises #{invalid_service_id_exc}" do
                 expect { subject.save(service_token, invalid_service_id) }
                     .to raise_error invalid_service_id_error
               end
@@ -69,7 +69,7 @@ module ThreeScale
                                       service_id: 'id' })
               end
 
-              it "raises #{INVALID_SERVICE_TOKEN_EXC}" do
+              it "raises #{invalid_service_token_exc}" do
                 expect { subject.save_pairs(tokens) }
                     .to raise_error invalid_service_token_error
               end
@@ -91,7 +91,7 @@ module ThreeScale
                                       service_id: invalid_service_id })
               end
 
-              it "raises #{INVALID_SERVICE_ID_EXC}" do
+              it "raises #{invalid_service_id_exc}" do
                 expect { subject.save_pairs(tokens) }
                     .to raise_error invalid_service_id_error
               end
@@ -115,7 +115,7 @@ module ThreeScale
                 { service_token: invalid_service_token, service_id: 'valid_id' })
           end
 
-          it "raises #{INVALID_SERVICE_TOKEN_EXC}" do
+          it "raises #{invalid_service_token_exc}" do
             expect { subject.save_pairs(tokens) }
                 .to raise_error invalid_service_token_error
           end
