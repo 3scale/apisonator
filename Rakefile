@@ -238,5 +238,10 @@ namespace :stats do
     task :latest => :environment do
       puts ThreeScale::Backend::Stats::RedshiftImporter.latest_imported_events_time
     end
+
+    desc 'Is data consistent in the DB?'
+    task :data_ok? => :environment do
+      puts ThreeScale::Backend::Stats::RedshiftImporter.consistent_data?
+    end
   end
 end
