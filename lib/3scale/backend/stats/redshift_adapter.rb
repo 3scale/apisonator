@@ -153,6 +153,14 @@ module ThreeScale
               "INSERT INTO #{TABLES[:latest_s3_path_read]} VALUES ('#{timestamp}');"
             end
 
+            def duplicated_events
+              'SELECT COUNT(*) '\
+              'FROM (SELECT COUNT(*) AS count '\
+                "FROM #{TABLES[:events]} "\
+                "GROUP BY #{JOIN_EVENT_ATTRS.join(',')}) AS group_counts "\
+              'WHERE group_counts.count > 1;'
+            end
+
             private
 
             def amazon_credentials(access_key_id, secret_access_key)
@@ -269,6 +277,13 @@ module ThreeScale
             query_result = execute_command(SQL::LATEST_TIMESTAMP_READ)
             return nil if query_result.ntuples == 0
             query_result.first['s3_path']
+          end
+
+          # Returns whether the data in the DB is consistent. Right now, this
+          # method only checks if there are duplicated events, but it could be
+          # extended in the future.
+          def consistent_data?
+            execute_command(SQL::duplicated_events).first['count'].to_i.zero?
           end
 
           private

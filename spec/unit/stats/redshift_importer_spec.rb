@@ -74,6 +74,32 @@ module ThreeScale
           end
         end
 
+        describe '.consistent_data?' do
+          context 'when the data in the DB is consistent' do
+            before do
+              allow(RedshiftAdapter)
+                  .to receive(:consistent_data?)
+                  .and_return(true)
+            end
+
+            it 'returns true' do
+              expect(subject.consistent_data?).to be true
+            end
+          end
+
+          context 'when the data in the DB is not consistent' do
+            before do
+              allow(RedshiftAdapter)
+                  .to receive(:consistent_data?)
+                  .and_return(false)
+            end
+
+            it 'returns false' do
+              expect(subject.consistent_data?).to be false
+            end
+          end
+        end
+
         describe '.enable' do
           before { subject.disable }
 
