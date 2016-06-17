@@ -359,6 +359,7 @@ module ThreeScale
       ##~ op.set :httpMethod => "POST"
       ##~ op.summary = "Report (App Id authentication pattern)"
 
+      ##~ @post_notes = "<p>Supported <code class='http'>Content-Type</code> values for this POST call are: <code class='http'>application/x-www-form-urlencoded</code>."
       ##~ @report_desc = "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K"
       ##~ @report_desc = @report_desc + " transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
       ##~ @report_desc = @report_desc + "<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in"
@@ -366,6 +367,7 @@ module ThreeScale
       ##~ @report_desc = @report_desc + " service, <em>service_id</em> is at the same level that <em>provider_key</em>. Multiple report calls will have to be issued to report"
       ##~ @report_desc = @report_desc + " transactions to different services."
       ##~ @report_desc = @report_desc + "<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect."
+      ##~ @report_desc = @report_desc + @post_notes
       ##
       ##~ op.description = @report_desc
       ##~ op.group = "report"
