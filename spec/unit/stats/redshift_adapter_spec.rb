@@ -255,6 +255,31 @@ module ThreeScale
           end
         end
 
+        describe '.consistent_data?' do
+          before do
+            clean_up
+            create_schema
+            create_tables
+            insert_events(events, tables[:events])
+          end
+
+          context 'when there are duplicated events' do
+            let(:events) { Array.new(2, example_event) }
+
+            it 'returns false' do
+              expect(subject.consistent_data?).to be false
+            end
+          end
+
+          context 'when there are no duplicated events' do
+            let(:events) { [example_event, example_event.merge(metric: 30)] }
+
+            it 'returns true' do
+              expect(subject.consistent_data?).to be true
+            end
+          end
+        end
+
         def clean_up
           drop_schema
         end

@@ -35,9 +35,13 @@ module ThreeScale
           # imported in Redshift were generated or nil if nothing has been
           # imported.
           def latest_imported_events_time
-            latest_timestamp = RedshiftAdapter.latest_timestamp_read
+            latest_timestamp = db_adapter.latest_timestamp_read
             return nil if latest_timestamp.nil?
             DateTime.parse(latest_timestamp).to_time.utc
+          end
+
+          def consistent_data?
+            db_adapter.consistent_data?
           end
 
           def enable
@@ -65,6 +69,10 @@ module ThreeScale
 
           def dist_lock
             @dist_lock ||= DistributedLock.new(self.name, TTL_JOB_RUNNING_KEY_SEC, storage)
+          end
+
+          def db_adapter
+            RedshiftAdapter
           end
         end
       end
