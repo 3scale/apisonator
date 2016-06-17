@@ -25,11 +25,13 @@ resource 'Service Tokens (prefix: /service_tokens)' do
     end
 
     let(:invalid_service_token_error) do
-      ThreeScale::Backend::ServiceToken::InvalidServiceToken
+      exc = ThreeScale::Backend::ServiceToken::InvalidServiceToken.new
+      { http_code: exc.http_code, message: exc.message }
     end
 
     let(:invalid_service_id_error) do
-      ThreeScale::Backend::ServiceToken::InvalidServiceId
+      exc = ThreeScale::Backend::ServiceToken::InvalidServiceId.new
+      { http_code: exc.http_code, message: exc.message }
     end
 
     let(:raw_post) { params.to_json }
@@ -47,29 +49,29 @@ resource 'Service Tokens (prefix: /service_tokens)' do
     example 'Try to create a (service_token, service_id) pair with null service_token' do
       do_request(service_tokens: { nil => { service_id: service_id } })
 
-      expect(status).to eq invalid_service_token_error.new.http_code
-      expect(response_json['error']).to eq invalid_service_token_error.new.message
+      expect(status).to eq invalid_service_token_error[:http_code]
+      expect(response_json['error']).to eq invalid_service_token_error[:message]
     end
 
     example 'Try to create a (service_token, service_id) pair with empty service_token' do
       do_request(service_tokens: { '' => { service_id: service_id } })
 
-      expect(status).to eq invalid_service_token_error.new.http_code
-      expect(response_json['error']).to eq invalid_service_token_error.new.message
+      expect(status).to eq invalid_service_token_error[:http_code]
+      expect(response_json['error']).to eq invalid_service_token_error[:message]
     end
 
     example 'Try to create a (service_token, service_id) pair with null service_id' do
       do_request(service_tokens: { service_token => { service_id: nil } })
 
-      expect(status).to eq invalid_service_id_error.new.http_code
-      expect(response_json['error']).to eq invalid_service_id_error.new.message
+      expect(status).to eq invalid_service_id_error[:http_code]
+      expect(response_json['error']).to eq invalid_service_id_error[:message]
     end
 
     example 'Try to create a (service_token, service_id) pair with empty service_id' do
       do_request(service_tokens: { service_token => { service_id: '' } })
 
-      expect(status).to eq invalid_service_id_error.new.http_code
-      expect(response_json['error']).to eq invalid_service_id_error.new.message
+      expect(status).to eq invalid_service_id_error[:http_code]
+      expect(response_json['error']).to eq invalid_service_id_error[:message]
     end
 
     example 'Try to create a (service_token, service_id) without sending service_tokens' do
@@ -83,8 +85,8 @@ resource 'Service Tokens (prefix: /service_tokens)' do
       tokens = service_tokens.merge({ 'valid_token' => { service_id: '' } })
       do_request(service_tokens: tokens)
 
-      expect(status).to eq invalid_service_id_error.new.http_code
-      expect(response_json['error']).to eq invalid_service_id_error.new.message
+      expect(status).to eq invalid_service_id_error[:http_code]
+      expect(response_json['error']).to eq invalid_service_id_error[:message]
 
       tokens.each do |token, token_info|
         expect(ThreeScale::Backend::ServiceToken.exists?(token, token_info[:service_id]))
@@ -96,8 +98,8 @@ resource 'Service Tokens (prefix: /service_tokens)' do
       tokens = service_tokens.merge({ '' => { service_id: service_id } })
       do_request(service_tokens: tokens)
 
-      expect(status).to eq invalid_service_token_error.new.http_code
-      expect(response_json['error']).to eq invalid_service_token_error.new.message
+      expect(status).to eq invalid_service_token_error[:http_code]
+      expect(response_json['error']).to eq invalid_service_token_error[:message]
 
       tokens.each do |token, token_info|
         expect(ThreeScale::Backend::ServiceToken.exists?(token, token_info[:service_id]))
