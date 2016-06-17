@@ -7,9 +7,15 @@ if ARGV.include? '--no-daemonize'
 else
   require 'daemons'
 
+  daemon_rundata= '/var/run/3scale'.freeze
+
+  if !File.writable? daemon_rundata
+    File.mkdir_p daemon_rundata
+  end
+
   Daemons.run_proc('3scale_backend_worker', :multiple => true,
                                             :dir_mode => :normal,
-                                            :dir      => '/var/run/3scale') do
+                                            :dir      => daemon_rundata) do
     ThreeScale::Backend::Worker.work
   end
 end
