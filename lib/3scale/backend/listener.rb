@@ -527,18 +527,6 @@ module ThreeScale
         builder :log_requests
       end
 
-      # TODO: This one's not used by System, safe for removal
-      get '/services/:service_id/applications/:app_id/log_requests/count.xml' do
-        @count = LogRequestStorage.count_by_application(service_id, application.id)
-        builder :log_requests_count
-      end
-
-      # TODO: This one's not used by System, safe for removal
-      get '/services/:service_id/log_requests/count.xml' do
-        @count = LogRequestStorage.count_by_service(service_id)
-        builder :log_requests_count
-      end
-
       delete '/services/:service_id/applications/:app_id/log_requests.xml' do
         LogRequestStorage.delete_by_application(service_id, application.id)
         200
