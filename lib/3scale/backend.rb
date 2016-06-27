@@ -144,3 +144,6 @@ Resque.redis = ThreeScale::Backend::QueueStorage.connection(
   ThreeScale::Backend.environment,
   ThreeScale::Backend.configuration,
 )
+
+# Needs to be required after the config params are set
+require '3scale/backend/statsd'
