@@ -6,6 +6,7 @@ module ThreeScale
       PURGE = 60
       MAX_ENTRIES = 10000
       ACTIVE = true
+      private_constant :EXPIRE, :PURGE, :MAX_ENTRIES, :ACTIVE
 
       # Initialize the class variables
       # XXX Note: using class variables is generally bad practice,
