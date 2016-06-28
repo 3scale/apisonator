@@ -12,7 +12,8 @@ module TestHelpers
       private
 
       def test_post(endpoint, params = {}, ctypes: VALID_CTYPES, invalid_ctypes: INVALID_CTYPES)
-        (Array(invalid_ctypes) - Array(ctypes)).each do |ctype|
+        valid_ctypes = Array(ctypes)
+        (Array(invalid_ctypes) - valid_ctypes).each do |ctype|
           test "POST to #{endpoint} returns invalid content type error with #{ctype.inspect}" do
             post endpoint, params, 'CONTENT_TYPE' => ctype
             error = Nokogiri::XML(last_response.body).at('error:root')
@@ -23,7 +24,7 @@ module TestHelpers
           end
         end
 
-        Array(ctypes).each do |ctype|
+        valid_ctypes.each do |ctype|
           test "POST to #{endpoint} does not produce invalid content type error with #{ctype.inspect}" do
             post endpoint, params, 'CONTENT_TYPE' => ctype
             error = Nokogiri::XML(last_response.body).at('error:root')
@@ -45,6 +46,18 @@ module TestHelpers
           end
         end
 
+        string_ctypes = valid_ctypes.select { |c| c && !c.empty? }
+        if !string_ctypes.empty?
+          upcased_ctype = string_ctypes.sample.upcase
+          test "POST to #{endpoint} does not produce invalid content type error with upcased content type #{upcased_ctype}" do
+            post endpoint, params, 'CONTENT_TYPE' => "#{upcased_ctype}; charset=UTF-8"
+            error = Nokogiri::XML(last_response.body).at('error:root')
+            if error
+              assert_not_equal 'content_type_invalid', error['code']
+              assert !error.content.start_with?("invalid Content-Type: #{upcased_ctype}")
+            end
+          end
+        end
       end
     end
   end
