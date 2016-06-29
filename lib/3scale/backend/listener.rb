@@ -601,11 +601,15 @@ module ThreeScale
         end
       end
 
+      def invalid_post_content_type?(content_type)
+        content_type && !content_type.empty? &&
+          content_type != 'application/x-www-form-urlencoded'.freeze &&
+          content_type != 'multipart/form-data'.freeze
+      end
+
       def check_post_content_type!
         ctype = request.media_type
-        raise ContentTypeInvalid, ctype if ctype && !ctype.empty? &&
-          ctype != 'application/x-www-form-urlencoded'.freeze &&
-          ctype != 'multipart/form-data'.freeze
+        raise ContentTypeInvalid, ctype if invalid_post_content_type?(ctype)
       end
 
       def application
