@@ -72,6 +72,7 @@ require '3scale/backend/stats/send_to_kinesis'
 require '3scale/backend/stats/send_to_kinesis_job'
 require '3scale/backend/stats/redshift_importer'
 require '3scale/backend/stats/info'
+require '3scale/backend/experiment'
 
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
@@ -102,6 +103,7 @@ module ThreeScale
       config.add_section(:stats, :bucket_size)
       config.add_section(:cubert, :host)
       config.add_section(:redshift, :host, :port, :dbname, :user, :password)
+      config.add_section(:statsd, :host, :port)
 
       # Default config
       config.master_service_id  = 1
@@ -143,3 +145,6 @@ Resque.redis = ThreeScale::Backend::QueueStorage.connection(
   ThreeScale::Backend.environment,
   ThreeScale::Backend.configuration,
 )
+
+# Needs to be required after the config params are set
+require '3scale/backend/statsd'
