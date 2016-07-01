@@ -87,6 +87,23 @@ module Validators
       assert !Referrer.apply(@status, :referrer => 'forexample.org')
     end
 
+    test 'succeeds when service does not require referrer filters' do
+      service_no_filters = Service.save!(:provider_key => 'a_provider_key',
+                                         :id => next_id,
+                                         :referrer_filters_required => false)
+
+      app = Application.save(:service_id => service_no_filters.id,
+                             :id => next_id,
+                             :state => :active)
+
+      status = Transactor::Status.new(:service => service_no_filters,
+                                      :application => app)
+
+      app.create_referrer_filter('accepted.org')
+
+      assert Referrer.apply(status, :referrer => 'unaccepted.org')
+    end
+
     # TODO: maybe filters like the ones in the following tests should not even be allowed.
 
     test 'filter is not a regular expression' do
