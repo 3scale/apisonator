@@ -253,12 +253,9 @@ module ThreeScale
           if application.user_required?
             user = User.load_or_create!(service, user_id)
             raise UserRequiresRegistration, service.id, user_id unless user
-          else
-            user_id = nil
           end
         else
           raise UserNotDefined, application.id if application.user_required?
-          user_id = nil
         end
 
         user
