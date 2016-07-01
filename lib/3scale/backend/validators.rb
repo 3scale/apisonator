@@ -6,3 +6,19 @@ require '3scale/backend/validators/limits'
 require '3scale/backend/validators/redirect_uri'
 require '3scale/backend/validators/referrer'
 require '3scale/backend/validators/state'
+
+module ThreeScale
+  module Backend
+    module Validators
+      COMMON_VALIDATORS = [Validators::Referrer,
+                           Validators::State,
+                           Validators::Limits].freeze
+
+      VALIDATORS = ([Validators::Key] + COMMON_VALIDATORS).freeze
+
+      OAUTH_VALIDATORS = ([Validators::OauthSetting,
+                           Validators::OauthKey,
+                           Validators::RedirectURI] + COMMON_VALIDATORS).freeze
+    end
+  end
+end

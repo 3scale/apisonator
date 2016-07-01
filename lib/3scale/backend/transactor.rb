@@ -63,20 +63,6 @@ module ThreeScale
 
       private
 
-      COMMON_VALIDATORS = [
-        Validators::Referrer,
-        Validators::State,
-        Validators::Limits
-      ].freeze
-
-      VALIDATORS = ([Validators::Key] + COMMON_VALIDATORS).freeze
-
-      OAUTH_VALIDATORS = ([
-        Validators::OauthSetting,
-        Validators::OauthKey,
-        Validators::RedirectURI] +
-        COMMON_VALIDATORS).freeze
-
       def authorize_nocache(method, provider_key, params)
         oauth = method == :oauth_authorize
         validate(oauth, provider_key, false, params)
@@ -141,9 +127,9 @@ module ThreeScale
               user_id = params[:user_id] = token_uid
             end
           end
-          validators = OAUTH_VALIDATORS
+          validators = Validators::OAUTH_VALIDATORS
         else
-          validators = VALIDATORS
+          validators = Validators::VALIDATORS
         end
 
         params[:user_key] = nil if params[:user_key] && params[:user_key].empty?
