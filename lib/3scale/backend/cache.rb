@@ -16,10 +16,14 @@ module ThreeScale
                                 :referrer,
                                 :redirect_url,
                                 :redirect_uri,
-                                :usage]
+                                :usage].freeze
+      private_constant :VALID_PARAMS_FOR_CACHE
 
       COMBINATION_TTL       = 3600 # 1 hour
+      private_constant :COMBINATION_TTL
+
       STATUS_TTL            = 60   # 1 minute, this is too short but we need minute information on the output :-(
+      private_constant :STATUS_TTL
 
       CACHING_ENABLED_KEY = 'settings/caching_enabled'.freeze
       private_constant :CACHING_ENABLED_KEY
