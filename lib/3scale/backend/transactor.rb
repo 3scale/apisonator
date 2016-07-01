@@ -276,9 +276,7 @@ module ThreeScale
       def apply_validators(validators, status_attrs, params)
         Status.new(status_attrs).tap do |st|
           validators.all? do |validator|
-            if validator == Validators::Referrer && !st.service.referrer_filters_required?
-              true
-            elsif validator == Validators::Key && st.service.backend_version.to_i == 1
+            if validator == Validators::Key && st.service.backend_version.to_i == 1
               true
             else
               validator.apply(st, params)

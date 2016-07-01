@@ -8,11 +8,16 @@ module Validators
     def setup
       Storage.instance(true).flushdb
 
-      @application = Application.save(:service_id => next_id,
-                                      :id         => next_id,
+      @service = Service.save!(:provider_key => 'a_provider_key',
+                               :id => next_id,
+                               :referrer_filters_required => true)
+
+      @application = Application.save(:service_id => @service.id,
+                                      :id => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(:application => @application)
+      @status = Transactor::Status.new(:service => @service,
+                                       :application => @application)
     end
 
     test 'succeeds if no referrer filter is defined and no referrer is passed' do
