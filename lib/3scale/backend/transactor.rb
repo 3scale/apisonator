@@ -77,14 +77,14 @@ module ThreeScale
         Validators::RedirectURI] +
         COMMON_VALIDATORS).freeze
 
-      def authorize_nocache(method, provider_key, params, options = {})
+      def authorize_nocache(method, provider_key, params)
         oauth = method == :oauth_authorize
         validate(oauth, provider_key, false, params)
       end
 
       ## this is the classic way to do an authrep in case the cache fails, there
       ## has been changes on the underlying data or the time to life has elapsed
-      def authrep_nocache(method, provider_key, params, options = {})
+      def authrep_nocache(method, provider_key, params)
         oauth = method == :oauth_authrep
         validate(oauth, provider_key, true, params)
       rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
@@ -173,15 +173,15 @@ module ThreeScale
       def do_authorize(method, provider_key, params, options)
         notify(provider_key, 'transactions/authorize' => 1)
         ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
-        sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do |opts|
-          authorize_nocache(method, provider_key, params, opts)
+        sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do
+          authorize_nocache(method, provider_key, params)
         end
       end
 
       def do_authrep(method, provider_key, params, options)
         usage = params[:usage]
-        ret = sanitize_and_cache_auth(method, provider_key, usage, params[:no_caching], params, options) do |opts|
-          authrep_nocache(method, provider_key, params, opts)
+        ret = sanitize_and_cache_auth(method, provider_key, usage, params[:no_caching], params, options) do
+          authrep_nocache(method, provider_key, params)
         end
 
         status, _, status_result, service, application, user, service_id = ret
@@ -234,7 +234,7 @@ module ThreeScale
 
         if cache_miss
           report_cache_miss
-          status, service, application, user = yield(options)
+          status, service, application, user = yield
           combination_save(data_combination) unless data_combination.nil? || !caching_allowed
           status_xml = nil
           status_result = nil
