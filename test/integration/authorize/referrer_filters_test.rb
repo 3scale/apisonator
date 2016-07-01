@@ -109,7 +109,7 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
     assert_authorized
   end
 
- test 'authorize always is referrer filters at the service level are set to false' do
+ test 'authorize always if referrer filters at the service level are set to false' do
     @service.referrer_filters_required = false
     @service.save!
 
@@ -122,7 +122,7 @@ class AuthorizeReferrerFiltersTest < Test::Unit::TestCase
     assert_authorized
   end
 
-  test 'authorize always is referrer filters at the service level are set to false, even when incorrect' do
+  test 'authorize always if referrer filters at the service level are set to false, even when incorrect' do
     @service.referrer_filters_required = false
     @service.save!
 
