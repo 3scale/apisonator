@@ -728,4 +728,84 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyInvalid.new(provider_key))
   end
+
+  test_authrep 'resp headers have rejection reason when 409, option is in params, and resp is not cached' do |e|
+    max_usage_day = 1
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id => @plan_id,
+                    :metric_id => @metric_id,
+                    :day => max_usage_day)
+
+    Transactor.report(@provider_key,
+                      @service.id,
+                      0 => { 'app_id' => @application.id,
+                             'usage' => { 'hits' => max_usage_day + 1 } })
+    Resque.run!
+
+    get e, :provider_key => @provider_key,
+           :app_id => @application.id,
+           :usage => { 'hits' => 1 },
+           :rejection_reason_header => true
+
+    assert_equal 409, last_response.status
+    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
+  end
+
+  test_authrep 'resp headers have rejection reason when 409, option is in params, and resp is cached' do |e|
+    max_usage_day = 1
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id => @plan_id,
+                    :metric_id => @metric_id,
+                    :day => max_usage_day)
+
+    Transactor.report(@provider_key,
+                      @service.id,
+                      0 => {'app_id' => @application.id,
+                            'usage' => { 'hits' => max_usage_day + 1 } })
+    Resque.run!
+
+    # Not cached
+    get e, :provider_key => @provider_key,
+           :service_id => @service.id,
+           :app_id => @application.id,
+           :usage => { 'hits' => 1 },
+           :rejection_reason_header => true
+
+    assert_equal 409, last_response.status
+    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
+
+    # Cached
+    get e, :provider_key => @provider_key,
+           :service_id => @service.id,
+           :app_id => @application.id,
+           :usage => { 'hits' => 1 },
+           :rejection_reason_header => true
+
+    assert_equal 409, last_response.status
+    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
+  end
+
+  test_authrep 'resp headers do not have rejection reason when 409 and option is not in the params' do |e|
+    max_usage_day = 1
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id => @plan_id,
+                    :metric_id => @metric_id,
+                    :day => max_usage_day)
+
+    Transactor.report(@provider_key,
+                      @service.id,
+                      0 => {'app_id' => @application.id,
+                            'usage' => { 'hits' => max_usage_day + 1 } })
+    Resque.run!
+
+    get e, :provider_key => @provider_key,
+           :app_id => @application.id,
+           :usage => { 'hits' => 1 }
+
+    assert_equal 409, last_response.status
+    assert_nil last_response.header['X-3scale-rejection-reason']
+  end
 end
