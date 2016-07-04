@@ -179,6 +179,11 @@ module ThreeScale
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
           status(authorization.authorized? ? 200 : 409)
+
+          if !authorization.authorized? && params[:rejection_reason_header]
+            response['X-3scale-rejection-reason'.freeze] = authorization.rejection_reason_code
+          end
+
           body(params[:no_body] ? nil : authorization.to_xml)
         else
           status(cached_authorization_result ? 200 : 409)
