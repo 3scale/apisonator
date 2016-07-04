@@ -198,6 +198,7 @@ module ThreeScale
 
           ## little hack to avoid parsing for <authorized> to know the state. Not very nice but leave it like this.
           s = authorized? ? '1' : '0'
+          s << ",#{rejection_reason_code}" unless authorized?
           s << XML_SEPARATOR
           s << xml
         end

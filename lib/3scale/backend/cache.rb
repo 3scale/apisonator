@@ -165,6 +165,7 @@ module ThreeScale
         split_app_xml     = split_xml(app_xml_str)
         split_user_xml    = split_xml(user_xml_str)
         cached_auth       = xml_authorized?(split_app_xml, split_user_xml)
+        rejection_reason  = rejection_reason_code(split_app_xml, split_user_xml) unless cached_auth
         merged_xml        = merge_xmls(split_app_xml, split_user_xml)
 
         v = merged_xml.split('|.|'.freeze)
@@ -210,7 +211,7 @@ module ThreeScale
           currently_violating
         end
 
-        [newxmlstr, cached_auth, violation]
+        [newxmlstr, cached_auth, violation, rejection_reason]
       end
 
 
@@ -303,8 +304,16 @@ module ThreeScale
 
       def xml_authorized?(split_app_xml, split_user_xml = nil)
         # a node is authorized if it is != '0'
-        split_app_xml.first != '0' &&
-          (split_user_xml.nil? || split_user_xml.first != '0'.freeze)
+        split_app_xml.first[0] != '0' &&
+          (split_user_xml.nil? || split_user_xml.first[0] != '0'.freeze)
+      end
+
+      def rejection_reason_code(split_app_xml, split_user_xml)
+        if split_app_xml.first[0] == '0'
+          split_app_xml.first.split(',')[1]
+        else
+          split_user_xml.first.split(',')[1]
+        end
       end
 
       def merge_xmls(split_app_xml, split_user_xml = nil)
