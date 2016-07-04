@@ -184,7 +184,7 @@ module ThreeScale
           authrep_nocache(method, provider_key, params, opts)
         end
 
-        status, _, status_result, service, application, user, service_id = ret
+        status, _, status_result, _, service, application, user, service_id = ret
 
         if application.nil?
           application_id = params[:app_id] || params[:user_key]
@@ -215,6 +215,7 @@ module ThreeScale
         status = nil
         status_xml = nil
         status_result = nil
+        rejection_reason = nil
         data_combination = nil
         cache_miss = true
 
@@ -227,7 +228,8 @@ module ThreeScale
               options[:usage] = usage
               options[:add_usage_on_report] = true if method == :authrep || method == :oauth_authrep
             end
-            status_xml, status_result, violation = clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
+            status_xml, status_result, violation, rejection_reason =
+                clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
             cache_miss = false unless status_xml.nil? || status_result.nil? || violation
           end
         end
@@ -242,7 +244,7 @@ module ThreeScale
           report_cache_hit
         end
 
-        [status, status_xml, status_result, service, application, user, service_id]
+        [status, status_xml, status_result, rejection_reason, service, application, user, service_id]
       end
 
       def load_user!(application, service, user_id)
