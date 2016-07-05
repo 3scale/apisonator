@@ -5,7 +5,7 @@ module ThreeScale
         BYPASS = '*'
 
         def apply
-          if application.has_referrer_filters?
+          if service.referrer_filters_required? && application.has_referrer_filters?
             if application.referrer_filters.any? { |filter| matches?(filter, params[:referrer]) }
               succeed!
             else

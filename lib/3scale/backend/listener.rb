@@ -172,7 +172,8 @@ module ThreeScale
         halt 403 unless valid_usage_params?
 
         # As params is passed to other methods, we need to overwrite the
-        # provider key. Just in case it is used somewhere.
+        # provider key. Some of the methods in the Cache class assume that
+        # params[:provider_key] is not null/empty.
         params[:provider_key] = provider_key
 
         authorization, cached_authorization_text, cached_authorization_result, cached_rejection =
