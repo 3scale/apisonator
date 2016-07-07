@@ -176,6 +176,7 @@ module ThreeScale
         newxmlstr = ''
         currently_violating = false
         usage_violation = false
+        lowest_limit_exceeded = nil
 
         v.each_slice(2) do |uninteresting, str|
           newxmlstr << uninteresting
@@ -203,6 +204,18 @@ module ThreeScale
               else
                 curr_value
               end.to_s
+
+            # This is just for XC users that need to know the lowest usage
+            # limit exceeded when a call is not authorized due to a violation
+            # of the usage limits defined.
+            if options[:lowest_limit_exceeded]
+              current_usage = updated_value ? updated_value : curr_value
+              if current_usage > max_value &&
+                  (lowest_limit_exceeded.nil? || max_value < lowest_limit_exceeded[:max_allowed])
+                lowest_limit_exceeded = { usage: current_usage,
+                                          max_allowed: max_value }
+              end
+            end
           end
         end
 
@@ -215,7 +228,7 @@ module ThreeScale
           currently_violating
         end
 
-        [newxmlstr, cached_auth, violation, rejection_reason]
+        [newxmlstr, cached_auth, violation, rejection_reason, lowest_limit_exceeded]
       end
 
 
