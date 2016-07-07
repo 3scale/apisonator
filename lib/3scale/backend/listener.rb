@@ -186,6 +186,15 @@ module ThreeScale
             response['X-3scale-rejection-reason'.freeze] = authorization.rejection_reason_code
           end
 
+          if !authorization.authorized? &&
+              authorization.rejection_reason_code == 'limits_exceeded'.freeze &&
+              params[:xc_usage_limit_header]
+            lowest_limit_exceeded =
+                limits_validator.new(authorization, params).lowest_limit_exceeded
+            response['X-3scale-xc-usage-limit'.freeze] =
+                formatted_limit_exceeded(lowest_limit_exceeded)
+          end
+
           body(params[:no_body] ? nil : authorization.to_xml)
         else
           status(cached_authorization_result ? 200 : 409)
@@ -693,6 +702,14 @@ module ThreeScale
         elsif !Service.authenticate_service_id(service_id, provider_key)
           raise ProviderKeyInvalid, provider_key
         end
+      end
+
+      def limits_validator
+        ThreeScale::Backend::Validators::Limits
+      end
+
+      def formatted_limit_exceeded(usage_limit)
+        "#{usage_limit[:usage]}/#{usage_limit[:max_allowed]}"
       end
     end
   end
