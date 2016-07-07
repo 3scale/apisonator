@@ -845,4 +845,39 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal 409, last_response.status
     assert_nil last_response.header['X-3scale-xc-usage-limit']
   end
+
+  test_authrep 'resp headers have lowest limit exceeded when 409, opt in the params, and resp cached' do |e|
+    max_usage_day = 1
+    usage_to_report = max_usage_day + 1
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id => @plan_id,
+                    :metric_id => @metric_id,
+                    :day => max_usage_day)
+
+    Transactor.report(@provider_key,
+                      @service.id,
+                      0 => { 'app_id' => @application.id,
+                             'usage' => { 'hits' => usage_to_report } })
+    Resque.run!
+
+    # Not cached
+    get e, :provider_key => @provider_key,
+           :app_id => @application.id,
+           :usage => { 'hits' => usage_to_report },
+           :xc_usage_limit_header => true
+
+    assert_equal 0, Cache.stats[:last]
+
+    # Cached
+    get e, :provider_key => @provider_key,
+           :app_id => @application.id,
+           :usage => { 'hits' => usage_to_report },
+           :xc_usage_limit_header => true
+
+    assert_equal 1, Cache.stats[:last]
+    assert_equal 409, last_response.status
+    assert_equal "#{usage_to_report*2}/#{max_usage_day}",
+                 last_response.header['X-3scale-xc-usage-limit']
+  end
 end

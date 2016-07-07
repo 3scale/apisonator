@@ -176,8 +176,11 @@ module ThreeScale
         # params[:provider_key] is not null/empty.
         params[:provider_key] = provider_key
 
-        authorization, cached_authorization_text, cached_authorization_result, cached_rejection =
-            Transactor.send method_name, provider_key, params
+        authorization,
+        cached_authorization_text,
+        cached_authorization_result,
+        cached_rejection,
+        cached_lowest_limit_exceeded = Transactor.send method_name, provider_key, params
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
           status(authorization.authorized? ? 200 : 409)
@@ -201,6 +204,13 @@ module ThreeScale
 
           if !cached_authorization_result && params[:rejection_reason_header]
             response['X-3scale-rejection-reason'] = cached_rejection
+          end
+
+          if !cached_authorization_result &&
+              cached_rejection == 'limits_exceeded' &&
+              params[:xc_usage_limit_header]
+            response['X-3scale-xc-usage-limit'.freeze] =
+                formatted_limit_exceeded(cached_lowest_limit_exceeded)
           end
 
           body(params[:no_body] ? nil : cached_authorization_text)
