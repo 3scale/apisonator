@@ -552,6 +552,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                                        :app_id => @application.id,
                                        :rejection_reason_header => true
 
+    assert_equal 0, Cache.stats[:last]
     assert_equal 409, last_response.status
     assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
   end
@@ -578,6 +579,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                                        :usage => { 'hits' => 1 },
                                        :rejection_reason_header => true
 
+    assert_equal 0, Cache.stats[:last]
     assert_equal 409, last_response.status
     assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
 
@@ -588,6 +590,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                                        :usage => { 'hits' => 1 },
                                        :rejection_reason_header => true
 
+    assert_equal 1, Cache.stats[:last]
     assert_equal 409, last_response.status
     assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
   end
