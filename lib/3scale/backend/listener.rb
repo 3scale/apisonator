@@ -176,8 +176,11 @@ module ThreeScale
         # params[:provider_key] is not null/empty.
         params[:provider_key] = provider_key
 
-        authorization, cached_authorization_text, cached_authorization_result, cached_rejection =
-            Transactor.send method_name, provider_key, params
+        authorization,
+        cached_authorization_text,
+        cached_authorization_result,
+        cached_rejection,
+        cached_lowest_limit_exceeded = Transactor.send method_name, provider_key, params
 
         if cached_authorization_text.nil? || cached_authorization_result.nil?
           status(authorization.authorized? ? 200 : 409)
@@ -186,12 +189,28 @@ module ThreeScale
             response['X-3scale-rejection-reason'.freeze] = authorization.rejection_reason_code
           end
 
+          if !authorization.authorized? &&
+              authorization.rejection_reason_code == 'limits_exceeded'.freeze &&
+              params[:xc_usage_limit_header]
+            lowest_limit_exceeded =
+                limits_validator.new(authorization, params).lowest_limit_exceeded
+            response['X-3scale-xc-usage-limit'.freeze] =
+                formatted_limit_exceeded(lowest_limit_exceeded)
+          end
+
           body(params[:no_body] ? nil : authorization.to_xml)
         else
           status(cached_authorization_result ? 200 : 409)
 
           if !cached_authorization_result && params[:rejection_reason_header]
             response['X-3scale-rejection-reason'] = cached_rejection
+          end
+
+          if !cached_authorization_result &&
+              cached_rejection == 'limits_exceeded' &&
+              params[:xc_usage_limit_header]
+            response['X-3scale-xc-usage-limit'.freeze] =
+                formatted_limit_exceeded(cached_lowest_limit_exceeded)
           end
 
           body(params[:no_body] ? nil : cached_authorization_text)
@@ -693,6 +712,14 @@ module ThreeScale
         elsif !Service.authenticate_service_id(service_id, provider_key)
           raise ProviderKeyInvalid, provider_key
         end
+      end
+
+      def limits_validator
+        ThreeScale::Backend::Validators::Limits
+      end
+
+      def formatted_limit_exceeded(usage_limit)
+        "#{usage_limit[:usage]}/#{usage_limit[:max_allowed]}"
       end
     end
   end
