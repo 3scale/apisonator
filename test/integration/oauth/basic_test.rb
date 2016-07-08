@@ -531,14 +531,9 @@ class OauthBasicTest < Test::Unit::TestCase
                     :metric_id => @metric_id,
                     :day => max_usage_day)
 
-    Transactor.report(@provider_key,
-                      @service.id,
-                      0 => { 'app_id' => @application.id,
-                             'usage' => { 'hits' => max_usage_day + 1 } })
-    Resque.run!
-
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id => @application.id,
+                                             :usage => { 'hits' => max_usage_day + 1 },
                                              :rejection_reason_header => true
 
     assert_equal 409, last_response.status
@@ -553,14 +548,9 @@ class OauthBasicTest < Test::Unit::TestCase
                     :metric_id => @metric_id,
                     :day => max_usage_day)
 
-    Transactor.report(@provider_key,
-                      @service.id,
-                      0 => {'app_id' => @application.id,
-                            'usage' => { 'hits' => max_usage_day + 1 } })
-    Resque.run!
-
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id => @application.id
+                                             :app_id => @application.id,
+                                             :usage => { 'hits' => max_usage_day + 1 }
 
     assert_equal 409, last_response.status
     assert_nil last_response.header['X-3scale-rejection-reason']
