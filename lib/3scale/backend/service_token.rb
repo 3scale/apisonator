@@ -69,7 +69,7 @@ module ThreeScale
           raise InvalidServiceToken if invalid_token
 
           invalid_service_id = token_id_pairs.any? do |pair|
-            pair[:service_id].nil? || pair[:service_id].empty?
+            pair[:service_id].nil? || pair[:service_id].to_s.empty?
           end
           raise InvalidServiceId if invalid_service_id
         end

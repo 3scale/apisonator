@@ -44,6 +44,15 @@ module ThreeScale
             end
           end
         end
+
+        context 'when service_id is an integer and service_token is valid' do
+          let(:service_id) { 123 }
+
+          it 'saves the (service_token, service_id) pair' do
+            subject.save(service_token, service_id)
+            expect(subject.exists?(service_token, service_id)).to be true
+          end
+        end
       end
 
       describe '.save_pairs' do
