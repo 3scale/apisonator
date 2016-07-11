@@ -176,45 +176,20 @@ module ThreeScale
         # params[:provider_key] is not null/empty.
         params[:provider_key] = provider_key
 
-        authorization,
-        cached_authorization_text,
-        cached_authorization_result,
-        cached_rejection,
-        cached_lowest_limit_exceeded = Transactor.send method_name, provider_key, params
+        # auth_status != nil only when the result is not cached.
+        # The other vars are != nil only when the result is cached.
+        auth_status, body, authorized, rejection_reason, lowest_limit_exceeded =
+            Transactor.send method_name, provider_key, params
 
-        if cached_authorization_text.nil? || cached_authorization_result.nil?
-          status(authorization.authorized? ? 200 : 409)
-
-          if !authorization.authorized? && params[:rejection_reason_header]
-            response['X-3scale-rejection-reason'.freeze] = authorization.rejection_reason_code
-          end
-
-          if !authorization.authorized? &&
-              authorization.rejection_reason_code == 'limits_exceeded'.freeze &&
-              params[:xc_usage_limit_header]
-            lowest_limit_exceeded =
-                limits_validator.new(authorization, params).lowest_limit_exceeded
-            response['X-3scale-xc-usage-limit'.freeze] =
-                formatted_limit_exceeded(lowest_limit_exceeded)
-          end
-
-          body(params[:no_body] ? nil : authorization.to_xml)
-        else
-          status(cached_authorization_result ? 200 : 409)
-
-          if !cached_authorization_result && params[:rejection_reason_header]
-            response['X-3scale-rejection-reason'] = cached_rejection
-          end
-
-          if !cached_authorization_result &&
-              cached_rejection == 'limits_exceeded' &&
-              params[:xc_usage_limit_header]
-            response['X-3scale-xc-usage-limit'.freeze] =
-                formatted_limit_exceeded(cached_lowest_limit_exceeded)
-          end
-
-          body(params[:no_body] ? nil : cached_authorization_text)
+        # If the result is not cached, get the info from the Status instance
+        if body.nil? || authorized.nil?
+          body = auth_status.to_xml
+          authorized = auth_status.authorized?
+          rejection_reason = auth_status.rejection_reason_code
+          lowest_limit_exceeded = limits_validator.new(auth_status, params).lowest_limit_exceeded
         end
+
+        response_auth_call(authorized, body, rejection_reason, lowest_limit_exceeded)
       rescue ThreeScale::Backend::Error => error
         begin
           ErrorStorage.store(service_id, error, response_code: 403, request: request_info)
@@ -720,6 +695,25 @@ module ThreeScale
 
       def formatted_limit_exceeded(usage_limit)
         "#{usage_limit[:usage]}/#{usage_limit[:max_allowed]}"
+      end
+
+      def response_auth_call(authorized, body, rejection_reason, lowest_limit_exc)
+        status(authorized ? 200 : 409)
+        set_optional_headers(authorized, rejection_reason, lowest_limit_exc)
+        body(params[:no_body] ? nil : body)
+      end
+
+      def set_optional_headers(authorized, rejection_reason, lowest_limit_exc)
+        if params[:rejection_reason_header] && !authorized
+          response['X-3scale-rejection-reason'.freeze] = rejection_reason
+        end
+
+        if params[:xc_usage_limit_header] &&
+            !authorized &&
+            rejection_reason == 'limits_exceeded'.freeze
+          response['X-3scale-xc-usage-limit'.freeze] =
+              formatted_limit_exceeded(lowest_limit_exc)
+        end
       end
     end
   end
