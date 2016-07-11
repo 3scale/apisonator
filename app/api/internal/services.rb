@@ -6,8 +6,9 @@ module ThreeScale
     module API
       internal_api '/services' do
         get '/:id' do
-          if service = Service.load_by_id(params[:id])
-            service.to_hash.to_json
+          service = Service.load_by_id(params[:id])
+          if service
+            { status: :found, service: service.to_hash }.to_json
           else
             [404, headers, {error: :not_found}.to_json]
           end
