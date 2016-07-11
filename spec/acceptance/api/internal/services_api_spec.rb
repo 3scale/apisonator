@@ -1,23 +1,31 @@
 require_relative '../../acceptance_spec_helper'
 
-resource "Services (prefix: /services)" do
+resource 'Services (prefix: /services)' do
   set_app ThreeScale::Backend::API::Internal
-  header "Accept", "application/json"
-  header "Content-Type", "application/json"
+  header 'Accept', 'application/json'
+  header 'Content-Type', 'application/json'
+
+  let(:id) { '1001' }
+  let(:invalid_id) { '2002' }
+  let(:provider_key) { 'foo' }
 
   before do
-    @service = ThreeScale::Backend::Service.save!(provider_key: 'foo', id: '1001')
+    @service = ThreeScale::Backend::Service.save!(provider_key: provider_key, id: id)
   end
 
   get '/services/:id' do
-    parameter :id, "Service ID", required: true
+    parameter :id, 'Service ID', required: true
 
-    example_request "Get Service by ID", :id => 1001 do
-      expect(response_json['id']).to eq '1001'
+    let(:id) { '1001' }
+
+    example_request 'Get Service by ID' do
+      expect(response_json['service']['id']).to eq id
+      expect(response_json['service']['provider_key']).to eq provider_key
       expect(status).to eq 200
     end
 
-    example_request 'Try to get a Service by non-existent ID', id: 1002 do
+    example 'Try to get a Service by non-existent ID' do
+      do_request(id: invalid_id)
       expect(status).to eq 404
       expect(response_json['error']).to match /not_found/
     end
