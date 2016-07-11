@@ -523,7 +523,7 @@ class OauthBasicTest < Test::Unit::TestCase
     assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyInvalid.new(provider_key))
   end
 
-  test 'resp headers have rejection reason when 409, option is in params, and resp is not cached' do
+  test 'resp headers have rejection reason when 409 and option is in the params' do
     max_usage_day = 1
 
     UsageLimit.save(:service_id => @service.id,
@@ -531,50 +531,9 @@ class OauthBasicTest < Test::Unit::TestCase
                     :metric_id => @metric_id,
                     :day => max_usage_day)
 
-    Transactor.report(@provider_key,
-                      @service.id,
-                      0 => { 'app_id' => @application.id,
-                             'usage' => { 'hits' => max_usage_day + 1 } })
-    Resque.run!
-
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :app_id => @application.id,
-                                             :rejection_reason_header => true
-
-    assert_equal 409, last_response.status
-    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
-  end
-
-  test 'resp headers have rejection reason when 409, option is in params, and resp is cached' do
-    max_usage_day = 1
-
-    UsageLimit.save(:service_id => @service.id,
-                    :plan_id => @plan_id,
-                    :metric_id => @metric_id,
-                    :day => max_usage_day)
-
-    Transactor.report(@provider_key,
-                      @service.id,
-                      0 => {'app_id' => @application.id,
-                            'usage' => { 'hits' => max_usage_day + 1 } })
-
-    Resque.run!
-
-    # Not cached
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :service_id => @service.id,
-                                             :app_id => @application.id,
-                                             :usage => { 'hits' => 1 },
-                                             :rejection_reason_header => true
-
-    assert_equal 409, last_response.status
-    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
-
-    # Cached
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :service_id => @service.id,
-                                             :app_id => @application.id,
-                                             :usage => { 'hits' => 1 },
+                                             :usage => { 'hits' => max_usage_day + 1 },
                                              :rejection_reason_header => true
 
     assert_equal 409, last_response.status
@@ -589,14 +548,9 @@ class OauthBasicTest < Test::Unit::TestCase
                     :metric_id => @metric_id,
                     :day => max_usage_day)
 
-    Transactor.report(@provider_key,
-                      @service.id,
-                      0 => {'app_id' => @application.id,
-                            'usage' => { 'hits' => max_usage_day + 1 } })
-    Resque.run!
-
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id => @application.id
+                                             :app_id => @application.id,
+                                             :usage => { 'hits' => max_usage_day + 1 }
 
     assert_equal 409, last_response.status
     assert_nil last_response.header['X-3scale-rejection-reason']
