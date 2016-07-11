@@ -161,9 +161,9 @@ module ThreeScale
       end
 
       def do_api_method(method_name)
-        normalize_non_empty_keys!
-
         halt 403 if params.nil?
+
+        normalize_non_empty_keys!
 
         provider_key = params[:provider_key] ||
             provider_key_from(params[:service_token], params[:service_id])
@@ -599,7 +599,6 @@ module ThreeScale
       end
 
       def normalize_non_empty_keys!
-        return if params.nil?
         ## this is to minimize potential security hazzards with an empty user_key
         COMMON_PARAMS.each do |p|
           thisparam = params[p]
