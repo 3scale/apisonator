@@ -34,7 +34,7 @@ class CacheTest < Test::Unit::TestCase
     @service.referrer_filters_required = true
     @service.save!
 
-    referrer = @application.create_referrer_filter('*.bar.example.org')
+    @application.create_referrer_filter('*.bar.example.org')
 
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
 
@@ -58,8 +58,8 @@ class CacheTest < Test::Unit::TestCase
     assert_equal 3, Transactor.stats[:count]
 
     Transactor.stats = {:hits => 0, :count => 0, :last => nil}
-    referrer = @application.create_referrer_filter('another.referral')
-    referrer = @application.create_referrer_filter('www.bar.example.org')
+    @application.create_referrer_filter('another.referral')
+    @application.create_referrer_filter('www.bar.example.org')
 
     app_key = @application.create_key('app_key1')
     @application.create_key('app_key2')
@@ -95,12 +95,11 @@ class CacheTest < Test::Unit::TestCase
                     :metric_id  => @metric_id,
                     :day        => 100)
 
-    #old_referrer_filters = @service.referrer_filters_required
     @service.referrer_filters_required = true
     @service.save!
 
     app_key = @application.create_key('app_key')
-    _referrer = @application.create_referrer_filter('*.bar.example.org')
+    @application.create_referrer_filter('*.bar.example.org')
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                       :app_id       => @application.id,
@@ -173,20 +172,17 @@ class CacheTest < Test::Unit::TestCase
   end
 
   test 'caching with referrals with authorize' do
-    ##Transactor.caching_disable
-
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
                     :metric_id  => @metric_id,
                     :day        => 100)
 
-    #old_referrer_filters = @service.referrer_filters_required
     @service.referrer_filters_required = true
     @service.save!
 
     tmp_last_response = nil
     app_key = @application.create_key('app_key')
-    _referrer = @application.create_referrer_filter('*.bar.example.org')
+    @application.create_referrer_filter('*.bar.example.org')
 
     get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                         :app_id       => @application.id,
@@ -264,8 +260,6 @@ class CacheTest < Test::Unit::TestCase
 
     @service.referrer_filters_required = false
     @service.save!
-
-    ##Transactor.caching_enable
   end
 
   test 'caching considers metrics' do
@@ -281,7 +275,6 @@ class CacheTest < Test::Unit::TestCase
                                         :usage        => {'hits' => 1, 'fake_metric' => 1}
     Resque.run!
 
-    doc   = Nokogiri::XML(last_response.body)
     assert_equal 404, last_response.status
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
@@ -289,7 +282,6 @@ class CacheTest < Test::Unit::TestCase
                                         :usage        => {'hits' => 1, 'fake_metric' => 1}
     Resque.run!
 
-    doc   = Nokogiri::XML(last_response.body)
     assert_equal 404, last_response.status
     assert_equal Transactor.stats[:hits], 0
     assert_equal Transactor.stats[:count], 2
@@ -299,7 +291,6 @@ class CacheTest < Test::Unit::TestCase
                                         :usage        => {'hits' => 1}
     Resque.run!
 
-    doc   = Nokogiri::XML(last_response.body)
     assert_equal 200, last_response.status
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
@@ -307,7 +298,6 @@ class CacheTest < Test::Unit::TestCase
                                         :usage        => {'hits' => 1}
     Resque.run!
 
-    doc   = Nokogiri::XML(last_response.body)
     assert_equal 200, last_response.status
     assert_equal Transactor.stats[:hits], 1
     assert_equal Transactor.stats[:count], 4
@@ -317,7 +307,6 @@ class CacheTest < Test::Unit::TestCase
                                         :usage        => {'hits' => 1, 'fake_metric' => 1}
     Resque.run!
 
-    doc   = Nokogiri::XML(last_response.body)
     assert_equal 404, last_response.status
 
     get '/transactions/authrep.xml',  :provider_key => @provider_key,
@@ -325,7 +314,6 @@ class CacheTest < Test::Unit::TestCase
                                         :usage        => {'hits' => 1, 'fake_metric' => 1}
     Resque.run!
 
-    doc   = Nokogiri::XML(last_response.body)
     assert_equal 404, last_response.status
     assert_equal Transactor.stats[:hits], 1
     assert_equal Transactor.stats[:count], 6
@@ -653,7 +641,7 @@ class CacheTest < Test::Unit::TestCase
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      5.times do |i|
+      5.times do
         get '/transactions/authorize.xml',  :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :usage        => {'hits' => 1}
@@ -685,7 +673,7 @@ class CacheTest < Test::Unit::TestCase
     assert_equal Transactor.stats[:count], 0
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      5.times do |i|
+      5.times do
         get '/transactions/authrep.xml',    :provider_key => @provider_key,
                                             :app_id       => @application.id,
                                             :usage        => {'hits' => 1}
@@ -981,7 +969,7 @@ class CacheTest < Test::Unit::TestCase
                       :metric_id  => @metric_id,
                       :day        => 100)
 
-      11.times do |i|
+      11.times do
         get '/transactions/authrep.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id,
                                          :usage        => {'hits' => 10}
@@ -1005,7 +993,7 @@ class CacheTest < Test::Unit::TestCase
 
       Transactor.caching_disable
 
-      11.times do |i|
+      11.times do
         get '/transactions/authrep.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id,
                                          :usage        => {'hits' => 10}
@@ -1055,7 +1043,7 @@ class CacheTest < Test::Unit::TestCase
                       :metric_id  => @metric_id,
                       :day        => 100)
 
-      12.times do |i|
+      12.times do
         get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id,
                                          :app_key      => app_key
@@ -1085,7 +1073,7 @@ class CacheTest < Test::Unit::TestCase
 
       Transactor.caching_disable
 
-      12.times do |i|
+      12.times do
         get '/transactions/authorize.xml', :provider_key => @provider_key,
                                          :app_id       => @application.id,
                                          :app_key      => app_key
