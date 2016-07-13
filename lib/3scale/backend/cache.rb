@@ -269,7 +269,7 @@ module ThreeScale
         "cache/service:#{service_id}/#{type.to_s}:#{id}"
       end
 
-      def update_status_cache(applications, users = {})
+      def update_alerts_and_cache(applications, users = {})
         current_timestamp = Time.now.getutc
 
         applications.each do |_appid, values|
