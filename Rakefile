@@ -72,16 +72,6 @@ if testable_environment?
     end
   end
 
-  desc 'Seed, put info into redis using data/postfile3, plan :default'
-  task :seed do
-    system 'ruby -Ilib bin/3scale_backend_seed -l -p data/postfile3'
-  end
-
-  desc 'Seed, put info into redis using data/postfile3, plan :user'
-  task :seed_user do
-    system 'ruby -Ilib bin/3scale_backend_seed -u -l -p data/postfile3'
-  end
-
   desc 'Start the backend server in development'
   task :start do
     system "ruby -Ilib bin/3scale_backend start -p #{ENV['PORT'] || 3001}"
