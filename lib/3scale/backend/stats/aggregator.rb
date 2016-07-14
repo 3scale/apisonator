@@ -56,8 +56,8 @@ module ThreeScale
             touched_relations = aggregate(transactions, current_bucket)
 
             ApplicationEvents.generate(touched_relations[:applications].values)
-            Cache.update_status_cache(touched_relations[:applications],
-                                      touched_relations[:users])
+            Cache.update_alerts_and_cache(touched_relations[:applications],
+                                          touched_relations[:users])
             ApplicationEvents.ping
           end
 

@@ -257,19 +257,19 @@ module ThreeScale
           end
         end
 
-        store_keys_in_cache(status, keys, content)
+        store_keys_in_cache(keys, content)
       end
 
       def set_status_in_cache(key, status, options ={})
         options[:anchors_for_caching] = true
-        store_keys_in_cache(status, [key], status.to_xml(options))
+        store_keys_in_cache([key], status.to_xml(options))
       end
 
       def caching_key(service_id, type ,id)
         "cache/service:#{service_id}/#{type.to_s}:#{id}"
       end
 
-      def update_status_cache(applications, users = {})
+      def update_alerts_and_cache(applications, users = {})
         current_timestamp = Time.now.getutc
 
         applications.each do |_appid, values|
@@ -303,14 +303,12 @@ module ThreeScale
 
       private
 
-      def store_keys_in_cache(status, keys, content)
+      def store_keys_in_cache(keys, content)
         now = Time.now.getutc.sec
-        op = status.authorized? ? :srem : :sadd
         storage.pipelined do
           keys.each do |key|
             storage.set(key, content)
             storage.expire(key, STATUS_TTL - now)
-            storage.send op, 'limit_violations_set'.freeze, key
           end
         end
       end
