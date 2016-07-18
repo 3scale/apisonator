@@ -60,7 +60,7 @@ module ThreeScale
       end
 
       def caching_enabled?
-        storage.get(CACHING_ENABLED_KEY) != '0'.freeze
+        false
       end
       memoize :caching_enabled?
 
