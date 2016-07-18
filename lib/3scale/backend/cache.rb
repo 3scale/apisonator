@@ -5,6 +5,7 @@ module ThreeScale
     # Methods for caching
     module Cache
       include Backend::StorageKeyHelpers
+      include Memoizer::Decorator
       extend self
 
       VALID_PARAMS_FOR_CACHE = [:provider_key,
@@ -61,6 +62,7 @@ module ThreeScale
       def caching_enabled?
         storage.get(CACHING_ENABLED_KEY) != '0'.freeze
       end
+      memoize :caching_enabled?
 
       def signature(action, params)
         key_version = "cache_combination/#{action}/"

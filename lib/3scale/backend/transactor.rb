@@ -158,15 +158,18 @@ module ThreeScale
 
       def do_authorize(method, provider_key, params, options)
         notify(provider_key, 'transactions/authorize' => 1)
+
         ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
-        sanitize_and_cache_auth(method, provider_key, params[:usage], method == :oauth_authorize || params[:no_caching], params, options) do
+        use_cache = (method != :oauth_authorize && params[:no_caching].nil? && Cache.caching_enabled?)
+        sanitize_and_cache_auth(method, provider_key, params[:usage], use_cache, params, options) do
           authorize_nocache(method, provider_key, params)
         end
       end
 
       def do_authrep(method, provider_key, params, options)
         usage = params[:usage]
-        ret = sanitize_and_cache_auth(method, provider_key, usage, params[:no_caching], params, options) do
+        use_cache = (params[:no_caching].nil? && Cache.caching_enabled?)
+        ret = sanitize_and_cache_auth(method, provider_key, usage, use_cache, params, options) do
           authrep_nocache(method, provider_key, params)
         end
 
@@ -195,7 +198,7 @@ module ThreeScale
         ret
       end
 
-      def sanitize_and_cache_auth(method, provider_key, usage, no_cache, params, options)
+      def sanitize_and_cache_auth(method, provider_key, usage, cache, params, options)
         check_values_of_usage(usage) unless usage.nil?
 
         status = nil
@@ -205,7 +208,7 @@ module ThreeScale
         data_combination = nil
         cache_miss = true
 
-        unless no_cache
+        if cache
           ## check if the keys/id combination has been seen before
           isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(method, provider_key, params)
 
