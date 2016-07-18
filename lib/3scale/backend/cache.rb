@@ -284,8 +284,6 @@ module ThreeScale
           if max_utilization >= 0.0
             ThreeScale::Backend::Alerts.update_utilization(status, max_utilization, max_record, current_timestamp)
           end
-
-          ThreeScale::Backend::Cache.set_status_in_cache_application(values[:service_id], application, status, exclude_user: true)
         end
 
         users.each do |_userid, values|
@@ -297,9 +295,6 @@ module ThreeScale
           usage  = ThreeScale::Backend::Transactor.send(:load_user_usage, user, current_timestamp)
           status = ThreeScale::Backend::Transactor::Status.new(user: user, user_values: usage)
           ThreeScale::Backend::Validators::Limits.apply(status, {})
-
-          key = ThreeScale::Backend::Cache.caching_key(service.id, :user, user.username)
-          ThreeScale::Backend::Cache.set_status_in_cache(key, status, exclude_application: true)
         end
       end
 
