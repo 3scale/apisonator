@@ -57,6 +57,8 @@ class AuthorizeMultiServicesTest < Test::Unit::TestCase
                     :plan_id    => @plan_id_3,
                     :metric_id  => @metric_id_3,
                     :day => 100)
+
+    @service_ids = [@service_1, @service_2, @service_3].map(&:id)
   end
 
   test 'right place to declare service_id' do
@@ -82,7 +84,7 @@ class AuthorizeMultiServicesTest < Test::Unit::TestCase
                                                  @metric_id_2,
                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
-    assert_not_errors_in_transactions
+    assert_not_errors_in_transactions(@service_ids)
   end
 
   test 'sending an application that does not belong to the default service' do
@@ -121,7 +123,6 @@ class AuthorizeMultiServicesTest < Test::Unit::TestCase
     Resque.run!
 
     assert_equal 403, last_response.status
-    assert_not_errors_in_transactions
   end
 
   test 'check scoping of the applications by service' do
@@ -278,7 +279,7 @@ class AuthorizeMultiServicesTest < Test::Unit::TestCase
                                                   @metric_id_1,
                                                   :month, Time.now.getutc.strftime('%Y%m01'))).to_i
 
-    assert_not_errors_in_transactions
+    assert_not_errors_in_transactions(@service_ids)
   end
 
   test 'provider key with multiple services, check that call to authorize works with explicit/implicit service ids while changing the default service' do
@@ -468,7 +469,7 @@ class AuthorizeMultiServicesTest < Test::Unit::TestCase
                                                  @application_2.id,
                                                  @metric_id_2,
                                                  :month, Time.now.getutc.strftime('%Y%m01'))).to_i
-    assert_not_errors_in_transactions
+    assert_not_errors_in_transactions(@service_ids)
   end
 
   test 'provider_key needs to be checked regardless if the service_id is correct with authorize/report' do
@@ -512,7 +513,7 @@ class AuthorizeMultiServicesTest < Test::Unit::TestCase
 
     assert_not_nil error
     assert_equal 'provider_key_invalid', error['code']
-    assert_not_errors_in_transactions
+    assert_not_errors_in_transactions(@service_ids)
   end
 
   test 'testing that the app_id matches the service that is default service with authorize' do
@@ -566,7 +567,7 @@ class AuthorizeMultiServicesTest < Test::Unit::TestCase
 
     assert_not_nil error
     assert_equal 'service_id_invalid', error['code']
-    assert_not_errors_in_transactions
+    assert_not_errors_in_transactions(@service_ids)
   end
 
   test 'failed report on invalid provider_key and service_id' do
