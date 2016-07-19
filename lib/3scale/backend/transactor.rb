@@ -295,22 +295,6 @@ module ThreeScale
         value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/
       end
 
-      def check_for_users(service, application, params)
-        if application.user_required?
-          raise UserNotDefined, application.id if params[:user_id].nil? || params[:user_id].empty? || !params[:user_id].is_a?(String)
-
-          if service.user_registration_required?
-            raise UserRequiresRegistration, service.id, params[:user_id] unless service.user_exists?(params[:user_id])
-          end
-        else
-          ## for sanity, it's important to get rid of the request parameter :user_id if the
-          ## plan is default. :user_id is passed all the way up and sometimes its existance
-          ## is the only way to know which application plan we are in (:default or :user)
-          params[:user_id] = nil
-        end
-        return params
-      end
-
       def report_enqueue(service_id, data, context_info)
         Resque.enqueue(ReportJob, service_id, data, Time.now.getutc.to_f, context_info)
       end
