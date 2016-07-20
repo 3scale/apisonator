@@ -52,10 +52,10 @@ module ThreeScale
               prepare_stats_buckets(current_bucket)
             end
 
-            touched_relations = aggregate(transactions, current_bucket)
+            touched_apps = aggregate(transactions, current_bucket)
 
-            ApplicationEvents.generate(touched_relations[:applications].values)
-            update_alerts(touched_relations[:applications], touched_relations[:users])
+            ApplicationEvents.generate(touched_apps.values)
+            update_alerts(touched_apps)
             ApplicationEvents.ping
           end
 
@@ -65,26 +65,21 @@ module ThreeScale
           #
           # @param [Array] transactions the collection of transactions
           # @param [String, Nil] bucket
-          # @return [Hash] A Hash with two keys: applications and users. Each key
-          #   contains a Hash with those applications/users whose stats values have
-          #   been updated.
+          # @return [Hash] A Hash where each key is an application_id and the
+          #   value is another Hash with service_id and application_id.
           def aggregate(transactions, bucket = nil)
-            touched_apps   = {}
-            touched_users  = {}
+            touched_apps = {}
 
             transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
               storage.pipelined do
                 slice.each do |transaction|
                   aggregate_all(transaction, bucket)
-
-                  touched_apps.merge!(touched_relation(:application, transaction))
-                  next unless transaction.user_id
-                  touched_users.merge!(touched_relation(:user, transaction))
+                  touched_apps.merge!(touched_relation(transaction))
                 end
               end
             end
 
-            { applications: touched_apps, users: touched_users }
+            touched_apps
           end
 
           def aggregate_all(transaction, bucket)
@@ -128,22 +123,16 @@ module ThreeScale
             @bucket_storage ||= BucketStorage.new(storage)
           end
 
-          # Return a Hash with needed info to update the cached XMLs
+          # Return a Hash with needed info to update usages and alerts.
           #
-          # @param [Symbol] relation
           # @param [Transaction] transaction
-          # @return [Hash] the hash that contains which kind of relation has been
-          #   updated (application or used) and the transaction's service_id.
-          #   The key of the hash is the transaction value of that relation attr.
-          def touched_relation(relation, transaction)
-            relation_id = "#{relation}_id"
-            relation_value = transaction.send(relation_id)
-            {
-              relation_value => {
-                relation_id.to_sym => relation_value,
-                :service_id        => transaction.service_id,
-              },
-            }
+          # @return [Hash] the hash that contains the application_id that has
+          #   been updated and the transaction's service_id. The key of the
+          #   hash is the application_id.
+          def touched_relation(transaction)
+            relation_value = transaction.send(:application_id)
+            { relation_value => { application_id: relation_value,
+                                  service_id: transaction.service_id } }
           end
 
           def buckets_limit_exceeded?
@@ -154,7 +143,7 @@ module ThreeScale
             Backend.logger.info(MAX_BUCKETS_CREATED_MSG)
           end
 
-          def update_alerts(applications, users = {})
+          def update_alerts(applications)
             current_timestamp = Time.now.getutc
 
             applications.each do |_appid, values|
@@ -168,17 +157,6 @@ module ThreeScale
               if max_utilization >= 0.0
                 Alerts.update_utilization(status, max_utilization, max_record, current_timestamp)
               end
-            end
-
-            users.each do |_userid, values|
-              service ||= Service.load_by_id(values[:service_id])
-              if service.id != values[:service_id]
-                raise ServiceLoadInconsistency.new(values[:service_id], service.id)
-              end
-              user = User.load_or_create!(service, values[:user_id])
-              usage = Transactor.send(:load_user_usage, user, current_timestamp)
-              status = Transactor::Status.new(user: user, user_values: usage)
-              Validators::Limits.apply(status, {})
             end
           end
         end
