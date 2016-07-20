@@ -151,8 +151,6 @@ module ThreeScale
           values && values[usage_limit.metric_id] || 0
         end
 
-
-        ## WARNING/CAUTION: any change in to_xml must be reflected in cache.rb/clean_cached_xml !!!
         def to_xml(options = {})
           xml = ''
           xml << '<?xml version="1.0" encoding="UTF-8"?>'.freeze unless options[:skip_instruct]
@@ -177,30 +175,18 @@ module ThreeScale
             end
           end
 
-          anchors = options[:anchors_for_caching]
           if !@application.nil? && !options[:exclude_application]
-            xml << XML_SEPARATOR if anchors
             xml << '<plan>'.freeze
             xml << plan_name.to_s.encode(xml: :text) << '</plan>'.freeze
             xml << aux_reports_to_xml(:application, application_usage_reports, options)
           end
           if !@user.nil? && !options[:exclude_user]
-            xml << XML_SEPARATOR if anchors
             xml << '<user_plan>'.freeze
             xml << user_plan_name.to_s.encode(xml: :text) << '</user_plan>'.freeze
             xml << aux_reports_to_xml(:user, user_usage_reports, options)
           end
 
-          xml << XML_SEPARATOR if anchors
           xml << '</status>'.freeze
-
-          return xml unless anchors
-
-          ## little hack to avoid parsing for <authorized> to know the state. Not very nice but leave it like this.
-          s = authorized? ? '1' : '0'
-          s << ",#{rejection_reason_code}" unless authorized?
-          s << XML_SEPARATOR
-          s << xml
         end
 
         private
@@ -241,18 +227,12 @@ module ThreeScale
               end
               xml << '<max_value>' << report.max_value.to_s << '</max_value><current_value>'
 
-              xml << if not options[:anchors_for_caching]
-                if authorized? && usage && (usage_metric_name = usage[report.metric_name])
-                  # this is a authrep request and therefore we should sum the usage
-                  Usage.get_from usage_metric_name, report.current_value
-                else
-                  report.current_value
-                end.to_s
-              else
-                ## this is a hack to avoid marshalling status for caching, this way is much faster, but nastier
-                ## see Transactor.clean_cached_xml(xmlstr, options = {}) for futher info
-                "|.|#{report_type},#{report.metric_name},#{report.current_value},#{report.max_value}|.|"
-              end
+              xml << if authorized? && usage && (usage_metric_name = usage[report.metric_name])
+                       # this is a authrep request and therefore we should sum the usage
+                       Usage.get_from usage_metric_name, report.current_value
+                     else
+                       report.current_value
+                     end.to_s
 
               xml << '</current_value></usage_report>'.freeze
             end
