@@ -112,8 +112,8 @@ class TransactorTest < Test::Unit::TestCase
   test 'authorize returns status object with the plan name' do
     status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
-    assert_not_nil status.first
-    assert_equal @plan_name, status.first.plan_name
+    assert_not_nil status
+    assert_equal @plan_name, status.plan_name
   end
 
   test 'authorize returns status object with usage reports if the plan has usage limits' do
