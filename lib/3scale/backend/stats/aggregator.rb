@@ -1,4 +1,3 @@
-require '3scale/backend/cache'
 require '3scale/backend/stats/storage'
 require '3scale/backend/stats/keys'
 require '3scale/backend/application_events'
@@ -56,8 +55,7 @@ module ThreeScale
             touched_relations = aggregate(transactions, current_bucket)
 
             ApplicationEvents.generate(touched_relations[:applications].values)
-            Cache.update_alerts_and_cache(touched_relations[:applications],
-                                          touched_relations[:users])
+            update_alerts(touched_relations[:applications], touched_relations[:users])
             ApplicationEvents.ping
           end
 
@@ -154,6 +152,34 @@ module ThreeScale
 
           def log_bucket_creation_disabled
             Backend.logger.info(MAX_BUCKETS_CREATED_MSG)
+          end
+
+          def update_alerts(applications, users = {})
+            current_timestamp = Time.now.getutc
+
+            applications.each do |_appid, values|
+              application = ThreeScale::Backend::Application.load(values[:service_id],
+                                                                  values[:application_id])
+              usage = Transactor.send(:load_application_usage, application, current_timestamp)
+              status = Transactor::Status.new(application: application, values: usage)
+              Validators::Limits.apply(status, {})
+
+              max_utilization, max_record = Alerts.utilization(status)
+              if max_utilization >= 0.0
+                Alerts.update_utilization(status, max_utilization, max_record, current_timestamp)
+              end
+            end
+
+            users.each do |_userid, values|
+              service ||= Service.load_by_id(values[:service_id])
+              if service.id != values[:service_id]
+                raise ServiceLoadInconsistency.new(values[:service_id], service.id)
+              end
+              user = User.load_or_create!(service, values[:user_id])
+              usage = Transactor.send(:load_user_usage, user, current_timestamp)
+              status = Transactor::Status.new(user: user, user_values: usage)
+              Validators::Limits.apply(status, {})
+            end
           end
         end
       end

@@ -271,33 +271,6 @@ module ThreeScale
         "cache/service:#{service_id}/#{type.to_s}:#{id}"
       end
 
-      def update_alerts_and_cache(applications, users = {})
-        current_timestamp = Time.now.getutc
-
-        applications.each do |_appid, values|
-          application = Application.load(values[:service_id], values[:application_id])
-          usage  = ThreeScale::Backend::Transactor.send(:load_application_usage, application, current_timestamp)
-          status = ThreeScale::Backend::Transactor::Status.new(application: application, values: usage)
-          ThreeScale::Backend::Validators::Limits.apply(status, {})
-
-          max_utilization, max_record = ThreeScale::Backend::Alerts.utilization(status)
-          if max_utilization >= 0.0
-            ThreeScale::Backend::Alerts.update_utilization(status, max_utilization, max_record, current_timestamp)
-          end
-        end
-
-        users.each do |_userid, values|
-          service ||= Service.load_by_id(values[:service_id])
-          if service.id != values[:service_id]
-            raise ServiceLoadInconsistency.new(values[:service_id], service.id)
-          end
-          user   = User.load_or_create!(service, values[:user_id])
-          usage  = ThreeScale::Backend::Transactor.send(:load_user_usage, user, current_timestamp)
-          status = ThreeScale::Backend::Transactor::Status.new(user: user, user_values: usage)
-          ThreeScale::Backend::Validators::Limits.apply(status, {})
-        end
-      end
-
       private
 
       def store_keys_in_cache(keys, content)
