@@ -99,23 +99,6 @@ task :reschedule_failed_jobs => :environment do
   puts "Rescheduled: #{result[:rescheduled]}. Pending failed jobs: #{result[:failed_current]}."
 end
 
-namespace :cache do
-  desc 'Caching enabled?'
-  task :caching_enabled? => :environment do
-    puts ThreeScale::Backend::Transactor.caching_enabled?
-  end
-
-  desc 'Disable caching'
-  task :disable_caching => :environment do
-    puts ThreeScale::Backend::Transactor.caching_disable
-  end
-
-  desc 'Enable caching'
-  task :enable_caching => :environment do
-    puts ThreeScale::Backend::Transactor.caching_enable
-  end
-end
-
 namespace :stats do
   namespace :buckets do
     desc 'Show number of pending buckets'

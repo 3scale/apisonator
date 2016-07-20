@@ -534,7 +534,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyInvalid.new(provider_key))
   end
 
-  test 'resp headers have rejection reason when 409, option is in params, and resp is not cached' do
+  test 'resp headers have rejection reason when 409 and option is in the params' do
     max_usage_day = 1
 
     UsageLimit.save(:service_id => @service.id,
@@ -547,45 +547,6 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                                        :usage => { 'hits' => max_usage_day + 1 },
                                        :rejection_reason_header => true
 
-    assert_equal 0, Cache.stats[:last]
-    assert_equal 409, last_response.status
-    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
-  end
-
-  test 'resp headers have rejection reason when 409, option is in params, and resp is cached' do
-    max_usage_day = 1
-
-    UsageLimit.save(:service_id => @service.id,
-                    :plan_id => @plan_id,
-                    :metric_id => @metric_id,
-                    :day => max_usage_day)
-
-    Transactor.report(@provider_key,
-                      @service.id,
-                      0 => {'app_id' => @application.id,
-                            'usage' => { 'hits' => max_usage_day + 1 } })
-
-    Resque.run!
-
-    # Not cached
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :service_id => @service.id,
-                                       :app_id => @application.id,
-                                       :usage => { 'hits' => 1 },
-                                       :rejection_reason_header => true
-
-    assert_equal 0, Cache.stats[:last]
-    assert_equal 409, last_response.status
-    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
-
-    # Cached
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :service_id => @service.id,
-                                       :app_id => @application.id,
-                                       :usage => { 'hits' => 1 },
-                                       :rejection_reason_header => true
-
-    assert_equal 1, Cache.stats[:last]
     assert_equal 409, last_response.status
     assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
   end
@@ -606,7 +567,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     assert_nil last_response.header['X-3scale-rejection-reason']
   end
 
-  test 'resp headers have lowest limit exceeded when 409, opt in the params, and resp not cached' do
+  test 'resp headers have lowest limit exceeded when 409 and option in the params' do
     max_usage_day = 1
     usage_to_report = max_usage_day + 1
 
@@ -620,7 +581,6 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                                        :usage => { 'hits' => usage_to_report },
                                        :xc_usage_limit_header => true
 
-    assert_equal 0, Cache.stats[:last]
     assert_equal 409, last_response.status
     assert_equal "#{usage_to_report}/#{max_usage_day}",
                  last_response.header['X-3scale-xc-usage-limit']
@@ -641,40 +601,5 @@ class AuthorizeBasicTest < Test::Unit::TestCase
 
     assert_equal 409, last_response.status
     assert_nil last_response.header['X-3scale-xc-usage-limit']
-  end
-
-  test 'resp headers have lowest limit exceeded when 409, opt in the params, and resp cached' do
-    max_usage_day = 1
-    usage_to_report = max_usage_day + 1
-
-    UsageLimit.save(:service_id => @service.id,
-                    :plan_id => @plan_id,
-                    :metric_id => @metric_id,
-                    :day => max_usage_day)
-
-    Transactor.report(@provider_key,
-                      @service.id,
-                      0 => { 'app_id' => @application.id,
-                             'usage' => { 'hits' => usage_to_report } })
-    Resque.run!
-
-    # Not cached
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id => @application.id,
-                                       :usage => { 'hits' => usage_to_report },
-                                       :xc_usage_limit_header => true
-
-    assert_equal 0, Cache.stats[:last]
-
-    # Cached
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id => @application.id,
-                                       :usage => { 'hits' => usage_to_report },
-                                       :xc_usage_limit_header => true
-
-    assert_equal 1, Cache.stats[:last]
-    assert_equal 409, last_response.status
-    assert_equal "#{usage_to_report*2}/#{max_usage_day}",
-                 last_response.header['X-3scale-xc-usage-limit']
   end
 end
