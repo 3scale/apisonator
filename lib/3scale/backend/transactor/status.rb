@@ -85,12 +85,12 @@ module ThreeScale
         end
 
         attr_reader :service
-        attr_accessor :application
+        attr_reader :application
         attr_reader :oauth
         attr_accessor :redirect_uri_field
         attr_reader :usage
         attr_accessor :values
-        attr_accessor :user
+        attr_reader :user
         attr_accessor :user_values
 
         def reject!(error)

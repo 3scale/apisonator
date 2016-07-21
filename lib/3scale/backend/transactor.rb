@@ -63,7 +63,7 @@ module ThreeScale
 
       def authorize_nocache(method, provider_key, params)
         oauth = method == :oauth_authorize
-        validate(oauth, provider_key, false, params).first
+        validate(oauth, provider_key, false, params)
       end
 
       def authrep_nocache(method, provider_key, params)
@@ -147,9 +147,8 @@ module ThreeScale
           user:        user,
         }
 
-        status = apply_validators(validators, status_attrs, params)
-
-        [status, service, application, user]
+        # returns a status object
+        apply_validators(validators, status_attrs, params)
       end
 
       def do_authorize(method, provider_key, params)
@@ -159,11 +158,11 @@ module ThreeScale
 
       def do_authrep(method, provider_key, params)
         usage = params[:usage]
-        status, service, application, user = authrep_nocache(method, provider_key, params)
+        status = authrep_nocache(method, provider_key, params)
 
-        service_id = service.id
-        application_id = application.id
-        username = user.username unless user.nil?
+        service_id = status.service.id
+        application_id = status.application.id
+        username = status.user.username unless status.user.nil?
 
         if (usage || params[:log]) && status.authorized?
           report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})
