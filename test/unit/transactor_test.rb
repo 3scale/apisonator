@@ -146,36 +146,21 @@ class TransactorTest < Test::Unit::TestCase
     end
 
     Timecop.freeze(Time.utc(2010, 5, 14)) do
-      status, status_xml, status_result = Transactor.authorize(@provider_key, :app_id => @application_one.id)
+      status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
-      if not status.nil?
-        assert_equal 2, status.usage_reports.count
+      assert_equal 2, status.usage_reports.count
 
-        report_month = status.usage_reports.find { |report| report.period == :month }
-        assert_not_nil       report_month
-        assert_equal 'hits', report_month.metric_name
-        assert_equal 5,      report_month.current_value
-        assert_equal 10000,  report_month.max_value
+      report_month = status.usage_reports.find { |report| report.period == :month }
+      assert_not_nil       report_month
+      assert_equal 'hits', report_month.metric_name
+      assert_equal 5,      report_month.current_value
+      assert_equal 10000,  report_month.max_value
 
-        report_day = status.usage_reports.find { |report| report.period == :day }
-        assert_not_nil       report_day
-        assert_equal 'hits', report_day.metric_name
-        assert_equal 2,      report_day.current_value
-        assert_equal 200,    report_day.max_value
-      else
-        ## this means it comes from the cache,
-        ## warning: need to reproduce the above asserts for xml
-        assert_not_nil status_xml
-        assert_not_nil status_result
-
-        status, tmp1, tmp2 = Transactor.authorize(@provider_key, { :service_id => @service_id, :app_id => @application_one.id, :no_caching => true })
-
-        assert_not_nil status
-        assert_equal  tmp1, nil
-        assert_equal  tmp2, nil
-
-        assert_equal status_xml, status.to_xml
-      end
+      report_day = status.usage_reports.find { |report| report.period == :day }
+      assert_not_nil       report_day
+      assert_equal 'hits', report_day.metric_name
+      assert_equal 2,      report_day.current_value
+      assert_equal 200,    report_day.max_value
     end
   end
 
@@ -194,23 +179,8 @@ class TransactorTest < Test::Unit::TestCase
   end
 
   test 'authorize returns status object without usage reports if the plan has no usage limits' do
-    status, status_xml, status_result = Transactor.authorize(@provider_key, :app_id => @application_one.id)
-    if not status.nil?
-      assert_equal 0, status.usage_reports.count
-    else
-      assert_not_nil status_xml
-      assert_not_nil status_result
-
-      status, tmp1, tmp2 = Transactor.authorize(@provider_key, { :app_id => @application_one.id, :no_caching => true })
-
-      assert_not_nil status
-      assert_equal  tmp1, nil
-      assert_equal  tmp2, nil
-
-      assert_equal status_xml, status.to_xml
-
-      ## warning: need to reproduce the above asserts for xml
-    end
+    status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
+    assert_equal 0, status.usage_reports.count
   end
 
   test 'authorize raises an exception when provider key is invalid' do
@@ -290,23 +260,8 @@ class TransactorTest < Test::Unit::TestCase
   end
 
   test_authrep 'returns status object without usage reports if the plan has no usage limits' do |_, method|
-    status, status_xml, status_result = Transactor.send(method, @provider_key, :app_id => @application_one.id)
-    if not status.nil?
-      assert_equal 0, status.usage_reports.count
-    else
-      assert_not_nil status_xml
-      assert_not_nil status_result
-
-      status, tmp1, tmp2 = Transactor.send(method, @provider_key, { :app_id => @application_one.id, :no_caching => true })
-
-      assert_not_nil status
-      assert_equal  tmp1, nil
-      assert_equal  tmp2, nil
-
-      assert_equal status_xml, status.to_xml
-
-      ## warning: need to reproduce the above asserts for xml
-    end
+    status = Transactor.send(method, @provider_key, :app_id => @application_one.id)
+    assert_equal 0, status.usage_reports.count
   end
 
   test_authrep 'raises an exception when provider key is invalid' do |_, method|
