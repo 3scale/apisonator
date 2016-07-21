@@ -81,7 +81,7 @@ module ThreeScale
           now      = Time.now.getutc
           qs       = extract_query_string(env)
           length   = extract_content_length(header)
-          cache    = ThreeScale::Backend::Cache.stats
+          cache    = { last: 0, count: 0, hits: 0 } # Cache is no longer used
           memoizer = ThreeScale::Backend::Memoizer.stats
 
           logger = @logger || env[STR_RACK_ERRORS] || STDERR

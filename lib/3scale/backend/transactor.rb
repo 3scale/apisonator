@@ -4,7 +4,6 @@ require '3scale/backend/transactor/process_job'
 require '3scale/backend/transactor/report_job'
 require '3scale/backend/transactor/log_request_job'
 require '3scale/backend/transactor/status'
-require '3scale/backend/cache'
 require '3scale/backend/errors'
 require '3scale/backend/validators'
 require '3scale/backend/stats/keys'
@@ -14,7 +13,6 @@ module ThreeScale
     # Methods for reporting and authorizing transactions.
     module Transactor
       include Backend::StorageKeyHelpers
-      include Backend::Cache
       include NotifyBatcher
       extend self
 
@@ -28,20 +26,20 @@ module ThreeScale
           'transactions' => transactions.size)
       end
 
-      def authorize(provider_key, params, options = {})
-        do_authorize :authorize, provider_key, params, options
+      def authorize(provider_key, params)
+        do_authorize :authorize, provider_key, params
       end
 
-      def oauth_authorize(provider_key, params, options = {})
-        do_authorize :oauth_authorize, provider_key, params, options
+      def oauth_authorize(provider_key, params)
+        do_authorize :oauth_authorize, provider_key, params
       end
 
-      def authrep(provider_key, params, options = {})
-        do_authrep :authrep, provider_key, params, options
+      def authrep(provider_key, params)
+        do_authrep :authrep, provider_key, params
       end
 
-      def oauth_authrep(provider_key, params, options = {})
-        do_authrep :oauth_authrep, provider_key, params, options
+      def oauth_authrep(provider_key, params)
+        do_authrep :oauth_authrep, provider_key, params
       end
 
       def utilization(service_id, application_id)
@@ -68,8 +66,6 @@ module ThreeScale
         validate(oauth, provider_key, false, params)
       end
 
-      ## this is the classic way to do an authrep in case the cache fails, there
-      ## has been changes on the underlying data or the time to life has elapsed
       def authrep_nocache(method, provider_key, params)
         oauth = method == :oauth_authrep
         validate(oauth, provider_key, true, params)
@@ -151,42 +147,24 @@ module ThreeScale
           user:        user,
         }
 
-        status = apply_validators(validators, status_attrs, params)
-
-        [status, service, application, user]
+        # returns a status object
+        apply_validators(validators, status_attrs, params)
       end
 
-      def do_authorize(method, provider_key, params, options)
+      def do_authorize(method, provider_key, params)
         notify(provider_key, 'transactions/authorize' => 1)
-
-        ## FIXME: oauth is never called, the ttl of the access_token makes the ttl of the cached results change
-        use_cache = (method != :oauth_authorize && params[:no_caching].nil? && Cache.caching_enabled?)
-        sanitize_and_cache_auth(method, provider_key, params[:usage], use_cache, params, options) do
-          authorize_nocache(method, provider_key, params)
-        end
+        authorize_nocache(method, provider_key, params)
       end
 
-      def do_authrep(method, provider_key, params, options)
+      def do_authrep(method, provider_key, params)
         usage = params[:usage]
-        use_cache = (params[:no_caching].nil? && Cache.caching_enabled?)
-        ret = sanitize_and_cache_auth(method, provider_key, usage, use_cache, params, options) do
-          authrep_nocache(method, provider_key, params)
-        end
+        status = authrep_nocache(method, provider_key, params)
 
-        status, _, status_result, _, _, service, application, user, service_id = ret
+        service_id = status.service.id
+        application_id = status.application.id
+        username = status.user.username unless status.user.nil?
 
-        if application.nil?
-          application_id = params[:app_id] || params[:user_key]
-          username = params[:user_id]
-        else
-          service_id = service.id
-          application_id = application.id
-          username = unless user.nil?
-                       user.username
-                     end
-        end
-
-        if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
+        if (usage || params[:log]) && status.authorized?
           report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})
           val = usage ? usage.size : 0
           ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
@@ -195,49 +173,7 @@ module ThreeScale
           notify(provider_key, 'transactions/authorize' => 1)
         end
 
-        ret
-      end
-
-      def sanitize_and_cache_auth(method, provider_key, usage, cache, params, options)
-        check_values_of_usage(usage) unless usage.nil?
-
-        status = nil
-        status_xml = nil
-        status_result = nil
-        rejection_reason = nil
-        data_combination = nil
-        cache_miss = true
-
-        if cache
-          ## check if the keys/id combination has been seen before
-          isknown, service_id, data_combination, dirty_app_xml, dirty_user_xml, caching_allowed = combination_seen(method, provider_key, params)
-
-          if caching_allowed && isknown && !service_id.nil? && !dirty_app_xml.nil?
-            unless usage.nil?
-              options[:usage] = usage
-              options[:add_usage_on_report] = true if method == :authrep || method == :oauth_authrep
-            end
-
-            options[:lowest_limit_exceeded] = true if params[:xc_usage_limit_header]
-
-            status_xml, status_result, violation, rejection_reason, lowest_limit_exceeded =
-                clean_cached_xml(dirty_app_xml, dirty_user_xml, options)
-            cache_miss = false unless status_xml.nil? || status_result.nil? || violation
-          end
-        end
-
-        if cache_miss
-          report_cache_miss
-          status, service, application, user = yield
-          combination_save(data_combination) unless data_combination.nil? || !caching_allowed
-          status_xml = nil
-          status_result = nil
-        else
-          report_cache_hit
-        end
-
-        [status, status_xml, status_result, rejection_reason, lowest_limit_exceeded,
-         service, application, user, service_id]
+        status
       end
 
       def load_user!(application, service, user_id)
@@ -278,21 +214,6 @@ module ThreeScale
             end
           end
         end
-      end
-
-      ## this is required because values are checked only on creation of the status
-      ## object and this does not happen on cache, no need to do the same for the metrics
-      ## because those are covered by the signature
-
-      def check_values_of_usage(usage)
-        usage.each do |metric, value|
-          raise UsageValueInvalid.new(metric, value) unless sane_value?(value)
-        end
-      end
-
-      ## duplicated in metric/collection.rb
-      def sane_value?(value)
-        value.is_a?(Numeric) || value.to_s =~ /\A\s*#?\d+\s*\Z/
       end
 
       def report_enqueue(service_id, data, context_info)
