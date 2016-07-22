@@ -139,10 +139,21 @@ module ThreeScale
         end
 
         def load_usage_reports(what, type)
+          # We might have usage limits that apply to metrics that no longer
+          # exist. In that case, the usage limit refers to a metric ID that no
+          # longer has a name associated to it. When that happens, we do not
+          # want to take into account that usage limit.
+          # This might happen, for example, when a Backend client decides to delete
+          # a metric and all the associated usage limits, but the operation fails
+          # for some of the usage limits.
+
           return [] if what.nil?
-          what.usage_limits.map do |usage_limit|
-            UsageReport.new self, usage_limit, type
+          reports = what.usage_limits.map do |usage_limit|
+            report = UsageReport.new self, usage_limit, type
+            report if report.metric_name
           end
+          reports.compact!
+          reports
         end
 
         def aux_reports_to_xml(report_type, reports)

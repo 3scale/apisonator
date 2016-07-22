@@ -54,6 +54,23 @@ module Transactor
       end
     end
 
+    test 'does not contain usage reports that have an empty metric name' do
+      metric = Metric.save(:service_id => @service_id,
+                           :id         => @metric_id,
+                           :name       => 'a_metric_name')
+
+      UsageLimit.save(:service_id => @service_id,
+                      :plan_id    => @plan_id,
+                      :metric_id  => metric.id,
+                      :month      => 2000)
+
+      Metric.delete(@service_id, metric.id)
+      # We do not delete the usage limit that affects the metric
+
+      status = Transactor::Status.new(:service => @service, :application => @application)
+      assert_equal 0, status.usage_reports.size
+    end
+
     test 'usage report is marked as exceeded when current value is greater than max value' do
       UsageLimit.save(:service_id => @service_id,
                       :plan_id    => @plan_id,
