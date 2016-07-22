@@ -9,9 +9,6 @@ module ThreeScale
         REDIRECT_URI_FIELD = 'redirect_url'.freeze
         private_constant :REDIRECT_URI_FIELD
 
-        XML_SEPARATOR = '<__separator__/>'.freeze
-        private_constant :XML_SEPARATOR
-
         def initialize(attributes = {})
           @service     = attributes[:service]
           @application = attributes[:application]
