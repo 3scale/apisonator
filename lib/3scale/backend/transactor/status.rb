@@ -124,11 +124,11 @@ module ThreeScale
 
           if !@application.nil? && !options[:exclude_application]
             add_plan(xml, 'plan'.freeze, plan_name)
-            xml << aux_reports_to_xml(:application, application_usage_reports, options)
+            xml << aux_reports_to_xml(:application, application_usage_reports)
           end
           if !@user.nil? && !options[:exclude_user]
             add_plan(xml, 'user_plan'.freeze, user_plan_name)
-            xml << aux_reports_to_xml(:user, user_usage_reports, options)
+            xml << aux_reports_to_xml(:user, user_usage_reports)
           end
 
           xml << '</status>'.freeze
@@ -148,7 +148,7 @@ module ThreeScale
           end
         end
 
-        def aux_reports_to_xml(report_type, reports, options)
+        def aux_reports_to_xml(report_type, reports)
           xml = ''
           unless reports.empty?
             xml_node = if report_type == :application
