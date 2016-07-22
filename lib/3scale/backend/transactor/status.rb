@@ -4,67 +4,10 @@ module ThreeScale
   module Backend
     module Transactor
       class Status
-        class UsageReport
-          def initialize(parent, usage_limit, type)
-            @parent      = parent
-            @usage_limit = usage_limit
-            @type        = type
-          end
-
-          def metric_name
-            if @type==:application
-              @parent.application.metric_name(@usage_limit.metric_id)
-            else
-              @parent.user.metric_name(@usage_limit.metric_id)
-            end
-          end
-
-          def period
-            @usage_limit.period
-          end
-
-          def period_start
-            @parent.timestamp.beginning_of_cycle(period)
-          end
-
-          def period_end
-            @parent.timestamp.end_of_cycle(period)
-          end
-
-          def max_value
-            @usage_limit.value
-          end
-
-          def current_value
-            @parent.value_for_usage_limit(@usage_limit,@type)
-          end
-
-          def exceeded?
-            current_value > max_value
-          end
-
-          def inspect
-            "#<#{self.class.name} period=#{period}" +
-            " metric_name=#{metric_name}" +
-            " max_value=#{max_value}" +
-            " current_value=#{current_value}>"
-          end
-
-          def to_h
-            { period: period,
-              metric_name: metric_name,
-              max_value: max_value,
-              current_value: current_value }
-          end
-        end
-
         # This is the default field we respond with when using OAuth redirects
         # We only use 'redirect_uri' if a request sent such a param. See #397.
         REDIRECT_URI_FIELD = 'redirect_url'.freeze
         private_constant :REDIRECT_URI_FIELD
-
-        XML_SEPARATOR = '<__separator__/>'.freeze
-        private_constant :XML_SEPARATOR
 
         def initialize(attributes = {})
           @service     = attributes[:service]
@@ -124,11 +67,11 @@ module ThreeScale
         end
 
         def application_usage_reports
-          @usage_report ||= load_application_usage_reports
+          @usage_report ||= load_usage_reports @application, :application
         end
 
         def user_usage_reports
-          @user_usage_report ||= load_user_usage_reports
+          @user_usage_report ||= load_usage_reports @user, :user
         end
 
 
@@ -160,7 +103,8 @@ module ThreeScale
             xml << 'true</authorized>'.freeze
           else
             xml << 'false</authorized><reason>'.freeze
-            xml << rejection_reason_text << '</reason>'.freeze
+            xml << rejection_reason_text
+            xml << '</reason>'.freeze
           end
 
           if oauth
@@ -176,14 +120,12 @@ module ThreeScale
           end
 
           if !@application.nil? && !options[:exclude_application]
-            xml << '<plan>'.freeze
-            xml << plan_name.to_s.encode(xml: :text) << '</plan>'.freeze
-            xml << aux_reports_to_xml(:application, application_usage_reports, options)
+            add_plan(xml, 'plan'.freeze, plan_name)
+            xml << aux_reports_to_xml(:application, application_usage_reports)
           end
           if !@user.nil? && !options[:exclude_user]
-            xml << '<user_plan>'.freeze
-            xml << user_plan_name.to_s.encode(xml: :text) << '</user_plan>'.freeze
-            xml << aux_reports_to_xml(:user, user_usage_reports, options)
+            add_plan(xml, 'user_plan'.freeze, user_plan_name)
+            xml << aux_reports_to_xml(:user, user_usage_reports)
           end
 
           xml << '</status>'.freeze
@@ -191,21 +133,30 @@ module ThreeScale
 
         private
 
-        def load_application_usage_reports
-          return [] if @application.nil?
-          @application.usage_limits.map do |usage_limit|
-            UsageReport.new(self, usage_limit, :application)
-          end
+        def add_plan(xml, tag, plan_name)
+          xml << "<#{tag}>"
+          xml << plan_name.to_s.encode(xml: :text) << "</#{tag}>"
         end
 
-        def load_user_usage_reports
-          return [] if @user.nil?
-          @user.usage_limits.map do |usage_limit|
-            UsageReport.new(self, usage_limit, :user)
+        def load_usage_reports(what, type)
+          # We might have usage limits that apply to metrics that no longer
+          # exist. In that case, the usage limit refers to a metric ID that no
+          # longer has a name associated to it. When that happens, we do not
+          # want to take into account that usage limit.
+          # This might happen, for example, when a Backend client decides to delete
+          # a metric and all the associated usage limits, but the operation fails
+          # for some of the usage limits.
+
+          return [] if what.nil?
+          reports = what.usage_limits.map do |usage_limit|
+            report = UsageReport.new self, usage_limit, type
+            report if report.metric_name
           end
+          reports.compact!
+          reports
         end
 
-        def aux_reports_to_xml(report_type, reports, options)
+        def aux_reports_to_xml(report_type, reports)
           xml = ''
           unless reports.empty?
             xml_node = if report_type == :application
@@ -216,25 +167,7 @@ module ThreeScale
             xml << '<'.freeze
             xml << xml_node
             reports.each do |report|
-              attributes = "metric=\"#{report.metric_name}\" " \
-                           "period=\"#{report.period}\""
-              attributes << " exceeded=\"true\"" if report.exceeded?
-              xml << "<usage_report #{attributes}>"
-
-              if report.period != :eternity
-                xml << '<period_start>' << report.period_start.strftime(TIME_FORMAT) << '</period_start>'
-                xml << '<period_end>' << report.period_end.strftime(TIME_FORMAT) << '</period_end>'
-              end
-              xml << '<max_value>' << report.max_value.to_s << '</max_value><current_value>'
-
-              xml << if authorized? && usage && (usage_metric_name = usage[report.metric_name])
-                       # this is a authrep request and therefore we should sum the usage
-                       Usage.get_from usage_metric_name, report.current_value
-                     else
-                       report.current_value
-                     end.to_s
-
-              xml << '</current_value></usage_report>'.freeze
+              xml << report.to_xml
             end
             xml << '</'.freeze
             xml << xml_node
@@ -242,6 +175,7 @@ module ThreeScale
 
           xml
         end
+
       end
     end
   end
