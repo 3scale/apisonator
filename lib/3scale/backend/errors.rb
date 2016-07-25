@@ -257,6 +257,12 @@ module ThreeScale
       end
     end
 
+    class UserRequiresServiceId < Error
+      def initialize
+        super 'User requires a service ID'.freeze
+      end
+    end
+
     class UserRequiresValidService < Error
       def initialize
         super 'User requires a valid service, the service does not exist'.freeze
