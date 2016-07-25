@@ -24,6 +24,10 @@ class UserTest < Test::Unit::TestCase
       User.save!(:service_id => '7001')
     end
 
+    assert_raise UserRequiresServiceId do
+      User.save!(:username => 'username')
+    end
+
     assert_raise UserRequiresValidService do
       User.save!(:username => 'username', :service_id => '7001001001')
     end
