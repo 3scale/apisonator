@@ -8,11 +8,14 @@ module Validators
     def setup
       Storage.instance(true).flushdb
 
-      @application = Application.save(:service_id => next_id,
+      @service = Service.save!(:provider_key => 'a_provider_key', :id => next_id)
+
+      @application = Application.save(:service_id => @service.id,
                                       :id         => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(:application => @application)
+      @status = Transactor::Status.new(:service => @service,
+                                       :application => @application)
     end
 
     test 'succeeds if no application key is defined nor passed' do
@@ -52,6 +55,23 @@ module Validators
 
       assert_equal 'application_key_invalid',          @status.rejection_reason_code
       assert_equal 'application key "bar" is invalid', @status.rejection_reason_text
+    end
+
+    test 'succeeds if service backend version is 1, even when invalid keys are passed' do
+      service = Service.save!(:provider_key => 'provider_key',
+                              :id => next_id,
+                              :backend_version => 1)
+
+      application = Application.save(:service_id => service.id,
+                                     :id => next_id,
+                                     :state => :active)
+
+      status = Transactor::Status.new(:service => service,
+                                      :application => application)
+
+      application.create_key('foo')
+
+      assert Key.apply(status, :app_key => 'non_registered_key')
     end
   end
 end
