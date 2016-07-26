@@ -8,11 +8,14 @@ module Validators
     def setup
       Storage.instance(true).flushdb
 
-      @application = Application.save(:service_id => next_id,
+      @service = Service.save!(:provider_key => 'a_provider_key', :id => next_id)
+
+      @application = Application.save(:service_id => @service.id,
                                       :id         => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(:application => @application)
+      @status = Transactor::Status.new(:service => @service,
+                                       :application => @application)
     end
 
     test 'succeeds if no application key is defined nor passed' do
