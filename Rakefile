@@ -79,7 +79,7 @@ if testable_environment?
 
   desc 'Start a backend_worker in development'
   task :start_worker do
-    system 'ruby -Ilib bin/3scale_backend_worker_no_daemon'
+    system 'ruby -Ilib bin/3scale_backend_worker --no-daemonize'
   end
 
   desc 'Stop a backend_worker in development'
