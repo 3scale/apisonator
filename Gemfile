@@ -10,7 +10,7 @@ gemspec
 #
 platform :ruby do
   gem 'yajl-ruby', '= 1.1.0'
-  gem 'pry-byebug', '~> 3.3.0', groups: [:development]
+  gem 'pry-byebug', '~> 3.4.0', groups: [:development]
 end
 
 group :test do
@@ -21,26 +21,26 @@ group :test do
   gem 'test-unit',   '= 3.2.1'
   gem 'resque_spec', '~> 0.17.0'
   gem 'timecop',     '~> 0.8.0'
-  gem 'rspec',       '~> 3.4.0', require: nil
-  gem 'codeclimate-test-reporter', '~> 0.5.0', require: nil
+  gem 'rspec',       '~> 3.5.0', require: nil
+  gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
   gem 'geminabox', require: false
 end
 
 group :development do
   gem 'sshkit'
   gem 'source2swagger', github: 'unleashed/source2swagger', branch: 'master'
-  gem 'pry',      '~> 0.10.3'
-  gem 'pry-doc',  '~> 0.8.0'
+  gem 'pry',      '~> 0.10.4'
+  gem 'pry-doc',  '~> 0.9.0'
 end
 
 group :development, :test do
-  gem 'rspec_api_documentation', '~> 4.7.0'
+  gem 'rspec_api_documentation', '~> 4.8.0'
 end
 
 # Default server by platform
 gem 'puma', '= 2.15.3'
 # gems required by the runner
-gem 'gli', '~> 2.13.4', require: nil
+gem 'gli', '~> 2.14.0', require: nil
 # Cubert client
 gem 'cubert-client', '= 0.0.12', source: 'https://geminabox'
 # Workers
@@ -59,7 +59,7 @@ gem 'tilt', '= 1.4.1'
 gem 'sinatra', '= 1.4.7'
 gem 'sinatra-contrib', '= 1.4.7'
 gem 'aws-sdk', '= 2.4.2'
-gem 'whenever', '= 0.9.4'
+gem 'whenever', '= 0.9.7'
 gem 'pg', '= 0.18.4'
 gem 'scientist', '= 1.0.0'
 gem 'statsd-ruby', '= 1.3.0'
