@@ -21,7 +21,7 @@ group :test do
   gem 'test-unit',   '= 3.2.1'
   gem 'resque_spec', '~> 0.17.0'
   gem 'timecop',     '~> 0.8.0'
-  gem 'rspec',       '~> 3.4.0', require: nil
+  gem 'rspec',       '~> 3.5.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.5.0', require: nil
   gem 'geminabox', require: false
 end
@@ -34,7 +34,7 @@ group :development do
 end
 
 group :development, :test do
-  gem 'rspec_api_documentation', '~> 4.7.0'
+  gem 'rspec_api_documentation', '~> 4.8.0'
 end
 
 # Default server by platform
