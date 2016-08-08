@@ -10,7 +10,7 @@ gemspec
 #
 platform :ruby do
   gem 'yajl-ruby', '= 1.1.0'
-  gem 'pry-byebug', '~> 3.3.0', groups: [:development]
+  gem 'pry-byebug', '~> 3.4.0', groups: [:development]
 end
 
 group :test do
@@ -29,8 +29,8 @@ end
 group :development do
   gem 'sshkit'
   gem 'source2swagger', github: 'unleashed/source2swagger', branch: 'master'
-  gem 'pry',      '~> 0.10.3'
-  gem 'pry-doc',  '~> 0.8.0'
+  gem 'pry',      '~> 0.10.4'
+  gem 'pry-doc',  '~> 0.9.0'
 end
 
 group :development, :test do
