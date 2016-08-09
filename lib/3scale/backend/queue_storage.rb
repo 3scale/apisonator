@@ -3,25 +3,21 @@ require 'redis'
 module ThreeScale
   module Backend
     class QueueStorage
-      def self.connection(env, configuration)
-        if %w(development test).include?(env)
-          Redis.new
-        else
-          if valid_configuration?(configuration)
-            init_params = { url: "redis://#{configuration.queues.master_name}" }
-            sentinels = configuration.queues.sentinels
-            init_params[:sentinels] = sentinels unless sentinels.empty?
-            Redis.new(init_params)
-          else
-            raise "Configuration must have a valid queues section."
-          end
+      def self.connection(env, cfg)
+        init_params = { driver: :hiredis }
+        if !%w(development test).include?(env)
+          raise 'Configuration must have a valid queues section' if !valid_cfg?(cfg)
+          init_params[:url] = "redis://#{cfg.queues.master_name}"
+          sentinels = cfg.queues.sentinels
+          init_params[:sentinels] = sentinels unless sentinels.empty?
         end
+        Redis.new(init_params)
       end
 
       private
 
-      def self.valid_configuration?(config)
-        config.queues && config.queues.master_name && config.queues.sentinels
+      def self.valid_cfg?(cfg)
+        cfg.queues && cfg.queues.master_name && cfg.queues.sentinels
       end
     end
   end
