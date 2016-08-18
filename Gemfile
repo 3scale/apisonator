@@ -31,6 +31,7 @@ group :development do
   gem 'source2swagger', github: 'unleashed/source2swagger', branch: 'master'
   gem 'pry',      '~> 0.10.4'
   gem 'pry-doc',  '~> 0.9.0'
+  gem 'license_finder', '~> 2.1.2'
 end
 
 group :development, :test do
