@@ -1,0 +1,38 @@
+---
+- - :whitelist
+  - MIT
+  - :who: David
+    :why: 
+    :versions: []
+    :when: 2016-08-16 09:25:15.635515271 Z
+- - :whitelist
+  - Apache 2.0
+  - :who: David
+    :why: 
+    :versions: []
+    :when: 2016-08-16 09:26:31.814319646 Z
+- - :whitelist
+  - MIT-LICENSE
+  - :who: David
+    :why: It's the same as MIT
+    :versions: []
+    :when: 2016-08-16 09:27:49.047135842 Z
+- - :license
+  - rake
+  - MIT
+  - :who: David
+    :why: 
+    :versions: []
+    :when: 2016-08-18 15:16:38.712225384 Z
+- - :whitelist
+  - 3scale_backend
+  - :who: David
+    :why: It's this project. Strange that license_finder shows it.
+    :versions: []
+    :when: 2016-08-18 15:18:39.314149125 Z
+- - :whitelist
+  - cubert-client
+  - :who: David
+    :why: It's from 3scale.
+    :versions: []
+    :when: 2016-08-18 15:18:48.222064172 Z
