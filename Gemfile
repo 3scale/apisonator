@@ -28,7 +28,7 @@ end
 
 group :development do
   gem 'sshkit'
-  gem 'source2swagger', github: 'unleashed/source2swagger', branch: 'master'
+  gem 'source2swagger', github: '3scale/source2swagger', branch: 'backend'
   gem 'pry',      '~> 0.10.4'
   gem 'pry-doc',  '~> 0.9.0'
 end
