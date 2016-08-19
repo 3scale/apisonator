@@ -24,13 +24,13 @@
     :why:
     :versions: []
     :when: 2016-08-18 15:16:38.712225384 Z
-- - :whitelist
+- - :approve
   - 3scale_backend
   - :who: David
     :why: It's this project. Strange that license_finder shows it.
     :versions: []
     :when: 2016-08-18 15:18:39.314149125 Z
-- - :whitelist
+- - :approve
   - cubert-client
   - :who: David
     :why: It's from 3scale.
