@@ -1,7 +1,7 @@
 GIT
-  remote: git://github.com/unleashed/source2swagger.git
-  revision: e7a8cb18b2d52d5f4b791fd86b19622a7df3c444
-  branch: master
+  remote: git://github.com/3scale/source2swagger.git
+  revision: 9a787007577fc58b5822b55720e977cc063057fd
+  branch: backend
   specs:
     source2swagger (0.0.2)
       json
@@ -237,4 +237,4 @@ DEPENDENCIES
   yajl-ruby (= 1.1.0)
 
 BUNDLED WITH
-   1.12.2
+   1.12.5
