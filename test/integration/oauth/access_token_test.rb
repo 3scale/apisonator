@@ -277,8 +277,10 @@ class AccessTokenTest < Test::Unit::TestCase
   end
 
   test 'create oauth_access_token with invalid token returns 422' do
-    s = (0...OAuth::Token::Storage.const_get(:MAXIMUM_TOKEN_SIZE)+1).map { (65 + rand(25)).chr }.join
-    ['', nil, [], {}, s].each do |token|
+    s = (0...OAuth::Token::Storage.const_get(:MAXIMUM_TOKEN_SIZE)-1).map { (65 + rand(25)).chr }.join
+    # includes a string whose length is <= MAXIMUM_TOKEN_SIZE but whose
+    # bytesize is over the limit because of UTF-8
+    ['', nil, [], {}, s + 'AB', s + 'β'].each do |token|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => token
