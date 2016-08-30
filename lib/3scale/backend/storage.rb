@@ -15,6 +15,14 @@ module ThreeScale
         @@instance
       end
 
+      def self.max_key_length
+        # currently this is hardcoded to be the Twemproxy limit minus
+        # additional safety space we reserve for prefixes and potential
+        # combination of long parameters (256 bytes)
+        # MBUF_SIZE - MBUF_HDR_SIZE - 256
+        8192 - 48 - 256
+      end
+
       def host_and_port(server)
         host, port = server.split(':')
         port       = port.to_i

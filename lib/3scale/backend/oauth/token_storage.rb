@@ -3,7 +3,7 @@ module ThreeScale
     module OAuth
       class Token
         module Storage
-          MAXIMUM_TOKEN_SIZE = 1024
+          MAXIMUM_TOKEN_SIZE = ThreeScale::Backend::Storage.max_key_length
           private_constant :MAXIMUM_TOKEN_SIZE
           TOKEN_MAX_REDIS_SLICE_SIZE = 500
           private_constant :TOKEN_MAX_REDIS_SLICE_SIZE
@@ -16,7 +16,7 @@ module ThreeScale
             include Backend::StorageHelpers
 
             def create(token, service_id, app_id, user_id, ttl = nil)
-              return false if token.nil? || token.empty? || !token.is_a?(String) || token.size > MAXIMUM_TOKEN_SIZE
+              return false if token.nil? || token.empty? || !token.is_a?(String) || token.bytesize > MAXIMUM_TOKEN_SIZE
 
               key = Key.for token, service_id
               raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
