@@ -52,12 +52,12 @@ module ThreeScale
         max_utilization = 0
         max_record = 0
 
-        max_utilization, max_record = ThreeScale::Backend::Alerts.utilization(status) if status.usage_reports.size > 0
+        max_utilization, max_record = ThreeScale::Backend::Alerts.utilization(status) if status.application_usage_reports.size > 0
         max_utilization = (max_utilization * 100.to_f).round
 
         stats = ThreeScale::Backend::Alerts.stats(service_id, application_id)
 
-        [status.usage_reports, max_record, max_utilization, stats]
+        [status.application_usage_reports, max_record, max_utilization, stats]
       end
 
       private

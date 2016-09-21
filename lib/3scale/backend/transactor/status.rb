@@ -62,10 +62,6 @@ module ThreeScale
           @user.plan_name unless @user.nil?
         end
 
-        def usage_reports
-          application_usage_reports
-        end
-
         def application_usage_reports
           @usage_report ||= load_usage_reports @application, :application
         end

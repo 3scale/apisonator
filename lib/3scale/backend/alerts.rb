@@ -23,13 +23,13 @@ module ThreeScale
           end
         end
 
-        status.usage_reports.each(&max)
+        status.application_usage_reports.each(&max)
         status.user_usage_reports.each(&max)
 
         if max_utilization == -1
           ## case that all the limits have max_value==0
           max_utilization = 0
-          max_record = status.usage_reports.first || status.user_usage_reports.first
+          max_record = status.application_usage_reports.first || status.user_usage_reports.first
         end
 
         [max_utilization, max_record]
