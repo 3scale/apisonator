@@ -35,12 +35,8 @@ module ThreeScale
         def parse_usage(raw_usage)
           raw_usage.inject({}) do |usage, (name, value)|
             name      = sanitize_name(name)
-            metric_id = metric_id(name)
-
-            raise MetricInvalid.new(name)            unless metric_id
             raise UsageValueInvalid.new(name, value) unless sane_value?(value)
-
-            usage.update(metric_id => value)
+            usage.update(metric_id(name) => value)
           end
         end
 
@@ -83,7 +79,7 @@ module ThreeScale
           Memoizer.memoize_block(Memoizer.build_key(self,
                                         :load_metric_id, @service_id, name)) do
             storage.get(encode_key("metric/service_id:#{@service_id}/name:#{name}/id"))
-          end
+          end || raise(MetricInvalid.new(name))
         end
 
         def sanitize_name(name)
