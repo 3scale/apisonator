@@ -46,7 +46,8 @@ module ThreeScale
 
         def process_ancestors(usage)
           usage.keys.inject(usage.dup) do |memo, id|
-            ancestor_id(id).each do |ancestor_id|
+            ancestor_id = parent_id(id)
+            if ancestor_id
               if Usage.is_set? memo[id]
                 memo[ancestor_id] = memo[id]
               else
@@ -61,22 +62,6 @@ module ThreeScale
 
             memo
           end
-        end
-
-        # FIXME: as of right now the maximum depth of metrics/methods is 1, therefore let's skip the extra query
-        # by using the ancestor_id method instead
-        def ancestors_ids(id)
-          results = []
-          while id_of_parent = parent_id(id)
-            results << id_of_parent
-            id = id_of_parent
-          end
-
-          results
-        end
-
-        def ancestor_id(id)
-          [parent_id(id)].compact
         end
 
         def parent_id(id)
