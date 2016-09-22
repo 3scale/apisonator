@@ -34,7 +34,7 @@ module ThreeScale
 
         def parse_usage(raw_usage)
           raw_usage.inject({}) do |usage, (name, value)|
-            name      = sanitize_name(name)
+            name = name.strip
             raise UsageValueInvalid.new(name, value) unless sane_value?(value)
             usage.update(metric_id(name) => value)
           end
@@ -80,10 +80,6 @@ module ThreeScale
                                         :load_metric_id, @service_id, name)) do
             storage.get(encode_key("metric/service_id:#{@service_id}/name:#{name}/id"))
           end || raise(MetricInvalid.new(name))
-        end
-
-        def sanitize_name(name)
-          name.strip
         end
 
         ## accepts postive integers or positive integers preffixed with # (for sets)
