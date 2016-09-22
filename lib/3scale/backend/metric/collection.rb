@@ -51,10 +51,10 @@ module ThreeScale
               if Usage.is_set? memo[id]
                 memo[ancestor_id] = memo[id]
               else
-                memo[ancestor_id] ||= 0
                 # need the to_i here instead of in parse_usage because the value
                 # can be a string if the ancestor is passed explictly on the
                 # usage since the value might not be a Fixnum but a '#'Fixnum
+                # (also because memo[ancestor_id] might be nil)
                 memo[ancestor_id] = memo[ancestor_id].to_i
                 memo[ancestor_id] += memo[id].to_i
               end
