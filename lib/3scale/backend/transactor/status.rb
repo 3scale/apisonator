@@ -18,6 +18,7 @@ module ThreeScale
           @user        = attributes[:user]
           @user_values = attributes[:user_values]
           @timestamp   = attributes[:timestamp] || Time.now.getutc
+          @hierarchy   = attributes[:hierarchy]
 
           if (@application.nil? and @user.nil?)
             raise ':application is required'

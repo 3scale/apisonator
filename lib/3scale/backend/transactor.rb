@@ -131,6 +131,10 @@ module ThreeScale
           oauth:       oauth,
           usage:       report_usage ? params[:usage] : nil,
           values:      usage_values,
+          # hiearchy parameter adds information in the response needed
+          # to derive which limits affect directly or indirectly the
+          # metrics for which authorization is requested.
+          hierarchy:   params[:hierarchy],
           user:        user,
         }
 
