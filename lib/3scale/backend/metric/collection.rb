@@ -61,14 +61,7 @@ module ThreeScale
         end
 
         def parent_id(id)
-          @parent_ids[id] ||= load_ancestor_id(id)
-        end
-
-        def load_ancestor_id(id)
-          Memoizer.memoize_block(Memoizer.build_key(self,
-                                        :load_ancestor_id, @service_id, id)) do
-            storage.get(encode_key("metric/service_id:#{@service_id}/id:#{id}/parent_id"))
-          end
+          @parent_ids[id] ||= Metric.load_ancestor_id(@service_id, id)
         end
 
         def metric_id(name)
