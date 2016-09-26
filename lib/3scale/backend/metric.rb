@@ -114,6 +114,28 @@ module ThreeScale
           metrics
         end
 
+        # Returns a hash where the keys can only be parent metric ids (as
+        # Strings) that **have** children (one or more), and their values are
+        # arrays of children (so always non-empty).
+        #
+        # So hierarchy(s_id)[children_metric] is always going to be nil.
+        #
+        def hierarchy(service_id)
+          load_all_ids(service_id).inject({}) do |acc, metric_id|
+            parent_id = load_parent_id(service_id, metric_id)
+            if parent_id
+              acc[parent_id] ||= []
+              acc[parent_id] << metric_id
+            end
+            acc
+          end
+        end
+        memoize :hierarchy
+
+        def children(service_id, id)
+          hierarchy(service_id)[id.to_s]
+        end
+
         def delete(service_id, id)
           name = load_name(service_id, id)
           return false unless name and not name.empty?
