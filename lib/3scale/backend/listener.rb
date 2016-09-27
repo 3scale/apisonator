@@ -15,11 +15,11 @@ module ThreeScale
       ##~ sapi.apiVersion = "1.0"
       ##
       ## ------------ DOCS COMMON -------
-      ##~ @parameter_provider_key = {"name" => "provider_key", "dataType" => "string", "required" => true, "paramType" => "query", "threescale_name" => "api_keys"}
-      ##~ @parameter_provider_key["description"] = "Your api key with 3scale (also known as provider key)."
+      ##~ @parameter_service_token = {"name" => "service_token", "dataType" => "string", "required" => true, "paramType" => "query", "threescale_name" => "service_tokens"}
+      ##~ @parameter_service_token["description"] = "Your service api key with 3scale (also known as service token)."
       ##
-      ##~ @parameter_service_id = {"name" => "service_id", "dataType" => "string", "paramType" => "query", "threescale_name" => "service_ids"}
-      ##~ @parameter_service_id["description"] = "Service id. Required only if you have more than one service."
+      ##~ @parameter_service_id = {"name" => "service_id", "dataType" => "string", "required" => true, "paramType" => "query", "threescale_name" => "service_ids"}
+      ##~ @parameter_service_id["description"] = "Service id. Required."
       ##
       ##~ @parameter_app_id = {"name" => "app_id", "dataType" => "string", "required" => true, "paramType" => "query", "threescale_name" => "app_ids"}
       ##~ @parameter_app_id["description"] = "App Id (identifier of the application if the auth. pattern is App Id)"
@@ -214,7 +214,7 @@ module ThreeScale
       ##~ op.description = "<p>Read-only operation to authorize an application in the App Id authentication pattern." + " "+ @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_app_id
       ##~ op.parameters.add @parameter_app_key
@@ -231,7 +231,7 @@ module ThreeScale
       ##~ op.description = "Read-only operation to authorize an application in the App Key authentication pattern." + " "+ @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_user_key
       ##~ op.parameters.add @parameter_referrer
@@ -256,7 +256,7 @@ module ThreeScale
       ##~ op.description = op.description + " " + @authorize_desc + " " + @authorize_desc_response
       ##~ op.group = "authorize"
       ##
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
@@ -288,7 +288,7 @@ module ThreeScale
       ##~ op.description = @authrep_desc_base + @authrep_desc
       ##~ op.group = "authrep"
       ##
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_app_id
       ##~ op.parameters.add @parameter_app_key
@@ -306,7 +306,7 @@ module ThreeScale
       ##~ op.description = @authrep_desc_base + @authrep_desc
       ##~ op.group = "authrep"
       ##
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_user_key
       ##~ op.parameters.add @parameter_referrer
@@ -330,7 +330,7 @@ module ThreeScale
       ##~ op.description = op.description + @authrep_desc + @oauth_desc_response
       ##~ op.group = "authrep"
       ##
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
@@ -358,7 +358,7 @@ module ThreeScale
       ##~ @report_desc = @report_desc + " transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend."
       ##~ @report_desc = @report_desc + "<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in"
       ##~ @report_desc = @report_desc + " processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same"
-      ##~ @report_desc = @report_desc + " service, <em>service_id</em> is at the same level that <em>provider_key</em>. Multiple report calls will have to be issued to report"
+      ##~ @report_desc = @report_desc + " service, <em>service_id</em> is at the same level that <em>service_token</em>. Multiple report calls will have to be issued to report"
       ##~ @report_desc = @report_desc + " transactions to different services."
       ##~ @report_desc = @report_desc + "<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect."
       ##~ @report_desc = @report_desc + @post_notes
@@ -366,7 +366,7 @@ module ThreeScale
       ##~ op.description = @report_desc
       ##~ op.group = "report"
       #
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_transaction_app_id
       ##
@@ -378,7 +378,7 @@ module ThreeScale
       ##~ op.description = @report_desc
       ##~ op.group = "report"
       #
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_transaction_api_key
       ##
@@ -390,7 +390,7 @@ module ThreeScale
       ##~ op.description = @report_desc
       ##~ op.group = "report"
       #
-      ##~ op.parameters.add @parameter_provider_key
+      ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_transaction_oauth
       ##
