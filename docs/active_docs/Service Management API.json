@@ -14,19 +14,20 @@
           "group": "authorize",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "app_id",
@@ -97,19 +98,20 @@
           "group": "authorize",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "user_key",
@@ -172,19 +174,20 @@
           "group": "authorize",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "access_token",
@@ -263,19 +266,20 @@
           "group": "authrep",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "app_id",
@@ -371,19 +375,20 @@
           "group": "authrep",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "user_key",
@@ -473,19 +478,20 @@
           "group": "authrep",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "access_token",
@@ -591,23 +597,24 @@
         {
           "httpMethod": "POST",
           "summary": "Report (App Id authentication pattern)",
-          "description": "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend.<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same service, <em>service_id</em> is at the same level that <em>provider_key</em>. Multiple report calls will have to be issued to report transactions to different services.<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect.<p>Supported <code class='http'>Content-Type</code> values for this POST call are: <code class='http'>application/x-www-form-urlencoded</code>.",
+          "description": "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend.<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same service, <em>service_id</em> is at the same level that <em>service_token</em>. Multiple report calls will have to be issued to report transactions to different services.<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect.<p>Supported <code class='http'>Content-Type</code> values for this POST call are: <code class='http'>application/x-www-form-urlencoded</code>.",
           "group": "report",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "transactions",
@@ -704,23 +711,24 @@
         {
           "httpMethod": "POST",
           "summary": "Report (API Key authentication pattern)",
-          "description": "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend.<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same service, <em>service_id</em> is at the same level that <em>provider_key</em>. Multiple report calls will have to be issued to report transactions to different services.<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect.<p>Supported <code class='http'>Content-Type</code> values for this POST call are: <code class='http'>application/x-www-form-urlencoded</code>.",
+          "description": "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend.<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same service, <em>service_id</em> is at the same level that <em>service_token</em>. Multiple report calls will have to be issued to report transactions to different services.<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect.<p>Supported <code class='http'>Content-Type</code> values for this POST call are: <code class='http'>application/x-www-form-urlencoded</code>.",
           "group": "report",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "transactions",
@@ -817,23 +825,24 @@
         {
           "httpMethod": "POST",
           "summary": "Report (OAuth authentication pattern)",
-          "description": "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend.<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same service, <em>service_id</em> is at the same level that <em>provider_key</em>. Multiple report calls will have to be issued to report transactions to different services.<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect.<p>Supported <code class='http'>Content-Type</code> values for this POST call are: <code class='http'>application/x-www-form-urlencoded</code>.",
+          "description": "<p>Report the transactions to 3scale backend.<p>This operation updates the metrics passed in the usage parameter. You can send up to 1K transactions in a single POST request. Transactions are processed asynchronously by the 3scale's backend.<p>Transactions from a single batch are reported only if all of them are valid. If there is an error in processing of at least one of them, none is reported.<p>Note that a batch can only report transactions to the same service, <em>service_id</em> is at the same level that <em>service_token</em>. Multiple report calls will have to be issued to report transactions to different services.<p>Be aware that reporting metrics that are limited at the time of reporting will have no effect.<p>Supported <code class='http'>Content-Type</code> values for this POST call are: <code class='http'>application/x-www-form-urlencoded</code>.",
           "group": "report",
           "parameters": [
             {
-              "name": "provider_key",
+              "name": "service_token",
               "dataType": "string",
               "required": true,
               "paramType": "query",
-              "threescale_name": "api_keys",
-              "description": "Your api key with 3scale (also known as provider key)."
+              "threescale_name": "service_tokens",
+              "description": "Your service api key with 3scale (also known as service token)."
             },
             {
               "name": "service_id",
               "dataType": "string",
+              "required": true,
               "paramType": "query",
               "threescale_name": "service_ids",
-              "description": "Service id. Required only if you have more than one service."
+              "description": "Service id. Required."
             },
             {
               "name": "transactions",
