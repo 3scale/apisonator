@@ -116,19 +116,51 @@ module ThreeScale
             end
           end
 
+          hierarchy_reports = [] if @hierarchy
           if !@application.nil? && !options[:exclude_application]
             add_plan(xml, 'plan'.freeze, plan_name)
             xml << aux_reports_to_xml(application_usage_reports)
+            hierarchy_reports.concat application_usage_reports if hierarchy_reports
           end
           if !@user.nil? && !options[:exclude_user]
             add_plan(xml, 'user_plan'.freeze, user_plan_name)
             xml << aux_reports_to_xml(user_usage_reports, true)
+            hierarchy_reports.concat user_usage_reports if hierarchy_reports
+          end
+
+          if hierarchy_reports
+            add_hierarchy(xml, hierarchy_reports)
           end
 
           xml << '</status>'.freeze
         end
 
         private
+
+        def add_hierarchy(xml, reports)
+          xml << '<hierarchy>'.freeze
+          generate_hierarchy_info(reports).each do |metric_name, children|
+            xml << '<metric name="'.freeze
+            xml << metric_name << '" children="'.freeze
+            xml << children.join(' '.freeze) << '"/>'.freeze
+          end
+          xml << '</hierarchy>'.freeze
+        end
+
+        def generate_hierarchy_info(reports)
+          service_id = @service.id
+          reports.inject({}) do |acc, ur|
+            metric_name = ur.metric_name
+            next acc unless acc[metric_name].nil?
+            children_ids = Metric.children(service_id, ur.metric_id)
+            next acc unless children_ids
+            children = children_ids.map do |id|
+                         Metric.load_name(service_id, id)
+                       end
+            acc[metric_name] = children unless children.empty?
+            acc
+          end
+        end
 
         def add_plan(xml, tag, plan_name)
           xml << "<#{tag}>"
