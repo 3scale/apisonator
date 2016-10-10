@@ -143,12 +143,14 @@ module ThreeScale
           # a metric and all the associated usage limits, but the operation fails
           # for some of the usage limits.
 
-          return [] if what.nil?
-          reports = what.usage_limits.map do |usage_limit|
-            report = UsageReport.new self, usage_limit, type
-            report if report.metric_name
+          reports = []
+          if !what.nil?
+            what.usage_limits.each do |usage_limit|
+              if what.metric_name(usage_limit.metric_id)
+                reports << UsageReport.new(self, usage_limit, type)
+              end
+            end
           end
-          reports.compact!
           reports
         end
 
