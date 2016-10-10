@@ -48,6 +48,51 @@ class MetricTest < Test::Unit::TestCase
     assert_nil Metric.load_parent_id(metric.service_id, metric.id)
   end
 
+  def test_hierarchy_with_children
+    service_id = 1001
+    parent1 = { service_id: service_id, id: 2020, name: 'parent1' }
+    parent2 = { service_id: service_id, id: 2030, name: 'parent2' }
+
+    metric1 = Metric.new(parent1)
+    metric1.children << Metric.new(:id => parent1[:id] + 1, :name => 'p1_children1')
+    metric1.children << Metric.new(:id => parent1[:id] + 2, :name => 'p1_children2')
+    metric1.save
+
+    metric2 = Metric.new(parent2)
+    metric2.children << Metric.new(:id => parent2[:id] + 1, :name => 'p2_children1')
+    metric2.save
+
+    mh = Metric.hierarchy(service_id)
+    assert_equal metric1.children.map(&:id).sort, mh[parent1[:id].to_s].map(&:to_i).sort
+    assert_equal metric2.children.map(&:id).sort, mh[parent2[:id].to_s].map(&:to_i).sort
+
+    # assert that children don't have any children themselves
+    assert([metric1.children, metric2.children].all? do |mc|
+      mc.all? do |m|
+        mh[m.id.to_s].nil?
+      end
+    end)
+
+    mc = Metric.children(1001, parent1[:id])
+    assert_equal metric1.children.map(&:id).sort, mc.map(&:to_i).sort
+  end
+
+  def test_hierarchy_without_children
+    service_id = 1001
+    parent_id = 2040
+    parent = { service_id: service_id, id: parent_id, name: 'parent_wo_children' }
+    metric = Metric.new(parent)
+    metric.save
+
+    assert_empty metric.children
+    assert_nil Metric.children(1001, parent_id)
+
+    mh = Metric.hierarchy(service_id)
+
+    assert_nil mh[parent[:id].to_s]
+    assert mh.values.all? { |children| !children.include?(parent_id.to_s) }
+  end
+
   def test_rename
     # renames should behave like saves but reverse mappings should be deleted
     # and names updated.
