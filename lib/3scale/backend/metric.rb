@@ -103,10 +103,10 @@ module ThreeScale
         end
         memoize :load_all_names
 
-        def load_ancestor_id(service_id, id)
+        def load_parent_id(service_id, id)
           storage.get(key(service_id, id, :parent_id))
         end
-        memoize :load_ancestor_id
+        memoize :load_parent_id
 
         def save(attributes)
           metrics = new(attributes)

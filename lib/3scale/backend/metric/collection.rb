@@ -27,7 +27,7 @@ module ThreeScale
         def process_usage(raw_usage)
           return {} unless raw_usage
           usage = parse_usage(raw_usage)
-          process_ancestors(usage)
+          process_parents(usage)
         end
 
         private
@@ -40,19 +40,19 @@ module ThreeScale
           end
         end
 
-        def process_ancestors(usage)
+        def process_parents(usage)
           usage.keys.inject(usage.dup) do |memo, id|
-            ancestor_id = parent_id(id)
-            if ancestor_id
+            p_id = parent_id(id)
+            if p_id
               if Usage.is_set? memo[id]
-                memo[ancestor_id] = memo[id]
+                memo[p_id] = memo[id]
               else
                 # need the to_i here instead of in parse_usage because the value
-                # can be a string if the ancestor is passed explictly on the
-                # usage since the value might not be a Fixnum but a '#'Fixnum
-                # (also because memo[ancestor_id] might be nil)
-                memo[ancestor_id] = memo[ancestor_id].to_i
-                memo[ancestor_id] += memo[id].to_i
+                # can be a string if the parent is passed explictly on the usage
+                # since the value might not be a Fixnum but a '#'Fixnum
+                # (also because memo[p_id] might be nil)
+                memo[p_id] = memo[p_id].to_i
+                memo[p_id] += memo[id].to_i
               end
             end
 
@@ -61,7 +61,7 @@ module ThreeScale
         end
 
         def parent_id(id)
-          @parent_ids[id] ||= Metric.load_ancestor_id(@service_id, id)
+          @parent_ids[id] ||= Metric.load_parent_id(@service_id, id)
         end
 
         def metric_id(name)
