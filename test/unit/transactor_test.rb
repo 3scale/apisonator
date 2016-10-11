@@ -148,15 +148,15 @@ class TransactorTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 14)) do
       status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
-      assert_equal 2, status.usage_reports.count
+      assert_equal 2, status.application_usage_reports.count
 
-      report_month = status.usage_reports.find { |report| report.period == :month }
+      report_month = status.application_usage_reports.find { |report| report.period == :month }
       assert_not_nil       report_month
       assert_equal 'hits', report_month.metric_name
       assert_equal 5,      report_month.current_value
       assert_equal 10000,  report_month.max_value
 
-      report_day = status.usage_reports.find { |report| report.period == :day }
+      report_day = status.application_usage_reports.find { |report| report.period == :day }
       assert_not_nil       report_day
       assert_equal 'hits', report_day.metric_name
       assert_equal 2,      report_day.current_value
@@ -180,7 +180,7 @@ class TransactorTest < Test::Unit::TestCase
 
   test 'authorize returns status object without usage reports if the plan has no usage limits' do
     status = Transactor.authorize(@provider_key, :app_id => @application_one.id)
-    assert_equal 0, status.usage_reports.count
+    assert_equal 0, status.application_usage_reports.count
   end
 
   test 'authorize raises an exception when provider key is invalid' do
@@ -261,7 +261,7 @@ class TransactorTest < Test::Unit::TestCase
 
   test_authrep 'returns status object without usage reports if the plan has no usage limits' do |_, method|
     status = Transactor.send(method, @provider_key, :app_id => @application_one.id)
-    assert_equal 0, status.usage_reports.count
+    assert_equal 0, status.application_usage_reports.count
   end
 
   test_authrep 'raises an exception when provider key is invalid' do |_, method|

@@ -37,6 +37,17 @@ class MetricTest < Test::Unit::TestCase
     assert_equal ['2001', '2002'], storage.smembers("metrics/service_id:1001/ids").sort
   end
 
+  def test_load_parent_id
+    parent_id = 2011
+    metric = Metric.new(:service_id => 1001, :id => parent_id, :name => 'hits')
+    child = Metric.new(:id => 2012, :name => 'search_queries')
+    metric.children << child
+    metric.save
+
+    assert_equal parent_id, Metric.load_parent_id(metric.service_id, child.id).to_i
+    assert_nil Metric.load_parent_id(metric.service_id, metric.id)
+  end
+
   def test_rename
     # renames should behave like saves but reverse mappings should be deleted
     # and names updated.

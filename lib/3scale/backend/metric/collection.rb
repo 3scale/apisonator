@@ -27,35 +27,32 @@ module ThreeScale
         def process_usage(raw_usage)
           return {} unless raw_usage
           usage = parse_usage(raw_usage)
-          process_ancestors(usage)
+          process_parents(usage)
         end
 
         private
 
         def parse_usage(raw_usage)
           raw_usage.inject({}) do |usage, (name, value)|
-            name      = sanitize_name(name)
-            metric_id = metric_id(name)
-
-            raise MetricInvalid.new(name)            unless metric_id
+            name = name.strip
             raise UsageValueInvalid.new(name, value) unless sane_value?(value)
-
-            usage.update(metric_id => value)
+            usage.update(metric_id(name) => value)
           end
         end
 
-        def process_ancestors(usage)
+        def process_parents(usage)
           usage.keys.inject(usage.dup) do |memo, id|
-            ancestor_id(id).each do |ancestor_id|
+            p_id = parent_id(id)
+            if p_id
               if Usage.is_set? memo[id]
-                memo[ancestor_id] = memo[id]
+                memo[p_id] = memo[id]
               else
-                memo[ancestor_id] ||= 0
                 # need the to_i here instead of in parse_usage because the value
-                # can be a string if the ancestor is passed explictly on the
-                # usage since the value might not be a Fixnum but a '#'Fixnum
-                memo[ancestor_id] = memo[ancestor_id].to_i
-                memo[ancestor_id] += memo[id].to_i
+                # can be a string if the parent is passed explictly on the usage
+                # since the value might not be a Fixnum but a '#'Fixnum
+                # (also because memo[p_id] might be nil)
+                memo[p_id] = memo[p_id].to_i
+                memo[p_id] += memo[id].to_i
               end
             end
 
@@ -63,31 +60,8 @@ module ThreeScale
           end
         end
 
-        # FIXME: as of right now the maximum depth of metrics/methods is 1, therefore let's skip the extra query
-        # by using the ancestor_id method instead
-        def ancestors_ids(id)
-          results = []
-          while id_of_parent = parent_id(id)
-            results << id_of_parent
-            id = id_of_parent
-          end
-
-          results
-        end
-
-        def ancestor_id(id)
-          [parent_id(id)].compact
-        end
-
         def parent_id(id)
-          @parent_ids[id] ||= load_ancestor_id(id)
-        end
-
-        def load_ancestor_id(id)
-          Memoizer.memoize_block(Memoizer.build_key(self,
-                                        :load_ancestor_id, @service_id, id)) do
-            storage.get(encode_key("metric/service_id:#{@service_id}/id:#{id}/parent_id"))
-          end
+          @parent_ids[id] ||= Metric.load_parent_id(@service_id, id)
         end
 
         def metric_id(name)
@@ -98,11 +72,7 @@ module ThreeScale
           Memoizer.memoize_block(Memoizer.build_key(self,
                                         :load_metric_id, @service_id, name)) do
             storage.get(encode_key("metric/service_id:#{@service_id}/name:#{name}/id"))
-          end
-        end
-
-        def sanitize_name(name)
-          name.strip
+          end || raise(MetricInvalid.new(name))
         end
 
         ## accepts postive integers or positive integers preffixed with # (for sets)

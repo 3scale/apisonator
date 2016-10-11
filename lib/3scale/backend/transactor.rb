@@ -52,29 +52,15 @@ module ThreeScale
         max_utilization = 0
         max_record = 0
 
-        max_utilization, max_record = ThreeScale::Backend::Alerts.utilization(status) if status.usage_reports.size > 0
+        max_utilization, max_record = ThreeScale::Backend::Alerts.utilization(status) if status.application_usage_reports.size > 0
         max_utilization = (max_utilization * 100.to_f).round
 
         stats = ThreeScale::Backend::Alerts.stats(service_id, application_id)
 
-        [status.usage_reports, max_record, max_utilization, stats]
+        [status.application_usage_reports, max_record, max_utilization, stats]
       end
 
       private
-
-      def authorize_nocache(method, provider_key, params)
-        oauth = method == :oauth_authorize
-        validate(oauth, provider_key, false, params)
-      end
-
-      def authrep_nocache(method, provider_key, params)
-        oauth = method == :oauth_authrep
-        validate(oauth, provider_key, true, params)
-      rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
-        # we still want to track these
-        notify(provider_key, 'transactions/authorize' => 1)
-        raise e
-      end
 
       def validate(oauth, provider_key, report_usage, params)
         service = load_service!(provider_key, params[:service_id])
@@ -154,16 +140,22 @@ module ThreeScale
 
       def do_authorize(method, provider_key, params)
         notify(provider_key, 'transactions/authorize' => 1)
-        authorize_nocache(method, provider_key, params)
+        validate(method == :oauth_authorize, provider_key, false, params)
       end
 
       def do_authrep(method, provider_key, params)
-        usage = params[:usage]
-        status = authrep_nocache(method, provider_key, params)
+        status = begin
+                   validate(method == :oauth_authrep, provider_key, true, params)
+                 rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
+                   # we still want to track these
+                   notify(provider_key, 'transactions/authorize' => 1)
+                   raise e
+                 end
 
         service_id = status.service.id
         application_id = status.application.id
         username = status.user.username unless status.user.nil?
+        usage = params[:usage]
 
         if (usage || params[:log]) && status.authorized?
           report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})

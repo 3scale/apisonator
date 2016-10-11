@@ -42,9 +42,9 @@ module Transactor
         status = Transactor::Status.new(:application => @application,
                                         :values      => usage)
 
-        assert_equal 1, status.usage_reports.count
+        assert_equal 1, status.application_usage_reports.count
 
-        report = status.usage_reports.first
+        report = status.application_usage_reports.first
         assert_equal :month,               report.period
         assert_equal @metric_name,         report.metric_name
         assert_equal Time.utc(2010, 5, 1), report.period_start
@@ -68,7 +68,7 @@ module Transactor
       # We do not delete the usage limit that affects the metric
 
       status = Transactor::Status.new(:service => @service, :application => @application)
-      assert_equal 0, status.usage_reports.size
+      assert_equal 0, status.application_usage_reports.size
     end
 
     test 'usage report is marked as exceeded when current value is greater than max value' do
@@ -81,7 +81,7 @@ module Transactor
       status = Transactor::Status.new(:application => @application,
                                       :values      => usage)
 
-      assert status.usage_reports.first.exceeded?
+      assert status.application_usage_reports.first.exceeded?
     end
 
     test 'usage report is not marked as exceeded when current value is less than max value' do
@@ -94,7 +94,7 @@ module Transactor
       status = Transactor::Status.new(:application => @application,
                                       :values      => usage)
 
-      assert !status.usage_reports.first.exceeded?
+      assert !status.application_usage_reports.first.exceeded?
     end
 
     test 'usage report is not marked as exceeded when current value equals max value' do
@@ -107,7 +107,7 @@ module Transactor
       status = Transactor::Status.new(:application => @application,
                                       :values      => usage)
 
-      assert !status.usage_reports.first.exceeded?
+      assert !status.application_usage_reports.first.exceeded?
     end
 
     test '#authorized? returns true by default' do

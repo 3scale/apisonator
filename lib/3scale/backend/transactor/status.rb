@@ -62,10 +62,6 @@ module ThreeScale
           @user.plan_name unless @user.nil?
         end
 
-        def usage_reports
-          application_usage_reports
-        end
-
         def application_usage_reports
           @usage_report ||= load_usage_reports @application, :application
         end
@@ -121,11 +117,11 @@ module ThreeScale
 
           if !@application.nil? && !options[:exclude_application]
             add_plan(xml, 'plan'.freeze, plan_name)
-            xml << aux_reports_to_xml(:application, application_usage_reports)
+            xml << aux_reports_to_xml(application_usage_reports)
           end
           if !@user.nil? && !options[:exclude_user]
             add_plan(xml, 'user_plan'.freeze, user_plan_name)
-            xml << aux_reports_to_xml(:user, user_usage_reports)
+            xml << aux_reports_to_xml(user_usage_reports, true)
           end
 
           xml << '</status>'.freeze
@@ -147,22 +143,24 @@ module ThreeScale
           # a metric and all the associated usage limits, but the operation fails
           # for some of the usage limits.
 
-          return [] if what.nil?
-          reports = what.usage_limits.map do |usage_limit|
-            report = UsageReport.new self, usage_limit, type
-            report if report.metric_name
+          reports = []
+          if !what.nil?
+            what.usage_limits.each do |usage_limit|
+              if what.metric_name(usage_limit.metric_id)
+                reports << UsageReport.new(self, usage_limit, type)
+              end
+            end
           end
-          reports.compact!
           reports
         end
 
-        def aux_reports_to_xml(report_type, reports)
+        def aux_reports_to_xml(reports, report_type_user = false)
           xml = ''
           unless reports.empty?
-            xml_node = if report_type == :application
-                         'usage_reports>'.freeze
-                       else
+            xml_node = if report_type_user
                          'user_usage_reports>'.freeze
+                       else
+                         'usage_reports>'.freeze
                        end
             xml << '<'.freeze
             xml << xml_node
