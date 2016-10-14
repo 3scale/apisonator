@@ -680,10 +680,6 @@ module ThreeScale
         ThreeScale::Backend::Validators::Limits
       end
 
-      def formatted_limit_exceeded(usage_limit)
-        "#{usage_limit[:usage]}/#{usage_limit[:max_allowed]}"
-      end
-
       def response_auth_call(auth_status)
         status(auth_status.authorized? ? 200 : 409)
         optionally_set_headers(auth_status, params)
@@ -691,16 +687,8 @@ module ThreeScale
       end
 
       def optionally_set_headers(auth_status, params)
-        unless auth_status.authorized?
-          if params[:rejection_reason_header]
-            response['X-3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
-          end
-
-          if params[:xc_usage_limit_header] &&
-              auth_status.rejection_reason_code == 'limits_exceeded'.freeze
-            lowest_limit_exc = limits_validator.new(auth_status, params).lowest_limit_exceeded
-            response['X-3scale-xc-usage-limit'.freeze] = formatted_limit_exceeded(lowest_limit_exc)
-          end
+        if !auth_status.authorized? && params[:rejection_reason_header]
+          response['X-3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
         end
       end
     end

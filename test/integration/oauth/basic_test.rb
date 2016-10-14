@@ -555,40 +555,4 @@ class OauthBasicTest < Test::Unit::TestCase
     assert_equal 409, last_response.status
     assert_nil last_response.header['X-3scale-rejection-reason']
   end
-
-  test 'resp headers have lowest limit exceeded when 409 and option is in the params' do
-    max_usage_day = 1
-    usage_to_report = max_usage_day + 1
-
-    UsageLimit.save(:service_id => @service.id,
-                    :plan_id => @plan_id,
-                    :metric_id => @metric_id,
-                    :day => max_usage_day)
-
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id => @application.id,
-                                             :usage => { 'hits' => usage_to_report },
-                                             :xc_usage_limit_header => true
-
-    assert_equal 409, last_response.status
-    assert_equal "#{usage_to_report}/#{max_usage_day}",
-                 last_response.header['X-3scale-xc-usage-limit']
-  end
-
-  test 'resp headers do not have lowest limit exceeded when option is not in the params' do
-    max_usage_day = 1
-    usage_to_report = max_usage_day + 1
-
-    UsageLimit.save(:service_id => @service.id,
-                    :plan_id => @plan_id,
-                    :metric_id => @metric_id,
-                    :day => max_usage_day)
-
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id => @application.id,
-                                             :usage => { 'hits' => usage_to_report }
-
-    assert_equal 409, last_response.status
-    assert_nil last_response.header['X-3scale-xc-usage-limit']
-  end
 end
