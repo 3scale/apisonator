@@ -555,4 +555,107 @@ class OauthBasicTest < Test::Unit::TestCase
     assert_equal 409, last_response.status
     assert_nil last_response.header['X-3scale-rejection-reason']
   end
+
+  test 'response includes hierarchy information for metrics affected by usage limits' do
+    plan_id          = next_id
+    parent           = 'parent_metric'
+    parent_id        = next_id
+    metric_child1    = 'child_metric_1'
+    metric_child1_id = next_id
+    metric_child2    = 'child_metric_2'
+    metric_child2_id = next_id
+    parent_limit = 5
+
+    application = Application.save(:service_id => @service.id,
+                                   :id         => next_id,
+                                   :state      => :active,
+                                   :plan_id    => plan_id,
+                                   :plan_name  => 'someplan')
+
+    Metric.save(:service_id => @service.id, :id => parent_id, :name => parent)
+    Metric.save(:service_id => @service.id, :id => metric_child1_id,
+                :name => metric_child1, parent_id: parent_id)
+    Metric.save(:service_id => @service.id, :id => metric_child2_id,
+                :name => metric_child2, parent_id: parent_id)
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => plan_id,
+                    :metric_id  => parent_id,
+                    :day => parent_limit)
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => plan_id,
+                    :metric_id  => metric_child1_id,
+                    :day => parent_limit + 1)
+
+    assertions = lambda do |hierarchy = true|
+      doc = Nokogiri::XML(last_response.body)
+      hierarchy_info = doc.at('hierarchy')
+      if hierarchy
+        assert_not_nil hierarchy_info
+        parent_info = hierarchy_info.at("metric[name = '#{parent}']")
+        assert_not_nil parent_info
+        children_list = parent_info.attribute('children')
+        assert_not_nil children_list
+        assert_equal [metric_child1, metric_child2].sort, children_list.value.split.sort
+      else
+        assert_nil hierarchy_info
+      end
+    end
+
+    # We have 1 parent metric and 2 children metrics, one of them limited.
+    # When we add usage over the "hits" limit for the unlimited metric, we
+    # should see an auth denied, and also children information in the hits usage
+    # report (and none elsewhere).
+
+    Timecop.freeze(Time.utc(2010, 5, 15)) do
+      get '/transactions/oauth_authorize.xml',
+        :provider_key => @provider_key,
+        :app_id       => application.id,
+        :usage        => { metric_child2 => parent_limit },
+        :hierarchy    => 1
+      Resque.run!
+
+      assert_authorized
+      assertions.call
+
+      get '/transactions/oauth_authorize.xml',
+        :provider_key => @provider_key,
+        :app_id       => application.id,
+        :usage        => { metric_child1 => 0, metric_child2 => 0 },
+        :hierarchy    => 1
+      Resque.run!
+
+      assert_authorized
+      assertions.call
+
+      get '/transactions/oauth_authorize.xml',
+        :provider_key => @provider_key,
+        :app_id       => application.id,
+        :hierarchy    => 1
+      Resque.run!
+
+      assert_authorized
+      assertions.call
+
+      get '/transactions/oauth_authorize.xml',
+        :provider_key => @provider_key,
+        :app_id       => application.id,
+        :usage        => { metric_child2 => parent_limit + 1 },
+        :hierarchy    => 1
+      Resque.run!
+
+      assert_not_authorized
+      assertions.call
+
+      # no hierarchy parameter
+      get '/transactions/oauth_authorize.xml',
+        :provider_key => @provider_key,
+        :app_id       => application.id,
+        :usage        => { metric_child2 => parent_limit + 1 }
+      Resque.run!
+
+      assert_not_authorized
+      assertions.call false
+    end
+  end
 end

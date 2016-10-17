@@ -14,10 +14,14 @@ module ThreeScale
           def metric_name
             @metric_name ||=
               if @type == :application
-                @status.application.metric_name(@usage_limit.metric_id)
+                @status.application.metric_name(metric_id)
               else
-                @status.user.metric_name(@usage_limit.metric_id)
+                @status.user.metric_name(metric_id)
               end
+          end
+
+          def metric_id
+            @usage_limit.metric_id
           end
 
           def period
