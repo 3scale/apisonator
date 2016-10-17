@@ -9,7 +9,7 @@ GIT
 PATH
   remote: .
   specs:
-    3scale_backend (2.66.1)
+    3scale_backend (2.67.0)
 
 GEM
   remote: https://rubygems.org/
@@ -250,4 +250,4 @@ DEPENDENCIES
   yajl-ruby (= 1.1.0)
 
 BUNDLED WITH
-   1.12.5
+   1.13.5
