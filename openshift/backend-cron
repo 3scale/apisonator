@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+while true do
+  system('rake', '--trace=stdout', 'reschedule_failed_jobs') or raise 'task crashed'
+  ENV['ONCE'] ? exit : sleep(5*60)
+end

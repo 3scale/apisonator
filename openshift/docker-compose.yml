@@ -1,0 +1,39 @@
+version: '2'
+services:
+  listener:
+    image: ${LOCAL_IMAGE}
+    command: 3scale_backend start -e production -p 3000 -x /dev/stdout
+    depends_on:
+      - redis
+      - worker
+    ports:
+      - "3000"
+    environment:
+      CONFIG_REDIS_PROXY: redis:6379
+      CONFIG_QUEUES_MASTER_NAME: redis:6379
+      RACK_ENV: production
+  worker:
+    image: ${LOCAL_IMAGE}
+    command: 3scale_backend_worker start --ontop
+    depends_on:
+      - redis
+    environment:
+      CONFIG_REDIS_PROXY: redis:6379
+      CONFIG_QUEUES_MASTER_NAME: redis:6379
+      RACK_ENV: production
+  test:
+    build:
+      dockerfile: Dockerfile.core
+      context: .
+      args:
+        - CORE_VERSION=1.20.0
+    command: ruby test.rb
+    depends_on:
+      - listener
+      - worker
+    volumes:
+      - ./test.rb:/opt/app/test.rb:ro
+    environment:
+      BACKEND_ENDPOINT: http://listener:3000
+  redis:
+    image: redis:alpine
