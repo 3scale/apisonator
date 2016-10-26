@@ -19,14 +19,19 @@ module ThreeScale
           # Note that these values will likely need to be tweaked depending on
           # the Ruby implementation and how our app behaves!
           ncpus = ThreeScale::Backend::Util.number_of_cpus
-          workers = Process.respond_to?(:fork) ? ncpus << 3 : 0
-          # if no workers but mt-safe, we spawn more threads.
-          min_threads, max_threads = if thread_safe?
-                                       shift = workers.zero? ? 2 : 0
-                                       [ncpus << shift, ncpus << 1 + shift]
-                                     else
-                                       [1, 1]
-                                     end
+          if (w = ENV['PUMA_WORKERS'])
+            workers = w
+            min_threads, max_threads = [w,w]
+          else
+            workers = Process.respond_to?(:fork) ? ncpus << 3 : 0
+            # if no workers but mt-safe, we spawn more threads.
+            min_threads, max_threads = if thread_safe?
+                                         shift = workers.zero? ? 2 : 0
+                                         [ncpus << shift, ncpus << 1 + shift]
+                                       else
+                                         [1, 1]
+                                       end
+          end
           {
             ncpus: ncpus,
             workers: workers,
