@@ -19,15 +19,15 @@ RUN yum -y update \
  && yum -y install postgresql-devel postgresql-libs \
  && source /opt/app/etc/scl_enable \
  && gem install bundle \
- && gem env \
- && bundle config --global silence_root_warning 1
+ && gem env \ 
+ && bundle config --global silence_root_warning 1 
 
 ADD . ./
 
-RUN source /opt/app/etc/scl_enable \
+RUN source /opt/app/etc/scl_enable \ 
  && gem build 3scale_backend.gemspec \
  && gem unpack *.gem --target=/opt/ruby \
- && cd /opt/ruby/3scale_backend-$(cat Gemfile.lock | grep '3scale_backend (' | cut -f2 -d'(' | cut -f1 -d')') \
+ && cd /opt/ruby/3scale_backend-$(cat Gemfile.lock | grep '3scale_backend (' | cut -f2 -d'(' | cut -f1 -d')') \ 
  && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
  && cp -R /opt/app/etc ./ && rm -rf /opt/app \
  && ln -sf ${PWD} /opt/app \
@@ -38,6 +38,11 @@ RUN mkdir -p /var/run/3scale && chgrp -R 0 /var/run/ && chmod -R g+rw /var/run/
 WORKDIR /opt/app
 
 ADD openshift/3scale_backend.conf /etc/
+
+RUN mkdir -p /var/log/backend/ \
+  && touch /var/log/backend/3scale_backend.log \
+  && touch /var/log/backend/3scale_backend_worker.log \
+  && chmod -R g+wrx /var/log/backend/
 
 EXPOSE 3000
 
