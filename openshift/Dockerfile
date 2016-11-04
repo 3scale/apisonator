@@ -39,6 +39,11 @@ WORKDIR /opt/app
 
 ADD openshift/3scale_backend.conf /etc/
 
+RUN mkdir -p /var/log/backend/ \
+  && touch /var/log/backend/3scale_backend.log \
+  && touch /var/log/backend/3scale_backend_worker.log \
+  && chmod -R g+wrx /var/log/backend/
+
 EXPOSE 3000
 
 COPY openshift/entrypoint.sh ./
