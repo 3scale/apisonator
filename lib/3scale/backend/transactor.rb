@@ -27,20 +27,20 @@ module ThreeScale
           'transactions' => transactions.size)
       end
 
-      def authorize(provider_key, params)
-        do_authorize :authorize, provider_key, params
+      def authorize(provider_key, params, extensions = {})
+        do_authorize :authorize, provider_key, params, extensions
       end
 
-      def oauth_authorize(provider_key, params)
-        do_authorize :oauth_authorize, provider_key, params
+      def oauth_authorize(provider_key, params, extensions = {})
+        do_authorize :oauth_authorize, provider_key, params, extensions
       end
 
-      def authrep(provider_key, params)
-        do_authrep :authrep, provider_key, params
+      def authrep(provider_key, params, extensions = {})
+        do_authrep :authrep, provider_key, params, extensions
       end
 
-      def oauth_authrep(provider_key, params)
-        do_authrep :oauth_authrep, provider_key, params
+      def oauth_authrep(provider_key, params, extensions = {})
+        do_authrep :oauth_authrep, provider_key, params, extensions
       end
 
       def utilization(service_id, application_id)
@@ -62,7 +62,7 @@ module ThreeScale
 
       private
 
-      def validate(oauth, provider_key, report_usage, params)
+      def validate(oauth, provider_key, report_usage, params, extensions)
         service = load_service!(provider_key, params[:service_id])
         app_id, user_id = params[:app_id], params[:user_id]
         # TODO: make sure params are nil if they are empty up the call stack so
@@ -131,10 +131,10 @@ module ThreeScale
           oauth:       oauth,
           usage:       report_usage ? params[:usage] : nil,
           values:      usage_values,
-          # hiearchy parameter adds information in the response needed
+          # hierarchy parameter adds information in the response needed
           # to derive which limits affect directly or indirectly the
           # metrics for which authorization is requested.
-          hierarchy:   params[:hierarchy],
+          hierarchy:   extensions[:hierarchy],
           user:        user,
         }
 
@@ -142,14 +142,14 @@ module ThreeScale
         apply_validators(validators, status_attrs, params)
       end
 
-      def do_authorize(method, provider_key, params)
+      def do_authorize(method, provider_key, params, extensions)
         notify(provider_key, 'transactions/authorize' => 1)
-        validate(method == :oauth_authorize, provider_key, false, params)
+        validate(method == :oauth_authorize, provider_key, false, params, extensions)
       end
 
-      def do_authrep(method, provider_key, params)
+      def do_authrep(method, provider_key, params, extensions)
         status = begin
-                   validate(method == :oauth_authrep, provider_key, true, params)
+                   validate(method == :oauth_authrep, provider_key, true, params, extensions)
                  rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
                    # we still want to track these
                    notify(provider_key, 'transactions/authorize' => 1)

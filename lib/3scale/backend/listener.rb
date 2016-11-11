@@ -172,7 +172,7 @@ module ThreeScale
         # params[:provider_key] is not null/empty.
         params[:provider_key] = provider_key
 
-        auth_status = Transactor.send method_name, provider_key, params
+        auth_status = Transactor.send method_name, provider_key, params, extensions
         response_auth_call(auth_status)
       rescue ThreeScale::Backend::Error => error
         begin
@@ -679,11 +679,11 @@ module ThreeScale
       def response_auth_call(auth_status)
         status(auth_status.authorized? ? 200 : 409)
         optionally_set_headers(auth_status, params)
-        body(params[:no_body] ? nil : auth_status.to_xml)
+        body((extensions[:no_body] || params[:no_body]) ? nil : auth_status.to_xml)
       end
 
       def optionally_set_headers(auth_status, params)
-        if !auth_status.authorized? && params[:rejection_reason_header]
+        if !auth_status.authorized? && extensions[:rejection_reason_header] == '1'.freeze
           response['3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
         end
       end
