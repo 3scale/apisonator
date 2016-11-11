@@ -4,6 +4,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
   include TestHelpers::AuthorizeAssertions
   include TestHelpers::Fixtures
   include TestHelpers::Integration
+  include TestHelpers::Extensions
 
   def setup
     @storage = Storage.instance(true)
@@ -31,13 +32,8 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
-  test 'successful authorize with no body responds with 200' do
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id,
-                                       :no_body      => true
-
-    assert_equal 200, last_response.status
-    assert_equal '', last_response.body
+  test_nobody :get, '/transactions/authorize.xml' do
+    { provider_key: @provider_key, app_id: @application.id }
   end
 
   test 'successful authorize has custom content type' do
@@ -131,9 +127,11 @@ class AuthorizeBasicTest < Test::Unit::TestCase
   end
 
   test 'fails on invalid provider key with no body' do
-    get '/transactions/authorize.xml', :provider_key => 'boo',
-                                       :app_id     => @application.id,
-                                       :no_body    => true
+    get '/transactions/authorize.xml', {
+        :provider_key => 'boo',
+        :app_id     => @application.id,
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 403, last_response.status
     assert_equal '', last_response.body
@@ -149,9 +147,11 @@ class AuthorizeBasicTest < Test::Unit::TestCase
   end
 
   test 'fails on invalid application id with no body' do
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => 'boo',
-                                       :no_body      => true
+    get '/transactions/authorize.xml', {
+        :provider_key => @provider_key,
+        :app_id       => 'boo',
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 404, last_response.status
     assert_equal '', last_response.body
@@ -197,9 +197,11 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     @application.state = :suspended
     @application.save
 
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id       => @application.id,
-                                       :no_body      => true
+    get '/transactions/authorize.xml', {
+        :provider_key => @provider_key,
+        :app_id       => @application.id,
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 409, last_response.status
     assert_equal '', last_response.body
@@ -233,9 +235,11 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                       0 => {'app_id' => @application.id, 'usage' => {'hits' => 5}})
     Resque.run!
 
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id     => @application.id,
-                                       :no_body    => true
+    get '/transactions/authorize.xml', {
+        :provider_key => @provider_key,
+        :app_id     => @application.id,
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 409, last_response.status
     assert_equal '', last_response.body
@@ -542,16 +546,18 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                     :metric_id => @metric_id,
                     :day => max_usage_day)
 
-    get '/transactions/authorize.xml', :provider_key => @provider_key,
-                                       :app_id => @application.id,
-                                       :usage => { 'hits' => max_usage_day + 1 },
-                                       :rejection_reason_header => true
+    get '/transactions/authorize.xml', {
+        :provider_key => @provider_key,
+        :app_id => @application.id,
+        :usage => { 'hits' => max_usage_day + 1 },
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::REJECTION_REASON_HEADER
 
     assert_equal 409, last_response.status
     assert_equal 'limits_exceeded', last_response.header['3scale-rejection-reason']
   end
 
-  test 'resp headers do not have rejection reason when 409 and option is not in the params' do
+  test 'resp headers do not have rejection reason when 409 and option is not enabled' do
     max_usage_day = 1
 
     UsageLimit.save(:service_id => @service.id,
@@ -619,40 +625,44 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     # report (and none elsewhere).
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-      get '/transactions/authorize.xml',
-        :provider_key => @provider_key,
-        :app_id       => application.id,
-        :usage        => { metric_child2 => parent_limit },
-        :hierarchy    => 1
+      get '/transactions/authorize.xml', {
+          :provider_key => @provider_key,
+          :app_id       => application.id,
+          :usage        => { metric_child2 => parent_limit },
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
       Resque.run!
 
       assert_authorized
       assertions.call
 
-      get '/transactions/authorize.xml',
-        :provider_key => @provider_key,
-        :app_id       => application.id,
-        :usage        => { metric_child1 => 0, metric_child2 => 0 },
-        :hierarchy    => 1
+      get '/transactions/authorize.xml', {
+          :provider_key => @provider_key,
+          :app_id       => application.id,
+          :usage        => { metric_child1 => 0, metric_child2 => 0 },
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
       Resque.run!
 
       assert_authorized
       assertions.call
 
-      get '/transactions/authorize.xml',
-        :provider_key => @provider_key,
-        :app_id       => application.id,
-        :hierarchy    => 1
+      get '/transactions/authorize.xml', {
+          :provider_key => @provider_key,
+          :app_id       => application.id,
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
       Resque.run!
 
       assert_authorized
       assertions.call
 
-      get '/transactions/authorize.xml',
-        :provider_key => @provider_key,
-        :app_id       => application.id,
-        :usage        => { metric_child2 => parent_limit + 1 },
-        :hierarchy    => 1
+      get '/transactions/authorize.xml', {
+          :provider_key => @provider_key,
+          :app_id       => application.id,
+          :usage        => { metric_child2 => parent_limit + 1 },
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
       Resque.run!
 
       assert_not_authorized

@@ -4,6 +4,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   include TestHelpers::AuthorizeAssertions
   include TestHelpers::Fixtures
   include TestHelpers::Integration
+  include TestHelpers::Extensions
 
   def setup
     @storage = Storage.instance(true)
@@ -94,10 +95,12 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   end
 
   test 'successful authorize with no body responds with 200' do
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :no_body      => true,
-                                             :log          => @apilog
+    get '/transactions/oauth_authorize.xml', {
+        :provider_key => @provider_key,
+        :access_token => @access_token,
+        :log          => @apilog
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 200, last_response.status
     assert_equal '', last_response.body
@@ -231,10 +234,12 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   end
 
   test 'fails on invalid provider key with no body' do
-    get '/transactions/oauth_authorize.xml', :provider_key => 'boo',
-                                             :access_token => @access_token,
-                                             :no_body    => true,
-                                             :log        => @apilog
+    get '/transactions/oauth_authorize.xml', {
+        :provider_key => 'boo',
+        :access_token => @access_token,
+        :log        => @apilog
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 403, last_response.status
     assert_equal '', last_response.body
@@ -251,10 +256,12 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   end
 
   test 'fails on invalid application id with no body' do
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => 'boo',
-                                             :no_body      => true,
-                                             :log          => @apilog
+    get '/transactions/oauth_authorize.xml', {
+        :provider_key => @provider_key,
+        :access_token => 'boo',
+        :log          => @apilog
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 404, last_response.status
     assert_equal '', last_response.body
@@ -283,10 +290,12 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     @application.state = :suspended
     @application.save
 
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :no_body      => true,
-                                             :log          => @apilog
+    get '/transactions/oauth_authorize.xml', {
+        :provider_key => @provider_key,
+        :access_token => @access_token,
+        :log          => @apilog
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 409, last_response.status
     assert_equal '', last_response.body
@@ -321,10 +330,12 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                       0 => {'access_token' => @access_token, 'usage' => {'hits' => 5}})
     Resque.run!
 
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :no_body    => true,
-                                             :log          => @apilog
+    get '/transactions/oauth_authorize.xml', {
+        :provider_key => @provider_key,
+        :access_token => @access_token,
+        :log          => @apilog
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 409, last_response.status
     assert_equal '', last_response.body
