@@ -841,7 +841,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
            :rejection_reason_header => true
 
     assert_equal 409, last_response.status
-    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
+    assert_equal 'limits_exceeded', last_response.header['3scale-rejection-reason']
   end
 
   test_authrep 'resp headers do not have rejection reason when 409 and option is not in the params' do |e|
@@ -857,6 +857,6 @@ class AuthrepBasicTest < Test::Unit::TestCase
            :usage => { 'hits' => max_usage_day + 1 }
 
     assert_equal 409, last_response.status
-    assert_nil last_response.header['X-3scale-rejection-reason']
+    assert_nil last_response.header['3scale-rejection-reason']
   end
 end

@@ -684,7 +684,7 @@ module ThreeScale
 
       def optionally_set_headers(auth_status, params)
         if !auth_status.authorized? && params[:rejection_reason_header]
-          response['X-3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
+          response['3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
         end
       end
     end
