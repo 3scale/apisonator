@@ -687,6 +687,10 @@ module ThreeScale
           response['3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
         end
       end
+
+      def extensions
+        @extensions ||= Rack::Utils.parse_nested_query(request.env['HTTP_3SCALE_OPTIONS'.freeze]).symbolize_keys
+      end
     end
   end
 end
