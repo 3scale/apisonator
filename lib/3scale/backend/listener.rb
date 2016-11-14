@@ -61,10 +61,6 @@ module ThreeScale
       ##~ @parameter_redirect_uri["description"] = "Optional redirect URI for OAuth. This is the same as 'redirect_url', but if used you should expect a matching 'redirect_uri' response field."
       ##
 
-      ##  FIXME: CHECK THIS ONE TOO
-      ##~ @parameter_no_body = {"name" => "no_body", "dataType" => "boolean", "required" => false, "paramType" => "query"}
-      ##~ @parameter_no_body["description"] = "If no_body is passed the response will not include HTTP body."
-
       ##~ @parameter_usage = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
       ##~ @parameter_usage["description"] = "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting usage[hits]=1 will increment the hits counter by +1."
       ##

@@ -11,30 +11,30 @@ This document describes the protocol used for your API to communicate with 3scal
 <dl>
   <dt>service</dt>
   <dd>any web service implementing an API</dd>
-  
+
   <dt>provider</dt>
   <dd>an organization, company or individual providing a service</dd>
-  
+
   <dt>application</dt>
   <dd>a consumer endpoint of a web service (website, embeddable widget, desktop program, mobile application, HTTP enabled microwave oven, ...)</dd>
-  
+
   <dt>transaction</dt>
   <dd>Single unit of interaction between an application and a service. In case of HTTP-base web services, this is usually one request-response exchange.</dd>
-  
+
   <dt>resource</dt>
   <dd>Anything that is spent during a transaction and can be measured. This can be for example CPU time spent during the processing, or storage space used for storing some data, and so on.</dd>
-  
+
   <dt>metric</dt>
   <dd>A way to measure a resource. For example: number of API hits, amount of disk space in megabytes, CPU time in milliseconds, ...</dd>
-  
+
   <dt>provider key</dt>
   <dd>Unique textual identifier of a provider.</dd>
-  
+
   <dt>application id</dt>
   <dd>Public unique textual identifier of an application.</dd>
-  
+
   <dt>application key</dt>
-  <dd>Secret key for authenticating transactions.</dd> 
+  <dd>Secret key for authenticating transactions.</dd>
 </dl>
 
 <h3>Operations</h3>
@@ -53,15 +53,14 @@ Read-only operation to authorize an application. It is used to check if a partic
   <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
   <dt><var>service_id</var></dt> <dd>Service id. Required only if as a provider you have multiple services allowed and enabled.</dd>
   <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
-  <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd> 
+  <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd>
   <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
-  <dt><var>no_body</var></dt> <dd>Specify this parameter to remove the HTTP body from the response. Optional. Example: no_body=true</dd>
   <dt><var>usage</var></dt> <dd>Predicted usage. Optional</dd>
 </dl>
 
 <h5>Predicted usage</h5>
 
-It's possible to pass a "predicted usage" to the authorize call. This can serve two purposes: 
+It's possible to pass a "predicted usage" to the authorize call. This can serve two purposes:
 
 <ol>
   <li>To make sure an API call won't go over the limits before the call is made, if the usage of the call is known in advance. In this case, the estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit. In other words, without the <var>usage</var> parameter, authorize only checks the usage that has already been reported. If the <var>usage</var> parameter is passes in, it will check whether the already reported usage + the passed in predicted usage is still within limit.</li>
@@ -76,17 +75,17 @@ It's possible to pass a "predicted usage" to the authorize call. This can serve 
 <p>NOTE: <var>usage</var> can be either a positive integer (e.g. 1, 50) or a positive integer prefixed with the character '#' (e.g. #1, #50). In the first case, the value of the usage will be incremented, whereas in the second case will be set to the numerical value. Thus, <code>usage[hits]=1</code> will increment the hits counter by <code>+1</code>, whereas <code>usage[hits]=#1</code> will set the hits counters to <code>1</code>.
 
 <p>Setting the value of a counter with the prefix '#' to wherever the <var>usage</var> is present. However, this is something that needs to be handled with care because it can raise concurrency issues. For instance, in the case of two (or more) concurrent requests: <code>usage[hits]=#1</code>, <code>usage[hits]=#10</code> it is not possible to determine the final value of <var>hits</var>, it can be either 1 or 10 depending on which was the last request processed by 3scale's backend. We cannot ensure order preserving or reconciliation. In the case of <code>usage[hits]=1</code> and <code>usage[hits]=10</code>, the final value of <var>hits</var> would have been incremented by <var>11</var>.
-	
+
 <p>Another potential issue with setting the value of a counter with the prefix '#' is that in the case applying to methods (metrics that are children of metrics) the parent will also be take the value of the child. For instance, let's assume that <var>views</var> and <var>save</var> are methods of the metric <var>hits</var>, thus <var>views</var> and <var>save</var> are children of <var>hits</var>. In this case, if we do <code>usage[save]=1</code> and <code>usage[views]=3</code>, the value of <var>views</var> will be increased by 3, the value of <var>save</var> will be increased by 1 and the value of <var>hits</var> will be implicitly increased by 4 (3+1). On the other hand, doing a <code>usage[save]=#1</code> and <code>usage[views]=#3</code> will set the value of <var>views</var> to 3, the value of <var>save</var> will be set to 1, but the value of <var>hits</var> will be set to either 3 or 1 depending which method was processed last.
-	
-	 
-	
-	 
-	
+
+
+
+
+
 
 <h5>Successful Response</h5>
 
-Has status code <code class="http">200 OK</code> (if authorization is granted), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit. If the no_body parameter is specified, there is no body in the response.
+Has status code <code class="http">200 OK</code> (if authorization is granted), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit.
 
 Example of successful authorize response
 
@@ -143,31 +142,31 @@ Explanation of the elements
 <dl>
   <dt><var>status</var></dt>
   <dd>Root element of the response.</dd>
-  
+
   <dt><var>authorized</var></dt>
   <dd>Contains text "true" if the authorization was successful, or "false" if it failed.</dd>
-  
+
   <dt><var>reason</var></dt>
   <dd>Human readable textual description of failure reason. This element appears only if <var>authorize</var> is false.</dd>
-  
+
   <dt><var>plan</var></dt>
   <dd>Name of the plan the user is signed up to.</dd>
-  
+
   <dt><var>usage_reports</var></dt>
   <dd>Contains list of <var>usage_report</var> elements - one per each usage limit defined for the plan the user is signed up to.</dd>
 
   <dt><var>usage_report</var></dt>
   <dd>Contains information about usage status. Contains these elements: <var>period_start</var>, <var>period_end</var>, <var>current_value</var> and <var>max_value</var>. Has attributes <var>metric</var> with the name of the metric the limit applies to, <var>period</var>, which is the period of the limit (year, month, week, day, hour, minute) and optionally <var>exceeded</var> which is set to "true" if the limit is exceeded in the current period.</dd>
-  
+
   <dt><var>period_start</var></dt>
   <dd>Start of the limit period. It's in the form <samp>YYYY-MM-DD HH:MM:SS +ZZ:ZZ</samp>. <samp>+ZZ:ZZ</samp> (or <samp>-ZZ:ZZ</samp>) is a time offset (in hours and minutes) from UTC.</dd>
 
-  <dt><var>period_end</var></dt> 
+  <dt><var>period_end</var></dt>
   <dd>End of the limit period. Same format as <var>period_start</var></dd>
-  
+
   <dt><var>current_value</var></dt>
   <dd>Value of the corresponding metric accumulated so far in the current period.</dd>
-  
+
   <dt><var>max_value</var></dt>
   <dd>Maximum value allowed by the usage limit.</dd>
 </dl>
@@ -181,7 +180,7 @@ These are all possible error identifiers and their meanings:
 <dl>
   <dt><var>provider_key_invalid</var></dt>
   <dd>Provider key is not valid</dd>
-  
+
   <dt><var>application_not_found</var></dt>
   <dd>Application with the given id does not exist.</dd>
 </dl>
@@ -233,16 +232,15 @@ It's a modified version of the authorize call that returns some extra data that 
   <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
   <dt><var>service_id</var></dt> <dd>Service id. Required only if as a provider you have multiple services allowed and enabled.</dd>
   <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
-  <dt><var>app_key</var></dt> <dd>Application key. Optionl. Will be validated if sent.</dd> 
+  <dt><var>app_key</var></dt> <dd>Application key. Optionl. Will be validated if sent.</dd>
   <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
-  <dt><var>no_body</var></dt> <dd>Specify this parameter to remove the HTTP body from the response. Optional. Example: no_body=true</dd>
   <dt><var>usage</var></dt> <dd>Predicted usage. Optional</dd>
   <dt><var>redirect_url</var></dt> <dd>Redirect URL for OAuth. Optional. Will be validated if sent.</dd>
 </dl>
 
 <h5>Successful Response</h5>
 
-Has status code <code class="http">200 OK</code> (if authorization is granted), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit. If the no_body parameter is specified, there is no body in the response.
+Has status code <code class="http">200 OK</code> (if authorization is granted), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit.
 
 Example of successful authorize response
 
@@ -311,13 +309,13 @@ Explanation of the elements
 <dl>
   <dt><var>status</var></dt>
   <dd>Root element of the response.</dd>
-  
+
   <dt><var>authorized</var></dt>
   <dd>Contains text "true" if the authorization was successful, or "false" if it failed.</dd>
-  
+
   <dt><var>reason</var></dt>
   <dd>Human readable textual description of failure reason. This element appears only if <var>authorize</var> is false.</dd>
-  
+
   <dt><var>plan</var></dt>
   <dd>Name of the plan the user is signed up to.</dd>
 
@@ -332,22 +330,22 @@ Explanation of the elements
 
   <dt><var>redirect_url</var></dt>
   <dd>Rdirect URL configured by the author of the application. If it's a web application you might be interested in making sure you'll only redirect users to this URL.</dd>
-  
+
   <dt><var>usage_reports</var></dt>
   <dd>Contains list of <var>usage_report</var> elements - one per each usage limit defined for the plan the user is signed up to.</dd>
 
   <dt><var>usage_report</var></dt>
   <dd>Contains information about usage status. Contains these elements: <var>period_start</var>, <var>period_end</var>, <var>current_value</var> and <var>max_value</var>. Has attributes <var>metric</var> with the name of the metric the limit applies to, <var>period</var>, which is the period of the limit (year, month, week, day, hour, minute) and optionally <var>exceeded</var> which is set to "true" if the limit is exceeded in the current period.</dd>
-  
+
   <dt><var>period_start</var></dt>
   <dd>Start of the limit period. It's in the form <samp>YYYY-MM-DD HH:MM:SS +ZZ:ZZ</samp>. <samp>+ZZ:ZZ</samp> (or <samp>-ZZ:ZZ</samp>) is a time offset (in hours and minutes) from UTC.</dd>
 
-  <dt><var>period_end</var></dt> 
+  <dt><var>period_end</var></dt>
   <dd>End of the limit period. Same format as <var>period_start</var></dd>
-  
+
   <dt><var>current_value</var></dt>
   <dd>Value of the corresponding metric accumulated so far in the current period.</dd>
-  
+
   <dt><var>max_value</var></dt>
   <dd>Maximum value allowed by the usage limit.</dd>
 </dl>
@@ -361,7 +359,7 @@ These are all possible error identifiers and their meanings:
 <dl>
   <dt><var>provider_key_invalid</var></dt>
   <dd>Provider key is not valid</dd>
-  
+
   <dt><var>application_not_found</var></dt>
   <dd>Application with the given id does not exist.</dd>
 </dl>
@@ -392,16 +390,15 @@ Host: su1.3scale.net</pre></code>
   <dt><var>provider_key</var></dt> <dd>Provider key. Required.</dd>
   <dt><var>service_id</var></dt> <dd>Service id. Required only if as a provider you have multiple services allowed and enabled.</dd>
   <dt><var>app_id</var></dt> <dd>Application id. Required.</dd>
-  <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd> 
+  <dt><var>app_key</var></dt> <dd>Application key. Required only if it is defined for the application.</dd>
   <dt><var>referrer</var></dt> <dd>Referrer IP Address or Domain. Required if referrer filtering is enabled. If special value "*" (start) is passed, the referrer check is bypassed.</dd>
-  <dt><var>no_body</var></dt> <dd>Specify this parameter to remove the HTTP body from the response. Optional. Example: no_body=true</dd>
   <dt><var>usage</var></dt> <dd>Metric usage. If the authorization succeeds and the application is still within the limits with this usage, it's aggregated to the application statistics and usage limits.</dd>
   <dt><var>log</var></dt> <dd>Log requests. Optional, available only to certain 3scale's plans. If allowed and enabled it let's you log requests/responses/response_codes of your API, such logs will be accessible on your admin portal as a providers as well as on the buyer portal for the users of your API.</dd>
 </dl>
 
 <h5>Usage</h5>
 
-The usage parameters should be passed along in order to report traffic. 
+The usage parameters should be passed along in order to report traffic.
 
 <ol>
   <li>This will make sure an API call won't go over the limits. It will check whether the already reported usage + the passed in usage is still within limit.</li>
@@ -413,7 +410,7 @@ NOTE: <var>usage</var> is an associative array of the form <code>{metric : value
 
 <h5>Log</h5>
 
-The log parameters should be passed along in order to keep a log of your API requests. 
+The log parameters should be passed along in order to keep a log of your API requests.
 
 <ol>
   <li>This parameter is optional and it is only allowed to certain 3scale's plans. If as providers you have log requests allowed and enabled you can send the body of the API requests, responses and status code to 3scale so that you can keep a log of the latest activity of your API. Please refer to the "Log Request" appendix for more info. </li>
@@ -441,7 +438,7 @@ Host: su1.3scale.net</pre></code>
 
 <h5>Successful Response</h5>
 
-Has status code <code class="http">200 OK</code> (if authorization is granted - and therefore reported), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit. If the no_body parameter is specified, there is no body in the response.
+Has status code <code class="http">200 OK</code> (if authorization is granted - and therefore reported), <code class="http">409</code> (if it's not granted) and a body containing authorization result, failure reason (if authorization failed), the plan type and list of usage report entries for every current metric limit.
 
 <h4>Report</h4>
 
@@ -454,10 +451,10 @@ This operation is used to report 3scale system about transactions. Any number of
 <dl>
   <dt><var>transactions</var></dt>
   <dd>List of parameters for each transaction in the batch. More details are explained below. Required.</dd>
-  
+
   <dt><var>provider_key</var></dt>
   <dd>Provider key. Required.</dd>
-  <dt><var>service_id</var></dt> 
+  <dt><var>service_id</var></dt>
   <dd>Service id. Required only if as a provider you have multiple services allowed and enabled.</dd>
 </dl>
 
@@ -468,10 +465,10 @@ The <em>transactions</em> should contain numerically indexed list of records, on
 <dl>
   <dt><var>app_id</var></dt>
   <dd>Application ID. Required.</dd>
-  
+
   <dt><var>usage</var></dt>
   <dd>Usage data of the transaction. This should be associative array (a hash) of the form: <code>{metric =&gt; value, ...}</code>, where metric is name of the metric that measures the particular resource (for example "storage" or "hits") and value is any amount of the corresponding resource spend in the transaction. Required.</dd>
-  
+
   <dt><var>timestamp</var></dt>
   <dd>If given, should be date and time when the transaction occurred. It can be
 specified in two ways: First, in UTC (Greenwich time), second, in any other time zone.
@@ -481,8 +478,8 @@ for example <code>2009-01-01 17:45:02</code>. In the second case, the format has
 
   <dt><var>log</var></dt>
   <dd>This parameter is optional and it is only allowed to certain 3scale's plans. If as providers you have log requests allowed and enabled you can send the body of the API requests, responses and status code to 3scale so that you can keep a log of the latest activity of your API. Please refer to the "Log Request" appendix for more info. In addition, <var>log</var> is an associative array of the form <code>{request : value, response : value, code : value}</code>. Please refer to the "Encoding complex data structures in URLs" appendix for more info. The <var>request</var> in <var>log</var> is required whereas the rest are optional and can be left blank. Additionally, the <var>values</var> for <var>log</var> they have to be url-encoded.</dd>
-  
-	
+
+
 </dl>
 
 These parameters have to be encoded in <span class="caps">HTTP</span> <span class="caps">POST</span> request using the <code>application/x-www-form-urlencoded</code> media type. Please reefer to the "Encoding complex data structures in URLs" appendix for more info.
@@ -588,10 +585,10 @@ service_id=78910
 
 <h3>Appendix: Log requests detail</h3>
 
-To enable the API log requests the provider has to send the information on what needs to be reported 
+To enable the API log requests the provider has to send the information on what needs to be reported
 on their calls to the Service Management API.
 
-Every log entry contains 
+Every log entry contains
 
 <dl>
   <dt><var>request</var></dt> <dd>Required. The API request to the provider sent by the user</dd>
@@ -599,7 +596,7 @@ Every log entry contains
   <dt><var>code</var></dt> <dd>Optional. Additional string to denote supplementary information, could be the http_status_code or other semantically relevant string like <em>success</em> or <em>failure</em></dd>
 </dl>
 
-All the strings need to be url encoded, for instance, blank spaces need to be replaced by "+" or by "%20", etc. 
+All the strings need to be url encoded, for instance, blank spaces need to be replaced by "+" or by "%20", etc.
 
 
 Additionally there is a cap to the length of the log data:
@@ -612,7 +609,7 @@ Additionally there is a cap to the length of the log data:
 
 <h3>Appendix (II): Encoding complex data structures in URLs</h3>
 
-The usual way to encode a complex data structure (array, associative array, nested structures) is to "flatten" it. 
+The usual way to encode a complex data structure (array, associative array, nested structures) is to "flatten" it.
 
 For example, having this structure:
 
