@@ -134,7 +134,7 @@ module ThreeScale
           # hierarchy parameter adds information in the response needed
           # to derive which limits affect directly or indirectly the
           # metrics for which authorization is requested.
-          hierarchy:   extensions[:hierarchy],
+          hierarchy:   extensions[:hierarchy] == '1',
           user:        user,
         }
 
