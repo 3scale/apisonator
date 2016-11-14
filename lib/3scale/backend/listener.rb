@@ -679,7 +679,7 @@ module ThreeScale
       def response_auth_call(auth_status)
         status(auth_status.authorized? ? 200 : 409)
         optionally_set_headers(auth_status, params)
-        body((extensions[:no_body] || params[:no_body]) ? nil : auth_status.to_xml)
+        body(extensions[:no_body] ? nil : auth_status.to_xml)
       end
 
       def optionally_set_headers(auth_status, params)
