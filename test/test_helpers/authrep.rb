@@ -12,8 +12,7 @@ module TestHelpers
       private
 
       def test_authrep(title, on: AUTHREP_ENDPOINTS.keys, except: [], &blk)
-        endpoints = Array(on) - Array(except)
-        AUTHREP_ENDPOINTS.lazy.select { |m, _| endpoints.include? m }.each do |m, url|
+        authrep_endpoints(on: on, except: except).each do |m, url|
           test "#{m} #{title}" do
             begin
               instance_exec url, m, &blk
@@ -24,6 +23,13 @@ module TestHelpers
             end
           end
         end
+      end
+
+      # generates the different authrep endpoints in case direct test generation
+      # is not desired (ie. when combining with test generators).
+      def authrep_endpoints(on: AUTHREP_ENDPOINTS.keys, except: [])
+        endpoints = Array(on) - Array(except)
+        AUTHREP_ENDPOINTS.lazy.select { |m, _| endpoints.include? m }
       end
     end
   end
