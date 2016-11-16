@@ -703,25 +703,24 @@ module ThreeScale
           {}
         end.tap do |ext|
           # no_body must be supported from URL params, as it has users
-          if ext[:no_body].nil?
-            no_body = deprecated_no_body_param(env, params)
-            ext[:no_body] = no_body unless no_body.nil?
+          no_body = ext[:no_body] || deprecated_no_body_param(env, params)
+          # This particular param was expected to be specified (no matter the
+          # value) or having the string 'true' as value. We are going to
+          # accept any value except '0' or 'false'.
+          if no_body
+            ext[:no_body] = no_body != 'false' && no_body != '0'
           end
         end
       end
 
       def self.deprecated_no_body_param(env, params)
-        no_body = if params.nil?
-                    # check the request parameters from the Rack environment
-                    qh = env['rack.request.query_hash'.freeze]
-                    qh['no_body'.freeze] unless qh.nil?
-                  else
-                    params[:no_body]
-                  end
-        # This particular param was expected to be specified (no matter the
-        # value) or having the string 'true' as value. We are going to
-        # accept any value except '0' or 'false'.
-        no_body && no_body != 'false' && no_body != '0'
+        if params.nil?
+          # check the request parameters from the Rack environment
+          qh = env['rack.request.query_hash'.freeze]
+          qh['no_body'.freeze] unless qh.nil?
+        else
+          params[:no_body]
+        end
       end
 
       private_class_method :deprecated_no_body_param
