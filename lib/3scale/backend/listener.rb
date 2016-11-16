@@ -61,10 +61,6 @@ module ThreeScale
       ##~ @parameter_redirect_uri["description"] = "Optional redirect URI for OAuth. This is the same as 'redirect_url', but if used you should expect a matching 'redirect_uri' response field."
       ##
 
-      ##  FIXME: CHECK THIS ONE TOO
-      ##~ @parameter_no_body = {"name" => "no_body", "dataType" => "boolean", "required" => false, "paramType" => "query"}
-      ##~ @parameter_no_body["description"] = "If no_body is passed the response will not include HTTP body."
-
       ##~ @parameter_usage = {"name" => "usage", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
       ##~ @parameter_usage["description"] = "Usage will increment the metrics with the values passed. The value can be only a positive integer (e.g. 1, 50). Reporting usage[hits]=1 will increment the hits counter by +1."
       ##
@@ -176,7 +172,7 @@ module ThreeScale
         # params[:provider_key] is not null/empty.
         params[:provider_key] = provider_key
 
-        auth_status = Transactor.send method_name, provider_key, params
+        auth_status = Transactor.send method_name, provider_key, params, extensions
         response_auth_call(auth_status)
       rescue ThreeScale::Backend::Error => error
         begin
@@ -683,14 +679,52 @@ module ThreeScale
       def response_auth_call(auth_status)
         status(auth_status.authorized? ? 200 : 409)
         optionally_set_headers(auth_status, params)
-        body(params[:no_body] ? nil : auth_status.to_xml)
+        body(extensions[:no_body] ? nil : auth_status.to_xml)
       end
 
       def optionally_set_headers(auth_status, params)
-        if !auth_status.authorized? && params[:rejection_reason_header]
-          response['X-3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
+        if !auth_status.authorized? && extensions[:rejection_reason_header] == '1'.freeze
+          response['3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
         end
       end
+
+      def extensions
+        @extensions ||= self.class.extensions request.env, params
+      end
+
+      # Listener.extensions - this is a public class method
+      #
+      # Collect 3scale extensions or optional features.
+      def self.extensions(env, params = nil)
+        options = env['HTTP_3SCALE_OPTIONS'.freeze]
+        if options
+          Rack::Utils.parse_nested_query(options).symbolize_keys
+        else
+          {}
+        end.tap do |ext|
+          # no_body must be supported from URL params, as it has users
+          if ext[:no_body].nil?
+            no_body = deprecated_no_body_param(env, params)
+            ext[:no_body] = no_body unless no_body.nil?
+          end
+        end
+      end
+
+      def self.deprecated_no_body_param(env, params)
+        no_body = if params.nil?
+                    # check the request parameters from the Rack environment
+                    qh = env['rack.request.query_hash'.freeze]
+                    qh['no_body'.freeze] unless qh.nil?
+                  else
+                    params[:no_body]
+                  end
+        # This particular param was expected to be specified (no matter the
+        # value) or having the string 'true' as value. We are going to
+        # accept any value except '0' or 'false'.
+        no_body && no_body != 'false' && no_body != '0'
+      end
+
+      private_class_method :deprecated_no_body_param
     end
   end
 end

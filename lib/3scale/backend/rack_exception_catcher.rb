@@ -51,8 +51,7 @@ module Rack
     #
     # Returns String.
     def prepare_body(body, env)
-      env['rack.request.query_hash'] ||= {}
-      env['rack.request.query_hash']['no_body'] == 'true' ? '' : body
+      ThreeScale::Backend::Listener.extensions(env)[:no_body] ? '' : body
     end
 
     def respond_with(code, body)

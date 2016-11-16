@@ -4,6 +4,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
   include TestHelpers::AuthorizeAssertions
   include TestHelpers::Fixtures
   include TestHelpers::Integration
+  include TestHelpers::Extensions
 
   include TestHelpers::AuthRep
 
@@ -37,11 +38,30 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
+  authrep_endpoints.each do |_m, url|
+    test_nobody :get, url do
+      { provider_key: @provider_key, app_id: @application.id }
+    end
+  end
+
   test_authrep 'successful authorize with no body responds with 200' do |e|
-    get e, :provider_key => @provider_key,
-           :app_id       => @application.id,
-           :no_body      => true,
-           :log          => @apilog
+    get e, {
+        :provider_key => @provider_key,
+        :app_id       => @application.id,
+        :log          => @apilog
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
+
+    assert_equal 200, last_response.status
+    assert_equal '', last_response.body
+  end
+
+  test_authrep 'successful authorize with deprecated no body as param responds with 200' do |e|
+    get e,
+      :provider_key => @provider_key,
+      :app_id       => @application.id,
+      :log          => @apilog,
+      :no_body      => 1
 
     assert_equal 200, last_response.status
     assert_equal '', last_response.body
@@ -182,36 +202,44 @@ class AuthrepBasicTest < Test::Unit::TestCase
     # report (and none elsewhere).
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
-      get e, :provider_key => @provider_key,
-        :app_id       => application.id,
-        :usage        => { metric_child2 => parent_limit },
-        :hierarchy    => 1
+      get e, {
+          :provider_key => @provider_key,
+          :app_id       => application.id,
+          :usage        => { metric_child2 => parent_limit },
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
       Resque.run!
 
       assert_authorized
       assertions.call
 
-      get e, :provider_key => @provider_key,
-        :app_id       => application.id,
-        :usage        => { metric_child1 => 0, metric_child2 => 0 },
-        :hierarchy    => 1
+      get e, {
+          :provider_key => @provider_key,
+          :app_id       => application.id,
+          :usage        => { metric_child1 => 0, metric_child2 => 0 },
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
       Resque.run!
 
       assert_authorized
       assertions.call
 
-      get e, :provider_key => @provider_key,
-        :app_id       => application.id,
-        :hierarchy    => 1
+      get e, {
+          :provider_key => @provider_key,
+          :app_id       => application.id,
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
       Resque.run!
 
       assert_authorized
       assertions.call
 
-      get e, :provider_key => @provider_key,
-        :app_id       => application.id,
-        :usage        => { metric_child2 => parent_limit + 1 },
-        :hierarchy    => 1
+      get e, {
+          :provider_key => @provider_key,
+          :app_id       => application.id,
+          :usage        => { metric_child2 => parent_limit + 1 },
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
       Resque.run!
 
       assert_not_authorized
@@ -219,8 +247,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
       # no hierarchy parameter
       get e, :provider_key => @provider_key,
-        :app_id       => application.id,
-        :usage        => { metric_child2 => parent_limit + 1 }
+             :app_id       => application.id,
+             :usage        => { metric_child2 => parent_limit + 1 }
       Resque.run!
 
       assert_not_authorized
@@ -238,10 +266,12 @@ class AuthrepBasicTest < Test::Unit::TestCase
   end
 
   test_authrep 'fails on invalid provider key with no body' do |e|
-    get e, :provider_key => 'boo',
-           :app_id       => @application.id,
-           :no_body      => true,
-           :log          => @apilog
+    get e, {
+        :provider_key => 'boo',
+        :app_id       => @application.id,
+        :log          => @apilog
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 403, last_response.status
     assert_equal '', last_response.body
@@ -276,9 +306,11 @@ class AuthrepBasicTest < Test::Unit::TestCase
   end
 
   test_authrep 'fails on invalid application id with no body' do |e|
-    get e, :provider_key => @provider_key,
-           :app_id       => 'boo',
-           :no_body      => true
+    get e, {
+        :provider_key => @provider_key,
+        :app_id       => 'boo',
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 404, last_response.status
     assert_equal '', last_response.body
@@ -307,10 +339,12 @@ class AuthrepBasicTest < Test::Unit::TestCase
     @application.state = :suspended
     @application.save
 
-    get e, :provider_key => @provider_key,
-           :app_id       => @application.id,
-           :no_body      => true,
-           :log          => @apilog
+    get e, {
+        :provider_key => @provider_key,
+        :app_id       => @application.id,
+        :log          => @apilog
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 409, last_response.status
     assert_equal '', last_response.body
@@ -346,9 +380,11 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     Resque.run!
 
-    get e, :provider_key => @provider_key,
-           :app_id       => @application.id,
-           :no_body      => true
+    get e, {
+        :provider_key => @provider_key,
+        :app_id       => @application.id,
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
     assert_equal 409, last_response.status
     assert_equal '', last_response.body
@@ -835,13 +871,15 @@ class AuthrepBasicTest < Test::Unit::TestCase
                     :metric_id => @metric_id,
                     :day => max_usage_day)
 
-    get e, :provider_key => @provider_key,
-           :app_id => @application.id,
-           :usage => { 'hits' => max_usage_day + 1 },
-           :rejection_reason_header => true
+    get e, {
+        :provider_key => @provider_key,
+        :app_id => @application.id,
+        :usage => { 'hits' => max_usage_day + 1 },
+      },
+      'HTTP_3SCALE_OPTIONS' => Extensions::REJECTION_REASON_HEADER
 
     assert_equal 409, last_response.status
-    assert_equal 'limits_exceeded', last_response.header['X-3scale-rejection-reason']
+    assert_equal 'limits_exceeded', last_response.header['3scale-rejection-reason']
   end
 
   test_authrep 'resp headers do not have rejection reason when 409 and option is not in the params' do |e|
@@ -857,6 +895,6 @@ class AuthrepBasicTest < Test::Unit::TestCase
            :usage => { 'hits' => max_usage_day + 1 }
 
     assert_equal 409, last_response.status
-    assert_nil last_response.header['X-3scale-rejection-reason']
+    assert_nil last_response.header['3scale-rejection-reason']
   end
 end

@@ -36,12 +36,25 @@ The proposal talks about a method to signal the backend some non-default feature
 or extension is desired.
 
 The mechanism used for this under this document is using a single header named
-`3scale-options`, with a value containing an URL-escaped list of parameters
-supporting Rack's array and hash parameter types.
+`3scale-options`, with a value containing an URL-encoded list of parameters and
+their values.
+
+Separation between parameters is expected to be performed with the '&' sigil,
+and separation between the parameter names and values is expected to be
+performed with the '=' sigil. If any one of those characters can appear in the
+parameter name or the parameter value, it should be escaped, and names and/or
+values should be expected in an escaped form.
+
+Rack's array and hash parameter types commonly used in Ruby applications are
+explicitly expected to work correctly. This includes the parameter name suffixes
+`[]` to indicate an array type, and `[<key>]` to indicate a hash table with key
+`<key>`.
 
 Example:
 
 `3scale-options: no_body=1&somearray[]=one&somearray[]=2&a_hash[key]=val`
+
+### Backwards compatibility
 
 Currently used options (used as parameters) should be only removed after no one
 else is using them (ie. some people are using `no_body` at the time of writing).
