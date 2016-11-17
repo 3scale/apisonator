@@ -111,9 +111,7 @@ module ThreeScale
 
       def stats(service_id, application_id)
         key_stats = "#{build_key(service_id, application_id)}stats_utilization"
-        list = storage.lrange(key_stats,0,-1)
-              # format compact address,value
-        return list
+        storage.lrange(key_stats,0,-1) # format compact address,value
       end
 
       def utilization_discrete(utilization)
