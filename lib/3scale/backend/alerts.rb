@@ -9,7 +9,7 @@ module ThreeScale
       FIRST_ALERT_BIN = ALERT_BINS.first
       RALERT_BINS     = ALERT_BINS.reverse
 
-      def utilization(status)
+      def utilization(app_usage_reports, user_usage_reports)
         max_utilization = -1.0
         max_record = nil
         max = proc do |item|
@@ -23,13 +23,13 @@ module ThreeScale
           end
         end
 
-        status.application_usage_reports.each(&max)
-        status.user_usage_reports.each(&max)
+        app_usage_reports.each(&max)
+        user_usage_reports.each(&max)
 
         if max_utilization == -1
           ## case that all the limits have max_value==0
           max_utilization = 0
-          max_record = status.application_usage_reports.first || status.user_usage_reports.first
+          max_record = app_usage_reports.first || user_usage_reports.first
         end
 
         [max_utilization, max_record]
