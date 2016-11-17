@@ -5,9 +5,9 @@ module ThreeScale
 
       ALERT_TTL       = 24*3600 # 1 day (only one message per day)
       ## zero must be here and sorted, yes or yes
-      ALERT_BINS      = [0, 50, 80, 90, 100, 120, 150, 200, 300]
+      ALERT_BINS      = [0, 50, 80, 90, 100, 120, 150, 200, 300].freeze
       FIRST_ALERT_BIN = ALERT_BINS.first
-      RALERT_BINS     = ALERT_BINS.reverse
+      RALERT_BINS     = ALERT_BINS.reverse.freeze
 
       def utilization(app_usage_reports, user_usage_reports)
         max_utilization = -1.0
