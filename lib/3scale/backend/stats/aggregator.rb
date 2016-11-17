@@ -151,7 +151,6 @@ module ThreeScale
                                                                   values[:application_id])
               usage = Transactor.send(:load_application_usage, application, current_timestamp)
               status = Transactor::Status.new(application: application, values: usage)
-              Validators::Limits.apply(status, {})
 
               max_utilization, max_record = Alerts.utilization(
                   status.application_usage_reports, status.user_usage_reports)
