@@ -18,7 +18,7 @@ module ThreeScale
         end)
 
         private_constant(*{
-          FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d %s %s %s %s %s %s %s %s %s\n",
+          FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d %s %s 0 0 0 %s %s %s %s\n",
           ERROR_FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d \"%s\" %s %s\n",
           DATE_FORMAT: '%d/%b/%Y %H:%M:%S %Z',
           STR_PROVIDER_KEY: 'provider_key',
@@ -81,7 +81,6 @@ module ThreeScale
           now      = Time.now.getutc
           qs       = extract_query_string(env)
           length   = extract_content_length(header)
-          cache    = { last: 0, count: 0, hits: 0 } # Cache is no longer used
           memoizer = ThreeScale::Backend::Memoizer.stats
 
           logger = @logger || env[STR_RACK_ERRORS] || STDERR
@@ -96,9 +95,6 @@ module ThreeScale
             status.to_s[Z3_RANGE],
             length,
             now - began_at,
-            cache[:last] || STR_DASH,
-            cache[:count] || STR_DASH,
-            cache[:hits] || STR_DASH,
             memoizer[:size] || STR_DASH,
             memoizer[:count] || STR_DASH,
             memoizer[:hits] || STR_DASH,
