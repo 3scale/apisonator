@@ -5,11 +5,11 @@ module ThreeScale
 
       ALERT_TTL       = 24*3600 # 1 day (only one message per day)
       ## zero must be here and sorted, yes or yes
-      ALERT_BINS      = [0, 50, 80, 90, 100, 120, 150, 200, 300]
+      ALERT_BINS      = [0, 50, 80, 90, 100, 120, 150, 200, 300].freeze
       FIRST_ALERT_BIN = ALERT_BINS.first
-      RALERT_BINS     = ALERT_BINS.reverse
+      RALERT_BINS     = ALERT_BINS.reverse.freeze
 
-      def utilization(status)
+      def utilization(app_usage_reports, user_usage_reports)
         max_utilization = -1.0
         max_record = nil
         max = proc do |item|
@@ -23,19 +23,19 @@ module ThreeScale
           end
         end
 
-        status.application_usage_reports.each(&max)
-        status.user_usage_reports.each(&max)
+        app_usage_reports.each(&max)
+        user_usage_reports.each(&max)
 
         if max_utilization == -1
           ## case that all the limits have max_value==0
           max_utilization = 0
-          max_record = status.application_usage_reports.first || status.user_usage_reports.first
+          max_record = app_usage_reports.first || user_usage_reports.first
         end
 
         [max_utilization, max_record]
       end
 
-      def update_utilization(status, max_utilization, max_record, timestamp)
+      def update_utilization(service_id, app_id, max_utilization, max_record, timestamp)
         discrete = utilization_discrete(max_utilization)
         max_utilization_i = (max_utilization * 100.0).round
 
@@ -44,9 +44,6 @@ module ThreeScale
         period_hour = timestamp.beginning_of_cycle(:hour).to_compact_s
         # UNIX timestamp for key expiration - add 1 day + 5 mins
         expire_at = (beginning_of_day + 86700).to_i
-
-        service_id = status.application.service_id
-        app_id = status.application.id
 
         alerts_service_app = build_key(service_id, app_id)
         alerts_service = build_key(service_id)
@@ -114,9 +111,7 @@ module ThreeScale
 
       def stats(service_id, application_id)
         key_stats = "#{build_key(service_id, application_id)}stats_utilization"
-        list = storage.lrange(key_stats,0,-1)
-              # format compact address,value
-        return list
+        storage.lrange(key_stats,0,-1) # format compact address,value
       end
 
       def utilization_discrete(utilization)
