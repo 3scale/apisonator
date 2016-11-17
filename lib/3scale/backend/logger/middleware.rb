@@ -12,14 +12,15 @@ module ThreeScale
           :PATH_INFO,
           :HTTP_VERSION,
           :HTTP_X_REQUEST_ID,
-          :QUERY_STRING
+          :QUERY_STRING,
+          :HTTP_3SCALE_OPTIONS
         ].each do |k|
           const_set(k, k.to_s.freeze)
         end)
 
         private_constant(*{
-          FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d %s %s 0 0 0 %s %s %s %s\n",
-          ERROR_FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d \"%s\" %s %s\n",
+          FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d %s %s 0 0 0 %s %s %s %s %s\n",
+          ERROR_FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d \"%s\" %s %s %s\n",
           DATE_FORMAT: '%d/%b/%Y %H:%M:%S %Z',
           STR_PROVIDER_KEY: 'provider_key',
           STR_POST: 'POST',
@@ -31,6 +32,8 @@ module ThreeScale
           STR_EMPTY: '',
           STR_QUESTION_MARK: '?',
           STR_NEWLINE: "\n",
+          STR_DQUOTE: '"',
+          STR_ESCAPED_DQUOTE: '\"',
           STR_CONTENT_LENGTH: 'Content-Length'
         }.map do |k, v|
           const_set(k, v.freeze)
@@ -73,7 +76,8 @@ module ThreeScale
             status.to_s[Z3_RANGE],
             error,
             now - began_at,
-            env[HTTP_X_REQUEST_ID] || STR_DASH
+            env[HTTP_X_REQUEST_ID] || STR_DASH,
+            extensions(env)
           ]
         end
 
@@ -98,7 +102,8 @@ module ThreeScale
             memoizer[:size] || STR_DASH,
             memoizer[:count] || STR_DASH,
             memoizer[:hits] || STR_DASH,
-            env[HTTP_X_REQUEST_ID] || STR_DASH
+            env[HTTP_X_REQUEST_ID] || STR_DASH,
+            extensions(env)
           ]
         end
 
@@ -121,6 +126,11 @@ module ThreeScale
           end
 
           qs
+        end
+
+        def extensions(env)
+          ext = env[HTTP_3SCALE_OPTIONS]
+          ext ? "\"#{ext.gsub(STR_DQUOTE, STR_ESCAPED_DQUOTE)}\"" : STR_DASH
         end
       end
     end
