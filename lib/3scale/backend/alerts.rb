@@ -35,7 +35,7 @@ module ThreeScale
         [max_utilization, max_record]
       end
 
-      def update_utilization(status, max_utilization, max_record, timestamp)
+      def update_utilization(service_id, app_id, max_utilization, max_record, timestamp)
         discrete = utilization_discrete(max_utilization)
         max_utilization_i = (max_utilization * 100.0).round
 
@@ -44,9 +44,6 @@ module ThreeScale
         period_hour = timestamp.beginning_of_cycle(:hour).to_compact_s
         # UNIX timestamp for key expiration - add 1 day + 5 mins
         expire_at = (beginning_of_day + 86700).to_i
-
-        service_id = status.application.service_id
-        app_id = status.application.id
 
         alerts_service_app = build_key(service_id, app_id)
         alerts_service = build_key(service_id)

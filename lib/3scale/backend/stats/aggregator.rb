@@ -155,7 +155,8 @@ module ThreeScale
 
               max_utilization, max_record = Alerts.utilization(status)
               if max_utilization >= 0.0
-                Alerts.update_utilization(status, max_utilization, max_record, current_timestamp)
+                Alerts.update_utilization(values[:service_id], values[:application_id],
+                                          max_utilization, max_record, current_timestamp)
               end
             end
           end
