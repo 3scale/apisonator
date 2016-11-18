@@ -45,3 +45,6 @@ end
 def formatted_name(exception)
   exception.name.split(':').last
 end
+
+# Require spec helpers
+Dir[File.dirname(__FILE__) + '/spec_helpers/**/*.rb'].each { |file| require file }
