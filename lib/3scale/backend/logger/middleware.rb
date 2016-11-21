@@ -73,7 +73,7 @@ module ThreeScale
             status.to_s[Z3_RANGE],
             error,
             now - began_at,
-            env[HTTP_X_REQUEST_ID]
+            env[HTTP_X_REQUEST_ID] || STR_DASH
           ]
         end
 
@@ -102,7 +102,7 @@ module ThreeScale
             memoizer[:size] || STR_DASH,
             memoizer[:count] || STR_DASH,
             memoizer[:hits] || STR_DASH,
-            env[HTTP_X_REQUEST_ID]
+            env[HTTP_X_REQUEST_ID] || STR_DASH
           ]
         end
 
