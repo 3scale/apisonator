@@ -15,8 +15,8 @@ module ThreeScale
         let(:lm) { SpecHelpers::LoglineMatcher.new }
         let(:rackrequest) { SpecHelpers::Rack::Request.new }
         let(:logger) { object_double(STDOUT) }
-        let(:fixed_fields_success_response) { 19 }
-        let(:fixed_fields_error_response) { 12 }
+        let(:fixed_fields_success_response) { 20 }
+        let(:fixed_fields_error_response) { 13 }
         subject { described_class.new(app.app, logger) }
 
         # field_s provides a _string_ representing the Ruby code that would
@@ -84,12 +84,63 @@ module ThreeScale
           it_behaves_like :logline
         end
 
+        shared_examples_for 'passing in extensions' do
+          let(:ext) { 'no_body=1&rejection_reason_header=0' }
+          let(:ext_re) { Regexp.escape ext }
+          let(:rackrequest) do
+            SpecHelpers::Rack::Request.new(headers: { 'HTTP_3SCALE_OPTIONS' => ext })
+          end
+
+          it 'writes out the extensions header content' do
+            expect(logger).to receive(:write).with(
+              lm.match_a_field("\"#{ext_re}\"")).once
+            run_request
+          end
+
+          it 'writes out the extensions header content in the last field' do
+            expect(logger).to receive(:write).with(
+              lm.match_positional_field("\"#{ext_re}\"",
+                                        [total_fields-1, total_fields-1],
+                                        [0, 0])).once
+            run_request
+          end
+        end
+
+        shared_examples_for 'not using extensions' do
+          # the request is not overwritten so the caller should set it up
+          it 'writes a dash as the extensions header in the last field' do
+            expect(logger).to receive(:write).with(
+              lm.match_positional_field("-",
+                                        [total_fields-1, total_fields-1],
+                                        [0, 0])).once
+            run_request
+          end
+        end
+
         context 'when logging a successful response' do
           include_examples 'successful response'
+
+          context 'and passing in extensions' do
+            include_examples 'passing in extensions'
+
+            it_behaves_like 'successful response'
+          end
         end
 
         context 'when logging an error response' do
           include_examples 'error response'
+
+          context 'and passing in extensions' do
+            include_examples 'passing in extensions'
+
+            it_behaves_like 'error response'
+          end
+
+          context 'and not using extensions' do
+            include_examples 'not using extensions'
+
+            it_behaves_like 'error response'
+          end
         end
       end
     end
