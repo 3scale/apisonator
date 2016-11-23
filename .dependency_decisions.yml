@@ -1,39 +1,39 @@
 ---
 - - :whitelist
   - MIT
-  - :who: David
+  - :who: 3scale Engineering
     :why:
     :versions: []
     :when: 2016-08-16 09:25:15.635515271 Z
 - - :whitelist
   - Apache 2.0
-  - :who: David
+  - :who: 3scale Engineering
     :why:
     :versions: []
     :when: 2016-08-16 09:26:31.814319646 Z
 - - :whitelist
   - MIT-LICENSE
-  - :who: David
+  - :who: 3scale Engineering
     :why: It's the same as MIT
     :versions: []
     :when: 2016-08-16 09:27:49.047135842 Z
 - - :license
   - rake
   - MIT
-  - :who: David
-    :why:
+  - :who: 3scale Engineering
+    :why: Rake uses MIT but it's not automatically detected
     :versions: []
     :when: 2016-08-18 15:16:38.712225384 Z
 - - :approve
   - 3scale_backend
-  - :who: David
-    :why: It's this project. Strange that license_finder shows it.
+  - :who: 3scale Engineering
+    :why: It's this project.
     :versions: []
     :when: 2016-08-18 15:18:39.314149125 Z
 - - :approve
   - cubert-client
-  - :who: David
-    :why: It's from 3scale.
+  - :who: 3scale Engineering
+    :why: It's a 3scale project.
     :versions: []
     :when: 2016-08-18 15:18:48.222064172 Z
 - - :whitelist
