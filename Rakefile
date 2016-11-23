@@ -21,7 +21,7 @@ end
 if testable_environment?
   require 'rake/testtask'
 
-  task :default => [:test, :spec]
+  task :default => [:license_finder, :test, :spec]
 
   test_task_dependencies = ['test:unit', 'test:integration']
 
@@ -90,6 +90,16 @@ if testable_environment?
   desc 'Restart a backend_worker in development'
   task :restart_worker do
     system 'ruby -Ilib bin/3scale_backend_worker restart'
+  end
+
+  desc 'Check license compliance of dependencies'
+  task :license_finder do
+    STDOUT.puts "Checking license compliance\n"
+    unless system("license_finder --decisions-file=#{File.dirname(__FILE__)}" \
+                  "/.dependency_decisions.yml")
+      STDERR.puts "\n*** License compliance test failed  ***\n"
+      exit 1
+    end
   end
 end
 
