@@ -43,7 +43,7 @@ class AccessTokenTest < Test::Unit::TestCase
     get "/services/#{@service.id}/applications/#{@application.id.succ}/oauth_access_tokens.xml",
         :provider_key => @provider_key
 
-    assert_equal 404, last_response.status
+    assert_error_resp_with_exc(ApplicationNotFound.new @application.id.succ)
 
     # Delete
     delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN.xml",
@@ -62,7 +62,7 @@ class AccessTokenTest < Test::Unit::TestCase
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id.succ,
                                                              :token => 'VALID-TOKEN'
-    assert_equal 404, last_response.status
+    assert_error_resp_with_exc(ApplicationNotFound.new @application.id.succ)
   end
 
   test 'CR(U)D oauth_access_token tied to a specified user' do
@@ -357,9 +357,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     get "/services/#{@service.id}/oauth_access_tokens/#{token}.xml", :provider_key => @provider_key
 
-    assert_error_response :status  => 404,
-                           :code    => 'access_token_invalid',
-                           :message => "token \"#{token}\" is invalid: expired or never defined"
+    assert_error_resp_with_exc(AccessTokenInvalid.new(token))
   end
 
   test 'create oauth access token and retrieve the app_id later on' do
