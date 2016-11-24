@@ -22,9 +22,17 @@ class ErrorsTest < Test::Unit::TestCase
     assert_equal 'application with id="boo" was not found', error.message
   end
 
+  test 'http code of ApplicationNotFound' do
+    assert_equal 404, ApplicationNotFound.new('boo').http_code
+  end
+
   test 'message of ProviderKeyInvalid' do
     error = ProviderKeyInvalid.new('foo')
     assert_equal 'provider key "foo" is invalid', error.message
+  end
+
+  test 'http code of ProviderKeyInvalid' do
+    assert_equal 403, ProviderKeyInvalid.new('foo').http_code
   end
 
   test 'message of UserKeyInvalid' do
@@ -88,9 +96,17 @@ class ErrorsTest < Test::Unit::TestCase
     assert_equal 'token "foo" is invalid: expired or never defined', error.message
   end
 
+  test 'http code of AccessTokenInvalid' do
+    assert_equal 404, AccessTokenInvalid.new("foo").http_code
+  end
+
   test 'messsage of AccessTokenAlreadyExists' do
     error = AccessTokenAlreadyExists.new("foo")
     assert_equal 'token "foo" already exists', error.message
+  end
+
+  test 'http code of AccessTokenAlreadyExists' do
+    assert_equal 403, AccessTokenAlreadyExists.new("foo").http_code
   end
 
   test 'messsage of AccessTokenInvalidTTL' do
@@ -100,6 +116,15 @@ class ErrorsTest < Test::Unit::TestCase
 
   test 'http code of AccessTokenInvalidTTL' do
     assert_equal 422, AccessTokenInvalidTTL.new.http_code
+  end
+
+  test 'message of AccessTokenStorageError' do
+    error = AccessTokenStorageError.new('a_token')
+    assert_equal 'storage error when saving token "a_token"', error.message
+  end
+
+  test 'http code of AccessTokenStorageError' do
+    assert_equal 403, AccessTokenStorageError.new('a_token').http_code
   end
 
   test 'messsage of AccessTokenFormatInvalid' do
