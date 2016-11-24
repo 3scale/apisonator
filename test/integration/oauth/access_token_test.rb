@@ -259,14 +259,14 @@ class AccessTokenTest < Test::Unit::TestCase
     assert node.nil?
   end
 
-  test 'create oauth_access_token with invalid TTL returns 422' do
+  test 'create oauth_access_token with invalid TTL returns AccessTokenInvalidTTL' do
     [ -666, 0, '', 'adbc'].each do |ttl|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => 'VALID-TOKEN',
                                                                :ttl => ttl
 
-      assert_equal 422, last_response.status, "TTL '#{ttl}' should be invalid"
+      assert_error_resp_with_exc(AccessTokenInvalidTTL.new)
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
           :provider_key => @provider_key
@@ -276,16 +276,32 @@ class AccessTokenTest < Test::Unit::TestCase
     end
   end
 
-  test 'create oauth_access_token with invalid token returns 422' do
-    s = (0...OAuth::Token::Storage.const_get(:MAXIMUM_TOKEN_SIZE)-1).map { (65 + rand(25)).chr }.join
-    # includes a string whose length is <= MAXIMUM_TOKEN_SIZE but whose
-    # bytesize is over the limit because of UTF-8
-    ['', nil, [], {}, s + 'AB', s + 'β'].each do |token|
+  test 'create oauth_access_token with empty token returns RequiredParamsMissing' do
+    ['', nil, [], {}].each do |token|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => token
 
-      assert_equal 422, last_response.status, "oauth access token '#{token.inspect}' should be invalid"
+      assert_error_resp_with_exc(RequiredParamsMissing.new)
+
+      get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+          :provider_key => @provider_key
+
+      assert_equal 200, last_response.status
+      assert xml.at('oauth_access_tokens').element_children.empty?
+    end
+  end
+
+  test 'create oauth_access_token with invalid token returns AccessTokenFormatInvalid' do
+    s = (0...OAuth::Token::Storage.const_get(:MAXIMUM_TOKEN_SIZE)-1).map { (65 + rand(25)).chr }.join.force_encoding(Encoding::UTF_8)
+    # includes a string whose length is <= MAXIMUM_TOKEN_SIZE but whose
+    # bytesize is over the limit because of UTF-8
+    [s + 'AB', s + 'β'].each do |token|
+      post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                               :app_id => @application.id,
+                                                               :token => token
+
+      assert_error_resp_with_exc(AccessTokenFormatInvalid.new)
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
           :provider_key => @provider_key
