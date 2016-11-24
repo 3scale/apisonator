@@ -24,9 +24,8 @@ module ThreeScale
               value = Value.for(app_id, user_id)
               token_set = Key::Set.for(service_id, app_id)
 
-              if store_token token, token_set, key, value, ttl
-                ensure_stored! token, token_set, key, value
-              end
+              store_token token, token_set, key, value, ttl
+              ensure_stored! token, token_set, key, value
             end
 
             # Deletes a token
@@ -263,7 +262,11 @@ module ThreeScale
 
               args << value
 
-              storage.pipelined do
+              # pipelined will return nil if it is embedded into another
+              # pipeline(which would be an error at this point) or if shutting
+              # down and a connection error happens. Both things being abnormal
+              # means we should just raise a storage error.
+              raise AccessTokenStorageError, token unless storage.pipelined do
                 storage.send(command, *args)
                 storage.sadd(token_set, token)
               end
