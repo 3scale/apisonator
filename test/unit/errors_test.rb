@@ -92,4 +92,22 @@ class ErrorsTest < Test::Unit::TestCase
     error = AccessTokenAlreadyExists.new("foo")
     assert_equal 'token "foo" already exists', error.message
   end
+
+  test 'messsage of AccessTokenInvalidTTL' do
+    error = AccessTokenInvalidTTL.new
+    assert_equal 'the specified TTL should be a positive integer', error.message
+  end
+
+  test 'http code of AccessTokenInvalidTTL' do
+    assert_equal 422, AccessTokenInvalidTTL.new.http_code
+  end
+
+  test 'messsage of AccessTokenFormatInvalid' do
+    error = AccessTokenFormatInvalid.new
+    assert_equal 'token is either too big or has an invalid format', error.message
+  end
+
+  test 'http code of AccessTokenFormatInvalid' do
+    assert_equal 422, AccessTokenFormatInvalid.new.http_code
+  end
 end
