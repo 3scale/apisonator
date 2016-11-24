@@ -93,6 +93,18 @@ module ThreeScale
       end
     end
 
+    class AccessTokenFormatInvalid < Invalid
+      def initialize
+        super 'token is either too big or has an invalid format'.freeze
+      end
+    end
+
+    class AccessTokenInvalidTTL < Invalid
+      def initialize
+        super 'the specified TTL should be a positive integer'.freeze
+      end
+    end
+
     class ApplicationNotActive < Error
       def initialize
         super 'application is not active'.freeze
