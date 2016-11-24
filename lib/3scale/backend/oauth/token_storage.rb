@@ -16,7 +16,8 @@ module ThreeScale
             include Backend::StorageHelpers
 
             def create(token, service_id, app_id, user_id, ttl = nil)
-              return false if token.nil? || token.empty? || !token.is_a?(String) || token.bytesize > MAXIMUM_TOKEN_SIZE
+              raise AccessTokenFormatInvalid if token.nil? || token.empty? ||
+                !token.is_a?(String) || token.bytesize > MAXIMUM_TOKEN_SIZE
 
               key = Key.for token, service_id
               raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
@@ -24,9 +25,8 @@ module ThreeScale
               value = Value.for(app_id, user_id)
               token_set = Key::Set.for(service_id, app_id)
 
-              if store_token token, token_set, key, value, ttl
-                ensure_stored! token, token_set, key, value
-              end
+              store_token token, token_set, key, value, ttl
+              ensure_stored! token, token_set, key, value
             end
 
             # Deletes a token
@@ -256,14 +256,18 @@ module ThreeScale
 
               if ttl
                 ttl = ttl.to_i
-                return false if ttl <= 0
+                raise AccessTokenInvalidTTL if ttl <= 0
                 command = :setex
                 args << ttl
               end
 
               args << value
 
-              storage.pipelined do
+              # pipelined will return nil if it is embedded into another
+              # pipeline(which would be an error at this point) or if shutting
+              # down and a connection error happens. Both things being abnormal
+              # means we should just raise a storage error.
+              raise AccessTokenStorageError, token unless storage.pipelined do
                 storage.send(command, *args)
                 storage.sadd(token_set, token)
               end

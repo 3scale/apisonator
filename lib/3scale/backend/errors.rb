@@ -77,19 +77,31 @@ module ThreeScale
 
     class AccessTokenInvalid < NotFound
       def initialize(id = nil)
-        super %(access_token "#{id}" is invalid: expired or never defined)
+        super %(token "#{id}" is invalid: expired or never defined)
       end
     end
 
     class AccessTokenAlreadyExists < Error
       def initialize(id = nil)
-        super %(access_token "#{id}" already exists)
+        super %(token "#{id}" already exists)
       end
     end
 
     class AccessTokenStorageError < Error
-      def initialized(id = nil)
-        super %(storage error when saving access_token "#{id}")
+      def initialize(id = nil)
+        super %(storage error when saving token "#{id}")
+      end
+    end
+
+    class AccessTokenFormatInvalid < Invalid
+      def initialize
+        super 'token is either too big or has an invalid format'.freeze
+      end
+    end
+
+    class AccessTokenInvalidTTL < Invalid
+      def initialize
+        super 'the specified TTL should be a positive integer'.freeze
       end
     end
 

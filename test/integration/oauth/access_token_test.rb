@@ -43,7 +43,7 @@ class AccessTokenTest < Test::Unit::TestCase
     get "/services/#{@service.id}/applications/#{@application.id.succ}/oauth_access_tokens.xml",
         :provider_key => @provider_key
 
-    assert_equal 404, last_response.status
+    assert_error_resp_with_exc(ApplicationNotFound.new @application.id.succ)
 
     # Delete
     delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN.xml",
@@ -62,7 +62,7 @@ class AccessTokenTest < Test::Unit::TestCase
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id.succ,
                                                              :token => 'VALID-TOKEN'
-    assert_equal 404, last_response.status
+    assert_error_resp_with_exc(ApplicationNotFound.new @application.id.succ)
   end
 
   test 'CR(U)D oauth_access_token tied to a specified user' do
@@ -186,11 +186,11 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_equal 200, last_response.status
 
-    # Delete the user token AGAIN (expect 404)
+    # Delete the user token AGAIN
     delete "/services/#{@service.id}/oauth_access_tokens/#{user_token}.xml",
            :provider_key => @provider_key
 
-    assert_equal 404, last_response.status
+    assert_error_resp_with_exc(AccessTokenInvalid.new(user_token))
 
     # Delete the remaining user's token
     delete "/services/#{@service.id}/oauth_access_tokens/#{other_token}.xml",
@@ -202,7 +202,7 @@ class AccessTokenTest < Test::Unit::TestCase
     delete "/services/#{@service.id}/oauth_access_tokens/#{other_token}.xml",
            :provider_key => @provider_key
 
-    assert_equal 404, last_response.status
+    assert_error_resp_with_exc(AccessTokenInvalid.new(other_token))
 
     # Read tokens for the user_id again, should be 0
     get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
@@ -259,14 +259,14 @@ class AccessTokenTest < Test::Unit::TestCase
     assert node.nil?
   end
 
-  test 'create oauth_access_token with invalid TTL returns 422' do
+  test 'create oauth_access_token with invalid TTL returns AccessTokenInvalidTTL' do
     [ -666, 0, '', 'adbc'].each do |ttl|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => 'VALID-TOKEN',
                                                                :ttl => ttl
 
-      assert_equal 422, last_response.status, "TTL '#{ttl}' should be invalid"
+      assert_error_resp_with_exc(AccessTokenInvalidTTL.new)
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
           :provider_key => @provider_key
@@ -276,16 +276,32 @@ class AccessTokenTest < Test::Unit::TestCase
     end
   end
 
-  test 'create oauth_access_token with invalid token returns 422' do
-    s = (0...OAuth::Token::Storage.const_get(:MAXIMUM_TOKEN_SIZE)-1).map { (65 + rand(25)).chr }.join
-    # includes a string whose length is <= MAXIMUM_TOKEN_SIZE but whose
-    # bytesize is over the limit because of UTF-8
-    ['', nil, [], {}, s + 'AB', s + 'β'].each do |token|
+  test 'create oauth_access_token with empty token returns RequiredParamsMissing' do
+    ['', nil, [], {}].each do |token|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => token
 
-      assert_equal 422, last_response.status, "oauth access token '#{token.inspect}' should be invalid"
+      assert_error_resp_with_exc(RequiredParamsMissing.new)
+
+      get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+          :provider_key => @provider_key
+
+      assert_equal 200, last_response.status
+      assert xml.at('oauth_access_tokens').element_children.empty?
+    end
+  end
+
+  test 'create oauth_access_token with invalid token returns AccessTokenFormatInvalid' do
+    s = (0...OAuth::Token::Storage.const_get(:MAXIMUM_TOKEN_SIZE)-1).map { (65 + rand(25)).chr }.join.force_encoding(Encoding::UTF_8)
+    # includes a string whose length is <= MAXIMUM_TOKEN_SIZE but whose
+    # bytesize is over the limit because of UTF-8
+    [s + 'AB', s + 'β'].each do |token|
+      post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                               :app_id => @application.id,
+                                                               :token => token
+
+      assert_error_resp_with_exc(AccessTokenFormatInvalid.new)
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
           :provider_key => @provider_key
@@ -341,9 +357,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     get "/services/#{@service.id}/oauth_access_tokens/#{token}.xml", :provider_key => @provider_key
 
-    assert_error_response :status  => 404,
-                           :code    => 'access_token_invalid',
-                           :message => "access_token \"#{token}\" is invalid: expired or never defined"
+    assert_error_resp_with_exc(AccessTokenInvalid.new(token))
   end
 
   test 'create oauth access token and retrieve the app_id later on' do
@@ -371,23 +385,17 @@ class AccessTokenTest < Test::Unit::TestCase
 
     get "/services/#{@service.id}/oauth_access_tokens/fake-token.xml", :provider_key => @provider_key
 
-    assert_error_response :status  => 404,
-                          :code    => 'access_token_invalid',
-                          :message => 'access_token "fake-token" is invalid: expired or never defined'
+    assert_error_resp_with_exc(AccessTokenInvalid.new('fake-token'))
   end
 
   test 'check that service_id and provider_key match on return app_id by token' do
     get "/services/fake-service-id/oauth_access_tokens/fake-token.xml", :provider_key => @provider_key
 
-    assert_error_response :status  => 403,
-                          :code    => 'provider_key_invalid',
-                          :message => "provider key \"#{@provider_key}\" is invalid"
+    assert_error_resp_with_exc(ProviderKeyInvalid.new(@provider_key))
 
     get "/services/#{@service.id}/oauth_access_tokens/fake-token.xml", :provider_key => 'fake-provider-key'
 
-    assert_error_response :status  => 403,
-                          :code    => 'provider_key_invalid',
-                          :message => 'provider key "fake-provider-key" is invalid'
+    assert_error_resp_with_exc(ProviderKeyInvalid.new('fake-provider-key'))
   end
 
   # TODO: test correct but different service_id with correct but other provider_id
@@ -395,17 +403,17 @@ class AccessTokenTest < Test::Unit::TestCase
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => 'INVALID-KEY',
                                                              :app_id => @application.id,
                                                              :token => 'TOKEN'
-    assert_equal 403, last_response.status
+    assert_error_resp_with_exc(ProviderKeyInvalid.new('INVALID-KEY'))
 
     get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
         :provider_key => 'INVALID-KEY'
 
-    assert_equal 403, last_response.status
+    assert_error_resp_with_exc(ProviderKeyInvalid.new('INVALID-KEY'))
 
     delete "/services/#{@service.id}/oauth_access_tokens/VALID-TOKEN.xml",
            :provider_key => 'INVALID-KEY'
 
-    assert_equal 403, last_response.status
+    assert_error_resp_with_exc(ProviderKeyInvalid.new('INVALID-KEY'))
   end
 
   test 'check that service_id and provider_key match' do
@@ -414,18 +422,14 @@ class AccessTokenTest < Test::Unit::TestCase
                                                               :token => 'VALID-TOKEN',
                                                               :ttl => 1000
 
-    assert_error_response :status  => 403,
-                          :code    => 'provider_key_invalid',
-                          :message => "provider key \"#{@provider_key}\" is invalid"
+    assert_error_resp_with_exc(ProviderKeyInvalid.new(@provider_key))
 
     post "/services/#{@service_id}/oauth_access_tokens.xml", :provider_key => 'fake-provider-key',
                                                               :app_id => @application.id,
                                                               :token => 'VALID-TOKEN',
                                                               :ttl => 1000
 
-    assert_error_response :status  => 403,
-                          :code    => 'provider_key_invalid',
-                          :message => 'provider key "fake-provider-key" is invalid'
+    assert_error_resp_with_exc(ProviderKeyInvalid.new('fake-provider-key'))
   end
 
   test 'reusing an access token that is already in use fails, unless it is for a different service' do
@@ -455,17 +459,13 @@ class AccessTokenTest < Test::Unit::TestCase
                                                              :user_id => @user.username,
                                                              :token => 'valid-token-666'
 
-    assert_error_response :status  => 403,
-                          :code    => 'access_token_already_exists',
-                          :message => 'access_token "valid-token-666" already exists'
+    assert_error_resp_with_exc(AccessTokenAlreadyExists.new('valid-token-666'))
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => application2.id,
                                                              :token => 'valid-token-666'
 
-    assert_error_response :status  => 403,
-                          :code    => 'access_token_already_exists',
-                          :message => 'access_token "valid-token-666" already exists'
+    assert_error_resp_with_exc(AccessTokenAlreadyExists.new('valid-token-666'))
 
     post "/services/#{service2.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => application_diff_service.id,
@@ -619,9 +619,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     get "/services/#{@service.id}/oauth_access_tokens/valid-token1.xml", :provider_key => @provider_key
 
-    assert_error_response :status  => 404,
-                          :code    => 'access_token_invalid',
-                          :message => 'access_token "valid-token1" is invalid: expired or never defined'
+    assert_error_resp_with_exc(AccessTokenInvalid.new('valid-token1'))
 
     get "/services/#{@service.id}/oauth_access_tokens/valid-token2.xml", :provider_key => @provider_key
 

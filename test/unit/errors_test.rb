@@ -22,9 +22,17 @@ class ErrorsTest < Test::Unit::TestCase
     assert_equal 'application with id="boo" was not found', error.message
   end
 
+  test 'http code of ApplicationNotFound' do
+    assert_equal 404, ApplicationNotFound.new('boo').http_code
+  end
+
   test 'message of ProviderKeyInvalid' do
     error = ProviderKeyInvalid.new('foo')
     assert_equal 'provider key "foo" is invalid', error.message
+  end
+
+  test 'http code of ProviderKeyInvalid' do
+    assert_equal 403, ProviderKeyInvalid.new('foo').http_code
   end
 
   test 'message of UserKeyInvalid' do
@@ -82,17 +90,49 @@ class ErrorsTest < Test::Unit::TestCase
     error = ReferrerNotAllowed.new('foo.example.org')
     assert_equal 'referrer "foo.example.org" is not allowed', error.message
   end
-  
+
   test 'messsage of AccessTokenInvalid' do
     error = AccessTokenInvalid.new("foo")
-    assert_equal 'access_token "foo" is invalid: expired or never defined', error.message 
+    assert_equal 'token "foo" is invalid: expired or never defined', error.message
   end
-  
+
+  test 'http code of AccessTokenInvalid' do
+    assert_equal 404, AccessTokenInvalid.new("foo").http_code
+  end
+
   test 'messsage of AccessTokenAlreadyExists' do
     error = AccessTokenAlreadyExists.new("foo")
-    assert_equal 'access_token "foo" already exists', error.message 
+    assert_equal 'token "foo" already exists', error.message
   end
-  
-  
-  
+
+  test 'http code of AccessTokenAlreadyExists' do
+    assert_equal 403, AccessTokenAlreadyExists.new("foo").http_code
+  end
+
+  test 'messsage of AccessTokenInvalidTTL' do
+    error = AccessTokenInvalidTTL.new
+    assert_equal 'the specified TTL should be a positive integer', error.message
+  end
+
+  test 'http code of AccessTokenInvalidTTL' do
+    assert_equal 422, AccessTokenInvalidTTL.new.http_code
+  end
+
+  test 'message of AccessTokenStorageError' do
+    error = AccessTokenStorageError.new('a_token')
+    assert_equal 'storage error when saving token "a_token"', error.message
+  end
+
+  test 'http code of AccessTokenStorageError' do
+    assert_equal 403, AccessTokenStorageError.new('a_token').http_code
+  end
+
+  test 'messsage of AccessTokenFormatInvalid' do
+    error = AccessTokenFormatInvalid.new
+    assert_equal 'token is either too big or has an invalid format', error.message
+  end
+
+  test 'http code of AccessTokenFormatInvalid' do
+    assert_equal 422, AccessTokenFormatInvalid.new.http_code
+  end
 end
