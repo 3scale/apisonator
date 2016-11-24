@@ -343,7 +343,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_error_response :status  => 404,
                            :code    => 'access_token_invalid',
-                           :message => "access_token \"#{token}\" is invalid: expired or never defined"
+                           :message => "token \"#{token}\" is invalid: expired or never defined"
   end
 
   test 'create oauth access token and retrieve the app_id later on' do
@@ -373,7 +373,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_error_response :status  => 404,
                           :code    => 'access_token_invalid',
-                          :message => 'access_token "fake-token" is invalid: expired or never defined'
+                          :message => 'token "fake-token" is invalid: expired or never defined'
   end
 
   test 'check that service_id and provider_key match on return app_id by token' do
@@ -457,7 +457,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_error_response :status  => 403,
                           :code    => 'access_token_already_exists',
-                          :message => 'access_token "valid-token-666" already exists'
+                          :message => 'token "valid-token-666" already exists'
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => application2.id,
@@ -465,7 +465,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_error_response :status  => 403,
                           :code    => 'access_token_already_exists',
-                          :message => 'access_token "valid-token-666" already exists'
+                          :message => 'token "valid-token-666" already exists'
 
     post "/services/#{service2.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => application_diff_service.id,
@@ -621,7 +621,7 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_error_response :status  => 404,
                           :code    => 'access_token_invalid',
-                          :message => 'access_token "valid-token1" is invalid: expired or never defined'
+                          :message => 'token "valid-token1" is invalid: expired or never defined'
 
     get "/services/#{@service.id}/oauth_access_tokens/valid-token2.xml", :provider_key => @provider_key
 

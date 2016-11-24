@@ -252,7 +252,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
     assert_error_response :status  => 404,
                           :code    => 'access_token_invalid',
-                          :message => 'access_token "boo" is invalid: expired or never defined'
+                          :message => 'token "boo" is invalid: expired or never defined'
   end
 
   test 'fails on invalid application id with no body' do
@@ -533,7 +533,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
       assert_error_response :status  => 404,
                             :code    => 'access_token_invalid',
-                            :message => 'access_token "fake" is invalid: expired or never defined'
+                            :message => 'token "fake" is invalid: expired or never defined'
     end
   end
 
@@ -556,7 +556,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
     errors.each do |err|
       assert_equal 'access_token_invalid', err[:code]
-      assert_equal 'access_token "fake" is invalid: expired or never defined', err[:message]
+      assert_equal 'token "fake" is invalid: expired or never defined', err[:message]
     end
 
     ## TODO: check that the errors are reported like a missing app_id
@@ -566,6 +566,6 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
     assert_error_response :status  => 404,
                           :code    => 'access_token_invalid',
-                          :message => 'access_token "fake" is invalid: expired or never defined'
+                          :message => 'token "fake" is invalid: expired or never defined'
   end
 end

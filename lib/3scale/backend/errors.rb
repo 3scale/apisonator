@@ -77,19 +77,19 @@ module ThreeScale
 
     class AccessTokenInvalid < NotFound
       def initialize(id = nil)
-        super %(access_token "#{id}" is invalid: expired or never defined)
+        super %(token "#{id}" is invalid: expired or never defined)
       end
     end
 
     class AccessTokenAlreadyExists < Error
       def initialize(id = nil)
-        super %(access_token "#{id}" already exists)
+        super %(token "#{id}" already exists)
       end
     end
 
     class AccessTokenStorageError < Error
       def initialized(id = nil)
-        super %(storage error when saving access_token "#{id}")
+        super %(storage error when saving token "#{id}")
       end
     end
 
