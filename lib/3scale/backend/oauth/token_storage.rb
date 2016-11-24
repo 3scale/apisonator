@@ -16,7 +16,8 @@ module ThreeScale
             include Backend::StorageHelpers
 
             def create(token, service_id, app_id, user_id, ttl = nil)
-              return false if token.nil? || token.empty? || !token.is_a?(String) || token.bytesize > MAXIMUM_TOKEN_SIZE
+              raise AccessTokenFormatInvalid if token.nil? || token.empty? ||
+                !token.is_a?(String) || token.bytesize > MAXIMUM_TOKEN_SIZE
 
               key = Key.for token, service_id
               raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
@@ -255,7 +256,7 @@ module ThreeScale
 
               if ttl
                 ttl = ttl.to_i
-                return false if ttl <= 0
+                raise AccessTokenInvalidTTL if ttl <= 0
                 command = :setex
                 args << ttl
               end
