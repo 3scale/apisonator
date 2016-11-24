@@ -428,36 +428,38 @@ module ThreeScale
         check_post_content_type!
         require_params! :service_id, :token
 
-        ensure_authenticated!(params[:provider_key], params[:service_token], params[:service_id])
+        service_id = params[:service_id]
+        ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
 
-        halt 404 unless Application.exists?(params[:service_id], params[:app_id])
+        app_id = params[:app_id]
+        raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
 
         # Users do not need to exist, since they can be "created" on-demand.
-        if OAuth::Token::Storage.create(params[:token], params[:service_id] , params[:app_id], params[:user_id], params[:ttl])
-          200
-        else
-          422
-        end
+        OAuth::Token::Storage.create(params[:token], service_id, app_id,
+                                     params[:user_id], params[:ttl])
       end
 
       delete '/services/:service_id/oauth_access_tokens/:token.xml' do
         require_params! :service_id, :token
 
-        ensure_authenticated!(params[:provider_key], params[:service_token], params[:service_id])
+        service_id = params[:service_id]
+        ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
+
+        token = params[:token]
 
         # TODO: perhaps improve this to list the deleted tokens?
-        OAuth::Token::Storage.delete(params[:token], params[:service_id]) ? 200 : 404
+        raise AccessTokenInvalid, token unless OAuth::Token::Storage.delete(token, service_id)
       end
 
       get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
         require_params! :service_id, :app_id
 
-        ensure_authenticated!(params[:provider_key], params[:service_token], params[:service_id])
-
         service_id = params[:service_id]
+        ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
+
         app_id = params[:app_id]
 
-        halt 404 unless Application.exists?(service_id, app_id)
+        raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
 
         @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id, params[:user_id]
         builder :oauth_access_tokens
@@ -466,11 +468,11 @@ module ThreeScale
       get '/services/:service_id/oauth_access_tokens/:token.xml' do
         require_params! :service_id, :token
 
-        ensure_authenticated!(params[:provider_key], params[:service_token], params[:service_id])
+        service_id = params[:service_id]
+        ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
 
-        @token_to_app_id, @token_to_user_id = OAuth::Token::Storage.get_credentials(
-          params[:token], params[:service_id]
-        )
+        @token_to_app_id, @token_to_user_id =
+          OAuth::Token::Storage.get_credentials(params[:token], service_id)
 
         builder :oauth_app_id_by_token
       end
