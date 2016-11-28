@@ -2,7 +2,6 @@ FROM centos:7
 
 ARG BUNDLE_GEMINABOX="geminabox_user:geminabox_password"
 ARG BUNDLE_WITHOUT=development:test
-ARG BACKEND_VERSION=2.67.0
 
 WORKDIR /opt/app
 
@@ -19,15 +18,15 @@ RUN yum -y update \
  && yum -y install postgresql-devel postgresql-libs \
  && source /opt/app/etc/scl_enable \
  && gem install bundle \
- && gem env \ 
- && bundle config --global silence_root_warning 1 
+ && gem env \
+ && bundle config --global silence_root_warning 1
 
 ADD . ./
 
-RUN source /opt/app/etc/scl_enable \ 
+RUN source /opt/app/etc/scl_enable \
  && gem build 3scale_backend.gemspec \
  && gem unpack *.gem --target=/opt/ruby \
- && cd /opt/ruby/3scale_backend-$(cat Gemfile.lock | grep '3scale_backend (' | cut -f2 -d'(' | cut -f1 -d')') \ 
+ && cd /opt/ruby/3scale_backend-$(cat Gemfile.lock | grep '3scale_backend (' | cut -f2 -d'(' | cut -f1 -d')') \
  && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
  && cp -R /opt/app/etc ./ && rm -rf /opt/app \
  && ln -sf ${PWD} /opt/app \
