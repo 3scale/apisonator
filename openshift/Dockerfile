@@ -2,7 +2,6 @@ FROM centos:7
 
 ARG BUNDLE_GEMINABOX="geminabox_user:geminabox_password"
 ARG BUNDLE_WITHOUT=development:test
-ARG BACKEND_VERSION=2.67.0
 
 WORKDIR /opt/app
 
