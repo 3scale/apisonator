@@ -1,3 +1,6 @@
+MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+THISDIR_PATH := $(patsubst %/,%,$(abspath $(dir $(MKFILE_PATH))))
+PROJECT_PATH := $(patsubst %/,%,$(abspath $(dir $(THISDIR_PATH)/../)))
 NAME=backend
 NAMESPACE=quay.io/3scale
 BACKEND_VERSION=2.67.0
@@ -42,7 +45,7 @@ ifndef GEMINABOX_CREDENTIALS
 endif
 
 build:
-	cd ../ ; docker build -f openshift/Dockerfile --pull -t $(LOCAL_IMAGE) .
+	docker build -f $(THISDIR_PATH)/Dockerfile --pull -t $(LOCAL_IMAGE) $(PROJECT_PATH)
 
 test: build
 	docker run -t --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) rackup -D
