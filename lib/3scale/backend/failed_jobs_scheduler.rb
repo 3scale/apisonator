@@ -18,15 +18,30 @@ module ThreeScale
             begin
               count = rescheduled = failed_queue.count
               count.times { |i| failed_queue.requeue(i) }
-            rescue NoMethodError
-              # The dist lock we use does not guarantee mutual exclusion in all
-              # cases. This can result in a 'NoMethodError' if requeue is
-              # called with an index that is no longer valid.
-              retry
             rescue Resque::Helpers::DecodeException
               # This means we tried to dequeue a job with invalid encoding.
               # We just want to delete it from the queue. Although this might
               # change in the future. Marking it as non-rescheduled is enough.
+              rescheduled -= 1
+            rescue Exception => e
+              # The dist lock we use does not guarantee mutual exclusion in all
+              # cases. This can result in a 'NoMethodError' if requeue is
+              # called with an index that is no longer valid.
+              #
+              # There are other cases that can result in a 'NoMethodError'.
+              # The format that Resque expects for a job is a hash with fields
+              # like payload, args, failed_at, timestamp, etc. However,
+              # we have seen Fixnums enqueued. The root cause of that is not
+              # clear, but it is a problem. A Fixnum does not raise a
+              # DecodeException, but when Resque receives that 'job', it
+              # raises a 'NoMethodError' because it tries to call [] (remember
+              # that it expects a hash) on that Fixnum.
+              # We need to make sure that we remove 'jobs' like this from the
+              # queue, otherwise, they'll be retried forever.
+              #
+              # TODO: investigate if we can treat differently the different
+              # types of exceptions that we can find here.
+              Airbrake.notify(e)
               rescheduled -= 1
             end
 
