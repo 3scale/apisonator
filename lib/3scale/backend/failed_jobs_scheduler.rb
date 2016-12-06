@@ -22,6 +22,9 @@ module ThreeScale
               # This means we tried to dequeue a job with invalid encoding.
               # We just want to delete it from the queue. Although this might
               # change in the future. Marking it as non-rescheduled is enough.
+              #
+              # We know that Cubert is responsible for errors of this type.
+              # For that reason, we do not need to notify Airbrake.
               rescheduled -= 1
             rescue Exception => e
               # The dist lock we use does not guarantee mutual exclusion in all
