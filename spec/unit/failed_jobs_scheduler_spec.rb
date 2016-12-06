@@ -43,10 +43,13 @@ module ThreeScale
             # at _index, but we do not need to do anything.
 
             # We need to simulate cases where Resque::Helpers::DecodeException
-            # is raised. In order to do so, to simplify, we will raise that if
-            # the job is the string 'invalid'.
-            if failed_jobs[index] == 'invalid'
+            # and other exceptions are raised. In order to do so, to simplify,
+            # we will raise DecodeException if the string is 'invalid_encoding'
+            # and Exception when it is 'exception'
+            if failed_jobs[index] == 'invalid_encoding'
               raise Resque::Helpers::DecodeException
+            elsif failed_jobs[index] == 'exception'
+              raise Exception.new
             end
           end
 
@@ -69,6 +72,44 @@ module ThreeScale
 
           class << self
             alias_method :failed_queue, :original_failed_queue
+          end
+        end
+      end
+
+      shared_examples 'jobs that fail to be re-enqueued' do |jobs, reenqueue_fails, notify_airbrake|
+        before do
+          jobs.each { |job| subject.failed_queue.enqueue(job) }
+          stub_const('Airbrake', double('Mocked_Airbrake', notify: true))
+        end
+
+        it 'tries to requeue all the jobs in the queue' do
+          expect(subject.failed_queue)
+              .to receive(:requeue)
+              .exactly(jobs.size).times
+
+          subject.reschedule_failed_jobs
+        end
+
+        # This behavior might change in the future
+        it 'removes all the jobs from the queue including the invalid ones' do
+          subject.reschedule_failed_jobs
+          expect(subject.failed_queue.count).to be_zero
+        end
+
+        it 'returns a hash with the current failed jobs and the rescheduled ones' do
+          expect(subject.reschedule_failed_jobs)
+              .to eq({ failed_current: 0, rescheduled: jobs.size - reenqueue_fails })
+        end
+
+        if notify_airbrake
+          it 'notifies airbrake' do
+            subject.reschedule_failed_jobs
+            expect(Airbrake).to have_received :notify
+          end
+        else
+          it 'does not notify airbrake' do
+            subject.reschedule_failed_jobs
+            expect(Airbrake).not_to have_received :notify
           end
         end
       end
@@ -123,31 +164,15 @@ module ThreeScale
             end
           end
 
-          context 'and a job in the queue has invalid encoding (raises DecodeException)' do
-            let(:failed_jobs) { %w(job1 job2 invalid job3) }
-            let(:invalid_index) { failed_jobs.find_index('invalid') } # Assuming there is 1
-
-            before do
-              failed_jobs.each { |job| subject.failed_queue.enqueue(job) }
+          context 'and an exception is raised when re-queuing a job' do
+            context 'and it is because the job has invalid encoding (raises DecodeException)' do
+              include_examples 'jobs that fail to be re-enqueued',
+                               %w(job1 job2 invalid_encoding job3), 1, false
             end
 
-            it 'tries to requeue all the jobs in the queue including the invalid ones' do
-              expect(subject.failed_queue)
-                  .to receive(:requeue)
-                  .exactly(failed_jobs.size).times
-
-              subject.reschedule_failed_jobs
-            end
-
-            # This behavior might change in the future
-            it 'removes all the jobs from the queue including the invalid ones' do
-              subject.reschedule_failed_jobs
-              expect(subject.failed_queue.count).to be_zero
-            end
-
-            it 'returns a hash with the current failed jobs and the rescheduled ones' do
-              expect(subject.reschedule_failed_jobs)
-                  .to eq({ failed_current: 0, rescheduled: failed_jobs.size - 1 })
+            context 'and it is not because the job has invalid encoding' do
+              include_examples 'jobs that fail to be re-enqueued',
+                               %w(job1 job2 exception job3), 1, true
             end
           end
         end
