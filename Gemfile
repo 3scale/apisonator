@@ -23,7 +23,7 @@ group :test do
   gem 'timecop',     '~> 0.8.0'
   gem 'rspec',       '~> 3.5.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
-  gem 'geminabox', require: false
+  gem 'geminabox',   '~> 0.13.4', require: false
 end
 
 group :development do
