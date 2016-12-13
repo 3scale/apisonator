@@ -10,7 +10,7 @@ gemspec
 #
 platform :ruby do
   gem 'yajl-ruby', '= 1.1.0'
-  gem 'pry-byebug', '~> 3.4.0', groups: [:development]
+  gem 'pry-byebug', '~> 3.4.2', groups: [:development]
 end
 
 group :test do
