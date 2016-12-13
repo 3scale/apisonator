@@ -35,7 +35,7 @@ group :development do
 end
 
 group :development, :test do
-  gem 'rspec_api_documentation', '~> 4.8.0'
+  gem 'rspec_api_documentation', '~> 4.9.0'
 end
 
 # Default server by platform
