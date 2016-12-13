@@ -1,3 +1,4 @@
+require 'timecop'
 require_relative '../../acceptance_spec_helper'
 
 resource 'Errors (prefix: /services/:service_id/errors)' do
