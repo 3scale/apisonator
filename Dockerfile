@@ -4,10 +4,8 @@ MAINTAINER Toni Reina <toni@3scale.net>
 WORKDIR /tmp/backend/
 
 COPY bin /tmp/backend/bin/
-COPY Gemfile /tmp/backend/
-COPY Gemfile.lock /tmp/backend/
+COPY Gemfile Gemfile.lock Gemfile.base 3scale_backend.gemspec /tmp/backend/
 COPY lib/3scale/backend/version.rb /tmp/backend/lib/3scale/backend/
-COPY 3scale_backend.gemspec /tmp/backend/
 
 COPY docker/patches/0001-cubert-server.patch /tmp/
 RUN ruby -e "begin; Gem::Specification.find_by_name('cubert-server', Gem::Requirement.create('= 0.0.2.pre.4')); rescue exit(1); end" || \
