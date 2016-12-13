@@ -1,21 +1,24 @@
-#! /usr/bin/env ruby
-
+#!/usr/bin/env ruby
 require '3scale/backend'
+require 'daemons'
 
+options = {
+  multiple: true,
+  dir_mode: :normal,
+  dir: '/var/run/3scale'
+}
+
+# make --no-daemonize an alias of --ontop
 if ARGV.include? '--no-daemonize'
+  ARGV.delete '--no-daemonize'
+  options[:ontop] = true
+end
+
+if !File.writable? options[:dir]
+  require 'fileutils'
+  FileUtils.mkdir_p options[:dir]
+end
+
+Daemons.run_proc('3scale_backend_worker', options) do
   ThreeScale::Backend::Worker.work
-else
-  require 'daemons'
-
-  daemon_rundata= '/var/run/3scale'.freeze
-
-  if !File.writable? daemon_rundata
-    File.mkdir_p daemon_rundata
-  end
-
-  Daemons.run_proc('3scale_backend_worker', :multiple => true,
-                                            :dir_mode => :normal,
-                                            :dir      => daemon_rundata) do
-    ThreeScale::Backend::Worker.work
-  end
 end
