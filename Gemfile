@@ -14,7 +14,7 @@ platform :ruby do
 end
 
 group :test do
-  gem 'mocha',       '~> 1.1.0'
+  gem 'mocha',       '~> 1.2.1'
   gem 'nokogiri',    '~> 1.6.8.1'
   # Nokogiri won't pull pkg-config automatically, so addingt it ourselves
   # https://github.com/sparklemotion/nokogiri/issues/1488
