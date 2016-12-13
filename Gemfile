@@ -48,7 +48,7 @@ gem 'gli', '~> 2.14.0', require: nil
 # Cubert client
 gem 'cubert-client', '= 0.0.12', source: 'https://geminabox'
 # Workers
-gem 'daemons', '= 1.1.9'
+gem 'daemons', '= 1.2.4'
 
 # Production gems
 gem 'rake', '= 10.4.2'
