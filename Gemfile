@@ -15,7 +15,10 @@ end
 
 group :test do
   gem 'mocha',       '~> 1.1.0'
-  gem 'nokogiri',    '~> 1.6.7'
+  gem 'nokogiri',    '~> 1.6.8.1'
+  # Nokogiri won't pull pkg-config automatically, so addingt it ourselves
+  # https://github.com/sparklemotion/nokogiri/issues/1488
+  gem 'pkg-config',  '~> 1.1.7'
   gem 'rack-test',   '~> 0.6.2'
   gem 'resque_unit', '~> 0.4.4', source: 'https://rubygems.org'
   gem 'test-unit',   '= 3.2.1'
