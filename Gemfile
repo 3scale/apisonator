@@ -10,12 +10,15 @@ gemspec
 #
 platform :ruby do
   gem 'yajl-ruby', '= 1.1.0'
-  gem 'pry-byebug', '~> 3.4.0', groups: [:development]
+  gem 'pry-byebug', '~> 3.4.2', groups: [:development]
 end
 
 group :test do
-  gem 'mocha',       '~> 1.1.0'
-  gem 'nokogiri',    '~> 1.6.7'
+  gem 'mocha',       '~> 1.2.1'
+  gem 'nokogiri',    '~> 1.6.8.1'
+  # Nokogiri won't pull pkg-config automatically, so addingt it ourselves
+  # https://github.com/sparklemotion/nokogiri/issues/1488
+  gem 'pkg-config',  '~> 1.1.7'
   gem 'rack-test',   '~> 0.6.2'
   gem 'resque_unit', '~> 0.4.4', source: 'https://rubygems.org'
   gem 'test-unit',   '= 3.2.1'
@@ -23,7 +26,7 @@ group :test do
   gem 'timecop',     '~> 0.8.0'
   gem 'rspec',       '~> 3.5.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
-  gem 'geminabox', require: false
+  gem 'geminabox',   '~> 0.13.4', require: false
 end
 
 group :development do
@@ -35,7 +38,7 @@ group :development do
 end
 
 group :development, :test do
-  gem 'rspec_api_documentation', '~> 4.8.0'
+  gem 'rspec_api_documentation', '~> 4.9.0'
 end
 
 # Default server by platform
@@ -45,7 +48,7 @@ gem 'gli', '~> 2.14.0', require: nil
 # Cubert client
 gem 'cubert-client', '= 0.0.12', source: 'https://geminabox'
 # Workers
-gem 'daemons', '= 1.1.9'
+gem 'daemons', '= 1.2.4'
 
 # Production gems
 gem 'rake', '= 10.4.2'
@@ -55,8 +58,7 @@ gem 'redis', '= 3.2.2'
 gem 'redis-namespace', '= 1.5.2'
 gem 'resque', '= 1.23.0'
 gem 'rack', '= 1.6.4'
-gem 'airbrake', '= 4.3.0'
-gem 'tilt', '= 1.4.1'
+gem 'airbrake', '= 4.3.1'
 gem 'sinatra', '= 1.4.7'
 gem 'sinatra-contrib', '= 1.4.7'
 gem 'aws-sdk', '= 2.4.2'
