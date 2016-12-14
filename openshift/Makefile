@@ -51,7 +51,7 @@ test: build
 	docker run -t --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) rackup -D
 	docker run -t $(LOCAL_IMAGE) 3scale_backend --version
 	docker run -t --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) 3scale_backend_worker --version
-	docker run -t --env RACK_ENV=$(ENVIRONMENT) --env ONCE=1 $(LOCAL_IMAGE) backend-cron | grep "task crashed (RuntimeError)" > /dev/null # because redis is not running
+	docker run -t --env RACK_ENV=$(ENVIRONMENT) --env ONCE=1 $(LOCAL_IMAGE) backend-cron | grep "RuntimeError: task crashed" > /dev/null # because redis is not running
 
 test-integration: export LOCAL_IMAGE := $(LOCAL_IMAGE)
 test-integration: $(DOCKER_COMPOSE)
