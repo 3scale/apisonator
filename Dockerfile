@@ -12,6 +12,8 @@ RUN ruby -e "begin; Gem::Specification.find_by_name('cubert-server', Gem::Requir
  patch -p1 -d $(ruby -e "puts Gem::Specification.find_by_name('cubert-server', Gem::Requirement.create('= 0.0.2')).gem_dir") < /tmp/0001-cubert-server.patch
 RUN find $(ruby -e "puts Gem.dir") -type d -exec chmod go+rx {} \; \
  && find $(ruby -e "puts Gem.dir") -type f -exec chmod go+r {} \;
+# uninstall rack 2.0.0+ if present
+RUN gem uninstall -x rack -v '>= 2.0.0' || true
 RUN chown -R ruby: /tmp/backend/
 
 USER ruby
