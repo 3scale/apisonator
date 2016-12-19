@@ -140,26 +140,30 @@ class TransactionStorageTest < Test::Unit::TestCase
     assert_equal 1, transactions[1][:usage][@metric_id]
   end
 
-  test 'keeps at most 50 transactions in the storage' do
-    60.times do
+  test 'keeps at most LIMIT transactions in the storage' do
+    limit = TransactionStorage.const_get(:LIMIT)
+
+    (limit + 1).times do
       TransactionStorage.store(transaction(
                                  usage:     { @metric_id => 1 },
                                  timestamp: Time.now.getutc),
                               )
     end
 
-    assert_equal 50, @storage.llen("transactions/service_id:#{@service_id}")
+    assert_equal limit, @storage.llen("transactions/service_id:#{@service_id}")
   end
 
-  test 'when more than 50 transactions are in the storage, the oldest ones are discarded' do
-    60.times do |index|
+  test 'when more than LIMIT transactions are in the storage, the oldest ones are discarded' do
+    limit = TransactionStorage.const_get(:LIMIT)
+
+    (limit + 1).times do |index|
       TransactionStorage.store(transaction(
                                  usage:     { @metric_id => index },
                                  timestamp: Time.now.getutc),
                               )
     end
 
-    assert_equal 59, TransactionStorage.list(@service_id).first[:usage][@metric_id]
+    assert_equal limit, TransactionStorage.list(@service_id).first[:usage][@metric_id]
   end
 
   test '#delete_all' do
