@@ -62,7 +62,7 @@ resource 'Transactions (prefix: /services/:service_id/transactions)' do
     end
 
     context 'when the number of transactions is higher than the limit' do
-      let(:max_transactions) { ThreeScale::Backend::TransactionStorage::LIMIT }
+      let(:max_transactions) { ThreeScale::Backend::TransactionStorage.const_get(:LIMIT) }
       let(:test_transactions) do
         transactions = []
         (max_transactions + 1).times do
