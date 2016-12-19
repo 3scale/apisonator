@@ -62,6 +62,20 @@ class TransactionStorageTest < Test::Unit::TestCase
     assert_equal expected, Yajl::Parser.parse(transactions[0])
   end
 
+  test '#store_all does not store more transactions than the limit especified' do
+    limit = TransactionStorage::LIMIT
+    storage = TransactionStorage.send(:storage)
+    storage.expects(:lpush).times(limit)
+
+    transactions = Array.new(limit + 1,
+                             transaction(service_id: 'a_service_id',
+                                         application_id: 'an_app_id',
+                                         usage: { 'a_metric' => 1 },
+                                         timestamp: Time.now))
+
+    TransactionStorage.store_all(transactions)
+  end
+
   test '#list returns transactions from the storage' do
     application_id_one = @application_id
     application_id_two = next_id
