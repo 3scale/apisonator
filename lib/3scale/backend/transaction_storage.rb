@@ -7,7 +7,11 @@ module ThreeScale
         include StorageHelpers
 
         def store_all(transactions)
-          transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
+          # We store at most LIMIT transactions. As we call 'ltrim' when a
+          # transaction is stored, it makes no sense to store more than the
+          # limit defined. The first transactions that are stored would get
+          # 'trimmed' quickly, thus wasting resources of the Redis cluster.
+          transactions.take(LIMIT).each_slice(PIPELINED_SLICE_SIZE) do |slice|
             storage.pipelined do
               slice.each do |transaction|
                 store(transaction)
