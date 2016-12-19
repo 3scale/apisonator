@@ -2,6 +2,7 @@ module ThreeScale
   module Backend
     class TransactionStorage
       LIMIT = 50
+      private_constant :LIMIT
 
       class << self
         include StorageHelpers

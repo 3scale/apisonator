@@ -63,7 +63,7 @@ class TransactionStorageTest < Test::Unit::TestCase
   end
 
   test '#store_all does not store more transactions than the limit especified' do
-    limit = TransactionStorage::LIMIT
+    limit = TransactionStorage.const_get(:LIMIT)
     storage = TransactionStorage.send(:storage)
     storage.expects(:lpush).times(limit)
 
