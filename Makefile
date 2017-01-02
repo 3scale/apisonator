@@ -21,6 +21,14 @@ DOCKER_PROJECT_PATH := /home/$(RUBY_USER)/$(PROJECT)
 # support STDIN-fed Dockerfiles.
 DOCKERFILE_MAXWAIT_SECS := 30
 
+# Jenkins specific. Needed to report test coverage to CodeClimate.
+JENKINS_ENV = JENKINS_URL BUILD_TAG BUILD_NUMBER BUILD_URL
+JENKINS_ENV += GIT_BRANCH GIT_COMMIT GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_EMAIL GIT_COMMITTER_NAME
+DOCKER_ENV = $(foreach env,$(JENKINS_ENV),-e "$(env)=$(shell echo $$$(env))" )
+DOCKER_ENV += -e "GIT_TIMESTAMP=$(shell git log -n 1 --pretty=format:%ct)"
+DOCKER_ENV += -e "GIT_COMMIT_MESSAGE=$(subst ','\'',$(shell git log -n 1 --pretty=format:%B))"
+DOCKER_ENV += -e "GIT_COMMITTED_DATE=$(shell git log -n 1 --pretty=format:%ai)"
+
 .PHONY: all bash build build_test clean default dev devclean pull show_bench test
 
 default: | clean test show_bench
@@ -40,7 +48,7 @@ pull:
 	@ $(call docker_ensure_image, $(DOCKER_REPO):$(DOCKER_BASE_IMG))
 
 test: build_test
-	@ $(call docker_run_container, $(DOCKER_NAME):$(RUBY_VERSION), $(NAME))
+	@ $(call docker_run_container, $(DOCKER_NAME):$(RUBY_VERSION), $(NAME), $(DOCKER_ENV))
 
 # bash creates a temporary test container from the Dockerfile each time it is run
 # use dev target to keep a persistent container suitable for development
