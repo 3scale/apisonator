@@ -55,7 +55,7 @@ define docker_run_disposable
 endef
 
 define docker_run_container
-	docker run --name $2 $1
+	docker run $3 --name $2 $1
 endef
 
 define docker_run
