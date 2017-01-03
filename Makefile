@@ -24,6 +24,11 @@ DOCKERFILE_MAXWAIT_SECS := 30
 # Jenkins specific. Needed to report test coverage to CodeClimate.
 JENKINS_ENV = JENKINS_URL BUILD_TAG BUILD_NUMBER BUILD_URL
 JENKINS_ENV += GIT_BRANCH GIT_COMMIT GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_EMAIL GIT_COMMITTER_NAME
+
+ifdef CODECLIMATE_REPO_TOKEN
+	JENKINS_ENV += CODECLIMATE_REPO_TOKEN
+endif
+
 DOCKER_ENV = $(foreach env,$(JENKINS_ENV),-e "$(env)=$(shell echo $$$(env))" )
 DOCKER_ENV += -e "GIT_TIMESTAMP=$(shell git log -n 1 --pretty=format:%ct)"
 DOCKER_ENV += -e "GIT_COMMIT_MESSAGE=$(subst ','\'',$(shell git log -n 1 --pretty=format:%B))"
