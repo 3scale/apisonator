@@ -95,6 +95,9 @@ module ThreeScale
     end
 
     configuration.tap do |config|
+      # To distinguish between SaaS and on-premises mode.
+      config.saas = true
+
       # Add configuration sections
       config.add_section(:queues, :master_name, :sentinels)
       config.add_section(:redis, :proxy, :nodes, :backup_file)
