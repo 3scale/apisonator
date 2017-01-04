@@ -500,42 +500,6 @@ module ThreeScale
         builder :latest_transactions
       end
 
-      ## LOG REQUESTS
-
-      get '/services/:service_id/applications/:app_id/log_requests.xml' do
-        @list = LogRequestStorage.list_by_application(service_id, application.id)
-        builder :log_requests
-      end
-
-      get '/applications/:app_id/log_requests.xml' do
-        ## FIXME: two ways of doing the same
-        ## get '/services/:service_id/applications/:app_id/log_requests.xml'
-        @list = LogRequestStorage.list_by_application(service_id, application.id)
-        builder :log_requests
-      end
-
-      get '/services/:service_id/log_requests.xml' do
-        @list = LogRequestStorage.list_by_service(service_id)
-        builder :log_requests
-      end
-
-      delete '/services/:service_id/applications/:app_id/log_requests.xml' do
-        LogRequestStorage.delete_by_application(service_id, application.id)
-        200
-      end
-
-      delete '/applications/:app_id/log_requests.xml' do
-        ## FIXME: two ways of doing the same
-        ## delete '/services/:service_id/applications/:app_id/log_requests.xml'
-        LogRequestStorage.delete_by_application(service_id, application.id)
-        200
-      end
-
-      delete '/services/:service_id/log_requests.xml' do
-        LogRequestStorage.delete_by_service(service_id)
-        200
-      end
-
       ## ALERTS & VIOLATIONS
 
       get "/services/:service_id/applications/:app_id/utilization.xml" do
@@ -729,4 +693,10 @@ module ThreeScale
       private_class_method :deprecated_no_body_param
     end
   end
+end
+
+# If using SaaS config, then reopen the Listener class and add the
+# SaaS-specific endpoints.
+if ThreeScale::Backend.configuration.saas
+  require '3scale/backend/listener_saas'
 end

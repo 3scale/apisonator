@@ -47,7 +47,6 @@ require '3scale/backend/oauth'
 require '3scale/backend/memoizer'
 require '3scale/backend/application'
 require '3scale/backend/error_storage'
-require '3scale/backend/listener'
 require '3scale/backend/metric'
 require '3scale/backend/service'
 require '3scale/backend/queue_storage'
@@ -149,3 +148,4 @@ Resque.redis = ThreeScale::Backend::QueueStorage.connection(
 # Need to be required after the config params are set
 require '3scale/backend/statsd'
 require '3scale/backend/saas'
+require '3scale/backend/listener'
