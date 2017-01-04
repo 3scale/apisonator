@@ -8,12 +8,19 @@ Airbrake.configure do |config|
 end
 
 load 'lib/3scale/tasks/swagger.rake'
-load 'lib/3scale/tasks/cubert.rake'
 
 require '3scale/backend'
 
 def testable_environment?
   !%w(preview production).include?(ENV['RACK_ENV'])
+end
+
+def saas?
+  ThreeScale::Backend.configuration.saas
+end
+
+if saas?
+  load 'lib/3scale/tasks/cubert.rake'
 end
 
 if testable_environment?
