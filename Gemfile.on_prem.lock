@@ -9,38 +9,25 @@ GIT
 PATH
   remote: .
   specs:
-    3scale_backend (2.68.1)
+    3scale_backend (2.69.0)
 
 GEM
   remote: https://rubygems.org/
-  remote: https://host/
   specs:
-    abstract_type (0.0.7)
     activesupport (5.0.0.1)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (~> 0.7)
       minitest (~> 5.1)
       tzinfo (~> 1.1)
-    adamantium (0.2.0)
-      ice_nine (~> 0.11.0)
-      memoizable (~> 0.4.0)
     airbrake (4.3.1)
       builder
       multi_json
-    anima (0.2.0)
-      abstract_type (~> 0.0.7)
-      adamantium (~> 0.1)
-      equalizer (~> 0.0.8)
     aws-sdk (2.4.2)
       aws-sdk-resources (= 2.4.2)
     aws-sdk-core (2.4.2)
       jmespath (~> 1.0)
     aws-sdk-resources (2.4.2)
       aws-sdk-core (= 2.4.2)
-    axiom-types (0.1.1)
-      descendants_tracker (~> 0.0.4)
-      ice_nine (~> 0.11.0)
-      thread_safe (~> 0.3, >= 0.3.1)
     backports (3.6.8)
     builder (3.2.2)
     byebug (9.0.6)
@@ -48,19 +35,10 @@ GEM
     codeclimate-test-reporter (0.6.0)
       simplecov (>= 0.7.1, < 1.0.0)
     coderay (1.1.1)
-    coercible (1.0.0)
-      descendants_tracker (~> 0.0.1)
     concurrent-ruby (1.0.2)
-    cubert-client (0.0.12)
-      rack (>= 1.4.5)
-      vanguard (>= 0.0.5)
-      virtus
     daemons (1.2.4)
-    descendants_tracker (0.0.4)
-      thread_safe (~> 0.3, >= 0.3.1)
     diff-lcs (1.2.5)
     docile (1.1.5)
-    equalizer (0.0.11)
     faraday (0.10.0)
       multipart-post (>= 1.2, < 3)
     geminabox (0.13.4)
@@ -75,7 +53,6 @@ GEM
       multi_xml (>= 0.5.2)
     httpclient (2.8.3)
     i18n (0.7.0)
-    ice_nine (0.11.2)
     jmespath (1.3.1)
     json (2.0.2)
     license_finder (2.1.2)
@@ -84,8 +61,6 @@ GEM
       rubyzip
       thor
       xml-simple
-    memoizable (0.4.2)
-      thread_safe (~> 0.3, >= 0.3.1)
     metaclass (0.0.4)
     method_source (0.8.2)
     mini_portile2 (2.1.0)
@@ -185,19 +160,8 @@ GEM
     timecop (0.8.1)
     tzinfo (1.2.2)
       thread_safe (~> 0.1)
-    vanguard (0.0.5)
-      abstract_type (~> 0.0.6)
-      adamantium (~> 0.2.0)
-      anima (~> 0.2.0)
-      descendants_tracker (~> 0.0.1)
-      equalizer (~> 0.0.9)
     vegas (0.1.11)
       rack (>= 1.0.0)
-    virtus (1.0.5)
-      axiom-types (~> 0.1)
-      coercible (~> 1.0)
-      descendants_tracker (~> 0.0, >= 0.0.3)
-      equalizer (~> 0.0, >= 0.0.9)
     whenever (0.9.7)
       chronic (>= 0.6.3)
     xml-simple (1.1.5)
@@ -213,7 +177,6 @@ DEPENDENCIES
   aws-sdk (= 2.4.2)
   builder (= 3.2.2)
   codeclimate-test-reporter (~> 0.6.0)
-  cubert-client (= 0.0.12)!
   daemons (= 1.2.4)
   geminabox (~> 0.13.4)
   gli (~> 2.14.0)
