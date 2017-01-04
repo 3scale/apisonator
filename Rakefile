@@ -10,9 +10,7 @@ end
 load 'lib/3scale/tasks/swagger.rake'
 load 'lib/3scale/tasks/cubert.rake'
 
-task :environment do
-  require '3scale/backend'
-end
+require '3scale/backend'
 
 def testable_environment?
   !%w(preview production).include?(ENV['RACK_ENV'])
@@ -104,7 +102,7 @@ if testable_environment?
 end
 
 desc 'Reschedule failed jobs'
-task :reschedule_failed_jobs => :environment do
+task :reschedule_failed_jobs do
   result = ThreeScale::Backend::FailedJobsScheduler.reschedule_failed_jobs
   puts "Rescheduled: #{result[:rescheduled]}. Pending failed jobs: #{result[:failed_current]}."
 end
@@ -112,24 +110,24 @@ end
 namespace :stats do
   namespace :buckets do
     desc 'Show number of pending buckets'
-    task :size => :environment do
+    task :size do
       puts ThreeScale::Backend::Stats::BucketStorage
                .new(ThreeScale::Backend::Storage.instance)
                .pending_buckets_size
     end
 
     desc 'List pending buckets and their contents'
-    task :list => :environment do
+    task :list do
       puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
     end
 
     desc 'Is bucket storage enabled?'
-    task :enabled? => :environment do
+    task :enabled? do
       puts ThreeScale::Backend::Stats::Storage.enabled?
     end
 
     desc 'Enable bucket storage'
-    task :enable => :environment do
+    task :enable do
       if ThreeScale::Backend::Stats::SendToKinesis.enabled?
         puts ThreeScale::Backend::Stats::Storage.enable!
       else
@@ -138,36 +136,36 @@ namespace :stats do
     end
 
     desc 'Disable bucket storage'
-    task :disable! => :environment do
+    task :disable! do
       puts ThreeScale::Backend::Stats::Storage.disable!
     end
 
     desc 'Delete all the pending buckets'
-    task :delete! => :environment do
+    task :delete! do
       puts ThreeScale::Backend::Stats::BucketStorage
                .new(ThreeScale::Backend::Storage.instance)
                .delete_all_buckets_and_keys
     end
 
     desc 'Was the latest disable automatic to avoid filling Redis?'
-    task :emergency? => :environment do
+    task :emergency? do
       puts ThreeScale::Backend::Stats::Storage.last_disable_was_emergency?
     end
   end
 
   namespace :kinesis do
     desc 'Is sending to Kinesis enabled?'
-    task :enabled? => :environment do
+    task :enabled? do
       puts ThreeScale::Backend::Stats::SendToKinesis.enabled?
     end
 
     desc 'Enable sending to Kinesis'
-    task :enable => :environment do
+    task :enable do
       puts ThreeScale::Backend::Stats::SendToKinesis.enable
     end
 
     desc 'Disable sending to Kinesis'
-    task :disable => :environment do
+    task :disable do
       if ThreeScale::Backend::Stats::Storage.enabled?
         puts 'Error: disable bucket creation first. Otherwise, they will start accumulating.'
       else
@@ -176,7 +174,7 @@ namespace :stats do
     end
 
     desc 'Schedule one job to send all pending events to Kinesis'
-    task :send => :environment do
+    task :send do
       puts ThreeScale::Backend::Stats::SendToKinesis.schedule_job
     end
 
@@ -185,12 +183,12 @@ namespace :stats do
     #   1) There was an error while sending them to Kinesis.
     #   2) There were not enough events to send a whole batch.
     desc 'Count number of pending events - were read from the buckets, but not sent'
-    task :pending_events => :environment do
+    task :pending_events do
       puts ThreeScale::Backend::Stats::SendToKinesis.num_pending_events
     end
 
     desc 'Send pending events to Kinesis'
-    task :flush, [:limit] => :environment do |_, args|
+    task :flush, [:limit] do |_, args|
       limit = args.limit ? args.limit.to_i : nil
       puts ThreeScale::Backend::Stats::SendToKinesis.flush_pending_events(limit)
     end
@@ -198,32 +196,32 @@ namespace :stats do
 
   namespace :redshift do
     desc 'Is Redshift importing enabled?'
-    task :enabled? => :environment do
+    task :enabled? do
       puts ThreeScale::Backend::Stats::RedshiftImporter.enabled?
     end
 
     desc 'Enable Redshift importing'
-    task :enable => :environment do
+    task :enable do
       puts ThreeScale::Backend::Stats::RedshiftImporter.enable
     end
 
     desc 'Disable Redshift importing'
-    task :disable => :environment do
+    task :disable do
       puts ThreeScale::Backend::Stats::RedshiftImporter.disable
     end
 
     desc 'Import S3 events in Redshift'
-    task :import => :environment do
+    task :import do
       puts ThreeScale::Backend::Stats::RedshiftImporter.schedule_job
     end
 
     desc 'Show generation time (hour) of latest events imported in Redshift'
-    task :latest => :environment do
+    task :latest do
       puts ThreeScale::Backend::Stats::RedshiftImporter.latest_imported_events_time
     end
 
     desc 'Is data consistent in the DB?'
-    task :data_ok? => :environment do
+    task :data_ok? do
       puts ThreeScale::Backend::Stats::RedshiftImporter.consistent_data?
     end
   end
