@@ -95,7 +95,8 @@ module ThreeScale
           end
 
           def request_logs_storage_enabled?(service_id)
-            CubertServiceManagementUseCase.new(service_id).enabled?
+            ThreeScale::Backend.configuration.saas &&
+                CubertServiceManagementUseCase.new(service_id).enabled?
           end
 
           def compose_log(service_id, app_id, raw_transaction)
