@@ -21,11 +21,15 @@ RUN yum -y update \
 
 ADD . ./
 
+RUN rm Gemfile Gemfile.lock \
+ && mv Gemfile.on_prem Gemfile \
+ && mv Gemfile.on_prem.lock Gemfile.lock
+
 RUN source /opt/app/etc/scl_enable \
  && gem build 3scale_backend.gemspec \
  && gem unpack *.gem --target=/opt/ruby \
  && cd /opt/ruby/3scale_backend-$(cat Gemfile.lock | grep '3scale_backend (' | cut -f2 -d'(' | cut -f1 -d')') \
- && bundle install --gemfile 'Gemfile.on_prem' --deployment --jobs $(grep -c processor /proc/cpuinfo) \
+ && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
  && cp -R /opt/app/etc ./ && rm -rf /opt/app \
  && ln -sf ${PWD} /opt/app \
  && mkdir -p /var/run/3scale/
