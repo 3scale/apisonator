@@ -172,7 +172,7 @@ module ThreeScale
         # params[:provider_key] is not null/empty.
         params[:provider_key] = provider_key
 
-        auth_status = Transactor.send method_name, provider_key, params, extensions
+        auth_status = Transactor.send method_name, provider_key, params, threescale_extensions
         response_auth_call(auth_status)
       rescue ThreeScale::Backend::Error => error
         begin
@@ -681,23 +681,24 @@ module ThreeScale
       def response_auth_call(auth_status)
         status(auth_status.authorized? ? 200 : 409)
         optionally_set_headers(auth_status)
-        body(extensions[:no_body] ? nil : auth_status.to_xml)
+        body(threescale_extensions[:no_body] ? nil : auth_status.to_xml)
       end
 
       def optionally_set_headers(auth_status)
-        if !auth_status.authorized? && extensions[:rejection_reason_header] == '1'.freeze
+        if !auth_status.authorized? &&
+            threescale_extensions[:rejection_reason_header] == '1'.freeze
           response['3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
         end
       end
 
-      def extensions
-        @extensions ||= self.class.extensions request.env, params
+      def threescale_extensions
+        @threescale_extensions ||= self.class.threescale_extensions request.env, params
       end
 
-      # Listener.extensions - this is a public class method
+      # Listener.threescale_extensions - this is a public class method
       #
       # Collect 3scale extensions or optional features.
-      def self.extensions(env, params = nil)
+      def self.threescale_extensions(env, params = nil)
         options = env['HTTP_3SCALE_OPTIONS'.freeze]
         if options
           Rack::Utils.parse_nested_query(options).symbolize_keys

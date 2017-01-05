@@ -4,7 +4,7 @@ require_relative '../../spec_helper'
 module ThreeScale
   module Backend
     describe Listener do
-      describe '.extensions' do
+      describe '.threescale_extensions' do
         subject { described_class }
 
         let(:simple_key) { :a_value }
@@ -55,7 +55,7 @@ module ThreeScale
 
         shared_examples_for :parsing do |keytype|
           it "parses #{keytype.to_s.gsub('_', ' ')} parameters" do
-            expect(subject.extensions(
+            expect(subject.threescale_extensions(
               'HTTP_3SCALE_OPTIONS' => public_send(keytype)))
               .to eq(public_send("#{keytype}_result"))
           end

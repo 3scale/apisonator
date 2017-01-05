@@ -51,7 +51,7 @@ module Rack
     #
     # Returns String.
     def prepare_body(body, env)
-      ThreeScale::Backend::Listener.extensions(env)[:no_body] ? '' : body
+      ThreeScale::Backend::Listener.threescale_extensions(env)[:no_body] ? '' : body
     end
 
     def respond_with(code, body)
