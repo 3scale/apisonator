@@ -10,7 +10,6 @@ gemspec
 #
 platform :ruby do
   gem 'hiredis', '= 0.6.1'
-  gem 'pg', '= 0.18.4'
   gem 'yajl-ruby', '= 1.1.0'
   gem 'pry-byebug', '~> 3.4.2', groups: [:development]
 end
