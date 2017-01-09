@@ -4,11 +4,13 @@ require '3scale/backend/application_events'
 require '3scale/backend/transaction'
 require '3scale/backend/stats/aggregators/response_code'
 require '3scale/backend/stats/aggregators/usage'
-require '3scale/backend/stats/bucket_storage'
 
 module ThreeScale
   module Backend
     module Stats
+
+      # This class contains several methods that deal with buckets, which are
+      # only used in the SaaS analytics system.
       class Aggregator
         # We need to limit the number of buckets stored in the system.
         # The reason is that our Redis can grow VERY quickly if we start
@@ -40,16 +42,19 @@ module ThreeScale
           def process(transactions)
             current_bucket = nil
 
-            # Only disable indicating emergency if bucket storage is enabled.
-            # Otherwise, we might indicate emergency when a user manually
-            # disabled it previously.
-            if Storage.enabled? && buckets_limit_exceeded?
-              Storage.disable!(true)
-              log_bucket_creation_disabled
-            elsif save_in_bucket?
-              Storage.enable! unless Storage.enabled?
-              current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size).to_not_compact_s
-              prepare_stats_buckets(current_bucket)
+            if configuration.can_create_event_buckets
+              # Only disable indicating emergency if bucket storage is enabled.
+              # Otherwise, we might indicate emergency when a user manually
+              # disabled it previously.
+              if Storage.enabled? && buckets_limit_exceeded?
+                Storage.disable!(true)
+                log_bucket_creation_disabled
+              elsif save_in_bucket?
+                Storage.enable! unless Storage.enabled?
+                current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size)
+                                             .to_not_compact_s
+                prepare_stats_buckets(current_bucket)
+              end
             end
 
             touched_apps = aggregate(transactions, current_bucket)
@@ -89,8 +94,6 @@ module ThreeScale
           end
 
           def save_in_bucket?
-            return false unless configuration.can_create_event_buckets
-
             if Storage.enabled?
               true
             else
