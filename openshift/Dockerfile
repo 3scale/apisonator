@@ -15,7 +15,6 @@ ENV BASH_ENV=/opt/app/etc/scl_enable \
 
 RUN yum -y update \
  && yum -y groupinstall 'Development Tools' \
- && yum -y install postgresql-devel postgresql-libs \
  && source /opt/app/etc/scl_enable \
  && gem install bundle \
  && gem env \
