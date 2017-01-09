@@ -8,7 +8,6 @@ Airbrake.configure do |config|
 end
 
 load 'lib/3scale/tasks/swagger.rake'
-load 'lib/3scale/tasks/stats.rake'
 
 require '3scale/backend'
 
@@ -22,6 +21,7 @@ end
 
 if saas?
   load 'lib/3scale/tasks/cubert.rake'
+  load 'lib/3scale/tasks/stats.rake'
 end
 
 if testable_environment?
