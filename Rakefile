@@ -7,8 +7,6 @@ Airbrake.configure do |config|
   config.rescue_rake_exceptions = true
 end
 
-load 'lib/3scale/tasks/swagger.rake'
-
 require '3scale/backend'
 
 def testable_environment?
@@ -20,6 +18,7 @@ def saas?
 end
 
 if saas?
+  load 'lib/3scale/tasks/swagger.rake'
   load 'lib/3scale/tasks/cubert.rake'
   load 'lib/3scale/tasks/stats.rake'
 end
