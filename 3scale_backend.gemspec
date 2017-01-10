@@ -29,8 +29,6 @@ Gem::Specification.new do |s|
   s.files << 'Gemfile.base'
   s.files << 'Gemfile'
   s.files << 'Gemfile.lock'
-  s.files << 'Gemfile.on_prem'
-  s.files << 'Gemfile.on_prem.lock'
   s.files << __FILE__
 
   s.executables  = ['3scale_backend', '3scale_backend_worker']
