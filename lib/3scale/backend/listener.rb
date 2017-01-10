@@ -9,7 +9,8 @@ module ThreeScale
       disable :show_exceptions
 
       ## ------------ DOCS --------------
-      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ sapi = source2swagger.namespace(namespace)
       ##~ sapi.basePath = "https://su1.3scale.net"
       ##~ sapi.swaggerVersion = "0.1a"
       ##~ sapi.apiVersion = "1.0"
@@ -104,7 +105,7 @@ module ThreeScale
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_app_id["parameters"] << @timestamp
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_usage
-      ##~ @parameter_transaction_app_id["parameters"] << @parameter_log
+      ##~ @parameter_transaction_app_id["parameters"] << @parameter_log if ENV['SAAS_SWAGGER'] == '1'
 
       ##~ @parameter_transaction_api_key = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "query", "allowMultiple" => true}
       ##~ @parameter_transaction_api_key["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
@@ -114,7 +115,7 @@ module ThreeScale
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_api_key["parameters"] << @timestamp
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_usage
-      ##~ @parameter_transaction_api_key["parameters"] << @parameter_log
+      ##~ @parameter_transaction_api_key["parameters"] << @parameter_log if ENV['SAAS_SWAGGER'] == '1'
 
       ##~ @parameter_transaction_oauth = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "query", "allowMultiple" => true}
       ##~ @parameter_transaction_oauth["description"] = "Transactions to be reported. There is a limit of 1000 transactions to be reported on a single request."
@@ -124,7 +125,7 @@ module ThreeScale
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_oauth["parameters"] << @timestamp
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_usage
-      ##~ @parameter_transaction_oauth["parameters"] << @parameter_log
+      ##~ @parameter_transaction_oauth["parameters"] << @parameter_log if ENV['SAAS_SWAGGER'] == '1'
 
 
       COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze, 'user_key'.freeze, 'provider_key'.freeze].freeze
@@ -186,7 +187,8 @@ module ThreeScale
       private :do_api_method
 
       ## ------------ DOCS --------------
-      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/authorize.xml", "format" => "xml"
       ##~ op = a.operations.add
@@ -239,7 +241,8 @@ module ThreeScale
       end
 
       ## ------------ DOCS --------------
-      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/oauth_authorize.xml", "format" => "xml"
       ##~ op = a.operations.add
@@ -267,7 +270,8 @@ module ThreeScale
       end
 
       ## ------------ DOCS --------------
-      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/authrep.xml", "format" => "xml"
       ##~ op = a.operations.add
@@ -291,7 +295,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
-      ##~ op.parameters.add @parameter_log
+      ##~ op.parameters.add @parameter_log if ENV['SAAS_SWAGGER'] == '1'
       ##
       ##
       ##~ a = sapi.apis.add
@@ -308,14 +312,15 @@ module ThreeScale
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
-      ##~ op.parameters.add @parameter_log
+      ##~ op.parameters.add @parameter_log if ENV['SAAS_SWAGGER'] == '1'
       ##
       get '/transactions/authrep.xml' do
         do_api_method :authrep
       end
 
       ## ------------ DOCS --------------
-      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/oauth_authrep.xml", "format" => "xml"
       ##~ op = a.operations.add
@@ -333,7 +338,7 @@ module ThreeScale
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id_oauth
       ##~ op.parameters.add @parameter_usage
-      ##~ op.parameters.add @parameter_log
+      ##~ op.parameters.add @parameter_log if ENV['SAAS_SWAGGER'] == '1'
       ##~ op.parameters.add @parameter_redirect_url
       ##~ op.parameters.add @parameter_redirect_uri
       ##
@@ -342,7 +347,8 @@ module ThreeScale
       end
 
       ## ------------ DOCS --------------
-      ##~ sapi = source2swagger.namespace("Service Management API")
+      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions.xml", "format" => "xml"
       ##~ op = a.operations.add
