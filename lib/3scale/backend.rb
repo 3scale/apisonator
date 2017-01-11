@@ -70,6 +70,12 @@ module ThreeScale
   PIPELINED_SLICE_SIZE = 400
 
   module Backend
+    class InvalidInternalApiCreds < RuntimeError
+      def initialize(msg = 'Internal API credentials not provided.'.freeze)
+        super(msg)
+      end
+    end
+
     def self.environment
       ENV['RACK_ENV'] || 'development'
     end
@@ -86,6 +92,13 @@ module ThreeScale
       environment == 'test'
     end
 
+    def self.valid_internal_api_creds?
+      user = configuration.internal_api.user
+      password = configuration.internal_api.password
+      (user && !user.empty?) && (password && !password.empty?)
+    end
+    private_class_method :valid_internal_api_creds?
+
     configuration.tap do |config|
       # To distinguish between SaaS and on-premises mode.
       config.saas = true
@@ -98,6 +111,7 @@ module ThreeScale
       config.add_section(:cubert, :host)
       config.add_section(:redshift, :host, :port, :dbname, :user, :password)
       config.add_section(:statsd, :host, :port)
+      config.add_section(:internal_api, :user, :password)
 
       # Default config
       config.master_service_id  = 1
@@ -118,6 +132,10 @@ module ThreeScale
 
       # Load configuration from a file.
       config.load!
+    end
+
+    if production? && !valid_internal_api_creds?
+      raise InvalidInternalApiCreds
     end
 
     # We should think about chaing it to something more general.
