@@ -118,6 +118,10 @@ module ThreeScale
 
       # Load configuration from a file.
       config.load!
+
+      # can_create_event_buckets is just for our SaaS analytics system.
+      # If SaaS has been set to false, we need to disable buckets too.
+      config.can_create_event_buckets = false unless config.saas
     end
 
     # We should think about chaing it to something more general.
