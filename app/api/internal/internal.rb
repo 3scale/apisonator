@@ -5,18 +5,17 @@ require 'json'
 module ThreeScale
   module Backend
     module API
+      class InvalidCredentials < RuntimeError
+        def initialize(msg = 'Internal API credentials not provided.'.freeze)
+          super(msg)
+        end
+      end
+
       def self.internal_api(ns, &blk)
         Internal.class_eval { namespace ns, &blk }
       end
 
       class Internal < Sinatra::Base
-
-        def initialize(username: nil, password: nil)
-          @username = username
-          @password = password
-          @credentials_set = credentials_set?(username, password)
-          super()
-        end
 
         register Sinatra::Namespace
 
@@ -24,17 +23,6 @@ module ThreeScale
         # as fast as possible when responding, since we hit /status a lot.
         @@status = { status: :ok,
                      version: { backend: ThreeScale::Backend::VERSION } }.to_json
-
-        class << self
-          # the method below is used by the Rack application for auth
-          def check_password(username, password)
-            if @credentials_set
-              username == @username && password == @password
-            else
-              true
-            end
-          end
-        end
 
         before do
           content_type 'application/json'
@@ -57,12 +45,25 @@ module ThreeScale
           ThreeScale::Backend.test? || ThreeScale::Backend.development?
         end
 
-        private
-
-        def credentials_set?(username, password)
-          (!username.nil? && !username.empty?) ||
-              (!password.nil? && !password.empty?)
+        def initialize(username: nil, password: nil, allow_insecure: false)
+          @username = username
+          @password = password
+          raise InvalidCredentials unless allow_insecure or credentials_set?
+          super()
         end
+
+        # the two methods below are used by the Rack application for auth
+        # you can access them through the .helpers method after calling .new
+        def credentials_set?
+          (!@username.nil? && !@username.empty?) ||
+              (!@password.nil? && !@password.empty?)
+        end
+
+        def check_password(username, password)
+          username == @username && password == @password
+        end
+
+        private
 
         def parse_json_params(params)
           body = request.body.read
@@ -85,4 +86,3 @@ module ThreeScale
     end
   end
 end
-
