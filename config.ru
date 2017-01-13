@@ -6,13 +6,17 @@ use ThreeScale::Backend::Logger::Middleware
 map "/internal" do
   require_relative 'app/api/api'
 
-  use Rack::Auth::Basic do |username, password|
-    ThreeScale::Backend::API::Internal.check_password username, password
-  end
+  internal_api = ThreeScale::Backend::API::Internal.new(
+    username: ThreeScale::Backend.configuration.internal_api.user,
+    password: ThreeScale::Backend.configuration.internal_api.password,
+    allow_insecure: !ThreeScale::Backend.production?
+  )
 
-  run(ThreeScale::Backend::API::Internal.new(
-        username: ThreeScale::Backend.configuration.internal_api.user,
-        password: ThreeScale::Backend.configuration.internal_api.password))
+  use Rack::Auth::Basic do |username, password|
+    internal_api.helpers.check_password username, password
+  end if internal_api.helpers.credentials_set?
+
+  run internal_api
 end
 
 run ThreeScale::Backend::Listener.new
