@@ -70,12 +70,6 @@ module ThreeScale
   PIPELINED_SLICE_SIZE = 400
 
   module Backend
-    class InvalidInternalApiCreds < RuntimeError
-      def initialize(msg = 'Internal API credentials not provided.'.freeze)
-        super(msg)
-      end
-    end
-
     def self.environment
       ENV['RACK_ENV'] || 'development'
     end
@@ -91,13 +85,6 @@ module ThreeScale
     def self.test?
       environment == 'test'
     end
-
-    def self.valid_internal_api_creds?
-      user = configuration.internal_api.user
-      password = configuration.internal_api.password
-      (user && !user.empty?) && (password && !password.empty?)
-    end
-    private_class_method :valid_internal_api_creds?
 
     configuration.tap do |config|
       # To distinguish between SaaS and on-premises mode.
@@ -136,10 +123,6 @@ module ThreeScale
       # can_create_event_buckets is just for our SaaS analytics system.
       # If SaaS has been set to false, we need to disable buckets too.
       config.can_create_event_buckets = false unless config.saas
-    end
-
-    if production? && !valid_internal_api_creds?
-      raise InvalidInternalApiCreds
     end
 
     # We should think about chaing it to something more general.
