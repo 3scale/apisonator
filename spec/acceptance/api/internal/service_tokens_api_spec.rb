@@ -1,7 +1,7 @@
 require_relative '../../acceptance_spec_helper'
 
 resource 'Service Tokens (prefix: /service_tokens)' do
-  set_app ThreeScale::Backend::API::Internal
+  set_app(ThreeScale::Backend::API::Internal.new(allow_insecure: true))
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 

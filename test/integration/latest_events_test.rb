@@ -253,7 +253,9 @@ class LatestEventsTest < Test::Unit::TestCase
     require_relative '../../app/api/api'
 
     Rack::Test::Session.new(
-      Rack::MockSession.new(ThreeScale::Backend::API::Internal)
+      Rack::MockSession.new(
+        ThreeScale::Backend::API::Internal.new(allow_insecure: true)
+      )
     )
   end
 
