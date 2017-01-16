@@ -11,15 +11,9 @@ end
 
 RspecApiDocumentation.configure do |config|
   config.docs_dir = Pathname.new(__FILE__).dirname.join('..', '..', 'docs', 'internal_api')
-end
-
-def set_app(app)
-  RspecApiDocumentation.configure do |config|
-    config.app = app
-  end
+  config.app = ThreeScale::Backend::API::Internal.new(allow_insecure: true)
 end
 
 def response_json
   JSON.parse(response_body)
 end
-

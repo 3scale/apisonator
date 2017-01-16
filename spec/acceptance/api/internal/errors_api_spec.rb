@@ -2,7 +2,6 @@ require 'timecop'
 require_relative '../../acceptance_spec_helper'
 
 resource 'Errors (prefix: /services/:service_id/errors)' do
-  set_app(ThreeScale::Backend::API::Internal.new(allow_insecure: true))
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
