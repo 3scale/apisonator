@@ -17,6 +17,8 @@ DOCKER_COMPOSE_VERSION := 1.8.0
 DOCKER_COMPOSE := .bin/docker-compose
 DOCKER_COMPOSE_BIN := $(DOCKER_COMPOSE)-$(DOCKER_COMPOSE_VERSION)
 
+default: help
+
 .bin:
 	@mkdir -p $@
 
@@ -44,11 +46,11 @@ ifndef GEMINABOX_CREDENTIALS
 	$(error GEMINABOX_CREDENTIALS is undefined)
 endif
 
-build:
+build: ## Build docker image with name LOCAL_IMAGE (NAME:VERSION).
 	docker build -f $(THISDIR_PATH)/Dockerfile --pull -t $(LOCAL_IMAGE) $(PROJECT_PATH)
 
-test: build
-	docker run -t --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) rackup -D
+test: ## Test built LOCAL_IMAGE (NAME:VERSION).
+	docker run -t --env RACK_ENV=$(ENVIRONMENT) --env CONFIG_INTERNAL_API_USER=foo $(LOCAL_IMAGE) rackup -D
 	docker run -t $(LOCAL_IMAGE) 3scale_backend --version
 	docker run -t --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) 3scale_backend_worker --version
 	docker run -t --env RACK_ENV=$(ENVIRONMENT) --env ONCE=1 $(LOCAL_IMAGE) backend-cron | grep "RuntimeError: task crashed" > /dev/null # because redis is not running
@@ -71,11 +73,15 @@ worker:
 cron:
 	docker run --rm --env-file .env --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) backend-cron
 
-bash:
+bash: ## Start bash in the build IMAGE_NAME.
 	docker run --env-file .env --env RACK_ENV=$(ENVIRONMENT) --entrypoint=/bin/bash -it $(LOCAL_IMAGE)
 
-tag:
+tag: ## Tag LOCAL_IMAGE (NAME:VERSION) in the remote registry.
 	docker tag $(LOCAL_IMAGE) $(REMOTE_IMAGE)
 
-push:
+push: ## Push the remote image. Accepts NAME and VERSION.
 	docker push $(REMOTE_IMAGE)
+
+# Check http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
+help: ## Print this help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
