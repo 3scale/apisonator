@@ -12,7 +12,7 @@ DOCKERFILE := $(shell mktemp -u -p $(PROJECT_PATH) Dockerfile_$(RUBY_VERSION)_XX
 DOCKER_REPO := quay.io/3scale/docker
 DOCKER_BASE_IMG := dev-backend-$(RUBY_VERSION)
 
-DOCKER_EXTRA_VOLUMES := -v $(PROJECT_PATH):$(DOCKER_PROJECT_PATH)
+DOCKER_EXTRA_VOLUMES := -v $(PROJECT_PATH):$(DOCKER_PROJECT_PATH):z
 
 RUN = docker run
 RUN_RM = $(RUN) --rm
