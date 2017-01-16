@@ -15,7 +15,7 @@ ENV BASH_ENV=/opt/app/etc/scl_enable \
 RUN yum -y update \
  && yum -y install make gcc \
  && source /opt/app/etc/scl_enable \
- && gem install bundle \
+ && gem install -N bundler \
  && gem env \
  && bundle config --global silence_root_warning 1
 
@@ -43,7 +43,8 @@ ADD openshift/3scale_backend.conf /etc/
 RUN mkdir -p /var/log/backend/ \
   && touch /var/log/backend/3scale_backend.log \
   && touch /var/log/backend/3scale_backend_worker.log \
-  && chmod -R g+wrx /var/log/backend/
+  && chmod -R g+rwx /var/log/backend/ \
+  && chmod 644 /etc/3scale_backend.conf
 
 ENV PATH="${PATH}:/opt/app/bin"
 
