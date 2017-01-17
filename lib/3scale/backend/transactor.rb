@@ -238,10 +238,6 @@ module ThreeScale
         notify_batch(provider_key, usage)
       end
 
-      def encode_time(time)
-        time.to_s
-      end
-
       def get_pairs_and_metric_ids(usage_limits)
         pairs = []
 
