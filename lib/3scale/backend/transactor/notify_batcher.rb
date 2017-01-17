@@ -56,7 +56,12 @@ module ThreeScale
             process_batch(num_elements)
           end
         end
-          
+
+        private
+
+        def encode_time(time)
+          time.to_s
+        end
       end
     end
   end
