@@ -167,7 +167,6 @@ module ThreeScale
         if (usage || params[:log]) && status.authorized?
           report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})
           val = usage ? usage.size : 0
-          ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
           notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
         else
           notify(provider_key, 'transactions/authorize' => 1)
