@@ -15,19 +15,24 @@ module ThreeScale
         include Backend::Configurable
 
         module SaaS
+          METRIC_AUTHORIZE = 'transactions/authorize'.freeze
+          METRIC_CREATE_MULTIPLE = 'transactions/create_multiple'.freeze
+          METRIC_TRANSACTIONS = 'transactions'.freeze
+          private_constant :METRIC_AUTHORIZE, :METRIC_CREATE_MULTIPLE, :METRIC_TRANSACTIONS
+
           def notify_authorize(provider_key)
-            notify(provider_key, 'transactions/authorize'.freeze => 1)
+            notify(provider_key, METRIC_AUTHORIZE => 1)
           end
 
           def notify_authrep(provider_key, transactions)
-            notify(provider_key, 'transactions/authorize'.freeze => 1,
-                                 'transactions/create_multiple'.freeze => 1,
-                                 'transactions'.freeze => transactions)
+            notify(provider_key, METRIC_AUTHORIZE => 1,
+                                 METRIC_CREATE_MULTIPLE => 1,
+                                 METRIC_TRANSACTIONS => transactions)
           end
 
           def notify_report(provider_key, transactions)
-            notify(provider_key, 'transactions/create_multiple'.freeze => 1,
-                                 'transactions'.freeze => transactions)
+            notify(provider_key, METRIC_CREATE_MULTIPLE => 1,
+                                 METRIC_TRANSACTIONS => transactions)
           end
         end
         private_constant :SaaS
