@@ -53,7 +53,6 @@ require '3scale/backend/queue_storage'
 require '3scale/backend/transaction_storage'
 require '3scale/backend/errors'
 require '3scale/backend/stats/aggregator'
-require '3scale/backend/transactor'
 require '3scale/backend/usage_limit'
 require '3scale/backend/user'
 require '3scale/backend/alerts'
@@ -146,6 +145,7 @@ Resque.redis = ThreeScale::Backend::QueueStorage.connection(
 )
 
 # Need to be required after the config params are set
+require '3scale/backend/transactor'
 require '3scale/backend/statsd'
 require '3scale/backend/saas'
 require '3scale/backend/listener'
