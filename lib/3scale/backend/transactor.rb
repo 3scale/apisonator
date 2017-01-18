@@ -209,35 +209,6 @@ module ThreeScale
         Resque.enqueue(ReportJob, service_id, data, Time.now.getutc.to_f, context_info)
       end
 
-      def notify_authorize(provider_key)
-        notify(provider_key, 'transactions/authorize'.freeze => 1)
-      end
-
-      def notify_authrep(provider_key, transactions)
-        notify(provider_key, 'transactions/authorize'.freeze => 1,
-                             'transactions/create_multiple'.freeze => 1,
-                             'transactions'.freeze => transactions)
-      end
-
-      def notify_report(provider_key, transactions)
-        notify(provider_key, 'transactions/create_multiple'.freeze => 1,
-                             'transactions'.freeze => transactions)
-      end
-
-      def notify(provider_key, usage)
-        ## No longer create a job, but for efficiency the notify jobs (incr stats for the master) are
-        ## batched. It used to be like this:
-        ## tt = Time.now.getutc
-        ## Resque.enqueue(NotifyJob, provider_key, usage, encode_time(tt), tt.to_f)
-        ##
-        ## Basically, instead of creating a NotifyJob directly, which would trigger between 10-20 incrby
-        ## we store the data of the job in redis on a list. Once there are configuration.notification_batch
-        ## on the list, the worker will fetch the list, aggregate them in a single NotifyJob will all the
-        ## sums done in memory and schedule the job as a NotifyJob. The advantage is that instead of having
-        ## 20 jobs doing 10 incrby of +1, you will have a single job doing 10 incrby of +20
-        notify_batch(provider_key, usage)
-      end
-
       def get_pairs_and_metric_ids(usage_limits)
         pairs = []
 
