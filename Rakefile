@@ -26,7 +26,7 @@ end
 if testable_environment?
   require 'rake/testtask'
 
-  task :default => [:license_finder, :test, :spec]
+  task :default => [:test, :spec]
 
   test_task_dependencies = ['test:unit', 'test:integration']
 
