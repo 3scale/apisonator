@@ -5,4 +5,5 @@ set -e
 export TEST_COVERAGE=1
 export CI=jenkins
 
+bundle exec rake license_finder
 exec script/test
