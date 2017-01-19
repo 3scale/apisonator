@@ -1,6 +1,0 @@
-# use a single line for the ActiveDocs endpoint. Empty lines, whitespace only
-# lines and lines with whitespace only or starting with '#' are ignored.
-#
-# This endpoint is extracted from the MT support account's api_docs services.
-
-https://active_docs_url?provider_key=pkey

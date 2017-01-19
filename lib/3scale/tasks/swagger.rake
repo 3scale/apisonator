@@ -9,6 +9,15 @@ def endpoint_file(type)
   res
 end
 
+def active_docs_host
+  'active_docs_host'.freeze
+end
+
+def support_account_endpoint(service_id, provider_key)
+  "https://#{active_docs_host}/admin/api/active_docs/"\
+  "#{service_id}.xml?provider_key=#{provider_key}"
+end
+
 # The file name depends on the 'namespace' defined in the Listener.
 def spec_file(type)
   res = 'docs/active_docs/Service Management API'
@@ -26,12 +35,9 @@ def generate_docs(type)
   File.write(spec, JSON.pretty_generate(JSON.parse(File.read(spec))) << "\n")
 end
 
-def upload_docs(type)
+def upload_docs(type, service_id, provider_key)
   require 'uri' unless Kernel.const_defined? :URI
-  endpoint = URI.encode(
-      File.readlines(endpoint_file(type)).find do |line|
-        line !~ /\A\s*(#.*)?\n?\z/
-      end.chomp)
+  endpoint = URI.encode(support_account_endpoint(service_id, provider_key))
   run_command "curl -v -X PUT -F \"body=@#{spec_file(type)}\" \"#{endpoint}\""
 end
 
@@ -61,12 +67,24 @@ namespace :docs do
 
       desc "Uploads swagger docs for SaaS"
       task :saas do
-        upload_docs(:saas)
+        service_id = ENV['SWAGGER_SAAS_SERVICE_ID']
+        provider_key = ENV['SWAGGER_PROVIDER_KEY']
+        if service_id.nil? || provider_key.nil?
+          raise 'Please set SWAGGER_SAAS_SERVICE_ID and SWAGGER_PROVIDER_KEY'
+        end
+
+        upload_docs(:saas, service_id, provider_key)
       end
 
       desc "Uploads swagger docs for on-prem"
       task :on_prem do
-        upload_docs(:on_prem)
+        service_id = ENV['SWAGGER_ONPREM_SERVICE_ID']
+        provider_key = ENV['SWAGGER_PROVIDER_KEY']
+        if service_id.nil? || provider_key.nil?
+          raise 'Please set SWAGGER_ONPREM_SERVICE_ID and SWAGGER_PROVIDER_KEY'
+        end
+
+        upload_docs(:on_prem, service_id, provider_key)
       end
     end
   end
