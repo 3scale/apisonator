@@ -30,6 +30,11 @@ module ThreeScale
             logger.formatter = proc { |severity, datetime, progname, msg|
               "#{severity} #{pid} #{datetime.getutc.strftime("[%d/%b/%Y %H:%M:%S %Z]")} #{msg}\n"
             }
+
+            # At this point, we've already configured the logger for Backend
+            # (used in Listeners and rake tasks). We can reuse the notify proc
+            # defined there.
+            logger.define_singleton_method(:notify, backend_logger_notify_proc)
         end
 
         super
@@ -86,7 +91,7 @@ module ThreeScale
           # I think that the only exception that can be raised here is
           # Yajl::ParseError. However, this is a critical part of the code so
           # we will capture all of them just to be safe.
-          Airbrake.notify(e)
+          Worker.logger.notify(e)
           nil
         end
       end
@@ -126,6 +131,10 @@ module ThreeScale
           Resque::Failure::Airbrake,
         ]
         Resque::Failure.backend = Resque::Failure::Multiple
+      end
+
+      def self.backend_logger_notify_proc
+        Backend.logger.method(:notify).to_proc
       end
 
       ## the next 4 are required for resque, leave them as is
