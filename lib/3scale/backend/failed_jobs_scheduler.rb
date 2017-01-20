@@ -5,6 +5,7 @@ module ThreeScale
       private_constant :TTL_RESCHEDULE_S
 
       class << self
+        include Backend::Logging
 
         def reschedule_failed_jobs
           # There might be several callers trying to requeue failed jobs at the
@@ -44,7 +45,7 @@ module ThreeScale
               #
               # TODO: investigate if we can treat differently the different
               # types of exceptions that we can find here.
-              Airbrake.notify(e)
+              logger.notify(e)
               rescheduled -= 1
             end
 
