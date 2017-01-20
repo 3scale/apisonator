@@ -85,6 +85,14 @@ module ThreeScale
       environment == 'test'
     end
 
+    def self.configure_airbrake
+      Airbrake.configure do |config|
+        config.api_key = configuration.hoptoad.api_key
+        config.environment_name = environment
+      end
+    end
+    private_class_method :configure_airbrake
+
     def self.enable_logging
       Logging.enable! on: self.singleton_class,
                       with: [logs_file, 10] do |logger|
@@ -153,11 +161,7 @@ module ThreeScale
       config.can_create_event_buckets = false unless config.saas
     end
 
-    Airbrake.configure do |config|
-      config.api_key = ThreeScale::Backend.configuration.hoptoad.api_key
-      config.environment_name = ThreeScale::Backend.environment
-    end
-
+    configure_airbrake
     enable_logging
   end
 end
