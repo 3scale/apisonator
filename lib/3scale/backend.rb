@@ -85,6 +85,43 @@ module ThreeScale
       environment == 'test'
     end
 
+    def self.configure_airbrake
+      Airbrake.configure do |config|
+        config.api_key = configuration.hoptoad.api_key
+        config.environment_name = environment
+      end
+    end
+    private_class_method :configure_airbrake
+
+    def self.enable_logging
+      Logging.enable! on: self.singleton_class,
+                      with: [logs_file, 10] do |logger|
+        logger.define_singleton_method(:notify, logger_notify_proc(logger))
+      end
+    end
+    private_class_method :enable_logging
+
+    def self.logs_file
+      # We should think about changing it to something more general.
+      "#{(development? || test?) ? ENV['HOME'] : configuration.log_path}"\
+      '/backend_logger.log'
+    end
+    private_class_method :logs_file
+
+    def self.logger_notify_proc(logger)
+      if airbrake_enabled?
+        Airbrake.method(:notify).to_proc
+      else
+        logger.method(:error).to_proc
+      end
+    end
+    private_class_method :logger_notify_proc
+
+    def self.airbrake_enabled?
+      Airbrake.configuration.api_key
+    end
+    private_class_method :airbrake_enabled?
+
     configuration.tap do |config|
       # To distinguish between SaaS and on-premises mode.
       config.saas = true
@@ -124,19 +161,9 @@ module ThreeScale
       config.can_create_event_buckets = false unless config.saas
     end
 
-    # We should think about chaing it to something more general.
-    @logger = Logger.new "#{(development? || test?) ? ENV['HOME'] :
-      configuration.log_path}/backend_logger.log", 10
-
-    def self.logger
-      @logger
-    end
+    configure_airbrake
+    enable_logging
   end
-end
-
-Airbrake.configure do |config|
-  config.api_key = ThreeScale::Backend.configuration.hoptoad.api_key
-  config.environment_name = ThreeScale::Backend.environment
 end
 
 Resque.redis = ThreeScale::Backend::QueueStorage.connection(

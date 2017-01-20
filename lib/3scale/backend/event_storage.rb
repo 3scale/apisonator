@@ -6,6 +6,7 @@ module ThreeScale
 
       class << self
         include StorageHelpers
+        include Backend::Logging
 
         def store(type, object)
           fail InvalidEventType, type unless EVENT_TYPES.member?(type)
@@ -43,7 +44,7 @@ module ThreeScale
               request_to_events_hook
               return true
             rescue Exception => e
-              Airbrake.notify(e)
+              logger.notify(e)
               return nil
             end
           end

@@ -76,10 +76,9 @@ module ThreeScale
         end
       end
 
-      shared_examples 'jobs that fail to be re-enqueued' do |jobs, reenqueue_fails, notify_airbrake|
+      shared_examples 'jobs that fail to be re-enqueued' do |jobs, reenqueue_fails, notify_error|
         before do
           jobs.each { |job| subject.failed_queue.enqueue(job) }
-          stub_const('Airbrake', double('Mocked_Airbrake', notify: true))
         end
 
         it 'tries to requeue all the jobs in the queue' do
@@ -101,15 +100,15 @@ module ThreeScale
               .to eq({ failed_current: 0, rescheduled: jobs.size - reenqueue_fails })
         end
 
-        if notify_airbrake
-          it 'notifies airbrake' do
+        if notify_error
+          it 'notifies the error' do
+            expect(subject.logger).to receive :notify
             subject.reschedule_failed_jobs
-            expect(Airbrake).to have_received :notify
           end
         else
-          it 'does not notify airbrake' do
+          it 'does not notify an error' do
+            expect(subject.logger).not_to receive :notify
             subject.reschedule_failed_jobs
-            expect(Airbrake).not_to have_received :notify
           end
         end
       end

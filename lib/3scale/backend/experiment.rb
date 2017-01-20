@@ -28,6 +28,7 @@ module ThreeScale
 
     class Experiment
       include Scientist::Experiment
+      include Backend::Logging
 
       ResultsMismatch = Class.new(StandardError)
 
@@ -62,7 +63,7 @@ module ThreeScale
       def check_mismatch(result)
         if result.mismatched?
           msg = mismatch_msg(result.control.value, result.candidates.first.value)
-          Airbrake.notify(ResultsMismatch.new(msg))
+          logger.notify(ResultsMismatch.new(msg))
         end
       end
 

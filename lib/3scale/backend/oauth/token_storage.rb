@@ -44,7 +44,7 @@ module ThreeScale
                 existed, * = remove_a_token token_set, token, key
 
                 unless existed
-                  Airbrake.notify(InconsistencyError.new("Found OAuth token " \
+                  logger.notify(InconsistencyError.new("Found OAuth token " \
                     "#{token} for service #{service_id} and app #{app_id} as " \
                     "key but not in set!"))
                 end

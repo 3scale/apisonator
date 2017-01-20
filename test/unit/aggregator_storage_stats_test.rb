@@ -20,9 +20,6 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     reset_aggregator_prior_bucket!
 
-    ## stubbing the Airbrake, not working on tests
-    Airbrake.stubs(:notify).returns(true)
-
     # I noticed that there are a bunch of variables that are not initialized.
     # The tests seem to run OK, but let's give them a value. For our sanity.
     @provider_key = 'test_provider_key'
