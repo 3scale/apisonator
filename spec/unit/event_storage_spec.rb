@@ -236,11 +236,9 @@ module ThreeScale
           end
 
           context 'when hook notification fails' do
-            let(:Airbrake) { class_double }
-
             before do
               allow(Net::HTTP).to receive(:post_form).and_raise(:BOOOM)
-              allow(Airbrake).to receive(:notify)
+              allow(Backend.logger).to receive(:notify)
             end
 
             subject { EventStorage.ping_if_not_empty }
