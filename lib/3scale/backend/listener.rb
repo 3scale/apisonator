@@ -588,19 +588,6 @@ module ThreeScale
         end
       end
 
-      def application_resource_url(application, type, value)
-        url("/applications/#{application.id}/#{type}/#{value}.xml")
-      end
-
-      def url(path)
-        protocol = request.env['HTTPS'] == 'on' ? 'https' : 'http'
-        server   = request.env['SERVER_NAME']
-
-        url = "#{protocol}://#{server}#{path}"
-        url += "?provider_key=#{params[:provider_key]}" if params[:provider_key]
-        url
-      end
-
       def request_info
         {
           url: request.url,
