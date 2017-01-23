@@ -29,8 +29,6 @@ ThreeScale::Backend.configure do |config|
   config.notification_batch = 5
 end
 
-ThreeScale::Backend.configuration
-
 ## to initilize the worker class variables for those cases that worker is called
 ## without creating a worker first, only happens in test environment
 ThreeScale::Backend::Worker.new
