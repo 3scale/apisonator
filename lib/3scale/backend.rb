@@ -103,8 +103,19 @@ module ThreeScale
 
     def self.logs_file
       # We should think about changing it to something more general.
-      "#{(development? || test?) ? ENV['HOME'] : configuration.log_path}"\
-      '/backend_logger.log'
+      dir = configuration.log_path
+
+      if !dir.nil? && !dir.empty?
+        if File.stat(dir).ftype == 'directory'.freeze
+          "#{dir}/backend_logger.log"
+        else
+          dir
+        end
+      elsif development? || test?
+        ENV['LOG_PATH'] || '/dev/null'.freeze
+      else # production without configuration.log_path specified
+        STDOUT
+      end
     end
     private_class_method :logs_file
 
