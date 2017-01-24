@@ -128,7 +128,9 @@ module ThreeScale
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_log if ENV['SAAS_SWAGGER'] == '1'
 
 
-      COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze, 'user_key'.freeze, 'provider_key'.freeze].freeze
+      COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze,
+		       'user_key'.freeze, 'provider_key'.freeze,
+		       'access_token'.freeze].freeze
 
       ## ------------ DOCS --------------
 
