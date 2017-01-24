@@ -132,8 +132,6 @@ module ThreeScale
 		       'user_key'.freeze, 'provider_key'.freeze,
 		       'access_token'.freeze].freeze
 
-      ## ------------ DOCS --------------
-
       configure :production do
         disable :dump_errors
       end
@@ -171,8 +169,8 @@ module ThreeScale
         halt 403 unless valid_usage_params?
 
         # As params is passed to other methods, we need to overwrite the
-        # provider key. Some of the methods in the Cache class assume that
-        # params[:provider_key] is not null/empty.
+        # provider key. Some methods assume that params[:provider_key] is
+        # not null/empty.
         params[:provider_key] = provider_key
 
         auth_status = Transactor.send method_name, provider_key, params, threescale_extensions
@@ -402,9 +400,7 @@ module ThreeScale
       post '/transactions.xml' do
         check_post_content_type!
 
-        ## return error code 400 (Bad request) if the parameters are not there
-        ## I put 403 (Forbidden) for consitency however it should be 400
-        ## reg = /^([^:\/#?& @%+;=$,<>~\^`\[\]{}\| "]|%[A-F0-9]{2})*$/
+        # 403 Forbidden for consistency (but we should return 400 Bad Request)
         halt 403 if params.nil?
 
         provider_key = params[:provider_key] ||
@@ -420,8 +416,7 @@ module ThreeScale
           halt 400
         end
 
-        ## not very proud of this but... this is to cover for those cases that it does not blow on
-        ## rack_exception_catcher
+        # avoid handling invalid encodings
         unless transactions.valid_encoding?
           halt 400, ThreeScale::Backend::NotValidData.new.to_xml
         end
@@ -557,7 +552,6 @@ module ThreeScale
       end
 
       def normalize_non_empty_keys!
-        ## this is to minimize potential security hazzards with an empty user_key
         COMMON_PARAMS.each do |p|
           thisparam = params[p]
           params[p] = nil if !thisparam.nil? && (thisparam.class != String || thisparam.strip.empty?)
