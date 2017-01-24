@@ -306,7 +306,7 @@ class AuthrepMultiServicesTest < Test::Unit::TestCase
     error = doc.at('error:root')
 
     assert_not_nil error
-    assert_equal 'provider_key_invalid', error['code']
+    assert_equal 'provider_key_invalid_or_service_missing', error['code']
 
     get e, :provider_key => 'fakeproviderkey',
            :service_id   => @service_1.id,
