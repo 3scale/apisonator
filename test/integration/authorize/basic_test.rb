@@ -119,11 +119,12 @@ class AuthorizeBasicTest < Test::Unit::TestCase
   end
 
   test 'fails on invalid provider key' do
-    get '/transactions/authorize.xml', :provider_key => 'boo',
-                                       :app_id     => @application.id
+    provider_key = 'invalid_key'
 
-    assert_error_response :code    => 'provider_key_invalid',
-                          :message => 'provider key "boo" is invalid'
+    get '/transactions/authorize.xml', :provider_key => provider_key,
+                                       :app_id => @application.id
+
+    assert_error_resp_with_exc(ProviderKeyInvalidOrServiceMissing.new(provider_key))
   end
 
   test 'fails on invalid provider key with no body' do
