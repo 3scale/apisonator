@@ -158,5 +158,21 @@ module TestHelpers
     def transaction_with_response_code code = 200
       default_transaction response_code: code
     end
+
+    def setup_provider_without_default_service
+      @provider_key_without_default_service = next_id
+
+      service1 = Service.save!(provider_key: @provider_key_without_default_service,
+                              id: next_id)
+
+      Service.save!(provider_key: @provider_key_without_default_service,
+                    id: next_id)
+
+      # Delete the default service. The provider will have just 1 non-default service.
+      Service.load_by_id(service1.id).tap do |service|
+        service.delete_data
+        service.clear_cache
+      end
+    end
   end
 end
