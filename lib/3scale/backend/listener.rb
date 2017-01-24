@@ -525,16 +525,18 @@ module ThreeScale
       # using a class variable instead of settings because we want this to be
       # as fast as possible when responding, since we hit /status a lot.
       @@status = { status: :ok,
-                   version: { backend: ThreeScale::Backend::VERSION } }.to_json
+		   version: { backend: ThreeScale::Backend::VERSION } }.to_json.freeze
 
       get '/status' do
         content_type 'application/json'.freeze
         @@status
       end
 
+      @@not_found = [404, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, ['']].freeze
+
       not_found do
-        env['sinatra.error'] = nil
-        [404, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, ['']]
+        env['sinatra.error'.freeze] = nil
+        @@not_found
       end
 
       private
