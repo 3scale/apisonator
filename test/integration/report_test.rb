@@ -134,12 +134,13 @@ class ReportTest < Test::Unit::TestCase
   end
 
   test 'report fails on invalid provider key' do
+    provider_key = 'invalid_key'
+
     post '/transactions.xml',
-      :provider_key => 'boo',
+      :provider_key => provider_key,
       :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
 
-    assert_error_response :code    => 'provider_key_invalid',
-                          :message => 'provider key "boo" is invalid'
+    assert_error_resp_with_exc(ProviderKeyInvalidOrServiceMissing.new(provider_key))
   end
 
   test 'report reports error on invalid application id' do
@@ -439,7 +440,7 @@ class ReportTest < Test::Unit::TestCase
       doc = Nokogiri::XML(last_response.body)
       error = doc.at('error:root')
       assert_not_nil error
-      assert_equal 'provider_key_invalid', error['code']
+      assert_equal 'provider_key_invalid_or_service_missing', error['code']
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
