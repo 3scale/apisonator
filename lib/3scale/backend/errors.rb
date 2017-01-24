@@ -22,9 +22,7 @@ module ThreeScale
         underscore(name[/[^:]*$/])
       end
 
-      # TODO: move this over to some utility module.
       def self.underscore(string)
-        # Code stolen from ActiveSupport
         string.gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
                gsub(/([a-z\d])([A-Z])/,'\1_\2').
                downcase
