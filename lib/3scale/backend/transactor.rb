@@ -17,7 +17,7 @@ module ThreeScale
       extend self
 
       def report(provider_key, service_id, transactions, context_info = {})
-        service = load_service!(provider_key, service_id)
+        service = Service.load_with_provider_key!(service_id, provider_key)
 
         report_enqueue(service.id, transactions, context_info)
         notify_report(provider_key, transactions.size)
@@ -63,7 +63,7 @@ module ThreeScale
       private
 
       def validate(oauth, provider_key, report_usage, params, extensions)
-        service = load_service!(provider_key, params[:service_id])
+        service = Service.load_with_provider_key!(params[:service_id], provider_key)
         app_id, user_id = params[:app_id], params[:user_id]
         # TODO: make sure params are nil if they are empty up the call stack so
         # that we stop these idiotic checkings.
@@ -185,20 +185,6 @@ module ThreeScale
         end
 
         user
-      end
-
-      def load_service!(provider_key, id)
-        id = Service.default_id(provider_key) if id.nil? || id.empty?
-        raise ProviderKeyInvalidOrServiceMissing, provider_key if id.nil? || id.empty?
-
-        service = Service.load_by_id(id.split('-').last) || Service.load_by_id!(id)
-
-        if service.provider_key != provider_key
-          Service.default_id!(provider_key) # no need to check anything, raises if invalid provider
-          raise ServiceIdInvalid, id
-        end
-
-        service
       end
 
       def apply_validators(validators, status_attrs, params)
