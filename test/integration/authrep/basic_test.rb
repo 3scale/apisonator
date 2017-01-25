@@ -257,12 +257,13 @@ class AuthrepBasicTest < Test::Unit::TestCase
   end
 
   test_authrep 'fails on invalid provider key' do |e|
-    get e, :provider_key => 'boo',
+    provider_key = 'invalid_key'
+
+    get e, :provider_key => provider_key,
            :app_id       => @application.id,
            :log          => @apilog
 
-    assert_error_response :code    => 'provider_key_invalid',
-                          :message => 'provider key "boo" is invalid'
+    assert_error_resp_with_exc(ProviderKeyInvalidOrServiceMissing.new(provider_key))
   end
 
   test_authrep 'fails on invalid provider key with no body' do |e|

@@ -65,9 +65,24 @@ class TransactorTest < Test::Unit::TestCase
     end
   end
 
-  test 'report raises an exception when provider key is invalid' do
-    assert_raise ProviderKeyInvalid do
+  test 'report raises ProviderKeyInvalidOrServiceMissing when provider key is invalid and no service ID is given' do
+    assert_raise ProviderKeyInvalidOrServiceMissing do
       Transactor.report('booo', nil, Hash[*@raw_transactions.first])
+    end
+  end
+
+  test 'report raises ServiceIdInvalid when both the provider key and the service are invalid' do
+    assert_raise ServiceIdInvalid do
+      Transactor.report('booo', 'non_existing_service', Hash[*@raw_transactions.first])
+    end
+  end
+
+  test 'report raises ProviderKeyInvalidOrServiceMissing when provider key has no default service and a service id is not given' do
+    setup_provider_without_default_service
+
+    assert_raise ProviderKeyInvalidOrServiceMissing do
+      Transactor.report(@provider_key_without_default_service,
+                        nil, Hash[*@raw_transactions.first])
     end
   end
 
@@ -183,9 +198,23 @@ class TransactorTest < Test::Unit::TestCase
     assert_equal 0, status.application_usage_reports.count
   end
 
-  test 'authorize raises an exception when provider key is invalid' do
-    assert_raise ProviderKeyInvalid do
-      Transactor.authorize('booo', :app_id => @application_one.id)
+  test 'authorize raises ProviderKeyInvalidOrServiceMissing when provider key is invalid and no service ID is given' do
+    assert_raise ProviderKeyInvalidOrServiceMissing do
+      Transactor.authorize('booo', app_id: @application_one.id)
+    end
+  end
+
+  test 'authorize raises ServiceIdInvalid when both the provider key and the service are invalid' do
+    assert_raise ServiceIdInvalid do
+      Transactor.authorize('booo', service_id: 'invalid', app_id: @application_one.id)
+    end
+  end
+
+  test 'authorize raises ProviderKeyInvalidOrServiceMissing when provider key has no default service and a service id is not given' do
+    setup_provider_without_default_service
+
+    assert_raise ProviderKeyInvalidOrServiceMissing do
+      Transactor.authorize(@provider_key_without_default_service, app_id: @application_one.id)
     end
   end
 
@@ -264,9 +293,23 @@ class TransactorTest < Test::Unit::TestCase
     assert_equal 0, status.application_usage_reports.count
   end
 
-  test_authrep 'raises an exception when provider key is invalid' do |_, method|
-    assert_raise ProviderKeyInvalid do
-      Transactor.send(method, 'booo', :app_id => @application_one.id)
+  test_authrep 'raises ProviderKeyInvalidOrServiceMissing when provider key is invalid and no service ID is given' do |_, method|
+    assert_raise ProviderKeyInvalidOrServiceMissing do
+      Transactor.send(method, 'booo', app_id: @application_one.id)
+    end
+  end
+
+  test_authrep 'raises ServiceIdInvalid when both the provider key and the service are invalid' do |_, method|
+    assert_raise ServiceIdInvalid do
+      Transactor.send(method, 'booo', service_id: 'invalid', app_id: @application_one.id)
+    end
+  end
+
+  test_authrep 'raises ProviderKeyInvalidOrServiceMissing when provider key has no default service and a service id is not given' do |_, method|
+    setup_provider_without_default_service
+
+    assert_raise ProviderKeyInvalidOrServiceMissing do
+      Transactor.send(method, @provider_key_without_default_service, app_id: @application_one.id)
     end
   end
 

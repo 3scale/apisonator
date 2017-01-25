@@ -327,6 +327,17 @@ module ThreeScale
       end
     end
 
+    # This is raised in these 2 situations:
+    #   1) The request does not contain a valid provider key nor a service ID.
+    #   2) The request contains a valid provider key, but does not contain a
+    #      service ID, and the provider does not have a default service
+    #      associated.
+    class ProviderKeyInvalidOrServiceMissing < Error
+      def initialize(provider_key)
+        super %(provider key "#{provider_key}" invalid and/or service ID missing)
+      end
+    end
+
     # Legacy API support
 
     class AuthenticationError < Error

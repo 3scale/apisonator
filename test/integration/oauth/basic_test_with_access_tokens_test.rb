@@ -225,12 +225,13 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   end
 
   test 'fails on invalid provider key' do
-    get '/transactions/oauth_authorize.xml', :provider_key => 'boo',
+    provider_key = 'invalid_key'
+
+    get '/transactions/oauth_authorize.xml', :provider_key => provider_key,
                                              :access_token => @access_token,
                                              :log          => @apilog
 
-    assert_error_response :code    => 'provider_key_invalid',
-                          :message => 'provider key "boo" is invalid'
+    assert_error_resp_with_exc(ProviderKeyInvalidOrServiceMissing.new(provider_key))
   end
 
   test 'fails on invalid provider key with no body' do
