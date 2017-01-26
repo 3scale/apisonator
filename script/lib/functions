@@ -69,11 +69,11 @@ function stop_cubert {
 }
 
 function start_postgresql {
-    daemonize sudo -u postgres sh -c '/usr/lib/postgresql/9.5/bin/pg_ctl -D /usr/local/pgsql/data start' > ${POSTGRES_PIDFILE}
+    daemonize sudo -u postgres sh -c '/usr/lib/postgresql/9.5/bin/pg_ctl -D /usr/local/pgsql/data start' > /dev/null
 }
 
 function stop_postgresql {
-    kill_pidfile ${POSTGRES_PIDFILE}
+    sudo kill -TERM `sudo head -1 /usr/local/pgsql/data/postmaster.pid`
 }
 
 function start_services {
