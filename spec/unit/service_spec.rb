@@ -4,11 +4,81 @@ module ThreeScale
   module Backend
     describe Service do
 
+      provider_key_invalid = ProviderKeyInvalid
+
       describe '.default_id' do
         before { Service.storage.set('service/provider_key:foo/id', '7001') }
 
         it 'returns an ID' do
           expect(Service.default_id('foo')).to eq '7001'
+        end
+      end
+
+      describe '.default_id!' do
+        context 'when the provider exists' do
+          let(:provider_key) { 'a_key' }
+          let!(:service) { Service.save!(provider_key: provider_key, id: '1') }
+
+          context 'and it has a default service' do
+            it 'returns its ID' do
+              expect(Service.default_id!(provider_key)).to eq service.id
+            end
+          end
+
+          context 'and it does not have a default service' do
+            before do
+              service.delete_data
+              service.clear_cache
+            end
+
+            it "raises #{provider_key_invalid}" do
+              expect { Service.default_id!(provider_key_invalid) }
+                  .to raise_error provider_key_invalid
+            end
+          end
+        end
+
+        context 'when the provider does not exist' do
+          it "raises #{provider_key_invalid}" do
+            expect { Service.default_id!('a_key') }
+                .to raise_error provider_key_invalid
+          end
+        end
+      end
+
+      describe '.load!' do
+        context 'when the provider exists' do
+          let(:provider_key) { 'a_key' }
+          let!(:service) do
+            Service.save!(provider_key: provider_key,
+                          id: '1',
+                          referrer_filters_required: false)
+          end
+
+          context 'and it has a default service' do
+            it 'returns it' do
+              expect(Service.load!(provider_key).to_hash).to eq service.to_hash
+            end
+          end
+
+          context 'and it does not have a default service' do
+            before do
+              service.delete_data
+              service.clear_cache
+            end
+
+            it "raises #{provider_key_invalid}" do
+              expect { Service.load!(provider_key) }
+                  .to raise_error provider_key_invalid
+            end
+          end
+        end
+
+        context 'when the provider does not exist' do
+          it "raises #{provider_key_invalid}" do
+            expect { Service.load!('a_key') }
+                .to raise_error provider_key_invalid
+          end
         end
       end
 
