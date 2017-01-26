@@ -4,6 +4,13 @@ module ThreeScale
       TTL_RESCHEDULE_S = 30
       private_constant :TTL_RESCHEDULE_S
 
+      # We need to limit the amount of failed jobs that we reschedule each
+      # time. Even a small Redis downtime can cause lots of failed jobs and we
+      # want to avoid spending more time than the TTL defined above. Otherwise,
+      # several reschedule jobs might try to run at the same time.
+      MAX_JOBS_TO_RESCHEDULE = 20_000
+      private_constant :MAX_JOBS_TO_RESCHEDULE
+
       class << self
         include Backend::Logging
 
@@ -17,7 +24,7 @@ module ThreeScale
 
           if key
             begin
-              count = rescheduled = failed_queue.count
+              count = rescheduled = [failed_queue.count, MAX_JOBS_TO_RESCHEDULE].min
               count.times { |i| failed_queue.requeue(i) }
             rescue Resque::Helpers::DecodeException
               # This means we tried to dequeue a job with invalid encoding.
