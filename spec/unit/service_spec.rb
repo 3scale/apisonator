@@ -4,7 +4,16 @@ module ThreeScale
   module Backend
     describe Service do
 
+      # Note: in some tests, services are initialized with referrer_filters_required
+      # set to false even when that field does not seem useful for what is
+      # being tested. This field is set to false by default when the service is
+      # saved. So it's just more convenient to set it as false when it's
+      # instantiated so assertions are easier to write by allowing us to
+      # compare the whole service object.
+
+      service_id_invalid = ServiceIdInvalid
       provider_key_invalid = ProviderKeyInvalid
+      pkey_invalid_or_service_missing = ProviderKeyInvalidOrServiceMissing
 
       describe '.default_id' do
         before { Service.storage.set('service/provider_key:foo/id', '7001') }
@@ -131,6 +140,131 @@ module ThreeScale
             result = Service.load_by_id(service.id)
 
             expect(result.user_registration_required?).to be false
+          end
+        end
+      end
+
+      describe '.load_with_provider_key!' do
+        context 'when a service ID is not specified' do
+          let(:provider_key) { 'a_provider_key' }
+
+          context 'and the provider key has a default service associated' do
+            let(:default_service_id) { '123' }
+            let(:other_service_id) { '456' }
+
+            let!(:default_service) do
+              Service.save!(provider_key: provider_key,
+                            id: default_service_id,
+                            referrer_filters_required: false)
+            end
+
+            let!(:other_service) do
+              Service.save!(provider_key: provider_key,
+                            id: other_service_id,
+                            referrer_filters_required: false)
+            end
+
+            it 'returns the default service' do
+              expect(Service.load_with_provider_key!(nil, provider_key).to_hash)
+                  .to eq default_service.to_hash
+            end
+          end
+
+          context 'and the provider key does not have a default service associated' do
+            it "raises #{pkey_invalid_or_service_missing}" do
+              expect { Service.load_with_provider_key!(nil, provider_key) }
+                  .to raise_error pkey_invalid_or_service_missing
+            end
+          end
+        end
+
+        context 'when a service ID is specified' do
+          context 'and it does not exist' do
+            it "raises #{service_id_invalid}" do
+              expect { Service.load_with_provider_key!('non_existing_service_id', 'a_key') }
+                  .to raise_error service_id_invalid
+            end
+          end
+
+          context 'and it exists' do
+            context 'and it belongs to the provider key' do
+              let(:provider_key) { 'a_key' }
+              let!(:service) do
+                Service.save!(provider_key: provider_key,
+                              id: '123',
+                              referrer_filters_required: false)
+              end
+
+              it 'returns the service' do
+                expect(Service.load_with_provider_key!(service.id, provider_key).to_hash)
+                    .to eq service.to_hash
+              end
+            end
+
+            context 'and it does not belong to the provider key' do
+              context 'and the provider key exists and has a default service' do
+                let(:provider_key_1) { 'a_key_1' }
+                let(:provider_key_2) { 'a_key_2' }
+                let!(:service_pkey1) do
+                  Service.save!(provider_key: provider_key_1,
+                                id: '123',
+                                referrer_filters_required: false)
+                end
+                let!(:service_pkey2) do
+                  Service.save!(provider_key: provider_key_2,
+                                id: '456',
+                                referrer_filters_required: false)
+                end
+
+                it "raises #{service_id_invalid}" do
+                  expect { Service.load_with_provider_key!(service_pkey2.id, provider_key_1) }
+                      .to raise_error service_id_invalid
+                end
+              end
+
+              context 'and the provider key exists but does not have a default service' do
+                let(:provider_key_1) { 'a_key_1' }
+                let(:provider_key_2) { 'a_key_2' }
+                let!(:service_pkey1) do
+                  Service.save!(provider_key: provider_key_1,
+                                id: '123',
+                                referrer_filters_required: false)
+                end
+                let!(:service_pkey2) do
+                  Service.save!(provider_key: provider_key_2,
+                                id: '456',
+                                referrer_filters_required: false)
+                end
+
+                before do
+                  # Delete service so the provider key does not have a default one
+                  Service.load_by_id(service_pkey1.id).tap do |service|
+                    service.delete_data
+                    service.clear_cache
+                  end
+                end
+
+                it "raises #{provider_key_invalid}" do
+                  expect { Service.load_with_provider_key!(service_pkey2.id, provider_key_1) }
+                      .to raise_error provider_key_invalid
+                end
+              end
+
+              context 'because the provider key does not exist' do
+                let(:provider_key) { 'a_key' }
+                let(:service_pkey) { 'another_key' }
+                let!(:service) do
+                  Service.save!(provider_key: service_pkey,
+                                id: '123',
+                                referrer_filters_required: false)
+                end
+
+                it "raises #{provider_key_invalid}" do
+                  expect { Service.load_with_provider_key!(service.id, provider_key) }
+                      .to raise_error provider_key_invalid
+                end
+              end
+            end
           end
         end
       end

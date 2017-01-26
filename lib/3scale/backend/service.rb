@@ -64,6 +64,21 @@ module ThreeScale
           load_by_id(service_id) or raise ServiceIdInvalid, service_id
         end
 
+        def load_with_provider_key!(id, provider_key)
+          id = Service.default_id(provider_key) if id.nil? || id.empty?
+          raise ProviderKeyInvalidOrServiceMissing, provider_key if id.nil? || id.empty?
+
+          service = Service.load_by_id(id.split('-').last) || Service.load_by_id!(id)
+
+          if service.provider_key != provider_key
+            # this is an error; let's raise in default_id! or raise invalid service
+            Service.default_id!(provider_key)
+            raise ServiceIdInvalid, id
+          end
+
+          service
+        end
+
         def delete_by_id(service_id)
           service = load_by_id!(service_id)
           raise ServiceIsDefaultService, service.id if service.default_service?
