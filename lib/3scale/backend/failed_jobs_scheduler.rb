@@ -20,7 +20,7 @@ module ThreeScale
           # failed job more than once.
           key = dist_lock.lock
 
-          rescheduled = 0
+          count = rescheduled = 0
 
           if key
             count = rescheduled = [failed_queue.count, MAX_JOBS_TO_RESCHEDULE].min
@@ -63,7 +63,9 @@ module ThreeScale
             dist_lock.unlock if key == dist_lock.current_lock_key
           end
 
-          { failed_current: failed_queue.count, rescheduled: rescheduled }
+          { rescheduled: rescheduled,
+            failed_while_rescheduling: count - rescheduled,
+            failed_current: failed_queue.count }
         end
 
         private
