@@ -23,40 +23,43 @@ module ThreeScale
           rescheduled = 0
 
           if key
-            begin
-              count = rescheduled = [failed_queue.count, MAX_JOBS_TO_RESCHEDULE].min
-              count.times { |i| failed_queue.requeue(i) }
-            rescue Resque::Helpers::DecodeException
-              # This means we tried to dequeue a job with invalid encoding.
-              # We just want to delete it from the queue. Although this might
-              # change in the future. Marking it as non-rescheduled is enough.
-              #
-              # We know that Cubert is responsible for errors of this type.
-              # For that reason, we do not need to notify Airbrake.
-              rescheduled -= 1
-            rescue Exception => e
-              # The dist lock we use does not guarantee mutual exclusion in all
-              # cases. This can result in a 'NoMethodError' if requeue is
-              # called with an index that is no longer valid.
-              #
-              # There are other cases that can result in a 'NoMethodError'.
-              # The format that Resque expects for a job is a hash with fields
-              # like payload, args, failed_at, timestamp, etc. However,
-              # we have seen Fixnums enqueued. The root cause of that is not
-              # clear, but it is a problem. A Fixnum does not raise a
-              # DecodeException, but when Resque receives that 'job', it
-              # raises a 'NoMethodError' because it tries to call [] (remember
-              # that it expects a hash) on that Fixnum.
-              # We need to make sure that we remove 'jobs' like this from the
-              # queue, otherwise, they'll be retried forever.
-              #
-              # TODO: investigate if we can treat differently the different
-              # types of exceptions that we can find here.
-              logger.notify(e)
-              rescheduled -= 1
+            count = rescheduled = [failed_queue.count, MAX_JOBS_TO_RESCHEDULE].min
+            count.times do
+              begin
+                failed_queue.requeue(0)
+              rescue Resque::Helpers::DecodeException
+                # This means we tried to dequeue a job with invalid encoding.
+                # We just want to delete it from the queue. Although this might
+                # change in the future. Marking it as non-rescheduled is enough.
+                #
+                # We know that Cubert is responsible for errors of this type.
+                # For that reason, we do not need to notify Airbrake.
+                rescheduled -= 1
+              rescue Exception => e
+                # The dist lock we use does not guarantee mutual exclusion in all
+                # cases. This can result in a 'NoMethodError' if requeue is
+                # called with an index that is no longer valid.
+                #
+                # There are other cases that can result in a 'NoMethodError'.
+                # The format that Resque expects for a job is a hash with fields
+                # like payload, args, failed_at, timestamp, etc. However,
+                # we have seen Fixnums enqueued. The root cause of that is not
+                # clear, but it is a problem. A Fixnum does not raise a
+                # DecodeException, but when Resque receives that 'job', it
+                # raises a 'NoMethodError' because it tries to call [] (remember
+                # that it expects a hash) on that Fixnum.
+                # We need to make sure that we remove 'jobs' like this from the
+                # queue, otherwise, they'll be retried forever.
+                #
+                # TODO: investigate if we can treat differently the different
+                # types of exceptions that we can find here.
+                logger.notify(e)
+                rescheduled -= 1
+              end
+
+              failed_queue.remove(0)
             end
 
-            count.times { failed_queue.remove(0) }
             dist_lock.unlock if key == dist_lock.current_lock_key
           end
 
