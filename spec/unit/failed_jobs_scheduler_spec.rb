@@ -93,9 +93,11 @@ module ThreeScale
           expect(subject.failed_queue.count).to be_zero
         end
 
-        it 'returns a hash with the current failed jobs and the rescheduled ones' do
+        it 'returns the correct number of rescheduled, failed and current jobs' do
           expect(subject.reschedule_failed_jobs)
-              .to eq({ failed_current: 0, rescheduled: jobs.size - reenqueue_fails })
+              .to eq({ rescheduled: jobs.size - reenqueue_fails,
+                       failed_while_rescheduling: reenqueue_fails,
+                       failed_current: 0 })
         end
 
         if notify_error
@@ -111,7 +113,7 @@ module ThreeScale
         end
       end
 
-      describe '#reschedule failed jobs' do
+      describe '.reschedule_failed_jobs' do
         context 'when the lock cannot be acquired' do
           let(:failed_jobs) { %w(job1 job2) }
           let(:dist_lock) { double('dist_lock', lock: false) }
@@ -121,17 +123,21 @@ module ThreeScale
             allow(subject).to receive(:dist_lock).and_return(dist_lock)
           end
 
-          it 'returns a hash with the number of failed jobs unchanged and rescheduled = 0' do
+          it 'returns the correct number of rescheduled, failed and current jobs' do
             expect(subject.reschedule_failed_jobs)
-                .to eq({ failed_current: failed_jobs.size, rescheduled: 0 })
+                .to eq({ rescheduled: 0,
+                         failed_while_rescheduling: 0,
+                         failed_current: failed_jobs.size })
           end
         end
 
         context 'when the lock can be acquired' do
           context 'and the failed jobs queue is empty' do
-            it 'returns a hash with failed_current = 0 and rescheduled = 0' do
+            it 'returns the correct number of rescheduled, failed and current jobs' do
               expect(subject.reschedule_failed_jobs)
-                  .to eq({ failed_current: 0, rescheduled: 0 })
+                  .to eq({ rescheduled: 0,
+                           failed_while_rescheduling: 0,
+                           failed_current: 0 })
             end
           end
 
@@ -155,9 +161,11 @@ module ThreeScale
               expect(subject.failed_queue.count).to be_zero
             end
 
-            it 'returns a hash with failed_current = 0 and rescheduled = number of failed before' do
+            it 'returns the correct number of rescheduled, failed and current jobs' do
               expect(subject.reschedule_failed_jobs)
-                  .to eq({ failed_current: 0, rescheduled: failed_jobs.size })
+                  .to eq({ rescheduled: failed_jobs.size,
+                           failed_while_rescheduling: 0,
+                           failed_current: 0 })
             end
           end
 
