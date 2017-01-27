@@ -111,5 +111,7 @@ end
 desc 'Reschedule failed jobs'
 task :reschedule_failed_jobs do
   result = ThreeScale::Backend::FailedJobsScheduler.reschedule_failed_jobs
-  puts "Rescheduled: #{result[:rescheduled]}. Pending failed jobs: #{result[:failed_current]}."
+  puts "Rescheduled: #{result[:rescheduled]}. "\
+       "Failed and discarded: #{result[:failed_while_rescheduling]}. "\
+       "Pending failed jobs: #{result[:failed_current]}."
 end
