@@ -81,7 +81,7 @@ module ThreeScale
 
         it 'tries to requeue all the jobs in the queue' do
           expect(subject.failed_queue)
-              .to receive(:requeue)
+              .to receive(:requeue).and_call_original
               .exactly(jobs.size).times
 
           subject.reschedule_failed_jobs
@@ -144,7 +144,7 @@ module ThreeScale
 
             it 're-queues all the failed jobs' do
               expect(subject.failed_queue)
-                  .to receive(:requeue)
+                  .to receive(:requeue).and_call_original
                   .exactly(failed_jobs.size).times
 
               subject.reschedule_failed_jobs
