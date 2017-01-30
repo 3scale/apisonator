@@ -22,6 +22,8 @@ module ThreeScale
         end
 
         class FakeFailedQueue
+          attr_reader :failed_jobs
+
           def initialize
             @failed_jobs = []
           end
@@ -52,10 +54,6 @@ module ThreeScale
               raise Exception.new
             end
           end
-
-          private
-
-          attr_reader :failed_jobs
         end
       end
 
@@ -160,6 +158,41 @@ module ThreeScale
             it 'returns a hash with failed_current = 0 and rescheduled = number of failed before' do
               expect(subject.reschedule_failed_jobs)
                   .to eq({ failed_current: 0, rescheduled: failed_jobs.size })
+            end
+          end
+
+          context 'when the number of failed jobs is higher than the defined max to reschedule' do
+            let(:failed_jobs) { %w(job1 job2) }
+            let(:max_to_reschedule) { 1 }
+
+            before do
+              failed_jobs.each { |job| subject.failed_queue.enqueue(job) }
+
+              # To make the tests easier, set the max to a low number.
+              stub_const('ThreeScale::Backend::FailedJobsScheduler::MAX_JOBS_TO_RESCHEDULE',
+                         max_to_reschedule)
+            end
+
+            it 're-queues only the max defined instead of all the failed jobs' do
+              expect(subject.failed_queue)
+                  .to receive(:requeue).and_call_original
+                  .exactly(max_to_reschedule).times
+
+              subject.reschedule_failed_jobs
+            end
+
+            it 'deletes the re-enqueued jobs from the queue of failed_jobs' do
+              subject.reschedule_failed_jobs
+
+              expect(subject.failed_queue.failed_jobs)
+                  .to eq failed_jobs[max_to_reschedule..-1]
+            end
+
+            it 'returns the correct number of rescheduled, failed and current jobs' do
+              expect(subject.reschedule_failed_jobs)
+                  .to eq({ rescheduled: max_to_reschedule,
+                           failed_while_rescheduling: 0,
+                           failed_current: failed_jobs.size - max_to_reschedule })
             end
           end
 
