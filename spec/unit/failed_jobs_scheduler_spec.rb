@@ -44,12 +44,17 @@ module ThreeScale
             # Resque would enqueue a new job with the info stored in the object
             # at _index, but we do not need to do anything.
 
-            # We need to simulate cases where Resque::Helpers::DecodeException
-            # and other exceptions are raised. In order to do so, to simplify,
-            # we will raise DecodeException if the string is 'invalid_encoding'
-            # and Exception when it is 'exception'
+            # We need to "simulate" the errors that we know can happen:
+            # 1) Job with invalid encoding.
+            # 2) Invalid job that is a Fixnum instead of a Hash.
+            # 3) Trying to requeue a job when there are none.
+            # 4) Unknown.
             if failed_jobs[index] == 'invalid_encoding'
               raise Resque::Helpers::DecodeException
+            elsif failed_jobs[index] == 'fixnum_job'
+              raise Exception.new("undefined method `[]=' for 123:Fixnum")
+            elsif failed_jobs[index] == 'no_jobs_in_queue'
+              raise Exception.new("undefined method `[]=' for nil:NilClass")
             elsif failed_jobs[index] == 'exception'
               raise Exception.new
             end
@@ -210,9 +215,53 @@ module ThreeScale
                                %w(job1 job2 invalid_encoding job3), 1, false
             end
 
-            context 'and it is not because the job has invalid encoding' do
+            context 'and it is because the job is a Fixnum' do
+              include_examples 'jobs that fail to be re-enqueued',
+                               %w(job1 job2 fixnum_job job3), 1, true
+            end
+
+            context 'and it is because an unknown exception has been raised' do
               include_examples 'jobs that fail to be re-enqueued',
                                %w(job1 job2 exception job3), 1, true
+            end
+
+            # This one is a bit different and I think that trying to include
+            # its logic in the shared example would hurt readability.
+            context 'and it is because the job is no longer in the queue' do
+              let(:jobs) { %w(job1 job2 no_jobs_in_queue job3) }
+              let(:error_position) do
+                jobs.find_index { |job| job == 'no_jobs_in_queue' }
+              end
+
+              before do
+                jobs.each { |job| subject.failed_queue.enqueue(job) }
+              end
+
+              it 'tries to requeue all the jobs in the queue until the error is raised' do
+                expect(subject.failed_queue)
+                    .to receive(:requeue).and_call_original
+                    .exactly(error_position + 1).times
+
+                subject.reschedule_failed_jobs
+              end
+
+              it 'removes all the jobs from the queue that come before the one that fails' do
+                subject.reschedule_failed_jobs
+                expect(subject.failed_queue.failed_jobs)
+                    .to eq jobs[error_position..-1]
+              end
+
+              it 'returns the correct number of rescheduled, failed and current jobs' do
+                expect(subject.reschedule_failed_jobs)
+                    .to eq({ rescheduled: error_position,
+                             failed_while_rescheduling: 1,
+                             failed_current: jobs.size - error_position })
+              end
+
+              it 'notifies the error' do
+                expect(subject.logger).to receive :notify
+                subject.reschedule_failed_jobs
+              end
             end
           end
         end
