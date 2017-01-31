@@ -11,6 +11,12 @@ module ThreeScale
       MAX_JOBS_TO_RESCHEDULE = 20_000
       private_constant :MAX_JOBS_TO_RESCHEDULE
 
+      PATTERN_FIXNUM_JOB_ERROR = /undefined method `\[\]=' for .*:Fixnum*/.freeze
+      private_constant :PATTERN_FIXNUM_JOB_ERROR
+
+      NO_JOBS_IN_QUEUE_ERROR = "undefined method `[]=' for nil:NilClass".freeze
+      private_constant :NO_JOBS_IN_QUEUE_ERROR
+
       class << self
         include Backend::Logging
 
@@ -20,21 +26,28 @@ module ThreeScale
           # failed job more than once.
           key = dist_lock.lock
 
-          count = rescheduled = 0
+          rescheduled = failed_while_rescheduling = 0
 
           if key
-            count = number_of_jobs_to_reschedule
-            count.times do
-              reschedule_ok = requeue_oldest_failed_job
-              rescheduled += 1 if reschedule_ok
-              remove_oldest_failed_job
+            number_of_jobs_to_reschedule.times do
+              requeue_result = requeue_oldest_failed_job
+
+              if requeue_result[:rescheduled?]
+                rescheduled += 1
+              else
+                failed_while_rescheduling += 1
+              end
+
+              # :ok_to_remove? is false only when the requeue() call fails
+              # because there are no more jobs in the queue.
+              requeue_result[:ok_to_remove?] ? remove_oldest_failed_job : break
             end
 
             dist_lock.unlock if key == dist_lock.current_lock_key
           end
 
           { rescheduled: rescheduled,
-            failed_while_rescheduling: count - rescheduled,
+            failed_while_rescheduling: failed_while_rescheduling,
             failed_current: failed_queue.count }
         end
 
@@ -53,22 +66,34 @@ module ThreeScale
           [failed_queue.count, MAX_JOBS_TO_RESCHEDULE].min
         end
 
-        # Returns true when the job is successfully rescheduled. False
-        # otherwise.
+        # Returns a hash with two symbol keys. ':rescheduled?' is a boolean
+        # that indicates whether the job has been rescheduled successfully.
+        # ':ok_to_remove?' is a boolean that indicates whether we should remove
+        # the job from the queue. That is true when the job has been
+        # rescheduled successfully and when we want to discard the job because
+        # the error it raised.
         def requeue_oldest_failed_job
           failed_queue.requeue(0)
-          true
+          { rescheduled?: true, ok_to_remove?: true }
         rescue Resque::Helpers::DecodeException
           # This means we tried to dequeue a job with invalid encoding.
           # We just want to delete it from the queue.
           #
           # We know that Cubert is responsible for errors of this type.
           # For that reason, we do not need to notify Airbrake.
-          false
+          { rescheduled?: false, ok_to_remove?: true }
         rescue Exception => e
+          logger.notify(e)
+          { rescheduled?: false, ok_to_remove?: ok_to_remove?(e.message)}
+        end
+
+        def ok_to_remove?(error_msg)
           # The dist lock we use does not guarantee mutual exclusion in all
           # cases. This can result in a 'NoMethodError' if requeue is
           # called with an index that is no longer valid.
+          # The error msg raised in this case is the one defined in
+          # NO_JOBS_IN_QUEUE_ERROR. We do not want to remove the job in this
+          # case because the one we wanted to remove no longer exists.
           #
           # There are other cases that can result in a 'NoMethodError'.
           # The format that Resque expects for a job is a hash with fields
@@ -78,13 +103,18 @@ module ThreeScale
           # DecodeException, but when Resque receives that 'job', it
           # raises a 'NoMethodError' because it tries to call [] (remember
           # that it expects a hash) on that Fixnum.
+          # The error msg raised in this case matches the pattern
+          # PATTERN_FIXNUM_JOB_ERROR.
           # We need to make sure that we remove 'jobs' like this from the
           # queue, otherwise, they'll be retried forever.
-          #
-          # TODO: investigate if we can treat differently the different
-          # types of exceptions that we can find here.
-          logger.notify(e)
-          false
+
+          if PATTERN_FIXNUM_JOB_ERROR =~ error_msg
+            true
+          elsif NO_JOBS_IN_QUEUE_ERROR == error_msg
+            false
+          else # Unknown error. Remove the job to avoid retrying it forever.
+            true
+          end
         end
 
         def remove_oldest_failed_job
