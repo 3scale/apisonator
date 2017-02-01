@@ -264,6 +264,29 @@ module ThreeScale
               end
             end
           end
+
+          context 'when there is no time for rescheduling another job' do
+            let(:jobs) { %w(job1 job2) }
+
+            before do
+              jobs.each { |job| subject.failed_queue.enqueue(job) }
+
+              # Set a high safe margin so we know that we'll not have enough
+              # time to reschedule more jobs
+              stub_const('ThreeScale::Backend::FailedJobsScheduler::SAFE_MARGIN_S',
+                         subject.const_get(:TTL_RESCHEDULE_S) + 1)
+            end
+
+            it 'the jobs are not rescheduled' do
+              expect(subject.failed_queue).not_to receive(:requeue)
+              subject.reschedule_failed_jobs
+            end
+
+            it 'the jobs are not removed from the queue' do
+              subject.reschedule_failed_jobs
+              expect(subject.failed_queue.failed_jobs).to eq jobs
+            end
+          end
         end
       end
     end
