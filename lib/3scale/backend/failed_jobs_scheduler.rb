@@ -89,12 +89,13 @@ module ThreeScale
         def requeue_oldest_failed_job
           failed_queue.requeue(0)
           { rescheduled?: true, ok_to_remove?: true }
-        rescue Resque::Helpers::DecodeException
+        rescue Resque::Helpers::DecodeException => e
           # This means we tried to dequeue a job with invalid encoding.
           # We just want to delete it from the queue.
           #
           # We know that Cubert is responsible for errors of this type.
-          # For that reason, we do not need to notify Airbrake.
+          # We want to call notify only in cases that we do not expect.
+          logger.notify(e) unless oldest_job_is_from_cubert?
           { rescheduled?: false, ok_to_remove?: true }
         rescue Exception => e
           logger.notify(e)
@@ -129,6 +130,12 @@ module ThreeScale
           else # Unknown error. Remove the job to avoid retrying it forever.
             true
           end
+        end
+
+        def oldest_job_is_from_cubert?
+          job = failed_queue.all(0, 1) # Could be nil if no longer exists
+          job_class = job && job['payload'] && job['payload']['class']
+          job_class == ThreeScale::Backend::Transactor::LogRequestJob.name
         end
 
         def remove_oldest_failed_job
