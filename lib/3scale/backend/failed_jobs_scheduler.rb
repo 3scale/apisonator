@@ -4,6 +4,12 @@ module ThreeScale
       TTL_RESCHEDULE_S = 30
       private_constant :TTL_RESCHEDULE_S
 
+      # We are going to reschedule a job only if the remaining time for the TTL
+      # is at least SAFE_MARGIN_S. This is to minimize the chance of having 2
+      # jobs running at the same time.
+      SAFE_MARGIN_S = 0.25*TTL_RESCHEDULE_S
+      private_constant :SAFE_MARGIN_S
+
       # We need to limit the amount of failed jobs that we reschedule each
       # time. Even a small Redis downtime can cause lots of failed jobs and we
       # want to avoid spending more time than the TTL defined above. Otherwise,
@@ -26,10 +32,13 @@ module ThreeScale
           # failed job more than once.
           key = dist_lock.lock
 
+          ttl_expiration_time = Time.now + TTL_RESCHEDULE_S
           rescheduled = failed_while_rescheduling = 0
 
           if key
             number_of_jobs_to_reschedule.times do
+              break unless time_for_another_reschedule?(ttl_expiration_time)
+
               requeue_result = requeue_oldest_failed_job
 
               if requeue_result[:rescheduled?]
@@ -56,6 +65,11 @@ module ThreeScale
         def dist_lock
           @dist_lock ||= DistributedLock.new(
               self.name, TTL_RESCHEDULE_S, Storage.instance)
+        end
+
+        def time_for_another_reschedule?(ttl_expiration_time)
+          remaining = ttl_expiration_time - Time.now
+          remaining >= SAFE_MARGIN_S
         end
 
         def failed_queue
