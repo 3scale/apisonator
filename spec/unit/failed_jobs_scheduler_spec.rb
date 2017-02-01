@@ -22,6 +22,8 @@ module ThreeScale
         end
 
         class FakeFailedQueue
+          attr_reader :failed_jobs
+
           def initialize
             @failed_jobs = []
           end
@@ -42,20 +44,33 @@ module ThreeScale
             # Resque would enqueue a new job with the info stored in the object
             # at _index, but we do not need to do anything.
 
-            # We need to simulate cases where Resque::Helpers::DecodeException
-            # and other exceptions are raised. In order to do so, to simplify,
-            # we will raise DecodeException if the string is 'invalid_encoding'
-            # and Exception when it is 'exception'
-            if failed_jobs[index] == 'invalid_encoding'
+            # We need to "simulate" the errors that we know can happen:
+            # 1) Job with invalid encoding.
+            # 2) Invalid job that is a Fixnum instead of a Hash.
+            # 3) Trying to requeue a job when there are none.
+            # 4) Unknown.
+            if failed_jobs[index] == 'invalid_encoding_cubert' ||
+                failed_jobs[index] == 'invalid_encoding_no_cubert'
               raise Resque::Helpers::DecodeException
+            elsif failed_jobs[index] == 'fixnum_job'
+              raise Exception.new("undefined method `[]=' for 123:Fixnum")
+            elsif failed_jobs[index] == 'no_jobs_in_queue'
+              raise Exception.new("undefined method `[]=' for nil:NilClass")
             elsif failed_jobs[index] == 'exception'
               raise Exception.new
             end
           end
 
-          private
-
-          attr_reader :failed_jobs
+          # This is only called to check the first element of the queue
+          # and determine whether it's a LogRequest job.
+          # This is a hack because we do not need to implement a proper '#all'.
+          # We just need to make sure that we correctly set
+          # job['payload']['class'] in the case of a log job.
+          def all(_index, _count)
+            if failed_jobs.first == 'invalid_encoding_cubert'
+              { 'payload' => { 'class' => 'ThreeScale::Backend::Transactor::LogRequestJob' } }
+            end
+          end
         end
       end
 
@@ -83,7 +98,7 @@ module ThreeScale
 
         it 'tries to requeue all the jobs in the queue' do
           expect(subject.failed_queue)
-              .to receive(:requeue)
+              .to receive(:requeue).and_call_original
               .exactly(jobs.size).times
 
           subject.reschedule_failed_jobs
@@ -95,9 +110,11 @@ module ThreeScale
           expect(subject.failed_queue.count).to be_zero
         end
 
-        it 'returns a hash with the current failed jobs and the rescheduled ones' do
+        it 'returns the correct number of rescheduled, failed and current jobs' do
           expect(subject.reschedule_failed_jobs)
-              .to eq({ failed_current: 0, rescheduled: jobs.size - reenqueue_fails })
+              .to eq({ rescheduled: jobs.size - reenqueue_fails,
+                       failed_while_rescheduling: reenqueue_fails,
+                       failed_current: 0 })
         end
 
         if notify_error
@@ -113,7 +130,7 @@ module ThreeScale
         end
       end
 
-      describe '#reschedule failed jobs' do
+      describe '.reschedule_failed_jobs' do
         context 'when the lock cannot be acquired' do
           let(:failed_jobs) { %w(job1 job2) }
           let(:dist_lock) { double('dist_lock', lock: false) }
@@ -123,17 +140,21 @@ module ThreeScale
             allow(subject).to receive(:dist_lock).and_return(dist_lock)
           end
 
-          it 'returns a hash with the number of failed jobs unchanged and rescheduled = 0' do
+          it 'returns the correct number of rescheduled, failed and current jobs' do
             expect(subject.reschedule_failed_jobs)
-                .to eq({ failed_current: failed_jobs.size, rescheduled: 0 })
+                .to eq({ rescheduled: 0,
+                         failed_while_rescheduling: 0,
+                         failed_current: failed_jobs.size })
           end
         end
 
         context 'when the lock can be acquired' do
           context 'and the failed jobs queue is empty' do
-            it 'returns a hash with failed_current = 0 and rescheduled = 0' do
+            it 'returns the correct number of rescheduled, failed and current jobs' do
               expect(subject.reschedule_failed_jobs)
-                  .to eq({ failed_current: 0, rescheduled: 0 })
+                  .to eq({ rescheduled: 0,
+                           failed_while_rescheduling: 0,
+                           failed_current: 0 })
             end
           end
 
@@ -146,7 +167,7 @@ module ThreeScale
 
             it 're-queues all the failed jobs' do
               expect(subject.failed_queue)
-                  .to receive(:requeue)
+                  .to receive(:requeue).and_call_original
                   .exactly(failed_jobs.size).times
 
               subject.reschedule_failed_jobs
@@ -157,21 +178,132 @@ module ThreeScale
               expect(subject.failed_queue.count).to be_zero
             end
 
-            it 'returns a hash with failed_current = 0 and rescheduled = number of failed before' do
+            it 'returns the correct number of rescheduled, failed and current jobs' do
               expect(subject.reschedule_failed_jobs)
-                  .to eq({ failed_current: 0, rescheduled: failed_jobs.size })
+                  .to eq({ rescheduled: failed_jobs.size,
+                           failed_while_rescheduling: 0,
+                           failed_current: 0 })
+            end
+          end
+
+          context 'when the number of failed jobs is higher than the defined max to reschedule' do
+            let(:failed_jobs) { %w(job1 job2) }
+            let(:max_to_reschedule) { 1 }
+
+            before do
+              failed_jobs.each { |job| subject.failed_queue.enqueue(job) }
+
+              # To make the tests easier, set the max to a low number.
+              stub_const('ThreeScale::Backend::FailedJobsScheduler::MAX_JOBS_TO_RESCHEDULE',
+                         max_to_reschedule)
+            end
+
+            it 're-queues only the max defined instead of all the failed jobs' do
+              expect(subject.failed_queue)
+                  .to receive(:requeue).and_call_original
+                  .exactly(max_to_reschedule).times
+
+              subject.reschedule_failed_jobs
+            end
+
+            it 'deletes the re-enqueued jobs from the queue of failed_jobs' do
+              subject.reschedule_failed_jobs
+
+              expect(subject.failed_queue.failed_jobs)
+                  .to eq failed_jobs[max_to_reschedule..-1]
+            end
+
+            it 'returns the correct number of rescheduled, failed and current jobs' do
+              expect(subject.reschedule_failed_jobs)
+                  .to eq({ rescheduled: max_to_reschedule,
+                           failed_while_rescheduling: 0,
+                           failed_current: failed_jobs.size - max_to_reschedule })
             end
           end
 
           context 'and an exception is raised when re-queuing a job' do
             context 'and it is because the job has invalid encoding (raises DecodeException)' do
-              include_examples 'jobs that fail to be re-enqueued',
-                               %w(job1 job2 invalid_encoding job3), 1, false
+              context 'and it is a cubert job' do
+                include_examples 'jobs that fail to be re-enqueued',
+                                 %w(job1 job2 invalid_encoding_cubert job3), 1, false
+              end
+
+              context 'and it is not a cubert job' do
+                include_examples 'jobs that fail to be re-enqueued',
+                                 %w(job1 job2 invalid_encoding_no_cubert job3), 1, true
+              end
             end
 
-            context 'and it is not because the job has invalid encoding' do
+            context 'and it is because the job is a Fixnum' do
+              include_examples 'jobs that fail to be re-enqueued',
+                               %w(job1 job2 fixnum_job job3), 1, true
+            end
+
+            context 'and it is because an unknown exception has been raised' do
               include_examples 'jobs that fail to be re-enqueued',
                                %w(job1 job2 exception job3), 1, true
+            end
+
+            # This one is a bit different and I think that trying to include
+            # its logic in the shared example would hurt readability.
+            context 'and it is because the job is no longer in the queue' do
+              let(:jobs) { %w(job1 job2 no_jobs_in_queue job3) }
+              let(:error_position) do
+                jobs.find_index { |job| job == 'no_jobs_in_queue' }
+              end
+
+              before do
+                jobs.each { |job| subject.failed_queue.enqueue(job) }
+              end
+
+              it 'tries to requeue all the jobs in the queue until the error is raised' do
+                expect(subject.failed_queue)
+                    .to receive(:requeue).and_call_original
+                    .exactly(error_position + 1).times
+
+                subject.reschedule_failed_jobs
+              end
+
+              it 'removes all the jobs from the queue that come before the one that fails' do
+                subject.reschedule_failed_jobs
+                expect(subject.failed_queue.failed_jobs)
+                    .to eq jobs[error_position..-1]
+              end
+
+              it 'returns the correct number of rescheduled, failed and current jobs' do
+                expect(subject.reschedule_failed_jobs)
+                    .to eq({ rescheduled: error_position,
+                             failed_while_rescheduling: 1,
+                             failed_current: jobs.size - error_position })
+              end
+
+              it 'notifies the error' do
+                expect(subject.logger).to receive :notify
+                subject.reschedule_failed_jobs
+              end
+            end
+          end
+
+          context 'when there is no time for rescheduling another job' do
+            let(:jobs) { %w(job1 job2) }
+
+            before do
+              jobs.each { |job| subject.failed_queue.enqueue(job) }
+
+              # Set a high safe margin so we know that we'll not have enough
+              # time to reschedule more jobs
+              stub_const('ThreeScale::Backend::FailedJobsScheduler::SAFE_MARGIN_S',
+                         subject.const_get(:TTL_RESCHEDULE_S) + 1)
+            end
+
+            it 'the jobs are not rescheduled' do
+              expect(subject.failed_queue).not_to receive(:requeue)
+              subject.reschedule_failed_jobs
+            end
+
+            it 'the jobs are not removed from the queue' do
+              subject.reschedule_failed_jobs
+              expect(subject.failed_queue.failed_jobs).to eq jobs
             end
           end
         end
