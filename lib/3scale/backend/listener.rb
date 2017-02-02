@@ -629,10 +629,6 @@ module ThreeScale
         end
       end
 
-      def limits_validator
-        ThreeScale::Backend::Validators::Limits
-      end
-
       def response_auth_call(auth_status)
         status(auth_status.authorized? ? 200 : 409)
         optionally_set_headers(auth_status)
