@@ -28,7 +28,8 @@ module ThreeScale
 
           context 'with a valid configuration' do
             before do
-              configuration.add_section(:queues, :master_name, :sentinels)
+              configuration.add_section(:queues, :master_name, :sentinels,
+                                        :conn_timeout, :read_timeout, :write_timeout)
               configuration.queues.master_name = 'foo'
               configuration.queues.sentinels   = ['foo']
             end
