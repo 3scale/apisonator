@@ -40,7 +40,7 @@ GEM
       httpclient (>= 2.2.7)
       nesty
       sinatra (>= 1.2.7)
-    gli (2.14.0)
+    gli (2.15.0)
     hiredis (0.6.1)
     httparty (0.14.0)
       multi_xml (>= 0.5.2)
@@ -167,7 +167,7 @@ DEPENDENCIES
   codeclimate-test-reporter (~> 0.6.0)
   daemons (= 1.2.4)
   geminabox (~> 0.13.5)
-  gli (~> 2.14.0)
+  gli (~> 2.15.0)
   hiredis (= 0.6.1)
   license_finder (~> 2.1.2)
   mocha (~> 1.2.1)
