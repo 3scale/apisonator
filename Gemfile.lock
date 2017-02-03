@@ -61,9 +61,9 @@ GEM
     diff-lcs (1.2.5)
     docile (1.1.5)
     equalizer (0.0.11)
-    faraday (0.10.0)
+    faraday (0.11.0)
       multipart-post (>= 1.2, < 3)
-    geminabox (0.13.4)
+    geminabox (0.13.5)
       builder
       faraday
       httpclient (>= 2.2.7)
@@ -215,7 +215,7 @@ DEPENDENCIES
   codeclimate-test-reporter (~> 0.6.0)
   cubert-client (= 0.0.12)!
   daemons (= 1.2.4)
-  geminabox (~> 0.13.4)
+  geminabox (~> 0.13.5)
   gli (~> 2.14.0)
   hiredis (= 0.6.1)
   license_finder (~> 2.1.2)
