@@ -17,7 +17,7 @@ end
 group :test do
   gem 'mocha',       '~> 1.2.1'
   gem 'nokogiri',    '~> 1.6.8.1'
-  # Nokogiri won't pull pkg-config automatically, so addingt it ourselves
+  # Nokogiri won't pull pkg-config automatically, so adding it ourselves
   # https://github.com/sparklemotion/nokogiri/issues/1488
   gem 'pkg-config',  '~> 1.1.7'
   gem 'rack-test',   '~> 0.6.2'
@@ -52,7 +52,7 @@ gem 'daemons', '= 1.2.4'
 # Production gems
 gem 'rake', '= 10.4.2'
 gem 'builder', '= 3.2.2'
-gem 'redis', '= 3.2.2'
+gem 'redis', '= 3.3.3'
 gem 'redis-namespace', '= 1.5.2'
 gem 'resque', '= 1.23.0'
 gem 'rack', '= 1.6.4'
