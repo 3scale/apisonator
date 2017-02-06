@@ -1,7 +1,7 @@
 eval_gemfile(File.expand_path('../Gemfile.base', __FILE__))
 
 platform :ruby do
-  gem 'pg', '= 0.18.4'
+  gem 'pg', '= 0.19.0'
 end
 
 gem 'cubert-client', '= 0.0.12', source: 'https://host'
