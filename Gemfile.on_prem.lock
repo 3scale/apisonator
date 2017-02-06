@@ -23,7 +23,7 @@ GEM
       builder
       multi_json
     backports (3.6.8)
-    builder (3.2.2)
+    builder (3.2.3)
     byebug (9.0.6)
     codeclimate-test-reporter (0.6.0)
       simplecov (>= 0.7.1, < 1.0.0)
@@ -163,7 +163,7 @@ PLATFORMS
 DEPENDENCIES
   3scale_backend!
   airbrake (= 4.3.1)
-  builder (= 3.2.2)
+  builder (= 3.2.3)
   codeclimate-test-reporter (~> 0.6.0)
   daemons (= 1.2.4)
   geminabox (~> 0.13.5)

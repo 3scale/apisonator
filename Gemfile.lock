@@ -42,7 +42,7 @@ GEM
       ice_nine (~> 0.11.0)
       thread_safe (~> 0.3, >= 0.3.1)
     backports (3.6.8)
-    builder (3.2.2)
+    builder (3.2.3)
     byebug (9.0.6)
     chronic (0.10.2)
     codeclimate-test-reporter (0.6.0)
@@ -211,7 +211,7 @@ DEPENDENCIES
   3scale_backend!
   airbrake (= 4.3.1)
   aws-sdk (= 2.4.2)
-  builder (= 3.2.2)
+  builder (= 3.2.3)
   codeclimate-test-reporter (~> 0.6.0)
   cubert-client (= 0.0.12)!
   daemons (= 1.2.4)

@@ -51,7 +51,7 @@ gem 'daemons', '= 1.2.4'
 
 # Production gems
 gem 'rake', '= 10.4.2'
-gem 'builder', '= 3.2.2'
+gem 'builder', '= 3.2.3'
 gem 'redis', '= 3.3.3'
 gem 'redis-namespace', '= 1.5.2'
 gem 'resque', '= 1.23.0'
