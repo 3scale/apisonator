@@ -167,5 +167,29 @@ module Validators
       assert Referrer.apply(@status, :referrer => '.3scale.net')
       assert Referrer.apply(@status, :referrer => 'https://OlaKeAse.3scale.net')
     end
+
+    test 'apply fails if the referrer matches with extra chars at the beginning' do
+      @application.create_referrer_filter('1.2.3.4')
+      assert !Referrer.apply(@status, :referrer => '231.2.3.4')
+    end
+
+    test 'apply fails if the referrer matches with extra chars at the end' do
+      @application.create_referrer_filter('1.2.3.4')
+      assert !Referrer.apply(@status, :referrer => '1.2.3.456')
+    end
+
+    test 'apply fails if the referrer matches with an extra \n' do
+      @application.create_referrer_filter('1.2.3.4')
+      assert !Referrer.apply(@status, :referrer => "1.2.3.4\n")
+    end
+
+    test 'apply fails if the referrer includes URI parts and the filter is just a host' do
+      @application.create_referrer_filter('example.com')
+
+      assert !Referrer.apply(@status, :referrer => 'http://example.com')
+      assert !Referrer.apply(@status, :referrer => 'example.com:80')
+      assert !Referrer.apply(@status, :referrer => 'example.com/some/path')
+      assert !Referrer.apply(@status, :referrer => 'example.com/path?param=value')
+    end
   end
 end
