@@ -136,6 +136,18 @@ module Validators
       assert Referrer.apply(@status, :referrer => '(example.org')
     end
 
+    test 'filters can be used for ignoring parts of the URI (scheme, path, etc.)' do
+      @application.create_referrer_filter('*://example.com')
+      @application.create_referrer_filter('http://8.8.8.8/*')
+
+      assert Referrer.apply(@status, :referrer => 'http://example.com')
+      assert Referrer.apply(@status, :referrer => 'https://example.com')
+      assert !Referrer.apply(@status, :referrer => 'example.com')
+
+      assert Referrer.apply(@status, :referrer => 'http://8.8.8.8/some/path')
+      assert Referrer.apply(@status, :referrer => 'http://8.8.8.8/path?qs=value')
+    end
+
     # this mostly is for documentation purposes but also to notice changes in
     # semantics.
     test 'filter works in stupid edge cases even though we would want to fix em some day' do
