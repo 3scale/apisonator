@@ -177,7 +177,7 @@ GEM
       net-scp (>= 1.1.2)
       net-ssh (>= 2.8.0)
     statsd-ruby (1.3.0)
-    test-unit (3.2.1)
+    test-unit (3.2.3)
       power_assert
     thor (0.19.4)
     thread_safe (0.3.5)
@@ -243,7 +243,7 @@ DEPENDENCIES
   source2swagger!
   sshkit
   statsd-ruby (= 1.3.0)
-  test-unit (= 3.2.1)
+  test-unit (= 3.2.3)
   timecop (~> 0.8.0)
   whenever (= 0.9.7)
   yajl-ruby (= 1.1.0)

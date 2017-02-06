@@ -22,7 +22,7 @@ group :test do
   gem 'pkg-config',  '~> 1.1.7'
   gem 'rack-test',   '~> 0.6.2'
   gem 'resque_unit', '~> 0.4.4', source: 'https://rubygems.org'
-  gem 'test-unit',   '= 3.2.1'
+  gem 'test-unit',   '= 3.2.3'
   gem 'resque_spec', '~> 0.17.0'
   gem 'timecop',     '~> 0.8.0'
   gem 'rspec',       '~> 3.5.0', require: nil
