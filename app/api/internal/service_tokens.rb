@@ -3,14 +3,13 @@ module ThreeScale
     module API
       internal_api '/service_tokens' do
 
-        before do
-          @service_tokens = params[:service_tokens]
-          unless @service_tokens
-            halt(400, { error: "missing parameter 'service_tokens'".freeze }.to_json)
-          end
+        head '/:token/:service_id/' do |token, service_id|
+          ServiceToken.exists?(token, service_id) ? 200 : 404
         end
 
         post '/' do
+          check_tokens_param!
+
           token_pairs = @service_tokens.map do |token, token_info|
             { service_token: token, service_id: token_info[:service_id] }
           end
@@ -24,11 +23,22 @@ module ThreeScale
         end
 
         delete '/' do
+          check_tokens_param!
+
           deleted = @service_tokens.count do |token|
             ServiceToken.delete(token[:service_token], token[:service_id]) == 1
           end
 
           { status: :deleted, count: deleted }.to_json
+        end
+
+        private
+
+        def check_tokens_param!
+          @service_tokens = params[:service_tokens]
+          unless @service_tokens
+            halt(400, { error: "missing parameter 'service_tokens'".freeze }.to_json)
+          end
         end
       end
     end

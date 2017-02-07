@@ -12,6 +12,30 @@ resource 'Service Tokens (prefix: /service_tokens)' do
         .to eq 'Service ID cannot be blank'
   end
 
+  head '/service_tokens/:token/:service_id/' do
+    parameter :token, 'token', required: true
+    parameter :service_id, 'service ID', required: true
+
+    let(:token) { 'a_token' }
+    let(:service_id) { 'a_service_id' }
+
+    context 'when the (token, service_id) pair exists' do
+      before { ThreeScale::Backend::ServiceToken.save(token, service_id) }
+
+      example_request 'Check if the pair exists' do
+        expect(status).to eq 200
+      end
+    end
+
+    context 'when the (token, service_id) pair does not exist' do
+      before { ThreeScale::Backend::ServiceToken.delete(token, service_id) }
+
+      example_request 'Check if the pair exists' do
+        expect(status).to eq 404
+      end
+    end
+  end
+
   post '/service_tokens/' do
     parameter :service_tokens, 'Service Tokens', required: true
 
