@@ -140,7 +140,7 @@ module ThreeScale
       # Add configuration sections
       config.add_section(:queues, :master_name, :sentinels,
                          :connect_timeout, :read_timeout, :write_timeout)
-      config.add_section(:redis, :proxy, :nodes, :backup_file,
+      config.add_section(:redis, :proxy, :nodes,
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:hoptoad, :api_key)
       config.add_section(:stats, :bucket_size)
