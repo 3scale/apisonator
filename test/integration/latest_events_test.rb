@@ -55,57 +55,57 @@ class LatestEventsTest < Test::Unit::TestCase
       Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      events = get_events
+      events = EventStorage.list
       assert_equal 4, events.size
 
       app_events = events[0..1]
       master_app_events = events[2..3]
 
-      assert_equal app_events.first['type'], 'first_traffic'
-      assert_equal app_events.last['type'], 'first_daily_traffic'
-      assert_equal master_app_events.first['type'], 'first_traffic'
-      assert_equal master_app_events.last['type'], 'first_daily_traffic'
-      assert_equal true, app_events.first['object']['service_id'] == @service_id
-      assert_equal true, master_app_events.first['object']['service_id'] == @master_service_id
+      assert_equal app_events.first[:type], 'first_traffic'
+      assert_equal app_events.last[:type], 'first_daily_traffic'
+      assert_equal master_app_events.first[:type], 'first_traffic'
+      assert_equal master_app_events.last[:type], 'first_daily_traffic'
+      assert_equal true, app_events.first[:object][:service_id] == @service_id
+      assert_equal true, master_app_events.first[:object][:service_id] == @master_service_id
 
-      assert_equal 4, delete_events(99999999)
+      assert_equal 4, EventStorage.delete_range(99999999)
 
-      assert_equal [], get_events
+      assert_equal 0, EventStorage.size
 
       authrep(app_id: @application_id2, usage: { 'foos' => 1 })
       authrep(app_id: @application_id3, usage: {'foos' => 1 })
 
-      events = get_events
+      events = EventStorage.list
       assert_equal 4, events.size
 
       app_2_events = events[0..1]
       app_3_events = events[2..3]
 
-      assert_equal app_2_events.first['type'], 'first_traffic'
-      assert_equal app_2_events.last['type'], 'first_daily_traffic'
-      assert_equal true, app_2_events.first['object']['service_id'] == @service_id
-      assert_equal true, app_2_events.last['object']['service_id'] == @service_id
-      assert_equal true, app_2_events.first['object']['application_id'] == @application_id2
-      assert_equal true, app_2_events.last['object']['application_id'] == @application_id2
+      assert_equal app_2_events.first[:type], 'first_traffic'
+      assert_equal app_2_events.last[:type], 'first_daily_traffic'
+      assert_equal true, app_2_events.first[:object][:service_id] == @service_id
+      assert_equal true, app_2_events.last[:object][:service_id] == @service_id
+      assert_equal true, app_2_events.first[:object][:application_id] == @application_id2
+      assert_equal true, app_2_events.last[:object][:application_id] == @application_id2
 
-      assert_equal app_3_events.first['type'], 'first_traffic'
-      assert_equal app_3_events.last['type'], 'first_daily_traffic'
-      assert_equal true, app_3_events.first['object']['service_id'] == @service_id
-      assert_equal true, app_3_events.last['object']['service_id'] == @service_id
-      assert_equal true, app_3_events.first['object']['application_id'] == @application_id3
-      assert_equal true, app_3_events.last['object']['application_id'] == @application_id3
+      assert_equal app_3_events.first[:type], 'first_traffic'
+      assert_equal app_3_events.last[:type], 'first_daily_traffic'
+      assert_equal true, app_3_events.first[:object][:service_id] == @service_id
+      assert_equal true, app_3_events.last[:object][:service_id] == @service_id
+      assert_equal true, app_3_events.first[:object][:application_id] == @application_id3
+      assert_equal true, app_3_events.last[:object][:application_id] == @application_id3
 
-      assert_equal 4, delete_events(10_000)
+      assert_equal 4, EventStorage.delete_range(10_000)
 
-      assert_equal [], get_events
+      assert_equal 0, EventStorage.size
 
       authrep(app_id: @application_id2, usage: { 'foos' => 1 })
       authrep(app_id: @application_id3, usage: { 'foos' => 1})
 
       ## now it's empty because @application_id1, and @application_id2 first_traffic event already raised
-      assert_equal [], get_events
+      assert_equal 0, EventStorage.size
 
-      assert_equal 0, delete_events(10_000)
+      assert_equal 0, EventStorage.delete_range(10_000)
   end
 
   test 'test correct results for events with authrep' do
@@ -117,36 +117,36 @@ class LatestEventsTest < Test::Unit::TestCase
     Backend::Transactor.process_batch(0, all: true)
     Resque.run!
 
-    assert_equal 12, get_events.size
+    assert_equal 12, EventStorage.size
 
     filter_events_by_type("alert")
 
-    events = get_events
+    events = EventStorage.list
     assert_equal 4, events.size
 
     events.each do |item|
-      assert_equal 'alert', item['type']
+      assert_equal 'alert', item[:type]
     end
 
     saved_id = -1
     events.each do |item|
-      if item['type'] == 'alert' && item['object']['application_id'].to_i == @application_id3.to_i
-        saved_id = item['id']
-        assert_equal @service_id.to_i, item['object']['service_id'].to_i
-        assert_equal @application_id3.to_i, item['object']['application_id'].to_i
-        assert_equal '80'.to_i, item['object']['utilization'].to_i
-        assert_equal 'foos per month: 81/100', item['object']['limit']
-        assert_not_nil item['object']['timestamp']
-        assert_not_nil item['object']['id']
+      if item[:type] == 'alert' && item[:object][:application_id].to_i == @application_id3.to_i
+        saved_id = item[:id]
+        assert_equal @service_id.to_i, item[:object][:service_id].to_i
+        assert_equal @application_id3.to_i, item[:object][:application_id].to_i
+        assert_equal '80'.to_i, item[:object][:utilization].to_i
+        assert_equal 'foos per month: 81/100', item[:object][:limit]
+        assert_not_nil item[:object][:timestamp]
+        assert_not_nil item[:object][:id]
       end
     end
     assert_not_equal(-1, saved_id)
 
-    delete_event(saved_id)
+    EventStorage.delete(saved_id)
 
-    events = get_events
+    events = EventStorage.list
     assert_equal 3, events.size
-    events.each { |item| assert_not_equal saved_id.to_i, item['id'].to_i }
+    events.each { |item| assert_not_equal saved_id.to_i, item[:id].to_i }
   end
 
   test 'test alerts with authrep' do
@@ -154,11 +154,11 @@ class LatestEventsTest < Test::Unit::TestCase
 
     filter_events_by_type('alert')
 
-    assert_equal 1, get_events.size
+    assert_equal 1, EventStorage.size
 
     filter_events_by_type('alert')
 
-    assert_equal 1, get_events.size
+    assert_equal 1, EventStorage.size
 
     authrep(app_id: @application_id2, usage: { 'foos' => 99 })
 
@@ -166,7 +166,7 @@ class LatestEventsTest < Test::Unit::TestCase
 
     filter_events_by_type('alert')
 
-    assert_equal 2, get_events.size
+    assert_equal 2, EventStorage.size
 
     authrep(app_id: @application_id1, usage: { 'foos' => 1 })
 
@@ -174,11 +174,11 @@ class LatestEventsTest < Test::Unit::TestCase
 
     filter_events_by_type('alert')
 
-    assert_equal 3, get_events.size
+    assert_equal 3, EventStorage.size
 
     filter_events_by_type('alert')
 
-    assert_equal 3, get_events.size
+    assert_equal 3, EventStorage.size
   end
 
   test 'test correct results for alerts with reports' do
@@ -193,23 +193,23 @@ class LatestEventsTest < Test::Unit::TestCase
 
     ## 4 alerts, 3 first_traffic for the apps, 3 first_daily_traffic for the
     ## apps, 1 first_traffic for master app, 1 first_daily_traffic for master app
-    assert_equal 4+1+1+3+3, get_events.size
+    assert_equal 4+1+1+3+3, EventStorage.size
 
     filter_events_by_type('alert')
 
-    events = get_events
+    events = EventStorage.list
     assert_equal 4, events.size
 
     saved_id = -1
     events.each do |item|
-      if item['type'] == 'alert' && item['object']['application_id'].to_i == @application_id3.to_i
-        saved_id = item['id']
-        assert_equal @service_id.to_i, item['object']['service_id'].to_i
-        assert_equal @application_id3.to_i, item['object']['application_id'].to_i
-        assert_equal '100'.to_i, item['object']['utilization'].to_i
-        assert_equal 'foos per month: 115/100', item['object']['limit']
-        assert_not_nil item['object']['timestamp']
-        assert_not_nil item['object']['id']
+      if item[:type] == 'alert' && item[:object][:application_id].to_i == @application_id3.to_i
+        saved_id = item[:id]
+        assert_equal @service_id.to_i, item[:object][:service_id].to_i
+        assert_equal @application_id3.to_i, item[:object][:application_id].to_i
+        assert_equal '100'.to_i, item[:object][:utilization].to_i
+        assert_equal 'foos per month: 115/100', item[:object][:limit]
+        assert_not_nil item[:object][:timestamp]
+        assert_not_nil item[:object][:id]
       end
     end
     assert_not_equal(-1, saved_id)
@@ -243,39 +243,9 @@ class LatestEventsTest < Test::Unit::TestCase
 
   private
 
-  def internal_api
-    require_relative '../../app/api/api'
-
-    Rack::Test::Session.new(
-      Rack::MockSession.new(
-        ThreeScale::Backend::API::Internal.new(allow_insecure: true)
-      )
-    )
-  end
-
-  def get_events
-    response = internal_api.get '/events/'
-    assert_equal 200, response.status
-
-    Yajl::Parser.parse(response.body)["events"]
-  end
-
-  def delete_events(upto_id)
-    response = internal_api.delete '/events/', { upto_id: upto_id }.to_json
-    assert_equal 200, response.status
-
-    Yajl::Parser.parse(response.body)["num_events"]
-  end
-
-  def delete_event(id)
-    response = internal_api.delete "/events/#{id}"
-    assert_equal 200, response.status
-    assert_equal "deleted", Yajl::Parser.parse(response.body)["status"]
-  end
-
   def filter_events_by_type(type)
-    get_events.each do |item|
-      delete_event(item['id']) if item['type'] != type
+    EventStorage.list.each do |item|
+      EventStorage.delete(item[:id]) if item[:type] != type
     end
   end
 
