@@ -100,13 +100,6 @@ module ThreeScale
           events_set_size > 0
         end
 
-        # TODO: Remove this method. It's used only in tests and there it's
-        # possible to mock a constant.
-        def redef_without_warning(const, value)
-          remove_const(const)
-          const_set(const, value)
-        end
-
         def decode_event(raw_event)
           event = decode(raw_event)
 

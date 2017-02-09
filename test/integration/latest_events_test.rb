@@ -216,8 +216,6 @@ class LatestEventsTest < Test::Unit::TestCase
   end
 
   test 'events_hook is triggered on report' do
-    saved_ttl = EventStorage::PING_TTL
-    EventStorage.send(:redef_without_warning, 'PING_TTL', 5)
     EventStorage.stubs(:request_to_events_hook).at_least_once.returns(true)
 
     configuration.events_hook = 'http://foobar.foobar'
@@ -230,12 +228,9 @@ class LatestEventsTest < Test::Unit::TestCase
 
     EventStorage.unstub(:request_to_events_hook)
     configuration.events_hook = ''
-    EventStorage.send(:redef_without_warning, 'PING_TTL', saved_ttl)
   end
 
   test 'events_hook is triggered on authrep' do
-    saved_ttl = EventStorage::PING_TTL
-    EventStorage.send(:redef_without_warning, 'PING_TTL', 5)
     EventStorage.stubs(:request_to_events_hook).at_least_once.returns(true)
 
     configuration.events_hook = 'http://foobar.foobar'
@@ -244,7 +239,6 @@ class LatestEventsTest < Test::Unit::TestCase
 
     EventStorage.unstub(:request_to_events_hook)
     configuration.events_hook = ''
-    EventStorage.send(:redef_without_warning, 'PING_TTL', saved_ttl)
   end
 
   private
