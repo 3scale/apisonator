@@ -7,7 +7,7 @@ module ThreeScale
       end
 
       def decode(encoded_stuff)
-        stuff = Yajl::Parser.parse(encoded_stuff).symbolize_keys
+        stuff = Yajl::Parser.parse(encoded_stuff).symbolize_names
         stuff[:timestamp] = Time.parse_to_utc(stuff[:timestamp]) if stuff[:timestamp]
         stuff
       end

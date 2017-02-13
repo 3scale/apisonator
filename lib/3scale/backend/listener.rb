@@ -652,7 +652,7 @@ module ThreeScale
       def self.threescale_extensions(env, params = nil)
         options = env['HTTP_3SCALE_OPTIONS'.freeze]
         if options
-          Rack::Utils.parse_nested_query(options).symbolize_keys
+          Rack::Utils.parse_nested_query(options).symbolize_names
         else
           {}
         end.tap do |ext|
