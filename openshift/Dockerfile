@@ -15,6 +15,7 @@ ENV BASH_ENV=/opt/app/etc/scl_enable \
 RUN yum -y update \
  && yum -y install make gcc \
  && source /opt/app/etc/scl_enable \
+ && gem update --system \
  && gem install -N bundler \
  && gem env \
  && bundle config --global silence_root_warning 1
