@@ -26,9 +26,11 @@ RUN rm Gemfile Gemfile.lock \
  && mv Gemfile.on_prem.lock Gemfile.lock
 
 RUN source /opt/app/etc/scl_enable \
- && gem build 3scale_backend.gemspec \
- && gem unpack *.gem --target=/opt/ruby \
- && cd /opt/ruby/3scale_backend-$(cat Gemfile.lock | grep '3scale_backend (' | cut -f2 -d'(' | cut -f1 -d')') \
+ && BACKEND_VERSION=$(gem build 3scale_backend.gemspec | \
+      sed -n -e 's/^\s*Version\:\s*\([^\s]*\)$/\1/p') \
+ && test "${BACKEND_VERSION}" != "" \
+ && gem unpack "3scale_backend-${BACKEND_VERSION}.gem" --target=/opt/ruby \
+ && cd "/opt/ruby/3scale_backend-${BACKEND_VERSION}" \
  && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
  && cp -R /opt/app/etc ./ && rm -rf /opt/app \
  && ln -sf ${PWD} /opt/app \
