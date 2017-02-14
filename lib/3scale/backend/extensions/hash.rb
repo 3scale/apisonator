@@ -2,13 +2,13 @@ module ThreeScale
   module Backend
     module Extensions
       module Hash
-        def symbolize_keys
+        def symbolize_names
           inject({}) do |memo, (key, value)|
             memo[key.to_sym] = value
             memo
           end
         end
-        
+
         def valid_encoding?
           self.each do |k, v|
             return false if k.is_a?(String) && !k.valid_encoding?

@@ -18,7 +18,7 @@ module ThreeScale
 
           def preprocess(logs)
             logs.map do |log|
-              log = log.symbolize_keys
+              log = log.symbolize_names
               log[:timestamp] = parse_timestamp(log[:timestamp])
               log[:log] = clean_entry_log(log[:log])
               log[:usage] = clean_entry_usage(log[:usage])
