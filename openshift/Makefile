@@ -51,6 +51,7 @@ build: ## Build docker image with name LOCAL_IMAGE (NAME:VERSION).
 
 test: ## Test built LOCAL_IMAGE (NAME:VERSION).
 	docker run -t --env RACK_ENV=$(ENVIRONMENT) --env CONFIG_INTERNAL_API_USER=foo $(LOCAL_IMAGE) rackup -D
+	docker run -t --env RACK_ENV=$(ENVIRONMENT) --env CONFIG_INTERNAL_API_USER=foo $(LOCAL_IMAGE) rackup -s puma -D
 	docker run -t $(LOCAL_IMAGE) 3scale_backend --version
 	docker run -t --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) 3scale_backend_worker --version
 	docker run -t --env RACK_ENV=$(ENVIRONMENT) --env ONCE=1 $(LOCAL_IMAGE) backend-cron | grep "RuntimeError: task crashed" > /dev/null # because redis is not running
