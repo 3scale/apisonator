@@ -1,4 +1,11 @@
 GIT
+  remote: git://github.com/3scale/puma.git
+  revision: 1ef71313bf1447788ad8bec4fb66217b1b501624
+  branch: 3scale
+  specs:
+    puma (2.15.3)
+
+GIT
   remote: git://github.com/3scale/source2swagger.git
   revision: 9a787007577fc58b5822b55720e977cc063057fd
   branch: backend
@@ -78,7 +85,6 @@ GEM
     pry-doc (0.10.0)
       pry (~> 0.9)
       yard (~> 0.9)
-    puma (2.15.3)
     rack (1.6.5)
     rack-protection (1.5.3)
       rack
@@ -172,7 +178,7 @@ DEPENDENCIES
   pry (~> 0.10.4)
   pry-byebug (~> 3.4.2)
   pry-doc (~> 0.10.0)
-  puma (= 2.15.3)
+  puma!
   rack (= 1.6.5)
   rack-test (~> 0.6.2)
   rake (= 10.4.2)
