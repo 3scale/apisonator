@@ -60,6 +60,9 @@ COPY openshift/backend-cron /usr/local/sbin/backend-cron
 
 USER 1001
 
+# Our user's HOME (needed by Bundler)
+ENV HOME=/tmp/
+
 ENV CONFIG_LOG_PATH=/tmp/ CONFIG_WORKERS_LOG_FILE=/dev/stdout CONFIG_NOTIFICATION_BATCH=1 PUMA_WORKERS=1 CONFIG_SAAS=false
 
 ENTRYPOINT ["/opt/app/entrypoint.sh"]
