@@ -13,12 +13,13 @@ ENV BASH_ENV=/opt/app/etc/scl_enable \
     PROMPT_COMMAND=". /opt/app/etc/scl_enable"
 
 RUN yum -y update \
- && yum -y install make gcc \
+ && yum -y install make gcc git \
  && source /opt/app/etc/scl_enable \
  && gem update --system \
  && gem install -N bundler \
  && gem env \
- && bundle config --global silence_root_warning 1
+ && bundle config --global silence_root_warning 1 \
+ && bundle config --global disable_shared_gems 1
 
 ADD . ./
 
