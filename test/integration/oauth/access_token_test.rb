@@ -5,6 +5,8 @@ class AccessTokenTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
 
+  DEFAULT_TTL = OAuth::Token::Storage.const_get :TOKEN_TTL_DEFAULT
+  private_constant :DEFAULT_TTL
   PERMANENT_TTL = OAuth::Token::Storage.const_get :TOKEN_TTL_PERMANENT
   private_constant :PERMANENT_TTL
   INVALID_TTLS = [-666, -1, '', ' ', '80x', 'x80', 'adbc']
@@ -245,7 +247,29 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_equal 1, node.count
     assert_equal 'VALID-TOKEN', node.content
-    assert node.attribute('ttl').value.to_i > 0, 'TTL should be positive'
+    ttl = node.attribute('ttl').value.to_f
+    assert ttl > 0, 'TTL should be positive'
+    assert ttl <= 1000, 'TTL should be less or equal to the specified value'
+  end
+
+  test 'create and read oauth_access_token with a default TTL' do
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => 'VALID-TOKEN'
+    assert_equal 200, last_response.status
+
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+
+    node = xml.at('oauth_access_tokens/oauth_access_token')
+
+    assert_equal 1, node.count
+    assert_equal 'VALID-TOKEN', node.content
+    ttl = node.attribute('ttl').value.to_f
+    assert ttl > 0, 'TTL should be positive'
+    assert ttl <= DEFAULT_TTL, 'TTL should be less or equal to the default value'
   end
 
   test 'create and read oauth_access_token with expiring TTL supplied' do
