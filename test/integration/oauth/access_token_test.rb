@@ -5,6 +5,11 @@ class AccessTokenTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
 
+  PERMANENT_TTL = OAuth::Token::Storage.const_get :TOKEN_TTL_PERMANENT
+  private_constant :PERMANENT_TTL
+  INVALID_TTLS = [-666, -1, '', ' ', '80x', 'x80', 'adbc']
+  private_constant :INVALID_TTLS
+
   def setup
     Storage.instance(true).flushdb
     Memoizer.reset!
@@ -24,7 +29,8 @@ class AccessTokenTest < Test::Unit::TestCase
     # Create
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
-                                                             :token => 'VALID-TOKEN'
+                                                             :token => 'VALID-TOKEN',
+                                                             :ttl => PERMANENT_TTL
     assert_equal 200, last_response.status
 
     # Read
@@ -75,20 +81,23 @@ class AccessTokenTest < Test::Unit::TestCase
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :user_id => user_id,
-                                                             :token => user_token
+                                                             :token => user_token,
+                                                             :ttl => PERMANENT_TTL
     assert_equal 200, last_response.status
 
     # Create user token for a different, made up user
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :user_id => other_id,
-                                                             :token => other_token
+                                                             :token => other_token,
+                                                             :ttl => PERMANENT_TTL
     assert_equal 200, last_response.status
 
     # Create unrelated token within the same app
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
-                                                             :token => 'GLOBAL-TOKEN'
+                                                             :token => 'GLOBAL-TOKEN',
+                                                             :ttl => PERMANENT_TTL
     assert_equal 200, last_response.status
 
     # Read tokens for this user, should be 1
@@ -260,7 +269,7 @@ class AccessTokenTest < Test::Unit::TestCase
   end
 
   test 'create oauth_access_token with invalid TTL returns AccessTokenInvalidTTL' do
-    [ -666, 0, '', 'adbc'].each do |ttl|
+    INVALID_TTLS.each do |ttl|
       post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                                :app_id => @application.id,
                                                                :token => 'VALID-TOKEN',
@@ -327,7 +336,8 @@ class AccessTokenTest < Test::Unit::TestCase
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
-                                                             :token => token
+                                                             :token => token,
+                                                             :ttl => PERMANENT_TTL
 
     assert_equal 200, last_response.status
 
@@ -478,11 +488,11 @@ class AccessTokenTest < Test::Unit::TestCase
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => '666',
-                                                             :ttl => '1'
+                                                             :ttl => 1
 
     assert_equal 200, last_response.status
 
-    sleep 2
+    sleep 1
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
@@ -501,19 +511,22 @@ class AccessTokenTest < Test::Unit::TestCase
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
-                                                             :token => 666
+                                                             :token => 666,
+                                                             :ttl => PERMANENT_TTL
 
     assert_equal 200, last_response.status
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
-                                                             :token => 667
+                                                             :token => 667,
+                                                             :ttl => PERMANENT_TTL
 
     assert_equal 200, last_response.status
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => application2.id,
-                                                             :token => 668
+                                                             :token => 668,
+                                                             :ttl => PERMANENT_TTL
 
     assert_equal 200, last_response.status
 
@@ -571,7 +584,8 @@ class AccessTokenTest < Test::Unit::TestCase
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
-                                                             :token => 'valid-token2'
+                                                             :token => 'valid-token2',
+                                                             :ttl => PERMANENT_TTL
 
     assert_equal 200, last_response.status
 
