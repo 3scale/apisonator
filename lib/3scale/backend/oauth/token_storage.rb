@@ -7,6 +7,10 @@ module ThreeScale
           private_constant :MAXIMUM_TOKEN_SIZE
           TOKEN_MAX_REDIS_SLICE_SIZE = 500
           private_constant :TOKEN_MAX_REDIS_SLICE_SIZE
+          TOKEN_TTL_DEFAULT = 86400
+          private_constant :TOKEN_TTL_DEFAULT
+          TOKEN_TTL_PERMANENT = 0
+          private_constant :TOKEN_TTL_PERMANENT
 
           Error = Class.new StandardError
           InconsistencyError = Class.new Error
@@ -19,13 +23,16 @@ module ThreeScale
               raise AccessTokenFormatInvalid if token.nil? || token.empty? ||
                 !token.is_a?(String) || token.bytesize > MAXIMUM_TOKEN_SIZE
 
+              # raises if TTL is invalid
+              ttl = sanitized_ttl ttl
+
               key = Key.for token, service_id
               raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
 
               value = Value.for(app_id, user_id)
               token_set = Key::Set.for(service_id, app_id)
 
-              store_token token, token_set, key, value, ttl
+	      store_token token, token_set, key, value, ttl
               ensure_stored! token, token_set, key, value
             end
 
@@ -249,14 +256,14 @@ module ThreeScale
 
             # Store the specified token in Redis
             #
+            # TTL specified in seconds.
+            # A TTL of 0 stores a permanent token
             def store_token(token, token_set, key, value, ttl)
               # build the storage command so that we can pipeline everything cleanly
               command = :set
               args = [key]
 
-              if ttl
-                ttl = ttl.to_i
-                raise AccessTokenInvalidTTL if ttl <= 0
+              if !permanent_ttl? ttl
                 command = :setex
                 args << ttl
               end
@@ -292,6 +299,31 @@ module ThreeScale
               results.last && results.first == value ||
                 raise(AccessTokenStorageError, token)
             end
+
+	    # Validation for the TTL value
+	    #
+	    # 0 is accepted (understood as permanent token)
+	    # Negative values are not accepted
+	    # Integer(ttl) validation is required (if input is nil, default applies)
+	    def sanitized_ttl(ttl)
+              ttl = begin
+                      Integer(ttl)
+                    rescue TypeError
+                      # ttl is nil
+                      TOKEN_TTL_DEFAULT
+                    rescue
+                      # NaN
+                      -1
+                    end
+              raise AccessTokenInvalidTTL if ttl < 0
+
+	      ttl
+            end
+
+	    # Check whether a TTL has the magic value for a permanent token
+	    def permanent_ttl?(ttl)
+              ttl == TOKEN_TTL_PERMANENT
+	    end
           end
         end
       end
