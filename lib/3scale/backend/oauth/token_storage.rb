@@ -32,7 +32,7 @@ module ThreeScale
               value = Value.for(app_id, user_id)
               token_set = Key::Set.for(service_id, app_id)
 
-	      store_token token, token_set, key, value, ttl
+              store_token token, token_set, key, value, ttl
               ensure_stored! token, token_set, key, value
             end
 

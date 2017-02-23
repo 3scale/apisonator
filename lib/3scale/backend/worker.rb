@@ -6,6 +6,26 @@ module ThreeScale
     # is too slow.
 
     class Worker
+      module SaaS
+        private
+
+        def configure_airbrake?
+          Airbrake.configuration.api_key
+        end
+      end
+      private_constant :SaaS
+
+      module OnPrem
+        private
+
+        def configure_airbrake?
+          false
+        end
+      end
+      private_constant :OnPrem
+
+      include(ThreeScale::Backend.configuration.saas ? SaaS : OnPrem)
+
       include Resque::Helpers
       include Configurable
 
@@ -19,7 +39,7 @@ module ThreeScale
 
         @one_off = options[:one_off]
 
-        configure_airbrake_for_resque if Airbrake.configuration.api_key
+        configure_airbrake_for_resque
       end
 
       def self.new(options = {})
@@ -122,15 +142,17 @@ module ThreeScale
       end
 
       def configure_airbrake_for_resque
-        require 'resque/failure/multiple'
-        require 'resque/failure/airbrake'
-        require 'resque/failure/redis'
+        if configure_airbrake?
+          require 'resque/failure/multiple'
+          require 'resque/failure/airbrake'
+          require 'resque/failure/redis'
 
-        Resque::Failure::Multiple.classes = [
-          Resque::Failure::Redis,
-          Resque::Failure::Airbrake,
-        ]
-        Resque::Failure.backend = Resque::Failure::Multiple
+          Resque::Failure::Multiple.classes = [
+            Resque::Failure::Redis,
+            Resque::Failure::Airbrake,
+          ]
+          Resque::Failure.backend = Resque::Failure::Multiple
+        end
       end
 
       def self.backend_logger_notify_proc
