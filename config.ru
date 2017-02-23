@@ -1,6 +1,9 @@
 require_relative 'lib/3scale/backend'
 
-use Airbrake::Sinatra if Airbrake.configuration.api_key
+if ThreeScale::Backend.configuration.saas && Airbrake.configuration.api_key
+  use Airbrake::Sinatra
+end
+
 use ThreeScale::Backend::Logger::Middleware
 
 map "/internal" do
