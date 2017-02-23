@@ -19,7 +19,6 @@ end
 require 'builder'
 require 'hiredis'
 require 'redis'
-require 'airbrake'
 require 'resque'
 require 'securerandom'
 require 'sinatra/base'
@@ -86,9 +85,12 @@ module ThreeScale
     end
 
     def self.configure_airbrake
-      Airbrake.configure do |config|
-        config.api_key = configuration.hoptoad.api_key
-        config.environment_name = environment
+      if configuration.saas
+        require 'airbrake'
+        Airbrake.configure do |config|
+          config.api_key = configuration.hoptoad.api_key
+          config.environment_name = environment
+        end
       end
     end
     private_class_method :configure_airbrake
@@ -129,7 +131,7 @@ module ThreeScale
     private_class_method :logger_notify_proc
 
     def self.airbrake_enabled?
-      Airbrake.configuration.api_key
+      defined?(Airbrake) && Airbrake.configuration.api_key
     end
     private_class_method :airbrake_enabled?
 
