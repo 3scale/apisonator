@@ -13,18 +13,24 @@ ENV BASH_ENV=/opt/app/etc/scl_enable \
     PROMPT_COMMAND=". /opt/app/etc/scl_enable"
 
 RUN yum -y update \
- && yum -y install make gcc \
+ && yum -y install make gcc git \
  && source /opt/app/etc/scl_enable \
  && gem update --system \
- && gem install -N bundler \
- && gem env \
- && bundle config --global silence_root_warning 1
+ && gem env
 
-ADD . ./
+COPY Gemfile.on_prem.lock ./
+RUN source /opt/app/etc/scl_enable \
+ && gem install -N bundler --version $(cat Gemfile.on_prem.lock | \
+      grep -A 1 "^BUNDLED WITH$" | tail -n 1 | sed -e 's/\s//g')
 
-RUN rm Gemfile Gemfile.lock \
+COPY . ./
+
+RUN source /opt/app/etc/scl_enable \
+ && rm Gemfile Gemfile.lock \
  && mv Gemfile.on_prem Gemfile \
- && mv Gemfile.on_prem.lock Gemfile.lock
+ && mv Gemfile.on_prem.lock Gemfile.lock \
+ && bundle config --global silence_root_warning 1 \
+ && bundle config --global disable_shared_gems 1
 
 RUN source /opt/app/etc/scl_enable \
  && BACKEND_VERSION=$(gem build 3scale_backend.gemspec | \
@@ -41,7 +47,7 @@ RUN mkdir -p /var/run/3scale && chgrp -R 0 /var/run/ && chmod -R g+rw /var/run/
 
 WORKDIR /opt/app
 
-ADD openshift/3scale_backend.conf /etc/
+COPY openshift/3scale_backend.conf /etc/
 
 RUN mkdir -p /var/log/backend/ \
   && touch /var/log/backend/3scale_backend.log \
@@ -58,6 +64,9 @@ COPY openshift/entrypoint.sh ./
 COPY openshift/backend-cron /usr/local/sbin/backend-cron
 
 USER 1001
+
+# Our user's HOME (needed by Bundler)
+ENV HOME=/tmp/
 
 ENV CONFIG_LOG_PATH=/tmp/ CONFIG_WORKERS_LOG_FILE=/dev/stdout CONFIG_NOTIFICATION_BATCH=1 PUMA_WORKERS=1 CONFIG_SAAS=false
 
