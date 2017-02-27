@@ -38,6 +38,7 @@ RUN source /tmp/scl_enable \
  && ln -s ${PWD} /opt/app \
  && cp -n /tmp/backend/openshift/entrypoint.sh ./ \
  && cp -n /tmp/backend/openshift/backend-cron /usr/local/sbin/backend-cron \
+ && cp /tmp/backend/openshift/config/puma.rb ./config/ \
  && cp -n /tmp/scl_enable ./ \
  && rm -rf /tmp/backend /tmp/scl_enable \
  && mkdir -p /var/run/3scale/ \
