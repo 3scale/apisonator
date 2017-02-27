@@ -2,12 +2,13 @@ FROM centos:7
 
 ARG BUNDLE_WITHOUT=development:test
 
-WORKDIR /opt/app
-
 RUN yum install -y centos-release-scl \
     && yum install -y rh-ruby23 rh-ruby23-ruby-devel
 
+WORKDIR /opt/app
+
 COPY openshift/contrib/scl_enable /opt/app/etc/
+
 ENV BASH_ENV=/opt/app/etc/scl_enable \
     ENV=/opt/app/etc/scl_enable \
     PROMPT_COMMAND=". /opt/app/etc/scl_enable"
@@ -26,13 +27,13 @@ RUN source /opt/app/etc/scl_enable \
 COPY . ./
 
 RUN source /opt/app/etc/scl_enable \
+ && cp openshift/3scale_backend.conf /etc/ \
+ && chmod 644 /etc/3scale_backend.conf \
  && rm Gemfile Gemfile.lock \
  && mv Gemfile.on_prem Gemfile \
  && mv Gemfile.on_prem.lock Gemfile.lock \
  && bundle config --global silence_root_warning 1 \
- && bundle config --global disable_shared_gems 1
-
-RUN source /opt/app/etc/scl_enable \
+ && bundle config --global disable_shared_gems 1 \
  && BACKEND_VERSION=$(gem build 3scale_backend.gemspec | \
       sed -n -e 's/^\s*Version\:\s*\([^\s]*\)$/\1/p') \
  && test "${BACKEND_VERSION}" != "" \
@@ -41,19 +42,15 @@ RUN source /opt/app/etc/scl_enable \
  && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
  && cp -R /opt/app/etc ./ && rm -rf /opt/app \
  && ln -sf ${PWD} /opt/app \
- && mkdir -p /var/run/3scale/
-
-RUN mkdir -p /var/run/3scale && chgrp -R 0 /var/run/ && chmod -R g+rw /var/run/
+ && mkdir -p /var/run/3scale/ \
+ && chgrp -R 0 /var/run/ \
+ && chmod -R g+rw /var/run/ \
+ && mkdir -p /var/log/backend/ \
+ && touch /var/log/backend/3scale_backend.log \
+ && touch /var/log/backend/3scale_backend_worker.log \
+ && chmod -R g+rwx /var/log/backend/
 
 WORKDIR /opt/app
-
-COPY openshift/3scale_backend.conf /etc/
-
-RUN mkdir -p /var/log/backend/ \
-  && touch /var/log/backend/3scale_backend.log \
-  && touch /var/log/backend/3scale_backend_worker.log \
-  && chmod -R g+rwx /var/log/backend/ \
-  && chmod 644 /etc/3scale_backend.conf
 
 ENV PATH="${PATH}:/opt/app/bin"
 
