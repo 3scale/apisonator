@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/3scale/puma
-  revision: 1ef71313bf1447788ad8bec4fb66217b1b501624
+  revision: 2b6b1bac2f3d4930c4b20bb16bad332f7f464b1d
   branch: 3scale
   specs:
     puma (2.15.3)
