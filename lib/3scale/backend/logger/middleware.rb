@@ -115,7 +115,12 @@ module ThreeScale
         def extract_query_string(env)
           oqs = env[QUERY_STRING]
           if env[REQUEST_METHOD].to_s.upcase == STR_POST
-            provider_key = Rack::Request.new(env).params[STR_PROVIDER_KEY]
+            provider_key = begin
+                             Rack::Request.new(env).params[STR_PROVIDER_KEY]
+                           rescue IOError
+                             # happens when body does not parse
+                             nil
+                           end
             qs = oqs.dup
             unless provider_key.nil?
               qs << STR_AMPERSAND unless oqs.empty?
