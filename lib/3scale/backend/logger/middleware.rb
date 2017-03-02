@@ -113,7 +113,7 @@ module ThreeScale
         end
 
         def extract_query_string(env)
-          oqs = env[QUERY_STRING]
+          qs = env[QUERY_STRING]
           if env[REQUEST_METHOD].to_s.upcase == STR_POST
             provider_key = begin
                              Rack::Request.new(env).params[STR_PROVIDER_KEY]
@@ -121,13 +121,11 @@ module ThreeScale
                              # happens when body does not parse
                              nil
                            end
-            qs = oqs.dup
             unless provider_key.nil?
-              qs << STR_AMPERSAND unless oqs.empty?
+              qs = qs.dup
+              qs << STR_AMPERSAND unless qs.empty?
               qs << STR_PROVIDER_KEY + STR_EQUAL + provider_key.to_s
             end
-          else
-            qs = oqs
           end
 
           qs
