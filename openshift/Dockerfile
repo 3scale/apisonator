@@ -27,6 +27,8 @@ RUN source /tmp/scl_enable \
 
 COPY . ./
 
+ARG DELETE_UNUSED_GEMFILES=1
+
 RUN source /tmp/scl_enable \
  && cp -n openshift/3scale_backend.conf /etc/ \
  && chmod 644 /etc/3scale_backend.conf \
@@ -35,6 +37,12 @@ RUN source /tmp/scl_enable \
  && gem unpack "3scale_backend-${BACKEND_VERSION}.gem" --target=/opt/ruby \
  && cd "/opt/ruby/3scale_backend-${BACKEND_VERSION}" \
  && cp -a /tmp/backend/.bundle "/opt/ruby/3scale_backend-${BACKEND_VERSION}/" \
+ && if test "x${DELETE_UNUSED_GEMFILES}" = "x1"; then \
+      echo "Deleting the following unused Gemfile files:"; \
+      find . -maxdepth 1 -regex \./Gemfile"\(\..*\)?" \
+      ! -regex \./$(sed -e 's/[^^]/[&]/g; s/\^/\\^/g' <<< ${BUNDLE_GEMFILE})"\(\.lock\)?" \
+      ! -name Gemfile.base -print -delete; \
+    fi \
  && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
  && ln -s ${PWD} /opt/app \
  && cp -n /tmp/backend/openshift/entrypoint.sh ./ \
