@@ -1,3 +1,5 @@
+require 'net/http'
+
 module ThreeScale
   module Backend
     class EventStorage
