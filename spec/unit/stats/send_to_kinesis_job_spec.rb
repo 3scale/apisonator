@@ -51,8 +51,8 @@ module ThreeScale
               before do
                 allow(bucket_reader)
                     .to receive(:pending_events_in_buckets)
-                            .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
-                            .and_return({ events: events, latest_bucket: bucket })
+                    .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
+                    .and_return({ events: events, latest_bucket: bucket })
 
                 allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
                 allow(kinesis_adapter).to receive(:send_events).with(events_to_send)
@@ -75,8 +75,8 @@ module ThreeScale
               before do
                 allow(bucket_reader)
                     .to receive(:pending_events_in_buckets)
-                            .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
-                            .and_return({ events: pending_events, latest_bucket: bucket })
+                    .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
+                    .and_return({ events: pending_events, latest_bucket: bucket })
 
                 allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
                 allow(kinesis_adapter).to receive(:send_events).with(events_to_send)
@@ -90,12 +90,62 @@ module ThreeScale
             end
           end
 
+          context 'when there is an invalid event in the list of pending ones' do
+            let(:invalid_events) do
+              { 'stats/{service:s1}/metric:m1/$ay:20151209' => '5' }
+            end
+
+            let(:valid_events) do
+              { 'stats/{service:s1}/metric:m1/day:20151210' => '10',
+                'stats/{service:s1}/metric:m1/day:20151211' => '20' }
+            end
+
+            let(:events) { valid_events.merge(invalid_events) }
+
+            let(:events_to_send) do # Only send the valid ones
+              valid_events.map do |k, v|
+                StatsParser.parse(k, v).merge!(time_gen: bucket_timestamp)
+              end
+            end
+
+            let(:bucket) { '20150101000000' }
+            let(:bucket_timestamp) do
+              DateTime.parse(bucket).to_time.utc.strftime('%Y%m%d %H:%M:%S')
+            end
+
+            before do
+              allow(bucket_reader)
+                  .to receive(:pending_events_in_buckets)
+                  .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
+                  .and_return({ events: events, latest_bucket: bucket })
+
+              allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
+              allow(kinesis_adapter).to receive(:send_events).with(events_to_send)
+              allow(bucket_storage).to receive(:delete_range).with(bucket)
+            end
+
+            it 'notifies that an invalid event has been found' do
+              invalid_events.each do |k, v|
+                expect(subject.logger)
+                    .to receive(:notify)
+                    .with("Invalid stats key-value. k: #{k}. v: #{v}")
+              end
+
+              subject.perform_logged(end_time_utc.to_s, lock_key, end_time_utc)
+            end
+
+            it 'returns array with format [true, msg] without counting the invalid events' do
+              expect(subject.perform_logged(end_time_utc.to_s, lock_key, end_time_utc))
+                  .to eq [true, subject.send(:msg_events_sent, valid_events.size)]
+            end
+          end
+
           context 'when there are not any pending events' do
             before do
               allow(bucket_reader)
                   .to receive(:pending_events_in_buckets)
-                          .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
-                          .and_return({ events: { }, latest_bucket: nil })
+                  .with(end_time_utc: end_time_utc, max_buckets: max_buckets)
+                  .and_return({ events: { }, latest_bucket: nil })
             end
 
             it 'does not send anything to the kinesis adapter' do

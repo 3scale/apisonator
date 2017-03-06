@@ -49,6 +49,8 @@ module ThreeScale
         private_constant :FILTERED_EVENT_PERIODS_STR
 
         class << self
+          include Backend::Logging
+
           def perform_logged(end_time_utc, lock_key, _enqueue_time)
             # end_time_utc will be a string when the worker processes this job.
             # The parameter is passed through Redis as a string. We need to
@@ -84,8 +86,16 @@ module ThreeScale
             add_time_gen_to_events(parsed_events, bucket_to_timestamp(bucket)).force
           end
 
+          # Parses the events and discards the invalid ones
           def parse_events(events)
-            events.map { |k, v| StatsParser.parse(k, v) }
+            events.map do |k, v|
+              begin
+                StatsParser.parse(k, v)
+              rescue StatsParser::StatsKeyValueInvalid
+                logger.notify("Invalid stats key-value. k: #{k}. v: #{v}")
+                nil
+              end
+            end.reject(&:nil?)
           end
 
           # We do not want to send all the events to Kinesis.
