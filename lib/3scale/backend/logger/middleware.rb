@@ -1,5 +1,6 @@
 require '3scale/backend/logger/writer'
 require '3scale/backend/logger/text_writer'
+require '3scale/backend/logger/json_writer'
 
 module ThreeScale
   module Backend
