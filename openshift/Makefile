@@ -30,6 +30,9 @@ NAME:=amp
 NAMESPACE:=quay.io/3scale
 ENVIRONMENT:=production
 
+DISTRO:=centos/7
+DOCKERFILE_PATH=$(THISDIR_PATH)/distro/$(DISTRO)
+
 include $(THISDIR_PATH)/mk/git-export-sources.mk
 include $(THISDIR_PATH)/mk/docker-compose.mk
 include $(THISDIR_PATH)/mk/build.mk
@@ -65,10 +68,10 @@ _build:
 
 # build targets
 .PHONY: build
-build: export DOCKERFILE?=$(THISDIR_PATH)/Dockerfile ## Build dev image with your own DOCKERFILE and BUILD_ARGS.
+build: export DOCKERFILE?=$(DOCKERFILE_PATH)/Dockerfile ## Build dev image with your own DOCKERFILE and BUILD_ARGS.
 
 .PHONY: build-release
-build-release: export DOCKERFILE?=$(THISDIR_PATH)/Dockerfile
+build-release: export DOCKERFILE?=$(DOCKERFILE_PATH)/Dockerfile
 build-release: export BUILD_ARGS=--build-arg CACHE_FRIENDLY=false \
 	  --build-arg GEM_UPDATE=false \
 	  --build-arg BUNDLE_VERSION_MATCH=false \
@@ -78,13 +81,13 @@ build-release: ## Build dev image with release-like settings.
 	$(MAKE) -f $(MKFILE_PATH) build
 
 .PHONY: release
-release: export DOCKERFILE=$(THISDIR_PATH)/release/Dockerfile
+release: export DOCKERFILE=$(DOCKERFILE_PATH)/release/Dockerfile
 release: ## Build release image, a smaller equivalent of build-release
 	@echo === RELEASE BUILD ===
 	$(MAKE) -f $(MKFILE_PATH) build
 
 .PHONY: release-min
-release-min: export DOCKERFILE:=$(THISDIR_PATH)/release/Dockerfile.min
+release-min: export DOCKERFILE:=$(DOCKERFILE_PATH)/release/Dockerfile.min
 release-min: ## Build minimum size release image (no shared layer with other projects)
 	@echo === MINIMAL SIZE RELEASE BUILD ===
 	$(MAKE) -f $(MKFILE_PATH) build
