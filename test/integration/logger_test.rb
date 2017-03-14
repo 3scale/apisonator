@@ -15,7 +15,7 @@ class LoggerTest < Test::Unit::TestCase
   end
 
   test 'log valid requests with request info and stats info' do
-    default_log_writer.any_instance.expects(:log).times(1)
+    default_log_writer.any_instance.expects(:log).once
 
     assert_nothing_raised do
       post '/transactions.xml?transactions[0]=foo2', provider_key: 'foo'
@@ -26,7 +26,7 @@ class LoggerTest < Test::Unit::TestCase
     redis = Backend::Storage.any_instance
     redis.expects(:get).raises(TimeoutError)
 
-    default_log_writer.any_instance.expects(:log_error).times(1)
+    default_log_writer.any_instance.expects(:log_error).once
 
     assert_raise TimeoutError do
       post '/transactions.xml?transactions[0]=foo2', provider_key: 'foo'
