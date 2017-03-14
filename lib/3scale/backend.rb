@@ -139,6 +139,8 @@ module ThreeScale
       # To distinguish between SaaS and on-premises mode.
       config.saas = true
 
+      config.request_loggers = [:text]
+
       # Add configuration sections
       config.add_section(:queues, :master_name, :sentinels,
                          :connect_timeout, :read_timeout, :write_timeout)
