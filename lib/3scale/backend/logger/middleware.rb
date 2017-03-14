@@ -6,7 +6,20 @@ module ThreeScale
   module Backend
     class Logger
       class Middleware
-        def initialize(app, writers: [TextWriter.new])
+        WRITERS = { text: TextWriter, json: JsonWriter }.freeze
+        private_constant :WRITERS
+
+        DEFAULT_WRITERS = [WRITERS[:text].new].freeze
+        private_constant :DEFAULT_WRITERS
+
+        class UnsupportedLoggerType < StandardError
+          def initialize(logger)
+            super "#{logger} is not a supported logger type."
+          end
+        end
+
+        # writers is an array of symbols. WRITERS contains the accepted values
+        def initialize(app, writers: DEFAULT_WRITERS)
           @app = app
           @writers = writers
         end
@@ -30,6 +43,18 @@ module ThreeScale
           end
 
           [status, header, body]
+        end
+
+        # Returns the Writer instances that correspond to the loggers given.
+        # If no loggers are given, returns the default writers.
+        def self.writers(loggers)
+          writers = Array(loggers).map do |logger|
+            writer_class =  WRITERS[logger]
+            raise UnsupportedLoggerType.new(logger) unless writer_class
+            writer_class.new
+          end
+
+          writers.empty? ? DEFAULT_WRITERS : writers
         end
       end
     end
