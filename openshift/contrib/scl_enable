@@ -1,4 +1,0 @@
-# This file contains automatic SCL enablement.
-unset BASH_ENV PROMPT_COMMAND ENV
-export GEM_PATH=/opt/rh/rh-ruby23/root/usr/local/share/gems:/opt/rh/rh-ruby23/root/usr/share/gems
-source scl_source enable rh-ruby23

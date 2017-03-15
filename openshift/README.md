@@ -70,33 +70,35 @@ make bash
 
 # Releasing backend as part of AMP
 
+Please run `make help` and read the comments in `Makefile` for additional options.
+
 1. Build the image
 
    ```shell
-   make build NAME=amp VERSION=backend-er2-pre1
+   make RELEASE=ER5-pre1 release
    ```
 
 2. Test the image
 
    ```shell
-   make test NAME=amp VERSION=backend-er2-pre1
+   make RELEASE=ER5-pre1 test
    ```
 
 3. Tag the image
 
    ```shell
-   make tag NAME=amp VERSION=backend-er2-pre1
+   make RELEASE=ER5-pre1 tag
    ```
 
 4. Push the image
 
    ```shell
-   make push NAME=amp VERSION=backend-er2-pre1
+   make RELEASE=ER5-pre1 push
    ```
 
 Or you can do all actions at once:
 
 ```shell
-make build test tag push NAME=amp VERSION=backend-er2-pre1
+   make RELEASE=ER5-pre1 release test tag push
 ```
 

@@ -1,118 +1,93 @@
+#
+# 3scale Backend Docker image build process.
+#
+# You might want to run "make help" for a full list of targets.
+#
+# This Makefile is intended to safe and functional when invoked from external
+# directories with "make -f ../path/to/Makefile".
+#
+# Useful variables when invoking build targets:
+#
+# GIT_DIRTY_CHECK: set to 0 to allow dirty builds (non-committed changes).
+# BUILD_CLEANUP: set to 0 to skip removing the build directory after build.
+# VERSION: set to the base version of the software, ie. 2.0.1.
+# EXTRAVERSION: set to the extra version of the software, ie. -rc3.
+# RELEASE: set instead of VERSION and EXTRAVERSION.
+# PROJECT_NAME: set to the project name (autodetected from directory by default).
+#
+# If you want to create new build targets:
+#
+# You need to create a new target invoking theb build target after pointing to
+# your Dockerfile and setting up BUILD_ARGS.
+#
+
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 THISDIR_PATH := $(patsubst %/,%,$(abspath $(dir $(MKFILE_PATH))))
 PROJECT_PATH := $(patsubst %/,%,$(abspath $(dir $(THISDIR_PATH)/../)))
-BUILDDIR_NAME := os-build
-BUILDDIR_PATH = $(THISDIR_PATH)/$(BUILDDIR_NAME)
-NAME=backend
-NAMESPACE=quay.io/3scale
-BACKEND_VERSION=2.71.0
-ENVIRONMENT=production
-GEMINABOX_CREDENTIALS := $(GEMINABOX_CREDENTIALS)
-BACKEND_CREDENTIALS := $(BACKEND_CREDENTIALS)
-BACKEND_ENDPOINT := $(BACKEND_ENDPOINT)
-PORT=3001
-VERSION := $(BACKEND_VERSION)
-LOCAL_IMAGE := $(NAME):$(VERSION)
+PROJECT_NAME:=$(shell basename $(PROJECT_PATH))
+
+NAME:=amp
+NAMESPACE:=quay.io/3scale
+ENVIRONMENT:=production
+
+DISTRO:=centos/7
+DOCKERFILE_PATH=$(THISDIR_PATH)/distro/$(DISTRO)
+
+include $(THISDIR_PATH)/mk/git-export-sources.mk
+include $(THISDIR_PATH)/mk/docker-compose.mk
+include $(THISDIR_PATH)/mk/build.mk
+include $(THISDIR_PATH)/mk/help.mk
+include $(THISDIR_PATH)/mk/docker.mk
+include $(THISDIR_PATH)/mk/docker-repo.mk
+include $(THISDIR_PATH)/mk/backend.mk
+
+GIT_VERSION=$(shell cd $(PROJECT_PATH) && git describe --dirty)
+VERSION=$(GIT_VERSION)
+RELEASE=$(VERSION)$(EXTRAVERSION)
+RELEASE_NAME=$(PROJECT_NAME)-$(RELEASE)
+LOCAL_IMAGE=$(NAME):$(RELEASE_NAME)
 REMOTE_IMAGE := $(NAMESPACE)/$(LOCAL_IMAGE)
 
-DOCKER_COMPOSE_VERSION := 1.10.0
-DOCKER_COMPOSE := .bin/docker-compose
-DOCKER_COMPOSE_BIN := $(DOCKER_COMPOSE)-$(DOCKER_COMPOSE_VERSION)
-DOCKER_RUN := docker run --rm
-
-.PHONY: build build-dir new-build-dir rm-build-dir check-env test test-integration \
-        listener worker cron bash tag push help all compose default
+.PHONY: all default
 
 default: help
 
-.bin:
-	@mkdir -p $@
-
-$(DOCKER_COMPOSE): $(DOCKER_COMPOSE_BIN)
-	@ln -sf $(realpath $(DOCKER_COMPOSE_BIN)) $(DOCKER_COMPOSE)
-
-WGET := $(shell wget --version 2> /dev/null)
-
-$(DOCKER_COMPOSE_BIN): .bin
-ifndef WGET
-	$(error missing wget to download Docker Compose)
-endif
-	@wget --no-verbose https://github.com/docker/compose/releases/download/$(DOCKER_COMPOSE_VERSION)/docker-compose-`uname -s`-`uname -m` -O $(DOCKER_COMPOSE_BIN)
-	@chmod +x $(DOCKER_COMPOSE_BIN)
-	@touch $(DOCKER_COMPOSE_BIN)
-
-compose: $(DOCKER_COMPOSE)
-	@$(MAKE) $(DOCKER_COMPOSE) > /dev/null
-	@echo $(DOCKER_COMPOSE)
-
 all: build
 
-rm-build-dir:
-	rm -rf $(shell readlink -e $(BUILDDIR_PATH)) $(BUILDDIR_PATH)
+# generate a build target that handles export and tmp directories out of _build
+$(call build_target,build,_build)
 
-new-build-dir: rm-build-dir
-	ln -s $(shell mktemp -d) $(BUILDDIR_PATH)
+## Build docker image with your own DOCKERFILE and BUILD_ARGS settings.
+.PHONY: _build
+_build:
+	@echo ======================================================================
+	@echo "* Image: $(LOCAL_IMAGE)"
+	@echo "* Dockerfile: $(DOCKERFILE)"
+	@echo ======================================================================
+	$(call docker_build,$(DOCKERFILE),$(LOCAL_IMAGE),$(BUILD_ARGS))
 
-build-dir: # Generate a clean export of the source code for building
-	if test ! -d $(BUILDDIR_PATH); then $(MAKE) new-build-dir; fi
-	(git diff-index --quiet --cached HEAD && \
-	  git diff-files --quiet && \
-	  git diff-index --quiet HEAD) || \
-	  (echo error: dirty git state - ensure all diffs are committed >&2; false)
-	(cd $(PROJECT_PATH) && \
-	  git archive --worktree-attributes --format=tar --prefix=dist/ HEAD) | \
-	  (rm -rf $(BUILDDIR_PATH)/* && tar xf - -C $(BUILDDIR_PATH))
-	touch $(BUILDDIR_PATH)/ready
+# build targets
+.PHONY: build
+build: export DOCKERFILE?=$(DOCKERFILE_PATH)/Dockerfile ## Build dev image with your own DOCKERFILE and BUILD_ARGS.
 
-# flag file to *assume* whatever is in a build dir is trusted to generate the image
-$(BUILDDIR_NAME)/ready:
-	$(MAKE) build-dir
+.PHONY: build-release
+build-release: export DOCKERFILE?=$(DOCKERFILE_PATH)/Dockerfile
+build-release: export BUILD_ARGS=--build-arg CACHE_FRIENDLY=false \
+	  --build-arg GEM_UPDATE=false \
+	  --build-arg BUNDLE_VERSION_MATCH=false \
+	  --build-arg BUNDLE_WITHOUT=development:test \
+	  --build-arg RACK_ENV=production
+build-release: ## Build dev image with release-like settings.
+	$(MAKE) -f $(MKFILE_PATH) build
 
-check-env:
-ifndef GEMINABOX_CREDENTIALS
-	$(error GEMINABOX_CREDENTIALS is undefined)
-endif
+.PHONY: release
+release: export DOCKERFILE=$(DOCKERFILE_PATH)/release/Dockerfile
+release: ## Build release image, a smaller equivalent of build-release
+	@echo === RELEASE BUILD ===
+	$(MAKE) -f $(MKFILE_PATH) build
 
-build: $(BUILDDIR_NAME)/ready ## Build docker image with name LOCAL_IMAGE (NAME:VERSION).
-	docker build -f $(BUILDDIR_PATH)/dist/$(shell realpath --relative-to \
-	  $(PROJECT_PATH) $(THISDIR_PATH))/Dockerfile --pull -t $(LOCAL_IMAGE) \
-	  $(BUILDDIR_PATH)/dist
-	rm -rf $(BUILDDIR_PATH)
-
-test: ## Test built LOCAL_IMAGE (NAME:VERSION).
-	$(DOCKER_RUN) -t --env RACK_ENV=$(ENVIRONMENT) --env CONFIG_INTERNAL_API_USER=foo $(LOCAL_IMAGE) rackup -D
-	$(DOCKER_RUN) -t --env RACK_ENV=$(ENVIRONMENT) --env CONFIG_INTERNAL_API_USER=foo $(LOCAL_IMAGE) rackup -s puma -D
-	$(DOCKER_RUN) -t $(LOCAL_IMAGE) 3scale_backend --version
-	$(DOCKER_RUN) -t --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) 3scale_backend_worker --version
-	$(DOCKER_RUN) -t --env RACK_ENV=$(ENVIRONMENT) --env ONCE=1 $(LOCAL_IMAGE) backend-cron | grep "RuntimeError: task crashed" > /dev/null # because redis is not running
-
-test-integration: export LOCAL_IMAGE := $(LOCAL_IMAGE)
-test-integration: $(DOCKER_COMPOSE)
-ifndef BACKEND_ENDPOINT
-test-integration: build
-	$(DOCKER_COMPOSE) run --rm test
-else
-	$(DOCKER_COMPOSE) run --rm -e BACKEND_ENDPOINT=$(BACKEND_ENDPOINT) --no-deps test
-endif
-
-listener:
-	$(DOCKER_RUN) --env-file .env --env RACK_ENV=$(ENVIRONMENT) -p $(PORT):$(PORT) $(LOCAL_IMAGE) 3scale_backend start -p $(PORT) -x /dev/stdout
-
-worker:
-	$(DOCKER_RUN) --env-file .env --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) 3scale_backend_worker run
-
-cron:
-	$(DOCKER_RUN) --env-file .env --env RACK_ENV=$(ENVIRONMENT) $(LOCAL_IMAGE) backend-cron
-
-bash: ## Start bash in the build IMAGE_NAME.
-	docker run --env-file .env --env RACK_ENV=$(ENVIRONMENT) --entrypoint=/bin/bash -it $(LOCAL_IMAGE)
-
-tag: ## Tag LOCAL_IMAGE (NAME:VERSION) in the remote registry.
-	docker tag $(LOCAL_IMAGE) $(REMOTE_IMAGE)
-
-push: ## Push the remote image. Accepts NAME and VERSION.
-	docker push $(REMOTE_IMAGE)
-
-# Check http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
-help: ## Print this help
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+.PHONY: release-min
+release-min: export DOCKERFILE:=$(DOCKERFILE_PATH)/release/Dockerfile.min
+release-min: ## Build minimum size release image (no shared layer with other projects)
+	@echo === MINIMAL SIZE RELEASE BUILD ===
+	$(MAKE) -f $(MKFILE_PATH) build
