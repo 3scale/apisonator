@@ -61,6 +61,12 @@ RUN sed -i /etc/yum.conf -e \
       ! -name Gemfile.base -print -delete \
  && yum -y install ${BUILD_DEP_PKGS} \
  && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
+# Bundler < 1.12.0 needs fixing for git gems with extensions (Puma)
+ && if ruby -e "begin; require 'rubygems'; Gem::Specification.find_by_name('bundler').version < Gem::Version.new('1.12.0') && exit(0); rescue; end; exit(1)"; then \
+      echo "[WARNING] Old Bundler requires fixing git gems with extensions (Puma)" ; \
+      PUMA_DIR=$(bundle show puma) \
+      && ln -s $(find "${PUMA_DIR}" -name puma_http11.so) "${PUMA_DIR}"/lib/puma ; \
+    fi \
  && yum -y remove ${BUILD_DEP_PKGS} \
  && yum -y autoremove \
  && yum -y clean all \
