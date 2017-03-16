@@ -30,6 +30,7 @@ require 'digest/md5'
 require '3scale/backend/util'
 require '3scale/backend/manifest'
 require '3scale/backend/logger'
+require '3scale/backend/logger/middleware'
 require '3scale/backend/has_set'
 require '3scale/backend/storage_helpers'
 require '3scale/backend/storage_key_helpers'
@@ -137,6 +138,8 @@ module ThreeScale
     configuration.tap do |config|
       # To distinguish between SaaS and on-premises mode.
       config.saas = true
+
+      config.request_loggers = [:text]
 
       # Add configuration sections
       config.add_section(:queues, :master_name, :sentinels,

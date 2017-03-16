@@ -1,48 +1,27 @@
+require '3scale/backend/logger/writer'
+require '3scale/backend/logger/text_writer'
+require '3scale/backend/logger/json_writer'
+
 module ThreeScale
   module Backend
     class Logger
       class Middleware
-        Z3_RANGE = 0..3.freeze
+        WRITERS = { text: TextWriter, json: JsonWriter }.freeze
+        private_constant :WRITERS
 
-        private_constant(*[
-          :HTTP_X_FORWARDED_FOR,
-          :REMOTE_ADDR,
-          :REMOTE_USER,
-          :REQUEST_METHOD,
-          :PATH_INFO,
-          :HTTP_VERSION,
-          :HTTP_X_REQUEST_ID,
-          :QUERY_STRING,
-          :HTTP_3SCALE_OPTIONS
-        ].each do |k|
-          const_set(k, k.to_s.freeze)
-        end)
+        DEFAULT_WRITERS = [WRITERS[:text].new].freeze
+        private_constant :DEFAULT_WRITERS
 
-        private_constant(*{
-          FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d %s %s 0 0 0 %s %s %s %s %s\n",
-          ERROR_FORMAT: "%s - %s [%s] \"%s %s%s %s\" %d \"%s\" %s %s %s\n",
-          DATE_FORMAT: '%d/%b/%Y %H:%M:%S %Z',
-          STR_PROVIDER_KEY: 'provider_key',
-          STR_POST: 'POST',
-          STR_EQUAL: '=',
-          STR_DASH: '-',
-          STR_AMPERSAND: '&',
-          STR_ZERO: '0',
-          STR_RACK_ERRORS: 'rack.errors',
-          STR_EMPTY: '',
-          STR_QUESTION_MARK: '?',
-          STR_NEWLINE: "\n",
-          STR_DQUOTE: '"',
-          STR_ESCAPED_DQUOTE: '\"',
-          STR_CONTENT_LENGTH: 'Content-Length'
-        }.map do |k, v|
-          const_set(k, v.freeze)
-          k
-        end)
+        class UnsupportedLoggerType < StandardError
+          def initialize(logger)
+            super "#{logger} is not a supported logger type."
+          end
+        end
 
-        def initialize(app, logger=STDOUT)
+        # writers is an array of symbols. WRITERS contains the accepted values
+        def initialize(app, writers: DEFAULT_WRITERS)
           @app = app
-          @logger = logger
+          @writers = writers
         end
 
         def call(env)
@@ -50,90 +29,32 @@ module ThreeScale
           begin
             status, header, body = @app.call(env)
           rescue Exception => e
-            log_error(env, 500, e.message, began_at)
+            @writers.each do |writer|
+              writer.log_error(env, 500, e.message, began_at)
+            end
             raise e
           end
+
           header = Rack::Utils::HeaderHash.new(header)
-          body = Rack::BodyProxy.new(body) { log(env, status, header, began_at) }
-          [status, header, body]
-        end
-
-        private
-
-        def log_error(env, status, error, began_at)
-          now = Time.now.getutc
-          qs  = extract_query_string(env)
-
-          logger = @logger || env[STR_RACK_ERRORS] || STDERR
-          logger.write ERROR_FORMAT % [
-            env[HTTP_X_FORWARDED_FOR] || env[REMOTE_ADDR] || STR_DASH,
-            env[REMOTE_USER] || STR_DASH,
-            now.strftime(DATE_FORMAT),
-            env[REQUEST_METHOD],
-            env[PATH_INFO],
-            qs.empty? ? STR_EMPTY : STR_QUESTION_MARK + qs.tr(STR_NEWLINE, STR_EMPTY),
-            env[HTTP_VERSION],
-            status.to_s[Z3_RANGE],
-            error,
-            now - began_at,
-            env[HTTP_X_REQUEST_ID] || STR_DASH,
-            extensions(env)
-          ]
-        end
-
-        def log(env, status, header, began_at)
-          now      = Time.now.getutc
-          qs       = extract_query_string(env)
-          length   = extract_content_length(header)
-          memoizer = ThreeScale::Backend::Memoizer.stats
-
-          logger = @logger || env[STR_RACK_ERRORS] || STDERR
-          logger.write FORMAT % [
-            env[HTTP_X_FORWARDED_FOR] || env[REMOTE_ADDR] || STR_DASH,
-            env[REMOTE_USER] || STR_DASH,
-            now.strftime(DATE_FORMAT),
-            env[REQUEST_METHOD],
-            env[PATH_INFO],
-            qs.empty? ? STR_EMPTY : STR_QUESTION_MARK + qs.tr(STR_NEWLINE, STR_EMPTY),
-            env[HTTP_VERSION],
-            status.to_s[Z3_RANGE],
-            length,
-            now - began_at,
-            memoizer[:size] || STR_DASH,
-            memoizer[:count] || STR_DASH,
-            memoizer[:hits] || STR_DASH,
-            env[HTTP_X_REQUEST_ID] || STR_DASH,
-            extensions(env)
-          ]
-        end
-
-        def extract_content_length(headers)
-          value = headers[STR_CONTENT_LENGTH] or return STR_DASH
-          value.to_s == STR_ZERO ? STR_DASH : value
-        end
-
-        def extract_query_string(env)
-          qs = env[QUERY_STRING]
-          if env[REQUEST_METHOD].to_s.upcase == STR_POST
-            provider_key = begin
-                             Rack::Request.new(env).params[STR_PROVIDER_KEY]
-                           rescue IOError
-                             # happens when body does not parse
-                             nil
-                           end
-            unless provider_key.nil?
-              qs = qs.dup
-              qs << STR_AMPERSAND unless qs.empty?
-              qs << STR_PROVIDER_KEY + STR_EQUAL + provider_key.to_s
+          body = Rack::BodyProxy.new(body) do
+            @writers.each do |writer|
+              writer.log(env, status, header, began_at)
             end
           end
 
-          qs
+          [status, header, body]
         end
 
-        def extensions(env)
-          ext = env[HTTP_3SCALE_OPTIONS]
-          ext ? "\"#{ext.gsub(STR_DQUOTE, STR_ESCAPED_DQUOTE)}\"" : STR_DASH
+        # Returns the Writer instances that correspond to the loggers given.
+        # If no loggers are given, returns the default writers.
+        def self.writers(loggers)
+          writers = Array(loggers).map do |logger|
+            writer_class =  WRITERS[logger]
+            raise UnsupportedLoggerType.new(logger) unless writer_class
+            writer_class.new
+          end
+
+          writers.empty? ? DEFAULT_WRITERS : writers
         end
       end
     end

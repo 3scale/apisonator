@@ -11,135 +11,76 @@ module ThreeScale
           end
         end
 
-        let(:app) { SpecHelpers::Rack::App.new }
-        let(:lm) { SpecHelpers::LoglineMatcher.new }
         let(:rackrequest) { SpecHelpers::Rack::Request.new }
-        let(:logger) { object_double(STDOUT) }
-        let(:fixed_fields_success_response) { 20 }
-        let(:fixed_fields_error_response) { 13 }
-        subject { described_class.new(app.app, logger) }
+        let(:time) { Time.now }
 
-        # field_s provides a _string_ representing the Ruby code that would
-        # return the field's value as a regexp string when "eval"-ed (the caller
-        # must take care of escaping special characters if so desired).
-        # This is so because RSpec tries to be super smart and kills
-        # any attempt to pass in a callable or anything else that would
-        # execute code referencing a let variable in the right context.
-        shared_examples_for :field do |desc, position, field_s|
-          it "writes out the #{desc} field" do
-            expect(logger).to receive(:write).with(
-              lm.match_a_field(eval(field_s).to_s)).once
-            run_request
-          end
+        let(:writers) do
+          [double('writer1', log: '', log_error: ''),
+           double('writer2', log: '', log_error: '')]
+        end
+        subject { described_class.new(app.app, writers: writers) }
 
-          it "writes out the #{desc} field in the #{position} position" do
-            expect(logger).to receive(:write).with(
-              lm.match_positional_field(eval(field_s).to_s,
-              [position-1, position-1],
-              [total_fields-position, total_fields-position])).once
-            run_request
+        context 'when there are no errors' do
+          let(:app) { SpecHelpers::Rack::App.new }
+
+          it 'all the writers log the successful call' do
+            writers.each do |writer|
+              expect(writer)
+                  .to receive(:log)
+                  .with(rackrequest.env, app.status, {}, time)
+                  .once
+            end
+
+            Timecop.freeze(time) { run_request }
           end
         end
 
-        shared_examples_for :logline do
-          include_examples :field, 'HTTP method', 7, <<-'FIELD'
-            '"' + rackrequest.http_method
-          FIELD
-          include_examples :field, 'path and query', 8, <<-'FIELD'
-            Regexp.escape(rackrequest.path + (rackrequest.query_string.empty? ?
-              '' : "?#{rackrequest.query_string}"))
-          FIELD
-          include_examples :field, 'HTTP version', 9, <<-'FIELD'
-            Regexp.escape(rackrequest.env['HTTP_VERSION']) + '"'
-          FIELD
-          include_examples :field, 'status', 10, <<-'FIELD'
-            app.status
-          FIELD
-
-          it "writes out exactly the total number of fields expected" do
-            expect(logger).to receive(:write).
-              with(lm.match_n_fields total_fields).once
-            run_request
-          end
-        end
-
-        shared_examples_for 'successful response' do
-          let(:total_fields) { fixed_fields_success_response }
-
-          it_behaves_like :logline
-        end
-
-        shared_examples_for 'error response' do
+        context 'when there is an error' do
           let(:app) { SpecHelpers::Rack::App.new(status: 500, failure: true) }
-          let(:total_fields) do
-            fixed_fields_error_response + app.exception.message.split.size
-          end
 
-          it 'writes out the exception message' do
-            expect(logger).to receive(:write).with(
-              lm.match_a_field("\"#{app.exception.message}\"")).once
-            run_request
-          end
+          it 'all the writers log the error' do
+            writers.each do |writer|
+              expect(writer)
+                  .to receive(:log_error)
+                  .with(rackrequest.env, app.status, app.exception.message, time)
+                  .once
+            end
 
-          it_behaves_like :logline
-        end
-
-        shared_examples_for 'passing in extensions' do
-          let(:ext) { 'no_body=1&rejection_reason_header=0' }
-          let(:ext_re) { Regexp.escape ext }
-          let(:rackrequest) do
-            SpecHelpers::Rack::Request.new(headers: { 'HTTP_3SCALE_OPTIONS' => ext })
-          end
-
-          it 'writes out the extensions header content' do
-            expect(logger).to receive(:write).with(
-              lm.match_a_field("\"#{ext_re}\"")).once
-            run_request
-          end
-
-          it 'writes out the extensions header content in the last field' do
-            expect(logger).to receive(:write).with(
-              lm.match_positional_field("\"#{ext_re}\"",
-                                        [total_fields-1, total_fields-1],
-                                        [0, 0])).once
-            run_request
+            Timecop.freeze(time) { run_request }
           end
         end
 
-        shared_examples_for 'not using extensions' do
-          # the request is not overwritten so the caller should set it up
-          it 'writes a dash as the extensions header in the last field' do
-            expect(logger).to receive(:write).with(
-              lm.match_positional_field("-",
-                                        [total_fields-1, total_fields-1],
-                                        [0, 0])).once
-            run_request
-          end
-        end
+        describe '.writers' do
+          context 'with loggers' do
+            let(:loggers) { described_class.const_get(:WRITERS).keys }
+            let(:writer_classes) { described_class.const_get(:WRITERS).values }
 
-        context 'when logging a successful response' do
-          include_examples 'successful response'
-
-          context 'and passing in extensions' do
-            include_examples 'passing in extensions'
-
-            it_behaves_like 'successful response'
-          end
-        end
-
-        context 'when logging an error response' do
-          include_examples 'error response'
-
-          context 'and passing in extensions' do
-            include_examples 'passing in extensions'
-
-            it_behaves_like 'error response'
+            it 'returns the writers associated with the loggers' do
+              writers = described_class.writers(loggers)
+              expect(writer_classes.all? do |writer_class|
+                writers.find { |writer| writer.is_a?(writer_class) }
+              end).to be true
+            end
           end
 
-          context 'and not using extensions' do
-            include_examples 'not using extensions'
+          context 'without loggers' do
+            let(:default_writers) { described_class.const_get(:DEFAULT_WRITERS) }
 
-            it_behaves_like 'error response'
+            it 'returns the default writers' do
+              [nil, []].each do |param|
+                expect(described_class.writers(param)).to eq default_writers
+              end
+            end
+          end
+
+          context 'with an invalid logger' do
+            let(:invalid_logger) { :invalid }
+            invalid_logger_error = described_class::UnsupportedLoggerType
+
+            it "raises #{invalid_logger_error}" do
+              expect { described_class.writers([invalid_logger]) }
+                  .to raise_error(invalid_logger_error)
+            end
           end
         end
       end
