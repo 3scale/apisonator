@@ -35,7 +35,7 @@ group :development do
   gem 'source2swagger', git: 'https://github.com/3scale/source2swagger', branch: 'backend'
   gem 'pry',      '~> 0.10.4'
   gem 'pry-doc',  '~> 0.10.0'
-  gem 'license_finder', '~> 2.1.2'
+  gem 'license_finder', '~> 3.0.0'
 end
 
 group :development, :test do
