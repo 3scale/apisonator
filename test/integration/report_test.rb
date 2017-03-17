@@ -31,13 +31,6 @@ class ReportTest < Test::Unit::TestCase
 
   end
 
-  test 'options request returns list of allowed methods' do
-    request '/transactions.xml', :method => 'OPTIONS'
-
-    assert_equal 200,    last_response.status
-    assert_equal 'POST', last_response.headers['Allow']
-  end
-
   test 'successful report responds with 202' do
     post '/transactions.xml',
       :provider_key => @provider_key,

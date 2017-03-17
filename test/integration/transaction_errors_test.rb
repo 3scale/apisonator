@@ -14,15 +14,6 @@ class TransactionErrorsTest < Test::Unit::TestCase
     setup_provider_fixtures
   end
 
-  test 'OPTION /transactions/errors.xml returns GET and DELETE' do
-    request '/transactions/errors.xml',
-      :method => 'OPTIONS',
-      :params => {:provider_key => @provider_key}
-
-    assert_equal 200,           last_response.status
-    assert_equal 'GET, DELETE', last_response.headers['Allow']
-  end
-
   test 'GET /transactions/errors.xml contains no items if there are no errors' do
     get '/transactions/errors.xml', :provider_key => @provider_key
 
@@ -95,15 +86,6 @@ class TransactionErrorsTest < Test::Unit::TestCase
 
     assert_error_response :code    => 'provider_key_invalid',
                           :message => 'provider key "boo" is invalid'
-  end
-
-  test 'OPTION /transactions/errors/count.xml returns GET' do
-    request '/transactions/errors/count.xml',
-      :method => 'OPTIONS',
-      :params => {:provider_key => @provider_key}
-
-    assert_equal 200,   last_response.status
-    assert_equal 'GET', last_response.headers['Allow']
   end
 
   test 'GET /transactions/errors/count.xml returns number of stored errors' do

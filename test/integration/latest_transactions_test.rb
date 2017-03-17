@@ -27,15 +27,6 @@ class LatestTransactionsTest < Test::Unit::TestCase
     Metric.save(:service_id => @service_id, :id => @bars_id, :name => 'bars')
   end
 
-  test 'OPTION /transactions/latest.xml returns GET' do
-    request '/transactions/latest.xml',
-      :method => 'OPTIONS',
-      :params => {:provider_key => @provider_key}
-
-    assert_equal 200,   last_response.status
-    assert_equal 'GET', last_response.headers['Allow']
-  end
-
   test 'GET /transactions/latest.xml returns list of latest transactions' do
     first_transaction_time = Time.parse('2010-09-09 11:00:00 +0000')
     second_transaction_time = first_transaction_time + 5
