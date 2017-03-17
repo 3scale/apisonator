@@ -138,7 +138,7 @@ module ThreeScale
       end
 
       def hostname
-        @hostname ||= `hostname`.chomp
+        @hostname ||= (ENV['HOSTNAME'] || `hostname`.chomp)
       end
 
       def configure_airbrake_for_resque
