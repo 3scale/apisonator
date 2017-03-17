@@ -138,8 +138,6 @@ module ThreeScale
 
       set :views, File.dirname(__FILE__) + '/views'
 
-      register AllowMethods
-
       use Rack::RackExceptionCatcher
 
       before do
