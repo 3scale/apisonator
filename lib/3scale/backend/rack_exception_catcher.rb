@@ -72,9 +72,4 @@ module Rack
       [code, ERROR_HEADERS.dup, [body]]
     end
   end
-
-  module RequestExceptionExtensions
-  end
 end
-
-Rack::Request.send(:include, Rack::RequestExceptionExtensions)
