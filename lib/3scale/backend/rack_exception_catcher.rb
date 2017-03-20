@@ -1,7 +1,21 @@
 require 'rack'
+require '3scale/backend/cors'
 
 module Rack
   class RackExceptionCatcher
+
+    # These are the headers responded with when an error happens,
+    # and here we include the CORS ones.
+    # Note that this way of managing the errors is fundamentally
+    # broken, as important information gets lost. That is the case
+    # with response headers and other processing that has happened
+    # until an exception was raised.
+    # A refactoring to use Sinatra's error facilities is in order.
+    ERROR_HEADERS = {
+      'Content-Type'.freeze => 'application/vnd.3scale-v2.0+xml'.freeze,
+    }.merge(ThreeScale::Backend::CORS.const_get(:HEADERS)).freeze
+    private_constant :ERROR_HEADERS
+
     def initialize(app, options = {})
       @app = app
       @options = options
@@ -41,7 +55,7 @@ module Rack
     #
     # Returns nothing.
     def delete_sinatra_error!(env)
-      env['sinatra.error'] = nil
+      env['sinatra.error'.freeze] = nil
     end
 
     # Private: Prepares the body to inlude in the reponse.
@@ -51,16 +65,11 @@ module Rack
     #
     # Returns String.
     def prepare_body(body, env)
-      ThreeScale::Backend::Listener.threescale_extensions(env)[:no_body] ? '' : body
+      ThreeScale::Backend::Listener.threescale_extensions(env)[:no_body] ? ''.freeze : body
     end
 
     def respond_with(code, body)
-      [code, { 'Content-Type' => 'application/vnd.3scale-v2.0+xml' }, [body]]
+      [code, ERROR_HEADERS.dup, [body]]
     end
   end
-
-  module RequestExceptionExtensions
-  end
 end
-
-Rack::Request.send(:include, Rack::RequestExceptionExtensions)

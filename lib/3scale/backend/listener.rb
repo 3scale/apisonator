@@ -1,4 +1,5 @@
 require '3scale/backend/version'
+require '3scale/backend/cors'
 require 'json'
 
 module ThreeScale
@@ -138,12 +139,18 @@ module ThreeScale
 
       set :views, File.dirname(__FILE__) + '/views'
 
-      register AllowMethods
-
       use Rack::RackExceptionCatcher
 
       before do
-        content_type 'application/vnd.3scale-v2.0+xml'
+        content_type 'application/vnd.3scale-v2.0+xml'.freeze
+        # enable CORS for all our endpoints
+        response.headers.merge!(CORS.headers)
+      end
+
+      # Enable CORS pre-flight request for all our endpoints
+      options '*' do
+        response.headers.merge!(CORS.options_headers)
+        204
       end
 
       # this is an HAProxy-specific endpoint, equivalent to
