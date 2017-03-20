@@ -2,6 +2,11 @@
 require '3scale/backend'
 require 'daemons'
 
+if ARGV.delete '--version'
+  STDOUT.puts "3scale_backend_worker version #{ThreeScale::Backend::VERSION}"
+  exit 0
+end
+
 options = {
   multiple: true,
   dir_mode: :normal,
@@ -9,10 +14,7 @@ options = {
 }
 
 # make --no-daemonize an alias of --ontop
-if ARGV.include? '--no-daemonize'
-  ARGV.delete '--no-daemonize'
-  options[:ontop] = true
-end
+options[:ontop] = true if ARGV.delete '--no-daemonize'
 
 if !File.writable? options[:dir]
   require 'fileutils'
