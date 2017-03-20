@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'gli'
+require '3scale/backend/version'
 
 class Runner
   class << self
@@ -48,7 +49,7 @@ class Runner
 
   program_desc '3scale_backend launcher'
 
-  version '1.0.0'
+  version ThreeScale::Backend::VERSION
 
   CONFIG_FILE = '.backend_launcher.rc.yml'
   EXPANDED_ROOT_PATH = File.expand_path(File.join('..', '..'), __FILE__)
