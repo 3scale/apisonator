@@ -130,8 +130,8 @@ module ThreeScale
 
 
       COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze,
-		       'user_key'.freeze, 'provider_key'.freeze,
-		       'access_token'.freeze].freeze
+                       'user_key'.freeze, 'provider_key'.freeze,
+                       'access_token'.freeze].freeze
 
       configure :production do
         disable :dump_errors
@@ -170,7 +170,7 @@ module ThreeScale
         normalize_non_empty_keys!
 
         provider_key = params[:provider_key] ||
-            provider_key_from(params[:service_token], params[:service_id])
+          provider_key_from(params[:service_token], params[:service_id])
 
         raise_provider_key_error(params) if blank?(provider_key)
         halt 403 unless valid_usage_params?
@@ -411,7 +411,7 @@ module ThreeScale
         halt 403 if params.nil?
 
         provider_key = params[:provider_key] ||
-            provider_key_from(params[:service_token], params[:service_id])
+          provider_key_from(params[:service_token], params[:service_id])
 
         raise_provider_key_error(params) if blank?(provider_key)
 
@@ -490,8 +490,9 @@ module ThreeScale
       ## TRANSACTIONS & ERRORS
 
       get '/transactions/errors.xml' do
-        @errors = ErrorStorage.list(service_id, :page     => params[:page],
-                                                :per_page => params[:per_page])
+        @errors = ErrorStorage.list(service_id,
+                                    page: params[:page],
+                                    per_page: params[:per_page])
         builder :transaction_errors
       end
 
@@ -532,7 +533,7 @@ module ThreeScale
       # using a class variable instead of settings because we want this to be
       # as fast as possible when responding, since we hit /status a lot.
       @@status = { status: :ok,
-		   version: { backend: ThreeScale::Backend::VERSION } }.to_json.freeze
+                   version: { backend: ThreeScale::Backend::VERSION } }.to_json.freeze
 
       get '/status' do
         content_type 'application/json'.freeze
