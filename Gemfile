@@ -1,7 +1,7 @@
 eval_gemfile(File.expand_path('../Gemfile.base', __FILE__))
 
 platform :ruby do
-  gem 'pg', '= 0.19.0'
+  gem 'pg', '= 0.20.0'
 end
 
 gem 'aws-sdk', '= 2.4.2'
