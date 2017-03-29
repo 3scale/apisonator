@@ -28,10 +28,9 @@ module ThreeScale
         end
 
         def disable_service(service_id)
-          old_bucket = bucket service_id
-
-          storage.del(bucket_id_key(service_id))
-          storage.srem all_bucket_keys_key, old_bucket
+          bucket_key = bucket_id_key service_id
+          storage.del bucket_key
+          storage.srem all_bucket_keys_key, bucket_key
         end
 
         def enabled?(service_id)
