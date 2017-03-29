@@ -45,18 +45,14 @@ module ThreeScale
       end
 
       def enabled? service_id
-        cubert(service_id).enabled?
+        CubertServiceManagementUseCase.enabled?(service_id)
       end
       memoize :enabled?
 
       def bucket service_id
-        cubert(service_id).bucket
+        CubertServiceManagementUseCase.bucket(service_id)
       end
       memoize :bucket
-
-      def cubert service_id
-        CubertServiceManagementUseCase.new service_id
-      end
 
       def collection
         'request_logs'
