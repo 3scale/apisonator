@@ -446,6 +446,6 @@ class LogRequestTest < Test::Unit::TestCase
 
   def cubert_enable(service_id)
     CubertServiceManagementUseCase.global_enable
-    CubertServiceManagementUseCase.new(service_id).enable_service 'foo'
+    CubertServiceManagementUseCase.enable_service(service_id, 'foo')
   end
 end

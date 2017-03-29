@@ -7,7 +7,7 @@ module ThreeScale
       let(:storage) { ThreeScale::Backend::Storage.instance }
       let(:cubert) { CubertServiceManagementUseCase }
       let(:enabled_service) do
-        cubert.new('7001').enable_service cubert.connection.create_bucket
+        cubert.enable_service '7001', cubert.connection.create_bucket('7001')
         '7001'
       end
       let(:disabled_service) { '7002' }
