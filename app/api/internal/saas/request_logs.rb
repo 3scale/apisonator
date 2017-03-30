@@ -4,17 +4,16 @@ module ThreeScale
       internal_api '/services' do
         put '/:id/logs_bucket' do
           begin
-            service = CubertServiceManagementUseCase.new(params[:id])
-            service.enable_service params[:bucket]
-            {status: :ok, bucket: service.bucket}.to_json
+            CubertServiceManagementUseCase.enable_service params[:id], params[:bucket]
+            { status: :ok, bucket: CubertServiceManagementUseCase.bucket(params[:id]) }.to_json
           rescue BucketMissing => e
             respond_with_400 e
           end
         end
 
         delete '/:id/logs_bucket' do
-          CubertServiceManagementUseCase.new(params[:id]).disable_service
-          {status: :deleted}.to_json
+          CubertServiceManagementUseCase.disable_service params[:id]
+          { status: :deleted }.to_json
         end
       end
     end

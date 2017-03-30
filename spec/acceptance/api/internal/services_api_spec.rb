@@ -175,7 +175,7 @@ resource 'Services (prefix: /services)' do
       expect(status).to eq(200)
       expect(response_json['status']).to eq('ok')
       expect(response_json['bucket']).to eq('foo')
-      expect(ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket).
+      expect(ThreeScale::Backend::CubertServiceManagementUseCase.bucket 1001).
         to eq('foo')
     end
 
@@ -191,13 +191,12 @@ resource 'Services (prefix: /services)' do
     let(:raw_post) { params.to_json }
 
     example 'Removing log bucket info' do
-      ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).
-        enable_service 'foobar'
+      ThreeScale::Backend::CubertServiceManagementUseCase.enable_service 1001, 'foobar'
 
       do_request id: 1001
       expect(status).to eq(200)
       expect(response_json['status']).to eq('deleted')
-      expect(ThreeScale::Backend::CubertServiceManagementUseCase.new(1001).bucket)
+      expect(ThreeScale::Backend::CubertServiceManagementUseCase.bucket 1001)
           .to be nil
     end
   end
