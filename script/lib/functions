@@ -1,6 +1,5 @@
 REDIS_PORTS=(7379 7380 6379)
 TWEMPROXY_PIDFILE="/tmp/twemproxy_backend_tests.pid"
-CUBERT_PIDFILE="/tmp/cubert_backend_tests.pid"
 POSTGRES_PIDFILE="/tmp/postgres_backend_tests.pid"
 
 # helper for daemonizing processes from the shell
@@ -60,14 +59,6 @@ function stop_twemproxy {
     kill_pidfile ${TWEMPROXY_PIDFILE}
 }
 
-function start_cubert {
-    daemonize /usr/bin/env ruby -e "require 'cubert/app'; Rack::Server.start app: Cubert::App.app" > ${CUBERT_PIDFILE}
-}
-
-function stop_cubert {
-    kill_pidfile ${CUBERT_PIDFILE}
-}
-
 function start_postgresql {
     daemonize sudo -u postgres sh -c '/usr/lib/postgresql/9.5/bin/pg_ctl -D /usr/local/pgsql/data start' > /dev/null
 }
@@ -79,13 +70,12 @@ function stop_postgresql {
 function start_services {
     start_redis
     start_twemproxy
-    start_cubert
     start_postgresql
 }
 
 function stop_services {
     local pids
-    for fn in stop_redis stop_twemproxy stop_cubert stop_postgresql; do
+    for fn in stop_redis stop_twemproxy stop_postgresql; do
 	eval "${fn}" &
 	pids[${fn}]=$!
     done
