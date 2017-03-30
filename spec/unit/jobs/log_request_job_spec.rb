@@ -7,10 +7,7 @@ module ThreeScale
         include TestHelpers::Sequences
 
         describe 'parameter conversion' do
-          let(:LogRequestCubertStorage) { class_double }
-
           before do
-            allow(LogRequestCubertStorage).to receive(:store_all)
             ThreeScale::Backend::Worker.new
           end
 
@@ -69,9 +66,7 @@ module ThreeScale
               Time.now.getutc.to_f)
           end
         end
-
       end
     end
   end
 end
-
