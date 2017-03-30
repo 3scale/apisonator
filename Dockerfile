@@ -7,9 +7,6 @@ COPY bin /tmp/backend/bin/
 COPY Gemfile Gemfile.lock Gemfile.base 3scale_backend.gemspec /tmp/backend/
 COPY lib/3scale/backend/version.rb /tmp/backend/lib/3scale/backend/
 
-COPY docker/patches/0001-cubert-server.patch /tmp/
-RUN ruby -e "begin; Gem::Specification.find_by_name('cubert-server', Gem::Requirement.create('= 0.0.2.pre.4')); rescue exit(1); end" || \
- patch -p1 -d $(ruby -e "puts Gem::Specification.find_by_name('cubert-server', Gem::Requirement.create('= 0.0.2')).gem_dir") < /tmp/0001-cubert-server.patch
 RUN find $(ruby -e "puts Gem.dir") -type d -exec chmod go+rx {} \; \
  && find $(ruby -e "puts Gem.dir") -type f -exec chmod go+r {} \;
 # uninstall rack 2.0.0+ if present
