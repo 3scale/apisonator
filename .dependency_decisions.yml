@@ -30,12 +30,6 @@
     :why: It's this project.
     :versions: []
     :when: 2016-08-18 15:18:39.314149125 Z
-- - :approve
-  - cubert-client
-  - :who: 3scale Engineering
-    :why: It's a 3scale project.
-    :versions: []
-    :when: 2016-08-18 15:18:48.222064172 Z
 - - :whitelist
   - BSD
   - :who: Jeff Kaufmann and Richard Fontana (Red Hat Legal)
