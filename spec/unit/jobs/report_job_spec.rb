@@ -72,7 +72,7 @@ module ThreeScale
             context 'when Cubert storage is enabled' do
               before do
                 CubertServiceManagementUseCase.global_enable
-                CubertServiceManagementUseCase.enable_service(@service_id, 'foo')
+                CubertServiceManagementUseCase.enable_service @service_id
               end
 
               context 'when the log only contains code' do
