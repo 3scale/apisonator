@@ -49,8 +49,7 @@ module ThreeScale
             # 2) Invalid job that is a Fixnum instead of a Hash.
             # 3) Trying to requeue a job when there are none.
             # 4) Unknown.
-            if failed_jobs[index] == 'invalid_encoding_cubert' ||
-                failed_jobs[index] == 'invalid_encoding_no_cubert'
+            if failed_jobs[index] == 'invalid_encoding'
               raise Resque::Helpers::DecodeException
             elsif failed_jobs[index] == 'fixnum_job'
               raise Exception.new("undefined method `[]=' for 123:Fixnum")
@@ -58,17 +57,6 @@ module ThreeScale
               raise Exception.new("undefined method `[]=' for nil:NilClass")
             elsif failed_jobs[index] == 'exception'
               raise Exception.new
-            end
-          end
-
-          # This is only called to check the first element of the queue
-          # and determine whether it's a LogRequest job.
-          # This is a hack because we do not need to implement a proper '#all'.
-          # We just need to make sure that we correctly set
-          # job['payload']['class'] in the case of a log job.
-          def all(_index, _count)
-            if failed_jobs.first == 'invalid_encoding_cubert'
-              { 'payload' => { 'class' => 'ThreeScale::Backend::Transactor::LogRequestJob' } }
             end
           end
         end
@@ -223,15 +211,8 @@ module ThreeScale
 
           context 'and an exception is raised when re-queuing a job' do
             context 'and it is because the job has invalid encoding (raises DecodeException)' do
-              context 'and it is a cubert job' do
-                include_examples 'jobs that fail to be re-enqueued',
-                                 %w(job1 job2 invalid_encoding_cubert job3), 1, false
-              end
-
-              context 'and it is not a cubert job' do
-                include_examples 'jobs that fail to be re-enqueued',
-                                 %w(job1 job2 invalid_encoding_no_cubert job3), 1, true
-              end
+              include_examples 'jobs that fail to be re-enqueued',
+                %w(job1 job2 invalid_encoding job3), 1, true
             end
 
             context 'and it is because the job is a Fixnum' do
