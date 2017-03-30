@@ -7,12 +7,12 @@ module ThreeScale
         put '/:id/logs_bucket' do
           # bucket is a deprecated optional param
           bucket = params[:bucket]
-          CubertServiceManagementUseCase.enable_service params[:id]
+          RequestLogs::Management.enable_service params[:id]
           { status: :ok, bucket: bucket }.to_json
         end
 
         delete '/:id/logs_bucket' do
-          CubertServiceManagementUseCase.disable_service params[:id]
+          RequestLogs::Management.disable_service params[:id]
           { status: :deleted }.to_json
         end
       end

@@ -189,7 +189,7 @@ resource 'Services (prefix: /services)' do
     let(:raw_post) { params.to_json }
 
     example 'Removing log bucket info' do
-      ThreeScale::Backend::CubertServiceManagementUseCase.enable_service 1001
+      ThreeScale::Backend::RequestLogs::Management.enable_service 1001
 
       do_request id: 1001
       expect(status).to eq(200)

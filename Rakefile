@@ -19,7 +19,7 @@ if saas?
   end
 
   load 'lib/3scale/tasks/swagger.rake'
-  load 'lib/3scale/tasks/cubert.rake'
+  load 'lib/3scale/tasks/request_logs.rake'
   load 'lib/3scale/tasks/stats.rake'
 
   if testable_environment?

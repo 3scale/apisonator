@@ -38,6 +38,8 @@ module ThreeScale
             storage.get(global_lock_key).to_i == 1
           end
 
+          # NOTE: This is meant to be used by the Rake task alone, as the global
+          # lock IS NOT TAKEN INTO ACCOUNT!
           def service_enabled?(service_id)
             storage.sismember(all_bucket_keys_key, bucket_id_key(service_id))
           end
