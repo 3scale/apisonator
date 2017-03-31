@@ -6,13 +6,15 @@ module ThreeScale
       describe LogRequestJob do
         include TestHelpers::Sequences
 
+        let(:storage) { RequestLogs::Storage }
+
         describe 'parameter conversion' do
           before do
             ThreeScale::Backend::Worker.new
           end
 
           it 'changes :usage to a string' do
-            expect(LogRequestStorage).to receive(:store_all).with(any_args) do |args|
+            expect(storage).to receive(:store_all).with(any_args) do |args|
               expect(args.first[:usage]).to eq "hits: 1, other: 6, "
             end
 
@@ -21,7 +23,7 @@ module ThreeScale
           end
 
           it 'changes missing fields to "N/A"' do
-            expect(LogRequestStorage).to receive(:store_all).with(any_args) do |args|
+            expect(storage).to receive(:store_all).with(any_args) do |args|
               expect(args.first[:usage]).to eq "N/A"
               expect(args.first[:log]['code']).to eq "N/A"
               expect(args.first[:log]['request']).to eq "N/A"
@@ -32,7 +34,7 @@ module ThreeScale
           end
 
           it 'passes non-empty data' do
-            expect(LogRequestStorage).to receive(:store_all).with(any_args) do |args|
+            expect(storage).to receive(:store_all).with(any_args) do |args|
               expect(args.first[:usage]).to eq "N/A"
               expect(args.first[:log]['code']).to eq '200'
               expect(args.first[:log]['request']).to eq "/request?bla=bla&"
@@ -45,17 +47,17 @@ module ThreeScale
           end
 
           it 'truncates fields that are too long' do
-            long_request = (0...LogRequestStorage::ENTRY_MAX_LEN_REQUEST+100).
+            long_request = (0...storage::ENTRY_MAX_LEN_REQUEST+100).
               map{ ('a'..'z').to_a[rand(26)] }.join
-            long_response = (0...LogRequestStorage::ENTRY_MAX_LEN_RESPONSE+100).
+            long_response = (0...storage::ENTRY_MAX_LEN_RESPONSE+100).
               map{ ('a'..'z').to_a[rand(26)] }.join
-            long_code = (0...LogRequestStorage::ENTRY_MAX_LEN_CODE+100).
+            long_code = (0...storage::ENTRY_MAX_LEN_CODE+100).
               map{ ('a'..'z').to_a[rand(26)] }.join
-            expect(LogRequestStorage).to receive(:store_all).with(any_args) do |args|
+            expect(storage).to receive(:store_all).with(any_args) do |args|
               expect(args.first[:usage]).to eq "N/A"
-              expect(args.first[:log]['code']).to match /#{LogRequestStorage::TRUNCATED}/
-              expect(args.first[:log]['request']).to match /#{LogRequestStorage::TRUNCATED}/
-              expect(args.first[:log]['response']).to match /#{LogRequestStorage::TRUNCATED}/
+              expect(args.first[:log]['code']).to match /#{storage::TRUNCATED}/
+              expect(args.first[:log]['request']).to match /#{storage::TRUNCATED}/
+              expect(args.first[:log]['response']).to match /#{storage::TRUNCATED}/
               expect(args.first[:log]['code'].length).to be < long_code.length
               expect(args.first[:log]['request'].length).to be < long_request.length
               expect(args.first[:log]['response'].length).to be < long_response.length
