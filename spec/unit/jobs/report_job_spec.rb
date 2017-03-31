@@ -69,10 +69,10 @@ module ThreeScale
                                :plan_id    => @plan_id)
             end
 
-            context 'when Cubert storage is enabled' do
+            context 'when Request Logs storage is enabled' do
               before do
-                CubertServiceManagementUseCase.global_enable
-                CubertServiceManagementUseCase.enable_service(@service_id, 'foo')
+                RequestLogs::Management.global_enable
+                RequestLogs::Management.enable_service @service_id
               end
 
               context 'when the log only contains code' do
@@ -104,9 +104,9 @@ module ThreeScale
               end
             end
 
-            context 'when Cubert storage is disabled' do
+            context 'when Request Logs storage is disabled' do
               before do
-                CubertServiceManagementUseCase.global_disable
+                RequestLogs::Management.global_disable
               end
 
               it 'is not queued' do

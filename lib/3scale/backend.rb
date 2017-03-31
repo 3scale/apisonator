@@ -147,7 +147,6 @@ module ThreeScale
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:hoptoad, :api_key)
       config.add_section(:stats, :bucket_size)
-      config.add_section(:cubert, :host)
       config.add_section(:redshift, :host, :port, :dbname, :user, :password)
       config.add_section(:statsd, :host, :port)
       config.add_section(:internal_api, :user, :password)

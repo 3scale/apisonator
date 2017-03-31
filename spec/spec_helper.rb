@@ -40,8 +40,6 @@ RSpec.configure do |config|
         "127.0.0.1:7380",
       ]
 
-      app_config.cubert.host = 'http://localhost:8080'
-
       app_config.redshift.host = 'localhost'
       app_config.redshift.port = 5432
       app_config.redshift.dbname = 'test'

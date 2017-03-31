@@ -10,7 +10,7 @@ module ThreeScale
           def perform_logged(service_id, raw_transactions, _enqueue_time, context_info = {})
             transactions, logs = parse_transactions(service_id, raw_transactions)
             ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
-            if !logs.nil? && !logs.empty? && request_logs_storage_enabled?(service_id)
+            if request_logs_storage_enabled?(logs, service_id)
               Resque.enqueue(LogRequestJob, service_id, logs, Time.now.getutc.to_f)
             end
 
@@ -94,9 +94,15 @@ module ThreeScale
             end
           end
 
-          def request_logs_storage_enabled?(service_id)
-            ThreeScale::Backend.configuration.saas &&
-                CubertServiceManagementUseCase.enabled?(service_id)
+          if ThreeScale::Backend.configuration.saas
+            def request_logs_storage_enabled?(logs, service_id)
+              !logs.nil? && !logs.empty? &&
+                RequestLogs::Management.enabled?(service_id)
+            end
+          else
+            def request_logs_storage_enabled?(_logs, _service_id)
+              false
+            end
           end
 
           def compose_log(service_id, app_id, raw_transaction)

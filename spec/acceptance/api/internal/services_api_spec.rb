@@ -167,7 +167,7 @@ resource 'Services (prefix: /services)' do
 
   put '/services/:id/logs_bucket' do
     parameter :id, 'Service ID', required: true
-    parameter :bucket, 'Bucket name', require: true
+    parameter :bucket, 'Bucket name', require: false
 
     let(:raw_post) { params.to_json }
 
@@ -175,13 +175,11 @@ resource 'Services (prefix: /services)' do
       expect(status).to eq(200)
       expect(response_json['status']).to eq('ok')
       expect(response_json['bucket']).to eq('foo')
-      expect(ThreeScale::Backend::CubertServiceManagementUseCase.bucket 1001).
-        to eq('foo')
     end
 
-    example_request 'Missing required parameter', id: 1001, bucket: '' do
-      expect(status).to eq(400)
-      expect(response_json['error']).to eq('bucket is missing')
+    example_request 'Missing deprecated parameter', id: 1001 do
+      expect(status).to eq(200)
+      expect(response_json['status']).to eq('ok')
     end
   end
 
@@ -191,13 +189,11 @@ resource 'Services (prefix: /services)' do
     let(:raw_post) { params.to_json }
 
     example 'Removing log bucket info' do
-      ThreeScale::Backend::CubertServiceManagementUseCase.enable_service 1001, 'foobar'
+      ThreeScale::Backend::RequestLogs::Management.enable_service 1001
 
       do_request id: 1001
       expect(status).to eq(200)
       expect(response_json['status']).to eq('deleted')
-      expect(ThreeScale::Backend::CubertServiceManagementUseCase.bucket 1001)
-          .to be nil
     end
   end
 

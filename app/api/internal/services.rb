@@ -1,5 +1,4 @@
 require '3scale/backend/use_cases/provider_key_change_use_case'
-require '3scale/backend/use_cases/cubert_service_management_use_case'
 
 module ThreeScale
   module Backend
