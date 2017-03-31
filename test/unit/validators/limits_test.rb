@@ -3,6 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 module Validators
   class LimitsTest < Test::Unit::TestCase
     include TestHelpers::Sequences
+    include TestHelpers::Fixtures
     include Validators
 
     def setup
@@ -156,6 +157,76 @@ module Validators
                                       :values      => {:day => {@metric_id => 6}})
 
       assert !Limits.apply(status, :usage => {'hits' => 0})
+    end
+
+    test 'succeeds if there are app and user limits and none are exceeded' do
+      app_daily_limit = 5
+      user_daily_limit = 10
+      fixtures = limited_app_and_user!(
+          @service, @metric_id, app_daily_limit, user_daily_limit)
+
+      status = Transactor::Status.new(
+          service: @service,
+          application: fixtures[:app],
+          user: fixtures[:user],
+          values: { day: { @metric_id => app_daily_limit - 1 } },
+          user_values: { day: { @metric_id => user_daily_limit - 1 } })
+
+      assert Limits.apply(status, {})
+    end
+
+    # Note: We might change this behavior in the future, as it is not intuitive
+    # and it looks like it was introduced by mistake.
+    test 'succeeds if there are app and user limits and only app limits are exceeded' do
+      app_daily_limit = 5
+      user_daily_limit = 10
+      fixtures = limited_app_and_user!(
+          @service, @metric_id, app_daily_limit, user_daily_limit)
+
+      status = Transactor::Status.new(
+          service: @service,
+          application: fixtures[:app],
+          user: fixtures[:user],
+          values: { day: { @metric_id => app_daily_limit + 1 } },
+          user_values: { day: { @metric_id => user_daily_limit - 1 } })
+
+      assert Limits.apply(status, {})
+    end
+
+    test 'fails if there are app and user limits and only user limits are exceeded' do
+      app_daily_limit = 5
+      user_daily_limit = 10
+      fixtures = limited_app_and_user!(
+          @service, @metric_id, app_daily_limit, user_daily_limit)
+
+      status = Transactor::Status.new(
+          service: @service,
+          application: fixtures[:app],
+          user: fixtures[:user],
+          values: { day: { @metric_id => app_daily_limit - 1 } },
+          user_values: { day: { @metric_id => user_daily_limit + 1 } })
+
+      assert !Limits.apply(status, {})
+      assert_equal 'limits_exceeded', status.rejection_reason_code
+      assert_equal 'usage limits are exceeded', status.rejection_reason_text
+    end
+
+    test 'fails if there are app and user limits and both are exceeded' do
+      app_daily_limit = 5
+      user_daily_limit = 10
+      fixtures = limited_app_and_user!(
+          @service, @metric_id, app_daily_limit, user_daily_limit)
+
+      status = Transactor::Status.new(
+          service: @service,
+          application: fixtures[:app],
+          user: fixtures[:user],
+          values: { day: { @metric_id => app_daily_limit + 1 } },
+          user_values: { day: { @metric_id => user_daily_limit + 1 } })
+
+      assert !Limits.apply(status, {})
+      assert_equal 'limits_exceeded', status.rejection_reason_code
+      assert_equal 'usage limits are exceeded', status.rejection_reason_text
     end
   end
 end
