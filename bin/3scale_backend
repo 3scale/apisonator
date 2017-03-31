@@ -164,6 +164,9 @@ class Runner
       options[:errorfile] = nil if options[:errorfile] == '-'
       do_command :start, global_options, options, args
     end
+
+    c.example '3scale_backend start -p 5001 -d --pidfile backend.pid -l /var/log/backend.log -x /var/log/backend.err.log',
+              desc: 'Listen on port 5001, daemonize with pidfile, write separate logs for requests and errors'
   end
 
   desc 'Stops the backend server'
@@ -173,6 +176,8 @@ class Runner
     c.action do |global_options, options, args|
       do_command :stop, global_options, options, args
     end
+
+    c.example '3scale_backend stop --pidfile backend.pid', desc: 'Stop a daemon with a pidfile'
   end
 
   desc 'Restarts the backend server'
