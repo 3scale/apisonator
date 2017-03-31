@@ -41,7 +41,7 @@ group :development, :test do
 end
 
 # Default server by platform
-gem 'puma', git: 'https://github.com/3scale/puma', branch: '3scale'
+gem 'puma', git: 'https://github.com/3scale/puma', tag: '3scale-AMP-2.0.0'
 # gems required by the runner
 gem 'gli', '~> 2.16.0', require: nil
 # Workers

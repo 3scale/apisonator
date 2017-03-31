@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/3scale/puma
-  revision: 2b6b1bac2f3d4930c4b20bb16bad332f7f464b1d
-  branch: 3scale
+  revision: de1a1d620009b8bd5ce9c49c5f0737fa6f45a8f5
+  tag: 3scale-AMP-2.0.0
   specs:
     puma (2.15.3)
 
