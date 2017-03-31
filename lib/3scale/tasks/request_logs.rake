@@ -18,7 +18,7 @@ namespace :request_logs do
   # this task to be removed after cleaning plain keys
   desc 'Remove unneeded plain keys taking storage space'
   task :rm_plain_keys do
-    storage.smembers(request_logs.send :all_bucket_keys_key).each_slice(slice_size) do |s|
+    storage.smembers(request_logs.const_get :SERVICES_SET_KEY).each_slice(slice_size) do |s|
       storage.del s
     end
   end
