@@ -6,6 +6,8 @@ module ThreeScale
       describe Management do
         let(:storage) { ThreeScale::Backend::Storage.instance }
         let(:service_id) { '7001' }
+        let(:lock_key) { described_class.const_get :GLOBAL_LOCK_KEY }
+        let(:services_set_key) { described_class.const_get :SERVICES_SET_KEY }
 
         describe '.enable_service' do
           before do
@@ -20,8 +22,7 @@ module ThreeScale
           end
 
           it 'adds an entry to the tracking set' do
-            expect(storage.sismember(
-              described_class.send(:all_bucket_keys_key),
+            expect(storage.sismember(services_set_key,
               described_class.send(:bucket_id_key, service_id))).to be_truthy
           end
         end
@@ -39,8 +40,7 @@ module ThreeScale
           end
 
           it 'does not leak an entry in the tracking set' do
-            expect(storage.sismember(
-              described_class.send(:all_bucket_keys_key),
+            expect(storage.sismember(services_set_key,
               described_class.send(:bucket_id_key, service_id))).to be_falsey
           end
         end
@@ -54,9 +54,8 @@ module ThreeScale
           end
 
           it 'removes all the keys' do
-            expect(storage.exists described_class.send(:global_lock_key)).to be_falsey
-            expect(storage.exists described_class.send(:global_lock_key)).to be_falsey
-            expect(storage.exists described_class.send(:all_bucket_keys_key)).to be_falsey
+            expect(storage.exists lock_key).to be_falsey
+            expect(storage.exists services_set_key).to be_falsey
           end
         end
       end
