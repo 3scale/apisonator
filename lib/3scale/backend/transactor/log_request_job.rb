@@ -9,7 +9,7 @@ module ThreeScale
         class << self
           def perform_logged(service_id, logs, _enqueue_time)
             logs = preprocess(logs)
-            LogRequestStorage.store_all(logs)
+            RequestLogs::Storage.store_all(logs)
             [true, "#{service_id} #{logs.size}"]
           end
 
@@ -40,9 +40,9 @@ module ThreeScale
             entry['request'] = "N/A" if entry['request'].nil? || entry['request'].empty?
             entry['response'] = "N/A" if entry['response'].nil? || entry['response'].empty?
 
-            entry['request'] = entry['request'][0..LogRequestStorage::ENTRY_MAX_LEN_REQUEST] + LogRequestStorage::TRUNCATED if entry['request'].size > LogRequestStorage::ENTRY_MAX_LEN_REQUEST
-            entry['response'] = entry['response'][0..LogRequestStorage::ENTRY_MAX_LEN_RESPONSE] + LogRequestStorage::TRUNCATED if entry['response'].size > LogRequestStorage::ENTRY_MAX_LEN_RESPONSE
-            entry['code'] = entry['code'][0..LogRequestStorage::ENTRY_MAX_LEN_CODE] + LogRequestStorage::TRUNCATED if  entry['code'].size > LogRequestStorage::ENTRY_MAX_LEN_CODE
+            entry['request'] = entry['request'][0..RequestLogs::Storage::ENTRY_MAX_LEN_REQUEST] + RequestLogs::Storage::TRUNCATED if entry['request'].size > RequestLogs::Storage::ENTRY_MAX_LEN_REQUEST
+            entry['response'] = entry['response'][0..RequestLogs::Storage::ENTRY_MAX_LEN_RESPONSE] + RequestLogs::Storage::TRUNCATED if entry['response'].size > RequestLogs::Storage::ENTRY_MAX_LEN_RESPONSE
+            entry['code'] = entry['code'][0..RequestLogs::Storage::ENTRY_MAX_LEN_CODE] + RequestLogs::Storage::TRUNCATED if  entry['code'].size > RequestLogs::Storage::ENTRY_MAX_LEN_CODE
 
             entry
           end
