@@ -472,10 +472,8 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                       :metric_id  => @metric_id,
                       :month => 20)
 
-      1.times do
-        Transactor.report(@provider_key, nil,
-                          0 => {'access_token' => @access_token, 'usage' => {'hits' => 1}})
-      end
+      Transactor.report(@provider_key, nil,
+                        0 => {'access_token' => @access_token, 'usage' => {'hits' => 1}})
       Resque.run!
 
       get '/transactions/oauth_authorize.xml',  :provider_key => @provider_key,

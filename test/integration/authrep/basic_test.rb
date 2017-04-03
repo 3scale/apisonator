@@ -526,11 +526,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
                       :metric_id  => @metric_id,
                       :month => 20)
 
-      1.times do
-        Transactor.report(@provider_key, nil,
-                          0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
-      end
-
+      Transactor.report(@provider_key, nil,
+                        0 => {'app_id' => @application.id, 'usage' => {'hits' => 1}})
       Resque.run!
 
       get e, :provider_key => @provider_key,
