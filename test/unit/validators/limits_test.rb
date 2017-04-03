@@ -175,9 +175,7 @@ module Validators
       assert Limits.apply(status, {})
     end
 
-    # Note: We might change this behavior in the future, as it is not intuitive
-    # and it looks like it was introduced by mistake.
-    test 'succeeds if there are app and user limits and only app limits are exceeded' do
+    test 'fails if there are app and user limits and only app limits are exceeded' do
       app_daily_limit = 5
       user_daily_limit = 10
       fixtures = limited_app_and_user!(
@@ -190,7 +188,7 @@ module Validators
           values: { day: { @metric_id => app_daily_limit + 1 } },
           user_values: { day: { @metric_id => user_daily_limit - 1 } })
 
-      assert Limits.apply(status, {})
+      assert !Limits.apply(status, {})
     end
 
     test 'fails if there are app and user limits and only user limits are exceeded' do

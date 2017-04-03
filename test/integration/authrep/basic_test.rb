@@ -914,8 +914,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_authorized
   end
 
-  # Note: This behavior is not intuitive and it looks like it was introduced by mistake.
-  test_authrep 'authorizes if there are app and user limits and only app limits are exceeded' do |e|
+  test_authrep 'denies auth if there are app and user limits and only app limits are exceeded' do |e|
     app_daily_limit = 10
     hits_to_report = app_daily_limit + 1
     user_daily_limit = hits_to_report + 1
@@ -928,7 +927,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
            :user_id => fixtures[:user].username,
            :usage => { 'hits' => hits_to_report }
 
-    assert_authorized
+    assert_not_authorized 'usage limits are exceeded'
   end
 
   test_authrep 'denies auth if there are app and user limits and only user limits are exceeded' do |e|
