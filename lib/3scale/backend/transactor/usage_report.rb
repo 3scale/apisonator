@@ -33,6 +33,14 @@ module ThreeScale
             @current_value ||= @status.value_for_usage_limit(@usage_limit, @type)
           end
 
+          def remaining
+            max_value - current_value
+          end
+
+          def remaining_time(from = Time.now)
+            (period.finish - from).ceil
+          end
+
           def usage
             @status.usage
           end
