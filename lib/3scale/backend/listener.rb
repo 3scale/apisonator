@@ -664,6 +664,11 @@ module ThreeScale
             threescale_extensions[:rejection_reason_header] == '1'.freeze
           response['3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
         end
+        if threescale_extensions[:limit_headers] == '1'.freeze
+          auth_status.limit_headers.each do |hdr, value|
+            response["3scale-limit-#{hdr}"] = value
+          end
+        end
       end
 
       def threescale_extensions
