@@ -80,7 +80,6 @@ module ThreeScale
           @user_usage_report ||= load_usage_reports @user, :user
         end
 
-
         def value_for_usage_limit(usage_limit, type = :application)
           if type==:application
             values = @values[usage_limit.period]
@@ -103,6 +102,11 @@ module ThreeScale
         # provides a hierarchy hash with metrics as symbolic names
         def hierarchy
           @hierarchy ||= Metric.hierarchy service_id
+        end
+
+        def limit_headers(now = Time.now.utc)
+          # maybe filter by exceeded reports if not authorized
+          LimitHeaders.get(application_usage_reports + user_usage_reports, now)
         end
 
         def to_xml(options = {})
