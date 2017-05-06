@@ -3,7 +3,7 @@ module ThreeScale
     class UsageLimit
       include Storable
 
-      PERIODS = [:eternity, :year, :month, :week, :day, :hour, :minute].freeze
+      PERIODS = Period::ALL_DESC
 
       attr_accessor :service_id, :plan_id, :metric_id, :period, :value
 
@@ -47,7 +47,7 @@ module ThreeScale
           prefix = key_prefix(service_id, plan_id, attributes[:metric_id])
           storage.pipelined do
             PERIODS.each do |period|
-              p_val = attributes[period]
+              p_val = attributes[period.to_sym]
               p_val and storage.set(key_for_period(prefix, period), p_val)
             end
             Service.incr_version(service_id)
