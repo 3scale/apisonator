@@ -46,7 +46,7 @@ module ThreeScale
 
       def self.first_daily_traffic(service_id, application_id)
         timestamp = Time.now.utc
-        day_key   = timestamp.beginning_of_cycle(:day).to_compact_s
+        day_key   = Period::Boundary.day_start(timestamp).to_compact_s
         daily_key = "daily_traffic/service:#{service_id}/" \
                     "cinstance:#{application_id}/#{day_key}"
 

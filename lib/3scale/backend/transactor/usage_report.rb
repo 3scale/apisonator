@@ -29,11 +29,11 @@ module ThreeScale
           end
 
           def period_start
-            @status.timestamp.beginning_of_cycle(period)
+            Period::Boundary.start_of(period, @status.timestamp)
           end
 
           def period_end
-            @status.timestamp.end_of_cycle(period)
+            Period::Boundary.end_of(period, @status.timestamp)
           end
 
           def max_value
