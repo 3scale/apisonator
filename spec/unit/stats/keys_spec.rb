@@ -69,7 +69,7 @@ module ThreeScale
         shared_examples_for 'usage keys' do |method, expected_key_part|
           context 'with eternity granularity' do
             let(:result) {
-              method.call(metric_id, :eternity, time)
+              method.call(metric_id, Period[:eternity, time])
             }
 
             it 'returns a composed key not including a timestamp' do
@@ -80,7 +80,7 @@ module ThreeScale
 
           context 'with hour granularity' do
             let(:result) {
-              method.call(metric_id, :hour, time)
+              method.call(metric_id, Period[:hour, time])
             }
 
             it 'returns a composed key including a timestamp' do
@@ -102,7 +102,7 @@ module ThreeScale
           let(:prefix) { "stats/{service:1000}/cinstance:10/metric:100"}
 
           context 'with eternity granularity' do
-            let(:result) { Keys.counter_key(prefix, :eternity, time)}
+            let(:result) { Keys.counter_key(prefix, Period[:eternity, time])}
 
             it 'returns a composed key not including a timestamp' do
               expected = "stats/{service:1000}/cinstance:10/metric:100/eternity"
@@ -111,7 +111,7 @@ module ThreeScale
           end
 
           context 'with hour granularity' do
-            let(:result) { Keys.counter_key(prefix, :hour, time)}
+            let(:result) { Keys.counter_key(prefix, Period[:hour, time])}
 
             it 'returns a composed key including a timestamp' do
               expected = "stats/{service:1000}/cinstance:10/metric:100/hour:2014072918"
