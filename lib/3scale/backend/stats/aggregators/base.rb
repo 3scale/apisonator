@@ -4,20 +4,24 @@ module ThreeScale
       module Aggregators
         module Base
 
-          SERVICE_GRANULARITIES = [:eternity, :month, :week, :day, :hour].freeze
+          SERVICE_GRANULARITIES =
+            [:eternity, :month, :week, :day, :hour].map do |g|
+              Period[g]
+            end.freeze
           private_constant :SERVICE_GRANULARITIES
 
           # For applications and users
-          EXPANDED_GRANULARITIES = (SERVICE_GRANULARITIES + [:year, :minute]).freeze
+          EXPANDED_GRANULARITIES = (SERVICE_GRANULARITIES +
+                                    [Period[:year], Period[:minute]]).freeze
           private_constant :EXPANDED_GRANULARITIES
 
-          GRANULARITY_EXPIRATION_TIME = { minute: 180 }.freeze
+          GRANULARITY_EXPIRATION_TIME = { Period[:minute] => 180 }.freeze
           private_constant :GRANULARITY_EXPIRATION_TIME
 
           # We are not going to send metrics with granularity 'eternity' or
           # 'week' to Kinesis, so there is no point in storing them in Redis
           # buckets.
-          EXCLUDED_FOR_BUCKETS = [:eternity, :week].freeze
+          EXCLUDED_FOR_BUCKETS = [Period[:eternity], Period[:week]].freeze
           private_constant :EXCLUDED_FOR_BUCKETS
 
           # Aggregates a value in a timestamp for all given keys using a specific
@@ -34,7 +38,7 @@ module ThreeScale
 
             keys.each do |metric_type, prefix_key|
               granularities(metric_type).each do |granularity|
-                key = counter_key(prefix_key, granularity, timestamp)
+                key = counter_key(prefix_key, granularity.new(timestamp))
                 expire_time = expire_time_for_granularity(granularity)
 
                 store_key(cmd, key, value, expire_time)
