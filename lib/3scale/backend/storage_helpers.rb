@@ -12,20 +12,6 @@ module ThreeScale
         stuff
       end
 
-      def normalize_time(time_itself, period)
-        ## to really understand this crap check test/unit/extensions/time_test.rb # test_end_of_cycle_with_to_compact_s
-
-        period = period.to_sym
-        time_itself = time_itself.to_s
-
-        return time_itself[0..3] if period==:year
-        return time_itself[0..5] if period==:month
-        return time_itself[0..7] if period==:week
-        return time_itself[0..7] if period==:day
-        return (time_itself + "0"*12)[0..9]  if period==:hour
-        return (time_itself + "0"*12)[0..11] if period==:minute
-      end
-
       def storage
         Storage.instance
       end
