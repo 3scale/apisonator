@@ -45,10 +45,10 @@ module Transactor
         assert_equal 1, status.application_usage_reports.count
 
         report = status.application_usage_reports.first
-        assert_equal :month,               report.period
+        assert_equal :month,               report.period.to_sym
         assert_equal @metric_name,         report.metric_name
-        assert_equal Time.utc(2010, 5, 1), report.period_start
-        assert_equal Time.utc(2010, 6, 1), report.period_end
+        assert_equal Time.utc(2010, 5, 1), report.period.start
+        assert_equal Time.utc(2010, 6, 1), report.period.finish
         assert_equal 2000,                 report.max_value
         assert_equal 429,                  report.current_value
       end
