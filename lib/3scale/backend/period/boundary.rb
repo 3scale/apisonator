@@ -96,6 +96,10 @@ module ThreeScale
 
         class << self
           include Methods
+
+          def get_callable(period, at)
+            method(:"#{period}_#{at}")
+          end
         end
       end
     end
