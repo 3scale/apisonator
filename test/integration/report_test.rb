@@ -242,7 +242,7 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 3, @storage.get(
       application_key(@service_id, @application.id, @metric_id, :month,
-                      Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
+                      Period::Boundary.start_of(:month, Time.now.getutc).to_compact_s)).to_i
   end
 
   test 'report succeeds when provider usage limits are exceeded' do
@@ -266,7 +266,7 @@ class ReportTest < Test::Unit::TestCase
 
     assert_equal 4, @storage.get(
       application_key(@service_id, @application.id, @metric_id, :month,
-                      Time.now.getutc.beginning_of_cycle(:month).to_compact_s)).to_i
+                      Period::Boundary.start_of(:month, Time.now.getutc).to_compact_s)).to_i
   end
 
   test 'report succeeds when valid legacy user key passed' do
@@ -281,7 +281,7 @@ class ReportTest < Test::Unit::TestCase
     Resque.run!
 
     key = application_key(@service_id, @application.id, @metric_id, :month,
-                          Time.now.getutc.beginning_of_cycle(:month).to_compact_s)
+                          Period::Boundary.start_of(:month, Time.now.getutc).to_compact_s)
     assert_equal 1, @storage.get(key).to_i
   end
 
