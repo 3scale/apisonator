@@ -55,7 +55,7 @@ module ThreeScale
         def counter_key(prefix, granularity, timestamp)
           key = "#{prefix}/#{granularity}"
           if granularity != :eternity
-            key += ":#{timestamp.beginning_of_cycle(granularity).to_compact_s}"
+            key += ":#{Period::Boundary.start_of(granularity, timestamp).to_compact_s}"
           end
 
           key

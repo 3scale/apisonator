@@ -39,9 +39,9 @@ module ThreeScale
         discrete = utilization_discrete(max_utilization)
         max_utilization_i = (max_utilization * 100.0).round
 
-        beginning_of_day = timestamp.beginning_of_cycle(:day)
+        beginning_of_day = Period::Boundary.day_start(timestamp)
         period_day = beginning_of_day.to_compact_s
-        period_hour = timestamp.beginning_of_cycle(:hour).to_compact_s
+        period_hour = Period::Boundary.hour_start(timestamp).to_compact_s
         # UNIX timestamp for key expiration - add 1 day + 5 mins
         expire_at = (beginning_of_day + 86700).to_i
 
