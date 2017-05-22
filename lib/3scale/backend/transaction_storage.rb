@@ -7,30 +7,14 @@ module ThreeScale
       class << self
         include StorageHelpers
 
+        # Note: this method assumes that all the transactions belong to the
+        # same service
         def store_all(transactions)
-          # We store at most LIMIT transactions. As we call 'ltrim' when a
-          # transaction is stored, it makes no sense to store more than the
-          # limit defined. The first transactions that are stored would get
-          # 'trimmed' quickly, thus wasting resources of the Redis cluster.
-          transactions.take(LIMIT).each_slice(PIPELINED_SLICE_SIZE) do |slice|
-            storage.pipelined do
-              # we keep a hash of keys for services touched (they are lists)
-              # this way we avoid issuing one ltrim per transaction, since
-              # usually such ltrims act always on few lists.
-              lists = {}
-              slice.each do |transaction|
-                key = store_only(transaction)
-                lists[key] = true
-              end
-              lists.keys.each do |key|
-                trim_storage(key)
-              end
-            end
-          end
+          store_for_service(transactions.first.service_id, transactions)
         end
 
         def store(transaction)
-          trim_storage(store_only(transaction))
+          store_for_service(transaction.service_id, [transaction])
         end
 
         def list(service_id)
@@ -46,20 +30,29 @@ module ThreeScale
 
         private
 
-        def trim_storage(key)
-          storage.ltrim(key, 0, LIMIT - 1)
+        def store_for_service(service_id, transactions)
+          key = queue_key(service_id)
+
+          # We store at most LIMIT transactions. As we call 'ltrim' when a
+          # transaction is stored, it makes no sense to store more than the
+          # limit defined. The first transactions that are stored would get
+          # 'trimmed' quickly, thus wasting resources of the Redis cluster.
+          transactions.take(LIMIT).each_slice(PIPELINED_SLICE_SIZE) do |slice|
+            encoded_transactions = slice.map do |transaction|
+              encoded(transaction)
+            end
+
+            storage.pipelined do
+              storage.lpush(key, encoded_transactions)
+              storage.ltrim(key, 0, LIMIT - 1)
+            end
+          end
         end
 
-        # this method is meant to avoid cleaning up to optimize the amount of
-        # commands in a pipeline, as used in store_all.
-        def store_only(transaction)
-          key = queue_key(transaction.service_id)
-
-          storage.lpush(key,
-                        encode(application_id: transaction.application_id,
-                               usage:          transaction.usage,
-                               timestamp:      transaction.timestamp))
-          key
+        def encoded(transaction)
+          encode(application_id: transaction.application_id,
+                 usage: transaction.usage,
+                 timestamp: transaction.timestamp)
         end
 
         def queue_key(service_id)
