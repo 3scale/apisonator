@@ -42,27 +42,19 @@ class TransactionStorageTest < Test::Unit::TestCase
     ])
 
     # Service one
-    transactions = @storage.lrange("transactions/service_id:#{service_id_one}", 0, -1)
-    assert_equal 1, transactions.size
-
-    expected = { 'application_id' => application_id_one,
-                 'usage'          => { metric_id_one => 1 },
-                 'timestamp'      => '2010-09-10 17:04:00 UTC' }
-
-    assert_equal expected, Yajl::Parser.parse(transactions[0])
+    expected = [{ application_id: application_id_one,
+                  usage: { metric_id_one => 1 },
+                  timestamp: Time.utc(2010, 9, 10, 17, 4) }]
+    assert_equal expected, TransactionStorage.list(service_id_one)
 
     # Service two
-    transactions = @storage.lrange("transactions/service_id:#{service_id_two}", 0, -1)
-    assert_equal 1, transactions.size
-
-    expected = { 'application_id' => application_id_two,
-                 'usage'          => { metric_id_two => 2 },
-                 'timestamp'      => '2010-09-10 17:10:00 UTC' }
-
-    assert_equal expected, Yajl::Parser.parse(transactions[0])
+    expected = [{ application_id: application_id_two,
+                  usage: { metric_id_two => 2 },
+                  timestamp: Time.utc(2010, 9, 10, 17, 10) }]
+    assert_equal expected, TransactionStorage.list(service_id_two)
   end
 
-  test '#store_all does not store more transactions than the limit especified' do
+  test '#store_all does not store more transactions than the limit specified' do
     limit = TransactionStorage.const_get(:LIMIT)
     storage = TransactionStorage.send(:storage)
     storage.expects(:lpush).times(limit)
@@ -80,15 +72,16 @@ class TransactionStorageTest < Test::Unit::TestCase
     application_id_one = @application_id
     application_id_two = next_id
 
-    @storage.lpush("transactions/service_id:#{@service_id}",
-                   Yajl::Encoder.encode(application_id: application_id_one,
-                                        usage:          { @metric_id => 1 },
-                                        timestamp:      '2010-09-10 11:00:00 UTC'))
+    transactions = [transaction(service_id: @service_id,
+                                application_id: application_id_one,
+                                usage: { @metric_id => 1 },
+                                timestamp: '2010-09-10 11:00:00 UTC'),
+                    transaction(service_id: @service_id,
+                                application_id: application_id_two,
+                                usage: { @metric_id => 2 },
+                                timestamp: '2010-09-10 11:02:00 UTC')]
 
-    @storage.lpush("transactions/service_id:#{@service_id}",
-                   Yajl::Encoder.encode(application_id: application_id_two,
-                                        usage:          { @metric_id => 2 },
-                                        timestamp:      '2010-09-10 11:02:00 UTC'))
+    TransactionStorage.store_all(transactions)
 
     expected = [
       {
@@ -150,7 +143,7 @@ class TransactionStorageTest < Test::Unit::TestCase
                               )
     end
 
-    assert_equal limit, @storage.llen("transactions/service_id:#{@service_id}")
+    assert_equal limit, TransactionStorage.list(@service_id).size
   end
 
   test 'when more than LIMIT transactions are in the storage, the oldest ones are discarded' do
@@ -177,7 +170,7 @@ class TransactionStorageTest < Test::Unit::TestCase
     assert_equal 5, TransactionStorage.list(@service_id).size
 
     TransactionStorage.delete_all(@service_id)
-    
+
     assert_empty TransactionStorage.list(@service_id)
   end
 end
