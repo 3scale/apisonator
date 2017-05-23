@@ -21,9 +21,6 @@ class TransactionStorageTest < Test::Unit::TestCase
   end
 
   test '#store_all stores transactions to the storage' do
-    service_id_one = @service_id
-    service_id_two = next_id
-
     application_id_one = @application_id
     application_id_two = next_id
 
@@ -31,41 +28,24 @@ class TransactionStorageTest < Test::Unit::TestCase
     metric_id_two = next_id
 
     TransactionStorage.store_all([
-      transaction(service_id: service_id_one,
+      transaction(service_id: @service_id,
                   application_id: application_id_one,
                   usage: { metric_id_one => 1 },
                   timestamp: Time.utc(2010, 9, 10, 17, 4)),
-      transaction(service_id: service_id_two,
+      transaction(service_id: @service_id,
                   application_id: application_id_two,
                   usage: { metric_id_two => 2 },
                   timestamp: Time.utc(2010, 9, 10, 17, 10)),
     ])
 
-    # Service one
-    expected = [{ application_id: application_id_one,
-                  usage: { metric_id_one => 1 },
-                  timestamp: Time.utc(2010, 9, 10, 17, 4) }]
-    assert_equal expected, TransactionStorage.list(service_id_one)
-
-    # Service two
     expected = [{ application_id: application_id_two,
                   usage: { metric_id_two => 2 },
-                  timestamp: Time.utc(2010, 9, 10, 17, 10) }]
-    assert_equal expected, TransactionStorage.list(service_id_two)
-  end
+                  timestamp: Time.utc(2010, 9, 10, 17, 10) },
+                { application_id: application_id_one,
+                  usage: { metric_id_one => 1 },
+                  timestamp: Time.utc(2010, 9, 10, 17, 4) }]
 
-  test '#store_all does not store more transactions than the limit specified' do
-    limit = TransactionStorage.const_get(:LIMIT)
-    storage = TransactionStorage.send(:storage)
-    storage.expects(:lpush).times(limit)
-
-    transactions = Array.new(limit + 1,
-                             transaction(service_id: 'a_service_id',
-                                         application_id: 'an_app_id',
-                                         usage: { 'a_metric' => 1 },
-                                         timestamp: Time.now))
-
-    TransactionStorage.store_all(transactions)
+    assert_equal expected, TransactionStorage.list(@service_id)
   end
 
   test '#list returns transactions from the storage' do
