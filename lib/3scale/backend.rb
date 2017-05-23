@@ -27,41 +27,9 @@ require 'yajl'
 require 'yaml'
 require 'digest/md5'
 
-require '3scale/backend/util'
-require '3scale/backend/manifest'
-require '3scale/backend/logger'
-require '3scale/backend/logger/middleware'
-require '3scale/backend/period'
-require '3scale/backend/has_set'
-require '3scale/backend/storage_helpers'
-require '3scale/backend/storage_key_helpers'
-require '3scale/backend/storable'
-require '3scale/backend/usage'
-
-require '3scale/backend/rack_exception_catcher'
+# Require here the classes needed for configuring Backend
 require '3scale/backend/configuration'
-require '3scale/backend/extensions'
-require '3scale/backend/background_job'
-require '3scale/backend/storage'
-require '3scale/backend/oauth'
-require '3scale/backend/memoizer'
-require '3scale/backend/application'
-require '3scale/backend/error_storage'
-require '3scale/backend/metric'
-require '3scale/backend/service'
-require '3scale/backend/queue_storage'
-require '3scale/backend/transaction_storage'
-require '3scale/backend/errors'
-require '3scale/backend/stats/aggregator'
-require '3scale/backend/usage_limit'
-require '3scale/backend/user'
-require '3scale/backend/alerts'
-require '3scale/backend/event_storage'
-require '3scale/backend/worker'
-require '3scale/backend/service_token'
-
-require '3scale/backend/distributed_lock'
-require '3scale/backend/failed_jobs_scheduler'
+require '3scale/backend/logger'
 
 module ThreeScale
   TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
@@ -182,12 +150,46 @@ module ThreeScale
   end
 end
 
+# Some classes depend on the configuration above. For example, some classes
+# need to know the value of config.saas when they are required. That is why it
+# is better to put these requires here instead of putting them at the beginning
+# of the file even if it can seem a bit unusual at first.
+require '3scale/backend/util'
+require '3scale/backend/manifest'
+require '3scale/backend/logger/middleware'
+require '3scale/backend/period'
+require '3scale/backend/has_set'
+require '3scale/backend/storage_helpers'
+require '3scale/backend/storage_key_helpers'
+require '3scale/backend/storable'
+require '3scale/backend/usage'
+require '3scale/backend/rack_exception_catcher'
+require '3scale/backend/extensions'
+require '3scale/backend/background_job'
+require '3scale/backend/storage'
+require '3scale/backend/oauth'
+require '3scale/backend/memoizer'
+require '3scale/backend/application'
+require '3scale/backend/error_storage'
+require '3scale/backend/metric'
+require '3scale/backend/service'
+require '3scale/backend/queue_storage'
+require '3scale/backend/transaction_storage'
+require '3scale/backend/errors'
+require '3scale/backend/stats/aggregator'
+require '3scale/backend/usage_limit'
+require '3scale/backend/user'
+require '3scale/backend/alerts'
+require '3scale/backend/event_storage'
+require '3scale/backend/worker'
+require '3scale/backend/service_token'
+require '3scale/backend/distributed_lock'
+require '3scale/backend/failed_jobs_scheduler'
+require '3scale/backend/transactor'
+require '3scale/backend/saas'
+require '3scale/backend/listener'
+
 Resque.redis = ThreeScale::Backend::QueueStorage.connection(
   ThreeScale::Backend.environment,
   ThreeScale::Backend.configuration,
 )
-
-# Need to be required after the config params are set
-require '3scale/backend/transactor'
-require '3scale/backend/saas'
-require '3scale/backend/listener'
