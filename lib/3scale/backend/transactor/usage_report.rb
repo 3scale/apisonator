@@ -66,7 +66,7 @@ module ThreeScale
             # Node header
             add_head(xml)
             # Node content
-            add_period(xml) if period != :eternity
+            add_period(xml) if period != Period[:eternity]
             add_values(xml)
             # Node closing
             add_tail(xml)
