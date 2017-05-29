@@ -38,6 +38,14 @@ module ThreeScale
     describe Period do
       WELL_KNOWN_GRANULARITIES = [:minute, :hour, :day, :week, :month, :year, :eternity]
 
+      subject { Period }
+
+      it 'can iterate through all the Period::Granularity classes' do
+        res = subject.each.entries
+        expect(res.all? { |e| e.is_a?(Period::Granularity) }).to be true
+        expect(res.map(&:to_sym)).to include *WELL_KNOWN_GRANULARITIES
+      end
+
       it 'defines a SYMBOLS constant' do
         expect do
           described_class.const_get :SYMBOLS
