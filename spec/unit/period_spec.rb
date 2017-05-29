@@ -181,6 +181,15 @@ module ThreeScale
             end
           end
 
+          it 'returns the time difference between a timestamp and its end of period' do
+            timestamp = Time.now.utc
+            end_period = Period::Boundary.get_callable(granularity, :finish)
+                                         .call(timestamp)
+            diff = end_period - timestamp
+
+            expect(subject.remaining(timestamp)).to eq diff
+          end
+
           it "can be instantiated" do
             expect(subject).to respond_to(:new)
           end
