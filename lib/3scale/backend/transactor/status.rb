@@ -14,9 +14,9 @@ module ThreeScale
           @application = attributes[:application]
           @oauth       = attributes[:oauth]
           @usage       = attributes[:usage]
-          @values      = attributes[:values] || {}
+          @values      = filter_values(attributes[:values] || {})
           @user        = attributes[:user]
-          @user_values = attributes[:user_values]
+          @user_values = filter_values(attributes[:user_values])
           @timestamp   = attributes[:timestamp] || Time.now.getutc
           @hierarchy   = attributes[:hierarchy]
 
@@ -136,6 +136,20 @@ module ThreeScale
         end
 
         private
+
+        # make sure the keys are Periods
+        def filter_values(values)
+          return nil if values.nil?
+          values.inject({}) do |acc, (k, v)|
+            key = begin
+                    Period[k]
+                  rescue Period::Unknown
+                    k
+                  end
+            acc[key] = v
+            acc
+          end
+        end
 
         def add_hierarchy(xml, reports)
           xml << '<hierarchy>'.freeze

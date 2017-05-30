@@ -36,26 +36,27 @@ module ThreeScale
           "#{prefix}/response_code:#{response_code}"
         end
 
-        def usage_value_key(service_id, app_id, metric_id, period, time)
+        def usage_value_key(service_id, app_id, metric_id, period)
           service_key = service_key_prefix(service_id)
           app_key     = application_key_prefix(service_key, app_id)
           metric_key  = metric_key_prefix(app_key, metric_id)
 
-          encode_key(counter_key(metric_key, period, time))
+          encode_key(counter_key(metric_key, period))
         end
 
-        def user_usage_value_key(service_id, user_id, metric_id, period, time)
+        def user_usage_value_key(service_id, user_id, metric_id, period)
           service_key = service_key_prefix(service_id)
           user_key    = user_key_prefix(service_key, user_id)
           metric_key  = metric_key_prefix(user_key, metric_id)
 
-          encode_key(counter_key(metric_key, period, time))
+          encode_key(counter_key(metric_key, period))
         end
 
-        def counter_key(prefix, granularity, timestamp)
+        def counter_key(prefix, period)
+          granularity = period.granularity
           key = "#{prefix}/#{granularity}"
-          if granularity != :eternity
-            key += ":#{Period::Boundary.start_of(granularity, timestamp).to_compact_s}"
+          if granularity.to_sym != :eternity
+            key += ":#{period.start.to_compact_s}"
           end
 
           key

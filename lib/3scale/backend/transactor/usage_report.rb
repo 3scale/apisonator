@@ -3,12 +3,13 @@ module ThreeScale
     module Transactor
       class Status
         class UsageReport
-          attr_reader :type
+          attr_reader :type, :period
 
           def initialize(status, usage_limit, type)
             @status      = status
             @usage_limit = usage_limit
             @type        = type
+            @period      = usage_limit.period.new(status.timestamp)
           end
 
           def metric_name
@@ -22,18 +23,6 @@ module ThreeScale
 
           def metric_id
             @usage_limit.metric_id
-          end
-
-          def period
-            @usage_limit.period
-          end
-
-          def period_start
-            Period::Boundary.start_of(period, @status.timestamp)
-          end
-
-          def period_end
-            Period::Boundary.end_of(period, @status.timestamp)
           end
 
           def max_value
@@ -77,7 +66,7 @@ module ThreeScale
             # Node header
             add_head(xml)
             # Node content
-            add_period(xml) if period != :eternity
+            add_period(xml) if period != Period[:eternity]
             add_values(xml)
             # Node closing
             add_tail(xml)
@@ -95,9 +84,9 @@ module ThreeScale
 
           def add_period(xml)
             xml << '<period_start>'.freeze
-            xml << period_start.strftime(TIME_FORMAT) << '</period_start>'.freeze
+            xml << period.start.strftime(TIME_FORMAT) << '</period_start>'.freeze
             xml << '<period_end>'.freeze
-            xml << period_end.strftime(TIME_FORMAT) << '</period_end>'.freeze
+            xml << period.finish.strftime(TIME_FORMAT) << '</period_end>'.freeze
           end
 
           def add_values(xml)
