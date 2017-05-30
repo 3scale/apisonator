@@ -689,9 +689,3 @@ module ThreeScale
     end
   end
 end
-
-# If using SaaS config, then reopen the Listener class and add the
-# SaaS-specific endpoints.
-if ThreeScale::Backend.configuration.saas
-  require '3scale/backend/listener_saas'
-end
