@@ -12,5 +12,3 @@ require_relative 'internal/errors'
 require_relative 'internal/transactions'
 require_relative 'internal/utilization'
 require_relative 'internal/service_tokens'
-
-require_relative 'internal/saas' if ThreeScale::Backend.configuration.saas
