@@ -10,10 +10,6 @@ module ThreeScale
           def perform_logged(service_id, raw_transactions, _enqueue_time, context_info = {})
             transactions, logs = parse_transactions(service_id, raw_transactions)
             ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
-            if request_logs_storage_enabled?(logs, service_id)
-              Resque.enqueue(LogRequestJob, service_id, logs, Time.now.getutc.to_f)
-            end
-
             [true, "#{service_id} #{transactions.size} #{logs.size}"]
           rescue Error => error
             ErrorStorage.store(service_id, error, context_info)
@@ -91,17 +87,6 @@ module ThreeScale
                 usage:          metrics.process_usage(usage),
                 user_id:        raw_transaction['user_id'],
               }
-            end
-          end
-
-          if ThreeScale::Backend.configuration.saas
-            def request_logs_storage_enabled?(logs, service_id)
-              !logs.nil? && !logs.empty? &&
-                RequestLogs::Management.enabled?(service_id)
-            end
-          else
-            def request_logs_storage_enabled?(_logs, _service_id)
-              false
             end
           end
 
