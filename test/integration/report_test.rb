@@ -22,19 +22,12 @@ class ReportTest < Test::Unit::TestCase
 
     @metric_id = next_id
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
-
-    @apilog = {'request' => 'API original request', 'response' => 'API original response', 'code' => '200'}
-    @apilog2 = {'request' => 'API original request 2', 'response' => 'API original response 2', 'code' => '200'}
-    @apilog3 = {'request' => 'API original request 3', 'response' => 'API original response 3', 'code' => '200'}
-    @apilog_imcomplete = {'code' => '200'}
-    @apilog_empty = {}
-
   end
 
   test 'successful report responds with 202' do
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
   end
@@ -43,7 +36,7 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 10, 17, 36)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
       key_month = application_key(@service_id, @application.id, @metric_id, :month, '20100501')
@@ -131,7 +124,7 @@ class ReportTest < Test::Unit::TestCase
 
     post '/transactions.xml',
       :provider_key => provider_key,
-      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog}}
+      :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
     assert_error_resp_with_exc(ProviderKeyInvalidOrServiceMissing.new(provider_key))
   end
@@ -139,7 +132,7 @@ class ReportTest < Test::Unit::TestCase
   test 'report reports error on invalid application id' do
     post '/transactions.xml',
       :provider_key => @provider_key,
-      :transactions => {0 => {:app_id => 'boo', :usage => {'hits' => 1}, :log => @apilog}}
+      :transactions => {0 => {:app_id => 'boo', :usage => {'hits' => 1}}}
 
     assert_equal 202, last_response.status
     Resque.run!
@@ -350,9 +343,9 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog},
-                          1 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog1},
-                          2 => {:app_id => @application.id, :usage => {'hits' => 1}, :log => @apilog2}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          1 => {:app_id => @application.id, :usage => {'hits' => 1}},
+                          2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
       Backend::Transactor.process_batch(0, all: true)

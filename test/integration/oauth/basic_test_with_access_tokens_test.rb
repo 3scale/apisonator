@@ -26,9 +26,6 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     @metric_id = next_id
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
 
-    ## apilog is imcomplete because the response and the code (response code) are unknow at this stage
-    @apilog = {'request' => 'API original request'}
-
     @access_token = 'valid-token'
     @access_token_user = 'valid-user-token'
 
@@ -52,16 +49,14 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
   test 'successful authorize responds with 200' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :log          => @apilog
+                                             :access_token => @access_token
 
     assert_equal 200, last_response.status
   end
 
   test 'authorization with a user token with no user specified succeeds' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token_user,
-                                             :log          => @apilog
+                                             :access_token => @access_token_user
 
     assert_equal 200, last_response.status
   end
@@ -69,8 +64,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   test 'authorization with a user token with user specified succeeds' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :access_token => @access_token_user,
-                                             :user_id      => @user.username,
-                                             :log          => @apilog
+                                             :user_id      => @user.username
 
     assert_equal 200, last_response.status
   end
@@ -78,8 +72,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   test 'authorization with a user token with a made up user specified succeeds' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :access_token => @access_token_user,
-                                             :user_id      => 'invented_user',
-                                             :log          => @apilog
+                                             :user_id      => 'invented_user'
 
     assert_equal 200, last_response.status
   end
@@ -88,8 +81,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     # specifying user_id should make no difference to the OAuth token code
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :access_token => @access_token,
-                                             :user_id      => @user.username,
-                                             :log          => @apilog
+                                             :user_id      => @user.username
 
     assert_equal 200, last_response.status
   end
@@ -97,8 +89,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   test 'successful authorize with no body responds with 200' do
     get '/transactions/oauth_authorize.xml', {
         :provider_key => @provider_key,
-        :access_token => @access_token,
-        :log          => @apilog
+        :access_token => @access_token
       },
       'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
@@ -108,16 +99,14 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
   test 'successful authorize has custom content type' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :log          => @apilog
+                                             :access_token => @access_token
 
     assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
 
   test 'successful authorize renders plan name' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :log          => @apilog
+                                             :access_token => @access_token
 
     doc = Nokogiri::XML(last_response.body)
 
@@ -126,8 +115,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
   test 'response of successful authorize contains authorized flag set to true' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :log          => @apilog
+                                             :access_token => @access_token
 
     doc = Nokogiri::XML(last_response.body)
 
@@ -151,8 +139,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     assert_equal 200, last_response.status
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => access_token,
-                                             :log          => @apilog
+                                             :access_token => access_token
 
     doc = Nokogiri::XML(last_response.body)
 
@@ -181,8 +168,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                               :access_token => @access_token,
-                                               :log          => @apilog
+                                               :access_token => @access_token
 
       doc = Nokogiri::XML(last_response.body)
 
@@ -215,8 +201,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
       get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                                :service_id   => @service.id,
-                                               :access_token => @access_token,
-                                               :log          => @apilog
+                                               :access_token => @access_token
 
       doc = Nokogiri::XML(last_response.body)
 
@@ -228,8 +213,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     provider_key = 'invalid_key'
 
     get '/transactions/oauth_authorize.xml', :provider_key => provider_key,
-                                             :access_token => @access_token,
-                                             :log          => @apilog
+                                             :access_token => @access_token
 
     assert_error_resp_with_exc(ProviderKeyInvalidOrServiceMissing.new(provider_key))
   end
@@ -237,8 +221,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   test 'fails on invalid provider key with no body' do
     get '/transactions/oauth_authorize.xml', {
         :provider_key => 'boo',
-        :access_token => @access_token,
-        :log        => @apilog
+        :access_token => @access_token
       },
       'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
@@ -248,8 +231,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
   test 'fails on invalid application id' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => 'boo',
-                                             :log          => @apilog
+                                             :access_token => 'boo'
 
     assert_error_response :status  => 404,
                           :code    => 'access_token_invalid',
@@ -259,8 +241,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
   test 'fails on invalid application id with no body' do
     get '/transactions/oauth_authorize.xml', {
         :provider_key => @provider_key,
-        :access_token => 'boo',
-        :log          => @apilog
+        :access_token => 'boo'
       },
       'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
@@ -280,8 +261,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
     @application.save
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :log          => @apilog
+                                             :access_token => @access_token
 
     assert_equal 409, last_response.status
     assert_not_authorized 'application is not active'
@@ -293,8 +273,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
     get '/transactions/oauth_authorize.xml', {
         :provider_key => @provider_key,
-        :access_token => @access_token,
-        :log          => @apilog
+        :access_token => @access_token
       },
       'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
@@ -314,8 +293,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :service_id => @service.id,
-                                             :access_token => @access_token,
-                                             :log          => @apilog
+                                             :access_token => @access_token
 
     assert_equal 409, last_response.status
     assert_not_authorized 'usage limits are exceeded'
@@ -333,8 +311,7 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
 
     get '/transactions/oauth_authorize.xml', {
         :provider_key => @provider_key,
-        :access_token => @access_token,
-        :log          => @apilog
+        :access_token => @access_token
       },
       'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
