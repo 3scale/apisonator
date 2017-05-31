@@ -660,10 +660,18 @@ module ThreeScale
       end
 
       def optionally_set_headers(auth_status)
+        set_rejection_reason_header(auth_status)
+        set_limit_headers(auth_status)
+      end
+
+      def set_rejection_reason_header(auth_status)
         if !auth_status.authorized? &&
             threescale_extensions[:rejection_reason_header] == '1'.freeze
           response['3scale-rejection-reason'.freeze] = auth_status.rejection_reason_code
         end
+      end
+
+      def set_limit_headers(auth_status)
         if threescale_extensions[:limit_headers] == '1'.freeze
           auth_status.limit_headers.each do |hdr, value|
             response["3scale-limit-#{hdr}"] = value
