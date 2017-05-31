@@ -328,6 +328,23 @@
                   "description": "Metric to be reported"
                 }
               ]
+            },
+            {
+              "name": "log",
+              "dataType": "hash",
+              "required": false,
+              "paramType": "query",
+              "allowMultiple": false,
+              "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+              "parameters": [
+                {
+                  "name": "code",
+                  "dataType": "string",
+                  "paramType": "query",
+                  "description_inline": true,
+                  "description": "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
+                }
+              ]
             }
           ]
         }
@@ -396,6 +413,23 @@
                   "allowMultiple": true,
                   "threescale_name": "metric_names",
                   "description": "Metric to be reported"
+                }
+              ]
+            },
+            {
+              "name": "log",
+              "dataType": "hash",
+              "required": false,
+              "paramType": "query",
+              "allowMultiple": false,
+              "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+              "parameters": [
+                {
+                  "name": "code",
+                  "dataType": "string",
+                  "paramType": "query",
+                  "description_inline": true,
+                  "description": "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
                 }
               ]
             }
@@ -476,6 +510,23 @@
                   "allowMultiple": true,
                   "threescale_name": "metric_names",
                   "description": "Metric to be reported"
+                }
+              ]
+            },
+            {
+              "name": "log",
+              "dataType": "hash",
+              "required": false,
+              "paramType": "query",
+              "allowMultiple": false,
+              "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+              "parameters": [
+                {
+                  "name": "code",
+                  "dataType": "string",
+                  "paramType": "query",
+                  "description_inline": true,
+                  "description": "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
                 }
               ]
             },
@@ -573,6 +624,23 @@
                       "description": "Metric to be reported"
                     }
                   ]
+                },
+                {
+                  "name": "log",
+                  "dataType": "hash",
+                  "required": false,
+                  "paramType": "query",
+                  "allowMultiple": false,
+                  "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+                  "parameters": [
+                    {
+                      "name": "code",
+                      "dataType": "string",
+                      "paramType": "query",
+                      "description_inline": true,
+                      "description": "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
+                    }
+                  ]
                 }
               ]
             }
@@ -656,6 +724,23 @@
                       "description": "Metric to be reported"
                     }
                   ]
+                },
+                {
+                  "name": "log",
+                  "dataType": "hash",
+                  "required": false,
+                  "paramType": "query",
+                  "allowMultiple": false,
+                  "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+                  "parameters": [
+                    {
+                      "name": "code",
+                      "dataType": "string",
+                      "paramType": "query",
+                      "description_inline": true,
+                      "description": "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
+                    }
+                  ]
                 }
               ]
             }
@@ -737,6 +822,23 @@
                       "allowMultiple": true,
                       "threescale_name": "metric_names",
                       "description": "Metric to be reported"
+                    }
+                  ]
+                },
+                {
+                  "name": "log",
+                  "dataType": "hash",
+                  "required": false,
+                  "paramType": "query",
+                  "allowMultiple": false,
+                  "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+                  "parameters": [
+                    {
+                      "name": "code",
+                      "dataType": "string",
+                      "paramType": "query",
+                      "description_inline": true,
+                      "description": "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
                     }
                   ]
                 }
