@@ -31,7 +31,7 @@ module ThreeScale
               # Note: the line below is correctly reversing the operands
               # This is done to have the larger period ordered before the
               # shorter ones when the remaining hits are the same.
-              other.period <=> one.period
+              other.period.granularity <=> one.period.granularity
             elsif one_rem < other_rem
               -1
             else
