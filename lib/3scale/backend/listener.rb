@@ -564,7 +564,23 @@ module ThreeScale
       def normalize_non_empty_keys!
         COMMON_PARAMS.each do |p|
           thisparam = params[p]
-          params[p] = nil if !thisparam.nil? && (thisparam.class != String || thisparam.strip.empty?)
+          if !thisparam.nil?
+            if thisparam.class != String
+              params[p] = nil
+            else
+              contents = thisparam.strip
+              # Unfortunately some users send empty app_keys that should have
+              # been populated for some OAuth flows - this poses a problem
+              # because app_key must be kept even if empty if it exists as it is
+              # semantically different for authorization endpoints (ie. it
+              # forces authentication to happen).
+              if p == 'app_key'.freeze
+                params[p] = contents
+              else
+                params[p] = nil if contents.empty?
+              end
+            end
+          end
         end
       end
 
