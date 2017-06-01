@@ -33,10 +33,6 @@ module ThreeScale
             @current_value ||= @status.value_for_usage_limit(@usage_limit, @type)
           end
 
-          def remaining
-            max_value - current_value
-          end
-
           # Returns -1 if the period is eternity. Otherwise, returns the time
           # remaining until the end of the period in seconds.
           def remaining_time(from = Time.now)
@@ -45,6 +41,32 @@ module ThreeScale
             else
               (period.finish - from).ceil
             end
+          end
+
+          # Returns the number of identical calls that can be made before
+          # violating the limits defined in the usage report.
+          #
+          # Authrep (with actual usage): suppose that we have a metric with a
+          # daily limit of 10, a current usage of 0, and a given usage of 2.
+          # After taking into account the given usage, the number of identical
+          # calls that could be performed is (10-2)/2 = 4.
+          #
+          # Authorize (with predicted usage): suppose that we have a metric
+          # with a daily limit of 10, a current usage of 0, and a given usage
+          # of 2. This time, the given usage is not taken into account, as it
+          # is predicted, not to be reported. The number of identical calls
+          # that could be performed is 10/2 = 5.
+          #
+          # Returns 0 when not authorized.
+          # Returns -1 when there is not a limit in the number of calls.
+          def remaining_same_calls
+            return 0 unless authorized?
+
+            usage = @status.actual_or_predicted_usage
+            return -1 unless usage
+
+            this_usage = compute_usage
+            this_usage > 0 ? remaining/this_usage : -1
           end
 
           def usage
@@ -118,6 +140,27 @@ module ThreeScale
             xml << '</usage_report>'.freeze
           end
 
+          def remaining
+            # The remaining could be negative for several reasons:
+            # 1) We allow reports that do not check limits.
+            # 2) The reports included in authreps are async.
+            # 3) A usage passed by param in an authrep can go over the limits.
+            # However, a negative remaining does not make much sense. It's
+            # better to return just 0.
+            [max_value - compute_current_value, 0].max
+          end
+
+          def compute_usage
+            usage = @status.usage || @status.predicted_usage
+
+            return 0 unless authorized? && usage
+
+            this_usage = usage[metric_name] || 0
+            res = Usage.get_from(this_usage)
+
+            add_children_usage(usage, res)
+          end
+
           # helper to compute the current usage value after applying a possibly
           # non-existent usage (or possibly unauthorized state)
           def compute_current_value
@@ -128,19 +171,24 @@ module ThreeScale
               # this is an auth/authrep request and therefore we should sum the usage
               computed_usage = Usage.get_from this_usage, current_value
               # children can alter the resulting current value
-              children = hierarchy[metric_name]
-              if children
-                # this is a parent metric, so we need to add usage we got
-                # explicited in the usage parameter
-                children.each do |child|
-                  child_usage = usage[child]
-                  computed_usage = Usage.get_from child_usage, computed_usage
-                end
-              end
-              computed_usage
+              add_children_usage(usage, computed_usage)
             else
               current_value
             end
+          end
+
+          def add_children_usage(usages, parent_usage)
+            res = parent_usage
+            children = hierarchy[metric_name]
+            if children
+              # this is a parent metric, so we need to add usage we got
+              # explicited in the usage parameter
+              children.each do |child|
+                child_usage = usages[child]
+                res = Usage.get_from child_usage, res
+              end
+            end
+            res
           end
         end
       end
