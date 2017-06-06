@@ -37,8 +37,14 @@ module ThreeScale
             max_value - current_value
           end
 
+          # Returns -1 if the period is eternity. Otherwise, returns the time
+          # remaining until the end of the period in seconds.
           def remaining_time(from = Time.now)
-            (period.finish - from).ceil
+            if period.granularity == Period::Granularity::Eternity
+              -1
+            else
+              (period.finish - from).ceil
+            end
           end
 
           def usage
