@@ -25,15 +25,11 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     @metric_id = next_id
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
-
-    ## apilog is imcomplete because the response and the code (response code) are unknow at this stage
-    @apilog = {'request' => 'API original request'}
   end
 
   test_authrep 'successful authorize responds with 200' do |e|
     get e, :provider_key => @provider_key,
-           :app_id       => @application.id,
-           :log          => @apilog
+           :app_id       => @application.id
 
     assert_equal 200, last_response.status
   end
@@ -47,8 +43,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
   test_authrep 'successful authorize with no body responds with 200' do |e|
     get e, {
         :provider_key => @provider_key,
-        :app_id       => @application.id,
-        :log          => @apilog
+        :app_id       => @application.id
       },
       'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
@@ -60,7 +55,6 @@ class AuthrepBasicTest < Test::Unit::TestCase
     get e,
       :provider_key => @provider_key,
       :app_id       => @application.id,
-      :log          => @apilog,
       :no_body      => 1
 
     assert_equal 200, last_response.status
@@ -69,8 +63,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
   test_authrep 'successful authorize has custom content type' do |e|
     get e, :provider_key => @provider_key,
-           :app_id       => @application.id,
-           :log          => @apilog
+           :app_id       => @application.id
 
     assert_includes last_response.content_type, 'application/vnd.3scale-v2.0+xml'
   end
@@ -260,8 +253,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     provider_key = 'invalid_key'
 
     get e, :provider_key => provider_key,
-           :app_id       => @application.id,
-           :log          => @apilog
+           :app_id       => @application.id
 
     assert_error_resp_with_exc(ProviderKeyInvalidOrServiceMissing.new(provider_key))
   end
@@ -269,8 +261,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
   test_authrep 'fails on invalid provider key with no body' do |e|
     get e, {
         :provider_key => 'boo',
-        :app_id       => @application.id,
-        :log          => @apilog
+        :app_id       => @application.id
       },
       'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
@@ -280,8 +271,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
   test_authrep 'fails on invalid application id' do |e|
     get e, :provider_key => @provider_key,
-           :app_id       => 'boo',
-           :log          => @apilog
+           :app_id       => 'boo'
 
     assert_error_response :status  => 404,
                           :code    => 'application_not_found',
@@ -329,8 +319,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     @application.save
 
     get e, :provider_key => @provider_key,
-           :app_id       => @application.id,
-           :log          => @apilog
+           :app_id       => @application.id
 
     assert_equal 409, last_response.status
     assert_not_authorized 'application is not active'
@@ -342,8 +331,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     get e, {
         :provider_key => @provider_key,
-        :app_id       => @application.id,
-        :log          => @apilog
+        :app_id       => @application.id
       },
       'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
 
@@ -363,8 +351,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     Resque.run!
 
     get e, :provider_key => @provider_key,
-           :app_id       => @application.id,
-           :log          => @apilog
+           :app_id       => @application.id
 
     assert_equal 409, last_response.status
     assert_not_authorized 'usage limits are exceeded'
@@ -403,8 +390,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     Resque.run!
 
     get e, :provider_key => @provider_key,
-           :app_id       => @application.id,
-           :log          => @apilog
+           :app_id       => @application.id
 
     doc   = Nokogiri::XML(last_response.body)
     day   = doc.at('usage_report[metric = "hits"][period = "day"]')
@@ -452,8 +438,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
       Resque.run!
 
       get e, :provider_key => @provider_key,
-             :app_id       => @application.id,
-             :log          => @apilog
+             :app_id       => @application.id
 
       doc   = Nokogiri::XML(last_response.body)
       month   = doc.at('usage_report[metric = "hits"][period = "month"]')

@@ -335,22 +335,8 @@
               "required": false,
               "paramType": "query",
               "allowMultiple": false,
-              "description": "Request Log allows to log the requests/responses/status_codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+              "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
               "parameters": [
-                {
-                  "name": "request",
-                  "dataType": "string",
-                  "paramType": "query",
-                  "description_inline": true,
-                  "description": "Body of the request to your API (needs to be URL encoded). Mandatory if log is not empty. Truncated after 1KB."
-                },
-                {
-                  "name": "response",
-                  "dataType": "string",
-                  "paramType": "query",
-                  "description_inline": true,
-                  "description": "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
-                },
                 {
                   "name": "code",
                   "dataType": "string",
@@ -436,22 +422,8 @@
               "required": false,
               "paramType": "query",
               "allowMultiple": false,
-              "description": "Request Log allows to log the requests/responses/status_codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+              "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
               "parameters": [
-                {
-                  "name": "request",
-                  "dataType": "string",
-                  "paramType": "query",
-                  "description_inline": true,
-                  "description": "Body of the request to your API (needs to be URL encoded). Mandatory if log is not empty. Truncated after 1KB."
-                },
-                {
-                  "name": "response",
-                  "dataType": "string",
-                  "paramType": "query",
-                  "description_inline": true,
-                  "description": "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
-                },
                 {
                   "name": "code",
                   "dataType": "string",
@@ -547,22 +519,8 @@
               "required": false,
               "paramType": "query",
               "allowMultiple": false,
-              "description": "Request Log allows to log the requests/responses/status_codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+              "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
               "parameters": [
-                {
-                  "name": "request",
-                  "dataType": "string",
-                  "paramType": "query",
-                  "description_inline": true,
-                  "description": "Body of the request to your API (needs to be URL encoded). Mandatory if log is not empty. Truncated after 1KB."
-                },
-                {
-                  "name": "response",
-                  "dataType": "string",
-                  "paramType": "query",
-                  "description_inline": true,
-                  "description": "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
-                },
                 {
                   "name": "code",
                   "dataType": "string",
@@ -673,22 +631,8 @@
                   "required": false,
                   "paramType": "query",
                   "allowMultiple": false,
-                  "description": "Request Log allows to log the requests/responses/status_codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+                  "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
                   "parameters": [
-                    {
-                      "name": "request",
-                      "dataType": "string",
-                      "paramType": "query",
-                      "description_inline": true,
-                      "description": "Body of the request to your API (needs to be URL encoded). Mandatory if log is not empty. Truncated after 1KB."
-                    },
-                    {
-                      "name": "response",
-                      "dataType": "string",
-                      "paramType": "query",
-                      "description_inline": true,
-                      "description": "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
-                    },
                     {
                       "name": "code",
                       "dataType": "string",
@@ -787,22 +731,8 @@
                   "required": false,
                   "paramType": "query",
                   "allowMultiple": false,
-                  "description": "Request Log allows to log the requests/responses/status_codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+                  "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
                   "parameters": [
-                    {
-                      "name": "request",
-                      "dataType": "string",
-                      "paramType": "query",
-                      "description_inline": true,
-                      "description": "Body of the request to your API (needs to be URL encoded). Mandatory if log is not empty. Truncated after 1KB."
-                    },
-                    {
-                      "name": "response",
-                      "dataType": "string",
-                      "paramType": "query",
-                      "description_inline": true,
-                      "description": "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
-                    },
                     {
                       "name": "code",
                       "dataType": "string",
@@ -901,22 +831,8 @@
                   "required": false,
                   "paramType": "query",
                   "allowMultiple": false,
-                  "description": "Request Log allows to log the requests/responses/status_codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
+                  "description": "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans.",
                   "parameters": [
-                    {
-                      "name": "request",
-                      "dataType": "string",
-                      "paramType": "query",
-                      "description_inline": true,
-                      "description": "Body of the request to your API (needs to be URL encoded). Mandatory if log is not empty. Truncated after 1KB."
-                    },
-                    {
-                      "name": "response",
-                      "dataType": "string",
-                      "paramType": "query",
-                      "description_inline": true,
-                      "description": "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
-                    },
                     {
                       "name": "code",
                       "dataType": "string",

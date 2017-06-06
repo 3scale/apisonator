@@ -8,13 +8,11 @@ module ThreeScale
 
         class << self
           def perform_logged(service_id, raw_transactions, _enqueue_time, context_info = {})
-            transactions, logs = parse_transactions(service_id, raw_transactions)
+            transactions = parse_transactions(service_id, raw_transactions)
             ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
-            if request_logs_storage_enabled?(logs, service_id)
-              Resque.enqueue(LogRequestJob, service_id, logs, Time.now.getutc.to_f)
-            end
 
-            [true, "#{service_id} #{transactions.size} #{logs.size}"]
+            # Last field was logs.size. Set it to 0 until we modify our parsers.
+            [true, "#{service_id} #{transactions.size} 0"]
           rescue Error => error
             ErrorStorage.store(service_id, error, context_info)
             [false, "#{service_id} #{error}"]
@@ -37,23 +35,21 @@ module ThreeScale
 
           def parse_transactions(service_id, raw_transactions)
             transactions = []
-            logs         = []
 
             group_by_application_id(service_id, raw_transactions) do |app_id, group|
               group.each do |raw_transaction|
                 check_end_users_allowed(raw_transaction, service_id)
 
                 transaction = compose_transaction(service_id, app_id, raw_transaction)
-                log         = compose_log(service_id, app_id, raw_transaction)
+                log         = raw_transaction['log']
 
                 transaction[:response_code] = log[:log]['code'] if transaction && log
 
-                logs << log if log
                 transactions << transaction if transaction
               end
             end
 
-            [transactions, logs]
+            transactions
           end
 
           def group_by_application_id(service_id, transactions, &block)
@@ -89,32 +85,6 @@ module ThreeScale
                 application_id: app_id,
                 timestamp:      raw_transaction['timestamp'],
                 usage:          metrics.process_usage(usage),
-                user_id:        raw_transaction['user_id'],
-              }
-            end
-          end
-
-          if ThreeScale::Backend.configuration.saas
-            def request_logs_storage_enabled?(logs, service_id)
-              !logs.nil? && !logs.empty? &&
-                RequestLogs::Management.enabled?(service_id)
-            end
-          else
-            def request_logs_storage_enabled?(_logs, _service_id)
-              false
-            end
-          end
-
-          def compose_log(service_id, app_id, raw_transaction)
-            raw_log = raw_transaction['log']
-
-            if raw_log && !raw_log.empty?
-              {
-                service_id:     service_id,
-                application_id: app_id,
-                timestamp:      raw_transaction['timestamp'],
-                log:            raw_log,
-                usage:          raw_transaction['usage'],
                 user_id:        raw_transaction['user_id'],
               }
             end

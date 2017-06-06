@@ -164,37 +164,4 @@ resource 'Services (prefix: /services)' do
       expect(response_json['status']).to eq 'deleted'
     end
   end
-
-  put '/services/:id/logs_bucket' do
-    parameter :id, 'Service ID', required: true
-    parameter :bucket, 'Bucket name', require: false
-
-    let(:raw_post) { params.to_json }
-
-    example_request 'Setting a log bucket', id: 1001, bucket: 'foo' do
-      expect(status).to eq(200)
-      expect(response_json['status']).to eq('ok')
-      expect(response_json['bucket']).to eq('foo')
-    end
-
-    example_request 'Missing deprecated parameter', id: 1001 do
-      expect(status).to eq(200)
-      expect(response_json['status']).to eq('ok')
-    end
-  end
-
-  delete '/services/:id/logs_bucket' do
-    parameter :id, 'Service ID', required: true
-
-    let(:raw_post) { params.to_json }
-
-    example 'Removing log bucket info' do
-      ThreeScale::Backend::RequestLogs::Management.enable_service 1001
-
-      do_request id: 1001
-      expect(status).to eq(200)
-      expect(response_json['status']).to eq('deleted')
-    end
-  end
-
 end

@@ -53,69 +53,6 @@ module ThreeScale
               }.to raise_error(Exception)
             end
           end
-
-          context 'log request storage' do
-            before do
-              ResqueSpec.reset!
-              @service_id, @plan_id, @application_id, @metric_id, @metric_id2 =
-                (1..5).map{ next_id }
-              @log1 = {'code' => '200', 'request' => '/request?bla=bla&',
-                       'response' => '<xml>response</xml>'}
-              Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
-              Metric.save(:service_id => @service_id, :id => @metric_id2, :name => 'other')
-              Application.save(:id         => @application_id,
-                               :service_id => @service_id,
-                               :state      => :active,
-                               :plan_id    => @plan_id)
-            end
-
-            context 'when Request Logs storage is enabled' do
-              before do
-                RequestLogs::Management.global_enable
-                RequestLogs::Management.enable_service @service_id
-              end
-
-              context 'when the log only contains code' do
-                let(:log_with_code) { @log1.select { |k,v| k == 'code' } }
-                let(:transactions)  do
-                  {
-                    '0' => {
-                      'app_id' => @application_id,
-                      'usage'  => {'hits' => 1, 'other' => 6},
-                      'log'    => log_with_code,
-                    }
-                  }
-                end
-
-                it 'is enqueued' do
-                  expect(LogRequestJob).to have_queue_size_of(0)
-                  Transactor::ReportJob.perform(@service_id, transactions, Time.now.getutc.to_f, context_info)
-                  expect(LogRequestJob).to have_queue_size_of(1)
-                end
-              end
-
-              it 'is re-queued when necessary' do
-                expect(LogRequestJob).to have_queue_size_of(0)
-
-                Transactor::ReportJob.perform(
-                  @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, Time.now.getutc.to_f, context_info)
-
-                expect(LogRequestJob).to have_queue_size_of(1)
-              end
-            end
-
-            context 'when Request Logs storage is disabled' do
-              before do
-                RequestLogs::Management.global_disable
-              end
-
-              it 'is not queued' do
-                Transactor::ReportJob.perform(
-                  @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1, 'other' => 6}, 'log' => @log1}}, Time.now.getutc.to_f, context_info)
-                expect(LogRequestJob).to have_queue_size_of(0)
-              end
-            end
-          end
         end
       end
     end

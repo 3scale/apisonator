@@ -83,19 +83,13 @@ module ThreeScale
       ##~ @timestamp["description_inline"] = true
       ##
       ##~ @parameter_log = {"name" => "log", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
-      ##~ @parameter_log["description"] = "Request Log allows to log the requests/responses/status_codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans."
+      ##~ @parameter_log["description"] = "Request Log allows to log status codes of your API back to 3scale to maintain a log of the latest activity on your API. Request Logs are optional and not available in all 3scale plans."
       ##
-      ##~ @parameter_log_field_request = {"name" => "request", "dataType" => "string", "paramType" => "query", "description_inline" => true}
-      ##~ @parameter_log_field_request["description"] = "Body of the request to your API (needs to be URL encoded). Mandatory if log is not empty. Truncated after 1KB."
-      ##~ @parameter_log_field_response = {"name" => "response", "dataType" => "string", "paramType" => "query", "description_inline" => true}
-      ##~ @parameter_log_field_response["description"] = "Body of the response from your API (needs to be URL encoded). Optional. Truncated after 4KB."
       ##~ @parameter_log_field_code = {"name" => "code", "dataType" => "string", "paramType" => "query", "description_inline" => true}
       ##~ @parameter_log_field_code["description"] = "Response code of the response from your API (needs to be URL encoded). Optional. Truncated after 32bytes."
 
 
       ##~ @parameter_log["parameters"] = []
-      ##~ @parameter_log["parameters"] << @parameter_log_field_request
-      ##~ @parameter_log["parameters"] << @parameter_log_field_response
       ##~ @parameter_log["parameters"] << @parameter_log_field_code
       ##
       ##~ @parameter_transaction_app_id = {"name" => "transactions", "dataType" => "array", "required" => true, "paramType" => "query", "allowMultiple" => true}
@@ -688,10 +682,4 @@ module ThreeScale
       private_class_method :deprecated_no_body_param
     end
   end
-end
-
-# If using SaaS config, then reopen the Listener class and add the
-# SaaS-specific endpoints.
-if ThreeScale::Backend.configuration.saas
-  require '3scale/backend/listener_saas'
 end
