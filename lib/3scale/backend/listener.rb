@@ -257,15 +257,20 @@ module ThreeScale
       ##~ op.summary = "Authorize (OAuth authentication mode pattern)"
       ##
       ##~ op.description = "<p>Read-only operation to authorize an application in the OAuth authentication pattern."
-      ##~ @oauth_desc_response = "<p>This calls returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
-      ##~ op.description = op.description + @oauth_desc_response
+      ##~ @oauth_security = "<p>When using this endpoint please pay attention at your handling of app_id and app_key parameters. If you don't specify an app_key, the endpoint assumes the app_id specified has already been authenticated by other means. If you specify the app_key parameter, even if it is empty, it will be checked against the application's keys. If you don't trust the app_id value you have, either use app keys and specify one or use access_token and avoid the app_id parameter."
+      ##~ @oauth_desc_response = "<p>This call returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
+      ##~ op.description = op.description + @oauth_security + @oauth_desc_response
       ##~ op.description = op.description + " " + @authorize_desc + " " + @authorize_desc_response
+      ##~ @parameter_app_key_oauth = {"name" => "app_key", "dataType" => "string", "required" => false, "paramType" => "query", "threescale_name" => "app_keys"}
+      ##~ @parameter_app_key_oauth["description"] = "App Key (shared secret of the application). The app key, if present, must match a key defined for the application. Note that empty values are considered invalid."
+      #
       ##~ op.group = "authorize"
       ##
       ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
+      ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id_oauth
       ##~ op.parameters.add @parameter_usage_predicted
@@ -335,13 +340,14 @@ module ThreeScale
       ##~ op.summary = "AuthRep (OAuth authentication mode pattern)"
       ##
       ##~ op.description = "<p>Authrep is a <b>'one-shot'</b> operation to authorize an application and report the associated transaction at the same time in the OAuth authentication pattern."
-      ##~ op.description = op.description + @authrep_desc + @oauth_desc_response
+      ##~ op.description = op.description + @authrep_desc + @oauth_security + @oauth_desc_response
       ##~ op.group = "authrep"
       ##
       ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
+      ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
       ##~ op.parameters.add @parameter_user_id_oauth
       ##~ op.parameters.add @parameter_usage
@@ -564,7 +570,23 @@ module ThreeScale
       def normalize_non_empty_keys!
         COMMON_PARAMS.each do |p|
           thisparam = params[p]
-          params[p] = nil if !thisparam.nil? && (thisparam.class != String || thisparam.strip.empty?)
+          if !thisparam.nil?
+            if thisparam.class != String
+              params[p] = nil
+            else
+              contents = thisparam.strip
+              # Unfortunately some users send empty app_keys that should have
+              # been populated for some OAuth flows - this poses a problem
+              # because app_key must be kept even if empty if it exists as it is
+              # semantically different for authorization endpoints (ie. it
+              # forces authentication to happen).
+              if p == 'app_key'.freeze
+                params[p] = contents
+              else
+                params[p] = nil if contents.empty?
+              end
+            end
+          end
         end
       end
 
