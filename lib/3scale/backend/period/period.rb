@@ -384,7 +384,10 @@ module ThreeScale
               iter.each(&blk)
             end
 
-            include Enumerable
+            # Enumerable is not being included because some external code
+            # actually thinks of this as a collection that must be listed
+            # instead of just inspecting or printing its value (this is the
+            # case with RSpec and ActiveSupport at least).
             alias_method :each, :break_down
 
             def remaining(ts)
