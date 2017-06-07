@@ -260,14 +260,53 @@ module ThreeScale
                 granularity = LINKS[name][:pred]
                 Period[granularity] if granularity
               end
+
+              def new(timestamp = Time.now)
+                timestamp = timestamp.utc
+                cached = Cache.get name, start(timestamp)
+                if cached
+                  # cache hit
+                  cached
+                else
+                  # cache miss
+                  obj = super timestamp
+                  Cache.set name, obj
+                  obj
+                end
+              end
+
+              # A simple last-used instance cache
+              #
+              # This is expected to be especially effective for us since most
+              # of the time what we look for is start/finish and the exact
+              # timestamp does not matter.
+              #
+              module Cache
+                # Global cache for Periods
+                @cache = {}
+
+                class << self
+                  def get(granularity, start)
+                    cached = @cache[granularity]
+                    if cached && cached.start == start
+                      cached
+                    end
+                  end
+
+                  def set(granularity, obj)
+                    @cache[granularity] = obj
+                  end
+                end
+              end
+              private_constant :Cache
             end
 
             # instance methods
             attr_reader :granularity, :timestamp, :start, :finish
 
-            def initialize(timestamp = Time.now)
+            def initialize(timestamp)
               @granularity = self.class
-              @timestamp = timestamp.utc
+              @timestamp = timestamp
               @start = granularity.start(self.timestamp)
               @finish = granularity.finish(self.timestamp)
             end
