@@ -106,7 +106,7 @@ module ThreeScale
 
         def limit_headers(now = Time.now.utc)
           # maybe filter by exceeded reports if not authorized
-          LimitHeaders.get(application_usage_reports + user_usage_reports, now)
+          LimitHeaders.get(reports_to_calculate_limit_headers, now)
         end
 
         def to_xml(options = {})
@@ -154,6 +154,25 @@ module ThreeScale
         end
 
         private
+
+        # Returns the app usage reports and user usage reports needed to
+        # construct the limit headers. If the status does not have a 'usage',
+        # this method returns all the usage reports. Otherwise, it returns the
+        # reports associated with the metrics present in the 'usage' and their
+        # parents.
+        def reports_to_calculate_limit_headers
+          all_reports = application_usage_reports + user_usage_reports
+
+          return all_reports if (@usage.nil? || @usage.empty?)
+
+          metric_names_in_usage = @usage.keys
+          metrics = metric_names_in_usage | parents_names(metric_names_in_usage)
+          all_reports.select { |report| metrics.include?(report.metric_name) }
+        end
+
+        def parents_names(metric_names)
+          Metric.parents(@service_id, metric_names)
+        end
 
         # make sure the keys are Periods
         def filter_values(values)
