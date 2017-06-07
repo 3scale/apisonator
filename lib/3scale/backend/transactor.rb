@@ -65,8 +65,9 @@ module ThreeScale
       def validate(oauth, provider_key, report_usage, params, extensions)
         service = Service.load_with_provider_key!(params[:service_id], provider_key)
         app_id, user_id = params[:app_id], params[:user_id]
-        # TODO: make sure params are nil if they are empty up the call stack so
-        # that we stop these idiotic checkings.
+        # TODO: make sure params are nil if they are empty up the call stack
+        # Note: app_key is an exception, as it being empty is semantically
+        # significant.
         params[:app_id] = nil if app_id && app_id.empty?
         params[:user_id] = nil if user_id && user_id.empty?
 
