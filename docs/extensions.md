@@ -56,6 +56,9 @@ non-existing metrics occur):
   current limiting period to elapse. A negative integer value means there is no
   limit in time.
 
+When a `usage` is specified, only the metrics specified in that usage and their
+parent metrics are taken into account when calculating the limit headers.
+
 The remaining hits header states how many _identical calls_ will be authorized by
 3scale's rate limiting logic. Be warned that this means exactly that, not that
 other orthogonal logic will end up causing an authorization request to be
