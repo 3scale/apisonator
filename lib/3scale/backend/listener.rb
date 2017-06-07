@@ -672,7 +672,8 @@ module ThreeScale
       end
 
       def set_limit_headers(auth_status)
-        if threescale_extensions[:limit_headers] == '1'.freeze
+        if threescale_extensions[:limit_headers] == '1'.freeze &&
+            (auth_status.authorized? || auth_status.rejection_reason_code == LimitsExceeded.code)
           auth_status.limit_headers.each do |hdr, value|
             response["3scale-limit-#{hdr}"] = value
           end
