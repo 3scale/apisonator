@@ -168,26 +168,18 @@ module ThreeScale
 
         def add_hierarchy(xml, reports)
           xml << '<hierarchy>'.freeze
-          generate_hierarchy_info(reports).each do |metric_name, children|
+          with_report_and_hierarchy(reports) do |ur, children|
             xml << '<metric name="'.freeze
-            xml << metric_name << '" children="'.freeze
-            xml << children.join(' '.freeze) << '"/>'.freeze
+            xml << ur.metric_name << '" children="'.freeze
+            xml << (children ? children.join(' '.freeze) : '') << '"/>'.freeze
           end
           xml << '</hierarchy>'.freeze
         end
 
-        def generate_hierarchy_info(reports)
-          service_id = @service.id
-          reports.inject({}) do |acc, ur|
-            metric_name = ur.metric_name
-            next acc unless acc[metric_name].nil?
-            children_ids = Metric.children(service_id, ur.metric_id)
-            next acc unless children_ids
-            children = children_ids.map do |id|
-                         Metric.load_name(service_id, id)
-                       end
-            acc[metric_name] = children unless children.empty?
-            acc
+        # helper to iterate over reports and get relevant hierarchy info
+        def with_report_and_hierarchy(reports)
+          reports.each do |ur|
+            yield ur, hierarchy[ur.metric_name]
           end
         end
 
