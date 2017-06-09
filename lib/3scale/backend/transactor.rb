@@ -126,17 +126,18 @@ module ThreeScale
         usage_values = load_application_usage(application, now)
         user_usage   = load_user_usage(user, now) if user
         status_attrs = {
-          user_values: user_usage,
-          application: application,
-          service:     service,
-          oauth:       oauth,
-          usage:       report_usage ? params[:usage] : nil,
-          values:      usage_values,
+          user_values:     user_usage,
+          application:     application,
+          service:         service,
+          oauth:           oauth,
+          usage:           params[:usage],
+          predicted_usage: !report_usage,
+          values:          usage_values,
           # hierarchy parameter adds information in the response needed
           # to derive which limits affect directly or indirectly the
           # metrics for which authorization is requested.
-          hierarchy:   extensions[:hierarchy] == '1',
-          user:        user,
+          hierarchy:       extensions[:hierarchy] == '1',
+          user:            user,
         }
 
         # returns a status object

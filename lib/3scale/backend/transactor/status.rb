@@ -10,15 +10,16 @@ module ThreeScale
         private_constant :REDIRECT_URI_FIELD
 
         def initialize(attributes = {})
-          @service     = attributes[:service]
-          @application = attributes[:application]
-          @oauth       = attributes[:oauth]
-          @usage       = attributes[:usage]
-          @values      = filter_values(attributes[:values] || {})
-          @user        = attributes[:user]
-          @user_values = filter_values(attributes[:user_values])
-          @timestamp   = attributes[:timestamp] || Time.now.getutc
-          @hierarchy   = attributes[:hierarchy]
+          @service         = attributes[:service]
+          @application     = attributes[:application]
+          @oauth           = attributes[:oauth]
+          @usage           = attributes[:usage]
+          @predicted_usage = attributes[:predicted_usage]
+          @values          = filter_values(attributes[:values] || {})
+          @user            = attributes[:user]
+          @user_values     = filter_values(attributes[:user_values])
+          @timestamp       = attributes[:timestamp] || Time.now.getutc
+          @hierarchy       = attributes[:hierarchy]
 
           if (@application.nil? and @user.nil?)
             raise ':application is required'
@@ -32,7 +33,6 @@ module ThreeScale
         attr_reader :application
         attr_reader :oauth
         attr_accessor :redirect_uri_field
-        attr_reader :usage
         attr_accessor :values
         attr_reader :user
         attr_accessor :user_values
@@ -46,6 +46,16 @@ module ThreeScale
         attr_reader :timestamp
         attr_reader :rejection_reason_code
         attr_reader :rejection_reason_text
+
+        # Returns the usage to be reported in an authrep request.
+        def usage
+          @predicted_usage ? nil : @usage
+        end
+
+        # Returns the predicted usage of an authorize request.
+        def predicted_usage
+          @predicted_usage ? @usage : nil
+        end
 
         def authorized?
           @authorized
