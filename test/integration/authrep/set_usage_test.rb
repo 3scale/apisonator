@@ -101,15 +101,11 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
       Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      ## this one should be 10, but the children update does not update the father on precalculation
-      ## (known issue)
-      ## assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 2, 100)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 2, 100)
+      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 10, 100)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'day', 10, 50)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'day', 0, 50)
 
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 5, 1000)
-      ##assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 10, 1000)
+      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 10, 1000)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'month', 10, 500)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'month', 0, 500)
 
@@ -119,21 +115,15 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
       Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      ## not updating father
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 10, 100)
-      ##assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 6, 100)
+      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 6, 100)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'day', 10, 50)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'day', 6, 50)
 
-      ## not updating father
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 10, 1000)
-      ##assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 6, 1000)
+      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 6, 1000)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'month', 10, 500)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'month', 6, 500)
 
-      ## not updating father
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'eternity', 10, 10000)
-      ##assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'eternity', 6, 10000)
+      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'eternity', 6, 10000)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'eternity', 10, 5000)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'eternity', 6, 5000)
     end
@@ -147,21 +137,15 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
       Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      ## not updating father
-      ##assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 12, 100)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 6, 100)
+      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 12, 100)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'day', 12, 50)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'day', 11, 50)
 
-      ## not updating father
-      ##assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 12, 1000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 6, 1000)
+      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 12, 1000)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'month', 12, 500)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'month', 11, 500)
 
-      ## not updating father
-      ##assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'eternity', 12, 10000)
-      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'month', 6, 1000)
+      assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'eternity', 12, 10000)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_2', 'eternity', 12, 5000)
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits_child_1', 'eternity', 11, 5000)
     end
