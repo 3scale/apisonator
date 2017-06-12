@@ -62,14 +62,25 @@ class MetricTest < Test::Unit::TestCase
     metric2.children << Metric.new(:id => parent2[:id] + 1, :name => 'p2_children1')
     metric2.save
 
-    mh = Metric.hierarchy(service_id)
-    assert_equal metric1.children.map(&:id).sort, mh[parent1[:id].to_s].map(&:to_i).sort
-    assert_equal metric2.children.map(&:id).sort, mh[parent2[:id].to_s].map(&:to_i).sort
+    mh_ids = Metric.hierarchy(service_id, false)
+    assert_equal metric1.children.map(&:id).sort, mh_ids[parent1[:id].to_s].map(&:to_i).sort
+    assert_equal metric2.children.map(&:id).sort, mh_ids[parent2[:id].to_s].map(&:to_i).sort
 
     # assert that children don't have any children themselves
     assert([metric1.children, metric2.children].all? do |mc|
       mc.all? do |m|
-        mh[m.id.to_s].nil?
+        mh_ids[m.id.to_s].nil?
+      end
+    end)
+
+    mh_names = Metric.hierarchy(service_id)
+    assert_equal metric1.children.map(&:name).sort, mh_names[parent1[:name]].sort
+    assert_equal metric2.children.map(&:name).sort, mh_names[parent2[:name]].sort
+
+    # assert that children don't have any children themselves
+    assert([metric1.children, metric2.children].all? do |mc|
+      mc.all? do |m|
+        mh_names[m.name].nil?
       end
     end)
 
@@ -87,7 +98,7 @@ class MetricTest < Test::Unit::TestCase
     assert_empty metric.children
     assert_nil Metric.children(1001, parent_id)
 
-    mh = Metric.hierarchy(service_id)
+    mh = Metric.hierarchy(service_id, false)
 
     assert_nil mh[parent[:id].to_s]
     assert mh.values.all? { |children| !children.include?(parent_id.to_s) }
