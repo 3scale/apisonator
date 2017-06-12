@@ -158,17 +158,17 @@ module ThreeScale
       def do_authrep(method, provider_key, params, extensions)
         status = begin
                    validate(method == :oauth_authrep, provider_key, true, params, extensions)
-                 rescue ThreeScale::Backend::ApplicationNotFound, ThreeScale::Backend::UserNotDefined => e
+                 rescue ApplicationNotFound, UserNotDefined => e
                    # we still want to track these
                    notify_authorize(provider_key)
                    raise e
                  end
 
-        application_id = status.application.id
-        username = status.user.username unless status.user.nil?
         usage = params[:usage]
 
         if (usage || params[:log]) && status.authorized?
+          application_id = status.application.id
+          username = status.user.username unless status.user.nil?
           report_enqueue(status.service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})
           notify_authrep(provider_key, usage ? usage.size : 0)
         else
@@ -195,9 +195,9 @@ module ThreeScale
       end
 
       def apply_validators(validators, status_attrs, params)
-        Status.new(status_attrs).tap do |st|
-          validators.all? { |validator| validator.apply(st, params) }
-        end
+        status = Status.new(status_attrs)
+        validators.each { |validator| validator.apply(status, params) }
+        status
       end
 
       def report_enqueue(service_id, data, context_info)
