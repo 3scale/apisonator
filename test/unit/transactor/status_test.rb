@@ -39,8 +39,9 @@ module Transactor
       usage = {:month => {@metric_id.to_s => 429}}
 
       Timecop.freeze(time) do
-        status = Transactor::Status.new(:application => @application,
-                                        :values      => usage)
+        status = Transactor::Status.new(service_id: @service_id,
+                                        application: @application,
+                                        values: usage)
 
         assert_equal 1, status.application_usage_reports.count
 
@@ -67,7 +68,8 @@ module Transactor
       Metric.delete(@service_id, metric.id)
       # We do not delete the usage limit that affects the metric
 
-      status = Transactor::Status.new(:service => @service, :application => @application)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application)
       assert_equal 0, status.application_usage_reports.size
     end
 
@@ -78,8 +80,9 @@ module Transactor
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 2002}}
-      status = Transactor::Status.new(:application => @application,
-                                      :values      => usage)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage)
 
       assert status.application_usage_reports.first.exceeded?
     end
@@ -91,8 +94,9 @@ module Transactor
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 1999}}
-      status = Transactor::Status.new(:application => @application,
-                                      :values      => usage)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage)
 
       assert !status.application_usage_reports.first.exceeded?
     end
@@ -104,26 +108,30 @@ module Transactor
                       :month      => 2000)
 
       usage  = {:month => {@metric_id.to_s => 2000}}
-      status = Transactor::Status.new(:application => @application,
-                                      :values      => usage)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage)
 
       assert !status.application_usage_reports.first.exceeded?
     end
 
     test '#authorized? returns true by default' do
-      status = Transactor::Status.new(:application => @application)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application)
       assert status.authorized?
     end
 
     test '#authorized? returns false when rejected' do
-      status = Transactor::Status.new(:application => @application)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application)
       status.reject!(ApplicationNotActive.new)
 
       assert !status.authorized?
     end
 
     test 'status contains rejection reason when rejected' do
-      status = Transactor::Status.new(:application => @application)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application)
       status.reject!(ApplicationNotActive.new)
 
       assert_equal 'application_not_active',    status.rejection_reason_code
@@ -131,7 +139,8 @@ module Transactor
     end
 
     test 'rejection reason can be set only once' do
-      status = Transactor::Status.new(:application => @application)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application)
       status.reject!(ApplicationNotActive.new)
       status.reject!(LimitsExceeded.new)
 
@@ -148,8 +157,9 @@ module Transactor
       usage = {:month => {@metric_id.to_s => 429}}
 
       Timecop.freeze(time) do
-        xml = Transactor::Status.new(:application => @application,
-                                     :values      => usage).to_xml
+        xml = Transactor::Status.new(service_id: @service_id,
+                                     application: @application,
+                                     values: usage).to_xml
 
         doc = Nokogiri::XML(xml)
 
@@ -179,8 +189,9 @@ module Transactor
 
     test '#to_xml does not serialize empty usage reports' do
       usage  = {:month => {@metric_id.to_s => 429}}
-      status = Transactor::Status.new(:application => @application,
-                                      :values      => usage)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage)
 
       doc = Nokogiri::XML(status.to_xml)
 
@@ -190,8 +201,9 @@ module Transactor
     test '#to_xml on rejected status' do
       usage = {:month => {@metric_id.to_s => 429}}
 
-      status = Transactor::Status.new(:application => @application,
-                                      :values      => usage)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage)
       status.reject!(ApplicationNotActive.new)
 
       doc = Nokogiri::XML(status.to_xml)
@@ -208,8 +220,9 @@ module Transactor
 
       usage  = {:month => {@metric_id.to_s => 1420},
                 :day   => {@metric_id.to_s => 122}}
-      status = Transactor::Status.new(:application => @application,
-                                      :values      => usage)
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage)
 
       doc = Nokogiri::XML(status.to_xml)
 
