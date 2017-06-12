@@ -19,7 +19,7 @@ module ThreeScale
           @user            = attributes[:user]
           @user_values     = filter_values(attributes[:user_values])
           @timestamp       = attributes[:timestamp] || Time.now.getutc
-          @hierarchy       = attributes[:hierarchy]
+          @hierarchy_ext   = attributes[:hierarchy]
 
           if (@application.nil? and @user.nil?)
             raise ':application is required'
@@ -101,6 +101,11 @@ module ThreeScale
           values && values[usage_limit.metric_id] || 0
         end
 
+        # provides a hierarchy hash with metrics as symbolic names
+        def hierarchy
+          @hierarchy ||= Metric.hierarchy service_id
+        end
+
         def to_xml(options = {})
           xml = ''
           xml << '<?xml version="1.0" encoding="UTF-8"?>'.freeze unless options[:skip_instruct]
@@ -126,7 +131,7 @@ module ThreeScale
             end
           end
 
-          hierarchy_reports = [] if @hierarchy
+          hierarchy_reports = [] if @hierarchy_ext
           if !@application.nil? && !options[:exclude_application]
             add_plan(xml, 'plan'.freeze, plan_name)
             xml << aux_reports_to_xml(application_usage_reports)
