@@ -42,20 +42,23 @@ module ThreeScale
       def utilization(service_id, application_id)
         application = Application.load!(service_id, application_id)
         usage = load_application_usage(application, Time.now.getutc)
-        status = ThreeScale::Backend::Transactor::Status.new(:application => application, :values => usage)
-        ThreeScale::Backend::Validators::Limits.apply(status, {})
+        status = Status.new(service_id: service_id,
+                            application: application,
+                            values: usage)
+        Validators::Limits.apply(status, {})
 
         max_utilization = 0
         max_record = 0
 
         unless status.application_usage_reports.empty?
-          max_utilization, max_record = ThreeScale::Backend::Alerts.utilization(
-              status.application_usage_reports, status.user_usage_reports)
+          max_utilization, max_record =
+            Alerts.utilization(status.application_usage_reports,
+                               status.user_usage_reports)
         end
 
         max_utilization = (max_utilization * 100.to_f).round
 
-        stats = ThreeScale::Backend::Alerts.stats(service_id, application_id)
+        stats = Alerts.stats(service_id, application_id)
 
         [status.application_usage_reports, max_record, max_utilization, stats]
       end
@@ -64,6 +67,9 @@ module ThreeScale
 
       def validate(oauth, provider_key, report_usage, params, extensions)
         service = Service.load_with_provider_key!(params[:service_id], provider_key)
+        # service_id cannot be taken from params since it might be missing there
+        service_id = service.id
+
         app_id, user_id = params[:app_id], params[:user_id]
         # TODO: make sure params are nil if they are empty up the call stack
         # Note: app_key is an exception, as it being empty is semantically
@@ -92,7 +98,7 @@ module ThreeScale
           else
             begin
               token_appid, token_uid = OAuth::Token::Storage.get_credentials(
-                access_token, service.id
+                access_token, service_id
               )
             rescue AccessTokenInvalid => e
               # Yep, well, er. Someone specified that it is OK to have an
@@ -117,7 +123,7 @@ module ThreeScale
         end
 
         params[:user_key] = nil if params[:user_key] && params[:user_key].empty?
-        application = Application.load_by_id_or_user_key!(service.id,
+        application = Application.load_by_id_or_user_key!(service_id,
                                                           app_id,
                                                           params[:user_key])
 
@@ -126,9 +132,9 @@ module ThreeScale
         usage_values = load_application_usage(application, now)
         user_usage   = load_user_usage(user, now) if user
         status_attrs = {
+          service_id:      service_id,
           user_values:     user_usage,
           application:     application,
-          service:         service,
           oauth:           oauth,
           usage:           params[:usage],
           predicted_usage: !report_usage,
@@ -158,13 +164,12 @@ module ThreeScale
                    raise e
                  end
 
-        service_id = status.service.id
         application_id = status.application.id
         username = status.user.username unless status.user.nil?
         usage = params[:usage]
 
         if (usage || params[:log]) && status.authorized?
-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})
+          report_enqueue(status.service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})
           notify_authrep(provider_key, usage ? usage.size : 0)
         else
           notify_authorize(provider_key)

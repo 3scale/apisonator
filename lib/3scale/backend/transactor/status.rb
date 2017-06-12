@@ -9,8 +9,8 @@ module ThreeScale
         REDIRECT_URI_FIELD = 'redirect_url'.freeze
         private_constant :REDIRECT_URI_FIELD
 
-        def initialize(attributes = {})
-          @service         = attributes[:service]
+        def initialize(attributes)
+          @service_id      = attributes[:service_id]
           @application     = attributes[:application]
           @oauth           = attributes[:oauth]
           @usage           = attributes[:usage]
@@ -21,15 +21,14 @@ module ThreeScale
           @timestamp       = attributes[:timestamp] || Time.now.getutc
           @hierarchy_ext   = attributes[:hierarchy]
 
-          if (@application.nil? and @user.nil?)
-            raise ':application is required'
-          end
+          raise 'service_id not specified' if @service_id.nil?
+          raise ':application is required' if @application.nil? && @user.nil?
 
           @redirect_uri_field = REDIRECT_URI_FIELD
           @authorized  = true
         end
 
-        attr_reader :service
+        attr_reader :service_id
         attr_reader :application
         attr_reader :oauth
         attr_accessor :redirect_uri_field

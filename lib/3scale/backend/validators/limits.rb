@@ -19,7 +19,7 @@ module ThreeScale
 
         def process(values, raw_usage)
           if raw_usage
-            metrics = Metric.load_all(status.service.id)
+            metrics = Metric.load_all(status.service_id)
             usage   = metrics.process_usage(raw_usage)
             values  = filter_metrics(values, usage.keys)
             values  = increment_or_set(values, usage)
