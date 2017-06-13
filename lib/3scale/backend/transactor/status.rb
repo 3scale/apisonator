@@ -9,8 +9,8 @@ module ThreeScale
         REDIRECT_URI_FIELD = 'redirect_url'.freeze
         private_constant :REDIRECT_URI_FIELD
 
-        def initialize(attributes = {})
-          @service         = attributes[:service]
+        def initialize(attributes)
+          @service_id      = attributes[:service_id]
           @application     = attributes[:application]
           @oauth           = attributes[:oauth]
           @usage           = attributes[:usage]
@@ -19,17 +19,16 @@ module ThreeScale
           @user            = attributes[:user]
           @user_values     = filter_values(attributes[:user_values])
           @timestamp       = attributes[:timestamp] || Time.now.getutc
-          @hierarchy       = attributes[:hierarchy]
+          @hierarchy_ext   = attributes[:hierarchy]
 
-          if (@application.nil? and @user.nil?)
-            raise ':application is required'
-          end
+          raise 'service_id not specified' if @service_id.nil?
+          raise ':application is required' if @application.nil? && @user.nil?
 
           @redirect_uri_field = REDIRECT_URI_FIELD
           @authorized  = true
         end
 
-        attr_reader :service
+        attr_reader :service_id
         attr_reader :application
         attr_reader :oauth
         attr_accessor :redirect_uri_field
@@ -101,6 +100,11 @@ module ThreeScale
           values && values[usage_limit.metric_id] || 0
         end
 
+        # provides a hierarchy hash with metrics as symbolic names
+        def hierarchy
+          @hierarchy ||= Metric.hierarchy service_id
+        end
+
         def to_xml(options = {})
           xml = ''
           xml << '<?xml version="1.0" encoding="UTF-8"?>'.freeze unless options[:skip_instruct]
@@ -126,7 +130,7 @@ module ThreeScale
             end
           end
 
-          hierarchy_reports = [] if @hierarchy
+          hierarchy_reports = [] if @hierarchy_ext
           if !@application.nil? && !options[:exclude_application]
             add_plan(xml, 'plan'.freeze, plan_name)
             xml << aux_reports_to_xml(application_usage_reports)
@@ -163,26 +167,18 @@ module ThreeScale
 
         def add_hierarchy(xml, reports)
           xml << '<hierarchy>'.freeze
-          generate_hierarchy_info(reports).each do |metric_name, children|
+          with_report_and_hierarchy(reports) do |ur, children|
             xml << '<metric name="'.freeze
-            xml << metric_name << '" children="'.freeze
-            xml << children.join(' '.freeze) << '"/>'.freeze
+            xml << ur.metric_name << '" children="'.freeze
+            xml << (children ? children.join(' '.freeze) : '') << '"/>'.freeze
           end
           xml << '</hierarchy>'.freeze
         end
 
-        def generate_hierarchy_info(reports)
-          service_id = @service.id
-          reports.inject({}) do |acc, ur|
-            metric_name = ur.metric_name
-            next acc unless acc[metric_name].nil?
-            children_ids = Metric.children(service_id, ur.metric_id)
-            next acc unless children_ids
-            children = children_ids.map do |id|
-                         Metric.load_name(service_id, id)
-                       end
-            acc[metric_name] = children unless children.empty?
-            acc
+        # helper to iterate over reports and get relevant hierarchy info
+        def with_report_and_hierarchy(reports)
+          reports.each do |ur|
+            yield ur, hierarchy[ur.metric_name]
           end
         end
 

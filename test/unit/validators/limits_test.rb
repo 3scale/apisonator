@@ -23,9 +23,9 @@ module Validators
     end
 
     test 'succeeds if there are no usage limits' do
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {@metric_id => 7000000}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { @metric_id => 7000000 }})
       assert Limits.apply(status, {})
     end
 
@@ -35,9 +35,9 @@ module Validators
                       :metric_id  => @metric_id,
                       :day        => 4)
 
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {@metric_id => 3}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { @metric_id => 3 }})
       assert Limits.apply(status, {})
     end
 
@@ -47,9 +47,9 @@ module Validators
                       :metric_id  => @metric_id,
                       :day        => 4)
 
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {@metric_id => 6}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { @metric_id => 6 }})
       assert !Limits.apply(status, {})
 
       assert_equal 'limits_exceeded',           status.rejection_reason_code
@@ -62,9 +62,9 @@ module Validators
                       :metric_id  => @metric_id,
                       :day        => 10)
 
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {@metric_id => 3}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { @metric_id => 3 }})
       assert Limits.apply(status, :usage => {'hits' => '#10'})
     end
 
@@ -74,9 +74,9 @@ module Validators
                       :metric_id  => @metric_id,
                       :day        => 10)
 
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {@metric_id => 3}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { @metric_id => 3 }})
       assert !Limits.apply(status, :usage => {'hits' => '#11'})
 
       assert_equal 'limits_exceeded',           status.rejection_reason_code
@@ -89,9 +89,9 @@ module Validators
                       :metric_id  => @metric_id,
                       :day        => 4)
 
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {@metric_id => 3}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { @metric_id => 3 }})
       assert !Limits.apply(status, :usage => {'hits' => 2})
 
       assert_equal 'limits_exceeded',           status.rejection_reason_code
@@ -114,10 +114,10 @@ module Validators
                       :metric_id  => metric_two_id,
                       :day        => 4)
 
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {metric_one_id => 5,
-                                                                metric_two_id => 2}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { metric_one_id => 5,
+                                                       metric_two_id => 2 }})
 
       assert Limits.apply(status, :usage => {'hacks' => 1})
     end
@@ -138,10 +138,10 @@ module Validators
                       :metric_id  => metric_two_id,
                       :day        => 4)
 
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {metric_one_id => 5,
-                                                                metric_two_id => 2}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { metric_one_id => 5,
+                                                       metric_two_id => 2 }})
 
       assert !Limits.apply(status, :usage => {'hits' => 1})
     end
@@ -152,9 +152,9 @@ module Validators
                       :metric_id  => @metric_id,
                       :day        => 4)
 
-      status = Transactor::Status.new(:service     => @service,
-                                      :application => @application,
-                                      :values      => {:day => {@metric_id => 6}})
+      status = Transactor::Status.new(service_id: @service.id,
+                                      application: @application,
+                                      values: { day: { @metric_id => 6 }})
 
       assert !Limits.apply(status, :usage => {'hits' => 0})
     end
@@ -166,7 +166,7 @@ module Validators
           @service, @metric_id, app_daily_limit, user_daily_limit)
 
       status = Transactor::Status.new(
-          service: @service,
+          service_id: @service.id,
           application: fixtures[:app],
           user: fixtures[:user],
           values: { day: { @metric_id => app_daily_limit - 1 } },
@@ -182,7 +182,7 @@ module Validators
           @service, @metric_id, app_daily_limit, user_daily_limit)
 
       status = Transactor::Status.new(
-          service: @service,
+          service_id: @service.id,
           application: fixtures[:app],
           user: fixtures[:user],
           values: { day: { @metric_id => app_daily_limit + 1 } },
@@ -198,7 +198,7 @@ module Validators
           @service, @metric_id, app_daily_limit, user_daily_limit)
 
       status = Transactor::Status.new(
-          service: @service,
+          service_id: @service.id,
           application: fixtures[:app],
           user: fixtures[:user],
           values: { day: { @metric_id => app_daily_limit - 1 } },
@@ -216,7 +216,7 @@ module Validators
           @service, @metric_id, app_daily_limit, user_daily_limit)
 
       status = Transactor::Status.new(
-          service: @service,
+          service_id: @service.id,
           application: fixtures[:app],
           user: fixtures[:user],
           values: { day: { @metric_id => app_daily_limit + 1 } },

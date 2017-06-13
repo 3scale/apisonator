@@ -16,8 +16,8 @@ module Validators
                                       :id => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(:service => @service,
-                                       :application => @application)
+      @status = Transactor::Status.new(service_id: @service.id,
+                                       application: @application)
     end
 
     test 'succeeds if no referrer filter is defined and no referrer is passed' do
@@ -96,27 +96,12 @@ module Validators
                              :id => next_id,
                              :state => :active)
 
-      status = Transactor::Status.new(:service => service_no_filters,
-                                      :application => app)
+      status = Transactor::Status.new(service_id: service_no_filters.id,
+                                      application: app)
 
       app.create_referrer_filter('accepted.org')
 
       assert Referrer.apply(status, :referrer => 'unaccepted.org')
-    end
-
-    test 'fails if the referrer matches the filter but with extra chars at the beginning' do
-      @application.create_referrer_filter('1.2.3.4')
-      assert !Referrer.apply(@status, :referrer => '231.2.3.4')
-    end
-
-    test 'fails if the referrer matches the filter but with extra chars at the end' do
-      @application.create_referrer_filter('1.2.3.4')
-      assert !Referrer.apply(@status, :referrer => '1.2.3.456')
-    end
-
-    test 'fails if the referrer matches the filter but with an extra \n' do
-      @application.create_referrer_filter('1.2.3.4')
-      assert !Referrer.apply(@status, :referrer => "1.2.3.4\n")
     end
 
     # TODO: maybe filters like the ones in the following tests should not even be allowed.
@@ -168,22 +153,22 @@ module Validators
       assert Referrer.apply(@status, :referrer => 'https://OlaKeAse.3scale.net')
     end
 
-    test 'apply fails if the referrer matches with extra chars at the beginning' do
+    test 'fails if the referrer matches the filter but with extra chars at the beginning' do
       @application.create_referrer_filter('1.2.3.4')
       assert !Referrer.apply(@status, :referrer => '231.2.3.4')
     end
 
-    test 'apply fails if the referrer matches with extra chars at the end' do
+    test 'fails if the referrer matches the filter but with extra chars at the end' do
       @application.create_referrer_filter('1.2.3.4')
       assert !Referrer.apply(@status, :referrer => '1.2.3.456')
     end
 
-    test 'apply fails if the referrer matches with an extra \n' do
+    test 'fails if the referrer matches the filter but with an extra \n' do
       @application.create_referrer_filter('1.2.3.4')
       assert !Referrer.apply(@status, :referrer => "1.2.3.4\n")
     end
 
-    test 'apply fails if the referrer includes URI parts and the filter is just a host' do
+    test 'fails if the referrer includes URI parts and the filter is just a host' do
       @application.create_referrer_filter('example.com')
 
       assert !Referrer.apply(@status, :referrer => 'http://example.com')

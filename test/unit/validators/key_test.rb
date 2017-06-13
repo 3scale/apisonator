@@ -14,8 +14,8 @@ module Validators
                                       :id         => next_id,
                                       :state => :active)
 
-      @status = Transactor::Status.new(:service => @service,
-                                       :application => @application)
+      @status = Transactor::Status.new(service_id: @service.id,
+                                       application: @application)
     end
 
     test 'succeeds if no application key is defined nor passed' do
@@ -66,8 +66,8 @@ module Validators
                                      :id => next_id,
                                      :state => :active)
 
-      status = Transactor::Status.new(:service => service,
-                                      :application => application)
+      status = Transactor::Status.new(service_id: service.id,
+                                      application: application)
 
       application.create_key('foo')
 

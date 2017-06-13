@@ -115,25 +115,29 @@ module ThreeScale
         end
 
         # Returns a hash where the keys can only be parent metric ids (as
-        # Strings) that **have** children (one or more), and their values are
-        # arrays of children (so always non-empty).
+        # Strings) and their values are arrays of children.
         #
-        # So hierarchy(s_id)[children_metric] is always going to be nil.
-        #
-        def hierarchy(service_id)
-          load_all_ids(service_id).inject({}) do |acc, metric_id|
-            parent_id = load_parent_id(service_id, metric_id)
-            if parent_id
-              acc[parent_id] ||= []
-              acc[parent_id] << metric_id
+        # The as_names optional parameter (default: true) returns metric names
+        # instead of metric ids when true.
+        def hierarchy(service_id, as_names = true)
+          h_ids = hierarchy_ids(service_id)
+          return h_ids unless as_names
+
+          res = {}
+
+          h_ids.each do |m_id, c_ids|
+            m_name = load_name service_id, m_id
+            res[m_name] = c_ids.map do |c_id|
+              load_name service_id, c_id
             end
-            acc
           end
+
+          res
         end
         memoize :hierarchy
 
         def children(service_id, id)
-          hierarchy(service_id)[id.to_s]
+          hierarchy(service_id, false)[id.to_s]
         end
 
         def delete(service_id, id)
@@ -159,6 +163,19 @@ module ThreeScale
                                         load_all: [service_id],
                                         load_all_names: [service_id, metric_ids],
                                         load_name: [service_id, id]))
+        end
+
+        private
+
+        def hierarchy_ids(service_id)
+          load_all_ids(service_id).inject({}) do |acc, metric_id|
+            parent_id = load_parent_id(service_id, metric_id)
+            if parent_id
+              acc[parent_id] ||= []
+              acc[parent_id] << metric_id
+            end
+            acc
+          end
         end
       end
 

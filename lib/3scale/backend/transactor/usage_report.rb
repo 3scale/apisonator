@@ -75,6 +75,10 @@ module ThreeScale
 
           private
 
+          def hierarchy
+            @status.hierarchy
+          end
+
           def add_head(xml)
             xml << '<usage_report metric="'.freeze
             xml << metric_name.to_s << '" period="'.freeze
@@ -92,12 +96,7 @@ module ThreeScale
           def add_values(xml)
             xml << '<max_value>'.freeze
             xml << max_value.to_s << '</max_value><current_value>'.freeze
-            xml << if authorized? && usage && (usage_metric_name = usage[metric_name])
-                     # this is an authrep request and therefore we should sum the usage
-                     Usage.get_from usage_metric_name, current_value
-                   else
-                     current_value
-                   end.to_s
+            xml << compute_current_value.to_s
             xml << '</current_value>'
           end
 
@@ -105,6 +104,30 @@ module ThreeScale
             xml << '</usage_report>'.freeze
           end
 
+          # helper to compute the current usage value after applying a possibly
+          # non-existent usage (or possibly unauthorized state)
+          def compute_current_value
+            # If not authorized or nothing to add, we just report the current
+            # value from the data store.
+            if authorized? && usage
+              this_usage = usage[metric_name] || 0
+              # this is an auth/authrep request and therefore we should sum the usage
+              computed_usage = Usage.get_from this_usage, current_value
+              # children can alter the resulting current value
+              children = hierarchy[metric_name]
+              if children
+                # this is a parent metric, so we need to add usage we got
+                # explicited in the usage parameter
+                children.each do |child|
+                  child_usage = usage[child]
+                  computed_usage = Usage.get_from child_usage, computed_usage
+                end
+              end
+              computed_usage
+            else
+              current_value
+            end
+          end
         end
       end
     end

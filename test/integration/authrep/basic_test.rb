@@ -561,10 +561,9 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
   end
 
+  # This has been changed to ensure the parent gets hit for its usage plus any
+  # child usage.
   test_authrep 'reporting hits and a child method at once' do |e|
-    ## FIXME: this case should not be allowed since it can lead to
-    ## WTF cases
-
     @child_metric_id = next_id
 
     m1 = Metric.save(:service_id => @service.id,
@@ -595,7 +594,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
-    assert_equal '1', eternity.at('current_value').content
+    assert_equal '2', eternity.at('current_value').content
 
     eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
 
@@ -626,7 +625,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
-    assert_equal '3', eternity.at('current_value').content
+    assert_equal '4', eternity.at('current_value').content
 
     eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
 
@@ -639,7 +638,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
-    assert_equal '3', eternity.at('current_value').content
+    assert_equal '4', eternity.at('current_value').content
 
     eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
 
@@ -647,9 +646,6 @@ class AuthrepBasicTest < Test::Unit::TestCase
   end
 
   test_authrep 'reporting hits and a child method at once, not unitary values' do |e|
-    ## FIXME: this case should not be allowed since it can lead to
-    ## WTF cases
-
     @child_metric_id = next_id
 
     m1 = Metric.save(:service_id => @service.id,
@@ -681,7 +677,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
-    assert_equal '2', eternity.at('current_value').content
+    assert_equal '7', eternity.at('current_value').content
 
     eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
 
@@ -713,7 +709,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
-    assert_equal '10', eternity.at('current_value').content
+    assert_equal '12', eternity.at('current_value').content
 
     eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
 
@@ -745,7 +741,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     doc   = Nokogiri::XML(last_response.body)
     eternity   = doc.at('usage_report[metric = "hits"][period = "eternity"]')
 
-    assert_equal '12', eternity.at('current_value').content
+    assert_equal '62', eternity.at('current_value').content
 
     eternity   = doc.at('usage_report[metric = "child_hits"][period = "eternity"]')
 

@@ -150,17 +150,23 @@ module ThreeScale
             current_timestamp = Time.now.getutc
 
             applications.each do |_appid, values|
-              application = ThreeScale::Backend::Application.load(values[:service_id],
+              service_id = values[:service_id]
+              application = ThreeScale::Backend::Application.load(service_id,
                                                                   values[:application_id])
               usage = Transactor.send(:load_application_usage, application, current_timestamp)
-              status = Transactor::Status.new(application: application, values: usage)
+              status = Transactor::Status.new(service_id: service_id,
+                                              application: application,
+                                              values: usage)
 
               max_utilization, max_record = Alerts.utilization(
                   status.application_usage_reports, status.user_usage_reports)
 
               if max_utilization >= 0.0
-                Alerts.update_utilization(values[:service_id], values[:application_id],
-                                          max_utilization, max_record, current_timestamp)
+                Alerts.update_utilization(service_id,
+                                          values[:application_id],
+                                          max_utilization,
+                                          max_record,
+                                          current_timestamp)
               end
             end
           end

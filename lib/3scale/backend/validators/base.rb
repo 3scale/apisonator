@@ -15,7 +15,7 @@ module ThreeScale
         attr_reader :params
 
         def service
-          status.service
+          @service ||= Service.load_by_id!(status.service_id)
         end
 
         def application

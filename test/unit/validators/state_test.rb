@@ -8,11 +8,13 @@ module Validators
     def setup
       Storage.instance(true).flushdb
 
-      @application = Application.save(:service_id => next_id,
-                                      :id         => next_id,
-                                      :state => :active)
+      service_id = next_id
+      @application = Application.save(service_id: service_id,
+                                      id: next_id,
+                                      state: :active)
 
-      @status = Transactor::Status.new(:application => @application)
+      @status = Transactor::Status.new(service_id: service_id,
+                                       application: @application)
     end
 
     test 'succeeds when application is active' do
