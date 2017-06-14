@@ -3,6 +3,9 @@ module ThreeScale
     module Transactor
       module LimitHeaders
         class << self
+          UNCONSTRAINED = { remaining: -1, reset: -1 }.freeze
+          private_constant :UNCONSTRAINED
+
           def get(reports, now = Time.now.utc)
             report = most_constrained_report reports
             if report
@@ -10,6 +13,8 @@ module ThreeScale
                 remaining: report.remaining,
                 reset: report.remaining_time(now)
               }
+            else
+              UNCONSTRAINED
             end
           end
 
