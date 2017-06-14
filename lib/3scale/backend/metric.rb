@@ -140,6 +140,22 @@ module ThreeScale
           hierarchy(service_id, false)[id.to_s]
         end
 
+        # Given an array of metrics, returns an array without duplicates that
+        # includes the names of the metrics that are parent of at least one of
+        # the given metrics.
+        def parents(service_id, metric_names)
+          parents = []
+
+          metric_names.each do |name|
+            parent_id = load_parent_id service_id, load_id(service_id, name)
+            if parent_id
+              parents << load_name(service_id, parent_id)
+            end
+          end
+
+          parents.uniq
+        end
+
         def delete(service_id, id)
           name = load_name(service_id, id)
           return false unless name and not name.empty?
