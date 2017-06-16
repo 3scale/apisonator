@@ -7,7 +7,8 @@ module ThreeScale
       describe '#reserve' do
         subject { Worker.new(one_off: true) }
 
-        let(:resque_queue) { 'queue_priority' } # Irrelevant for these tests
+        let(:resque_queue) { 'queue:priority' }
+        let(:job_queue) { resque_queue.sub('queue:', '') }
 
         context 'when the arguments of the job do not have encoding issues' do
           let(:enqueued_job) do
@@ -26,7 +27,7 @@ module ThreeScale
 
           it 'returns a job with the correct resque queue and payload' do
             job = subject.send(:reserve)
-            expect(job.queue).to eq job_info.first
+            expect(job.queue).to eq job_queue
             expect(job.payload).to eq enqueued_job
           end
         end
@@ -46,7 +47,7 @@ module ThreeScale
 
           it 'returns a job with the correct resque queue and payload' do
             job = subject.send(:reserve)
-            expect(job.queue).to eq job_info.first
+            expect(job.queue).to eq job_queue
             expect(job.payload).to eq JSON.parse(enqueued_job)
           end
 
