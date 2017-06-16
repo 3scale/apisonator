@@ -82,6 +82,11 @@ class BackgroundReportTest < Test::Unit::TestCase
     assert_not_nil day
     assert_equal '3', day.at('current_value').content
 
+
+    # Report a transaction with a user ID. End user plans are not enabled for
+    # the service, so there will be an integration error and the hits reported
+    # will not be added.
+
     post '/transactions.xml',
       :provider_key => @provider_key,
       :service_id   => @service_1.id,
@@ -90,6 +95,9 @@ class BackgroundReportTest < Test::Unit::TestCase
     assert_equal 202, last_response.status
 
     Resque.run!
+
+    integration_error = ErrorStorage.list(@service_1.id).first
+    assert_equal ServiceCannotUseUserId.code, integration_error[:code]
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                        :app_id       => @application_1.id,
@@ -103,6 +111,8 @@ class BackgroundReportTest < Test::Unit::TestCase
 
     day = usage_reports.at('usage_report[metric = "hits"][period = "day"]')
     assert_not_nil day
-    assert_equal '6', day.at('current_value').content
+
+    # Hits were not counted
+    assert_equal '3', day.at('current_value').content
   end
 end
