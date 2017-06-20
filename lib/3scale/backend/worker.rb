@@ -105,6 +105,17 @@ module ThreeScale
         return nil if encoded_job.nil? || encoded_job.empty?
 
         begin
+          # Resque::Job.new accepts a queue name as a param. It is very
+          # important to set here the same name as the one we set when calling
+          # Resque.enqueue. Resque.enqueue uses the @queue ivar in
+          # BackgroundJob classes as the name of the queue, and then, it stores
+          # the job in a queue called resque:queue:_@queue_. 'resque:' is the
+          # namespace and 'queue:' is added automatically. That's why we need
+          # to call blpop on 'queue:#{q}' above. However, when creating the job
+          # we cannot set 'queue:#{q}' as the name. Otherwise, if it fails and
+          # it is re-queued, it will end up in resque:queue:queue:_@queue_
+          # instead of resque:queue:_@queue_.
+          encoded_job[0].sub!('queue:', '')
           Resque::Job.new(encoded_job[0],
                           Yajl::Parser.parse(encoded_job[1], check_utf8: false))
         rescue Exception => e

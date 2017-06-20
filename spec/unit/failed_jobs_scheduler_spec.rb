@@ -16,7 +16,7 @@ module ThreeScale
             alias_method :original_failed_queue, :failed_queue
 
             def failed_queue
-              @failed_jobs_queue ||= FakeFailedQueue.new
+              @failed_queue ||= FakeFailedQueue.new
             end
           end
         end
