@@ -56,6 +56,12 @@ module ThreeScale
           @predicted_usage ? @usage : nil
         end
 
+        # Returns the actual usage. If there isn't one, returns the predicted
+        # usage. If there isn't an actual or predicted usage, returns nil.
+        def actual_or_predicted_usage
+          usage || predicted_usage
+        end
+
         def authorized?
           @authorized
         end
