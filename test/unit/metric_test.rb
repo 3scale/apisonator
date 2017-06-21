@@ -1,6 +1,8 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class MetricTest < Test::Unit::TestCase
+  include TestHelpers::Sequences
+
   attr_reader :storage
 
   def setup
@@ -185,5 +187,62 @@ class MetricTest < Test::Unit::TestCase
     Metric.save(:service_id => 1001, :id => 2003, :name => 'donkeys')
     assert_not_nil Metric.load(1001, 2003)
     assert Metric.load_all_ids(1001).include?('2003')
+  end
+
+  def test_parents
+    service_id = next_id
+    Service.save!(provider_key: 'a_provider_key', id: service_id)
+
+    metric = Metric.new(service_id: service_id, id: next_id, name: 'parent1')
+    metric.children << Metric.new(id: next_id, name: 'child1')
+    metric.save
+
+    metric = Metric.new(service_id: service_id, id: next_id, name: 'parent2')
+    metric.children << Metric.new(id: next_id, name: 'child2')
+    metric.save
+
+    assert_equal %w(parent1 parent2),
+                 Metric.parents(service_id, %w(child1 child2))
+  end
+
+  def test_parents_with_non_existing_service
+    assert_empty Metric.parents('non_existing', %w(metric1, metric2))
+  end
+
+  def test_parents_with_service_wo_metrics
+    service_id = next_id
+    Service.save!(provider_key: 'a_provider_key', id: service_id)
+    assert_empty Metric.parents(service_id, [])
+  end
+
+  def test_parents_with_non_existing_metrics
+    service_id = next_id
+    Service.save!(provider_key: 'a_provider_key', id: service_id)
+    assert_empty Metric.parents(service_id, %w(non_existing_1 non_existing_2))
+  end
+
+  def test_parents_with_metrics_wo_parents
+    service_id = next_id
+    Service.save!(provider_key: 'a_provider_key', id: service_id)
+
+    metrics = %w(metric1 metric2)
+    metrics.each do |metric|
+      Metric.save(service_id: service_id, id: next_id, name: metric)
+    end
+
+    assert_empty Metric.parents(service_id, metrics)
+  end
+
+  def test_parents_does_not_include_duplicates
+    service_id = next_id
+    Service.save!(provider_key: 'a_provider_key', id: service_id)
+
+    parent = Metric.new(service_id: service_id, id: next_id, name: 'parent')
+    child1 = Metric.new(service_id: service_id, id: next_id, name: 'child1')
+    child2 = Metric.new(service_id: service_id, id: next_id, name: 'child2')
+    parent.children = [child1, child2]
+    parent.save
+
+    assert_equal(['parent'], Metric.parents(service_id, %w(child1 child2)))
   end
 end

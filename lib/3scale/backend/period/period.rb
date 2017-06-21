@@ -169,7 +169,9 @@ module ThreeScale
           def <=>(other)
             other = get_granularity_class other
             return nil if other.nil?
-            if self == other
+            # avoid using #== as this is just a pointer comparison - much like
+            # comparing object ids.
+            if self.equal? other
               0
             elsif ALL.index(self) < ALL.index(other)
               -1

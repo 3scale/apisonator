@@ -56,6 +56,12 @@ module ThreeScale
           @predicted_usage ? @usage : nil
         end
 
+        # Returns the actual usage. If there isn't one, returns the predicted
+        # usage. If there isn't an actual or predicted usage, returns nil.
+        def actual_or_predicted_usage
+          usage || predicted_usage
+        end
+
         def authorized?
           @authorized
         end
@@ -80,7 +86,6 @@ module ThreeScale
           @user_usage_report ||= load_usage_reports @user, :user
         end
 
-
         def value_for_usage_limit(usage_limit, type = :application)
           if type==:application
             values = @values[usage_limit.period]
@@ -103,6 +108,11 @@ module ThreeScale
         # provides a hierarchy hash with metrics as symbolic names
         def hierarchy
           @hierarchy ||= Metric.hierarchy service_id
+        end
+
+        def limit_headers(now = Time.now.utc)
+          # maybe filter by exceeded reports if not authorized
+          LimitHeaders.get(reports_to_calculate_limit_headers, now)
         end
 
         def to_xml(options = {})
@@ -150,6 +160,25 @@ module ThreeScale
         end
 
         private
+
+        # Returns the app usage reports and user usage reports needed to
+        # construct the limit headers. If the status does not have a 'usage',
+        # this method returns all the usage reports. Otherwise, it returns the
+        # reports associated with the metrics present in the 'usage' and their
+        # parents.
+        def reports_to_calculate_limit_headers
+          all_reports = application_usage_reports + user_usage_reports
+
+          return all_reports if (@usage.nil? || @usage.empty?)
+
+          metric_names_in_usage = @usage.keys
+          metrics = metric_names_in_usage | parents_names(metric_names_in_usage)
+          all_reports.select { |report| metrics.include?(report.metric_name) }
+        end
+
+        def parents_names(metric_names)
+          Metric.parents(@service_id, metric_names)
+        end
 
         # make sure the keys are Periods
         def filter_values(values)
