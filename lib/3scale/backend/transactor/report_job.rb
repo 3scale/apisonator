@@ -43,7 +43,7 @@ module ThreeScale
                 transaction = compose_transaction(service_id, app_id, raw_transaction)
                 log         = raw_transaction['log']
 
-                transaction[:response_code] = log[:log]['code'] if transaction && log
+                transaction[:response_code] = log['code'] if transaction && log
 
                 transactions << transaction if transaction
               end
