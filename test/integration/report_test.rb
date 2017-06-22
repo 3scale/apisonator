@@ -956,4 +956,25 @@ class ReportTest < Test::Unit::TestCase
 
     assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyInvalid.new(provider_key))
   end
+
+  test 'report can include a response code' do
+    Time.now.utc
+
+    current_time = Time.utc(2017, 1, 1)
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml',
+           :provider_key => @provider_key,
+           :service_id => @service_id,
+           :transactions => { 0 => { :app_id => @application.id,
+                                     :usage => { 'hits' => 1 },
+                                     :log => { 'code' => 200 } } }
+      Resque.run!
+    end
+
+    assert_equal 202, last_response.status
+
+    assert_equal '1', @storage.get(response_code_key(@service_id, '200', :day, '20170101'))
+    assert_equal '1', @storage.get(response_code_key(@service_id, '2XX', :day, '20170101'))
+  end
 end
