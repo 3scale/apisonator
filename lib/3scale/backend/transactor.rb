@@ -195,9 +195,12 @@ module ThreeScale
         user
       end
 
+      # This method applies the validators in the given order. If there is one
+      # that fails, it stops there instead of applying all of them.
+      # Returns a Status instance.
       def apply_validators(validators, status_attrs, params)
         status = Status.new(status_attrs)
-        validators.each { |validator| validator.apply(status, params) }
+        validators.all? { |validator| validator.apply(status, params) }
         status
       end
 
