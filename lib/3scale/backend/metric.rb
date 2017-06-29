@@ -43,7 +43,7 @@ module ThreeScale
         # large number of commands.
         save_children
 
-        self.class.clear_cache(service_id, id)
+        self.class.clear_cache(service_id, id, name)
       end
 
       def children
@@ -87,11 +87,13 @@ module ThreeScale
         def load_id(service_id, name)
           storage.get(id_key(service_id, name))
         end
+        memoize :load_id
 
         def load_all_ids(service_id)
           # smembers is guaranteed to return an array of strings, even if empty
           storage.smembers(id_set_key(service_id))
         end
+        memoize :load_all_ids
 
         def load_name(service_id, id)
           storage.get(key(service_id, id, :name))
@@ -159,7 +161,7 @@ module ThreeScale
         def delete(service_id, id)
           name = load_name(service_id, id)
           return false unless name and not name.empty?
-          clear_cache(service_id, id)
+          clear_cache(service_id, id, name)
 
           storage.pipelined do
             storage.srem(id_set_key(service_id), id)
@@ -173,12 +175,14 @@ module ThreeScale
           true
         end
 
-        def clear_cache(service_id, id)
+        def clear_cache(service_id, id, name)
           metric_ids = load_all_ids(service_id)
           Memoizer.clear(Memoizer.build_keys_for_class(self,
                                         load_all: [service_id],
                                         load_all_names: [service_id, metric_ids],
-                                        load_name: [service_id, id]))
+                                        load_name: [service_id, id],
+                                        load_id: [service_id, name],
+                                        load_all_ids: [service_id]))
         end
 
         private
