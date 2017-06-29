@@ -184,11 +184,21 @@ module ThreeScale
         private
 
         def hierarchy_ids(service_id)
-          load_all_ids(service_id).inject({}) do |acc, metric_id|
-            parent_id = load_parent_id(service_id, metric_id)
-            if parent_id
+          ids = load_all_ids(service_id)
+          parent_ids_keys = ids.map { |id| key(service_id, id, :parent_id) }
+
+          parent_ids = storage.pipelined do
+            parent_ids_keys.each_slice(PIPELINED_SLICE_SIZE).map do |slice|
+              storage.mget(slice)
+            end
+          end.flatten
+
+          parent_child_rels = parent_ids.zip(ids)
+
+          parent_child_rels.inject({}) do |acc, (parent_id, child_id)|
+            if parent_id # nil if child_id has no parent
               acc[parent_id] ||= []
-              acc[parent_id] << metric_id
+              acc[parent_id] << child_id
             end
             acc
           end
