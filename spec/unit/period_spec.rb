@@ -222,6 +222,27 @@ module ThreeScale
               end
             end
 
+            context '.new' do
+              let(:start_time) do
+                klass.start(time)
+              end
+              let(:next_time) do
+                klass.finish(time)
+              end
+
+              # the specs below test for object identity with _equal_
+              it 'returns a cached instance if available' do
+                expect(klass.new start_time).to equal(klass.new(next_time - 1))
+              end
+
+              # this does not really work for eternity, since, well, you cannot
+              # yet obtain the "next" eternity.
+              it 'returns a new instance if no cache present' do
+                # a different period, with different start time breaks the cache
+                expect(klass.new start_time).not_to equal(klass.new next_time)
+              end unless granularity == :eternity
+            end
+
             it "refers back to its granularity class" do
               expect(subject.granularity).to be(klass)
             end
