@@ -36,6 +36,7 @@ GEM
     aws-sdk-resources (2.4.2)
       aws-sdk-core (= 2.4.2)
     backports (3.7.0)
+    benchmark-ips (2.7.2)
     builder (3.2.3)
     byebug (9.0.6)
     chronic (0.10.2)
@@ -183,6 +184,7 @@ DEPENDENCIES
   3scale_backend!
   airbrake (= 4.3.1)
   aws-sdk (= 2.4.2)
+  benchmark-ips (~> 2.7.2)
   builder (= 3.2.3)
   codeclimate-test-reporter (~> 0.6.0)
   daemons (= 1.2.4)
