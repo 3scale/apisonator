@@ -198,12 +198,13 @@ module ThreeScale
       ##
       ##~ @authorize_desc = "<p>It is used to check if a particular application exists,"
       ##~ @authorize_desc = @authorize_desc + " is active and is within its usage limits. It can be optionally used to authenticate a call using an application key."
-      ##~ @authorize_desc = @authorize_desc + " It's possible to pass a 'predicted usage' to the authorize call. This can serve two purposes:<p>1) To make sure an API"
+      ##~ @authorize_desc = @authorize_desc + " It's possible to pass a 'predicted usage' to the authorize call. This can serve three purposes:<p>1) To make sure an API"
       ##~ @authorize_desc = @authorize_desc + " call won't go over the limits before the call is made, if the usage of the call is known in advance. In this case, the"
       ##~ @authorize_desc = @authorize_desc + " estimated usage can be passed to the authorize call, and it will respond whether the actual API call is still within limit."
-      ##~ @authorize_desc = @authorize_desc + " And, <p>2) To limit the authorization only to a subset of metrics. If usage is passed in, only the metrics listed in it will"
+      ##~ @authorize_desc = @authorize_desc + " <p>2) To limit the authorization only to a subset of metrics. If usage is passed in, only the metrics listed in it will"
       ##~ @authorize_desc = @authorize_desc + " be checked against the limits. For example: There are two metrics defined: <em>searches</em> and <em>updates</em>. <em>updates</em> are already over"
       ##~ @authorize_desc = @authorize_desc + " limit, but <em>searches</em> are not. In this case, the user should still be allowed to do a search call, but not an update one."
+      ##~ @authorize_desc = @authorize_desc + " And, <p>3) If no usage is passed then any metric with a limit exceeded state will result in an _authorization_failed_ response."
       ##~ @authorize_desc = @authorize_desc + "<p><b>Note:</b> Even if the predicted usage is passed in, authorize is still a <b>read-only</b> operation. You have to make the report call"
       ##~ @authorize_desc = @authorize_desc + " to report the usage."
       ##
