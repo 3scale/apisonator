@@ -34,6 +34,7 @@ group :development do
   gem 'pry',      '~> 0.10.4'
   gem 'pry-doc',  '~> 0.10.0'
   gem 'license_finder', '~> 3.0.0'
+  gem 'license_finder_xml_reporter', git: 'https://github.com/3scale/license_finder_xml_reporter', ref: 'ab8072d11344b5e6d05565ccc84cb4745d01e6f8'
 end
 
 group :development, :test do
