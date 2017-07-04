@@ -1,3 +1,5 @@
+require 'set'
+
 module ThreeScale
   module Backend
     class Metric
@@ -125,12 +127,16 @@ module ThreeScale
           h_ids = hierarchy_ids(service_id)
           return h_ids unless as_names
 
+          metric_ids = Set.new(h_ids.keys + h_ids.values.flatten)
+          return {} if metric_ids.empty?
+
           res = {}
+          metric_names = load_all_names(service_id, metric_ids)
 
           h_ids.each do |m_id, c_ids|
-            m_name = load_name service_id, m_id
+            m_name = metric_names[m_id]
             res[m_name] = c_ids.map do |c_id|
-              load_name service_id, c_id
+              metric_names[c_id]
             end
           end
 
