@@ -16,7 +16,7 @@ export RACK_ENV=test
 
 start_services
 
-bundle exec rake
+bundle exec rake "$@"
 EXITVAL=$?
 
 cleanup
