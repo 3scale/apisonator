@@ -18,15 +18,6 @@ require 'timecop'
 # Require test helpers.
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
 
-ThreeScale::Backend.configure do |config|
-  config.redis.nodes = [
-    "127.0.0.1:7379",
-    "127.0.0.1:7380",
-  ]
-  config.stats.bucket_size  = 5
-  config.notification_batch = 5
-end
-
 ## to initilize the worker class variables for those cases that worker is called
 ## without creating a worker first, only happens in test environment
 ThreeScale::Backend::Worker.new
