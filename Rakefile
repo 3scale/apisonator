@@ -31,6 +31,21 @@ if saas?
     desc 'Run unit and integration tests'
     task :test => test_task_dependencies
 
+    desc 'Benchmark'
+    task :bench do
+      require 'benchmark/ips'
+      require 'pathname'
+      require File.dirname(__FILE__) + '/test/test_helpers/configuration'
+
+      FileList['bench/**/*_bench.rb'].each do |f|
+        bench = Pathname.new(f).relative_path_from(Pathname.new('./bench'))
+        puts "Running benchmark #{bench}"
+        load f
+      end
+
+      puts "Benchmarks finished"
+    end
+
     namespace :test do
       desc 'Run all tests (unit, integration and special)'
       task :all => ['test:unit', 'test:integration', 'test:special']

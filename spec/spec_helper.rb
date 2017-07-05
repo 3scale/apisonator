@@ -34,17 +34,7 @@ require_relative '../test/test_helpers/sequences.rb'
 
 RSpec.configure do |config|
   config.before :suite do
-    ThreeScale::Backend.configure do |app_config|
-      app_config.redis.nodes = [
-        "127.0.0.1:7379",
-        "127.0.0.1:7380",
-      ]
-
-      app_config.redshift.host = 'localhost'
-      app_config.redshift.port = 5432
-      app_config.redshift.dbname = 'test'
-      app_config.redshift.user = 'postgres'
-    end
+    require_relative '../test/test_helpers/configuration'
   end
 
   config.mock_with :rspec

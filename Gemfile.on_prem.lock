@@ -27,6 +27,7 @@ GEM
       minitest (~> 5.1)
       tzinfo (~> 1.1)
     backports (3.7.0)
+    benchmark-ips (2.7.2)
     builder (3.2.3)
     byebug (9.0.6)
     codeclimate-test-reporter (0.6.0)
@@ -165,6 +166,7 @@ PLATFORMS
 
 DEPENDENCIES
   3scale_backend!
+  benchmark-ips (~> 2.7.2)
   builder (= 3.2.3)
   codeclimate-test-reporter (~> 0.6.0)
   daemons (= 1.2.4)
