@@ -119,6 +119,24 @@ if saas?
         exit 1
       end
     end
+
+    namespace :license_finder do
+      namespace :report do
+        desc 'Generate an XML report for licenses'
+        task :xml do
+          # This is a hack to monkey patch license_finder that produces warnings :(
+          prev_verbose_lvl = $VERBOSE
+          $VERBOSE = nil
+          require 'license_finder_xml_reporter/cli/main'
+          $VERBOSE = prev_verbose_lvl
+          LicenseFinder::CLI::Main.start [
+            'report',
+            "--decisions-file=#{File.dirname(__FILE__)}/.dependency-decisions.yml",
+            '--format=xml'
+          ]
+        end
+      end
+    end
   end
 end
 

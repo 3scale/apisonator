@@ -1,4 +1,12 @@
 GIT
+  remote: https://github.com/3scale/license_finder_xml_reporter
+  revision: ab8072d11344b5e6d05565ccc84cb4745d01e6f8
+  ref: ab8072d11344b5e6d05565ccc84cb4745d01e6f8
+  specs:
+    license_finder_xml_reporter (0.1.0)
+      license_finder
+
+GIT
   remote: https://github.com/3scale/puma
   revision: de1a1d620009b8bd5ce9c49c5f0737fa6f45a8f5
   tag: 3scale-AMP-2.0.0
@@ -174,6 +182,7 @@ DEPENDENCIES
   gli (~> 2.16.0)
   hiredis (= 0.6.1)
   license_finder (~> 3.0.0)
+  license_finder_xml_reporter!
   mocha (~> 1.2.1)
   nokogiri (~> 1.7.1)
   pkg-config (~> 1.1.7)
