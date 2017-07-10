@@ -133,7 +133,7 @@ module ThreeScale
           end
 
           def bucket_reader
-            BucketReader.new(config.stats.bucket_size, bucket_storage, storage)
+            BucketReader.new(config.stats.bucket_size, bucket_storage)
           end
 
           def kinesis_client

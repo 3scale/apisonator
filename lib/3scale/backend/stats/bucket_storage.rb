@@ -27,6 +27,8 @@ module ThreeScale
         MAX_BUCKETS_REDIS_UNION = 15
         private_constant :MAX_BUCKETS_REDIS_UNION
 
+        attr_reader :storage
+
         def initialize(storage)
           @storage = storage
         end
@@ -99,8 +101,6 @@ module ThreeScale
         end
 
         private
-
-        attr_reader :storage
 
         def unique_keys_in_buckets(buckets)
           buckets.each_slice(MAX_BUCKETS_REDIS_UNION).inject([]) do |res, buckets_slice|

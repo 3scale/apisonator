@@ -44,7 +44,7 @@ module ThreeScale
 
         InvalidInterval = Class.new(ThreeScale::Backend::Error)
 
-        def initialize(bucket_create_interval, bucket_storage, storage)
+        def initialize(bucket_create_interval, bucket_storage)
           # This is needed because ThreeScale::Backend::TimeHacks.beginning_of_bucket
           if 60%bucket_create_interval != 0 || bucket_create_interval <= 0
             raise InvalidInterval, 'Bucket create interval needs to divide 60'
@@ -52,7 +52,7 @@ module ThreeScale
 
           @bucket_create_interval = bucket_create_interval
           @bucket_storage = bucket_storage
-          @latest_bucket_read_marker = LatestBucketReadMarker.new(storage)
+          @latest_bucket_read_marker = LatestBucketReadMarker.new(bucket_storage.storage)
         end
 
         # Returns the pending events and the bucket of the most recent of the
