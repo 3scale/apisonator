@@ -18,8 +18,6 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Resque.reset!
     Memoizer.reset!
 
-    reset_aggregator_prior_bucket!
-
     # I noticed that there are a bunch of variables that are not initialized.
     # The tests seem to run OK, but let's give them a value. For our sanity.
     @provider_key = 'test_provider_key'

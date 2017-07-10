@@ -33,8 +33,6 @@ module ThreeScale
           include Configurable
           include Keys
 
-          attr_accessor :prior_bucket
-
           # This method stores the events in buckets if that option is enabled
           # or if it was disable because of an emergency (not because a user
           # did it manually), and Kinesis has already consumed all the pending
@@ -103,10 +101,6 @@ module ThreeScale
 
           def prepare_stats_buckets(current_bucket)
             store_changed_keys(current_bucket)
-
-            if prior_bucket.nil? || current_bucket != prior_bucket
-              self.prior_bucket = current_bucket
-            end
           end
 
           def store_changed_keys(bucket = nil)
