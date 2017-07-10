@@ -19,14 +19,11 @@ module ThreeScale
               timestamp = transaction.timestamp
 
               # For now, we are not interested in storing response codes in
-              # buckets, that is the reason why set bucket_key to nil.
-              # Once we define a use case that requires us to store them,
-              # uncomment the line below.
-              # bucket_key = bucket ? Keys.changed_keys_bucket_key(bucket) : nil
-              bucket_key = nil
+              # buckets, that is the reason why set bucket to nil.
+              bucket = nil
 
               keys_for_multiple_codes.each do |keys|
-                aggregate_values(1, timestamp, keys, :incrby, bucket_key)
+                aggregate_values(1, timestamp, keys, :incrby, bucket)
               end
             end
 

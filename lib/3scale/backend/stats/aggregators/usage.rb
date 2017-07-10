@@ -17,14 +17,12 @@ module ThreeScale
             # @param [Transaction] transaction
             # @param [String, Nil] bucket
             def aggregate(transaction, bucket = nil)
-              bucket_key = Keys.changed_keys_bucket_key(bucket) if bucket
-
               transaction.usage.each do |metric_id, raw_value|
                 metric_keys = Keys.transaction_keys(transaction, :metric, metric_id)
                 cmd         = storage_cmd(raw_value)
                 value       = Backend::Usage.get_from raw_value
 
-                aggregate_values(value, transaction.timestamp, metric_keys, cmd, bucket_key)
+                aggregate_values(value, transaction.timestamp, metric_keys, cmd, bucket)
               end
             end
 
