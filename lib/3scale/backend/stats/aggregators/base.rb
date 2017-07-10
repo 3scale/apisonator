@@ -88,7 +88,7 @@ module ThreeScale
           private
 
           def bucket_storage
-            @bucket_storage ||= BucketStorage.new(storage)
+            Stats::Storage.bucket_storage
           end
         end
       end

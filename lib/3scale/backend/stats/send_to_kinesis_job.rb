@@ -1,6 +1,4 @@
 require 'aws-sdk'
-require '3scale/backend/stats/bucket_reader'
-require '3scale/backend/stats/bucket_storage'
 require '3scale/backend/stats/kinesis_adapter'
 require '3scale/backend/stats/stats_parser'
 
@@ -129,11 +127,11 @@ module ThreeScale
           end
 
           def bucket_storage
-            BucketStorage.new(storage)
+            Stats::Storage.bucket_storage
           end
 
           def bucket_reader
-            BucketReader.new(config.stats.bucket_size, bucket_storage)
+            Stats::Storage.bucket_reader
           end
 
           def kinesis_client

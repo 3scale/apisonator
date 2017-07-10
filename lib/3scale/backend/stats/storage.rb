@@ -1,5 +1,7 @@
 require_relative '../storage'
 require_relative 'keys'
+require '3scale/backend/stats/bucket_reader'
+require '3scale/backend/stats/bucket_storage'
 
 module ThreeScale
   module Backend
@@ -46,10 +48,23 @@ module ThreeScale
             storage.get(DISABLED_BECAUSE_EMERGENCY_KEY).to_i == 1
           end
 
+          def bucket_storage
+            @bucket_storage ||= BucketStorage.new(storage)
+          end
+
+          def bucket_reader
+            @bucket_reader ||= BucketReader.new(config.stats.bucket_size,
+                                                bucket_storage)
+          end
+
           private
 
           def storage
             Backend::Storage.instance
+          end
+
+          def config
+            Backend.configuration
           end
         end
 

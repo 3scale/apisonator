@@ -40,8 +40,7 @@ namespace :stats do
     end
 
     def bucket_storage
-      ThreeScale::Backend::Stats::BucketStorage
-          .new(ThreeScale::Backend::Storage.instance)
+      ThreeScale::Backend::Stats::Storage.bucket_storage
     end
   end
 

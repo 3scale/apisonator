@@ -117,7 +117,7 @@ module ThreeScale
           end
 
           def bucket_storage
-            @bucket_storage ||= BucketStorage.new(storage)
+            Stats::Storage.bucket_storage
           end
 
           # Return a Hash with needed info to update usages and alerts.
