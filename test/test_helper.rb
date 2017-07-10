@@ -22,10 +22,6 @@ Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file
 ## without creating a worker first, only happens in test environment
 ThreeScale::Backend::Worker.new
 
-def reset_aggregator_prior_bucket!
-  ThreeScale::Backend::Stats::Aggregator.send(:prior_bucket=, nil)
-end
-
 class Test::Unit::TestCase
   include ThreeScale
   include ThreeScale::Backend

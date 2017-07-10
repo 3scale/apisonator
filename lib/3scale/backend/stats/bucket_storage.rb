@@ -27,6 +27,8 @@ module ThreeScale
         MAX_BUCKETS_REDIS_UNION = 15
         private_constant :MAX_BUCKETS_REDIS_UNION
 
+        attr_reader :storage
+
         def initialize(storage)
           @storage = storage
         end
@@ -66,13 +68,13 @@ module ThreeScale
           storage.zcard(Keys.changed_keys_key)
         end
 
-        # Puts a key in a bucket. The bucket is created if it does not exist.
+        # Puts keys in a bucket. The bucket is created if it does not exist.
         # We could have decided to only fill the bucket if it existed, but that
         # would affect performance, because we would need to get all the
         # existing buckets to check if the given one exists in every call.
-        def put_in_bucket(event_key, bucket)
+        def put_in_bucket(event_keys, bucket)
           storage.zadd(Keys.changed_keys_key, bucket, bucket)
-          storage.sadd(Keys.changed_keys_bucket_key(bucket), event_key)
+          storage.sadd(Keys.changed_keys_bucket_key(bucket), event_keys)
         end
 
         def buckets_content_with_values(buckets)
@@ -90,9 +92,15 @@ module ThreeScale
           Hash[keys.zip(values)]
         end
 
-        private
+        def pending_keys_by_bucket
+          result = {}
+          buckets.each do |b|
+            result[b] = storage.scard(Keys.changed_keys_bucket_key(b))
+          end
+          result
+        end
 
-        attr_reader :storage
+        private
 
         def unique_keys_in_buckets(buckets)
           buckets.each_slice(MAX_BUCKETS_REDIS_UNION).inject([]) do |res, buckets_slice|

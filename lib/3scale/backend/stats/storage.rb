@@ -1,5 +1,9 @@
+require 'aws-sdk'
 require_relative '../storage'
 require_relative 'keys'
+require '3scale/backend/stats/kinesis_adapter'
+require '3scale/backend/stats/bucket_reader'
+require '3scale/backend/stats/bucket_storage'
 
 module ThreeScale
   module Backend
@@ -46,10 +50,36 @@ module ThreeScale
             storage.get(DISABLED_BECAUSE_EMERGENCY_KEY).to_i == 1
           end
 
+          def bucket_storage
+            @bucket_storage ||= BucketStorage.new(storage)
+          end
+
+          def bucket_reader
+            @bucket_reader ||= BucketReader.new(config.stats.bucket_size,
+                                                bucket_storage)
+          end
+
+          def kinesis_adapter
+            @kinesis_adapter ||= KinesisAdapter.new(config.kinesis_stream_name,
+                                                    kinesis_client,
+                                                    storage)
+          end
+
           private
 
           def storage
             Backend::Storage.instance
+          end
+
+          def config
+            Backend.configuration
+          end
+
+          def kinesis_client
+            @kinesis_client ||= Aws::Firehose::Client.new(
+                region: config.kinesis_region,
+                access_key_id: config.aws_access_key_id,
+                secret_access_key: config.aws_secret_access_key)
           end
         end
 
