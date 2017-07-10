@@ -7,13 +7,16 @@ module ThreeScale
       describe BucketStorage do
         let(:storage) { ThreeScale::Backend::Storage.instance }
         let(:bucket) { '20150101000000' }
-        let(:event_key) { 'stats/{service:11}/metric:21/day:20151207' }
+        let(:event_keys) do
+          ['stats/{service:11}/metric:21/day:20151207',
+           'stats/{service:12}/metric:22/day:20151208']
+        end
 
         subject { described_class.new(storage) }
 
         describe '#delete_bucket' do
           context 'when the bucket exists' do
-            before { subject.put_in_bucket(event_key, bucket) }
+            before { subject.put_in_bucket(event_keys, bucket) }
 
             it 'returns true' do
               expect(subject.delete_bucket(bucket)).to be true
@@ -50,7 +53,7 @@ module ThreeScale
 
           before do
             buckets.each_with_index do |bucket, index|
-              subject.put_in_bucket(event_keys[index], bucket)
+              subject.put_in_bucket([event_keys[index]], bucket)
             end
           end
 
@@ -136,7 +139,7 @@ module ThreeScale
 
           before do
             buckets.each_with_index do |bucket, index|
-              subject.put_in_bucket(event_keys[index], bucket)
+              subject.put_in_bucket([event_keys[index]], bucket)
             end
           end
 
@@ -176,7 +179,7 @@ module ThreeScale
 
             before do
               buckets.each_with_index do |bucket, index|
-                subject.put_in_bucket(event_keys[index], bucket)
+                subject.put_in_bucket([event_keys[index]], bucket)
               end
             end
 
@@ -235,7 +238,9 @@ module ThreeScale
             end
 
             before do
-              buckets.each { |bucket| subject.put_in_bucket(event_key, bucket) }
+              buckets.each do |bucket|
+                subject.put_in_bucket(event_keys, bucket)
+              end
             end
 
             it 'returns the number of pending buckets' do
@@ -245,15 +250,20 @@ module ThreeScale
         end
 
         describe '#put_in_bucket' do
-          let(:event_value) { 10 }
+          let(:events_and_vals) do
+            { 'stats/{service:11}/metric:21/day:20151207' => 10,
+              'stats/{service:12}/metric:22/day:20151207' => 20 }
+          end
 
-          before { storage.set(event_key, event_value) }
+          before do
+            events_and_vals.each { |event, val| storage.set(event, val) }
+          end
 
           context 'when the bucket exists' do
             it 'puts the event in the bucket' do
-              subject.put_in_bucket(event_key, bucket)
+              subject.put_in_bucket(events_and_vals.keys, bucket)
               expect(subject.buckets_content_with_values([bucket]))
-                  .to eq ({ event_key => event_value })
+                  .to eq events_and_vals
             end
           end
 
@@ -261,14 +271,14 @@ module ThreeScale
             let(:new_bucket) { (bucket.to_i + 10).to_s }
 
             it 'creates the bucket' do
-              subject.put_in_bucket(event_key, new_bucket)
+              subject.put_in_bucket(events_and_vals.keys, new_bucket)
               expect(subject.buckets).to include new_bucket
             end
 
             it 'puts the event in the bucket' do
-              subject.put_in_bucket(event_key, new_bucket)
+              subject.put_in_bucket(events_and_vals.keys, new_bucket)
               expect(subject.buckets_content_with_values([new_bucket]))
-                  .to eq ({ event_key => event_value })
+                  .to eq events_and_vals
             end
           end
         end
