@@ -90,6 +90,14 @@ module ThreeScale
           Hash[keys.zip(values)]
         end
 
+        def pending_keys_by_bucket
+          result = {}
+          buckets.each do |b|
+            result[b] = storage.scard(Keys.changed_keys_bucket_key(b))
+          end
+          result
+        end
+
         private
 
         attr_reader :storage

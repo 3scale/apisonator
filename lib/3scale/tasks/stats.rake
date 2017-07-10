@@ -2,14 +2,12 @@ namespace :stats do
   namespace :buckets do
     desc 'Show number of pending buckets'
     task :size do
-      puts ThreeScale::Backend::Stats::BucketStorage
-               .new(ThreeScale::Backend::Storage.instance)
-               .pending_buckets_size
+      puts bucket_storage.pending_buckets_size
     end
 
     desc 'List pending buckets and their contents'
     task :list do
-      puts ThreeScale::Backend::Stats::Info.pending_keys_by_bucket.inspect
+      puts bucket_storage.pending_keys_by_bucket.inspect
     end
 
     desc 'Is bucket storage enabled?'
@@ -33,14 +31,17 @@ namespace :stats do
 
     desc 'Delete all the pending buckets'
     task :delete! do
-      puts ThreeScale::Backend::Stats::BucketStorage
-               .new(ThreeScale::Backend::Storage.instance)
-               .delete_all_buckets_and_keys
+      puts bucket_storage.delete_all_buckets_and_keys
     end
 
     desc 'Was the latest disable automatic to avoid filling Redis?'
     task :emergency? do
       puts ThreeScale::Backend::Stats::Storage.last_disable_was_emergency?
+    end
+
+    def bucket_storage
+      ThreeScale::Backend::Stats::BucketStorage
+          .new(ThreeScale::Backend::Storage.instance)
     end
   end
 
