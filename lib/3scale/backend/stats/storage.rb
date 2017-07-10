@@ -1,5 +1,7 @@
+require 'aws-sdk'
 require_relative '../storage'
 require_relative 'keys'
+require '3scale/backend/stats/kinesis_adapter'
 require '3scale/backend/stats/bucket_reader'
 require '3scale/backend/stats/bucket_storage'
 
@@ -57,6 +59,12 @@ module ThreeScale
                                                 bucket_storage)
           end
 
+          def kinesis_adapter
+            @kinesis_adapter ||= KinesisAdapter.new(config.kinesis_stream_name,
+                                                    kinesis_client,
+                                                    storage)
+          end
+
           private
 
           def storage
@@ -65,6 +73,13 @@ module ThreeScale
 
           def config
             Backend.configuration
+          end
+
+          def kinesis_client
+            @kinesis_client ||= Aws::Firehose::Client.new(
+                region: config.kinesis_region,
+                access_key_id: config.aws_access_key_id,
+                secret_access_key: config.aws_secret_access_key)
           end
         end
 

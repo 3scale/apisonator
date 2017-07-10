@@ -1,6 +1,4 @@
-require 'aws-sdk'
 require_relative 'send_to_kinesis_job'
-require_relative 'kinesis_adapter'
 
 module ThreeScale
   module Backend
@@ -72,19 +70,8 @@ module ThreeScale
             Backend::Storage.instance
           end
 
-          def config
-            Backend.configuration
-          end
-
-          def kinesis_client
-            Aws::Firehose::Client.new(
-                region: config.kinesis_region,
-                access_key_id: config.aws_access_key_id,
-                secret_access_key: config.aws_secret_access_key)
-          end
-
           def kinesis_adapter
-            KinesisAdapter.new(config.kinesis_stream_name, kinesis_client, storage)
+            Stats::Storage.kinesis_adapter
           end
 
           def dist_lock

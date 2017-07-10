@@ -1,5 +1,3 @@
-require 'aws-sdk'
-require '3scale/backend/stats/kinesis_adapter'
 require '3scale/backend/stats/stats_parser'
 
 module ThreeScale
@@ -118,14 +116,6 @@ module ThreeScale
             "#{n_events} events have been sent to the Kinesis adapter"
           end
 
-          def storage
-            Backend::Storage.instance
-          end
-
-          def config
-            Backend.configuration
-          end
-
           def bucket_storage
             Stats::Storage.bucket_storage
           end
@@ -134,15 +124,8 @@ module ThreeScale
             Stats::Storage.bucket_reader
           end
 
-          def kinesis_client
-            Aws::Firehose::Client.new(
-                region: config.kinesis_region,
-                access_key_id: config.aws_access_key_id,
-                secret_access_key: config.aws_secret_access_key)
-          end
-
           def kinesis_adapter
-            KinesisAdapter.new(config.kinesis_stream_name, kinesis_client, storage)
+            Stats::Storage.kinesis_adapter
           end
         end
       end
