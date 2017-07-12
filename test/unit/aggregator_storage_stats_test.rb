@@ -30,6 +30,10 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Stats::Aggregator.send(:stats_bucket_size)
   end
 
+  def bucket_storage
+    Stats::Aggregator.send(:bucket_storage)
+  end
+
   test 'process increments_all_stats_counters' do
     Stats::Aggregator.process([transaction_with_response_code])
 
@@ -74,7 +78,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     Memoizer.reset! # the flag to know if storage stats is enabled is memoized
 
     Stats::Aggregator.process(Array.new(10, default_transaction))
-    assert_equal 0, Stats::BucketStorage.new(@storage).pending_buckets_size
+    assert_equal 0, bucket_storage.pending_buckets_size
   end
 
   test 'applications with end user plans (user_id) get recorded properly' do
@@ -281,40 +285,38 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
   test 'does not store buckets if the option was disabled manually' do
     Stats::Storage.disable!
-
-    Stats::Storage.expects(:prepare_stats_buckets).never
     Stats::Aggregator.process([default_transaction])
+
+    assert_equal 0, bucket_storage.pending_buckets_size
   end
 
   test 'does not store buckets if option disabled because an emergency and pending buckets > 0' do
-    mocked_bucket_storage = Object.new
-    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { 1 }
-    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
-    Stats::Storage.disable!(true)
+    keys = ['key1', 'key2']
+    bucket = '20170102120000'
+    bucket_storage.put_in_bucket(keys, bucket)
 
-    Stats::Aggregator.expects(:prepare_stats_buckets).never
+    Stats::Storage.disable!(true)
     Stats::Aggregator.process([default_transaction])
+
+    assert_equal({ bucket => keys.size }, bucket_storage.pending_keys_by_bucket)
   end
 
   test 'stores buckets if option disabled because an emergency and there are no pending buckets' do
-    mocked_bucket_storage = Object.new
-    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { 0 }
-    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
-    Stats::Storage.disable!(true)
+    # No pending buckets at the start of the test
 
-    Stats::Aggregator.expects(:prepare_stats_buckets).once
+    Stats::Storage.disable!(true)
     Stats::Aggregator.process([default_transaction])
+
+    assert_equal 1, bucket_storage.pending_buckets_size
   end
 
   test 're-enables bucket storage if disabled because emergency and there are no pending buckets' do
-    mocked_bucket_storage = Object.new
-    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { 0 }
-    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
+    # No pending buckets at the start of the test
+
     Stats::Storage.disable!(true)
-
     Stats::Aggregator.process([default_transaction])
-
     Memoizer.reset! # because Stats::Storage.enabled? is memoized
+
     assert_true Stats::Storage.enabled?
   end
 end
