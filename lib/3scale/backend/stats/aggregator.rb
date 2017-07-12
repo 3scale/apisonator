@@ -51,7 +51,6 @@ module ThreeScale
                 Storage.enable! unless Storage.enabled?
                 current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size)
                                              .to_not_compact_s
-                prepare_stats_buckets(current_bucket)
               end
             end
 
@@ -97,15 +96,6 @@ module ThreeScale
             else
               Storage.last_disable_was_emergency? && bucket_storage.pending_buckets_size == 0
             end
-          end
-
-          def prepare_stats_buckets(current_bucket)
-            store_changed_keys(current_bucket)
-          end
-
-          def store_changed_keys(bucket = nil)
-            return unless bucket
-            storage.zadd(Keys.changed_keys_key, bucket.to_i, bucket)
           end
 
           def stats_bucket_size
