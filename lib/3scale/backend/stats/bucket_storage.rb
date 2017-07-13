@@ -9,9 +9,6 @@ module ThreeScale
       # interval.
       # The values of the keys that are stored in the buckets can be retrieved
       # with a normal call to redis.
-      #
-      # Currently, the Aggregator class is responsible for creating the
-      # buckets, but we would like to change that in a future refactoring.
       class BucketStorage
         KEYS_SLICE_CALL_TO_REDIS = 1000
         private_constant :KEYS_SLICE_CALL_TO_REDIS
