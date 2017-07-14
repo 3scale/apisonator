@@ -31,8 +31,11 @@ module ThreeScale
         # also deletes its contents.
         def delete_range(last_bucket)
           buckets = storage.zrangebyscore(Keys.changed_keys_key, 0, last_bucket)
-          buckets.each { |bucket| delete_bucket_content(bucket) }
-          storage.zremrangebyscore(Keys.changed_keys_key, 0, last_bucket)
+
+          storage.pipelined do
+            buckets.each { |bucket| delete_bucket_content(bucket) }
+            storage.zremrangebyscore(Keys.changed_keys_key, 0, last_bucket)
+          end
         end
 
         def delete_all_buckets_and_keys(options = {})
@@ -61,8 +64,10 @@ module ThreeScale
         # would affect performance, because we would need to get all the
         # existing buckets to check if the given one exists in every call.
         def put_in_bucket(event_keys, bucket)
-          storage.zadd(Keys.changed_keys_key, bucket, bucket)
-          storage.sadd(Keys.changed_keys_bucket_key(bucket), event_keys)
+          storage.pipelined do
+            storage.zadd(Keys.changed_keys_key, bucket, bucket)
+            storage.sadd(Keys.changed_keys_bucket_key(bucket), event_keys)
+          end
         end
 
         def content(buckets)
@@ -81,11 +86,15 @@ module ThreeScale
         end
 
         def pending_keys_by_bucket
-          result = {}
-          buckets.each do |b|
-            result[b] = storage.scard(Keys.changed_keys_bucket_key(b))
+          bucket_keys = buckets.map do |bucket|
+            Keys.changed_keys_bucket_key(bucket)
           end
-          result
+
+          cardinalities = storage.pipelined do
+            bucket_keys.map { |bucket_key| storage.scard(bucket_key) }
+          end
+
+          Hash[buckets.zip(cardinalities)]
         end
 
         private
