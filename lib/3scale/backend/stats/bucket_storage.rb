@@ -27,12 +27,6 @@ module ThreeScale
           @storage = storage
         end
 
-        # Deletes a bucket from the set, and also deletes its contents
-        def delete_bucket(bucket)
-          delete_bucket_content(bucket)
-          storage.zrem(Keys.changed_keys_key, bucket)
-        end
-
         # For each of the buckets in the range, deletes it from the set, and
         # also deletes its contents.
         def delete_range(last_bucket)
