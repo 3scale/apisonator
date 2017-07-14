@@ -14,34 +14,6 @@ module ThreeScale
 
         subject { described_class.new(storage) }
 
-        describe '#delete_bucket' do
-          context 'when the bucket exists' do
-            before { subject.put_in_bucket(event_keys, bucket) }
-
-            it 'returns true' do
-              expect(subject.delete_bucket(bucket)).to be true
-            end
-
-            it 'deletes the bucket from the set' do
-              subject.delete_bucket(bucket)
-              expect(subject.buckets).not_to include bucket
-            end
-
-            it 'deletes the contents of the bucket' do
-              subject.delete_bucket(bucket)
-              expect(subject.content([bucket])).to be_empty
-            end
-          end
-
-          context 'when the bucket does not exist' do
-            let(:bucket) { 'invalid_bucket_name' }
-
-            it 'returns false' do
-              expect(subject.delete_bucket(bucket)).to be false
-            end
-          end
-        end
-
         describe '#delete_range' do
           let(:buckets) { %w(20150101000000 20150101000010 20150101000020 20150101000030) }
           let(:event_keys) do # One event in each bucket
