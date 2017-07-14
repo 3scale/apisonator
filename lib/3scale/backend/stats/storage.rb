@@ -56,7 +56,8 @@ module ThreeScale
 
           def bucket_reader
             @bucket_reader ||= BucketReader.new(config.stats.bucket_size,
-                                                bucket_storage)
+                                                bucket_storage,
+                                                storage)
           end
 
           def kinesis_adapter

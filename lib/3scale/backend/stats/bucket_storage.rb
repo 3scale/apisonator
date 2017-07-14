@@ -10,9 +10,6 @@ module ThreeScale
       # The values of the keys that are stored in the buckets can be retrieved
       # with a normal call to redis.
       class BucketStorage
-        KEYS_SLICE_CALL_TO_REDIS = 1000
-        private_constant :KEYS_SLICE_CALL_TO_REDIS
-
         # If we have not read buckets for a long time, we might deal with lots
         # of keys in the union operation. This is why we define a constant that
         # limits the number of buckets that we send to the union op.
@@ -74,19 +71,19 @@ module ThreeScale
           storage.sadd(Keys.changed_keys_bucket_key(bucket), event_keys)
         end
 
-        def buckets_content_with_values(buckets)
+        def content(buckets)
           # Values are stored as strings in Redis, but we want integers.
           # There are some values that can be nil. This happens when the key
           # has a TTL and we read it once it has expired. Right now, event keys
           # with granularity = 'minute' expire after 180 s. We might need to
           # increase that to make sure that we do not miss any values.
 
-          keys = unique_keys_in_buckets(buckets)
-          values = keys.each_slice(KEYS_SLICE_CALL_TO_REDIS).flat_map do |keys_slice|
-            storage.mget(keys_slice)
-          end.map { |value| Integer(value) if value }
-
-          Hash[keys.zip(values)]
+          buckets.each_slice(MAX_BUCKETS_REDIS_UNION).inject([]) do |res, buckets_slice|
+            bucket_keys = buckets_slice.map do |bucket|
+              Keys.changed_keys_bucket_key(bucket)
+            end
+            (res + storage.sunion(bucket_keys))
+          end.uniq
         end
 
         def pending_keys_by_bucket
@@ -98,13 +95,6 @@ module ThreeScale
         end
 
         private
-
-        def unique_keys_in_buckets(buckets)
-          buckets.each_slice(MAX_BUCKETS_REDIS_UNION).inject([]) do |res, buckets_slice|
-            bucket_keys = buckets_slice.map { |bucket| Keys.changed_keys_bucket_key(bucket) }
-            (res + storage.sunion(bucket_keys))
-          end.uniq
-        end
 
         def delete_bucket_content(bucket)
           storage.del(Keys.changed_keys_bucket_key(bucket))

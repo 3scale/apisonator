@@ -61,17 +61,17 @@ module ThreeScale
         before { Timecop.freeze(current_time) }
         after { Timecop.return }
 
-        subject { described_class.new(bucket_create_interval, bucket_storage) }
+        subject { described_class.new(bucket_create_interval, bucket_storage, storage) }
 
         let(:last_bucket_read_marker) { subject.send(:latest_bucket_read_marker) }
 
         it 'raises InvalidInterval when bucket_create_interval is negative' do
-          expect{described_class.new(-1, bucket_storage)}
+          expect{described_class.new(-1, bucket_storage, storage)}
             .to raise_error(BucketReader::InvalidInterval)
         end
 
         it 'raises InvalidInterval when bucket_create_interval does not divide 60' do
-          expect{described_class.new(90, bucket_storage)}
+          expect{described_class.new(90, bucket_storage, storage)}
             .to raise_error(BucketReader::InvalidInterval)
         end
 
@@ -113,7 +113,7 @@ module ThreeScale
 
           context 'when we have read some buckets' do
             let(:latest_bucket_read) { first_bucket }
-            
+
             before do
               save_buckets_and_events(buckets_and_events)
               last_bucket_read_marker.latest_bucket_read = latest_bucket_read

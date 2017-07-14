@@ -29,7 +29,7 @@ module ThreeScale
 
             it 'deletes the contents of the bucket' do
               subject.delete_bucket(bucket)
-              expect(subject.buckets_content_with_values([bucket])).to be_empty
+              expect(subject.content([bucket])).to be_empty
             end
           end
 
@@ -68,7 +68,7 @@ module ThreeScale
 
               it 'only deletes the content of the first bucket' do
                 subject.delete_range(bucket)
-                expect(subject.buckets_content_with_values(buckets).keys)
+                expect(subject.content(buckets))
                     .to match_array event_keys[1..-1]
               end
             end
@@ -83,7 +83,7 @@ module ThreeScale
 
               it 'deletes the contents of all the buckets' do
                 subject.delete_range(bucket)
-                expect(subject.buckets_content_with_values(buckets)).to be_empty
+                expect(subject.content(buckets)).to be_empty
               end
             end
 
@@ -98,7 +98,7 @@ module ThreeScale
 
               it 'deletes the contents of the given bucket and the previous ones' do
                 subject.delete_range(bucket)
-                expect(subject.buckets_content_with_values(buckets).keys)
+                expect(subject.content(buckets))
                     .to match_array event_keys[(position + 1)..-1]
               end
             end
@@ -124,7 +124,7 @@ module ThreeScale
 
               it 'deletes the contents of all the buckets' do
                 subject.delete_range(bucket)
-                expect(subject.buckets_content_with_values(buckets)).to be_empty
+                expect(subject.content(buckets)).to be_empty
               end
             end
           end
@@ -157,7 +157,7 @@ module ThreeScale
 
           it 'deletes the contents of all the buckets' do
             subject.delete_all_buckets_and_keys(silent: true)
-            expect(subject.buckets_content_with_values(buckets)).to be_empty
+            expect(subject.content(buckets)).to be_empty
           end
         end
 
@@ -250,20 +250,15 @@ module ThreeScale
         end
 
         describe '#put_in_bucket' do
-          let(:events_and_vals) do
-            { 'stats/{service:11}/metric:21/day:20151207' => 10,
-              'stats/{service:12}/metric:22/day:20151207' => 20 }
-          end
-
-          before do
-            events_and_vals.each { |event, val| storage.set(event, val) }
+          let(:event_keys) do
+            ['stats/{service:11}/metric:21/day:20151207',
+             'stats/{service:12}/metric:22/day:20151207']
           end
 
           context 'when the bucket exists' do
-            it 'puts the event in the bucket' do
-              subject.put_in_bucket(events_and_vals.keys, bucket)
-              expect(subject.buckets_content_with_values([bucket]))
-                  .to eq events_and_vals
+            it 'puts the events in the bucket' do
+              subject.put_in_bucket(event_keys, bucket)
+              expect(subject.content([bucket])).to match_array event_keys
             end
           end
 
@@ -271,24 +266,23 @@ module ThreeScale
             let(:new_bucket) { (bucket.to_i + 10).to_s }
 
             it 'creates the bucket' do
-              subject.put_in_bucket(events_and_vals.keys, new_bucket)
+              subject.put_in_bucket(event_keys, new_bucket)
               expect(subject.buckets).to include new_bucket
             end
 
-            it 'puts the event in the bucket' do
-              subject.put_in_bucket(events_and_vals.keys, new_bucket)
-              expect(subject.buckets_content_with_values([new_bucket]))
-                  .to eq events_and_vals
+            it 'puts the events in the bucket' do
+              subject.put_in_bucket(event_keys, new_bucket)
+              expect(subject.content([new_bucket])).to match_array event_keys
             end
           end
         end
 
-        describe '#buckets_content_with_values' do
+        describe '#content' do
           context 'when no buckets are received' do
             let(:buckets) { [] }
 
-            it 'returns an empty hash' do
-              expect(subject.buckets_content_with_values(buckets)).to be_empty
+            it 'returns an empty array' do
+              expect(subject.content(buckets)).to be_empty
             end
           end
 
@@ -301,30 +295,26 @@ module ThreeScale
             # does not return duplicated events.
             let(:n_buckets) { described_class.const_get(:MAX_BUCKETS_REDIS_UNION) + 1 }
             let(:unique_events) do
-              (0...n_buckets).map { |event_num| { "unique_event_#{event_num}" => event_num } }
+              (0...n_buckets).map { |event_num| "unique_event_#{event_num}" }
             end
-            let(:repeated_event) { { 'repeated_event_0' => 0 } }
+            let(:repeated_event) { 'repeated_event' }
             let(:all_events) { unique_events << repeated_event }
 
             let(:buckets) do
               (0...n_buckets).inject({}) do |res, bucket_index|
-                bucket_events = unique_events[bucket_index].merge(repeated_event)
+                bucket_events = [unique_events[bucket_index], repeated_event]
                 res.merge!(bucket_index.to_s => bucket_events)
               end
             end
 
             before do
               buckets.each do |bucket, events|
-                events.each do |event_key, event_value|
-                  subject.put_in_bucket(event_key, bucket)
-                  storage.set(event_key, event_value)
-                end
+                subject.put_in_bucket(events, bucket)
               end
             end
 
-            it 'returns a hash with all the keys in the buckets and their values' do
-              expect(subject.buckets_content_with_values(buckets.keys))
-                  .to eq unique_events.reduce(:merge).merge(repeated_event)
+            it 'returns the content of the buckets without duplicates' do
+              expect(subject.content(buckets.keys)).to match_array all_events
             end
           end
         end

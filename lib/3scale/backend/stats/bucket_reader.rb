@@ -42,9 +42,12 @@ module ThreeScale
         BACKUP_SECONDS_READ_BUCKET = 10
         private_constant :BACKUP_SECONDS_READ_BUCKET
 
+        KEYS_SLICE_CALL_TO_REDIS = 1000
+        private_constant :KEYS_SLICE_CALL_TO_REDIS
+
         InvalidInterval = Class.new(ThreeScale::Backend::Error)
 
-        def initialize(bucket_create_interval, bucket_storage)
+        def initialize(bucket_create_interval, bucket_storage, events_storage)
           # This is needed because ThreeScale::Backend::TimeHacks.beginning_of_bucket
           if 60%bucket_create_interval != 0 || bucket_create_interval <= 0
             raise InvalidInterval, 'Bucket create interval needs to divide 60'
@@ -52,6 +55,7 @@ module ThreeScale
 
           @bucket_create_interval = bucket_create_interval
           @bucket_storage = bucket_storage
+          @events_storage = events_storage
           @latest_bucket_read_marker = LatestBucketReadMarker.new(bucket_storage.storage)
         end
 
@@ -65,8 +69,7 @@ module ThreeScale
                       pending_buckets(end_time_utc).to_a
                     end
 
-          events = bucket_storage.buckets_content_with_values(buckets)
-          { events: events, latest_bucket: buckets.last }
+          { events: events(buckets), latest_bucket: buckets.last }
         end
 
         def latest_bucket_read=(latest_bucket_read)
@@ -75,7 +78,10 @@ module ThreeScale
 
         private
 
-        attr_reader :bucket_create_interval, :bucket_storage, :latest_bucket_read_marker
+        attr_reader :bucket_create_interval,
+                    :bucket_storage,
+                    :events_storage,
+                    :latest_bucket_read_marker
 
         def pending_buckets(end_time_utc = Time.now.utc)
           latest_bucket_read = latest_bucket_read_marker.latest_bucket_read
@@ -84,6 +90,23 @@ module ThreeScale
                        end
           end_time = end_time_with_backup(end_time_utc)
           stored_buckets(start_time, end_time)
+        end
+
+        def events(buckets)
+          event_keys = bucket_storage.content(buckets)
+
+          # Values are stored as strings in Redis, but we want integers.
+          # There are some values that can be nil. This happens when the key
+          # has a TTL and we read it once it has expired. Right now, event keys
+          # with granularity = 'minute' expire after 180 s (see
+          # Stats::Aggregators::Base module). We might need to increase that to
+          # make sure that we do not miss any values.
+          event_values = event_keys.each_slice(KEYS_SLICE_CALL_TO_REDIS)
+                                   .flat_map do |keys_slice|
+            events_storage.mget(keys_slice)
+          end.map { |value| Integer(value) if value }
+
+          Hash[event_keys.zip(event_values)]
         end
 
         def end_time_with_backup(end_time_utc)
