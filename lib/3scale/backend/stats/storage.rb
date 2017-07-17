@@ -51,7 +51,7 @@ module ThreeScale
           end
 
           def bucket_storage
-            @bucket_storage ||= BucketStorage.new(storage)
+            @bucket_storage ||= BucketStorage.new(stats_storage)
           end
 
           def bucket_reader
@@ -63,13 +63,37 @@ module ThreeScale
           def kinesis_adapter
             @kinesis_adapter ||= KinesisAdapter.new(config.kinesis_stream_name,
                                                     kinesis_client,
-                                                    storage)
+                                                    stats_storage)
           end
 
           private
 
           def storage
             Backend::Storage.instance
+          end
+
+          # This is a separate storage used only for the analytics system. More
+          # specifically, the only things saved in this storage are:
+          #   - The buckets handled by the BucketStorage class.
+          #   - The batches of events created by the KinesisAdapter class.
+          def stats_storage
+            @stats_storage ||= if config.analytics_redis[:server]
+                                 stats_storage_from_config
+                               else
+                                 # A stats storage has not been specified, so
+                                 # use the same one for everything.
+                                 storage
+                               end
+          end
+
+          def stats_storage_from_config
+            host, port = Backend::Storage::Helpers.host_and_port(
+                config.analytics_redis.server)
+
+            options = Backend::Storage::Helpers.config_with(
+                config.analytics_redis, host: host, port: port)
+
+            Redis.new(options)
           end
 
           def config
