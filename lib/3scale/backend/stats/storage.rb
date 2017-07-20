@@ -1,4 +1,3 @@
-require 'aws-sdk'
 require_relative '../storage'
 require_relative 'keys'
 require '3scale/backend/stats/kinesis_adapter'
