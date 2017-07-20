@@ -77,7 +77,7 @@ module ThreeScale
           #   - The buckets handled by the BucketStorage class.
           #   - The batches of events created by the KinesisAdapter class.
           def stats_storage
-            @stats_storage ||= if config.analytics_redis[:server]
+            @stats_storage ||= if config.analytics_redis && config.analytics_redis[:server]
                                  stats_storage_from_config
                                else
                                  # A stats storage has not been specified, so
