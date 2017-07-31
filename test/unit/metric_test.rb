@@ -169,6 +169,9 @@ class MetricTest < Test::Unit::TestCase
     Metric.save(:service_id => 1001, :id => 2001, :name => 'monkeys')
     name_hash = Metric.load_all_names(1001, [2001, 2002])
     assert_equal 'monkeys', name_hash[2001]
+
+    assert_empty Metric.load_all_names(1001, [])
+    assert_empty Metric.load_all_names(100, nil)
   end
 
   def test_load_id
