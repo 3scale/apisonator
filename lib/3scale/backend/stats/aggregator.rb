@@ -137,6 +137,8 @@ module ThreeScale
               service_id = values[:service_id]
               application = ThreeScale::Backend::Application.load(service_id,
                                                                   values[:application_id])
+
+              application.load_metric_names
               usage = Usage.application_usage(application, current_timestamp)
               status = Transactor::Status.new(service_id: service_id,
                                               application: application,

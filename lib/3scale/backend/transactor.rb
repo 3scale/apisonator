@@ -42,6 +42,7 @@ module ThreeScale
 
       def utilization(service_id, application_id)
         application = Application.load!(service_id, application_id)
+        application.load_metric_names
         usage = Usage.application_usage(application, Time.now.getutc)
         status = Status.new(service_id: service_id,
                             application: application,
@@ -146,6 +147,9 @@ module ThreeScale
           hierarchy:       extensions[:hierarchy] == '1',
           user:            user,
         }
+
+        application.load_metric_names
+        user.load_metric_names if user
 
         # returns a status object
         apply_validators(validators, status_attrs, params)
