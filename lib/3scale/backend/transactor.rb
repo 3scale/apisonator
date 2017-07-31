@@ -42,7 +42,7 @@ module ThreeScale
 
       def utilization(service_id, application_id)
         application = Application.load!(service_id, application_id)
-        usage = load_application_usage(application, Time.now.getutc)
+        usage = Usage.application_usage(application, Time.now.getutc)
         status = Status.new(service_id: service_id,
                             application: application,
                             values: usage)
@@ -130,8 +130,8 @@ module ThreeScale
 
         user         = load_user!(application, service, user_id)
         now          = Time.now.getutc
-        usage_values = load_application_usage(application, now)
-        user_usage   = load_user_usage(user, now) if user
+        usage_values = Usage.application_usage(application, now)
+        user_usage   = Usage.user_usage(user, now) if user
         status_attrs = {
           service_id:      service_id,
           user_values:     user_usage,
@@ -206,45 +206,6 @@ module ThreeScale
 
       def report_enqueue(service_id, data, context_info)
         Resque.enqueue(ReportJob, service_id, data, Time.now.getutc.to_f, context_info)
-      end
-
-      def get_pairs_and_metric_ids(usage_limits)
-        pairs = []
-
-        metric_ids = usage_limits.map do |usage_limit|
-          m_id = usage_limit.metric_id
-          pairs << [m_id, usage_limit.period]
-          m_id
-        end
-
-        [pairs, metric_ids]
-      end
-
-      def load_usage(obj)
-        pairs, metric_ids = get_pairs_and_metric_ids obj.usage_limits
-        return {} if pairs.empty?
-
-        # preloading metric names
-        obj.metric_names = Metric.load_all_names(obj.service_id, metric_ids)
-        keys = pairs.map(&Proc.new)
-        values = {}
-        pairs.zip(storage.mget(keys)) do |(metric_id, period), value|
-          values[period] ||= {}
-          values[period][metric_id] = value.to_i
-        end
-        values
-      end
-
-      def load_user_usage(user, ts)
-        load_usage user do |metric_id, period|
-          Stats::Keys.user_usage_value_key(user.service_id, user.username, metric_id, period.new(ts))
-        end
-      end
-
-      def load_application_usage(application, ts)
-        load_usage application do |metric_id, period|
-          Stats::Keys.usage_value_key(application.service_id, application.id, metric_id, period.new(ts))
-        end
       end
 
       def storage
