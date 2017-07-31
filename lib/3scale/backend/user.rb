@@ -138,6 +138,13 @@ module ThreeScale
         metric_names[metric_id] ||= Metric.load_name(service_id, metric_id)
       end
 
+      # Sets @metric_names with the names of all the metrics for which there is
+      # a usage limit that applies to the user, and returns it.
+      def load_metric_names
+        metric_ids = usage_limits.map(&:metric_id)
+        @metric_names = Metric.load_all_names(service_id, metric_ids)
+      end
+
       def usage_limits
         @usage_limits ||= UsageLimit.load_all(service_id, plan_id)
       end
