@@ -163,7 +163,7 @@ resource 'Errors (prefix: /services/:service_id/errors)' do
     parameter :errors, 'Errors', required: false
 
     let(:example_error_messages) do
-      %w(error_msg_#1, error_msg_#2, error_msg_#3)
+      %w(error_msg_#1 error_msg_#2 error_msg_#3)
     end
 
     define_method :raw_post do
@@ -175,10 +175,8 @@ resource 'Errors (prefix: /services/:service_id/errors)' do
         do_request(service_id: service_id, errors: example_error_messages)
 
         saved_errors = ThreeScale::Backend::ErrorStorage.list(service_id)
-        expect(saved_errors.size).to eq(example_error_messages.size)
-        expect(saved_errors[0][:message]).to eq(example_error_messages[2])
-        expect(saved_errors[1][:message]).to eq(example_error_messages[1])
-        expect(saved_errors[2][:message]).to eq(example_error_messages[0])
+        expect(saved_errors.map { |error| error[:message] })
+            .to eq example_error_messages.reverse
 
         expect(response_status).to eq(201)
       end
