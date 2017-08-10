@@ -17,14 +17,14 @@ end
 group :test do
   gem 'benchmark-ips', '~> 2.7.2'
   gem 'mocha',         '~> 1.2.1'
-  gem 'nokogiri',      '~> 1.7.1'
+  gem 'nokogiri',      '~> 1.8.0'
   gem 'pkg-config',    '~> 1.1.7'
   gem 'rack-test',     '~> 0.6.2'
   gem 'resque_unit',   '~> 0.4.4', source: 'https://rubygems.org'
-  gem 'test-unit',     '= 3.2.3'
+  gem 'test-unit',     '= 3.2.5'
   gem 'resque_spec',   '~> 0.17.0'
-  gem 'timecop',       '~> 0.8.0'
-  gem 'rspec',         '~> 3.5.0', require: nil
+  gem 'timecop',       '~> 0.9.1'
+  gem 'rspec',         '~> 3.6.0', require: nil
   gem 'geminabox',     '~> 0.13.5', require: false
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
 end
@@ -33,19 +33,19 @@ group :development do
   gem 'sshkit'
   gem 'source2swagger', git: 'https://github.com/3scale/source2swagger', branch: 'backend'
   gem 'pry',      '~> 0.10.4'
-  gem 'pry-doc',  '~> 0.10.0'
+  gem 'pry-doc',  '~> 0.11.1'
   gem 'license_finder', '~> 3.0.0'
   gem 'license_finder_xml_reporter', git: 'https://github.com/3scale/license_finder_xml_reporter', ref: 'ab8072d11344b5e6d05565ccc84cb4745d01e6f8'
 end
 
 group :development, :test do
-  gem 'rspec_api_documentation', '~> 4.9.0'
+  gem 'rspec_api_documentation', '~> 5.0.0'
 end
 
 # Default server by platform
 gem 'puma', git: 'https://github.com/3scale/puma', tag: '3scale-AMP-2.0.0'
 # gems required by the runner
-gem 'gli', '~> 2.16.0', require: nil
+gem 'gli', '~> 2.16.1', require: nil
 # Workers
 gem 'daemons', '= 1.2.4'
 
