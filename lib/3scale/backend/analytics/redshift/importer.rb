@@ -1,8 +1,6 @@
-require '3scale/backend/stats/redshift_job'
-
 module ThreeScale
   module Backend
-    module Stats
+    module Analytics
 
       # The main responsibility of this class is to schedule jobs that import
       # events that are stored in S3 into Redshift.

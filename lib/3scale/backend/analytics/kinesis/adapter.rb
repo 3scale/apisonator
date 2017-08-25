@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    module Stats
+    module Analytics
       class KinesisAdapter
         # Each Kinesis record is rounded to the nearest 5KB to calculate the
         # cost. Each of our events is a hash with a few keys: service,
@@ -60,8 +60,8 @@ module ThreeScale
 
           # Only disable indicating emergency if bucket storage is enabled.
           # We do not want to indicate emergency if it was disabled manually.
-          if limit_pending_events_reached?(pending_events.size) && Storage.enabled?
-            Storage.disable!(true)
+          if limit_pending_events_reached?(pending_events.size) && Stats::Storage.enabled?
+            Stats::Storage.disable!(true)
             log_bucket_creation_disabled
           end
 

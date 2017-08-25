@@ -42,7 +42,7 @@ def event_parser
 end
 
 def redshift_adapter
-  ThreeScale::Backend::Stats::RedshiftAdapter
+  ThreeScale::Backend::Analytics::Redshift::Adapter
 end
 
 def invalid_key

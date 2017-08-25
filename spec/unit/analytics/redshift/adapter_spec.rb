@@ -1,8 +1,8 @@
-require_relative '../../spec_helper'
+require_relative '../../../spec_helper'
 
 module ThreeScale
   module Backend
-    module Stats
+    module Analytics
       class RedshiftAdapter
         class << self
           private

@@ -1,9 +1,8 @@
-require_relative '../../spec_helper'
-require_relative '../../../lib/3scale/backend/stats/kinesis_adapter'
+require_relative '../../../spec_helper'
 
 module ThreeScale
   module Backend
-    module Stats
+    module Analytics
       describe KinesisAdapter do
         # EVENTS_PER_RECORD is set to a value optimized for running in
         # production. The tests run very slow if we use the same value.
@@ -38,7 +37,8 @@ module ThreeScale
 
         let(:kinesis_client) { double }
         let(:stream_name) { 'backend_stream' }
-        let(:storage) { ThreeScale::Backend::Storage.instance }
+        let(:storage) { Backend::Storage.instance }
+        let(:stats_storage) { Backend::Stats::Storage }
         let(:events_per_record) { described_class.const_get(:EVENTS_PER_RECORD) }
         let(:max_records_per_batch) { described_class.const_get(:MAX_RECORDS_PER_BATCH) }
         let(:pending_events_key) do
@@ -260,14 +260,14 @@ module ThreeScale
             end
 
             context 'and bucket storage is enabled' do
-              before { Storage.enable! }
+              before { stats_storage.enable! }
 
               it 'disables bucket storage indicating emergency' do
                 subject.send_events(events)
                 Memoizer.reset!
 
-                expect(Storage.enabled?).to be false
-                expect(Storage.last_disable_was_emergency?).to be true
+                expect(stats_storage.enabled?).to be false
+                expect(stats_storage.last_disable_was_emergency?).to be true
               end
 
               it 'logs a message' do
@@ -277,14 +277,14 @@ module ThreeScale
             end
 
             context 'and bucket storage is not enabled' do
-              before { Storage.disable! }
+              before { stats_storage.disable! }
 
               it 'does not mark that bucket storage was disabled because of an emergency' do
                 subject.send_events(events)
                 Memoizer.reset!
 
-                expect(Storage.enabled?).to be false
-                expect(Storage.last_disable_was_emergency?).to be false
+                expect(stats_storage.enabled?).to be false
+                expect(stats_storage.last_disable_was_emergency?).to be false
               end
 
               it 'does not log a message' do
@@ -302,7 +302,7 @@ module ThreeScale
             end
 
             it 'does not disable bucket creation' do
-              expect(Storage).not_to receive(:disable!)
+              expect(stats_storage).not_to receive(:disable!)
               subject.send_events(events)
             end
           end

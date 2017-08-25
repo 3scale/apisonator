@@ -1,8 +1,6 @@
-require '3scale/backend/stats/redshift_adapter'
-
 module ThreeScale
   module Backend
-    module Stats
+    module Analytics
       class RedshiftJob < BackgroundJob
         @queue = :stats
 

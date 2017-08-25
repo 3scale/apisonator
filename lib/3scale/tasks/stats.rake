@@ -17,7 +17,7 @@ namespace :stats do
 
     desc 'Enable bucket storage'
     task :enable do
-      if ThreeScale::Backend::Stats::SendToKinesis.enabled?
+      if ThreeScale::Backend::Analytics::SendToKinesis.enabled?
         puts ThreeScale::Backend::Stats::Storage.enable!
       else
         puts 'Error: enable Kinesis first. Otherwise, buckets will start accumulating in Redis.'
@@ -47,12 +47,12 @@ namespace :stats do
   namespace :kinesis do
     desc 'Is sending to Kinesis enabled?'
     task :enabled? do
-      puts ThreeScale::Backend::Stats::SendToKinesis.enabled?
+      puts kinesis_exporter.enabled?
     end
 
     desc 'Enable sending to Kinesis'
     task :enable do
-      puts ThreeScale::Backend::Stats::SendToKinesis.enable
+      puts kinesis_exporter.enable
     end
 
     desc 'Disable sending to Kinesis'
@@ -60,13 +60,13 @@ namespace :stats do
       if ThreeScale::Backend::Stats::Storage.enabled?
         puts 'Error: disable bucket creation first. Otherwise, they will start accumulating.'
       else
-        puts ThreeScale::Backend::Stats::SendToKinesis.disable
+        puts kinesis_exporter.disable
       end
     end
 
     desc 'Schedule one job to send all pending events to Kinesis'
     task :send do
-      puts ThreeScale::Backend::Stats::SendToKinesis.schedule_job
+      puts kinesis_exporter.schedule_job
     end
 
     # Pending events are the ones that were read but the buckets but have not
@@ -75,45 +75,53 @@ namespace :stats do
     #   2) There were not enough events to send a whole batch.
     desc 'Count number of pending events - were read from the buckets, but not sent'
     task :pending_events do
-      puts ThreeScale::Backend::Stats::SendToKinesis.num_pending_events
+      puts kinesis_exporter.num_pending_events
     end
 
     desc 'Send pending events to Kinesis'
     task :flush, [:limit] do |_, args|
       limit = args.limit ? args.limit.to_i : nil
-      puts ThreeScale::Backend::Stats::SendToKinesis.flush_pending_events(limit)
+      puts kinesis_exporter.flush_pending_events(limit)
+    end
+
+    def kinesis_exporter
+      ThreeScale::Backend::Analytics::SendToKinesis
     end
   end
 
   namespace :redshift do
     desc 'Is Redshift importing enabled?'
     task :enabled? do
-      puts ThreeScale::Backend::Stats::RedshiftImporter.enabled?
+      puts redshift_importer.enabled?
     end
 
     desc 'Enable Redshift importing'
     task :enable do
-      puts ThreeScale::Backend::Stats::RedshiftImporter.enable
+      puts redshift_importer.enable
     end
 
     desc 'Disable Redshift importing'
     task :disable do
-      puts ThreeScale::Backend::Stats::RedshiftImporter.disable
+      puts redshift_importer.disable
     end
 
     desc 'Import S3 events in Redshift'
     task :import do
-      puts ThreeScale::Backend::Stats::RedshiftImporter.schedule_job
+      puts redshift_importer.schedule_job
     end
 
     desc 'Show generation time (hour) of latest events imported in Redshift'
     task :latest do
-      puts ThreeScale::Backend::Stats::RedshiftImporter.latest_imported_events_time
+      puts redshift_importer.latest_imported_events_time
     end
 
     desc 'Is data consistent in the DB?'
     task :data_ok? do
-      puts ThreeScale::Backend::Stats::RedshiftImporter.consistent_data?
+      puts redshift_importer.consistent_data?
+    end
+
+    def redshift_importer
+      ThreeScale::Backend::Analytics::RedshiftImporter
     end
   end
 end

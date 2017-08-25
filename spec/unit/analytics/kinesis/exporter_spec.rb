@@ -1,9 +1,8 @@
-require_relative '../../spec_helper'
-require_relative '../../../lib/3scale/backend/stats/send_to_kinesis'
+require_relative '../../../spec_helper'
 
 module ThreeScale
   module Backend
-    module Stats
+    module Analytics
       describe SendToKinesis do
         subject { SendToKinesis }
 

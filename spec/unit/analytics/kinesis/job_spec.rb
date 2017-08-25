@@ -1,9 +1,8 @@
-require_relative '../../spec_helper'
-require_relative '../../../lib/3scale/backend/stats/send_to_kinesis_job'
+require_relative '../../../spec_helper'
 
 module ThreeScale
   module Backend
-    module Stats
+    module Analytics
       describe SendToKinesisJob do
         subject { SendToKinesisJob }
 
@@ -41,7 +40,7 @@ module ThreeScale
 
             let(:events_to_send) do
               events.map do |k, v|
-                StatsParser.parse(k, v).merge!(time_gen: bucket_timestamp)
+                Stats::StatsParser.parse(k, v).merge!(time_gen: bucket_timestamp)
               end
             end
 
@@ -104,7 +103,7 @@ module ThreeScale
 
             let(:events_to_send) do # Only send the valid ones
               valid_events.map do |k, v|
-                StatsParser.parse(k, v).merge!(time_gen: bucket_timestamp)
+                Stats::StatsParser.parse(k, v).merge!(time_gen: bucket_timestamp)
               end
             end
 

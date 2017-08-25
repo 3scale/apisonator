@@ -2,7 +2,7 @@ require 'pg'
 
 module ThreeScale
   module Backend
-    module Stats
+    module Analytics
 
       # This class imports the events stored by Kinesis in S3 into Redshift.
       # It keeps track of the events that have been imported so it does not
