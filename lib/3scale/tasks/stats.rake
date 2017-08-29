@@ -17,7 +17,7 @@ namespace :stats do
 
     desc 'Enable bucket storage'
     task :enable do
-      if ThreeScale::Backend::Analytics::SendToKinesis.enabled?
+      if ThreeScale::Backend::Analytics::Kinesis::Exporter.enabled?
         puts ThreeScale::Backend::Stats::Storage.enable!
       else
         puts 'Error: enable Kinesis first. Otherwise, buckets will start accumulating in Redis.'
@@ -85,7 +85,7 @@ namespace :stats do
     end
 
     def kinesis_exporter
-      ThreeScale::Backend::Analytics::SendToKinesis
+      ThreeScale::Backend::Analytics::Kinesis::Exporter
     end
   end
 
@@ -121,7 +121,7 @@ namespace :stats do
     end
 
     def redshift_importer
-      ThreeScale::Backend::Analytics::RedshiftImporter
+      ThreeScale::Backend::Analytics::Redshift::Importer
     end
   end
 end
