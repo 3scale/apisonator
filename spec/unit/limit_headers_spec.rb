@@ -43,7 +43,7 @@ module ThreeScale
                        remaining_time: 200)
               end
 
-              it 'returns the remaining and reset time of the report with the'\
+              it 'returns the remaining and reset time of the report with the '\
                  'longest period' do
                 result = subject.get([report_month, report_year])
 
@@ -68,7 +68,7 @@ module ThreeScale
                        remaining_time: 200)
               end
 
-              it 'returns the remaining and reset time of the report with the'\
+              it 'returns the remaining and reset time of the report with the '\
                  'smallest remaining' do
                 result = subject.get([report_more_remaining,
                                       report_less_remaining])
