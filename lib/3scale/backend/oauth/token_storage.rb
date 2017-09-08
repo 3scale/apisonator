@@ -3,7 +3,10 @@ module ThreeScale
     module OAuth
       class Token
         module Storage
-          MAXIMUM_TOKEN_SIZE = ThreeScale::Backend::Storage.max_key_length
+          include Configurable
+
+          # Default token size is 4K - 512 (to allow for some metadata)
+          MAXIMUM_TOKEN_SIZE = configuration.oauth.max_token_size || 3584
           private_constant :MAXIMUM_TOKEN_SIZE
           TOKEN_MAX_REDIS_SLICE_SIZE = 500
           private_constant :TOKEN_MAX_REDIS_SLICE_SIZE

@@ -121,6 +121,7 @@ module ThreeScale
       config.add_section(:redshift, :host, :port, :dbname, :user, :password)
       config.add_section(:statsd, :host, :port)
       config.add_section(:internal_api, :user, :password)
+      config.add_section(:oauth, :max_token_size)
 
       # Default config
       config.master_service_id  = 1
