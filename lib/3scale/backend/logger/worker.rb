@@ -9,7 +9,7 @@ module ThreeScale
             log_file = workers_log_file || configuration.workers_log_file || '/dev/null'
 
             Logging.enable! on: worker_class.singleton_class, with: log_file do |logger|
-              logger.formatter = default_logger_formatter
+              logger.formatter = logger_formatter
 
               # At this point, we've already configured the logger for Backend
               # (used in Listeners and rake tasks). We can reuse the notify proc
@@ -20,9 +20,29 @@ module ThreeScale
 
           private
 
+          def logger_formatter
+            if configuration.workers_logger_formatter == :json
+              json_logger_formatter
+            else
+              default_logger_formatter
+            end
+          end
+
           def default_logger_formatter
             proc do |severity, datetime, _progname, msg|
               "#{severity} #{Process.pid} #{formatted_datetime(datetime)} #{msg}\n"
+            end
+          end
+
+          # This method logs severity, pid, time, and msg. It would be
+          # interesting to change the code in the workers so that we can break
+          # down that 'msg' and get things like provider_key, service_id, etc.
+          def json_logger_formatter
+            proc do |severity, datetime, _progname, msg|
+              { severity: severity,
+                pid: Process.pid,
+                time: formatted_datetime(datetime),
+                msg: msg }.to_json + "\n".freeze
             end
           end
 
