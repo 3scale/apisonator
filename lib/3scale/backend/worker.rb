@@ -28,6 +28,7 @@ module ThreeScale
 
       include Resque::Helpers
       include Configurable
+      require '3scale/backend/logger/worker'
 
       # the order is relevant
       QUEUES = [:priority, :main, :stats]
@@ -43,20 +44,7 @@ module ThreeScale
       end
 
       def self.new(options = {})
-        pid = Process.pid
-        Logging.enable! on: self.singleton_class, with: [
-            options.delete(:log_file) || configuration.workers_log_file || '/dev/null'
-          ] do |logger|
-            logger.formatter = proc { |severity, datetime, progname, msg|
-              "#{severity} #{pid} #{datetime.getutc.strftime("[%d/%b/%Y %H:%M:%S %Z]")} #{msg}\n"
-            }
-
-            # At this point, we've already configured the logger for Backend
-            # (used in Listeners and rake tasks). We can reuse the notify proc
-            # defined there.
-            logger.define_singleton_method(:notify, backend_logger_notify_proc)
-        end
-
+        Logger::Worker.configure_logging(self, options[:log_file])
         super
       end
 
@@ -164,10 +152,6 @@ module ThreeScale
           ]
           Resque::Failure.backend = Resque::Failure::Multiple
         end
-      end
-
-      def self.backend_logger_notify_proc
-        Backend.logger.method(:notify).to_proc
       end
 
       ## the next 4 are required for resque, leave them as is
