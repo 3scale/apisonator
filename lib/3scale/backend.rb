@@ -108,6 +108,7 @@ module ThreeScale
       config.saas = true
 
       config.request_loggers = [:text]
+      config.workers_logger_formatter = :text
 
       # Add configuration sections
       config.add_section(:queues, :master_name, :sentinels,
