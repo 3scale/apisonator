@@ -32,13 +32,7 @@ module Rack
       delete_sinatra_error! env
       respond_with 400, ThreeScale::Backend::NotValidData.new.to_xml
     rescue Exception => e
-      if e.class == ArgumentError && (
-          e.message == "invalid byte sequence in UTF-8" ||
-          e.message =~ /invalid .-encoding/
-        )
-        delete_sinatra_error! env
-        respond_with 400, ThreeScale::Backend::NotValidData.new.to_xml
-      elsif e.class == RangeError && e.message == "exceeded available parameter key space"
+      if e.class == RangeError && e.message == "exceeded available parameter key space"
         respond_with 400, ThreeScale::Backend::NotValidData.new.to_xml
       else
         raise e

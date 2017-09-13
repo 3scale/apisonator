@@ -123,9 +123,16 @@ module ThreeScale
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_log
 
 
-      COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze,
+      AUTH_AUTHREP_COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze,
                        'user_key'.freeze, 'provider_key'.freeze,
                        'access_token'.freeze].freeze
+      private_constant :AUTH_AUTHREP_COMMON_PARAMS
+
+      REPORT_EXPECTED_PARAMS = ['provider_key'.freeze,
+                                      'service_token'.freeze,
+                                      'service_id'.freeze,
+                                      'transactions'.freeze].freeze
+      private_constant :REPORT_EXPECTED_PARAMS
 
       configure :production do
         disable :dump_errors
@@ -411,10 +418,14 @@ module ThreeScale
         # 403 Forbidden for consistency (but we should return 400 Bad Request)
         halt 403 if params.nil?
 
+        # returns 403 when no provider key is given, even if other params have an invalid encoding
         provider_key = params[:provider_key] ||
           provider_key_from(params[:service_token], params[:service_id])
 
         raise_provider_key_error(params) if blank?(provider_key)
+
+        # no need to check params key encoding. Sinatra framework does it for us.
+        check_params_value_encoding!(params, REPORT_EXPECTED_PARAMS)
 
         transactions = params[:transactions]
 
@@ -422,11 +433,6 @@ module ThreeScale
             !transactions.is_a?(Hash) ||
             transactions.any? { |_id, data| data.nil? }
           halt 400
-        end
-
-        # avoid handling invalid encodings
-        unless transactions.valid_encoding?
-          halt 400, ThreeScale::Backend::NotValidData.new.to_xml
         end
 
         Transactor.report(provider_key, params[:service_id], transactions, response_code: 202, request: request_info)
@@ -562,13 +568,25 @@ module ThreeScale
         raise RequiredParamsMissing unless params && keys.all? { |key| !blank?(params[key]) }
       end
 
+      def check_params_value_encoding!(input_params, params_to_validate)
+        params_to_validate.each do |p|
+          param_value = input_params[p]
+          if !param_value.nil? && !param_value.valid_encoding?
+            halt 400, ThreeScale::Backend::NotValidData.new.to_xml
+          end
+        end
+      end
+
       def normalize_non_empty_keys!
-        COMMON_PARAMS.each do |p|
+        AUTH_AUTHREP_COMMON_PARAMS.each do |p|
           thisparam = params[p]
           if !thisparam.nil?
             if thisparam.class != String
               params[p] = nil
             else
+              unless thisparam.valid_encoding?
+                halt 400, ThreeScale::Backend::NotValidData.new.to_xml
+              end
               contents = thisparam.strip
               # Unfortunately some users send empty app_keys that should have
               # been populated for some OAuth flows - this poses a problem
