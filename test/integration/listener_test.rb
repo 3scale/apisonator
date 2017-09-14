@@ -38,13 +38,6 @@ class ListenerTest < Test::Unit::TestCase
     end
   end
 
-  def test_utf8_exception_is_caught
-    Transactor.stubs(:report).raises(ArgumentError.new('invalid byte sequence in UTF-8'))
-    assert_nothing_raised do
-      post '/transactions.xml?transactions[0]=foo2', :provider_key => 'foo'
-    end
-  end
-
   def test_missing_required_parameters
     post '/services/123/oauth_access_tokens.xml', :provider_key => 'foo' # no :token
     assert_equal 422, last_response.status
