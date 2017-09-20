@@ -3,6 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 class ApplicationTest < Test::Unit::TestCase
 
   ##include TestHelpers::Integration
+  include TestHelpers::Sequences
 
   def setup
     @storage = Storage.instance(true)
@@ -330,6 +331,52 @@ class ApplicationTest < Test::Unit::TestCase
 
     assert_equal 'foo', key
     assert_equal [key], application.keys
+  end
+
+  test '#metric_names returns loaded metric names' do
+    service_id = '1001'
+    metric_id = next_id
+    metric_name = 'hits'
+    plan_id = next_id
+
+    application = Application.save(service_id: service_id,
+                                   id: next_id,
+                                   state: :active,
+                                   plan_id: plan_id)
+
+    Metric.save(service_id: service_id, id: metric_id, name: metric_name)
+    UsageLimit.save(service_id: service_id,
+                    plan_id: plan_id,
+                    metric_id: metric_id,
+                    minute: 10)
+
+    # No metrics loaded
+    assert_empty application.metric_names
+
+    application.metric_name(metric_id)
+    assert_equal({ metric_id => metric_name }, application.metric_names)
+  end
+
+  test '#load_metric_names loads and returns the names of all the metrics for '\
+       'which there is a usage limit that applies to the app' do
+    service_id = '1001'
+    plan_id = next_id
+    metrics = { next_id => 'metric1', next_id => 'metric2' }
+
+    application = Application.save(service_id: service_id,
+                                   id: next_id,
+                                   state: :active,
+                                   plan_id: plan_id)
+
+    metrics.each do |metric_id, metric_name|
+      Metric.save(service_id: service_id, id: metric_id, name: metric_name)
+      UsageLimit.save(service_id: service_id,
+                      plan_id: plan_id,
+                      metric_id: metric_id,
+                      minute: 10)
+    end
+
+    assert_equal metrics, application.load_metric_names
   end
 
   test 'application has no referrer filters when created' do
