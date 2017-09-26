@@ -784,7 +784,8 @@ class AccessTokenTest < Test::Unit::TestCase
            app_id: app_id,
            token: access_token)
 
-      assert_error_resp_with_exc(ThreeScale::Backend::ServiceTokenInvalid.new(service_token))
+      assert_error_resp_with_exc(
+        ThreeScale::Backend::ServiceTokenInvalid.new service_token, service_id)
     end
   end
 
