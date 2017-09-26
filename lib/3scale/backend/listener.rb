@@ -645,9 +645,10 @@ module ThreeScale
       #      This can happen when these 2 are not received or when the pair is
       #      not associated with a provider key.
       def raise_provider_key_error(params)
-        raise ProviderKeyOrServiceTokenRequired if blank?(params[:service_token])
-        raise ServiceIdMissing if blank?(params[:service_id])
-        raise ServiceTokenInvalid, params[:service_token]
+        token, id = params[:service_token], params[:service_id]
+        raise ProviderKeyOrServiceTokenRequired if blank?(token)
+        raise ServiceIdMissing if blank?(id)
+        raise ServiceTokenInvalid.new(token, id)
       end
 
       def ensure_authenticated!(provider_key, service_token, service_id)
