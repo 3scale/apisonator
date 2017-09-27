@@ -932,7 +932,8 @@ class ReportTest < Test::Unit::TestCase
          :service_id => service_id,
          :transactions => { 0 => { :app_id => @application.id, :usage => { 'hits' => 1 } } }
 
-    assert_error_resp_with_exc(ThreeScale::Backend::ServiceTokenInvalid.new(service_token))
+    assert_error_resp_with_exc(
+      ThreeScale::Backend::ServiceTokenInvalid.new service_token, service_id)
   end
 
   # For the next two tests, it is important to bear in mind that when both
