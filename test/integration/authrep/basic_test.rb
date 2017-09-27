@@ -835,7 +835,8 @@ class AuthrepBasicTest < Test::Unit::TestCase
            :service_id => service_id,
            :app_id => @application.id
 
-    assert_error_resp_with_exc(ThreeScale::Backend::ServiceTokenInvalid.new(service_token))
+    assert_error_resp_with_exc(
+      ThreeScale::Backend::ServiceTokenInvalid.new service_token, service_id)
   end
 
   test_authrep 'authrep using valid provider key and blank service token responds with 200' do |e|
