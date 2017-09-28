@@ -437,26 +437,6 @@ class AuthorizeBasicTest < Test::Unit::TestCase
 
     assert_equal 400, last_response.status
 
-    get '/transactions/authorize.xml',  :provider_key => @provider_key,
-                                        :app_id => @application.id,
-                                        :usage => {"\xf0\x90\x28\xbc" => 1}
-
-    ## FIXME: rack test is doing something fishy here. It does not call the rack middleware rack_exception_catcher like
-    ## the examples above. Could be for the explicit querystring,
-    ## get '/transactions/authorize.xml?provider_key=FAKE&app_id=FAKE&usage%5D%5B%5D=1&%5Busage%5D%5Bkilobytes_out%5D=1'
-    ## will simulate the error to get at least some coverage
-
-    Transactor.stubs(:authorize).raises(TypeError.new('expected Hash (got Array) for param `usage\''))
-
-    assert_nothing_raised do
-      get '/transactions/authorize.xml',  :provider_key => 'FAKE',
-                                          :app_id => 'FAKE'
-
-      assert_equal 400, last_response.status
-      assert_error_response :status  => 400,
-                            :code    => 'bad_request',
-                            :message => 'request contains syntax errors, should not be repeated without modification'
-    end
   end
 
   test 'auth using registered (service_token, service_id) instead of provider key responds 200' do
