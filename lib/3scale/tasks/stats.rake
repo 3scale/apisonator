@@ -1,4 +1,20 @@
 namespace :stats do
+  def bucket_storage
+    ThreeScale::Backend::Stats::Storage.bucket_storage
+  end
+
+  def kinesis_exporter
+    ThreeScale::Backend::Analytics::Kinesis::Exporter
+  end
+
+  def redshift_importer
+    ThreeScale::Backend::Analytics::Redshift::Importer
+  end
+
+  def stats_storage
+    ThreeScale::Backend::Stats::Storage
+  end
+
   namespace :buckets do
     desc 'Show number of pending buckets'
     task :size do
@@ -12,13 +28,13 @@ namespace :stats do
 
     desc 'Is bucket storage enabled?'
     task :enabled? do
-      puts ThreeScale::Backend::Stats::Storage.enabled?
+      stats_storage.enabled?
     end
 
     desc 'Enable bucket storage'
     task :enable do
-      if ThreeScale::Backend::Analytics::Kinesis::Exporter.enabled?
-        puts ThreeScale::Backend::Stats::Storage.enable!
+      if kinesis_exporter.enabled?
+        puts stats_storage.enable!
       else
         puts 'Error: enable Kinesis first. Otherwise, buckets will start accumulating in Redis.'
       end
@@ -26,7 +42,7 @@ namespace :stats do
 
     desc 'Disable bucket storage'
     task :disable! do
-      puts ThreeScale::Backend::Stats::Storage.disable!
+      puts stats_storage.disable!
     end
 
     desc 'Delete all the pending buckets'
@@ -36,11 +52,7 @@ namespace :stats do
 
     desc 'Was the latest disable automatic to avoid filling Redis?'
     task :emergency? do
-      puts ThreeScale::Backend::Stats::Storage.last_disable_was_emergency?
-    end
-
-    def bucket_storage
-      ThreeScale::Backend::Stats::Storage.bucket_storage
+      puts stats_storage.last_disable_was_emergency?
     end
   end
 
@@ -83,10 +95,6 @@ namespace :stats do
       limit = args.limit ? args.limit.to_i : nil
       puts kinesis_exporter.flush_pending_events(limit)
     end
-
-    def kinesis_exporter
-      ThreeScale::Backend::Analytics::Kinesis::Exporter
-    end
   end
 
   namespace :redshift do
@@ -118,10 +126,6 @@ namespace :stats do
     desc 'Is data consistent in the DB?'
     task :data_ok? do
       puts redshift_importer.consistent_data?
-    end
-
-    def redshift_importer
-      ThreeScale::Backend::Analytics::Redshift::Importer
     end
   end
 end
