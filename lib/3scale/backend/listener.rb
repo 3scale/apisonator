@@ -513,11 +513,6 @@ module ThreeScale
         builder :transaction_error_count
       end
 
-      get '/transactions/latest.xml' do
-        @transactions = TransactionStorage.list(service_id)
-        builder :latest_transactions
-      end
-
       ## ALERTS & VIOLATIONS
 
       get "/services/:service_id/applications/:app_id/utilization.xml" do
