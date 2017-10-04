@@ -43,7 +43,7 @@ group :development, :test do
 end
 
 # Default server by platform
-gem 'puma', git: 'https://github.com/3scale/puma', tag: '3scale-AMP-2.0.0'
+gem 'puma', git: 'https://github.com/3scale/puma', ref: '9b17499eeb491ab951e519f48416540629d085ec'
 # gems required by the runner
 gem 'gli', '~> 2.16.1', require: nil
 # Workers
@@ -55,6 +55,6 @@ gem 'builder', '= 3.2.3'
 gem 'redis', '= 3.3.3'
 gem 'redis-namespace', '= 1.5.3'
 gem 'resque', '= 1.23.0'
-gem 'rack', '= 1.6.5'
-gem 'sinatra', '= 1.4.8'
-gem 'sinatra-contrib', '= 1.4.7'
+gem 'rack', '= 2.0.3'
+gem 'sinatra', '= 2.0.0'
+gem 'sinatra-contrib', '= 2.0.0'

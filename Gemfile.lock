@@ -8,8 +8,8 @@ GIT
 
 GIT
   remote: https://github.com/3scale/puma
-  revision: de1a1d620009b8bd5ce9c49c5f0737fa6f45a8f5
-  tag: 3scale-AMP-2.0.0
+  revision: 9b17499eeb491ab951e519f48416540629d085ec
+  ref: 9b17499eeb491ab951e519f48416540629d085ec
   specs:
     puma (2.15.3)
 
@@ -84,10 +84,11 @@ GEM
     minitest (5.10.3)
     mocha (1.2.1)
       metaclass (~> 0.0.1)
-    multi_json (1.12.1)
+    multi_json (1.12.2)
     multi_xml (0.6.0)
     multipart-post (2.0.0)
     mustache (1.0.5)
+    mustermann (1.0.1)
     nesty (1.0.2)
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
@@ -107,8 +108,8 @@ GEM
     pry-doc (0.11.1)
       pry (~> 0.9)
       yard (~> 0.9)
-    rack (1.6.5)
-    rack-protection (1.5.3)
+    rack (2.0.3)
+    rack-protection (2.0.0)
       rack
     rack-test (0.6.3)
       rack (>= 1.0)
@@ -152,16 +153,17 @@ GEM
       json (>= 1.8, < 3)
       simplecov-html (~> 0.10.0)
     simplecov-html (0.10.2)
-    sinatra (1.4.8)
-      rack (~> 1.5)
-      rack-protection (~> 1.4)
-      tilt (>= 1.3, < 3)
-    sinatra-contrib (1.4.7)
+    sinatra (2.0.0)
+      mustermann (~> 1.0)
+      rack (~> 2.0)
+      rack-protection (= 2.0.0)
+      tilt (~> 2.0)
+    sinatra-contrib (2.0.0)
       backports (>= 2.0)
       multi_json
-      rack-protection
-      rack-test
-      sinatra (~> 1.4.0)
+      mustermann (~> 1.0)
+      rack-protection (= 2.0.0)
+      sinatra (= 2.0.0)
       tilt (>= 1.3, < 3)
     slop (3.6.0)
     sshkit (1.14.0)
@@ -209,7 +211,7 @@ DEPENDENCIES
   pry-byebug (~> 3.4.2)
   pry-doc (~> 0.11.1)
   puma!
-  rack (= 1.6.5)
+  rack (= 2.0.3)
   rack-test (~> 0.6.2)
   rake (= 10.4.2)
   redis (= 3.3.3)
@@ -220,8 +222,8 @@ DEPENDENCIES
   rspec (~> 3.6.0)
   rspec_api_documentation (~> 5.0.0)
   scientist (= 1.0.0)
-  sinatra (= 1.4.8)
-  sinatra-contrib (= 1.4.7)
+  sinatra (= 2.0.0)
+  sinatra-contrib (= 2.0.0)
   source2swagger!
   sshkit
   statsd-ruby (= 1.4.0)
