@@ -513,20 +513,6 @@ module ThreeScale
         builder :transaction_error_count
       end
 
-      ## ALERTS & VIOLATIONS
-
-      get "/services/:service_id/applications/:app_id/utilization.xml" do
-        @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, application.id)
-        builder :utilization
-      end
-
-      get '/applications/:app_id/utilization.xml' do
-        ## FIXME: two ways of doing the same
-        ## "/services/:service_id/applications/:app_id/utilization.xml"
-        @usage_reports, @max_record, @max_utilization, @stats = Transactor.utilization(service_id, application.id)
-        builder :utilization
-      end
-
       get '/check.txt' do
         content_type 'text/plain'
         body 'ok'

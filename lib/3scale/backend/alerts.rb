@@ -109,11 +109,6 @@ module ThreeScale
         end
       end
 
-      def stats(service_id, application_id)
-        key_stats = "#{build_key(service_id, application_id)}stats_utilization"
-        storage.lrange(key_stats,0,-1) # format compact address,value
-      end
-
       def utilization_discrete(utilization)
         u = utilization * 100.0
         # reverse search
