@@ -14,10 +14,7 @@ module ThreeScale
 
         get '/' do |service_id, app_id|
           utilization = Transactor.utilization(service_id, app_id)
-
-          # app_utilization is an Array with 4 elements. We just want need to
-          # return the first one as it is the only used in multi-tenant.
-          usage_reports = utilization[0].map(&:to_h)
+          usage_reports = utilization.map(&:to_h)
           { status: :found, utilization: usage_reports }.to_json
         end
       end
