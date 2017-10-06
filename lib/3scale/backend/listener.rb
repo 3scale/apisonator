@@ -494,25 +494,6 @@ module ThreeScale
         builder :oauth_app_id_by_token
       end
 
-      ## TRANSACTIONS & ERRORS
-
-      get '/transactions/errors.xml' do
-        @errors = ErrorStorage.list(service_id,
-                                    page: params[:page],
-                                    per_page: params[:per_page])
-        builder :transaction_errors
-      end
-
-      delete '/transactions/errors.xml' do
-        ErrorStorage.delete_all(service_id)
-        200
-      end
-
-      get '/transactions/errors/count.xml' do
-        @count = ErrorStorage.count(service_id)
-        builder :transaction_error_count
-      end
-
       get '/check.txt' do
         content_type 'text/plain'
         body 'ok'
