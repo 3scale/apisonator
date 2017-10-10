@@ -97,7 +97,7 @@ RUN source scl_source enable ${RUBY_SCL} \
  && cp -n openshift/3scale_backend.conf /etc/ \
  && chmod 644 /etc/3scale_backend.conf \
  && BACKEND_VERSION=$(gem build 3scale_backend.gemspec | \
-      sed -n -e 's/^\s*Version\:\s*\([^\s]*\)$/\1/p') \
+      sed -n -e 's/^\s*Version\:\s*\([^[:space:]]*\)$/\1/p') \
  && gem unpack "3scale_backend-${BACKEND_VERSION}.gem" --target=/opt/ruby \
  && cd "/opt/ruby/3scale_backend-${BACKEND_VERSION}" \
  && cp -a /tmp/app/.bundle "/opt/ruby/3scale_backend-${BACKEND_VERSION}/" \
