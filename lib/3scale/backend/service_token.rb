@@ -35,6 +35,7 @@ module ThreeScale
       private_constant :PERMISSIONS_KEY_FIELD
 
       class << self
+        include Memoizer::Decorator
 
         def save(service_token, service_id)
           validate_pairs([{ service_token: service_token, service_id: service_id }])
@@ -53,12 +54,15 @@ module ThreeScale
         end
 
         def delete(service_token, service_id)
-          storage.del(key(service_token, service_id))
+          res = storage.del(key(service_token, service_id))
+          clear_cache(service_token, service_id)
+          res
         end
 
         def exists?(service_token, service_id)
           storage.exists(key(service_token, service_id))
         end
+        memoize :exists?
 
         private
 
@@ -80,6 +84,10 @@ module ThreeScale
 
         def storage
           Storage.instance
+        end
+
+        def clear_cache(service_token, service_id)
+          Memoizer.clear(Memoizer.build_key(self, :exists?, service_token, service_id))
         end
 
       end
