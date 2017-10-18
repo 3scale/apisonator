@@ -315,9 +315,11 @@ module ThreeScale
       end
     end
 
+    # The name for this class stays as ServiceTokenInvalid even though the more
+    # correct name would be ServiceTokenOrIdInvalid to avoid breaking users.
     class ServiceTokenInvalid < Error
-      def initialize(token)
-        super %(service token "#{token}" is invalid)
+      def initialize(token, service_id)
+        super %(service token "#{token}" or service id "#{service_id}" is invalid)
       end
     end
 
