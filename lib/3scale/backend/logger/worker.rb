@@ -20,13 +20,8 @@ module ThreeScale
         private_constant :PlainText
 
         module Json
-          # The format of the message depends on the kind of background job that
-          # sends it:
-          # variable_part run_time run_time+queued_time memoizer_size
-          # memoizer_count memoizer_hits".
-          # variable_part depends on the kind of job. It might contain the job
-          # name, app ids, a message (with spaces), etc. The rest of the message
-          # is common for all the jobs. For now, we discard the variable part.
+          STRING_COMMON_FIELDS = [:job_class].freeze
+          private_constant :STRING_COMMON_FIELDS
 
           FLOAT_COMMON_FIELDS = [:runtime, :run_plus_queued_time].freeze
           private_constant :FLOAT_COMMON_FIELDS
@@ -34,7 +29,9 @@ module ThreeScale
           INT_COMMON_FIELDS = [:memoizer_size, :memoizer_count, :memoizer_hits].freeze
           private_constant :INT_COMMON_FIELDS
 
-          COMMON_LOG_FIELDS = (FLOAT_COMMON_FIELDS + INT_COMMON_FIELDS).freeze
+          COMMON_LOG_FIELDS = (STRING_COMMON_FIELDS +
+                               FLOAT_COMMON_FIELDS +
+                               INT_COMMON_FIELDS).freeze
           private_constant :COMMON_LOG_FIELDS
 
           private
@@ -58,7 +55,15 @@ module ThreeScale
           end
 
           def formatted_msg(msg)
-            common_field_values = msg.split(' '.freeze).last(5)
+            # The format of the message depends on the kind of background job
+            # that sends it:
+            # job_class -variable_part- run_time run_time+queued_time
+            # memoizer_size memoizer_count memoizer_hits.
+            # -variable_part- depends on the kind of job. It might contain app
+            # ids, a message (with spaces), etc. The rest of the message is
+            # common for all the jobs. For now, we discard the variable part.
+            fields = msg.split(' '.freeze)
+            common_field_values = [fields.first] + fields.last(5)
             res = Hash[COMMON_LOG_FIELDS.zip(common_field_values)]
 
             FLOAT_COMMON_FIELDS.each do |field|
