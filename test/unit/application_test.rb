@@ -408,29 +408,29 @@ class ApplicationTest < Test::Unit::TestCase
 
     application.create_referrer_filter('192.*')
     assert_equal (version_app.to_i+1).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 1, application.size_referrer_filters
+    assert_equal 1, application.referrer_filters.size
 
     application.delete_referrer_filter('192.*')
     assert_equal (version_app.to_i+2).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 0, application.size_referrer_filters
+    assert_equal 0, application.referrer_filters.size
 
     key = application.create_key
     assert_not_nil key
     assert_equal (version_app.to_i+3).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 1, application.size_keys
+    assert_equal 1, application.keys.size
 
     application.delete_key(key)
     assert_equal (version_app.to_i+4).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 0, application.size_keys
+    assert_equal 0, application.keys.size
 
     key = application.create_key('key1')
     assert_equal  'key1', key
     assert_equal (version_app.to_i+5).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 1, application.size_keys
+    assert_equal 1, application.keys.size
 
     application.delete_key(key)
     assert_equal (version_app.to_i+6).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 0, application.size_keys
+    assert_equal 0, application.keys.size
 
   end
 
@@ -456,7 +456,73 @@ class ApplicationTest < Test::Unit::TestCase
     Memoizer.reset!
 
     assert_equal [key_bar], application.keys
-
   end
 
+  test '#keys returns keys member set' do
+    application = Application.save(service_id: '1001',
+                                   id: '2001',
+                                   state: :active)
+
+    keys = ['fry', 'bender', 'leela']
+    keys.each { |key| application.create_key(key) }
+
+    assert_equal keys.sort, application.keys.sort
+  end
+
+  test '#has_keys? checks whether keys set is not empty' do
+    application = Application.save(service_id: '1001',
+                                   id: '2001',
+                                   state: :active)
+
+    assert !application.has_keys?
+
+    application.create_key('fry')
+
+    assert application.has_keys?
+  end
+
+  test '#has_no_keys? checks whether keys set is empty' do
+    application = Application.save(service_id: '1001',
+                                   id: '2001',
+                                   state: :active)
+
+    assert application.has_no_keys?
+
+    application.create_key('fry')
+
+    assert !application.has_no_keys?
+  end
+
+  test '#has_key? checks whether member exists in keys set' do
+    application = Application.save(service_id: '1001',
+                                   id: '2001',
+                                   state: :active)
+
+    application.create_key('fry')
+
+    assert application.has_key?('fry')
+    assert !application.has_key?('other')
+  end
+
+  test '#referrer_filters returns referrer_filters member set' do
+    application = Application.save(service_id: '1001',
+                                   id: '2001',
+                                   state: :active)
+
+    filters = ['fry', 'bender', 'leela']
+    filters.each { |f| application.create_referrer_filter(f) }
+
+    assert_equal filters.sort, application.referrer_filters.sort
+  end
+
+  test '#has_referrer_filters? checks whether referrer_filters set is not empty' do
+    application = Application.save(service_id: '1001',
+                                   id: '2001',
+                                   state: :active)
+    assert !application.has_referrer_filters?
+
+    application.create_referrer_filter('fry')
+
+    assert application.has_referrer_filters?
+  end
 end
