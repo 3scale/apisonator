@@ -6,9 +6,27 @@ module ThreeScale
   module Backend
     module Manifest
       class << self
+        PUMA_WORKERS = 'PUMA_WORKERS'.freeze
+        private_constant :PUMA_WORKERS
+
         # Thread safety of our application. Turn this on if we ever are MT safe.
         def thread_safe?
           false
+        end
+
+        # Compute workers based on PUMA_WORKERS env variable
+        # If PUMA_WORKERS does not exist or is empty, use number of cpus
+        def compute_workers(ncpus)
+          return 0 unless Process.respond_to?(:fork)
+          if ENV[PUMA_WORKERS] && !ENV[PUMA_WORKERS].empty?
+            begin
+              Integer(ENV[PUMA_WORKERS])
+            rescue => e
+              raise e, "PUMA_WORKERS environment var cannot be parsed: #{e.message}"
+            end
+          else
+            ncpus << 3
+          end
         end
 
         def server_model
@@ -19,11 +37,7 @@ module ThreeScale
           # Note that these values will likely need to be tweaked depending on
           # the Ruby implementation and how our app behaves!
           ncpus = ThreeScale::Backend::Util.number_of_cpus
-          workers = if Process.respond_to?(:fork)
-                      ENV['PUMA_WORKERS'] || ncpus << 3
-                    else
-                      0
-                    end
+          workers = compute_workers ncpus
           # if no workers but mt-safe, we spawn more threads.
           min_threads, max_threads = if thread_safe?
                                        shift = workers.zero? ? 2 : 0
