@@ -47,6 +47,18 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 'required_params_missing', node['code']
   end
 
+  def test_malformed_hash_param
+    get '/transactions/authorize.xml', :provider_key => 'abc',
+                                       :usage => { '' => 1, 'hits' => 1 }
+
+    assert_equal 400, last_response.status
+
+    node = xml.at('error')
+    assert_equal 'request contains syntax errors, should not be repeated without modification',
+                 node.content
+    assert_equal 'bad_request', node['code']
+  end
+
   private
 
   def xml

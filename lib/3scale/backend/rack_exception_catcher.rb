@@ -20,6 +20,13 @@ module Rack
       'invalid byte sequence in UTF-8'.freeze
     private_constant :INVALID_BYTE_SEQUENCE_ERR_MSG
 
+    # Raised with invalid hash params such as:
+    # usage[]=1&usage[metric]=1.
+    # This is not the whole message. It contains the affected param at the end.
+    EXPECTED_HASH_ERR_MSG = 'Invalid query parameters: '\
+      'expected Hash (got Array)'.freeze
+    private_constant :EXPECTED_HASH_ERR_MSG
+
     def initialize(app, options = {})
       @app = app
       @options = options
@@ -74,8 +81,9 @@ module Rack
 
     # Private:
     # Filter to transform response under specific conditions:
-    # http_status is 400 and error code refers to encoding issues.
-    # When input request has invalid encoding issues, Sinatra does not raise error
+    #   - http_status is 400 and error code refers to encoding issues.
+    #   - http_status is 400 and error code refers to a malformed hash param.
+    # When input request has one of those issues, Sinatra does not raise error
     # and it prepares its own response. For backwards compatibility, we need
     # to capture the error and customize response accordingly.
     # Best and cleanest way to accomplish this is using error handlers. However,
@@ -96,11 +104,15 @@ module Rack
       # According to http://www.rubydoc.info/github/rack/rack/master/file/SPEC#The_Body
       # The Body must respond to each and must only yield String values.
       resp_body = resp.last.inject('') { |acc, x| acc << x }
+
       if resp_body == INVALID_BYTE_SEQUENCE_ERR_MSG
         delete_sinatra_error! env
-        # update response
         resp = respond_with 400, ThreeScale::Backend::NotValidData.new.to_xml
+      elsif resp_body.start_with?(EXPECTED_HASH_ERR_MSG)
+        delete_sinatra_error! env
+        resp = respond_with 400, ThreeScale::Backend::BadRequest.new.to_xml
       end
+
       resp
     end
   end
