@@ -1,13 +1,6 @@
 module ThreeScale
   module Backend
     class Application
-      module Sets
-        include ThreeScale::Backend::HasSet
-        has_set :referrer_filters
-        has_set :keys
-      end
-
-      include Sets
       include Storable
 
       ATTRIBUTES = [:state, :plan_id, :plan_name, :redirect_url,
@@ -229,32 +222,79 @@ module ThreeScale
         @usage_limits ||= UsageLimit.load_all(service_id, plan_id)
       end
 
-      # Creates new application key and adds it to the list of keys of this application.
-      # If +value+ is nil, generates new random key, otherwise uses the given value as
-      # the new key.
+      def active?
+        state == :active
+      end
+
+      #
+      # KEYS
+      #
+
+      def keys
+        # We memoize with self.class to avoid caching the result for specific
+        # instances as opposed to the combination of service_id and app_id.
+        key = Memoizer.build_key(self.class, :keys, service_id, id)
+        Memoizer.memoize_block(key) do
+          storage.smembers(storage_key(:keys))
+        end
+      end
+
+      # Create new application key and add it to the list of keys of this app.
+      # If value is nil, generates new random key, otherwise uses the given
+      # value as the new key.
       def create_key(value = nil)
-        Application.incr_version(service_id,id)
-        super(value || SecureRandom.hex(16))
+        Application.incr_version(service_id, id)
+        Memoizer.clear(Memoizer.build_key(self.class, :keys, service_id, id))
+        value ||= SecureRandom.hex(16)
+        storage.sadd(storage_key(:keys), value)
+        value
       end
 
       def delete_key(value)
         Application.incr_version(service_id,id)
-        super(value)
+        Memoizer.clear(Memoizer.build_key(self.class, :keys, service_id, id))
+        storage.srem(storage_key(:keys), value)
+      end
+
+      def has_keys?
+        storage.scard(storage_key(:keys)).to_i > 0
+      end
+
+      def has_no_keys?
+        !has_keys?
+      end
+
+      def has_key?(value)
+        storage.sismember(storage_key(:keys), value)
+      end
+
+      #
+      # REFERRER FILTER
+      #
+
+      def referrer_filters
+        key = Memoizer.build_key(self.class, :referrer_filters, @service_id, @id)
+        Memoizer.memoize_block(key) do
+          storage.smembers(storage_key(:referrer_filters))
+        end
       end
 
       def create_referrer_filter(value)
         raise ReferrerFilterInvalid, "referrer filter can't be blank" if value.blank?
         Application.incr_version(service_id,id)
-        super(value)
+        Memoizer.clear(Memoizer.build_key(self.class, :referrer_filters, service_id, id))
+        storage.sadd(storage_key(:referrer_filters), value)
+        value
       end
 
       def delete_referrer_filter(value)
         Application.incr_version(service_id,id)
-        super(value)
+        Memoizer.clear(Memoizer.build_key(self.class, :referrer_filters, service_id, id))
+        storage.srem(storage_key(:referrer_filters), value)
       end
 
-      def active?
-        state == :active
+      def has_referrer_filters?
+        storage.scard(storage_key(:referrer_filters)).to_i > 0
       end
 
       private
