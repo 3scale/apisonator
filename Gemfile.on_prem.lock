@@ -196,7 +196,6 @@ DEPENDENCIES
   rack-test (~> 0.6.2)
   rake (= 10.4.2)
   redis (= 3.3.3)
-  redis-namespace (= 1.5.3)
   resque (= 1.23.0)
   resque_spec (~> 0.17.0)
   resque_unit (~> 0.4.4)!
