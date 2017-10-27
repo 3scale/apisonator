@@ -17,7 +17,10 @@ module ThreeScale
                 around_hooks: 'around_perform'.freeze,
                 after_hooks: 'after_perform'.freeze,
                 failure_hooks: 'on_failure'.freeze,
-                after_enqueue_hooks: 'after_enqueue'.freeze }.freeze
+                after_enqueue_hooks: 'after_enqueue'.freeze,
+                before_enqueue_hooks: 'before_enqueue'.freeze,
+                after_dequeue_hooks: 'after_dequeue'.freeze,
+                before_dequeue_hooks: 'before_dequeue' }.freeze
       private_constant(:HOOKS)
 
       HOOKS.keys.each do |hook_type|
