@@ -10,7 +10,10 @@ module ThreeScale
           around_hooks: [:around_perform_2, :around_perform_1],
           after_hooks: [:after_perform_2, :after_perform_1],
           failure_hooks: [:on_failure_1, :on_failure_2],
-          after_enqueue_hooks: [:after_enqueue_1, :after_enqueue_2] }
+          after_enqueue_hooks: [:after_enqueue_1, :after_enqueue_2],
+          before_enqueue_hooks: [:before_enqueue_1, :before_enqueue_2],
+          after_dequeue_hooks: [:after_dequeue_2, :after_dequeue_1],
+          before_dequeue_hooks: [:before_dequeue_2, :before_dequeue_1] }
       end
 
       let(:test_class) do
