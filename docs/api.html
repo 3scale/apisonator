@@ -195,28 +195,28 @@ This is an example of an error response:
 <h5>Example Request</h5>
 
 <code class="http"><pre>
-GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key HTTP/1.1
+GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=app_key HTTP/1.1
 
 Host: su1.3scale.net</pre></code>
 
 <h5>Example Request with referrer</h5>
 
 <code class="http"><pre>
-GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;referrer=example.org HTTP/1.1
+GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=app_key&amp;referrer=example.org HTTP/1.1
 
 Host: su1.3scale.net</pre></code>
 
 <h5>Example Request with usage</h5>
 
 <code class="http"><pre>
-GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;usage[hits]=1&amp;usage[transfer]=1024 HTTP/1.1
+GET /transactions/authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=app_key&amp;usage[hits]=1&amp;usage[transfer]=1024 HTTP/1.1
 
 Host: su1.3scale.net</pre></code>
 
 <h5>Example Request with usage and service_id</h5>
 
 <code class="http"><pre>
-GET /transactions/authorize.xml?service_id=7812315&amp;app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;usage[hits]=1&amp;usage[transfer]=1024 HTTP/1.1
+GET /transactions/authorize.xml?service_id=7812315&amp;app_id=709deaac&amp;provider_key=pkey&amp;app_key=app_key&amp;usage[hits]=1&amp;usage[transfer]=1024 HTTP/1.1
 
 Host: su1.3scale.net</pre></code>
 
@@ -374,7 +374,7 @@ This is an example of an error response:
 <h5>Example Request</h5>
 
 <code class="http"><pre>
-GET /transactions/oauth_authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key HTTP/1.1
+GET /transactions/oauth_authorize.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=app_key HTTP/1.1
 
 Host: su1.3scale.net</pre></code>
 
@@ -423,7 +423,7 @@ The log parameters should be passed along in order to keep a log of your API req
 <h5>Example Request with usage</h5>
 
 <code class="http"><pre>
-GET /transactions/authrep.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;usage[hits]=1&amp;usage[storage]=500 HTTP/1.1
+GET /transactions/authrep.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=app_key&amp;usage[hits]=1&amp;usage[storage]=500 HTTP/1.1
 
 Host: su1.3scale.net</pre></code>
 
@@ -431,7 +431,7 @@ Host: su1.3scale.net</pre></code>
 <h5>Example Request with logs</h5>
 
 <code class="http"><pre>
-GET /transactions/authrep.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=user_key&amp;usage[hits]=1&amp;usage[storage]=500&amp;log[request]=%2Fmethod1.xml%3Fkey%3DXXX%26id%3DYYYY%26usage%5Bbla%5D%3D1&amp;log[response]=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%3Cerror+code%3D%22key_invalid%22%3Ekey+%22XXX%22+is+invalid%3C%2F&amp; log[code]=200&amp; HTTP/1.1
+GET /transactions/authrep.xml?app_id=709deaac&amp;provider_key=pkey&amp;app_key=app_key&amp;usage[hits]=1&amp;usage[storage]=500&amp;log[request]=%2Fmethod1.xml%3Fkey%3DXXX%26id%3DYYYY%26usage%5Bbla%5D%3D1&amp;log[response]=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%3Cerror+code%3D%22key_invalid%22%3Ekey+%22XXX%22+is+invalid%3C%2F&amp; log[code]=200&amp; HTTP/1.1
 
 Host: su1.3scale.net</pre></code>
 

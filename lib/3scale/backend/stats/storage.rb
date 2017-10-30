@@ -77,7 +77,7 @@ module ThreeScale
           # This is a separate storage used only for the analytics system. More
           # specifically, the only things saved in this storage are:
           #   - The buckets handled by the BucketStorage class.
-          #   - The batches of events created by the KinesisAdapter class.
+          #   - The batches of events created by the Kinesis::Adapter class.
           def stats_storage
             @stats_storage ||= if config.analytics_redis && config.analytics_redis[:server]
                                  stats_storage_from_config
