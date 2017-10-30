@@ -69,7 +69,7 @@ namespace :stats do
 
     desc 'Disable sending to Kinesis'
     task :disable do
-      if ThreeScale::Backend::Stats::Storage.enabled?
+      if stats_storage.enabled?
         puts 'Error: disable bucket creation first. Otherwise, they will start accumulating.'
       else
         puts kinesis_exporter.disable
