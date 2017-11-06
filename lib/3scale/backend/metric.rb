@@ -15,10 +15,6 @@ module ThreeScale
         def id_set_key(service_id)
           encode_key("metrics/service_id:#{service_id}/ids")
         end
-
-        def metric_names_key(service_id)
-          encode_key("metrics/service_id:#{service_id}/metric_names")
-        end
       end
 
       include KeyHelpers
