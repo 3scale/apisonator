@@ -12,7 +12,8 @@ RUBY_VERSION := $(shell cat $(PROJECT_PATH)/.ruby-version)
 DOCKER_NAME = $(subst @,,$(PROJECT))
 NAME = $(DOCKER_NAME)-build_$(RUBY_VERSION)
 DEV_NAME := dev_$(DOCKER_NAME)_$(RUBY_VERSION)
-DOCKER_PROJECT_PATH := /home/$(RUBY_USER)/$(PROJECT)
+# DOCKER_PROJECT_PATH value is hardcoded in Dockerfile
+DOCKER_PROJECT_PATH := /home/$(RUBY_USER)/backend
 
 # Sleep at most this much before giving up on docker reading Dockerfile
 # This is used because currently we generate the final form of the Dockerfile on
