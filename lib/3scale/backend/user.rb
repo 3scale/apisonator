@@ -92,10 +92,6 @@ module ThreeScale
         "service:#{service_id}/user:#{username}"
       end
 
-      def self.storage_key(service_id, username, attribute)
-        "service:#{service_id}/user:#{username}/#{attribute}"
-      end
-
       def to_hash
         {
           service_id: service_id,
@@ -124,10 +120,6 @@ module ThreeScale
 
       def key
         self.class.key(service_id, username)
-      end
-
-      def storage_key
-        self.class.storage_key(service_id, username, attribute)
       end
 
       def metric_names
