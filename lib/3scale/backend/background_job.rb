@@ -3,6 +3,7 @@ module ThreeScale
 
     class BackgroundJob
 
+      EMPTY_HOOKS = [].freeze
       Error = Class.new StandardError
 
       class << self
@@ -13,6 +14,12 @@ module ThreeScale
 
         def perform_logged
           raise "This should be overloaded."
+        end
+
+        # Disable hooks to improve performance. Profiling tests show that some
+        # significant CPU resources were consumed sorting and filtering these.
+        def hooks
+          EMPTY_HOOKS
         end
 
         private
