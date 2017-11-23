@@ -68,43 +68,27 @@ module ThreeScale
         # Now OAuth tokens also identify users, so must check tokens anyway if
         # at least one of app or user ids is missing.
         #
-        # We should probably limit the calls to OAuth methods without access
-        # tokens, because they are not really OAuth otherwise. And perhaps also
-        # forbid calling these endpoints with app_id and/or user_id.
-        #
         # NB: so what happens if we call an OAuth method with user_key=K and
         # user_id=U? It is effectively as if app_id was given and no token would
         # need to be checked, but we do... That is not consistent. And madness.
         # Each time I try to understand this I feel I'm becoming dumber...
         #
-        if oauth && (user_id.nil? || app_id.nil?)
-          access_token = params[:access_token]
-          access_token = nil if access_token && access_token.empty?
+        if oauth
+          if user_id.nil? || app_id.nil?
+            access_token = params[:access_token]
+            access_token = nil if access_token && access_token.empty?
 
-          if access_token.nil?
-            raise ApplicationNotFound.new nil if app_id.nil?
-          else
-            begin
-              token_appid, token_uid = OAuth::Token::Storage.get_credentials(
-                access_token, service_id
-              )
-            rescue AccessTokenInvalid => e
-              # Yep, well, er. Someone specified that it is OK to have an
-              # invalid token if an app_id is specified. Somehow passing in
-              # a user_key is still not enough, though...
-              raise e if app_id.nil?
-            end
-
-            # We only take the token ids into account if we had no parameter ids
-            # (we also update the params hash, because countless places just
-            # read from them).
-            if app_id.nil?
-              app_id = params[:app_id] = token_appid
-            end
-            if user_id.nil?
-              user_id = params[:user_id] = token_uid
+            if access_token.nil?
+              raise ApplicationNotFound.new nil if app_id.nil?
+            else
+              app_id, user_id = get_token_ids(access_token, service_id,
+                                              app_id, user_id)
+              # update params, since they are checked elsewhere
+              params[:app_id] = app_id
+              params[:user_id] = user_id
             end
           end
+
           validators = Validators::OAUTH_VALIDATORS
         else
           validators = Validators::VALIDATORS
@@ -139,6 +123,28 @@ module ThreeScale
 
         # returns a status object
         apply_validators(validators, status_attrs, params)
+      end
+
+      def get_token_ids(token, service_id, app_id, user_id)
+        begin
+          token_aid, token_uid = OAuth::Token::Storage.
+                                   get_credentials(token, service_id)
+        rescue AccessTokenInvalid => e
+          # Yep, well, er. Someone specified that it is OK to have an
+          # invalid token if an app_id is specified. Somehow passing in
+          # a user_key is still not enough, though...
+          raise e if app_id.nil?
+        end
+
+        # We only take the token ids into account if we had no parameter ids
+        if app_id.nil?
+          app_id = token_aid
+        end
+        if user_id.nil?
+          user_id = token_uid
+        end
+
+        [app_id, user_id]
       end
 
       def do_authorize(method, provider_key, params, extensions)
