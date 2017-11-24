@@ -195,6 +195,12 @@ module ThreeScale
         Memoizer.memoize(Memoizer.build_key(self.class, :exists?, service_id, id), state)
       end
 
+      def invalidate_cache(cmds, cache_key)
+        # cache key cannot be just cache_key.
+        # Command must be added to avoid collisions between different ops over same key
+        cmds.each { |cmd| Memoizer.clear(Memoizer.build_key(self.class, cmd, cache_key)) }
+      end
+
       def storage_key(attribute)
         self.class.storage_key(service_id, id, attribute)
       end
@@ -233,9 +239,10 @@ module ThreeScale
       def keys
         # We memoize with self.class to avoid caching the result for specific
         # instances as opposed to the combination of service_id and app_id.
-        key = Memoizer.build_key(self.class, :keys, service_id, id)
+        db_key = storage_key(:keys)
+        key = Memoizer.build_key(self.class, :smembers, db_key)
         Memoizer.memoize_block(key) do
-          storage.smembers(storage_key(:keys))
+          storage.smembers(db_key)
         end
       end
 
@@ -244,20 +251,26 @@ module ThreeScale
       # value as the new key.
       def create_key(value = nil)
         Application.incr_version(service_id, id)
-        Memoizer.clear(Memoizer.build_key(self.class, :keys, service_id, id))
+        db_key = storage_key(:keys)
+        invalidate_cache([:smembers, :scard], db_key)
         value ||= SecureRandom.hex(16)
-        storage.sadd(storage_key(:keys), value)
+        storage.sadd(db_key, value)
         value
       end
 
       def delete_key(value)
         Application.incr_version(service_id,id)
-        Memoizer.clear(Memoizer.build_key(self.class, :keys, service_id, id))
-        storage.srem(storage_key(:keys), value)
+        db_key = storage_key(:keys)
+        invalidate_cache([:smembers, :scard, :sismember], db_key)
+        storage.srem(db_key, value)
       end
 
       def has_keys?
-        storage.scard(storage_key(:keys)).to_i > 0
+        db_key = storage_key(:keys)
+        key = Memoizer.build_key(self.class, :scard, db_key)
+        Memoizer.memoize_block(key) do
+          storage.scard(db_key).to_i > 0
+        end
       end
 
       def has_no_keys?
@@ -265,7 +278,11 @@ module ThreeScale
       end
 
       def has_key?(value)
-        storage.sismember(storage_key(:keys), value)
+        db_key = storage_key(:keys)
+        key = Memoizer.build_key(self.class, :sismember, db_key, value)
+        Memoizer.memoize_block(key) do
+          storage.sismember(db_key, value)
+        end
       end
 
       #
@@ -273,28 +290,35 @@ module ThreeScale
       #
 
       def referrer_filters
-        key = Memoizer.build_key(self.class, :referrer_filters, @service_id, @id)
+        db_key = storage_key(:referrer_filters)
+        key = Memoizer.build_key(self.class, :smembers, db_key)
         Memoizer.memoize_block(key) do
-          storage.smembers(storage_key(:referrer_filters))
+          storage.smembers(db_key)
         end
       end
 
       def create_referrer_filter(value)
         raise ReferrerFilterInvalid, "referrer filter can't be blank" if value.blank?
         Application.incr_version(service_id,id)
-        Memoizer.clear(Memoizer.build_key(self.class, :referrer_filters, service_id, id))
-        storage.sadd(storage_key(:referrer_filters), value)
+        db_key = storage_key(:referrer_filters)
+        invalidate_cache([:smembers, :scard], db_key)
+        storage.sadd(db_key, value)
         value
       end
 
       def delete_referrer_filter(value)
         Application.incr_version(service_id,id)
-        Memoizer.clear(Memoizer.build_key(self.class, :referrer_filters, service_id, id))
-        storage.srem(storage_key(:referrer_filters), value)
+        db_key = storage_key(:referrer_filters)
+        invalidate_cache([:smembers, :scard], db_key)
+        storage.srem(db_key, value)
       end
 
       def has_referrer_filters?
-        storage.scard(storage_key(:referrer_filters)).to_i > 0
+        db_key = storage_key(:referrer_filters)
+        key = Memoizer.build_key(self.class, :scard, db_key)
+        Memoizer.memoize_block(key) do
+          storage.scard(db_key).to_i > 0
+        end
       end
 
       private
