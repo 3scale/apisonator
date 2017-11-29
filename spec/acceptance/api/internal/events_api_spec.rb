@@ -65,8 +65,6 @@ resource 'Events' do
   delete '/events/' do
     parameter :upto_id, "ID of the last event of the range", required: true
 
-    let(:raw_post) { params.to_json }
-
     context 'when there are errors to delete' do
       before do
         4.times do

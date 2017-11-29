@@ -144,7 +144,6 @@ resource 'Service Tokens (prefix: /service_tokens)' do
     end
 
     let(:service_tokens) { existing_tokens + non_existing_tokens }
-    let(:raw_post) { params.to_json }
 
     before do
       existing_tokens.each do |token|
