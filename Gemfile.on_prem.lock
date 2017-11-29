@@ -101,8 +101,8 @@ GEM
     rack (2.0.3)
     rack-protection (2.0.0)
       rack
-    rack-test (0.6.3)
-      rack (>= 1.0)
+    rack-test (0.8.2)
+      rack (>= 1.0, < 3)
     rake (10.4.2)
     redis (3.3.3)
     redis-namespace (1.6.0)
@@ -196,7 +196,7 @@ DEPENDENCIES
   pry-doc (~> 0.11.1)
   puma!
   rack (= 2.0.3)
-  rack-test (~> 0.6.2)
+  rack-test (~> 0.8.2)
   rake (= 10.4.2)
   redis (= 3.3.3)
   resque (= 1.27.4)
