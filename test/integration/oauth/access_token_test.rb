@@ -310,19 +310,43 @@ class AccessTokenTest < Test::Unit::TestCase
   end
 
   test 'create oauth_access_token with empty token returns RequiredParamsMissing' do
-    ['', nil, [], {}].each do |token|
-      post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
-                                                               :app_id => @application.id,
-                                                               :token => token
+    # Note: cannot use an empty array here because it is replaced with [""] by
+    # newer versions of rack-test. Not that it matters, because the empty array
+    # was never represented by rack as an empty array, but [""], so rack-test is
+    # now conforming to what rack does.
+    ['', nil, {}].each do |token|
+      post "/services/#{@service.id}/oauth_access_tokens.xml",
+        :provider_key => @provider_key,
+        :app_id => @application.id,
+        :token => token
 
       assert_error_resp_with_exc(RequiredParamsMissing.new)
 
       get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
-          :provider_key => @provider_key
+        :provider_key => @provider_key
 
       assert_equal 200, last_response.status
       assert xml.at('oauth_access_tokens').element_children.empty?
     end
+  end
+
+  test 'create oauth_access_token with a token array returns AccessTokenFormatInvalid' do
+    # Note: rack and rack-test will replace [] with [""] in parameters. [] by
+    # itself should return RequiredParamsMissing, but since it is not
+    # representable any more, we populate the array here and test for the 2nd
+    # line of defense (ie. we don't accept anything but non-empty Strings).
+    post "/services/#{@service.id}/oauth_access_tokens.xml",
+      :provider_key => @provider_key,
+      :app_id => @application.id,
+      :token => ["token"]
+
+    assert_error_resp_with_exc(AccessTokenFormatInvalid.new)
+
+    get "/services/#{@service.id}/applications/#{@application.id}/oauth_access_tokens.xml",
+      :provider_key => @provider_key
+
+    assert_equal 200, last_response.status
+    assert xml.at('oauth_access_tokens').element_children.empty?
   end
 
   test 'create oauth_access_token with invalid token returns AccessTokenFormatInvalid' do
