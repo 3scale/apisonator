@@ -20,7 +20,6 @@ class UsageLimitTest < Test::Unit::TestCase
   end
 
   def test_save
-    Service.expects(:incr_version).with('2001')
     UsageLimit.save(:service_id => '2001',
                     :plan_id    => '3001',
                     :metric_id  => '4001',
@@ -96,7 +95,6 @@ class UsageLimitTest < Test::Unit::TestCase
                     :metric_id  => 4001,
                     :minute     => 10)
 
-    Service.expects(:incr_version).with(2001)
     UsageLimit.delete(2001, 3001, 4001, :minute)
 
     assert_nil UsageLimit.load_value(2001, 3001, 4001, :minute)

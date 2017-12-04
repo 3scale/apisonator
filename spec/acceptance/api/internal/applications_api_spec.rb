@@ -71,8 +71,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
 
       app = ThreeScale::Backend::Application.load(service_id, id)
       expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
-      expect(app.to_hash).to eq application.merge(user_required: false,
-                                                  version: '1')
+      expect(app.to_hash).to eq application.merge(user_required: false)
     end
 
   end
@@ -107,9 +106,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
 
         app = ThreeScale::Backend::Application.load(service_id, id)
         expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
-        # Since the app has been modified, version should be '2'
-        expect(app.to_hash).to eq application.merge(user_required: false,
-                                                    version: '2')
+        expect(app.to_hash).to eq application.merge(user_required: false)
       end
     end
 
@@ -125,8 +122,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         app = ThreeScale::Backend::Application.load(service_id, non_existing_id)
         expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
         expect(app.to_hash).to eq application.merge(id: non_existing_id,
-                                                    user_required: false,
-                                                    version: '1')
+                                                    user_required: false)
       end
     end
 

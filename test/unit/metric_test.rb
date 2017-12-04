@@ -13,7 +13,6 @@ class MetricTest < Test::Unit::TestCase
 
   def test_save
     metric = Metric.new(:service_id => 1001, :id => 2001, :name => 'hits')
-    Service.expects(:incr_version).with(1001)
     metric.save
 
     assert_equal '2001',   storage.get("metric/service_id:1001/name:hits/id")
@@ -180,7 +179,6 @@ class MetricTest < Test::Unit::TestCase
   end
 
   def test_delete
-    Service.expects(:incr_version).with(1001).times(3)
     Metric.save(:service_id => 1001, :id => 2003, :name => 'donkeys')
     Metric.delete(1001, 2003)
 
