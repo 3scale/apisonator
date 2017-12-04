@@ -50,16 +50,12 @@ module ThreeScale
               p_val = attributes[period.to_sym]
               p_val and storage.set(key_for_period(prefix, period), p_val)
             end
-            Service.incr_version(service_id)
           end
           clear_cache(service_id, plan_id)
         end
 
         def delete(service_id, plan_id, metric_id, period)
-          storage.pipelined do
-            storage.del(key(service_id, plan_id, metric_id, period))
-            Service.incr_version(service_id)
-          end
+          storage.del(key(service_id, plan_id, metric_id, period))
           clear_cache(service_id, plan_id)
         end
 

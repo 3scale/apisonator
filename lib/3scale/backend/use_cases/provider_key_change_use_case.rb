@@ -15,7 +15,6 @@ module ThreeScale
         service_ids.each do |service_id|
           storage.set Service.storage_key(service_id, :provider_key), @new_key
           storage.sadd Service.storage_key_by_provider(@new_key, :ids), service_id
-          storage.incr Service.storage_key(service_id, :version)
         end
 
         storage.set Service.storage_key_by_provider(@new_key, :id), default_service_id

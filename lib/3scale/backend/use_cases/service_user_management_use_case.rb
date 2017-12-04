@@ -8,10 +8,7 @@ module ThreeScale
       end
 
       def add
-        isnew = storage.sadd(@service.storage_key("user_set"), @username)
-        @service.bump_version
-
-        return isnew
+        storage.sadd(@service.storage_key("user_set"), @username)
       end
 
       def exists?
@@ -19,10 +16,7 @@ module ThreeScale
       end
 
       def delete
-        deleted = storage.srem @service.storage_key("user_set"), @username
-        @service.bump_version
-
-        deleted
+        storage.srem @service.storage_key("user_set"), @username
       end
 
       private

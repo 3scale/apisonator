@@ -5,20 +5,16 @@ module ThreeScale
 
       ATTRIBUTES = %w(referrer_filters_required backend_version
         user_registration_required default_user_plan_id default_user_plan_name
-        provider_key version).freeze
+        provider_key).freeze
       private_constant :ATTRIBUTES
 
       attr_accessor :provider_key, :id, :backend_version,
         :default_user_plan_id, :default_user_plan_name
       attr_writer :referrer_filters_required, :user_registration_required,
-        :version, :default_service
+        :default_service
 
       class << self
         include Memoizer::Decorator
-
-        def incr_version(id)
-          storage.incr storage_key(id, :version)
-        end
 
         # Returns true if a given service belongs to the provider with
         # that key without loading the whole object.
@@ -88,7 +84,7 @@ module ThreeScale
         end
 
         def exists?(service_id)
-          storage.exists(storage_key(service_id, 'version'))
+          storage.exists(storage_key(service_id, 'provider_key'))
         end
 
         def get_service(id)
@@ -146,7 +142,6 @@ module ThreeScale
             service_attrs['referrer_filters_required'].to_i > 0
           service_attrs['user_registration_required'] = massage_get_user_registration_required(
             service_attrs['user_registration_required'])
-          service_attrs['version'] = massage_version(id, service_attrs['version'])
 
           service_attrs
         end
@@ -162,10 +157,6 @@ module ThreeScale
             attributes[:user_registration_required] =
               (!val.nil? && val.to_i == 0) ? false : true
           end
-        end
-
-        def massage_version(id, vv)
-          vv || storage.incr(storage_key(id, :version))
         end
 
         def get_attr(id, attribute)
@@ -194,7 +185,6 @@ module ThreeScale
         set_as_default_if_needed
         persist
         clear_cache
-
         self
       end
 
@@ -209,10 +199,6 @@ module ThreeScale
       def delete_data
         delete_from_lists
         delete_attributes
-      end
-
-      def bump_version
-        storage.incr storage_key(:version)
       end
 
       def to_hash
@@ -268,15 +254,12 @@ module ThreeScale
         persist_default(self.class.default_id(provider_key)) if default_service?
         persist_attributes
         persist_sets
-
-        bump_version
       end
 
       def persist_default(old_default_id)
         # we get all sorts of combinations of Strings and Fixnums here. Convert'em.
         if old_default_id.to_i != id.to_i
           storage.set storage_key_by_provider(:id), id
-          storage.incr self.class.storage_key(old_default_id, :version)
           # we should now clear memoizations of the previous default service
           self.class.clear_cache(provider_key, old_default_id)
         end
