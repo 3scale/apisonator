@@ -1,7 +1,8 @@
+raise "Memoizer is not thread safe" if ThreeScale::Backend::Manifest.thread_safe?
+
 module ThreeScale
   module Backend
     class Memoizer
-
       EXPIRE = 60
       PURGE = 60
       MAX_ENTRIES = 10000
@@ -34,23 +35,23 @@ module ThreeScale
         # call singleton_class? before actually doing so.
         if klass.respond_to? :singleton_class? and klass.singleton_class?
           # obtain class from Ruby's metaclass notation
-          classkey = classkey.split(':').delete_if do |k|
-            k[0] == '#'
-          end.join(':').split('>').first
+          classkey.split(':'.freeze).delete_if do |k|
+            k[0] == '#'.freeze
+          end.join(':'.freeze).split('>'.freeze).first
         else
           classkey
         end
       end
 
       def self.build_method_key(classkey, methodname)
-        classkey + '.' + methodname
+        classkey + '.'.freeze + methodname
       end
 
       def self.build_args_key(methodkey, *args)
         if args.empty?
           methodkey
         else
-          methodkey + '-' + args.join('-')
+          methodkey + '-'.freeze + args.join('-'.freeze)
         end
       end
 
