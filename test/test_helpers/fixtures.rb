@@ -13,7 +13,6 @@ module TestHelpers
       @master_service_id = ThreeScale::Backend.configuration.master_service_id.to_s
 
       @master_hits_id         = next_id
-      @master_reports_id      = next_id
       @master_authorizes_id   = next_id
       @master_transactions_id = next_id
       @master_provider_key    = "master_provider_key_#{next_id}"

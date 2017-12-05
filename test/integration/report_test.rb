@@ -327,14 +327,14 @@ class ReportTest < Test::Unit::TestCase
       Backend::Transactor.process_batch(0, all: true)
       Resque.run!
 
-      assert_equal 1, @storage.get(application_key(@master_service_id,
+      assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_hits_id,
                                                    :month, '20100501')).to_i
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
-                                                   @master_reports_id,
+                                                   @master_transactions_id,
                                                    :month, '20100501')).to_i
     end
   end
@@ -370,7 +370,7 @@ class ReportTest < Test::Unit::TestCase
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
-                                                   @master_reports_id,
+                                                   @master_transactions_id,
                                                    :month, '20100501')).to_i
     end
   end
@@ -387,7 +387,7 @@ class ReportTest < Test::Unit::TestCase
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
-                                                   @master_reports_id,
+                                                   @master_transactions_id,
                                                    :month, '20100501')).to_i
     end
   end
@@ -621,16 +621,23 @@ class ReportTest < Test::Unit::TestCase
       assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
       assert_equal 0, Resque.queues[:main].size
 
-      assert_equal configuration.notification_batch, @storage.get(application_key(@master_service_id,
-                                                  @provider_application_id,
-                                                  @master_hits_id,
-                                                  :month, '20100501')).to_i
+      assert_equal 0, @storage.get(application_key(@master_service_id,
+                                                   @provider_application_id,
+                                                   @master_hits_id,
+                                                   :month, '20100501')).to_i
+      assert_equal configuration.notification_batch*3,
+        @storage.get(application_key(@master_service_id,
+                                     @provider_application_id,
+                                     @master_transactions_id,
+                                     :month, '20100501')).to_i
     end
   end
 
   test 'successful aggregation of notify jobs with multiple iterations' do
+    batches = 5
+    batchsize = configuration.notification_batch
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      ((configuration.notification_batch*5.5).to_i).times do
+      (batchsize * (batches + 0.5)).to_i.times do
         post '/transactions.xml',
           :provider_key => @provider_key,
           :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
@@ -639,13 +646,15 @@ class ReportTest < Test::Unit::TestCase
         Resque.run!
       end
 
-      assert_equal (configuration.notification_batch*0.5).to_i, @storage.llen(Transactor.key_for_notifications_batch)
+      assert_equal (batchsize * 0.5).to_i,
+        @storage.llen(Transactor.key_for_notifications_batch)
       assert_equal 0, Resque.queues[:main].size
 
-      assert_equal configuration.notification_batch*5, @storage.get(application_key(@master_service_id,
-                                                  @provider_application_id,
-                                                  @master_hits_id,
-                                                  :month, '20100501')).to_i
+      assert_equal batchsize * batches * 3,
+        @storage.get(application_key(@master_service_id,
+                                     @provider_application_id,
+                                     @master_transactions_id,
+                                     :month, '20100501')).to_i
     end
   end
 
