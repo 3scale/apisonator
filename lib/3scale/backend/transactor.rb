@@ -167,7 +167,7 @@ module ThreeScale
           application_id = status.application.id
           username = status.user.username unless status.user.nil?
           report_enqueue(status.service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}), {})
-          notify_authrep(provider_key, usage ? usage.size : 0)
+          notify_authrep(provider_key, usage ? 1 : 0)
         else
           notify_authorize(provider_key)
         end
