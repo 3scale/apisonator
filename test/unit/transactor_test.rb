@@ -101,8 +101,7 @@ class TransactorTest < Test::Unit::TestCase
 
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
-                     {'transactions/create_multiple' => 1,
-                      'transactions'                 => 2},
+                     { 'transactions' => 2 },
                      '2010-07-29 11:48:00 UTC',
                      Time.utc(2010, 7, 29, 11, 48).to_f]
     end
@@ -117,8 +116,7 @@ class TransactorTest < Test::Unit::TestCase
 
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
-                     {'transactions/create_multiple' => 1,
-                      'transactions'                 => 2},
+                     { 'transactions' => 2 },
                      '2010-07-29 11:48:00 UTC',
                      Time.utc(2010, 7, 29, 11, 48).to_f]
     end

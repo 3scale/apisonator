@@ -21,7 +21,6 @@ module TestHelpers
       Metric.save(
         :service_id => @master_service_id, :id => @master_hits_id, :name => 'hits',
         :children => [
-          Metric.new(:id => @master_reports_id,    :name => 'transactions/create_multiple'),
           Metric.new(:id => @master_authorizes_id, :name => 'transactions/authorize')])
 
       Metric.save(
@@ -110,7 +109,6 @@ module TestHelpers
         id:         100,
         name:       'hits',
         children:   [
-          Metric.new(id: 101, name: 'transactions/create_multiple'),
           Metric.new(id: 102, name: 'transactions/authorize')
         ])
 
