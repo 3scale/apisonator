@@ -540,14 +540,27 @@ class AccessTokenTest < Test::Unit::TestCase
 
     assert_equal 200, last_response.status
 
-    sleep 1
+    sleep 1.2
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => '666',
                                                              :ttl => 1
-
     assert_equal 200, last_response.status
+  end
+
+  test 'recreating the same access token is not allowed' do
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => '666',
+                                                             :ttl => 10 # should not expire before next request
+    assert_equal 200, last_response.status
+
+    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
+                                                             :app_id => @application.id,
+                                                             :token => '666',
+                                                             :ttl => 1
+    assert_error_resp_with_exc(AccessTokenAlreadyExists.new '666')
   end
 
   test 'test that tokens of different application do not get mixed' do
