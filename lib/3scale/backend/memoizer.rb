@@ -1,21 +1,25 @@
+raise "Memoizer is not thread safe" if ThreeScale::Backend::Manifest.thread_safe?
+
 module ThreeScale
   module Backend
     class Memoizer
-
       EXPIRE = 60
       PURGE = 60
       MAX_ENTRIES = 10000
       ACTIVE = true
       private_constant :EXPIRE, :PURGE, :MAX_ENTRIES, :ACTIVE
 
-      # Initialize the class variables
-      # XXX Note: using class variables is generally bad practice,
-      # we might want to clean this up in the future
-      @@memoizer_cache = Hash.new
-      @@memoizer_cache_expires = Hash.new
-      @@memoizer_purge_time = nil
-      @@memoizer_stats_count = 0
-      @@memoizer_stats_hits = 0
+      def self.reset!
+        # Initialize class instance variables
+        # Note: we would be better off pre-allocating the Hash size
+        # ie. rb_hash_new_with_size(MAX_ENTRIES)
+        @memoizer_cache = Hash.new
+        @memoizer_purge_time = Time.now.getutc.to_i + PURGE
+        @memoizer_stats_count = 0
+        @memoizer_stats_hits = 0
+      end
+
+      reset!
 
       # Key management:
       #
@@ -34,30 +38,30 @@ module ThreeScale
         # call singleton_class? before actually doing so.
         if klass.respond_to? :singleton_class? and klass.singleton_class?
           # obtain class from Ruby's metaclass notation
-          classkey = classkey.split(':').delete_if do |k|
-            k[0] == '#'
-          end.join(':').split('>').first
+          classkey.split(':'.freeze).delete_if do |k|
+            k[0] == '#'.freeze
+          end.join(':'.freeze).split('>'.freeze).first
         else
           classkey
         end
       end
 
       def self.build_method_key(classkey, methodname)
-        classkey + '.' + methodname
+        classkey + '.'.freeze + methodname
       end
 
       def self.build_args_key(methodkey, *args)
         if args.empty?
           methodkey
         else
-          methodkey + '-' + args.join('-')
+          methodkey + '-'.freeze + args.join('-'.freeze)
         end
       end
 
       # A method to inspect in debugging mode the contents of the cache
       def self.cache
         raise 'Memoizer.cache only in development!' unless ThreeScale::Backend.development?
-        @@memoizer_cache
+        @memoizer_cache
       end
 
       public
@@ -80,81 +84,78 @@ module ThreeScale
         end
       end
 
-      def self.reset!
-        @@memoizer_cache = Hash.new
-        @@memoizer_cache_expires = Hash.new
-        @@memoizer_purge_time = nil
-        @@memoizer_stats_count = 0
-        @@memoizer_stats_hits = 0
-      end
+      if ACTIVE
+        Entry = Struct.new(:obj, :expire)
+        private_constant :Entry
 
-      def self.memoized?(key)
-        return false unless ACTIVE
-        @@memoizer_cache ||= Hash.new
-        @@memoizer_cache_expires ||= Hash.new
+        def self.fetch(key)
+          @memoizer_stats_count = @memoizer_stats_count + 1
 
-        now = Time.now.getutc.to_i
-        @@memoizer_purge_time ||= now
+          cached = @memoizer_cache[key]
 
-        is_memoized = (@@memoizer_cache.has_key?(key) && @@memoizer_cache_expires.has_key?(key) && (now - @@memoizer_cache_expires[key]) < EXPIRE)
-        purge(now) if (@@memoizer_purge_time.nil? || (now - @@memoizer_purge_time) > PURGE)
+          now = Time.now.getutc.to_i
+          purge(now) if now > @memoizer_purge_time
 
-        @@memoizer_stats_count ||= 0
-        @@memoizer_stats_hits ||= 0
+          if cached && now <= cached.expire
+            @memoizer_stats_hits = @memoizer_stats_hits + 1
+            cached
+          end
+        end
 
-        @@memoizer_stats_count = @@memoizer_stats_count + 1
-        @@memoizer_stats_hits = @@memoizer_stats_hits + 1 if is_memoized
+        def self.memoize(key, obj)
+          @memoizer_cache[key] = Entry.new(obj, Time.now.getutc.to_i + EXPIRE)
+          obj
+        end
+      else
+        def self.fetch(_key)
+          nil
+        end
 
-        return is_memoized
-      end
-
-      def self.memoize(key, obj)
-        return obj unless ACTIVE
-        @@memoizer_cache ||= Hash.new
-        @@memoizer_cache_expires ||= Hash.new
-        @@memoizer_cache[key] = obj
-        @@memoizer_cache_expires[key] = Time.now.getutc.to_i
-        obj
+        def self.memoize(_key, obj)
+          obj
+        end
       end
 
       def self.get(key)
-        @@memoizer_cache[key]
+        entry = @memoizer_cache[key]
+        entry.obj if entry
+      end
+
+      def self.memoized?(key)
+        !!(fetch key)
       end
 
       def self.clear(keys)
         Array(keys).each do |key|
-          @@memoizer_cache_expires.delete key
-          @@memoizer_cache.delete key
+          @memoizer_cache.delete key
         end
       end
 
       def self.purge(time)
-        ## not thread safe
-        @@memoizer_purge_time = time
+        @memoizer_purge_time = time + PURGE
 
-        @@memoizer_cache_expires.each do |key, inserted_at|
-          if (time - inserted_at > EXPIRE)
-            @@memoizer_cache_expires.delete(key)
-            @@memoizer_cache.delete(key)
-          end
+        @memoizer_cache.delete_if do |_, entry|
+          time > entry.expire
         end
 
         ##safety, should never reach this unless massive concurrency
-        reset! if @@memoizer_cache_expires.size > MAX_ENTRIES
+        reset! if @memoizer_cache.size > MAX_ENTRIES
       end
 
       def self.stats
-        @@memoizer_cache ||= Hash.new
-        @@memoizer_cache_expires ||= Hash.new
-        {:size => @@memoizer_cache.size, :count => (@@memoizer_stats_count || 0), :hits => (@@memoizer_stats_hits || 0)}
+        {
+          size: @memoizer_cache.size,
+          count: @memoizer_stats_count,
+          hits: @memoizer_stats_hits,
+        }
       end
 
       def self.memoize_block(key, &block)
-        if !memoized?(key)
-          obj = yield
-          Memoizer.memoize(key, obj)
+        entry = fetch key
+        if entry.nil?
+          Memoizer.memoize(key, yield)
         else
-          Memoizer.get(key)
+          entry.obj
         end
       end
 
