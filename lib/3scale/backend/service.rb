@@ -46,7 +46,7 @@ module ThreeScale
           return if service_id.nil?
 
           service_attrs = get_service(id = service_id.to_s)
-          massage_service_attrs id, service_attrs
+          massage_service_attrs service_attrs
 
           return if service_attrs['provider_key'].nil?
 
@@ -137,7 +137,7 @@ module ThreeScale
 
         private
 
-        def massage_service_attrs(id, service_attrs)
+        def massage_service_attrs(service_attrs)
           service_attrs['referrer_filters_required'] =
             service_attrs['referrer_filters_required'].to_i > 0
           service_attrs['user_registration_required'] = massage_get_user_registration_required(
