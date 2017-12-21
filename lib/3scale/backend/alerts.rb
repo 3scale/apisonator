@@ -1,7 +1,69 @@
 module ThreeScale
   module Backend
     module Alerts
+      module KeyHelpers
+        private
+
+        # The compacted hour and day in the params refer to the
+        # TimeHacks.to_compact_s method.
+        def alert_keys(service_id, app_id, discrete_utilization,
+                       compacted_day_start, compacted_hour_start)
+          {
+            hits_per_day_and_discrete_utilization: key_hits_day_and_discr_util(
+                service_id, app_id, compacted_day_start, discrete_utilization),
+            already_notified: key_already_notified(service_id, app_id, discrete_utilization),
+            allowed: key_allowed_set(service_id),
+            current_max: key_current_max(service_id, app_id, compacted_hour_start),
+            last_time_period: key_last_time_period(service_id, app_id),
+            stats_utilization: key_stats_utilization(service_id, app_id),
+            current_id: key_current_id
+          }
+        end
+
+        def key_prefix(service_id, app_id = nil)
+          prefix = "alerts/service_id:#{service_id}/"
+          prefix << "app_id:#{app_id}/" if app_id
+          prefix
+        end
+
+        def key_hits_day_and_discr_util(service_id, app_id,
+                                        compacted_day_start, discrete_utilization)
+          prefix = key_prefix(service_id, app_id)
+          "#{prefix}#{compacted_day_start}/#{discrete_utilization}"
+        end
+
+        def key_already_notified(service_id, app_id, discrete_utilization)
+          prefix = key_prefix(service_id, app_id)
+          "#{prefix}#{discrete_utilization}/already_notified"
+        end
+
+        def key_allowed_set(service_id)
+          prefix = key_prefix(service_id)
+          "#{prefix}allowed_set"
+        end
+
+        def key_current_max(service_id, app_id, compacted_hour_start)
+          prefix = key_prefix(service_id, app_id)
+          "#{prefix}#{compacted_hour_start}/current_max"
+        end
+
+        def key_last_time_period(service_id, app_id)
+          prefix = key_prefix(service_id, app_id)
+          "#{prefix}last_time_period"
+        end
+
+        def key_stats_utilization(service_id, app_id)
+          prefix = key_prefix(service_id, app_id)
+          "#{prefix}stats_utilization"
+        end
+
+        def key_current_id
+          'alerts/current_id'.freeze
+        end
+      end
+
       extend self
+      extend KeyHelpers
 
       ALERT_TTL       = 24*3600 # 1 day (only one message per day)
       ## zero must be here and sorted, yes or yes
@@ -45,56 +107,48 @@ module ThreeScale
         # UNIX timestamp for key expiration - add 1 day + 5 mins
         expire_at = (beginning_of_day + 86700).to_i
 
-        alerts_service_app = build_key(service_id, app_id)
-        alerts_service = build_key(service_id)
+        keys = alert_keys(service_id, app_id, discrete, period_day, period_hour)
 
-        key = "#{alerts_service_app}#{period_day}/#{discrete}"
-        key_notified = "#{alerts_service_app}#{discrete}/already_notified"
-        key_allowed = "#{alerts_service}allowed_set"
-        key_current_max = "#{alerts_service_app}#{period_hour}/current_max"
-        key_last_time_period = "#{alerts_service_app}last_time_period"
-        key_stats_utilization = "#{alerts_service_app}stats_utilization"
-
-        ## key_notified does not have the period, it reacts to (service_id/app_id/discrete)
         _, already_alerted, allowed, current_max, last_time_period, _, _ = storage.pipelined do
-          storage.incrby(key,"1")
-          storage.get(key_notified)
-          storage.sismember(key_allowed,discrete)
-          storage.get(key_current_max)
-          storage.get(key_last_time_period)
-          storage.expireat(key, expire_at)
-          storage.expireat(key_current_max, expire_at)
+          storage.incr(keys[:hits_per_day_and_discrete_utilization])
+          storage.get(keys[:already_notified])
+          storage.sismember(keys[:allowed], discrete)
+          storage.get(keys[:current_max])
+          storage.get(keys[:last_time_period])
+          storage.expireat(keys[:hits_per_day_and_discrete_utilization], expire_at)
+          storage.expireat(keys[:current_max], expire_at)
         end
 
         ## update the status of utilization
-        if (max_utilization_i > current_max.to_i)
+        if max_utilization_i > current_max.to_i
 
-          if (current_max.to_i == 0) && period_hour!=last_time_period
+          if (current_max.to_i == 0) && period_hour != last_time_period
             ## the first one of the hour and not itself. This is only done once per hour
 
             if !last_time_period.nil?
-              value = storage.get("#{alerts_service_app}#{last_time_period}/current_max")
+              value = storage.get(key_current_max(service_id, app_id, last_time_period))
               value = value.to_i
               if value > 0
                 storage.pipelined do
-                  storage.rpush(key_stats_utilization, "#{Time.parse_to_utc(last_time_period)},#{value}")
-                  storage.ltrim(key_stats_utilization, 0, 24*7 - 1)
+                  storage.rpush(keys[:stats_utilization],
+                                "#{Time.parse_to_utc(last_time_period)},#{value}")
+                  storage.ltrim(keys[:stats_utilization], 0, 24*7 - 1)
                 end
               end
             end
           end
 
           storage.pipelined do
-            storage.set(key_current_max,max_utilization_i)
-            storage.set(key_last_time_period,period_hour)
+            storage.set(keys[:current_max], max_utilization_i)
+            storage.set(keys[:last_time_period], period_hour)
           end
         end
 
         if already_alerted.nil? && allowed && discrete.to_i > 0
           next_id, _, _ = storage.pipelined do
-            storage.incrby("alerts/current_id",1)
-            storage.set(key_notified,"1")
-            storage.expire(key_notified,ALERT_TTL)
+            storage.incr(keys[:current_id])
+            storage.set(keys[:already_notified], "1")
+            storage.expire(keys[:already_notified], ALERT_TTL)
           end
 
           alert = { :id => next_id,
@@ -120,15 +174,6 @@ module ThreeScale
       def storage
         Storage.instance
       end
-
-      private
-
-      def build_key(service_id, app_id = nil)
-        key = "alerts/service_id:#{service_id}/"
-        key << "app_id:#{app_id}/" if app_id
-        key
-      end
-
     end
   end
 end
