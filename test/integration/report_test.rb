@@ -599,12 +599,15 @@ class ReportTest < Test::Unit::TestCase
 
   test 'successful aggregation of notify jobs' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      now = Time.now.utc
       (configuration.notification_batch-1).times do
         post '/transactions.xml',
-          :provider_key => @provider_key,
-          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                            1 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                            2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+          provider_key: @provider_key,
+          transactions: {
+            0 => {app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 2 },
+            1 => {app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 1 },
+            2 => {app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now }
+          }
         Resque.run!
       end
 
@@ -612,10 +615,12 @@ class ReportTest < Test::Unit::TestCase
       assert_equal 0, Resque.queues[:main].size
 
       post '/transactions.xml',
-        :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                          1 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                          2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+        provider_key: @provider_key,
+        transactions: {
+          0 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 2 },
+          1 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 1 },
+          2 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now }
+        }
       Resque.run!
 
       assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
@@ -637,12 +642,15 @@ class ReportTest < Test::Unit::TestCase
     batches = 5
     batchsize = configuration.notification_batch
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      now = Time.now.utc
       (batchsize * (batches + 0.5)).to_i.times do
         post '/transactions.xml',
-          :provider_key => @provider_key,
-          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                            1 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                            2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+          provider_key: @provider_key,
+          transactions: {
+            0 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 2 },
+            1 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 1 },
+            2 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now }
+          }
         Resque.run!
       end
 
