@@ -51,71 +51,103 @@ module ThreeScale
         end
 
         def notify(provider_key, usage)
-          ## No longer create a job, but for efficiency the notify jobs (incr stats for the master) are
-          ## batched. It used to be like this:
-          ## tt = Time.now.getutc
-          ## Resque.enqueue(NotifyJob, provider_key, usage, encode_time(tt), tt.to_f)
-          ##
-          ## Basically, instead of creating a NotifyJob directly, which would trigger between 10-20 incrby
-          ## we store the data of the job in redis on a list. Once there are configuration.notification_batch
-          ## on the list, the worker will fetch the list, aggregate them in a single NotifyJob will all the
-          ## sums done in memory and schedule the job as a NotifyJob. The advantage is that instead of having
-          ## 20 jobs doing 10 incrby of +1, you will have a single job doing 10 incrby of +20
+          # batch several notifications together so that we can process just one
+          # job for a group of them.
           notify_batch(provider_key, usage)
         end
 
         def notify_batch(provider_key, usage)
-          ## remove the seconds, so that all are stored in the same bucket, aggregation is done at the minute level
+          # discard seconds so that all the notifications are stored in the same
+          # bucket, because aggregation is done at the minute level.
           tt = Time.now.getutc
-          tt = tt-tt.sec
+          tt = tt - tt.sec
 
-          encoded = Yajl::Encoder.encode({:provider_key => provider_key, :usage => usage, :time => encode_time(tt)})
+          encoded = Yajl::Encoder.encode({
+            provider_key: provider_key,
+            usage: usage,
+            time: tt.to_s
+          })
+
           num_elements = storage.rpush(key_for_notifications_batch, encoded)
 
           if (num_elements  % configuration.notification_batch) == 0
-            ## we have already a full batch, we have to create the NotifyJobs for the backend 
+            # batch is full
             process_batch(num_elements)
           end
         end
 
-        def process_batch(num_elements, options = {})
+        def get_batch(num_elements)
+          storage.pipelined do
+            storage.lrange(key_for_notifications_batch, 0, num_elements - 1)
+            storage.ltrim(key_for_notifications_batch, num_elements, -1)
+          end.first
+        end
+
+        def process_batch(num_elements)
+          do_batch(get_batch num_elements)
+        end
+
+        def do_batch(list)
           tt = Time.now
           all = Hash.new
-
-          if options[:all]==true
-            list = storage.lrange(key_for_notifications_batch,0,-1)
-            storage.del(key_for_notifications_batch)
-          else
-            list = storage.lrange(key_for_notifications_batch,0,num_elements-1)
-            storage.ltrim(key_for_notifications_batch,num_elements,-1)
-          end
 
           list.each do |item|
             obj = decode(item)
 
-            bucket_key = "#{obj['provider_key']}-#{obj['time']}"
+            bucket_key = "#{obj['provider_key'.freeze]}-#{obj['time'.freeze]}"
 
-            all[bucket_key] = {"provider_key" => obj["provider_key"], "time" => obj["time"], "usage" => {}} if all[bucket_key].nil?
+            all[bucket_key] = {
+              'provider_key'.freeze => obj['provider_key'.freeze],
+              'time'.freeze => obj['time'.freeze],
+              'usage'.freeze => Hash.new(0)
+            } if all[bucket_key].nil?
 
-            obj["usage"].each do |metric_name, value|
+            obj['usage'.freeze].each do |metric_name, value|
               value = value.to_i
-              all[bucket_key]["usage"][metric_name] ||= 0
-              all[bucket_key]["usage"][metric_name] += value
+              usage = all[bucket_key]['usage'.freeze]
+              usage[metric_name] += value
             end
           end
 
+          enqueue_ts = Time.now.utc.to_f
+
           all.each do |_, v|
-            ::Resque.enqueue(NotifyJob, v["provider_key"], v["usage"], encode_time(v["time"]), tt.to_f)
+            enqueue_notify_job(v['provider_key'.freeze],
+                               v['usage'.freeze],
+                               v['time'.freeze],
+                               enqueue_ts)
           end
         end
 
         private
 
-        def encode_time(time)
-          time.to_s
+        def enqueue_notify_job(provider_key, usage, timestamp, enqueue_ts)
+          ::Resque.enqueue(NotifyJob,
+                           provider_key,
+                           usage,
+                           timestamp,
+                           enqueue_ts)
+        end
+
+        if ThreeScale::Backend.test?
+          module Test
+            def get_full_batch
+              storage.pipelined do
+                storage.lrange(key_for_notifications_batch, 0, -1)
+                storage.del(key_for_notifications_batch)
+              end.first
+            end
+
+            def process_full_batch
+              do_batch(get_full_batch)
+            end
+          end
+
+          private_constant :Test
+
+          include Test
         end
       end
-
     end
   end
 end
