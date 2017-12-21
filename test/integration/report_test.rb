@@ -324,7 +324,7 @@ class ReportTest < Test::Unit::TestCase
 
       ## processes all the pending NotifyJobs. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
@@ -348,7 +348,7 @@ class ReportTest < Test::Unit::TestCase
                           2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 3, @storage.get(application_key(@master_service_id,
@@ -365,7 +365,7 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
@@ -382,7 +382,7 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => 'baa', :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
@@ -400,7 +400,7 @@ class ReportTest < Test::Unit::TestCase
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 2, @storage.get(application_key(@master_service_id,
@@ -418,7 +418,7 @@ class ReportTest < Test::Unit::TestCase
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 403, last_response.status
@@ -440,7 +440,7 @@ class ReportTest < Test::Unit::TestCase
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 403, last_response.status
@@ -464,7 +464,7 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => nil}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
@@ -477,7 +477,7 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => ''}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 2, @storage.get(application_key(@master_service_id,
@@ -490,7 +490,7 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '0'}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 3, @storage.get(application_key(@master_service_id,
@@ -579,7 +579,7 @@ class ReportTest < Test::Unit::TestCase
       assert_raise Exception do
         Resque.run!
 
-        Backend::Transactor.process_batch(0, all: true)
+        Backend::Transactor.process_full_batch
         Resque.run!
       end
 

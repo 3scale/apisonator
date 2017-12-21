@@ -97,7 +97,7 @@ class TransactorTest < Test::Unit::TestCase
       Transactor.report(@provider_key, nil, @raw_transactions)
 
       ## processes all the pending notifyjobs.
-      Transactor.process_batch(0,{:all => true})
+      Transactor.process_full_batch
 
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
@@ -112,7 +112,7 @@ class TransactorTest < Test::Unit::TestCase
       Transactor.report(@provider_key, @service_id, @raw_transactions)
 
       ## processes all the pending notifyjobs.
-      Transactor.process_batch(0,{:all => true})
+      Transactor.process_full_batch
 
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
@@ -143,7 +143,7 @@ class TransactorTest < Test::Unit::TestCase
       Resque.run!
       ## processes all the pending notifyjobs that. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
-      Transactor.process_batch(0,{:all => true})
+      Transactor.process_full_batch
       Resque.run!
     end
 
@@ -154,7 +154,7 @@ class TransactorTest < Test::Unit::TestCase
       Resque.run!
       ## processes all the pending notifyjobs that. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
-      Transactor.process_batch(0,{:all => true})
+      Transactor.process_full_batch
       Resque.run!
     end
 
@@ -258,7 +258,7 @@ class TransactorTest < Test::Unit::TestCase
       Transactor.authorize(@provider_key, :app_id => @application_one.id)
 
       ## processes all the pending notifyjobs.
-      Transactor.process_batch(0,{:all => true})
+      Transactor.process_full_batch
 
       assert_queued Transactor::NotifyJob,
                     [@provider_key,
@@ -338,7 +338,7 @@ class TransactorTest < Test::Unit::TestCase
       Transactor.send(method, @provider_key, :app_id => @application_one.id)
 
       ## processes all the pending notifyjobs.
-      Transactor.process_batch(0,{:all => true})
+      Transactor.process_full_batch
 
       assert_queued Transactor::NotifyJob,
         [@provider_key,

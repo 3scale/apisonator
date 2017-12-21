@@ -50,7 +50,7 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 90}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
     end
 
@@ -58,7 +58,7 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
     end
 
@@ -70,7 +70,7 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       AlertLimit.delete(@service_id, 100)
@@ -79,7 +79,7 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 10}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       AlertLimit.save(@service_id, 100)
@@ -87,7 +87,7 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 20}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
     end
 
@@ -132,7 +132,7 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 90}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
     end
 
@@ -140,7 +140,7 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
     end
 
@@ -153,13 +153,13 @@ class AlertsTest < Test::Unit::TestCase
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 1}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       Transactor.report(@provider_key,
                         @service_id,
                         0 => {'app_id' => @application_id1, 'usage' => {'foos' => 10}})
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
     end
 

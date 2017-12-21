@@ -53,7 +53,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
       get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                         :app_id      => @application.id,
                                         :usage       => {'hits' => '#3'}
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
     end
 
@@ -61,7 +61,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
       get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                         :app_id      => @application.id,
                                         :usage       => {'hits_child_2' => '2'}
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
     end
 
@@ -69,7 +69,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
 
       get '/transactions/authrep.xml',  :provider_key => @provider_key,
                                         :app_id     => @application.id
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_usage_report(Time.utc(2011, 1, 1, 13, 0, 0), 'hits', 'day', 3, 100)
@@ -84,7 +84,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2011, 1, 2, 13, 0, 0)) do
       get '/transactions/authrep.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 2, 100)
@@ -98,7 +98,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
       get '/transactions/authrep.xml', :provider_key => @provider_key,
                                        :app_id     => @application.id,
                                        :usage => {'hits_child_2' => '#10'}
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 10, 100)
@@ -112,7 +112,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
       get '/transactions/authrep.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id,
                                          :usage => {'hits_child_1' => '#6'}
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 6, 100)
@@ -134,7 +134,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
       get '/transactions/authrep.xml', :provider_key => @provider_key,
                                          :app_id     => @application.id,
                                          :usage => {'hits_child_1' => '#11', 'hits_child_2' => '#12'}
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_usage_report(Time.utc(2011, 1, 2, 13, 0, 0), 'hits', 'day', 12, 100)

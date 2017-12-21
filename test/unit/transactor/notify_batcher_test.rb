@@ -89,7 +89,7 @@ module Transactor
       assert_equal 3, Resque.queues[:main].size
 
       ## process all
-      Transactor.process_batch(0, {:all => true})
+      Transactor.process_full_batch
 
       assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
       assert_equal 5, Resque.queues[:main].size
@@ -131,7 +131,7 @@ module Transactor
       assert_equal 10, @storage.llen(Transactor.key_for_notifications_batch)
 
       Timecop.freeze(Time.utc(2010, 7, 29, 18, 22, 55)) do
-        Transactor.process_batch(0, {:all => true})
+        Transactor.process_full_batch
       end
 
       assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
