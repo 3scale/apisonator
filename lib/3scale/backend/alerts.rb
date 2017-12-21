@@ -157,7 +157,7 @@ module ThreeScale
                     :application_id => app_id,
                     :service_id => service_id,
                     :timestamp => timestamp,
-                    :limit => "#{max_record.metric_name} per #{max_record.period}: #{max_record.current_value}/#{max_record.max_value}"}
+                    :limit => formatted_limit(max_record) }
 
           Backend::EventStorage::store(:alert, alert)
         end
@@ -169,6 +169,11 @@ module ThreeScale
         RALERT_BINS.find do |b|
           u >= b
         end || FIRST_ALERT_BIN
+      end
+
+      def formatted_limit(record)
+        "#{record.metric_name} per #{record.period}: "\
+        "#{record.current_value}/#{record.max_value}"
       end
 
       def storage
