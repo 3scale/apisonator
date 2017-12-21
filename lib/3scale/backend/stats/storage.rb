@@ -49,6 +49,7 @@ module ThreeScale
           def last_disable_was_emergency?
             storage.get(DISABLED_BECAUSE_EMERGENCY_KEY).to_i == 1
           end
+          memoize :last_disable_was_emergency?
 
           def bucket_storage
             @bucket_storage ||= BucketStorage.new(stats_storage)
