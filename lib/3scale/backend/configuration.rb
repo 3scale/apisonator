@@ -45,6 +45,10 @@ module ThreeScale
       def configuration
         ThreeScale::Backend.configuration
       end
+
+      def configuration=(cfg)
+        ThreeScale::Backend.configuration=(cfg)
+      end
     end
 
     def self.configure
@@ -53,6 +57,10 @@ module ThreeScale
 
     def self.configuration
       @@configuration ||= Configuration.new
+    end
+
+    def self.configuration=(cfg)
+      @@configuration = cfg
     end
   end
 end
