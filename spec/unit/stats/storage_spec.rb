@@ -22,7 +22,9 @@ module ThreeScale
             end
 
             it 'marks in Redis that disable was because of an emergency' do
-              expect { Storage.disable!(true) }
+              # Memoizer needs to be reset because .last_disable_was_emergency?
+              # is memoized.
+              expect { Storage.disable!(true); Memoizer.reset! }
                   .to change(Storage, :last_disable_was_emergency?)
                   .from(false).to(true)
             end
@@ -40,7 +42,9 @@ module ThreeScale
             end
 
             it 'marks in Redis that disable was not because of an emergency' do
-              expect { Storage.disable!(false) }
+              # Memoizer needs to be reset because .last_disable_was_emergency?
+              # is memoized.
+              expect { Storage.disable!(false); Memoizer.reset! }
                   .to change(Storage, :last_disable_was_emergency?)
                   .from(true).to(false)
             end
