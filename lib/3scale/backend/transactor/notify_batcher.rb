@@ -88,24 +88,31 @@ module ThreeScale
         end
 
         def do_batch(list)
-          tt = Time.now
           all = Hash.new
 
           list.each do |item|
             obj = decode(item)
 
-            bucket_key = "#{obj['provider_key'.freeze]}-#{obj['time'.freeze]}"
+            provider_key = obj['provider_key'.freeze]
+            time = obj['time'.freeze]
+            usage = obj['usage'.freeze]
 
-            all[bucket_key] = {
-              'provider_key'.freeze => obj['provider_key'.freeze],
-              'time'.freeze => obj['time'.freeze],
-              'usage'.freeze => Hash.new(0)
-            } if all[bucket_key].nil?
+            if usage.nil?
+              obj['usage'.freeze] = {}
+            end
 
-            obj['usage'.freeze].each do |metric_name, value|
-              value = value.to_i
-              usage = all[bucket_key]['usage'.freeze]
-              usage[metric_name] += value
+            bucket_key = "#{provider_key}-" << time
+            bucket_obj = all[bucket_key]
+
+            if bucket_obj.nil?
+              all[bucket_key] = obj
+            else
+              bucket_usage = bucket_obj['usage'.freeze]
+
+              usage.each do |metric_name, value|
+                bucket_usage[metric_name] =
+                  bucket_usage.fetch(metric_name, 0) + value.to_i
+              end
             end
           end
 
