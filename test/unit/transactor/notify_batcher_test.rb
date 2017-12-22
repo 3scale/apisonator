@@ -39,7 +39,7 @@ module Transactor
 
       assert_equal 8, @storage.llen(Transactor.key_for_notifications_batch)
 
-      configuration = bkp_configuration
+      self.configuration = bkp_configuration
     end
 
     test 'check process_batch' do
@@ -89,7 +89,7 @@ module Transactor
       assert_equal 3, Resque.queues[:main].size
 
       ## process all
-      Transactor.process_batch(0, {:all => true})
+      Transactor.process_full_batch
 
       assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
       assert_equal 5, Resque.queues[:main].size
@@ -131,7 +131,7 @@ module Transactor
       assert_equal 10, @storage.llen(Transactor.key_for_notifications_batch)
 
       Timecop.freeze(Time.utc(2010, 7, 29, 18, 22, 55)) do
-        Transactor.process_batch(0, {:all => true})
+        Transactor.process_full_batch
       end
 
       assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
@@ -142,7 +142,7 @@ module Transactor
       assert_equal '{"class":"ThreeScale::Backend::Transactor::NotifyJob","args":["foo",{"transactions/authorize":2},"2010-07-29 18:22:00 UTC",1280427775.0]}', Resque.queues[:main][2]
       assert_equal '{"class":"ThreeScale::Backend::Transactor::NotifyJob","args":["bar",{"transactions/authorize":1,"transactions/bar":1},"2010-07-29 18:22:00 UTC",1280427775.0]}', Resque.queues[:main][3]
 
-      configuration = bkp_configuration
+      self.configuration = bkp_configuration
     end
   end
 end

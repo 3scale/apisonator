@@ -41,7 +41,6 @@ module AggregatorBenchmark
         id:         100,
         name:       'hits',
         children:   [
-          Metric.new(id: 101, name: 'transactions/create_multiple'),
           Metric.new(id: 102, name: 'transactions/authorize')
         ])
 

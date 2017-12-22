@@ -52,7 +52,7 @@ class LatestEventsTest < Test::Unit::TestCase
 
       ## processes all the pending NotifyJobs. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       events = EventStorage.list
@@ -114,7 +114,7 @@ class LatestEventsTest < Test::Unit::TestCase
     authrep(app_id: @application_id2, usage: { 'foos' => 81 })
     authrep(app_id: @application_id3, usage: { 'foos' => 81 })
 
-    Backend::Transactor.process_batch(0, all: true)
+    Backend::Transactor.process_full_batch
     Resque.run!
 
     assert_equal 12, EventStorage.size
@@ -188,7 +188,7 @@ class LatestEventsTest < Test::Unit::TestCase
     report({ 0 => { app_id: @application_id2, usage: { 'foos' => 115 }}})
     report({ 0 => { app_id: @application_id3, usage: { 'foos' => 115 }}})
 
-    Backend::Transactor.process_batch(0, all: true)
+    Backend::Transactor.process_full_batch
     Resque.run!
 
     ## 4 alerts, 3 first_traffic for the apps, 3 first_daily_traffic for the

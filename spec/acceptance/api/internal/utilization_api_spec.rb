@@ -132,7 +132,7 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
         with_resque do
           ThreeScale::Backend::Transactor.report(
               provider_key, service_id, test_transactions)
-          ThreeScale::Backend::Transactor.process_batch(0, all: true)
+          ThreeScale::Backend::Transactor.process_full_batch
         end
       end
 

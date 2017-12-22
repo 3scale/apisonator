@@ -324,17 +324,17 @@ class ReportTest < Test::Unit::TestCase
 
       ## processes all the pending NotifyJobs. This creates a NotifyJob with the
       ## aggregate and another Resque.run! is needed
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
-      assert_equal 1, @storage.get(application_key(@master_service_id,
+      assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
                                                    @master_hits_id,
                                                    :month, '20100501')).to_i
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
-                                                   @master_reports_id,
+                                                   @master_transactions_id,
                                                    :month, '20100501')).to_i
     end
   end
@@ -348,7 +348,7 @@ class ReportTest < Test::Unit::TestCase
                           2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 3, @storage.get(application_key(@master_service_id,
@@ -365,12 +365,12 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 0, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
-                                                   @master_reports_id,
+                                                   @master_transactions_id,
                                                    :month, '20100501')).to_i
     end
   end
@@ -382,12 +382,12 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => 'baa', :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
                                                    @provider_application_id,
-                                                   @master_reports_id,
+                                                   @master_transactions_id,
                                                    :month, '20100501')).to_i
     end
   end
@@ -400,7 +400,7 @@ class ReportTest < Test::Unit::TestCase
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 2, @storage.get(application_key(@master_service_id,
@@ -418,7 +418,7 @@ class ReportTest < Test::Unit::TestCase
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 403, last_response.status
@@ -440,7 +440,7 @@ class ReportTest < Test::Unit::TestCase
                           1 => {:app_id => @application.id, :usage => {'hits' => 1}}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 403, last_response.status
@@ -464,7 +464,7 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => nil}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 1, @storage.get(application_key(@master_service_id,
@@ -477,7 +477,7 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => ''}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 2, @storage.get(application_key(@master_service_id,
@@ -490,7 +490,7 @@ class ReportTest < Test::Unit::TestCase
         :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '0'}}
       Resque.run!
 
-      Backend::Transactor.process_batch(0, all: true)
+      Backend::Transactor.process_full_batch
       Resque.run!
 
       assert_equal 3, @storage.get(application_key(@master_service_id,
@@ -579,7 +579,7 @@ class ReportTest < Test::Unit::TestCase
       assert_raise Exception do
         Resque.run!
 
-        Backend::Transactor.process_batch(0, all: true)
+        Backend::Transactor.process_full_batch
         Resque.run!
       end
 
@@ -599,12 +599,15 @@ class ReportTest < Test::Unit::TestCase
 
   test 'successful aggregation of notify jobs' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
+      now = Time.now.utc
       (configuration.notification_batch-1).times do
         post '/transactions.xml',
-          :provider_key => @provider_key,
-          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                            1 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                            2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+          provider_key: @provider_key,
+          transactions: {
+            0 => {app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 2 },
+            1 => {app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 1 },
+            2 => {app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now }
+          }
         Resque.run!
       end
 
@@ -612,40 +615,54 @@ class ReportTest < Test::Unit::TestCase
       assert_equal 0, Resque.queues[:main].size
 
       post '/transactions.xml',
-        :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                          1 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                          2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+        provider_key: @provider_key,
+        transactions: {
+          0 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 2 },
+          1 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 1 },
+          2 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now }
+        }
       Resque.run!
 
       assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch)
       assert_equal 0, Resque.queues[:main].size
 
-      assert_equal configuration.notification_batch, @storage.get(application_key(@master_service_id,
-                                                  @provider_application_id,
-                                                  @master_hits_id,
-                                                  :month, '20100501')).to_i
+      assert_equal 0, @storage.get(application_key(@master_service_id,
+                                                   @provider_application_id,
+                                                   @master_hits_id,
+                                                   :month, '20100501')).to_i
+      assert_equal configuration.notification_batch*3,
+        @storage.get(application_key(@master_service_id,
+                                     @provider_application_id,
+                                     @master_transactions_id,
+                                     :month, '20100501')).to_i
     end
   end
 
   test 'successful aggregation of notify jobs with multiple iterations' do
+    batches = 5
+    batchsize = configuration.notification_batch
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      ((configuration.notification_batch*5.5).to_i).times do
+      now = Time.now.utc
+      (batchsize * (batches + 0.5)).to_i.times do
         post '/transactions.xml',
-          :provider_key => @provider_key,
-          :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                            1 => {:app_id => @application.id, :usage => {'hits' => 1}},
-                            2 => {:app_id => @application.id, :usage => {'hits' => 1}}}
+          provider_key: @provider_key,
+          transactions: {
+            0 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 2 },
+            1 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now - 1 },
+            2 => { app_id: @application.id, usage: { 'hits' => 1 }, timestamp: now }
+          }
         Resque.run!
       end
 
-      assert_equal (configuration.notification_batch*0.5).to_i, @storage.llen(Transactor.key_for_notifications_batch)
+      assert_equal (batchsize * 0.5).to_i,
+        @storage.llen(Transactor.key_for_notifications_batch)
       assert_equal 0, Resque.queues[:main].size
 
-      assert_equal configuration.notification_batch*5, @storage.get(application_key(@master_service_id,
-                                                  @provider_application_id,
-                                                  @master_hits_id,
-                                                  :month, '20100501')).to_i
+      assert_equal batchsize * batches * 3,
+        @storage.get(application_key(@master_service_id,
+                                     @provider_application_id,
+                                     @master_transactions_id,
+                                     :month, '20100501')).to_i
     end
   end
 

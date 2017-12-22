@@ -16,9 +16,8 @@ module ThreeScale
 
         module SaaS
           METRIC_AUTHORIZE = 'transactions/authorize'.freeze
-          METRIC_CREATE_MULTIPLE = 'transactions/create_multiple'.freeze
           METRIC_TRANSACTIONS = 'transactions'.freeze
-          private_constant :METRIC_AUTHORIZE, :METRIC_CREATE_MULTIPLE, :METRIC_TRANSACTIONS
+          private_constant :METRIC_AUTHORIZE, :METRIC_TRANSACTIONS
 
           def notify_authorize(provider_key)
             notify(provider_key, METRIC_AUTHORIZE => 1)
@@ -26,13 +25,11 @@ module ThreeScale
 
           def notify_authrep(provider_key, transactions)
             notify(provider_key, METRIC_AUTHORIZE => 1,
-                                 METRIC_CREATE_MULTIPLE => 1,
                                  METRIC_TRANSACTIONS => transactions)
           end
 
           def notify_report(provider_key, transactions)
-            notify(provider_key, METRIC_CREATE_MULTIPLE => 1,
-                                 METRIC_TRANSACTIONS => transactions)
+            notify(provider_key, METRIC_TRANSACTIONS => transactions)
           end
         end
         private_constant :SaaS
@@ -54,71 +51,110 @@ module ThreeScale
         end
 
         def notify(provider_key, usage)
-          ## No longer create a job, but for efficiency the notify jobs (incr stats for the master) are
-          ## batched. It used to be like this:
-          ## tt = Time.now.getutc
-          ## Resque.enqueue(NotifyJob, provider_key, usage, encode_time(tt), tt.to_f)
-          ##
-          ## Basically, instead of creating a NotifyJob directly, which would trigger between 10-20 incrby
-          ## we store the data of the job in redis on a list. Once there are configuration.notification_batch
-          ## on the list, the worker will fetch the list, aggregate them in a single NotifyJob will all the
-          ## sums done in memory and schedule the job as a NotifyJob. The advantage is that instead of having
-          ## 20 jobs doing 10 incrby of +1, you will have a single job doing 10 incrby of +20
+          # batch several notifications together so that we can process just one
+          # job for a group of them.
           notify_batch(provider_key, usage)
         end
 
         def notify_batch(provider_key, usage)
-          ## remove the seconds, so that all are stored in the same bucket, aggregation is done at the minute level
+          # discard seconds so that all the notifications are stored in the same
+          # bucket, because aggregation is done at the minute level.
           tt = Time.now.getutc
-          tt = tt-tt.sec
+          tt = tt - tt.sec
 
-          encoded = Yajl::Encoder.encode({:provider_key => provider_key, :usage => usage, :time => encode_time(tt)})
+          encoded = Yajl::Encoder.encode({
+            provider_key: provider_key,
+            usage: usage,
+            time: tt.to_s
+          })
+
           num_elements = storage.rpush(key_for_notifications_batch, encoded)
 
           if (num_elements  % configuration.notification_batch) == 0
-            ## we have already a full batch, we have to create the NotifyJobs for the backend 
+            # batch is full
             process_batch(num_elements)
           end
         end
 
-        def process_batch(num_elements, options = {})
-          tt = Time.now
-          all = Hash.new
+        def get_batch(num_elements)
+          storage.pipelined do
+            storage.lrange(key_for_notifications_batch, 0, num_elements - 1)
+            storage.ltrim(key_for_notifications_batch, num_elements, -1)
+          end.first
+        end
 
-          if options[:all]==true
-            list = storage.lrange(key_for_notifications_batch,0,-1)
-            storage.del(key_for_notifications_batch)
-          else
-            list = storage.lrange(key_for_notifications_batch,0,num_elements-1)
-            storage.ltrim(key_for_notifications_batch,num_elements,-1)
-          end
+        def process_batch(num_elements)
+          do_batch(get_batch num_elements)
+        end
+
+        def do_batch(list)
+          all = Hash.new
 
           list.each do |item|
             obj = decode(item)
 
-            bucket_key = "#{obj['provider_key']}-#{obj['time']}"
+            provider_key = obj['provider_key'.freeze]
+            time = obj['time'.freeze]
+            usage = obj['usage'.freeze]
 
-            all[bucket_key] = {"provider_key" => obj["provider_key"], "time" => obj["time"], "usage" => {}} if all[bucket_key].nil?
+            if usage.nil?
+              obj['usage'.freeze] = {}
+            end
 
-            obj["usage"].each do |metric_name, value|
-              value = value.to_i
-              all[bucket_key]["usage"][metric_name] ||= 0
-              all[bucket_key]["usage"][metric_name] += value
+            bucket_key = "#{provider_key}-" << time
+            bucket_obj = all[bucket_key]
+
+            if bucket_obj.nil?
+              all[bucket_key] = obj
+            else
+              bucket_usage = bucket_obj['usage'.freeze]
+
+              usage.each do |metric_name, value|
+                bucket_usage[metric_name] =
+                  bucket_usage.fetch(metric_name, 0) + value.to_i
+              end
             end
           end
 
+          enqueue_ts = Time.now.utc.to_f
+
           all.each do |_, v|
-            ::Resque.enqueue(NotifyJob, v["provider_key"], v["usage"], encode_time(v["time"]), tt.to_f)
+            enqueue_notify_job(v['provider_key'.freeze],
+                               v['usage'.freeze],
+                               v['time'.freeze],
+                               enqueue_ts)
           end
         end
 
         private
 
-        def encode_time(time)
-          time.to_s
+        def enqueue_notify_job(provider_key, usage, timestamp, enqueue_ts)
+          ::Resque.enqueue(NotifyJob,
+                           provider_key,
+                           usage,
+                           timestamp,
+                           enqueue_ts)
+        end
+
+        if ThreeScale::Backend.test?
+          module Test
+            def get_full_batch
+              storage.pipelined do
+                storage.lrange(key_for_notifications_batch, 0, -1)
+                storage.del(key_for_notifications_batch)
+              end.first
+            end
+
+            def process_full_batch
+              do_batch(get_full_batch)
+            end
+          end
+
+          private_constant :Test
+
+          include Test
         end
       end
-
     end
   end
 end
