@@ -2,4 +2,4 @@ exclude_paths:
 - contrib/**/*
 - script/**/*
 - spec/**/*
-- tests/**/*
+- test/**/*
