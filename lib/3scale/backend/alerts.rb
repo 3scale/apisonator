@@ -4,13 +4,10 @@ module ThreeScale
       module KeyHelpers
         private
 
-        # The compacted hour and day in the params refer to the
+        # The compacted hour in the params refers to the
         # TimeHacks.to_compact_s method.
-        def alert_keys(service_id, app_id, discrete_utilization,
-                       compacted_day_start, compacted_hour_start)
+        def alert_keys(service_id, app_id, discrete_utilization, compacted_hour_start)
           {
-            hits_per_day_and_discrete_utilization: key_hits_day_and_discr_util(
-                service_id, app_id, compacted_day_start, discrete_utilization),
             already_notified: key_already_notified(service_id, app_id, discrete_utilization),
             allowed: key_allowed_set(service_id),
             current_max: key_current_max(service_id, app_id, compacted_hour_start),
@@ -24,12 +21,6 @@ module ThreeScale
           prefix = "alerts/service_id:#{service_id}/"
           prefix << "app_id:#{app_id}/" if app_id
           prefix
-        end
-
-        def key_hits_day_and_discr_util(service_id, app_id,
-                                        compacted_day_start, discrete_utilization)
-          prefix = key_prefix(service_id, app_id)
-          "#{prefix}#{compacted_day_start}/#{discrete_utilization}"
         end
 
         def key_already_notified(service_id, app_id, discrete_utilization)
@@ -102,20 +93,17 @@ module ThreeScale
         max_utilization_i = (max_utilization * 100.0).round
 
         beginning_of_day = Period::Boundary.day_start(timestamp)
-        period_day = beginning_of_day.to_compact_s
         period_hour = Period::Boundary.hour_start(timestamp).to_compact_s
         # UNIX timestamp for key expiration - add 1 day + 5 mins
         expire_at = (beginning_of_day + 86700).to_i
 
-        keys = alert_keys(service_id, app_id, discrete, period_day, period_hour)
+        keys = alert_keys(service_id, app_id, discrete, period_hour)
 
-        _, already_alerted, allowed, current_max, last_time_period, _, _ = storage.pipelined do
-          storage.incr(keys[:hits_per_day_and_discrete_utilization])
+        already_alerted, allowed, current_max, last_time_period, _ = storage.pipelined do
           storage.get(keys[:already_notified])
           storage.sismember(keys[:allowed], discrete)
           storage.get(keys[:current_max])
           storage.get(keys[:last_time_period])
-          storage.expireat(keys[:hits_per_day_and_discrete_utilization], expire_at)
           storage.expireat(keys[:current_max], expire_at)
         end
 
