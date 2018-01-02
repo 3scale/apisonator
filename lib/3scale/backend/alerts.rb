@@ -4,18 +4,13 @@ module ThreeScale
       module KeyHelpers
         private
 
-        # The compacted hour and day in the params refer to the
+        # The compacted hour in the params refers to the
         # TimeHacks.to_compact_s method.
-        def alert_keys(service_id, app_id, discrete_utilization,
-                       compacted_day_start, compacted_hour_start)
+        def alert_keys(service_id, app_id, discrete_utilization, compacted_hour_start)
           {
-            hits_per_day_and_discrete_utilization: key_hits_day_and_discr_util(
-                service_id, app_id, compacted_day_start, discrete_utilization),
             already_notified: key_already_notified(service_id, app_id, discrete_utilization),
             allowed: key_allowed_set(service_id),
             current_max: key_current_max(service_id, app_id, compacted_hour_start),
-            last_time_period: key_last_time_period(service_id, app_id),
-            stats_utilization: key_stats_utilization(service_id, app_id),
             current_id: key_current_id
           }
         end
@@ -24,12 +19,6 @@ module ThreeScale
           prefix = "alerts/service_id:#{service_id}/"
           prefix << "app_id:#{app_id}/" if app_id
           prefix
-        end
-
-        def key_hits_day_and_discr_util(service_id, app_id,
-                                        compacted_day_start, discrete_utilization)
-          prefix = key_prefix(service_id, app_id)
-          "#{prefix}#{compacted_day_start}/#{discrete_utilization}"
         end
 
         def key_already_notified(service_id, app_id, discrete_utilization)
@@ -45,16 +34,6 @@ module ThreeScale
         def key_current_max(service_id, app_id, compacted_hour_start)
           prefix = key_prefix(service_id, app_id)
           "#{prefix}#{compacted_hour_start}/current_max"
-        end
-
-        def key_last_time_period(service_id, app_id)
-          prefix = key_prefix(service_id, app_id)
-          "#{prefix}last_time_period"
-        end
-
-        def key_stats_utilization(service_id, app_id)
-          prefix = key_prefix(service_id, app_id)
-          "#{prefix}stats_utilization"
         end
 
         def key_current_id
@@ -102,53 +81,28 @@ module ThreeScale
         max_utilization_i = (max_utilization * 100.0).round
 
         beginning_of_day = Period::Boundary.day_start(timestamp)
-        period_day = beginning_of_day.to_compact_s
         period_hour = Period::Boundary.hour_start(timestamp).to_compact_s
         # UNIX timestamp for key expiration - add 1 day + 5 mins
         expire_at = (beginning_of_day + 86700).to_i
 
-        keys = alert_keys(service_id, app_id, discrete, period_day, period_hour)
+        keys = alert_keys(service_id, app_id, discrete, period_hour)
 
-        _, already_alerted, allowed, current_max, last_time_period, _, _ = storage.pipelined do
-          storage.incr(keys[:hits_per_day_and_discrete_utilization])
+        already_alerted, allowed, current_max, _ = storage.pipelined do
           storage.get(keys[:already_notified])
           storage.sismember(keys[:allowed], discrete)
           storage.get(keys[:current_max])
-          storage.get(keys[:last_time_period])
-          storage.expireat(keys[:hits_per_day_and_discrete_utilization], expire_at)
           storage.expireat(keys[:current_max], expire_at)
         end
 
         ## update the status of utilization
         if max_utilization_i > current_max.to_i
-
-          if (current_max.to_i == 0) && period_hour != last_time_period
-            ## the first one of the hour and not itself. This is only done once per hour
-
-            if !last_time_period.nil?
-              value = storage.get(key_current_max(service_id, app_id, last_time_period))
-              value = value.to_i
-              if value > 0
-                storage.pipelined do
-                  storage.rpush(keys[:stats_utilization],
-                                "#{Time.parse_to_utc(last_time_period)},#{value}")
-                  storage.ltrim(keys[:stats_utilization], 0, 24*7 - 1)
-                end
-              end
-            end
-          end
-
-          storage.pipelined do
-            storage.set(keys[:current_max], max_utilization_i)
-            storage.set(keys[:last_time_period], period_hour)
-          end
+          storage.set(keys[:current_max], max_utilization_i)
         end
 
         if already_alerted.nil? && allowed && discrete.to_i > 0
-          next_id, _, _ = storage.pipelined do
+          next_id, _ = storage.pipelined do
             storage.incr(keys[:current_id])
-            storage.set(keys[:already_notified], "1")
-            storage.expire(keys[:already_notified], ALERT_TTL)
+            storage.setex(keys[:already_notified], ALERT_TTL, "1")
           end
 
           alert = { :id => next_id,
