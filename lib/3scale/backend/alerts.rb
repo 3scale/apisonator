@@ -126,10 +126,8 @@ module ThreeScale
             end
           end
 
-          storage.pipelined do
-            storage.set(keys[:current_max], max_utilization_i)
-            storage.set(keys[:last_time_period], period_hour)
-          end
+          storage.mset(keys[:current_max], max_utilization_i,
+                       keys[:last_time_period], period_hour)
         end
 
         if already_alerted.nil? && allowed && discrete.to_i > 0
