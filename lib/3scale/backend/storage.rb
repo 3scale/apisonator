@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Storage < ::Redis
+    class Storage
       include Configurable
 
       DEFAULT_SERVER = '127.0.0.1:22121'.freeze
@@ -41,47 +41,95 @@ module ThreeScale
         end
       end
 
-      # Returns a shared instance of the storage. If there is no instance yet,
-      # creates one first. If you want to always create a fresh instance, set the
-      # +reset+ parameter to true.
-      def self.instance(reset = false)
-        @@instance = nil if reset
-        @@instance ||= begin
-                         host, port = Helpers.host_and_port(
-                                        configuration.redis.proxy || DEFAULT_SERVER)
-                         new(host: host, port: port)
-                       end
-      end
-
-      def initialize(options)
-        options = Helpers.config_with(configuration.redis, options)
-        super
-      end
-
-      def non_proxied_instances
-        if ENV['RACK_ENV'] != 'test'
-          raise "You only can use this method in a TEST environment."
+      class << self
+        # Returns a shared instance of the storage. If there is no instance yet,
+        # creates one first. If you want to always create a fresh instance, set
+        # the +reset+ parameter to true.
+        def instance(reset = false)
+          @@instance = nil if reset
+          @@instance ||= begin
+                           host, port = Helpers.host_and_port(
+                                          configuration.redis.proxy || DEFAULT_SERVER)
+                           new(host: host, port: port)
+                         end
         end
 
-        @non_proxied_instances ||= configuration.redis.nodes.map do |server|
-          host, port = Helpers.host_and_port(server)
-          options = Helpers.config_with(configuration.redis, host: host, port: port)
-          # Note: as designed this cannot be our own class because
-          # flushdb would be recursive.
-          Redis.new(options)
+        private
+
+        def new(options)
+          options = Helpers.config_with(configuration.redis, options)
+          Redis.new options
+        end
+
+        # for testing we need to return a wrapper that catches some specific
+        # commands so that they are sent to shards instead to a proxy, because
+        # the proxy lacks support for those (these are typically commands to
+        # flush the contents of the database).
+        if ThreeScale::Backend.test?
+          alias_method :orig_new, :new
+
+          def new(options)
+            TestRedis.new orig_new(options)
+          end
+
+          def non_proxied_instances
+            @non_proxied_instances ||= configuration.redis.nodes.map do |server|
+              host, port = Helpers.host_and_port(server)
+              options = Helpers.config_with(configuration.redis, host: host, port: port)
+              orig_new(options)
+            end
+          end
+          public :non_proxied_instances
+
         end
       end
+    end
 
-      def keys(*keys)
-        non_proxied_instances.map { |instance| instance.keys(*keys) }.flatten(1)
-      end
+    if ThreeScale::Backend.test?
+      # a wrapper class for the Redis client used in tests so that we can
+      # address specific Redis instances (as compared to proxies) for flushing.
+      class TestRedis
+        def initialize(inner_client)
+          @inner = inner_client
+        end
 
-      def flushdb
-        non_proxied_instances.map(&:flushdb)
-      end
+        def keys(*keys)
+          non_proxied_instances.map do |i|
+            i.keys(*keys)
+          end.flatten(1)
+        end
 
-      def flushall
-        non_proxied_instances.map(&:flushall)
+        def flushdb
+          non_proxied_instances.map do |i|
+            i.flushdb
+          end
+        end
+
+        def flushall
+          non_proxied_instances.map do |i|
+            i.flushall
+          end
+        end
+
+        def method_missing(m, *args, &blk)
+          # define and delegate the missing method
+          self.class.send(:define_method, m) do |*a, &b|
+            inner.send(m, *a, &b)
+          end
+          inner.send(m, *args, &blk)
+        end
+
+        def respond_to_missing?(m)
+          inner.respond_to_missing? m
+        end
+
+        private
+
+        attr_reader :inner
+
+        def non_proxied_instances
+          ThreeScale::Backend::Storage.non_proxied_instances
+        end
       end
     end
   end
