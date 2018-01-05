@@ -57,7 +57,9 @@ module ThreeScale
               expect(EventStorage).to_not receive(:store).with(:first_traffic, event)
               expect(EventStorage).to receive(:store).with(:first_daily_traffic, event)
               # ensure correct memoizer behaviour
-              expect_any_instance_of(Storage).to receive(:incr).and_call_original
+              expect(Storage.instance)
+                  .to receive(:incr)
+                  .and_call_original
             end
 
             it { Timecop.freeze(current_time) { expect(subject) } }
@@ -68,7 +70,7 @@ module ThreeScale
               ApplicationEvents.generate([application])
               expect(EventStorage).to_not receive(:store)
               # ensure correct memoizer behaviour
-              expect_any_instance_of(Storage).to_not receive(:incr)
+              expect(Storage.instance).to_not receive(:incr)
             end
 
             it { expect(subject) }
