@@ -23,7 +23,7 @@ class LoggerTest < Test::Unit::TestCase
   end
 
   test 'log failed requests with request info and error info' do
-    redis = Backend::Storage.any_instance
+    redis = Backend::Storage.instance
     redis.expects(:get).raises(TimeoutError)
 
     default_log_writer.any_instance.expects(:log_error).once
