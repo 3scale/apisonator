@@ -65,6 +65,19 @@ resource 'Metrics (prefix: /services/:service_id/metrics)' do
       expect(metric.name).to eq name
     end
 
+    example 'Create a Metric with extra params' do
+      do_request metric: metric.merge(some_param: 'some_val')
+      expect(status).to eq 201
+      expect(response_json['status']).to eq 'created'
+
+      metric = ThreeScale::Backend::Metric.load(service_id, id)
+      expect(metric).not_to be_nil
+      expect(metric).not_to respond_to :some_param
+      expect(metric.id).to eq id
+      expect(metric.service_id).to eq service_id
+      expect(metric.name).to eq name
+    end
+
   end
 
   put '/services/:service_id/metrics/:id' do
@@ -94,6 +107,18 @@ resource 'Metrics (prefix: /services/:service_id/metrics)' do
       expect(metric.name).to eq name
     end
 
+    example 'Update Metric by ID using extra params' do
+      do_request metric: metric.merge(some_param: 'some_val')
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'modified'
+
+      metric = ThreeScale::Backend::Metric.load(service_id, id)
+      expect(metric).not_to be_nil
+      expect(metric).not_to respond_to :some_param
+      expect(metric.id).to eq id
+      expect(metric.service_id).to eq service_id
+      expect(metric.name).to eq name
+    end
   end
 
   delete '/services/:service_id/metrics/:id' do

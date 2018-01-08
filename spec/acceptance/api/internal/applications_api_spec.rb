@@ -70,11 +70,23 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
       expect(response_json['status']).to eq 'created'
 
       app = ThreeScale::Backend::Application.load(service_id, id)
-      expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
       expect(app.to_hash).to eq application.merge(user_required: false,
                                                   version: '1')
     end
 
+    example 'Create an Application with extra params that should be ignored' do
+      application_params = application.merge(some_param: 'some_val')
+      do_request application: application_params
+      expect(status).to eq 201
+      expect(response_json['status']).to eq 'created'
+
+      app = ThreeScale::Backend::Application.load(service_id, id)
+      expect(app).not_to be_nil
+      expect(app).not_to respond_to :some_param
+      # The returned data should not contain *some_param* attribute
+      expect(app.to_hash).to eq application.merge(user_required: false,
+                                                  version: '1')
+    end
   end
 
   put '/services/:service_id/applications/:id' do
@@ -106,7 +118,21 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(response_json['status']).to eq 'modified'
 
         app = ThreeScale::Backend::Application.load(service_id, id)
-        expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
+        # Since the app has been modified, version should be '2'
+        expect(app.to_hash).to eq application.merge(user_required: false,
+                                                    version: '2')
+      end
+
+      example 'updating the application with extra params that should be ignored' do
+        application_param = application.merge(some_param: 'some_val')
+        do_request application: application_param
+        expect(status).to eq 200
+        expect(response_json['status']).to eq 'modified'
+
+        app = ThreeScale::Backend::Application.load(service_id, id)
+        expect(app).not_to be_nil
+        expect(app).not_to respond_to :some_param
+        # The returned data should not contain *some_param* attribute
         # Since the app has been modified, version should be '2'
         expect(app.to_hash).to eq application.merge(user_required: false,
                                                     version: '2')
@@ -123,7 +149,6 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(response_json['status']).to eq 'created'
 
         app = ThreeScale::Backend::Application.load(service_id, non_existing_id)
-        expect(app.to_hash.keys).to include *ThreeScale::Backend::Application::ATTRIBUTES
         expect(app.to_hash).to eq application.merge(id: non_existing_id,
                                                     user_required: false,
                                                     version: '1')
