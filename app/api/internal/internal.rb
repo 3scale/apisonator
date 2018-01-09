@@ -70,6 +70,22 @@ module ThreeScale
           params.merge! JSON.parse(body, symbolize_names: true) unless body.empty?
         end
 
+        # Return hash with item keys from the white_list when
+        # request parameter value is not nil for the given key
+        def valid_request_attrs(req_attrs, white_list)
+          white_list.each_with_object({}) do |elem, res|
+            res[elem] = req_attrs[elem] unless req_attrs[elem].nil?
+          end
+        end
+
+        def api_params(klass, api_scope = nil)
+          api_scope ||= klass.name.split('::'.freeze).last.downcase
+          attributes = params[api_scope]
+          # Checked both key does not exist and key exists but nil stored
+          halt 400, { status: :error, error: "missing parameter '#{api_scope}'" }.to_json unless attributes
+          valid_request_attrs(attributes, klass.attribute_names)
+        end
+
         def filter_params(params)
           params.reject!{ |k, v| !ACCEPTED_PARAMS.include? k }
         end

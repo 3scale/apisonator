@@ -14,10 +14,9 @@ module ThreeScale
         end
 
         post '/' do
-          attributes = params[:service]
-          halt 400, { status: :error, error: 'missing parameter \'service\'' }.to_json unless attributes
           begin
-            service = Service.save!(attributes)
+            svc_attrs = api_params Service
+            service = Service.save!(svc_attrs)
             [201, headers, {service: service.to_hash, status: :created}.to_json]
           rescue ServiceRequiresDefaultUserPlan => e
             respond_with_400 e
@@ -26,14 +25,15 @@ module ThreeScale
 
         put '/:id' do
           begin
+            svc_attrs = api_params Service
             service = Service.load_by_id(params[:id])
             if service
-              params[:service].each do |attr, value|
+              svc_attrs.each do |attr, value|
                 service.send "#{attr}=", value
               end
               service.save!
             else
-              service = Service.save!(params[:service])
+              service = Service.save!(svc_attrs)
             end
             {service: service.to_hash, status: :ok}.to_json
           rescue ServiceRequiresDefaultUserPlan => e
