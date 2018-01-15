@@ -19,12 +19,9 @@ class StorageTest < Test::Unit::TestCase
     assert_connection(storage)
   end
 
-  # can't really test UNIX path or protected Redis instances unless we configure
-  # and launch the Redis instance accordingly... so much for a unit test.
   def test_redis_unix
-    assert_nothing_raised do
-      Storage.send :new, url('unix:///tmp/redis.sock')
-    end
+    storage = Storage.send :new, url('unix:///tmp/redis_unix.6379.sock')
+    assert_connection(storage)
   end
 
   def test_redis_protected_url
