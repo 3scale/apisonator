@@ -49,6 +49,63 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
+  test 'successful report with different apps increments stats counter at service and app level' do
+    second_app = Application.save(service_id: @service_id,
+                                  id: next_id,
+                                  plan_id: @plan_id,
+                                  state: :active)
+
+    current_time = Time.now
+
+    post '/transactions.xml',
+         provider_key: @provider_key,
+         transactions: { 0 => { app_id: @application.id,
+                                usage: { 'hits' => 10 },
+                                timestamp: current_time },
+                         1 => { app_id: second_app.id,
+                                usage: { 'hits' => 10 },
+                                timestamp: current_time } }
+    Resque.run!
+
+    # At service level we aggregate per hour, day, week, month and year.
+    # At app level we also aggregate per minute and eternity.
+    periods_service = [Period::Hour.new(current_time),
+                       Period::Day.new(current_time),
+                       Period::Week.new(current_time),
+                       Period::Month.new(current_time),
+                       Period::Eternity.new]
+
+    all_periods = periods_service + [Period::Minute.new(current_time),
+                                     Period::Year.new(current_time)]
+
+    # Check counters of '@application'
+    usage_keys = all_periods.map do |period|
+      Stats::Keys.usage_value_key(@application.service_id, @application.id, @metric_id, period)
+    end
+
+    usages = storage.mget(usage_keys)
+    assert_true usages.all? { |usage| usage == '10' }
+
+    # Check counters of 'second_app'
+    usage_keys = all_periods.map do |period|
+      Stats::Keys.usage_value_key(second_app.service_id, second_app.id, @metric_id, period)
+    end
+
+    usages = storage.mget(usage_keys)
+    assert_true usages.all? { |usage| usage == '10' }
+
+    # Check counters of the service (sum of the counters of the two apps)
+    usage_keys = periods_service.map do |period|
+      # There's no way to build the key directly.
+      service_key_prefix = Stats::Keys.service_key_prefix(@service_id)
+      metric_key_prefix = Stats::Keys.metric_key_prefix(service_key_prefix, @metric_id)
+      Stats::Keys::counter_key(metric_key_prefix, period)
+    end
+
+    usages = storage.mget(usage_keys)
+    assert_true usages.all? { |usage| usage == '20' }
+  end
+
   test 'successful report with utc timestamped transactions' do
     Timecop.freeze(Time.utc(2010, 4, 23, 00, 00)) do
       post '/transactions.xml',
