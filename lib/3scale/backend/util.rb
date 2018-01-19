@@ -1,15 +1,11 @@
 require 'pathname'
+require 'etc'
 
 module ThreeScale
   module Backend
     module Util
       def self.number_of_cpus
-        cpuinfo_file = '/proc/cpuinfo'.freeze
-        if File.readable? cpuinfo_file
-          File.open(cpuinfo_file) { |f| f.grep(/\Aprocessor\s*:\s*\d+\Z/).size }
-        else
-          1 # non-Linux users get a default good enough for dev & test
-        end
+        Etc.nprocessors
       end
 
       def self.root_dir
