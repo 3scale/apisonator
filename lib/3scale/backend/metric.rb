@@ -67,6 +67,10 @@ module ThreeScale
       class << self
         include Memoizer::Decorator
 
+        def attribute_names
+          %i[service_id id parent_id name children].freeze
+        end
+
         def load(service_id, id)
           name, parent_id = storage.mget(key(service_id, id, :name),
                                          key(service_id, id, :parent_id))

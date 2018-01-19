@@ -8,6 +8,11 @@ module ThreeScale
       attr_accessor :service_id, :username, :state, :plan_id, :plan_name
       attr_writer :version, :metric_names
 
+      def self.attribute_names
+        %i[service_id username state plan_id plan_name version
+           metric_names].freeze
+      end
+
       def self.exists?(service_id, username)
         storage.exists(key(service_id, username))
       end
