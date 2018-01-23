@@ -612,48 +612,6 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
-  ## FIXME: this test in incomplete, should be done properly soon
-  test 'when exception raised in worker it goes to resque:failed' do
-    Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
-      post '/transactions.xml',
-        :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}}}
-
-      assert_equal 1, Resque.queues[:priority].length
-      ##FIXME: i would like to be able to do @storage.llen('resque:priority')
-      ##but resque_unit does not write to redis :-/ want to get rid of resque_unit so badly
-
-      @storage.stubs(:evalsha).raises(Exception.new('bang!'))
-      @storage.stubs(:eval).raises(Exception.new('bang!'))
-      @storage.stubs(:incrby).raises(Exception.new('bang!'))
-
-      assert_equal 0, Resque.queues[:failed].length
-      assert_equal 0, @storage.get(application_key(@master_service_id,
-                                                  @provider_application_id,
-                                                  @master_hits_id,
-                                                  :month, '20100501')).to_i
-
-      assert_raise Exception do
-        Resque.run!
-
-        Backend::Transactor.process_full_batch
-        Resque.run!
-      end
-
-      assert_equal 0, @storage.get(application_key(@master_service_id,
-                                                  @provider_application_id,
-                                                  @master_hits_id,
-                                                  :month, '20100501')).to_i
-      assert_equal 0, Resque.queues[:priority].length
-      ## assert_equal 1, Resque.queues[:failed].length
-      ## FIXME: THIS MOTHERFUCKER or :failed is empty!!!
-
-      @storage.unstub(:incrby)
-      @storage.unstub(:eval)
-      @storage.unstub(:evalsha)
-    end
-  end
-
   test 'successful aggregation of notify jobs' do
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       now = Time.now.utc

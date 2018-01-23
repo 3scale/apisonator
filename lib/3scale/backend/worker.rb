@@ -119,17 +119,14 @@ module ThreeScale
         job.perform
       rescue Exception => e
         job.fail(e)
-        failed!
       end
 
       def register_worker
         redis.sadd(:workers, self)
-        started!
       end
 
       def unregister_worker
         redis.srem(:workers, self)
-        stopped!
       end
 
       def redis_timeout
@@ -153,16 +150,6 @@ module ThreeScale
           Resque::Failure.backend = Resque::Failure::Multiple
         end
       end
-
-      ## the next 4 are required for resque, leave them as is
-      def started!; end
-
-      def stopped!; end
-
-      def processed!; end
-
-      def failed!; end
-      ## ----
     end
   end
 end
