@@ -45,6 +45,18 @@ class StorageTest < Test::Unit::TestCase
     end
   end
 
+  def test_redis_no_scheme
+    assert_nothing_raised do
+      Storage.send :new, url('backend-redis:6379')
+    end
+  end
+
+  def test_redis_unknown_scheme
+    assert_raise ArgumentError do
+      Storage.send :new, url('myscheme://127.0.0.1:6379')
+    end
+  end
+
   private
 
   def assert_connection(client)
