@@ -8,42 +8,25 @@ module ThreeScale
       # This module is responsible for scheduling Notify jobs. These jobs are
       # used to report the usage of some metrics specified in the master
       # account.
-      # This module is only used when running the SaaS version, because in
-      # on-premises, master accounts are disabled.
       module NotifyBatcher
         include Resque::Helpers
         include Backend::Configurable
 
-        module SaaS
-          METRIC_AUTHORIZE = 'transactions/authorize'.freeze
-          METRIC_TRANSACTIONS = 'transactions'.freeze
-          private_constant :METRIC_AUTHORIZE, :METRIC_TRANSACTIONS
+        METRIC_AUTHORIZE = 'transactions/authorize'.freeze
+        METRIC_TRANSACTIONS = 'transactions'.freeze
+        private_constant :METRIC_AUTHORIZE, :METRIC_TRANSACTIONS
 
-          def notify_authorize(provider_key)
-            notify(provider_key, METRIC_AUTHORIZE => 1)
-          end
-
-          def notify_authrep(provider_key, transactions)
-            notify(provider_key, METRIC_AUTHORIZE => 1,
-                                 METRIC_TRANSACTIONS => transactions)
-          end
-
-          def notify_report(provider_key, transactions)
-            notify(provider_key, METRIC_TRANSACTIONS => transactions)
-          end
+        def notify_authorize(provider_key)
+          notify(provider_key, METRIC_AUTHORIZE => 1)
         end
-        private_constant :SaaS
 
-        module OnPrem
-          def notify_authorize(_provider_key); end
-          def notify_authrep(_provider_key, _transactions); end
-          def notify_report(_provider_key, _transactions); end
+        def notify_authrep(provider_key, transactions)
+          notify(provider_key, METRIC_AUTHORIZE => 1,
+                               METRIC_TRANSACTIONS => transactions)
         end
-        private_constant :OnPrem
 
-        def self.included(base)
-          mod = ThreeScale::Backend.configuration.saas ? SaaS : OnPrem
-          base.include(mod)
+        def notify_report(provider_key, transactions)
+          notify(provider_key, METRIC_TRANSACTIONS => transactions)
         end
 
         def key_for_notifications_batch
