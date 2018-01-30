@@ -25,7 +25,7 @@ module ThreeScale
       # Add configuration sections
       config.add_section(:queues, :master_name, :sentinels,
                          :connect_timeout, :read_timeout, :write_timeout)
-      config.add_section(:redis, :proxy, :nodes,
+      config.add_section(:redis, :url, :proxy, :nodes,
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:analytics_redis, :server,
                          :connect_timeout, :read_timeout, :write_timeout)
