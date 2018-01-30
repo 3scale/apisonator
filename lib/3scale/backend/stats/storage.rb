@@ -90,11 +90,7 @@ module ThreeScale
           end
 
           def stats_storage_from_config
-            host, port = Backend::Storage::Helpers.host_and_port(
-                config.analytics_redis.server)
-
-            options = Backend::Storage::Helpers.config_with(
-                config.analytics_redis, host: host, port: port)
+            options = Backend::Storage::Helpers.config_with(config.analytics_redis)
 
             Redis.new(options)
           end
