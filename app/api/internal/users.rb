@@ -3,11 +3,11 @@ module ThreeScale
     module API
       internal_api '/services/:service_id/users' do
         module UserHelper
-          def self.save(service_id, username, attributes, method, headers)
-            halt 400, { status: :error, error: 'missing parameter \'user\'' }.to_json unless attributes
-            attributes.merge!(service_id: service_id, username: username)
+          def self.save(service_id, username, usr_attrs, method, headers)
+            usr_attrs[:service_id] = service_id
+            usr_attrs[:username] = username
             begin
-              user = User.save! attributes
+              user = User.save! usr_attrs
             rescue => e
               [400, headers, { status: :error, error: e.message }.to_json]
             else
@@ -27,11 +27,13 @@ module ThreeScale
         end
 
         post '/:username' do |service_id, username|
-          UserHelper.save(service_id, username, params[:user], :post, headers)
+          user_attrs = api_params User
+          UserHelper.save(service_id, username, user_attrs, :post, headers)
         end
 
         put '/:username' do |service_id, username|
-          UserHelper.save(service_id, username, params[:user], :put, headers)
+          user_attrs = api_params User
+          UserHelper.save(service_id, username, user_attrs, :put, headers)
         end
 
         delete '/:username' do |service_id, username|
@@ -42,7 +44,6 @@ module ThreeScale
             [400, headers, { status: :error, error: e.message }.to_json]
           end
         end
-
       end
     end
   end

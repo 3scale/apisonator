@@ -3,8 +3,10 @@ module ThreeScale
     class Application
       include Storable
 
+      # list of attributes to be fetched from storage
       ATTRIBUTES = [:state, :plan_id, :plan_name, :redirect_url,
                     :user_required, :version].freeze
+      private_constant :ATTRIBUTES
 
       attr_accessor :service_id, :id, *ATTRIBUTES
       attr_writer :metric_names
@@ -31,6 +33,10 @@ module ThreeScale
 
       class << self
         include Memoizer::Decorator
+
+        def attribute_names
+          (ATTRIBUTES + %i[service_id id metric_names].freeze).freeze
+        end
 
         def load(service_id, id)
           return nil unless service_id and id

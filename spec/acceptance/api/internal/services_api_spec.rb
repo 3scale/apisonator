@@ -50,13 +50,8 @@ resource 'Services (prefix: /services)' do
       expect(status).to eq 201
       expect(response_json['status']).to eq 'created'
 
-      service = ThreeScale::Backend::Service.load_by_id('1002')
-      expect(service.provider_key).to eq 'foo'
-      expect(service.referrer_filters_required?).to be true
-      expect(service.backend_version).to eq 'oauth'
-      expect(service.default_user_plan_name).to eq 'default user plan name'
-      expect(service.default_user_plan_id).to eq 'plan ID'
-      expect(service.default_service?).to be true
+      svc = ThreeScale::Backend::Service.load_by_id('1002')
+      expect(svc.to_hash).to eq service.merge(user_registration_required: true)
     end
 
     example 'Try creating a Service with invalid data' do
@@ -74,6 +69,18 @@ resource 'Services (prefix: /services)' do
       expect(status).to eq 400
       expect(response_json['error']).to match /missing parameter 'service'/
     end
+
+    example 'Create a Service with extra params that should be ignored' do
+      do_request service: service.merge(some_param: 'some_value')
+      expect(status).to eq 201
+      expect(response_json['status']).to eq 'created'
+
+      svc = ThreeScale::Backend::Service.load_by_id('1002')
+      expect(svc).not_to be_nil
+      expect(svc).not_to respond_to :some_param
+      # The returned data should not contain *some_param* attribute
+      expect(svc.to_hash).to eq service.merge(user_registration_required: true)
+    end
   end
 
   put '/services/:id' do
@@ -87,7 +94,8 @@ resource 'Services (prefix: /services)' do
         referrer_filters_required: true,
         backend_version: 'oauth',
         default_user_plan_name: 'default user plan name',
-        default_user_plan_id: 'plan ID'
+        default_user_plan_id: 'plan ID',
+        default_service: true
       }
     end
     let(:raw_post){ params.to_json }
@@ -96,12 +104,22 @@ resource 'Services (prefix: /services)' do
       expect(status).to eq 200
       expect(response_json['status']).to eq 'ok'
 
-      service = ThreeScale::Backend::Service.load_by_id('1001')
-      expect(service.provider_key).to eq  'foo'
-      expect(service.referrer_filters_required?).to be true
-      expect(service.backend_version).to eq 'oauth'
-      expect(service.default_user_plan_name).to eq 'default user plan name'
-      expect(service.default_user_plan_id).to eq 'plan ID'
+      svc = ThreeScale::Backend::Service.load_by_id('1001')
+      expect(svc.to_hash).to eq service.merge(id: '1001',
+                                              user_registration_required: true)
+    end
+
+    example 'Update Service by ID using extra params that should be ignored' do
+      do_request service: service.merge(some_param: 'some_value')
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'ok'
+
+      svc = ThreeScale::Backend::Service.load_by_id('1001')
+      expect(svc).not_to be_nil
+      expect(svc).not_to respond_to :some_param
+      # The returned data should not contain *some_param* attribute
+      expect(svc.to_hash).to eq service.merge(id: '1001',
+                                              user_registration_required: true)
     end
 
     example 'Try updating Service with invalid data' do

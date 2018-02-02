@@ -77,6 +77,21 @@ resource 'Users (prefix: /services/:service_id/users)' do
       expect(user.plan_id).to eq plan_id
       expect(user.plan_name).to eq plan_name
     end
+
+    example 'Create a User with extra params' do
+      do_request user: user.merge(some_param: 'some_value')
+      expect(status).to eq 201
+      expect(response_json['status']).to eq 'created'
+
+      user = ThreeScale::Backend::User.load(service_id, username)
+      expect(user).not_to be_nil
+      expect(user).not_to respond_to :some_param
+      expect(user.username).to eq username
+      expect(user.service_id).to eq service_id
+      expect(user.state).to eq state
+      expect(user.plan_id).to eq plan_id
+      expect(user.plan_name).to eq plan_name
+    end
   end
 
   put '/services/:service_id/users/:username' do
@@ -95,6 +110,21 @@ resource 'Users (prefix: /services/:service_id/users)' do
       expect(response_json['status']).to eq 'modified'
 
       user = ThreeScale::Backend::User.load(service_id, username)
+      expect(user.username).to eq username
+      expect(user.service_id).to eq service_id
+      expect(user.state).to eq state
+      expect(user.plan_id).to eq plan_id
+      expect(user.plan_name).to eq modified_plan_name
+    end
+
+    example 'Update User with extra params' do
+      do_request user: modified_user.merge(some_param: 'some_value')
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'modified'
+
+      user = ThreeScale::Backend::User.load(service_id, username)
+      expect(user).not_to be_nil
+      expect(user).not_to respond_to :some_param
       expect(user.username).to eq username
       expect(user.service_id).to eq service_id
       expect(user.state).to eq state

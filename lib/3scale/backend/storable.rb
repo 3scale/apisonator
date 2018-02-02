@@ -24,6 +24,11 @@ module ThreeScale
         def storage
           Storage.instance
         end
+
+        # returns array of attribute names
+        def attribute_names
+          raise NotImplementedError
+        end
       end
     end
   end

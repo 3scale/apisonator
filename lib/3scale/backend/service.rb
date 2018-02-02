@@ -3,9 +3,10 @@ module ThreeScale
     class Service
       include Storable
 
-      ATTRIBUTES = %w(referrer_filters_required backend_version
-        user_registration_required default_user_plan_id default_user_plan_name
-        provider_key version).freeze
+      # list of attributes to be fetched from storage
+      ATTRIBUTES = %i[referrer_filters_required backend_version
+                      user_registration_required default_user_plan_id default_user_plan_name
+                      provider_key version].freeze
       private_constant :ATTRIBUTES
 
       attr_accessor :provider_key, :id, :backend_version,
@@ -15,6 +16,10 @@ module ThreeScale
 
       class << self
         include Memoizer::Decorator
+
+        def attribute_names
+          (ATTRIBUTES + %i[id default_service].freeze).freeze
+        end
 
         def incr_version(id)
           storage.incr storage_key(id, :version)
@@ -52,10 +57,10 @@ module ThreeScale
           service_attrs = get_service(id = service_id.to_s)
           massage_service_attrs id, service_attrs
 
-          return if service_attrs['provider_key'].nil?
+          return if service_attrs[:provider_key].nil?
 
           new(service_attrs.merge(id: id,
-            default_service: default_service?(service_attrs['provider_key'], id)
+            default_service: default_service?(service_attrs[:provider_key], id)
           ))
         end
         memoize :load_by_id
@@ -142,11 +147,11 @@ module ThreeScale
         private
 
         def massage_service_attrs(id, service_attrs)
-          service_attrs['referrer_filters_required'] =
-            service_attrs['referrer_filters_required'].to_i > 0
-          service_attrs['user_registration_required'] = massage_get_user_registration_required(
-            service_attrs['user_registration_required'])
-          service_attrs['version'] = massage_version(id, service_attrs['version'])
+          service_attrs[:referrer_filters_required] =
+            service_attrs[:referrer_filters_required].to_i > 0
+          service_attrs[:user_registration_required] = massage_get_user_registration_required(
+            service_attrs[:user_registration_required])
+          service_attrs[:version] = massage_version(id, service_attrs[:version])
 
           service_attrs
         end
