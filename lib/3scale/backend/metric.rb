@@ -30,10 +30,6 @@ module ThreeScale
         storage.pipelined do
           save_attributes
           save_to_list
-          # XXX why increase the version for each save in a metric?
-          # a metric with N children and each children with M additional
-          # children increases the version by N*M...
-          Service.incr_version(service_id)
           remove_reverse_mapping(service_id, old_name) if old_name != name
         end
 
@@ -180,7 +176,6 @@ module ThreeScale
             storage.del(key(service_id, id, :name),
                         key(service_id, id, :parent_id),
                         id_key(service_id, name))
-            Service.incr_version(service_id)
           end
 
           true

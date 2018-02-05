@@ -14,8 +14,7 @@ class ApplicationTest < Test::Unit::TestCase
   test '.save correctly saves an application' do
     Application.save(service_id: '2001', id: '8010',
                      state: :active, plan_id: '3001',
-                     plan_name: 'awesome', redirect_url: 'bla',
-                     version: '666')
+                     plan_name: 'awesome', redirect_url: 'bla')
     application = Application.load('2001', '8010')
     assert application.kind_of?(Application)
     assert_equal '2001', application.service_id
@@ -24,7 +23,6 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal '3001', application.plan_id
     assert_equal 'awesome', application.plan_name
     assert_equal 'bla', application.redirect_url
-    assert_equal '1', application.version
     # test that memoization of load is invalidated
     Application.save(service_id: '2001', id: '8010', state: :suspended)
     changed_app = Application.load('2001', '8010')
@@ -34,8 +32,7 @@ class ApplicationTest < Test::Unit::TestCase
   test '#save correctly saves an Application instance data' do
     application = Application.new(service_id: '2001', id: '8011',
                      state: :active, plan_id: '3001',
-                     plan_name: 'awesome', redirect_url: 'bla',
-                     version: '666')
+                     plan_name: 'awesome', redirect_url: 'bla')
     application.save
     assert_equal '2001', application.service_id
     assert_equal '8011', application.id
@@ -43,19 +40,16 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal '3001', application.plan_id
     assert_equal 'awesome', application.plan_name
     assert_equal 'bla', application.redirect_url
-    assert_equal '1', application.version
-    # test for change and version increment
+    # test for change
     application.plan_name = 'almost_awesome'
     application.save
     newapp = Application.load('2001', '8011')
     assert_equal 'almost_awesome', newapp.plan_name
-    assert_equal '2', newapp.version
   end
 
   test '.load correctly creates an Application instance' do
     Application.save(service_id: '2001', id: '8012',
-                     state: :active, redirect_url: 'bla',
-                     version: '666')
+                     state: :active, redirect_url: 'bla')
     application = Application.load('2001', '8012')
     assert application.kind_of?(Application)
     assert_equal '2001', application.service_id
@@ -64,7 +58,6 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal nil, application.plan_id
     assert_equal nil, application.plan_name
     assert_equal 'bla', application.redirect_url
-    assert_equal '1', application.version
   end
 
   test 'load! raises an exception if application does not exist' do
@@ -393,42 +386,6 @@ class ApplicationTest < Test::Unit::TestCase
     assert_raise ReferrerFilterInvalid do
       application.create_referrer_filter('')
     end
-  end
-
-  test 'check version' do
-
-    application = Application.save(:service_id => '1001',
-                                   :id         => '2001',
-                                   :state      => :active)
-
-    version_app = Application.get_version(application.service_id, application.id)
-
-    application.create_referrer_filter('192.*')
-    assert_equal (version_app.to_i+1).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 1, application.referrer_filters.size
-
-    application.delete_referrer_filter('192.*')
-    assert_equal (version_app.to_i+2).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 0, application.referrer_filters.size
-
-    key = application.create_key
-    assert_not_nil key
-    assert_equal (version_app.to_i+3).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 1, application.keys.size
-
-    application.delete_key(key)
-    assert_equal (version_app.to_i+4).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 0, application.keys.size
-
-    key = application.create_key('key1')
-    assert_equal  'key1', key
-    assert_equal (version_app.to_i+5).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 1, application.keys.size
-
-    application.delete_key(key)
-    assert_equal (version_app.to_i+6).to_s, Application.get_version(application.service_id, application.id)
-    assert_equal 0, application.keys.size
-
   end
 
   test 'remove application keys test' do

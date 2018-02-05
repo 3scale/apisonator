@@ -6,7 +6,7 @@ module ThreeScale
       include Storable
 
       attr_accessor :service_id, :username, :state, :plan_id, :plan_name
-      attr_writer :version, :metric_names
+      attr_writer :metric_names
 
       def self.attribute_names
         %i[service_id username state plan_id plan_name version
@@ -20,20 +20,17 @@ module ThreeScale
       def self.load(service_id, username)
         key = self.key(service_id, username)
 
-        values = storage.hmget(key, 'state', 'plan_id', 'plan_name', 'version')
-        state, plan_id, plan_name, vv = values
+        values = storage.hmget(key, 'state', 'plan_id', 'plan_name')
+        state, plan_id, plan_name = values
 
         unless state.nil?
-          attributes = {
+          new({
             service_id: service_id,
             username: username,
             state: state.to_sym,
             plan_id: plan_id,
             plan_name: plan_name,
-          }
-          new(attributes).tap do
-            incr_version(service_id, username) if vv.nil?
-          end
+          })
         end
       end
 
@@ -75,14 +72,6 @@ module ThreeScale
         user = new(attributes)
         user.save
         user
-      end
-
-      def self.get_version(service_id, username)
-        storage.hget(self.key(service_id, username), 'version')
-      end
-
-      def self.incr_version(service_id, username)
-        storage.hincrby(self.key(service_id, username), 'version', 1)
       end
 
       def self.delete!(service_id, username)
@@ -175,7 +164,6 @@ module ThreeScale
         storage.hset key, "plan_name", plan_name if plan_name
         storage.hset key, "username", username if username
         storage.hset key, "service_id", service_id if service_id
-        storage.hincrby key, "version", 1
       end
 
     end

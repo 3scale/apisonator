@@ -5,7 +5,7 @@ module ThreeScale
 
       # list of attributes to be fetched from storage
       ATTRIBUTES = [:state, :plan_id, :plan_name, :redirect_url,
-                    :user_required, :version].freeze
+                    :user_required].freeze
       private_constant :ATTRIBUTES
 
       attr_accessor :service_id, :id, *ATTRIBUTES
@@ -19,8 +19,7 @@ module ThreeScale
           plan_id: plan_id,
           plan_name: plan_name,
           redirect_url: redirect_url,
-          user_required: user_required,
-          version: version
+          user_required: user_required
         }
       end
 
@@ -44,16 +43,14 @@ module ThreeScale
                                 storage_key(service_id, id, :plan_id),
                                 storage_key(service_id, id, :plan_name),
                                 storage_key(service_id, id, :redirect_url),
-                                storage_key(service_id, id, :user_required),
-                                storage_key(service_id, id, :version))
-          state, plan_id, plan_name, redirect_url, user_required, version = values
+                                storage_key(service_id, id, :user_required))
+          state, plan_id, plan_name, redirect_url, user_required = values
 
           # save a network call by just checking state here for existence
           return nil unless state
 
           ## the default value is false
           user_required = user_required.to_i > 0
-          version = self.incr_version(service_id, id) unless version
 
           new(service_id: service_id,
               id: id,
@@ -61,8 +58,7 @@ module ThreeScale
               plan_id: plan_id,
               plan_name: plan_name,
               user_required: user_required,
-              redirect_url: redirect_url,
-              version: version)
+              redirect_url: redirect_url)
         end
         memoize :load
 
@@ -105,14 +101,6 @@ module ThreeScale
           storage.exists(storage_key(service_id, id, :state))
         end
         memoize :exists?
-
-        def get_version(service_id, id)
-          storage.get(storage_key(service_id, id, :version))
-        end
-
-        def incr_version(service_id, id)
-          storage.incrby(storage_key(service_id, id, :version), 1)
-        end
 
         def delete(service_id, id)
           raise ApplicationNotFound, id unless exists?(service_id, id)
@@ -190,11 +178,10 @@ module ThreeScale
       end
 
       def save
-        self.version = storage.pipelined do
+        storage.pipelined do
           persist_attributes
           persist_set
-          self.class.incr_version(service_id, id)
-        end.last.to_s
+        end
 
         self.class.clear_cache(service_id, id)
 
@@ -256,7 +243,6 @@ module ThreeScale
       # If value is nil, generates new random key, otherwise uses the given
       # value as the new key.
       def create_key(value = nil)
-        Application.incr_version(service_id, id)
         db_key = storage_key(:keys)
         invalidate_cache([:smembers, :scard], db_key)
         value ||= SecureRandom.hex(16)
@@ -265,7 +251,6 @@ module ThreeScale
       end
 
       def delete_key(value)
-        Application.incr_version(service_id,id)
         db_key = storage_key(:keys)
         invalidate_cache([:smembers, :scard, :sismember], db_key)
         storage.srem(db_key, value)
@@ -305,7 +290,6 @@ module ThreeScale
 
       def create_referrer_filter(value)
         raise ReferrerFilterInvalid, "referrer filter can't be blank" if value.blank?
-        Application.incr_version(service_id,id)
         db_key = storage_key(:referrer_filters)
         invalidate_cache([:smembers, :scard], db_key)
         storage.sadd(db_key, value)
@@ -313,7 +297,6 @@ module ThreeScale
       end
 
       def delete_referrer_filter(value)
-        Application.incr_version(service_id,id)
         db_key = storage_key(:referrer_filters)
         invalidate_cache([:smembers, :scard], db_key)
         storage.srem(db_key, value)

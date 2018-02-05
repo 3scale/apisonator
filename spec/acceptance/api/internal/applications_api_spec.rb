@@ -70,8 +70,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
       expect(response_json['status']).to eq 'created'
 
       app = ThreeScale::Backend::Application.load(service_id, id)
-      expect(app.to_hash).to eq application.merge(user_required: false,
-                                                  version: '1')
+      expect(app.to_hash).to eq application.merge(user_required: false)
     end
 
     example 'Create an Application with extra params that should be ignored' do
@@ -84,8 +83,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
       expect(app).not_to be_nil
       expect(app).not_to respond_to :some_param
       # The returned data should not contain *some_param* attribute
-      expect(app.to_hash).to eq application.merge(user_required: false,
-                                                  version: '1')
+      expect(app.to_hash).to eq application.merge(user_required: false)
     end
   end
 
@@ -118,9 +116,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(response_json['status']).to eq 'modified'
 
         app = ThreeScale::Backend::Application.load(service_id, id)
-        # Since the app has been modified, version should be '2'
-        expect(app.to_hash).to eq application.merge(user_required: false,
-                                                    version: '2')
+        expect(app.to_hash).to eq application.merge(user_required: false)
       end
 
       example 'updating the application with extra params that should be ignored' do
@@ -133,9 +129,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(app).not_to be_nil
         expect(app).not_to respond_to :some_param
         # The returned data should not contain *some_param* attribute
-        # Since the app has been modified, version should be '2'
-        expect(app.to_hash).to eq application.merge(user_required: false,
-                                                    version: '2')
+        expect(app.to_hash).to eq application.merge(user_required: false)
       end
     end
 
@@ -150,8 +144,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
 
         app = ThreeScale::Backend::Application.load(service_id, non_existing_id)
         expect(app.to_hash).to eq application.merge(id: non_existing_id,
-                                                    user_required: false,
-                                                    version: '1')
+                                                    user_required: false)
       end
     end
 
