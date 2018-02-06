@@ -17,25 +17,10 @@ require '3scale/backend/configuration'
 require '3scale/backend/logger'
 
 require '3scale/backend/constants'
+require '3scale/backend/environment'
 
 module ThreeScale
   module Backend
-    def self.environment
-      ENV['RACK_ENV'] || 'development'
-    end
-
-    def self.production?
-      environment == 'production'
-    end
-
-    def self.development?
-      environment == 'development'
-    end
-
-    def self.test?
-      environment == 'test'
-    end
-
     def self.configure_airbrake
       if configuration.saas
         require 'airbrake'
