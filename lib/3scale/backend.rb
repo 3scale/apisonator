@@ -19,64 +19,7 @@ require '3scale/backend/logger'
 
 require '3scale/backend/constants'
 require '3scale/backend/environment'
-
-module ThreeScale
-  module Backend
-    def self.configure_airbrake
-      if configuration.saas
-        require 'airbrake'
-        Airbrake.configure do |config|
-          config.api_key = configuration.hoptoad.api_key
-          config.environment_name = environment
-        end
-      end
-    end
-    private_class_method :configure_airbrake
-
-    def self.enable_logging
-      Logging.enable! on: self.singleton_class,
-                      with: [logs_file, 10] do |logger|
-        logger.define_singleton_method(:notify, logger_notify_proc(logger))
-      end
-    end
-    private_class_method :enable_logging
-
-    def self.logs_file
-      # We should think about changing it to something more general.
-      dir = configuration.log_path
-
-      if !dir.nil? && !dir.empty?
-        if File.stat(dir).ftype == 'directory'.freeze
-          "#{dir}/backend_logger.log"
-        else
-          dir
-        end
-      elsif development? || test?
-        ENV['LOG_PATH'] || '/dev/null'.freeze
-      else # production without configuration.log_path specified
-        STDOUT
-      end
-    end
-    private_class_method :logs_file
-
-    def self.logger_notify_proc(logger)
-      if airbrake_enabled?
-        Airbrake.method(:notify).to_proc
-      else
-        logger.method(:error).to_proc
-      end
-    end
-    private_class_method :logger_notify_proc
-
-    def self.airbrake_enabled?
-      defined?(Airbrake) && Airbrake.configuration.api_key
-    end
-    private_class_method :airbrake_enabled?
-
-    configure_airbrake
-    enable_logging
-  end
-end
+require '3scale/backend/logging'
 
 # Some classes depend on the configuration above. For example, some classes
 # need to know the value of config.saas when they are required. That is why it
