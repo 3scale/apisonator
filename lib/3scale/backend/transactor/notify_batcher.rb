@@ -10,7 +10,7 @@ module ThreeScale
       # account.
       module NotifyBatcher
         include Resque::Helpers
-        include Backend::Configurable
+        include Configurable
 
         METRIC_AUTHORIZE = 'transactions/authorize'.freeze
         METRIC_TRANSACTIONS = 'transactions'.freeze

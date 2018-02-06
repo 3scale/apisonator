@@ -1,7 +1,7 @@
 module ThreeScale
   module Backend
     class Statsd
-      include ThreeScale::Backend::Configurable
+      include Configurable
 
       class << self
         def instance
