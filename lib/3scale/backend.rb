@@ -13,20 +13,17 @@ require 'yaml'
 require 'digest/md5'
 
 # Require here the classes needed for configuring Backend
-require '3scale/backend/configuration'
-require '3scale/backend/configurable'
-require '3scale/backend/logger'
-
-require '3scale/backend/constants'
 require '3scale/backend/environment'
-require '3scale/backend/logging'
-
-# Some classes depend on the configuration above. For example, some classes
-# need to know the value of config.saas when they are required. That is why it
-# is better to put these requires here instead of putting them at the beginning
-# of the file even if it can seem a bit unusual at first.
+require '3scale/backend/version'
+require '3scale/backend/constants'
+require '3scale/backend/configuration'
 require '3scale/backend/util'
 require '3scale/backend/manifest'
+require '3scale/backend/logger'
+require '3scale/backend/logging'
+
+# A lot of classes depend on the required modules above, so don't place them
+# above this point.
 require '3scale/backend/logger/middleware'
 require '3scale/backend/period'
 require '3scale/backend/storage_helpers'
