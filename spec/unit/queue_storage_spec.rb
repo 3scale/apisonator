@@ -4,7 +4,7 @@ module ThreeScale
   module Backend
     describe QueueStorage do
       describe "#connection" do
-        let(:configuration) { ThreeScale::Backend::Configuration.new }
+        let(:configuration) { ThreeScale::Backend::Configuration::Loader.new }
 
         context 'when environment is development' do
           let(:environment) { 'development' }
