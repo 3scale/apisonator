@@ -16,10 +16,9 @@ require 'digest/md5'
 require '3scale/backend/configuration'
 require '3scale/backend/logger'
 
-module ThreeScale
-  TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'
-  PIPELINED_SLICE_SIZE = 400
+require '3scale/backend/constants'
 
+module ThreeScale
   module Backend
     def self.environment
       ENV['RACK_ENV'] || 'development'
