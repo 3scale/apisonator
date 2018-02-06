@@ -36,31 +36,18 @@ module ThreeScale
       end
     end
 
-    # Include this into any class to provide convenient access to the configuration.
-    module Configurable
-      def self.included(base)
-        base.extend(self)
+    class << self
+      def configure
+        yield configuration
       end
 
       def configuration
-        ThreeScale::Backend.configuration
+        @configuration ||= Configuration.new
       end
 
       def configuration=(cfg)
-        ThreeScale::Backend.configuration=(cfg)
+        @configuration = cfg
       end
-    end
-
-    def self.configure
-      yield configuration
-    end
-
-    def self.configuration
-      @@configuration ||= Configuration.new
-    end
-
-    def self.configuration=(cfg)
-      @@configuration = cfg
     end
   end
 end

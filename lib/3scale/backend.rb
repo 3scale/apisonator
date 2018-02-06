@@ -14,6 +14,7 @@ require 'digest/md5'
 
 # Require here the classes needed for configuring Backend
 require '3scale/backend/configuration'
+require '3scale/backend/configurable'
 require '3scale/backend/logger'
 
 require '3scale/backend/constants'
