@@ -54,7 +54,11 @@ module ThreeScale
       config.can_create_event_buckets = !production?
 
       # Load configuration from a file.
-      config.load!
+      config.load!([
+        '/etc/3scale_backend.conf',
+        '~/.3scale_backend.conf',
+        ENV['CONFIG_FILE']
+      ].compact)
 
       # can_create_event_buckets is just for our SaaS analytics system.
       # If SaaS has been set to false, we need to disable buckets too.
