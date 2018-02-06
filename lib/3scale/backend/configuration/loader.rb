@@ -4,6 +4,9 @@ module ThreeScale
   module Backend
     module Configuration
       class Loader < OpenStruct
+        Error = Class.new StandardError
+        NoConfigFiles = Class.new Error
+
         # Add configuration section with the given fields.
         #
         # == Example
@@ -16,8 +19,8 @@ module ThreeScale
         #   loader.bacons.type   = :chunky
         #   loader.bacons.amount = 'a lot'
         #
-        #   # Load the configuration with
-        #   loader.load!
+        #   # Load the configuration from an array of files
+        #   loader.load!(files)
         #
         #   # Use like this
         #   loader.bacons.type # :chunky
@@ -27,9 +30,9 @@ module ThreeScale
         end
 
         # Load configuration from a set of files
-        def load!
-          paths = ['/etc/3scale_backend.conf', '~/.3scale_backend.conf']
-          paths.each do |path|
+        def load!(files)
+          raise NoConfigFiles if !files || files.empty?
+          files.each do |path|
             load path if File.readable?(File.expand_path(path))
           end
         end
