@@ -1,66 +1,68 @@
-require 'ostruct'
+require '3scale/backend/configuration/loader'
+require '3scale/backend/environment'
+require '3scale/backend/configurable'
 
 module ThreeScale
   module Backend
-    class Configuration < OpenStruct
-      # Add configuration section with the given fields.
-      #
-      # == Example
-      #
-      #   # Define section like this
-      #   ThreeScale::Backend.configuration.add_section(:bacons, :type, :amount)
-      #
-      #   # Configure it like this
-      #   ThreeScale::Backend.configure do |config|
-      #     # other stuff here ...
-      #
-      #     config.bacons.type   = :chunky
-      #     config.bacons.amount = 'a lot'
-      #
-      #     # more stuff here ...
-      #   end
-      #
-      #   # Use like this
-      #   ThreeScale::Backend.configuration.bacons.type # :chunky
-      #
-      def add_section(name, *fields)
-        send("#{name}=", Struct.new(*fields).new)
-      end
+    class << self
+      attr_accessor :configuration
 
-      # Load configuration from a file (in /etc)
-      def load!
-        paths = ['/etc/3scale_backend.conf', '~/.3scale_backend.conf']
-        paths.each do |path|
-          load path if File.readable?(File.expand_path(path))
-        end
+      def configure
+        yield configuration
       end
     end
 
-    # Include this into any class to provide convenient access to the configuration.
-    module Configurable
-      def self.included(base)
-        base.extend(self)
-      end
+    @configuration = Configuration::Loader.new
 
-      def configuration
-        ThreeScale::Backend.configuration
-      end
+    # assign @configuration first, since code can depend on the attr_reader
+    @configuration.tap do |config|
+      # To distinguish between SaaS and on-premises mode.
+      config.saas = true
 
-      def configuration=(cfg)
-        ThreeScale::Backend.configuration=(cfg)
-      end
-    end
+      config.request_loggers = [:text]
+      config.workers_logger_formatter = :text
 
-    def self.configure
-      yield configuration
-    end
+      # Add configuration sections
+      config.add_section(:queues, :master_name, :sentinels,
+                         :connect_timeout, :read_timeout, :write_timeout)
+      config.add_section(:redis, :proxy, :nodes,
+                         :connect_timeout, :read_timeout, :write_timeout)
+      config.add_section(:analytics_redis, :server,
+                         :connect_timeout, :read_timeout, :write_timeout)
+      config.add_section(:hoptoad, :api_key)
+      config.add_section(:stats, :bucket_size)
+      config.add_section(:redshift, :host, :port, :dbname, :user, :password)
+      config.add_section(:statsd, :host, :port)
+      config.add_section(:internal_api, :user, :password)
+      config.add_section(:oauth, :max_token_size)
 
-    def self.configuration
-      @@configuration ||= Configuration.new
-    end
+      # Default config
+      config.master_service_id  = 1
 
-    def self.configuration=(cfg)
-      @@configuration = cfg
+      ## this means that there will be a NotifyJob for every X notifications (this is
+      ## the call to master)
+      config.notification_batch = 10000
+
+      # This setting controls whether the listener can create event buckets in
+      # Redis. We do not want all the listeners creating buckets yet, as we do
+      # not know exactly the rate at which we can send events to Kinesis
+      # without problems.
+      # By default, we will allow creating buckets in any environment that is
+      # not 'production'.
+      # Notice that in order to create buckets, you also need to execute this
+      # rake task: stats:buckets:enable
+      config.can_create_event_buckets = !production?
+
+      # Load configuration from a file.
+      config.load!([
+        '/etc/3scale_backend.conf',
+        '~/.3scale_backend.conf',
+        ENV['CONFIG_FILE']
+      ].compact)
+
+      # can_create_event_buckets is just for our SaaS analytics system.
+      # If SaaS has been set to false, we need to disable buckets too.
+      config.can_create_event_buckets = false unless config.saas
     end
   end
 end

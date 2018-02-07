@@ -45,8 +45,8 @@ module TestHelpers
         assert_nil                                obj.at('period_start')
         assert_nil                                obj.at('period_end')
       else
-        assert_equal Period::Boundary.start_of(period, time).strftime(ThreeScale::TIME_FORMAT), obj.at('period_start').content
-        assert_equal Period::Boundary.end_of(period, time).strftime(ThreeScale::TIME_FORMAT), obj.at('period_end').content
+        assert_equal Period::Boundary.start_of(period, time).strftime(TIME_FORMAT), obj.at('period_start').content
+        assert_equal Period::Boundary.end_of(period, time).strftime(TIME_FORMAT), obj.at('period_end').content
       end
       assert_equal current_value.to_s,            obj.at('current_value').content
       assert_equal max_value.to_s,                obj.at('max_value').content
@@ -68,9 +68,9 @@ module TestHelpers
         assert_nil                                obj.at('period_end')
       else
         assert_equal Period::Boundary.start_of(period, time).
-          strftime(ThreeScale::TIME_FORMAT), obj.at('period_start').content
+          strftime(TIME_FORMAT), obj.at('period_start').content
         assert_equal Period::Boundary.end_of(period, time).
-          strftime(ThreeScale::TIME_FORMAT), obj.at('period_end').content
+          strftime(TIME_FORMAT), obj.at('period_end').content
       end
       assert_equal current_value.to_s,            obj.at('current_value').content
       assert_equal max_value.to_s,                obj.at('max_value').content
