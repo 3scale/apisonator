@@ -8,7 +8,6 @@ module ThreeScale
 
       class << self
         include StorageHelpers
-        include Backend::Logging
 
         def store(type, object)
           fail InvalidEventType, type unless EVENT_TYPES.member?(type)
@@ -41,17 +40,10 @@ module ThreeScale
         end
 
         def ping_if_not_empty
-          if events_hook_configured? && pending_ping?
-            begin
-              request_to_events_hook
-              return true
-            rescue Exception => e
-              logger.notify(e)
-              return nil
-            end
+          if events_hook && pending_ping?
+            request_to_events_hook
+            true
           end
-
-          false
         end
 
         private
@@ -68,21 +60,28 @@ module ThreeScale
           "events/id".freeze
         end
 
-        def events_hook_configured?
-          return @events_hook_configured unless @events_hook_configured.nil?
-          events_hook = ThreeScale::Backend.configuration.events_hook
-          @events_hook_configured = events_hook && !events_hook.empty?
-        end
-
         def request_to_events_hook
           Net::HTTP.post_form(
             events_hook_uri,
-            secret: ThreeScale::Backend.configuration.events_hook_shared_secret,
+            secret: events_hook_shared_secret,
           )
         end
 
+        def events_hook
+          hook = Backend.configuration.events_hook
+          if hook.nil? || hook.empty?
+            false
+          else
+            hook
+          end
+        end
+
+        def events_hook_shared_secret
+          Backend.configuration.events_hook_shared_secret
+        end
+
         def events_hook_uri
-          @events_hook_uri ||= URI(ThreeScale::Backend.configuration.events_hook)
+          URI(events_hook)
         end
 
         def expire_last_ping
