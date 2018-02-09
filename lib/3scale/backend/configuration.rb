@@ -75,10 +75,8 @@ module ThreeScale
                             else
                               log_path
                             end
-                          elsif development? || test?
-                            ENV['CONFIG_LOG_FILE'] || '/dev/null'
                           else
-                            STDOUT
+                            ENV['CONFIG_LOG_FILE'] || STDOUT
                           end
       end
     end
