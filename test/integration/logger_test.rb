@@ -5,13 +5,13 @@ class LoggerTest < Test::Unit::TestCase
 
   def app
     Rack::Builder.new {
-      use ThreeScale::Backend::Logger::Middleware
+      use ThreeScale::Backend::Logging::Middleware
       run ThreeScale::Backend::Listener.new
     }.to_app
   end
 
   def default_log_writer
-    ThreeScale::Backend::Logger::Middleware::TextWriter
+    ThreeScale::Backend::Logging::Middleware::TextWriter
   end
 
   test 'log valid requests with request info and stats info' do

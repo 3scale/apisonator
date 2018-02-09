@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Logger
+    module Logging
       describe Middleware do
         def run_request
           if app.status == 500
