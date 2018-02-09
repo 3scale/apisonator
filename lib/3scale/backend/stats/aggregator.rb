@@ -1,3 +1,4 @@
+require '3scale/backend/logging'
 require '3scale/backend/stats/storage'
 require '3scale/backend/stats/keys'
 require '3scale/backend/application_events'
@@ -32,6 +33,7 @@ module ThreeScale
           include Backend::StorageKeyHelpers
           include Configurable
           include Keys
+          include Logging
 
           # This method stores the events in buckets if that option is enabled
           # or if it was disable because of an emergency (not because a user
@@ -58,7 +60,12 @@ module ThreeScale
 
             ApplicationEvents.generate(touched_apps.values)
             update_alerts(touched_apps)
-            ApplicationEvents.ping
+            begin
+              ApplicationEvents.ping
+            rescue ApplicationEvents::PingFailed => e
+              # we could not ping the frontend, log it
+              logger.notify e
+            end
           end
 
           private
@@ -127,7 +134,7 @@ module ThreeScale
           end
 
           def log_bucket_creation_disabled
-            Backend.logger.info(MAX_BUCKETS_CREATED_MSG)
+            logger.info(MAX_BUCKETS_CREATED_MSG)
           end
 
           def update_alerts(applications)
@@ -135,8 +142,8 @@ module ThreeScale
 
             applications.each do |_appid, values|
               service_id = values[:service_id]
-              application = ThreeScale::Backend::Application.load(service_id,
-                                                                  values[:application_id])
+              application = Backend::Application.load(service_id,
+                                                      values[:application_id])
 
               application.load_metric_names
               usage = Usage.application_usage(application, current_timestamp)
