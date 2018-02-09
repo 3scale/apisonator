@@ -175,7 +175,7 @@ module ThreeScale
 
       describe '.ping_if_not_empty' do
         before do
-          allow(ThreeScale::Backend.configuration).to receive(:events_hook).and_return("foo")
+          allow(EventStorage).to receive(:events_hook).and_return("foo")
           allow(Net::HTTP).to receive(:post_form).and_return(true)
         end
 
@@ -202,7 +202,7 @@ module ThreeScale
                 EventStorage.ping_if_not_empty
               end
 
-              it { expect(subject).to be false }
+              it { expect(subject).to be_falsey }
             end
           end
 
@@ -223,33 +223,37 @@ module ThreeScale
 
               values = threads.each(&:wakeup).map { |thread| thread.join.value }
 
-              expect(values).to match_array([true, false])
+              expect(values).to match_array([true, nil])
             end
           end
 
-          context 'when there is no configuration for events_hook' do
+          context 'when there is no event_hook present' do
             before do
-              allow(ThreeScale::Backend::EventStorage)
-                  .to receive(:events_hook_configured?).and_return(false)
+              allow(EventStorage).to receive(:events_hook).and_return(false)
             end
-            it { expect(subject).to be false }
+
+            it { expect(subject).to be_falsey }
           end
 
           context 'when hook notification fails' do
             before do
-              allow(Net::HTTP).to receive(:post_form).and_raise(:BOOOM)
-              allow(Backend.logger).to receive(:notify)
+              allow(Net::HTTP).to receive(:post_form).and_raise(StandardError)
             end
 
-            subject { EventStorage.ping_if_not_empty }
+            subject { EventStorage }
 
-            it { expect(subject).to be nil }
+            it 'raises an error' do
+              expect { subject.ping_if_not_empty }.to raise_error(StandardError)
+            end
           end
         end
 
         context 'without events in set' do
-          subject { EventStorage.ping_if_not_empty }
-          it { expect(subject).to be false }
+          subject { EventStorage }
+
+          it 'returns falsey' do
+            expect(subject.ping_if_not_empty).to be_falsey
+          end
         end
       end
     end
