@@ -1,9 +1,11 @@
+require '3scale/backend/logging/middleware/writer'
+
 module ThreeScale
   module Backend
-    class Logger
+    module Logging
       class Middleware
         class JsonWriter
-          include ThreeScale::Backend::Logger::Middleware::Writer
+          include Middleware::Writer
 
           private
 

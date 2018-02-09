@@ -1,9 +1,11 @@
+require '3scale/backend/logging/middleware/writer'
+
 module ThreeScale
   module Backend
-    class Logger
+    module Logging
       class Middleware
         class TextWriter
-          include ThreeScale::Backend::Logger::Middleware::Writer
+          include Middleware::Writer
 
           FORMAT = "%s - %s [%s] \"%s %s%s %s\" %d %s %s 0 0 0 %s %s %s %s %s\n".freeze
           private_constant :FORMAT

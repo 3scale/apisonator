@@ -1,10 +1,10 @@
-require '3scale/backend/logger/writer'
-require '3scale/backend/logger/text_writer'
-require '3scale/backend/logger/json_writer'
+require '3scale/backend/logging/middleware/writer'
+require '3scale/backend/logging/middleware/text_writer'
+require '3scale/backend/logging/middleware/json_writer'
 
 module ThreeScale
   module Backend
-    class Logger
+    module Logging
       class Middleware
         WRITERS = { text: TextWriter, json: JsonWriter }.freeze
         private_constant :WRITERS
