@@ -122,6 +122,7 @@ module ThreeScale
                 allow(bucket_reader).to receive(:latest_bucket_read=).with(bucket)
                 allow(kinesis_adapter).to receive(:send_events).with(events_to_send)
                 allow(bucket_storage).to receive(:delete_range).with(bucket)
+                allow(subject.logger).to receive(:notify)
               end
 
               it 'notifies that an invalid event has been found' do

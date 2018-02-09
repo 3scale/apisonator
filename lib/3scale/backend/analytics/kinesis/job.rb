@@ -1,3 +1,5 @@
+require '3scale/backend/logging'
+
 module ThreeScale
   module Backend
     module Analytics
@@ -43,7 +45,7 @@ module ThreeScale
           private_constant :FILTERED_EVENT_PERIODS_STR
 
           class << self
-            include Backend::Logging
+            include Logging
 
             def perform_logged(end_time_utc, lock_key, _enqueue_time)
               # end_time_utc will be a string when the worker processes this job.
