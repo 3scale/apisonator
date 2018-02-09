@@ -5,8 +5,8 @@ if ThreeScale::Backend.configuration.saas && Airbrake.configuration.api_key
 end
 
 loggers = ThreeScale::Backend.configuration.request_loggers
-log_writers = ThreeScale::Backend::Logger::Middleware.writers(loggers)
-use ThreeScale::Backend::Logger::Middleware, writers: log_writers
+log_writers = ThreeScale::Backend::Logging::Middleware.writers(loggers)
+use ThreeScale::Backend::Logging::Middleware, writers: log_writers
 
 map "/internal" do
   require_relative 'app/api/api'
