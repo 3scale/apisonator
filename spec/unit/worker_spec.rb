@@ -77,10 +77,16 @@ module ThreeScale
 
           before do
             allow(subject.redis).to receive(:blpop).and_return(invalid_enqueued_job)
+            allow(described_class.logger).to receive(:notify)
           end
 
           it 'returns nil' do
             expect(subject.send(:reserve)).to be nil
+          end
+
+          it 'notifies the logger' do
+            expect(described_class.logger).to receive(:notify)
+            subject.send :reserve
           end
         end
       end
