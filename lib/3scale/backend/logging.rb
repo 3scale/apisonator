@@ -20,25 +20,8 @@ module ThreeScale
 
       def enable_logging
         Logging.enable! on: self.singleton_class,
-          with: [logs_file, 10] do |logger|
+          with: [configuration.log_file, 10] do |logger|
           logger.define_singleton_method(:notify, logger_notify_proc(logger))
-        end
-      end
-
-      def logs_file
-        # We should think about changing it to something more general.
-        dir = configuration.log_path
-
-        if !dir.nil? && !dir.empty?
-          if File.stat(dir).ftype == 'directory'.freeze
-            "#{dir}/backend_logger.log"
-          else
-            dir
-          end
-        elsif development? || test?
-          ENV['LOG_PATH'] || '/dev/null'.freeze
-        else # production without configuration.log_path specified
-          STDOUT
         end
       end
 
