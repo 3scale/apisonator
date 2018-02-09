@@ -19,7 +19,6 @@ require '3scale/backend/constants'
 require '3scale/backend/configuration'
 require '3scale/backend/util'
 require '3scale/backend/manifest'
-require '3scale/backend/logger'
 require '3scale/backend/logging'
 
 # A lot of classes depend on the required modules above, so don't place them

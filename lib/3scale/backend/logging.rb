@@ -1,6 +1,6 @@
 require '3scale/backend/environment'
 require '3scale/backend/configuration'
-require '3scale/backend/logger'
+require '3scale/backend/logging/logger'
 
 module ThreeScale
   module Backend
@@ -14,7 +14,7 @@ module ThreeScale
         logger = if with.empty?
                    ThreeScale::Backend.logger
                  else
-                   ThreeScale::Backend::Logger.new(*with).tap do |l|
+                   ThreeScale::Backend::Logging::Logger.new(*with).tap do |l|
                      yield l if block_given?
                    end
                  end

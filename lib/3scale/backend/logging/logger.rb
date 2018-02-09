@@ -7,9 +7,11 @@ require 'logger'
 
 module ThreeScale
   module Backend
-    class Logger
-      def self.new(*args)
-        ::Logger.new(*args)
+    module Logging
+      class Logger
+        def self.new(*args)
+          ::Logger.new(*args)
+        end
       end
     end
   end
