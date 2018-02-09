@@ -6,15 +6,15 @@ module ThreeScale
   module Backend
     # include this module to have a handy access to the default logger
     module Logging
-      def logger
-        @logger ||= ThreeScale::Backend.logger
+      def self.included(base)
+        enable! on: base
       end
 
       def self.enable!(on:, with: [], as: :logger)
         logger = if with.empty?
-                   ThreeScale::Backend.logger
+                   Backend.logger
                  else
-                   ThreeScale::Backend::Logging::Logger.new(*with).tap do |l|
+                   Backend::Logging::Logger.new(*with).tap do |l|
                      yield l if block_given?
                    end
                  end
