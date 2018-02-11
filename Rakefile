@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+require '3scale/backend/configuration'
 require '3scale/backend'
 
 def testable_environment?
@@ -11,12 +12,9 @@ def saas?
 end
 
 if saas?
-  require 'airbrake/tasks'
-  require 'airbrake/rake_handler'
+  require '3scale/backend/logging/external'
 
-  Airbrake.configure do |config|
-    config.rescue_rake_exceptions = true
-  end
+  ThreeScale::Backend::Logging::External.setup_rake
 
   load 'lib/3scale/tasks/swagger.rake'
   load 'lib/3scale/tasks/stats.rake'
