@@ -1,5 +1,6 @@
 require '3scale/backend/configuration'
 require '3scale/backend/logging/worker'
+require '3scale/backend/logging/external'
 
 module ThreeScale
   module Backend
@@ -9,26 +10,6 @@ module ThreeScale
     # is too slow.
 
     class Worker
-      module SaaS
-        private
-
-        def configure_airbrake?
-          Airbrake.configuration.api_key
-        end
-      end
-      private_constant :SaaS
-
-      module OnPrem
-        private
-
-        def configure_airbrake?
-          false
-        end
-      end
-      private_constant :OnPrem
-
-      include(Backend.configuration.saas ? SaaS : OnPrem)
-
       include Resque::Helpers
       include Configurable
 
@@ -41,12 +22,11 @@ module ThreeScale
         trap('INT')  { shutdown }
 
         @one_off = options[:one_off]
-
-        configure_airbrake_for_resque
       end
 
       def self.new(options = {})
         Logging::Worker.configure_logging(self, options[:log_file])
+        Logging::External.setup_worker
         super
       end
 
@@ -137,20 +117,6 @@ module ThreeScale
 
       def hostname
         @hostname ||= (ENV['HOSTNAME'] || `hostname`.chomp)
-      end
-
-      def configure_airbrake_for_resque
-        if configure_airbrake?
-          require 'resque/failure/multiple'
-          require 'resque/failure/airbrake'
-          require 'resque/failure/redis'
-
-          Resque::Failure::Multiple.classes = [
-            Resque::Failure::Redis,
-            Resque::Failure::Airbrake,
-          ]
-          Resque::Failure.backend = Resque::Failure::Multiple
-        end
       end
     end
   end
