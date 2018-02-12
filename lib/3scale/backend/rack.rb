@@ -1,6 +1,7 @@
 require '3scale/backend/configuration'
 require '3scale/backend/logging/middleware'
 require '3scale/backend/util'
+require '3scale/backend/rack/exception_catcher'
 require '3scale/backend'
 
 require 'rack'
