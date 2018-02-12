@@ -11,9 +11,7 @@ module ThreeScale
     module Rack
       def self.run(rack)
         rack.instance_eval do
-          if Backend.configuration.saas && Airbrake.configuration.api_key
-            use Airbrake::Sinatra
-          end
+          Backend::Logging::External.setup_rack self
 
           loggers = Backend.configuration.request_loggers
           log_writers = Backend::Logging::Middleware.writers loggers
