@@ -1,6 +1,7 @@
 require '3scale/backend/environment'
 require '3scale/backend/configuration'
 require '3scale/backend/logging/logger'
+require '3scale/backend/logging/external'
 
 module ThreeScale
   module Backend
@@ -28,16 +29,6 @@ module ThreeScale
 
       private
 
-      def configure_airbrake
-        if configuration.saas
-          require 'airbrake'
-          Airbrake.configure do |config|
-            config.api_key = configuration.hoptoad.api_key
-            config.environment_name = environment
-          end
-        end
-      end
-
       def enable_logging
         Logging.enable! on: self.singleton_class,
           with: [configuration.log_file, 10] do |logger|
@@ -46,19 +37,10 @@ module ThreeScale
       end
 
       def logger_notify_proc(logger)
-        if airbrake_enabled?
-          Airbrake.method(:notify).to_proc
-        else
-          logger.method(:error).to_proc
-        end
-      end
-
-      def airbrake_enabled?
-        defined?(Airbrake) && Airbrake.configuration.api_key
+        Logging::External.notify_proc || logger.method(:error).to_proc
       end
     end
 
-    configure_airbrake
     enable_logging
   end
 end
