@@ -248,6 +248,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     mocked_bucket_storage = Object.new
     mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
     Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
+    Stats::Aggregator.logger.stubs(:info)
 
     Stats::Aggregator.expects(:prepare_stats_buckets).never
     Stats::Aggregator.process([default_transaction])
@@ -259,7 +260,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
     Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
 
-    Backend.logger.expects(:info).with(Stats::Aggregator.const_get(:MAX_BUCKETS_CREATED_MSG))
+    Stats::Aggregator.logger.expects(:info).with(Stats::Aggregator.const_get(:MAX_BUCKETS_CREATED_MSG))
     Stats::Aggregator.process([default_transaction])
   end
 
@@ -268,6 +269,7 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     mocked_bucket_storage = Object.new
     mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
     Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
+    Stats::Aggregator.logger.stubs(:info)
 
     Stats::Aggregator.process([default_transaction])
 

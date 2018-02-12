@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Logger
+    module Logging
       class Middleware
         module Writer
           Z3_RANGE = 0..3.freeze

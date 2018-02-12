@@ -124,6 +124,7 @@ module ThreeScale
           let(:dist_lock) { double('dist_lock', lock: false) }
 
           before do
+            allow(subject.logger).to receive(:notify)
             failed_jobs.each { |job| subject.failed_queue.enqueue(job) }
             allow(subject).to receive(:dist_lock).and_return(dist_lock)
           end
@@ -210,6 +211,10 @@ module ThreeScale
           end
 
           context 'and an exception is raised when re-queuing a job' do
+            before do
+              allow(subject.logger).to receive(:notify)
+            end
+
             context 'and it is because the job has invalid encoding (raises DecodeException)' do
               include_examples 'jobs that fail to be re-enqueued',
                 %w(job1 job2 invalid_encoding job3), 1, true

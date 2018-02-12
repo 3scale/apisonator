@@ -19,12 +19,11 @@ require '3scale/backend/constants'
 require '3scale/backend/configuration'
 require '3scale/backend/util'
 require '3scale/backend/manifest'
-require '3scale/backend/logger'
 require '3scale/backend/logging'
 
 # A lot of classes depend on the required modules above, so don't place them
 # above this point.
-require '3scale/backend/logger/middleware'
+require '3scale/backend/logging/middleware'
 require '3scale/backend/period'
 require '3scale/backend/storage_helpers'
 require '3scale/backend/storage_key_helpers'

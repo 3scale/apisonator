@@ -12,11 +12,18 @@ module ThreeScale
 
       DAILY_KEY_TTL = 172_800
 
-      ## Finally, let's ping the frontend if any event is pending
-      ## for processing
+      Error = Class.new StandardError
+      class PingFailed < Error
+        def initialize(e)
+          super "Application event ping failed: #{e.class} - #{e.message}"
+        end
+      end
+
+      # ping the frontend if any event is pending for processing
       def self.ping
         EventStorage.ping_if_not_empty
-        true
+      rescue => e
+        raise PingFailed.new(e)
       end
 
       def self.generate(applications)

@@ -77,8 +77,35 @@ module ThreeScale
       end
 
       describe '.ping' do
-        before { expect(EventStorage).to receive(:ping_if_not_empty) }
-        it { expect(ApplicationEvents.ping).to be true}
+        context 'when pinging works' do
+          before do
+            allow(EventStorage).to receive(:ping_if_not_empty).and_return(true)
+          end
+
+          it 'calls EventStorage.ping_if_not_empty' do
+            expect(EventStorage).to receive(:ping_if_not_empty)
+            described_class.ping
+          end
+
+          it 'returns true' do
+            expect(described_class.ping).to be true
+          end
+        end
+
+        context 'when pinging fails' do
+          before do
+            allow(EventStorage).to receive(:ping_if_not_empty).and_raise(StandardError)
+          end
+
+          it 'calls EventStorage.ping_if_not_empty' do
+            expect(EventStorage).to receive(:ping_if_not_empty)
+            described_class.ping rescue nil
+          end
+
+          it 'raises PingFailed' do
+            expect { described_class.ping }.to raise_error(described_class::PingFailed)
+          end
+        end
       end
     end
   end

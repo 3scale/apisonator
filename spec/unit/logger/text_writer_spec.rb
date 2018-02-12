@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Logger
+    module Logging
       class Middleware
         describe TextWriter do
           let(:logger) { object_double(STDOUT) }

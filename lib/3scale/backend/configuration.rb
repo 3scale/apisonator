@@ -63,6 +63,22 @@ module ThreeScale
       # can_create_event_buckets is just for our SaaS analytics system.
       # If SaaS has been set to false, we need to disable buckets too.
       config.can_create_event_buckets = false unless config.saas
+
+      # often we don't have a log_file setting - generate it here from
+      # the log_path setting.
+      log_file = config.log_file
+      if !log_file || log_file.empty?
+        log_path = config.log_path
+        config.log_file = if log_path && !log_path.empty?
+                            if File.stat(log_path).ftype == 'directory'
+                              "#{log_path}/backend_logger.log"
+                            else
+                              log_path
+                            end
+                          else
+                            ENV['CONFIG_LOG_FILE'] || STDOUT
+                          end
+      end
     end
   end
 end

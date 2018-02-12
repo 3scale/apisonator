@@ -1,3 +1,6 @@
+require '3scale/backend/configuration'
+require '3scale/backend/logging/worker'
+
 module ThreeScale
   module Backend
     # Worker for working off background jobs. This is very stripped down version of the
@@ -24,11 +27,10 @@ module ThreeScale
       end
       private_constant :OnPrem
 
-      include(ThreeScale::Backend.configuration.saas ? SaaS : OnPrem)
+      include(Backend.configuration.saas ? SaaS : OnPrem)
 
       include Resque::Helpers
       include Configurable
-      require '3scale/backend/logger/worker'
 
       # the order is relevant
       QUEUES = [:priority, :main, :stats]
@@ -44,7 +46,7 @@ module ThreeScale
       end
 
       def self.new(options = {})
-        Logger::Worker.configure_logging(self, options[:log_file])
+        Logging::Worker.configure_logging(self, options[:log_file])
         super
       end
 
@@ -53,7 +55,7 @@ module ThreeScale
       # - :one_off           - if true, will process one job, then quit
       #
       def self.work(options = {})
-        Process.setproctitle("3scale_backend_worker #{ThreeScale::Backend::VERSION}")
+        Process.setproctitle("3scale_backend_worker #{Backend::VERSION}")
         new(options).work
       end
 

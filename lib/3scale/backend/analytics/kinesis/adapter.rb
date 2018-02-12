@@ -1,3 +1,5 @@
+require '3scale/backend/logging'
+
 module ThreeScale
   module Backend
     module Analytics
@@ -20,6 +22,8 @@ module ThreeScale
           # records that failed are re-enqueued as pending events.
           # The list of pending events is stored in Redis, so we do not fail to
           # process any events in case of downtime or errors.
+
+          include Logging
 
           EVENTS_PER_RECORD = 1000
           private_constant :EVENTS_PER_RECORD
@@ -105,7 +109,7 @@ module ThreeScale
           end
 
           def log_bucket_creation_disabled
-            Backend.logger.info(MAX_PENDING_EVENTS_REACHED_MSG)
+            logger.info(MAX_PENDING_EVENTS_REACHED_MSG)
           end
 
           # Returns the failed events

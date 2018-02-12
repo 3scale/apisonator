@@ -263,7 +263,10 @@ module ThreeScale
               end
 
               context 'and bucket storage is enabled' do
-                before { stats_storage.enable! }
+                before do
+                  allow(subject.logger).to receive(:info)
+                  stats_storage.enable!
+                end
 
                 it 'disables bucket storage indicating emergency' do
                   subject.send_events(events)
@@ -274,7 +277,7 @@ module ThreeScale
                 end
 
                 it 'logs a message' do
-                  expect(Backend.logger).to receive(:info).with(limit_reached_msg)
+                  expect(subject.logger).to receive(:info).with(limit_reached_msg)
                   subject.send_events(events)
                 end
               end

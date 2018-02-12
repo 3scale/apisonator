@@ -1,3 +1,5 @@
+require '3scale/backend/logging'
+
 module ThreeScale
   module Backend
     class FailedJobsScheduler

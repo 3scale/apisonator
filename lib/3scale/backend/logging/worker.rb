@@ -1,6 +1,6 @@
 module ThreeScale
   module Backend
-    class Logger
+    module Logging
       class Worker
         include Configurable
 
