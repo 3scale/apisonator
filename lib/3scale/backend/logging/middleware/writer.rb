@@ -108,7 +108,7 @@ module ThreeScale
             qs = env[QUERY_STRING]
             if env[REQUEST_METHOD].to_s.upcase == STR_POST
               provider_key = begin
-                Rack::Request.new(env).params[STR_PROVIDER_KEY]
+                ::Rack::Request.new(env).params[STR_PROVIDER_KEY]
               rescue IOError
                 # happens when body does not parse
                 nil

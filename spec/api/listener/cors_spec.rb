@@ -3,7 +3,7 @@ require 'rack/test'
 module ThreeScale
   module Backend
     describe CORS do
-      include Rack::Test::Methods
+      include ::Rack::Test::Methods
 
       REQUIRED_ENDPOINT_HEADERS = [
         'Access-Control-Allow-Origin',
