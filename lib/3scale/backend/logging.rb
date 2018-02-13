@@ -15,13 +15,15 @@ module ThreeScale
         logger = if with.empty?
                    Backend.logger
                  else
-                   Backend::Logging::Logger.new(*with).tap do |l|
-                     yield l if block_given?
-                   end
+                   Backend::Logging::Logger.new(*with)
                  end
+
+        # define the method before yielding
         on.send :define_method, as do
           logger
         end
+
+        yield logger if block_given?
       end
     end
 
