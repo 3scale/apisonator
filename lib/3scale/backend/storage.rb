@@ -46,7 +46,7 @@ module ThreeScale
           private_constant :CONN_WHITELIST
 
           # Parameters regarding target server we will take from a config object
-          URL_WHITELIST = [:url, :proxy, :server].freeze
+          URL_WHITELIST = [:url, :proxy, :server, :sentinels].freeze
           private_constant :URL_WHITELIST
 
           # these are the parameters we will take from a config object
@@ -74,7 +74,9 @@ module ThreeScale
               h[k] = val if val
             end.merge(options)
 
-            defaults.merge(ensure_url_param cfg)
+            cfg_with_sentinels = cfg_sentinels_handler cfg
+
+            defaults.merge(ensure_url_param(cfg_with_sentinels))
           end
 
           private
@@ -152,6 +154,29 @@ module ThreeScale
             # exception when validating the url
             options[:url] = to_redis_uri(options[:url])
 
+            options
+          end
+
+          # Expected sentinel input cfg format:
+          # "redis_url0,redis_url1,redis_url2,....,redis_urlN"
+          #
+          # Parse to expected format by redis client
+          # [
+          #   { host: "host0", port: "port0" },
+          #   { host: "host1", port: "port1" },
+          #   { host: "host2", port: "port2" },
+          #   ...
+          #   { host: "hostN", port: "portN" }
+          # ]
+          def cfg_sentinels_handler(options)
+            return options if options[:sentinels].nil? || options[:sentinels].empty?
+            sentinel_cfg = options[:sentinels].split(/\s*,\s*/).map do |uri_str|
+              valid_uri_str = to_redis_uri uri_str
+              # it is safe now parsing
+              uri = URI.parse valid_uri_str
+              { host: uri.host, port: uri.port }
+            end
+            options[:sentinels] = sentinel_cfg
             options
           end
         end
