@@ -28,9 +28,8 @@ module ThreeScale
           'expected Hash (got Array)'.freeze
         private_constant :EXPECTED_HASH_ERR_MSG
 
-        def initialize(app, options = {})
+        def initialize(app)
           @app = app
-          @options = options
         end
 
         def call(env)
@@ -40,14 +39,22 @@ module ThreeScale
           delete_sinatra_error! env
           respond_with e.http_code, prepare_body(e.to_xml, env)
         rescue Exception => e
-          if e.class == RangeError && e.message == "exceeded available parameter key space"
+          unhandled_exception(e)
+        end
+
+        private
+
+        # raise up the chain an unhandled exception - but test first for an edge
+        # case with Rack key space limit for parsing requests.
+        # See https://github.com/rack/rack/blob/2.0.4/lib/rack/query_parser.rb#L166
+        def unhandled_exception(e)
+          if e.class == RangeError &&
+              e.message == 'exceeded available parameter key space'.freeze
             respond_with 400, Backend::NotValidData.new.to_xml
           else
             raise e
           end
         end
-
-        private
 
         # Private: Deletes 'sinatra.error' key in Rack's env hash.
         # Some external services report 'sinatra.error' and we don't want it when
