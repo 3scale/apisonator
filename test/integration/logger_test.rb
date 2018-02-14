@@ -1,10 +1,10 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class LoggerTest < Test::Unit::TestCase
-  include Rack::Test::Methods
+  include ::Rack::Test::Methods
 
   def app
-    Rack::Builder.new {
+    ::Rack::Builder.new {
       use ThreeScale::Backend::Logging::Middleware
       run ThreeScale::Backend::Listener.new
     }.to_app

@@ -35,8 +35,8 @@ module ThreeScale
             raise e
           end
 
-          header = Rack::Utils::HeaderHash.new(header)
-          body = Rack::BodyProxy.new(body) do
+          header = ::Rack::Utils::HeaderHash.new(header)
+          body = ::Rack::BodyProxy.new(body) do
             @writers.each do |writer|
               writer.log(env, status, header, began_at)
             end
