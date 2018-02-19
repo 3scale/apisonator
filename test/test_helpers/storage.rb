@@ -22,7 +22,18 @@ module TestHelpers
     private_constant :Hooks
 
     module Mock
+      DEFAULT_NODES = ["127.0.0.1:7379", "127.0.0.1:7380"].freeze
+      private_constant :DEFAULT_NODES
+
       class << self
+        def set_nodes(*nodes)
+          @nodes = nodes.flatten
+        end
+
+        def nodes
+          @nodes || DEFAULT_NODES
+        end
+
         def mock_storage_client!
           class << ::ThreeScale::Backend::Storage
             # ensure this does not get overwritten
@@ -91,7 +102,7 @@ module TestHelpers
             end
 
             def non_proxied_instances
-              @non_proxied_instances ||= configuration.redis.nodes.map do |server|
+              @non_proxied_instances ||= Mock.nodes.map do |server|
                 orig_new(
                   ::ThreeScale::Backend::Storage::Helpers.config_with(
                     configuration.redis,
