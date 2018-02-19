@@ -7,7 +7,7 @@ module ThreeScale
     # GitHub. It is useful for comparing two different behaviors when doing a
     # refactoring. The idea is that we can use the old code in the normal flow
     # of the program and at the same time, we can compare its results and
-    # performance against new code. This class notifies Airbrake if the result
+    # performance against new code. This class notifies the logger if the result
     # of the two fragments of code does not match. Also, it sends their
     # execution time to StatsD.
     #
