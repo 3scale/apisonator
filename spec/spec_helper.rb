@@ -35,6 +35,13 @@ require_relative '../test/test_helpers/sequences.rb'
 RSpec.configure do |config|
   config.before :suite do
     require_relative '../test/test_helpers/configuration'
+    require_relative '../test/test_helpers/storage'
+
+    TestHelpers::Storage::Mock.mock_storage_client!
+  end
+
+  config.after :suite do
+    TestHelpers::Storage::Mock.unmock_storage_client!
   end
 
   config.mock_with :rspec
