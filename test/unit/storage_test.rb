@@ -57,7 +57,7 @@ class StorageTest < Test::Unit::TestCase
   def test_sentinels_connection_string
     config_obj = {
       url: 'redis://127.0.0.1:6379/0',
-      sentinels: 'redis://127.0.0.1:26379, 127.0.0.1:36379'
+      sentinels: ',redis://127.0.0.1:26379, ,    , 127.0.0.1:36379,'
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
@@ -69,7 +69,7 @@ class StorageTest < Test::Unit::TestCase
   def test_sentinels_connection_string_escaped
     config_obj = {
       url: 'redis://127.0.0.1:6379/0',
-      sentinels: 'redis://user:passw\,ord@127.0.0.1:26379 ,127.0.0.1:36379'
+      sentinels: 'redis://user:passw\,ord@127.0.0.1:26379 ,127.0.0.1:36379, ,'
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
@@ -81,7 +81,7 @@ class StorageTest < Test::Unit::TestCase
   def test_sentinels_connection_array_strings
     config_obj = {
       url: 'redis://127.0.0.1:6379/0',
-      sentinels: ['redis://127.0.0.1:26379 ', ' 127.0.0.1:36379']
+      sentinels: ['redis://127.0.0.1:26379 ', ' 127.0.0.1:36379', nil]
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
@@ -94,11 +94,14 @@ class StorageTest < Test::Unit::TestCase
     config_obj = {
       url: 'redis://127.0.1.1:6379/0',
       sentinels: [ { host: '127.0.0.1', port: 26379 },
-                   { host: '127.0.0.1', port: 36379 } ]
+                   {},
+                   { host: '127.0.0.1', port: 36379 },
+                   nil]
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
-    assert_client_config(conn.client, **config_obj)
+    assert_client_config(conn.client, url: config_obj[:url],
+                         sentinels: config_obj[:sentinels].compact.reject(&:empty?))
   end
 
   def test_sentinels_malformed_url
