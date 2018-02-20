@@ -148,17 +148,30 @@ module ThreeScale
             default_url = options.delete :default_url
 
             # order of preference: url, proxy, server, default_url
-            options[:url] ||= proxy || server ||  default_url
+            options[:url] = [options[:url], proxy, server, default_url].find do |val|
+              val && !val.empty?
+            end
 
             # not having a :url parameter at this point will throw up an
             # exception when validating the url
-            options[:url] = to_redis_uri(options[:url])
+            options[:url] = to_redis_uri(options[:url]) if options[:url]
 
             options
           end
 
           # Expected sentinel input cfg format:
-          # "redis_url0,redis_url1,redis_url2,....,redis_urlN"
+          #
+          # Either a String with one or more URLs:
+          #   "redis_url0,redis_url1,redis_url2,....,redis_urlN"
+          # Or an Array of Strings representing one URL each:
+          #   ["redis_url0", "redis_url1", ..., "redis_urlN"]
+          # Or an Array of Hashes with ":host" and ":port" keys:
+          #   [{ host: "srv0", port: 7379 }, { host: "srv1", port: 7379 }, ...]
+          #
+          # When using the String input, the comma "," character is the
+          # delimiter between URLs and the "\" character is the escaper that
+          # allows you to include commas "," and any other character verbatim in
+          # a URL.
           #
           # Parse to expected format by redis client
           # [
@@ -169,16 +182,70 @@ module ThreeScale
           #   { host: "hostN", port: "portN" }
           # ]
           def cfg_sentinels_handler(options)
-            return options if options[:sentinels].nil? || options[:sentinels].empty?
-            sentinel_cfg = options[:sentinels].split(/\s*,\s*/).map do |uri_str|
-              valid_uri_str = to_redis_uri uri_str
-              # it is safe now parsing
-              uri = URI.parse valid_uri_str
-              { host: uri.host, port: uri.port }
-            end
-            options[:sentinels] = sentinel_cfg
+            sentinels = options[:sentinels]
+            return options unless sentinels && !sentinels.empty?
+
+            sentinels = Splitter.split(sentinels) if sentinels.is_a? String
+
+            options[:sentinels] = sentinels.map do |sentinel|
+              if sentinel.is_a? Hash
+                next if sentinel.empty?
+                sentinel.fetch(:host) do
+                  raise InvalidURI.new("(sentinel #{sentinel.inspect})",
+                                       'no host given')
+                end
+                sentinel.fetch(:port) do
+                  raise InvalidURI.new("(sentinel #{sentinel.inspect})",
+                                       'no port given')
+                end
+                sentinel
+              else
+                sentinel_to_hash sentinel
+              end
+            end.compact
+
             options
           end
+
+          # helper to convert a sentinel object to a Hash
+          def sentinel_to_hash(sentinel)
+            return if sentinel.nil?
+
+            if sentinel.respond_to? :strip!
+              sentinel.strip!
+              # invalid string if it's empty after stripping
+              return if sentinel.empty?
+            end
+
+            valid_uri_str = to_redis_uri(sentinel)
+            # it is safe to perform URI parsing now
+            uri = URI.parse valid_uri_str
+
+            { host: uri.host, port: uri.port }
+          end
+
+          # split a string by a delimiter character with escaping
+          module Splitter
+            def self.split(str, delimiter: ',', escaper: '\\')
+              escaping = false
+
+              str.each_char.inject(['']) do |ary, c|
+                if escaping
+                  escaping = false
+                  ary.last << c
+                elsif c == delimiter
+                  ary << ''
+                elsif c == escaper
+                  escaping = true
+                else
+                  ary.last << c
+                end
+
+                ary
+              end
+            end
+          end
+          private_constant :Splitter
         end
       end
 
