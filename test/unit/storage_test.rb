@@ -54,10 +54,41 @@ class StorageTest < Test::Unit::TestCase
     end
   end
 
-  def test_sentinels_connection
+  def test_sentinels_connection_string
     config_obj = {
       url: 'redis://127.0.0.1:6379/0',
-      sentinels: 'redis://127.0.0.1:26379,127.0.0.1:36379'
+      sentinels: 'redis://127.0.0.1:26379, 127.0.0.1:36379'
+    }
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    connector = conn.client.instance_variable_get(:@connector)
+    assert_instance_of Redis::Client::Connector::Sentinel, connector
+  end
+
+  def test_sentinels_connection_string_escaped
+    config_obj = {
+      url: 'redis://127.0.0.1:6379/0',
+      sentinels: 'redis://user:passw\,ord@127.0.0.1:26379 ,127.0.0.1:36379'
+    }
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    connector = conn.client.instance_variable_get(:@connector)
+    assert_instance_of Redis::Client::Connector::Sentinel, connector
+  end
+
+  def test_sentinels_connection_array_strings
+    config_obj = {
+      url: 'redis://127.0.0.1:6379/0',
+      sentinels: ['redis://127.0.0.1:26379 ', ' 127.0.0.1:36379']
+    }
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    connector = conn.client.instance_variable_get(:@connector)
+    assert_instance_of Redis::Client::Connector::Sentinel, connector
+  end
+
+  def test_sentinels_connection_array_hashes
+    config_obj = {
+      url: 'redis://127.0.0.1:6379/0',
+      sentinels: [ { host: '127.0.0.1', port: 26379 },
+                   { host: '127.0.0.1', port: 36379 } ]
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
     connector = conn.client.instance_variable_get(:@connector)
