@@ -46,7 +46,7 @@ module ThreeScale
           private_constant :CONN_WHITELIST
 
           # Parameters regarding target server we will take from a config object
-          URL_WHITELIST = [:url, :proxy, :server].freeze
+          URL_WHITELIST = [:url, :proxy, :server, :sentinels].freeze
           private_constant :URL_WHITELIST
 
           # these are the parameters we will take from a config object
@@ -74,7 +74,9 @@ module ThreeScale
               h[k] = val if val
             end.merge(options)
 
-            defaults.merge(ensure_url_param cfg)
+            cfg_with_sentinels = cfg_sentinels_handler cfg
+
+            defaults.merge(ensure_url_param(cfg_with_sentinels))
           end
 
           private
@@ -146,7 +148,9 @@ module ThreeScale
             default_url = options.delete :default_url
 
             # order of preference: url, proxy, server, default_url
-            options[:url] ||= proxy || server ||  default_url
+            options[:url] = [options[:url], proxy, server, default_url].find do |val|
+              val && !val.empty?
+            end
 
             # not having a :url parameter at this point will throw up an
             # exception when validating the url
@@ -154,6 +158,95 @@ module ThreeScale
 
             options
           end
+
+          # Expected sentinel input cfg format:
+          #
+          # Either a String with one or more URLs:
+          #   "redis_url0,redis_url1,redis_url2,....,redis_urlN"
+          # Or an Array of Strings representing one URL each:
+          #   ["redis_url0", "redis_url1", ..., "redis_urlN"]
+          # Or an Array of Hashes with ":host" and ":port" keys:
+          #   [{ host: "srv0", port: 7379 }, { host: "srv1", port: 7379 }, ...]
+          #
+          # When using the String input, the comma "," character is the
+          # delimiter between URLs and the "\" character is the escaper that
+          # allows you to include commas "," and any other character verbatim in
+          # a URL.
+          #
+          # Parse to expected format by redis client
+          # [
+          #   { host: "host0", port: "port0" },
+          #   { host: "host1", port: "port1" },
+          #   { host: "host2", port: "port2" },
+          #   ...
+          #   { host: "hostN", port: "portN" }
+          # ]
+          def cfg_sentinels_handler(options)
+            sentinels = options.delete :sentinels
+            # The Redis client can't accept empty string or array of :sentinels
+            return options if sentinels.nil? || sentinels.empty?
+
+            sentinels = Splitter.split(sentinels) if sentinels.is_a? String
+
+            options[:sentinels] = sentinels.map do |sentinel|
+              if sentinel.is_a? Hash
+                next if sentinel.empty?
+                sentinel.fetch(:host) do
+                  raise InvalidURI.new("(sentinel #{sentinel.inspect})",
+                                       'no host given')
+                end
+                sentinel.fetch(:port) do
+                  raise InvalidURI.new("(sentinel #{sentinel.inspect})",
+                                       'no port given')
+                end
+                sentinel
+              else
+                sentinel_to_hash sentinel
+              end
+            end.compact
+
+            options
+          end
+
+          # helper to convert a sentinel object to a Hash
+          def sentinel_to_hash(sentinel)
+            return if sentinel.nil?
+
+            if sentinel.respond_to? :strip!
+              sentinel.strip!
+              # invalid string if it's empty after stripping
+              return if sentinel.empty?
+            end
+
+            valid_uri_str = to_redis_uri(sentinel)
+            # it is safe to perform URI parsing now
+            uri = URI.parse valid_uri_str
+
+            { host: uri.host, port: uri.port }
+          end
+
+          # split a string by a delimiter character with escaping
+          module Splitter
+            def self.split(str, delimiter: ',', escaper: '\\')
+              escaping = false
+
+              str.each_char.inject(['']) do |ary, c|
+                if escaping
+                  escaping = false
+                  ary.last << c
+                elsif c == delimiter
+                  ary << ''
+                elsif c == escaper
+                  escaping = true
+                else
+                  ary.last << c
+                end
+
+                ary
+              end
+            end
+          end
+          private_constant :Splitter
         end
       end
 

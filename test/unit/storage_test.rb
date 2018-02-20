@@ -31,7 +31,7 @@ class StorageTest < Test::Unit::TestCase
   end
 
   def test_redis_malformed_url
-    assert_raise do
+    assert_raise Storage::InvalidURI do
       Storage.send :new, url('a_malformed_url:1:10')
     end
   end
@@ -54,12 +54,96 @@ class StorageTest < Test::Unit::TestCase
     end
   end
 
+  def test_sentinels_connection_string
+    config_obj = {
+      url: 'redis://127.0.0.1:6379/0',
+      sentinels: ',redis://127.0.0.1:26379, ,    , 127.0.0.1:36379,'
+    }
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    assert_sentinel_connector(conn.client)
+    assert_client_config(conn.client, url: config_obj[:url],
+                         sentinels: [{ host: '127.0.0.1', port: 26379 },
+                                     { host: '127.0.0.1', port: 36379 }])
+  end
+
+  def test_sentinels_connection_string_escaped
+    config_obj = {
+      url: 'redis://127.0.0.1:6379/0',
+      sentinels: 'redis://user:passw\,ord@127.0.0.1:26379 ,127.0.0.1:36379, ,'
+    }
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    assert_sentinel_connector(conn.client)
+    assert_client_config(conn.client, url: config_obj[:url],
+                         sentinels: [{ host: '127.0.0.1', port: 26379 },
+                                     { host: '127.0.0.1', port: 36379 }])
+  end
+
+  def test_sentinels_connection_array_strings
+    config_obj = {
+      url: 'redis://127.0.0.1:6379/0',
+      sentinels: ['redis://127.0.0.1:26379 ', ' 127.0.0.1:36379', nil]
+    }
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    assert_sentinel_connector(conn.client)
+    assert_client_config(conn.client, url: config_obj[:url],
+                         sentinels: [{ host: '127.0.0.1', port: 26379 },
+                                     { host: '127.0.0.1', port: 36379 }])
+  end
+
+  def test_sentinels_connection_array_hashes
+    config_obj = {
+      url: 'redis://127.0.1.1:6379/0',
+      sentinels: [ { host: '127.0.0.1', port: 26379 },
+                   {},
+                   { host: '127.0.0.1', port: 36379 },
+                   nil]
+    }
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    assert_sentinel_connector(conn.client)
+    assert_client_config(conn.client, url: config_obj[:url],
+                         sentinels: config_obj[:sentinels].compact.reject(&:empty?))
+  end
+
+  def test_sentinels_malformed_url
+    config_obj = {
+      url: 'redis://127.0.0.1:6379/0',
+      sentinels: 'redis://127.0.0.1:26379,a_malformed_url:1:10'
+    }
+    assert_raise Storage::InvalidURI do
+      Storage.send :new, Storage::Helpers.config_with(config_obj)
+    end
+  end
+
+  def test_sentinels_empty
+    ['', []].each do |sentinels_val|
+      config_obj = {
+        url: 'redis://127.0.0.1:6379/0',
+        sentinels: sentinels_val
+      }
+      redis_cfg = Storage::Helpers.config_with(config_obj)
+      assert !redis_cfg.key?(:sentinels)
+    end
+  end
+
   private
 
   def assert_connection(client)
     client.flushdb
     client.set('foo', 'bar')
     assert_equal 'bar', client.get('foo')
+  end
+
+  def assert_sentinel_connector(client)
+    connector = client.instance_variable_get(:@connector)
+    assert_instance_of Redis::Client::Connector::Sentinel, connector
+  end
+
+  def assert_client_config(client, host: nil, port: nil, url: nil, sentinels: nil)
+    raise "bad usage of #{__method__}" unless host || port || url
+    assert_equal client.port, port if port
+    assert_equal client.host, host if host
+    assert_equal client.options[:url], url if url
+    assert_equal client.options[:sentinels], sentinels if sentinels
   end
 
   def url(url)
