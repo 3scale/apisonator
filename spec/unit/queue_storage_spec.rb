@@ -31,7 +31,7 @@ module ThreeScale
               configuration.add_section(:queues, :master_name, :sentinels,
                                         :connect_timeout, :read_timeout, :write_timeout)
               configuration.queues.master_name = 'foo'
-              configuration.queues.sentinels   = ['foo']
+              configuration.queues.sentinels   = 'foo'
             end
 
             it 'returns a sentinel connection' do

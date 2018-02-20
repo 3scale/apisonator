@@ -1,4 +1,5 @@
 REDIS_PORTS=(7379 7380 6379)
+REDIS_UNIX_SOCKET_PREFIX="/tmp/redis_unix"
 TWEMPROXY_PIDFILE="/tmp/twemproxy_backend_tests.pid"
 POSTGRES_PIDFILE="/tmp/postgres_backend_tests.pid"
 
@@ -28,7 +29,7 @@ function start_redis {
     fi
      for port in "${REDIS_PORTS[@]}"
     do
-	$cmd --port "$port" --daemonize yes &
+        $cmd --port "$port" --unixsocket "${REDIS_UNIX_SOCKET_PREFIX}.$port.sock" --unixsocketperm 775 --logfile "/tmp/redis.$port.log" --daemonize yes
     done
 }
 
