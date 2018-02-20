@@ -154,7 +154,7 @@ module ThreeScale
 
             # not having a :url parameter at this point will throw up an
             # exception when validating the url
-            options[:url] = to_redis_uri(options[:url]) if options[:url]
+            options[:url] = to_redis_uri(options[:url])
 
             options
           end
@@ -182,8 +182,9 @@ module ThreeScale
           #   { host: "hostN", port: "portN" }
           # ]
           def cfg_sentinels_handler(options)
-            sentinels = options[:sentinels]
-            return options unless sentinels && !sentinels.empty?
+            sentinels = options.delete :sentinels
+            # The Redis client can't accept empty string or array of :sentinels
+            return options if sentinels.nil? || sentinels.empty?
 
             sentinels = Splitter.split(sentinels) if sentinels.is_a? String
 
