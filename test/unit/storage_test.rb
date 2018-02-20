@@ -114,6 +114,17 @@ class StorageTest < Test::Unit::TestCase
     end
   end
 
+  def test_sentinels_empty
+    ['', []].each do |sentinels_val|
+      config_obj = {
+        url: 'redis://127.0.0.1:6379/0',
+        sentinels: sentinels_val
+      }
+      redis_cfg = Storage::Helpers.config_with(config_obj)
+      assert !redis_cfg.key?(:sentinels)
+    end
+  end
+
   private
 
   def assert_connection(client)
