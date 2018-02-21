@@ -9,4 +9,3 @@ gem 'whenever', '= 0.9.7'
 gem 'scientist', '= 1.0.0'
 gem 'statsd-ruby', '= 1.4.0'
 gem 'airbrake', '= 4.3.1', require: nil
-gem 'bugsnag', '~> 6', require: nil

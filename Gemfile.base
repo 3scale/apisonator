@@ -58,3 +58,5 @@ gem 'resque', git: 'https://github.com/3scale/resque', branch: '3scale'
 gem 'rack', '= 2.0.3'
 gem 'sinatra', '= 2.0.0'
 gem 'sinatra-contrib', '= 2.0.0'
+# Optional external error logging services
+gem 'bugsnag', '~> 6', require: nil

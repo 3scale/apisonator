@@ -48,6 +48,8 @@ GEM
       tzinfo (~> 1.1)
     backports (3.8.0)
     benchmark-ips (2.7.2)
+    bugsnag (6.6.4)
+      concurrent-ruby (~> 1.0)
     builder (3.2.3)
     byebug (9.1.0)
     codeclimate-test-reporter (0.6.0)
@@ -186,6 +188,7 @@ PLATFORMS
 DEPENDENCIES
   3scale_backend!
   benchmark-ips (~> 2.7.2)
+  bugsnag (~> 6)
   builder (= 3.2.3)
   codeclimate-test-reporter (~> 0.6.0)
   daemons (= 1.2.4)
