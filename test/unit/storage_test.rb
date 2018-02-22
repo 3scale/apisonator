@@ -42,6 +42,17 @@ class StorageTest < Test::Unit::TestCase
     end
   end
 
+  def test_sentinels_simple_url
+    config_obj = {
+      url: 'master-name', # url of the sentinel master name conf
+      sentinels: 'redis://127.0.0.1:26379'
+    }
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    test_sentinel_connector(conn.client)
+    test_client_config(conn.client, url: "redis://#{config_obj[:url]}",
+                                    sentinels: [{ host: '127.0.0.1', port: 26_379 }])
+  end
+
   def test_redis_no_scheme
     assert_nothing_raised do
       Storage.send :new, url('backend-redis:6379')
