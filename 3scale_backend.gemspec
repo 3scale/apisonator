@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.homepage    = 'http://www.3scale.net'
   s.summary     = '3scale web service management system backend'
   s.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'
-  s.license     = 'Nonstandard'
+  s.license     = 'Apache-2.0'
 
   s.required_ruby_version     = ">= 2.2.0"
   s.required_rubygems_version = ">= 1.3.7"
@@ -33,6 +33,9 @@ Gem::Specification.new do |s|
   s.files << 'Gemfile.on_prem'
   s.files << 'Gemfile.on_prem.lock'
   s.files << 'licenses.xml'
+  # License
+  s.files << 'LICENSE'
+  s.files << 'NOTICE'
   s.files << __FILE__
 
   s.executables  = ['3scale_backend', '3scale_backend_worker']
