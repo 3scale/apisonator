@@ -1,21 +1,28 @@
-# 3scale API Management System Backend
+# Apisonator
 
-This is 3scale's kick-ass ultra-scalable API management system backend.
+This is Red Hat 3scale API Management Platform's Backend.
+
+This software is licensed under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0).
+
+See the LICENSE and NOTICE files that should have been provided along with this
+software for details.
 
 ## Development environment set up
 
-We recommend that you **DO NOT** install the software on your own machine but
-instead use an isolated development environment.
+The development environment currently needs a private container image. We
+recommend that for the time being you set up the project with a Ruby interpreter
+in your development machine and one of the multiple Ruby version and gemsets
+managers such as RVM or rbenv.
 
 To learn how to run the project once the environment has been set up, refer to
 the "Running" section.
 
 The first thing you will need is cloning the project:
-> `$ git clone git@github.com:3scale/backend.git`
+> `$ git clone git@github.com:3scale/apisonator.git`
 
-Next cd into the directory, `cd backend`.
+Next cd into the directory, `cd apisonator`.
 
-### Isolated environment (supported)
+### Containerized environment
 
 #### Prerequisites
 
@@ -30,9 +37,10 @@ This requires GNU Make and has a single step:
 This command will take care of downloading and building all dependencies. Once
 that is done, the process will be way faster the next time.
 
-The project's source code will be available in `~/backend` and sync'ed with your
-local backend directory, so you can edit files in your preferred environment and
-still be able to run whatever you need inside the Docker container.
+The project's source code will be available in `~/apisonator` and sync'ed with
+your local apisonator directory, so you can edit files in your preferred
+environment and still be able to run whatever you need inside the Docker
+container.
 
 This Docker container is persistent, so your changes will be kept the next time
 you enter it. If you want to use a temporary, throw-away container you'd just
@@ -57,14 +65,15 @@ the project so that changes in one reflect instantly in the other.
 We recommend editing code and committing locally, and executing tests within the
 container, since the container won't have your own tools and configurations.
 
-### On local (unsupported)
+### On local machine (unsupported)
 
 This is **unsupported** and **strongly discouraged** because it is the source of a lot
 of headaches and potential problems and introduces the need for us to document
 dependencies and config files here that are very likely to be outdated and
-incomplete. Don't even consider wasting anyone's time asking for help with this.
+incomplete. This is the current method available for people without access to
+the private container image.
 
-*You are basically on your own here*.
+Bear in mind that we can only provide best effort support for this.
 
 1. Install Redis v2.8.19 (or install it elsewhere).
 2. Run `bundle install`.
@@ -76,9 +85,10 @@ ThreeScale::Backend.configure do |config|
 end
 ```
 
-### Testing API users / backend from outside
+### Testing API users from the outside
 
-You can test users of backend API services by starting its dependencies and then backend itself:
+You can test users of Apisonator API services by starting its dependencies and
+then apisonator itself:
 
 > `$ script/test_external`
 
@@ -86,13 +96,13 @@ This will launch the application and wait for requests. You could now ie. launch
 `3scale_core`'s testing against this backend instance.
 
 You can hit CTRL+C at any time to exit. If you wanted to pass extra parameters
-for the launcher, such as daemonizing, you could like this:
+for the launcher, such as daemonizing, you could run this:
 
 > `$ script/test_external -- -d`
 
 ## Running
 
-Backend has its own application runner for the listener service:
+Apisonator has its own application runner for the listener service:
 
 `bundle exec 3scale_backend help`
 
@@ -128,39 +138,12 @@ API. You can also generate the documentation of the Internal API with Rake tasks
 
 This is our basic integration flow:
 
-1. Create a topic branch and add your changes there.
-2. Create a Pull Request. To accept a PR, we require:
-  1. Build in jenkins should be green.
-  2. Team should review and approve it.
-  3. Test the branch in preview environment. It should work correctly.
-3. Merge to master.
-4. Deploy to production.
+1. Fork the project.
+2. Create a topic branch and add your changes there.
+3. Create a Pull Request. To accept a PR, we require:
+  1. The test suite should be green, both in the PR code and when merged.
+  2. The core team or other contributors should review it.
+  3. Someone in the core team should approve it.
+4. Merge to master.
 
-Our preferred way to proceed is merge & deploy, only one feature/fix per deploy. This way has a lot of benefits for us.
-But, there are no unbreakable rules, so if you have a good reason to deploy multiple things, go ahead.
-
-### Deploy in preview
-
-1. Update the version with ".pre" suffix.
-  1. Modify `lib/3scale/backend/version.rb`.
-  2. Execute `bundle install`.
-  3. GIT commit is not needed. This version is something provisional and it can be done locally.
-2. Package the project as a gem and upload it to our private gem server.
-You can do it executing: `script/release`
-3. Follow the steps described in deploy project.
-4. Probably you want to see how it works with traffic replayed form production.
-5. Check the Grafana pretty graphs to make sure all keeps working.
-
-### Deploy in production
-
-1. Update the version.
-  1. Modify `lib/3scale/backend/version.rb`.
-  2. Execute `bundle install`.
-  3. Git commit and push.
-2. Package the project as a gem and upload it to our private gem server.
-You can do it executing: `script/release`
-3. Follow the steps described in deploy project.
-4. Check the Grafana pretty graphs to make sure all keeps working.
-
-__Note:__ As you can see, here we have a process that we can automatize. This note is an invitation for bold developers.
-
+We keep stable branches receiving bug and security fixes for long term releases.
