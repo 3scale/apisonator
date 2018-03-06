@@ -83,3 +83,17 @@ function stop_services {
     wait ${pids[*]}
 }
 
+bundle_cmd() {
+  local version="${1:-}"
+  local version_spec="${version:+_${version}_}"
+  echo "bundle ${version_spec}"
+}
+
+bundled_with() {
+  local lockfile="${1:-${BUNDLE_GEMFILE:-Gemfile}.lock}"
+  cat ${lockfile} | grep -A 1 "^BUNDLED WITH$" | tail -n 1 | sed -e 's/\s//g'
+}
+
+bundle_exec() {
+  $(bundle_cmd $(bundled_with)) exec "$@"
+}
