@@ -10,13 +10,37 @@ function cleanup()
     fi
 }
 
-trap 'cleanup' INT
+function do_license_check()
+{
+    if [ -n "$CI" ]; then
+        bundle_exec rake license_finder
+    fi
+}
 
-export RACK_ENV=test
+function do_test()
+{
+    bundle_exec rake "$@"
+}
+
+trap 'cleanup' INT
 
 start_services
 
-bundle exec rake "$@"
+if test "x${TEST_RUBY_VERSION}" != "x"; then
+    if test -r ${SCRIPT_DIR}/lib/rbenv/ruby_versions; then
+        . ${SCRIPT_DIR}/lib/rbenv/ruby_versions
+        set_ruby_version "${TEST_RUBY_VERSION}"
+    elif test -r ~/.local/bin/ruby_versions; then
+        . ~/.local/bin/ruby_versions
+        set_ruby_version "${TEST_RUBY_VERSION}"
+    else
+        echo "Cannot find rbenv support scripts, falling back to default version" >&2
+    fi
+fi
+
+export RACK_ENV=test
+
+do_license_check && do_test
 EXITVAL=$?
 
 cleanup
