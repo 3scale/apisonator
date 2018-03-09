@@ -22,27 +22,45 @@ function do_test()
     bundle_exec rake "$@"
 }
 
+function run_tests()
+{
+    local ruby_version="${1}"
+    if test "x${ruby_version}" != "x"; then
+        set_ruby_version "${ruby_version}" || \
+            echo "Failed to set Ruby ${ruby_version}, falling back to default" >&2
+    fi
+
+    export RACK_ENV=test
+
+    do_license_check && do_test
+}
+
 trap 'cleanup' INT
+
+if test -r ${SCRIPT_DIR}/lib/rbenv/ruby_versions; then
+    . ${SCRIPT_DIR}/lib/rbenv/ruby_versions
+elif test -r ~/.local/bin/ruby_versions; then
+    . ~/.local/bin/ruby_versions
+fi
 
 start_services
 
-if test "x${TEST_RUBY_VERSION}" != "x"; then
-    if test -r ${SCRIPT_DIR}/lib/rbenv/ruby_versions; then
-        . ${SCRIPT_DIR}/lib/rbenv/ruby_versions
-        set_ruby_version "${TEST_RUBY_VERSION}"
-    elif test -r ~/.local/bin/ruby_versions; then
-        . ~/.local/bin/ruby_versions
-        set_ruby_version "${TEST_RUBY_VERSION}"
-    else
-        echo "Cannot find rbenv support scripts, falling back to default version" >&2
+if test "x${TEST_ALL_RUBIES}" != "x" && rbenv --version 2> /dev/null >&2; then
+    for v in $(rbenv whence ruby); do
+        echo "=== Running tests on ${v}"
+        if ! run_tests "${v}"; then
+            failures="${failures:+${failures} }${v}"
+        fi
+    done
+else
+    if ! run_tests "${TEST_RUBY_VERSION}"; then
+        failures="${TEST_RUBY_VERSION:-default version}"
     fi
 fi
 
-export RACK_ENV=test
-
-do_license_check && do_test
-EXITVAL=$?
-
 cleanup
 
-exit ${EXITVAL}
+if test "x${failures}" != "x"; then
+    echo "Failed tests in ${failures}" >&2
+    exit 1
+fi
