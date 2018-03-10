@@ -5,6 +5,20 @@
 version: 2
 jobs:
   build:
+    branches:
+      #only:
+      #  # This is where pull requests from "bors r+" are built.
+      #  - staging
+      #  # This is where pull requests from "bors try" are built.
+      #  - trying
+      #  # Uncomment this to enable building pull requests.
+      #  - master
+      ignore:
+        # never run CI on staging.tmp
+        - staging.tmp
+        # or any other tmp branch
+        - /.*\.tmp/
+
     docker:
       # specify the version you desire here
        - image: quay.io/3scale/apisonator-ci:2.84.0
