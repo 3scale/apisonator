@@ -2,94 +2,76 @@ MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
 SHELL = $(PROJECT_PATH)/script/make_report_time.sh
 BENCH = $(PROJECT_PATH)/bench.txt
-# Jenkins runs the project in ../backend/workspace in its master. Strip that.
-PROJECT := $(notdir $(subst /workspace,,$(PROJECT_PATH)))
+IMAGE_REPO = quay.io/3scale
+CI_IMAGE = $(IMAGE_REPO)/apisonator-ci
 
-RUBY_USER := ruby
-RUBY_VERSION := $(shell cat $(PROJECT_PATH)/.ruby-version)
-
-# docker does not allow '@' in container names (used by Jenkins)
-DOCKER_NAME = $(subst @,,$(PROJECT))
-NAME = $(DOCKER_NAME)-build_$(RUBY_VERSION)
-DEV_NAME := dev_$(DOCKER_NAME)_$(RUBY_VERSION)
-# DOCKER_PROJECT_PATH value is hardcoded in Dockerfile
-DOCKER_PROJECT_PATH := /home/$(RUBY_USER)/backend
-
-# Sleep at most this much before giving up on docker reading Dockerfile
-# This is used because currently we generate the final form of the Dockerfile on
-# the fly, and we don't want to have them lying around or really hitting the
-# disk. This hack should be removed if at any point Docker is able to properly
-# support STDIN-fed Dockerfiles.
-DOCKERFILE_MAXWAIT_SECS := 30
-
-# Jenkins specific. Needed to report test coverage to CodeClimate.
-JENKINS_ENV = JENKINS_URL BUILD_TAG BUILD_NUMBER BUILD_URL
-JENKINS_ENV += GIT_BRANCH GIT_COMMIT GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_EMAIL GIT_COMMITTER_NAME
-
-ifdef CODECLIMATE_REPO_TOKEN
-	JENKINS_ENV += CODECLIMATE_REPO_TOKEN
-endif
-
-DOCKER_ENV = $(foreach env,$(JENKINS_ENV),-e "$(env)=$(shell echo $$$(env))" )
-DOCKER_ENV += -e "GIT_TIMESTAMP=$(shell git log -n 1 --pretty=format:%ct)"
-DOCKER_ENV += -e "GIT_COMMIT_MESSAGE=$(subst ','\'',$(shell git log -n 1 --pretty=format:%B))"
-DOCKER_ENV += -e "GIT_COMMITTED_DATE=$(shell git log -n 1 --pretty=format:%ai)"
-
-.PHONY: all bash build build_test clean default dev devclean pull show_bench test
-
+.PHONY: default
 default: | clean test show_bench
 
-include $(PROJECT_PATH)/docker/docker.mk
+.PHONY: test
+test: export BUILD_CI?=0
+test: export DEV_TOOLS?=""
+test: export IMAGE_NAME?=apisonator-test
+test: DOCKER_OPTS?=
+test:
+	make -C $(PROJECT_PATH) -f $(MKFILE_PATH) dev-build
+	docker run -ti --rm -h apisonator-test -v \
+		$(PROJECT_PATH):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'cd && pwd')/apisonator:z \
+		-u $$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -u'):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -g') \
+	$(DOCKER_OPTS) --name apisonator-test $(IMAGE_NAME)
 
-# this is used to build our image
-define build_dockerfile
-	($(call docker_build_dockerfile) && \
-		((($(call docker_wait_until_read_dockerfile, $(DOCKERFILE), $(DOCKERFILE_MAXWAIT_SECS)) || \
-		echo '*** Docker appears to be TOO SLOW. Maybe use a higher timeout?' >&2) ; \
-		echo '*** Removing tmp Dockerfile' >&2; rm -f $(DOCKERFILE)) &) && \
-		$(call docker_build, $(DOCKER_NAME):$(RUBY_VERSION), -f $(DOCKERFILE), $(PROJECT_PATH)))
-endef
-
-pull:
-	@ $(call docker_ensure_image, $(DOCKER_REPO):$(DOCKER_BASE_IMG))
-
-test: build_test
-	@ $(call docker_run_container, $(DOCKER_NAME):$(RUBY_VERSION), $(NAME), $(DOCKER_ENV))
-
-# bash creates a temporary test container from the Dockerfile each time it is run
-# use dev target to keep a persistent container suitable for development
-bash: build_test
-	@ $(call docker_run_disposable, $(DOCKER_NAME):$(RUBY_VERSION), -u $(RUBY_USER), /bin/bash)
-
-dev: build
-	@ ($(call docker_start_n_exec, $(DEV_NAME), -u $(RUBY_USER), /bin/bash)) || \
-		($(call docker_run, $(DOCKER_NAME):$(RUBY_VERSION), $(DEV_NAME), -u $(RUBY_USER), /bin/bash))
-
-# we wait just enough for docker to pick up the temporary Dockerfile and remove
-# it (limitation in Docker, as it does not do anything useful with STDIN).
-build: pull
-	@ ($(call docker_check_image, $(DOCKER_NAME):$(RUBY_VERSION))) || \
-		($(call build_dockerfile))
-
-# when testing, we always want to make sure the docker image is up-to-date with
-# whatever we have in the dockerfile, plus any dependency therein (ie. Bundler).
-build_test: pull
-	@ $(call build_dockerfile)
-
+.PHONY: clean
 clean:
 	-@ rm -f $(BENCH)
-	-@ $(call docker_rm_f, $(NAME))
 
-devclean:
-	-@ $(call docker_rm_f, $(DEV_NAME))
-
+.PHONY: show_bench
 show_bench:
 	@ cat $(BENCH)
 
+.PHONY: dev-clean
+dev-clean:
+	-docker kill apisonator-dev
+	-docker rm apisonator-dev
+
+.PHONY: dev-clean-image
+dev-clean-image: IMAGE_NAME?=apisonator-dev
+dev-clean-image: dev-clean
+	docker rmi $(IMAGE_NAME)
+
+.PHONY: dev
+dev: export IMAGE_NAME?=apisonator-dev
+dev:
+	@docker history -q $(IMAGE_NAME) 2> /dev/null >&2 || $(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) dev-build
+	@if docker ps --filter name=apisonator-dev | grep -q $(IMAGE_NAME) 2> /dev/null >&2; then \
+		echo "dev container already started" >&2; false ; \
+	fi
+	@if docker ps -a --filter name=apisonator-dev | grep -q $(IMAGE_NAME) 2> /dev/null >&2; then \
+		docker start -ai apisonator-dev ; \
+	else \
+		docker run -ti -h apisonator-dev -v \
+		$(PROJECT_PATH):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'cd && pwd')/apisonator:z \
+		-u $$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -u'):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -g') \
+		--name apisonator-dev $(IMAGE_NAME) /bin/bash ; \
+	fi
+
+.PHONY: dev-build
+dev-build: export BUILD_CI?=0
+dev-build: export DEV_TOOLS?="vim"
+dev-build: export IMAGE_NAME?=apisonator-dev
+dev-build: $(PROJECT_PATH)/Dockerfile
+	docker history -q $(CI_IMAGE) || \
+		(test "x${BUILD_CI}" != "x1" && docker pull $(CI_IMAGE)) || \
+		$(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) ci-build
+	docker build -t $(IMAGE_NAME) --build-arg DEV_TOOLS=$(DEV_TOOLS) --build-arg \
+		APP_HOME="$$(docker run --rm $(CI_IMAGE) /bin/bash -c 'cd && pwd')/apisonator" \
+		$(PROJECT_PATH)
+
 .PHONY: ci-build
 ci-build: APISONATOR_REL?=$(shell ruby -r$(PROJECT_PATH)/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
-ci-build: Dockerfile.ci
+ci-build: $(PROJECT_PATH)/Dockerfile.ci
 	docker build -t apisonator-ci-layered:$(APISONATOR_REL) -f Dockerfile.ci $(PROJECT_PATH)
+	docker tag apisonator-ci-layered:$(APISONATOR_REL) apisonator-ci-layered:latest
+	$(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) ci-flatten
 
 .PHONY: ci-flatten
 ci-flatten: APISONATOR_REL?=$(shell ruby -r$(PROJECT_PATH)/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
@@ -101,7 +83,8 @@ ci-flatten:
 		apisonator-ci-layered:$(APISONATOR_REL) echo
 	(docker export dummy-export-apisonator-ci-$(APISONATOR_REL) | \
 		docker import -c "USER $(CI_USER)" -c "ENV PATH $(CI_PATH)" - \
-		quay.io/3scale/apisonator-ci:$(APISONATOR_REL)) || \
+		$(CI_IMAGE):$(APISONATOR_REL)) || \
 		(echo Failed to flatten image && \
 		docker rm dummy-export-apisonator-ci-$(APISONATOR_REL) && false)
 	-docker rm dummy-export-apisonator-ci-$(APISONATOR_REL)
+	docker tag $(CI_IMAGE):$(APISONATOR_REL) $(CI_IMAGE):latest
