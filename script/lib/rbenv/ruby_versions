@@ -1,0 +1,58 @@
+#!/bin/bash
+
+if test -r ~/.bash_rbenv; then
+  source ~/.bash_rbenv
+  # else assume rbenv support is already loaded
+fi
+
+regex_escape() {
+  echo "${1}" | sed -e 's/[]\/$*.^[]/\\&/g'
+}
+
+match_version() {
+  local input="${1}"
+  local version_esc=$(regex_escape "${2}")
+  echo "${input}" | grep -P "^\s*${version_esc}" | sed -e "s/[[:space:]]*\(${version_esc}\(\.[0-9]\+\)*\).*/\1/" | sort -V -r | head -n 1
+}
+
+similar_installed_version() {
+  local req="${1}"
+  match_version "$(rbenv versions --bare --skip-aliases)" "${req}"
+}
+
+set_ruby_version() {
+  local req="${1}"
+  local similar=$(similar_installed_version "${req}")
+  if test "x${similar}" = "x"; then
+    return 1
+  fi
+  rbenv shell "${similar}"
+}
+
+similar_installable_version() {
+  local req="${1}"
+  match_version "$(rbenv install -l)" "${req}"
+}
+
+install_all_rubies() {
+  for req in "${@}"; do
+    if set_ruby_version "${req}"; then
+      echo "Skipping version ${req} as there is already version $(rbenv version-name) installed"
+      continue
+    fi
+    echo Installing ${req}
+    if ! RBENV_VERSION="${req}" rbenv_update_env; then
+      echo "Trying to pick up a similar version to ${req}"
+      local new_version=$(similar_installable_version "${req}")
+      echo "Picked up version ${new_version:-(default)}"
+      RBENV_VERSION=${new_version} rbenv_update_env
+    fi
+  done
+}
+
+if [[ "${BASH_SOURCE[0]}" = "${0}" ]]; then
+  set -eo pipefail
+  shopt -s failglob
+
+  install_all_rubies "${@}"
+fi

@@ -10,15 +10,57 @@ function cleanup()
     fi
 }
 
+function do_license_check()
+{
+    if [ -n "$CI" ]; then
+        bundle_exec rake license_finder
+    fi
+}
+
+function do_test()
+{
+    bundle_exec rake "$@"
+}
+
+function run_tests()
+{
+    local ruby_version="${1}"
+    if test "x${ruby_version}" != "x"; then
+        set_ruby_version "${ruby_version}" || \
+            echo "Failed to set Ruby ${ruby_version}, falling back to default" >&2
+    fi
+
+    export RACK_ENV=test
+
+    do_license_check && do_test
+}
+
 trap 'cleanup' INT
 
-export RACK_ENV=test
+if test -r ${SCRIPT_DIR}/lib/rbenv/ruby_versions; then
+    . ${SCRIPT_DIR}/lib/rbenv/ruby_versions
+elif test -r ~/.local/bin/ruby_versions; then
+    . ~/.local/bin/ruby_versions
+fi
 
 start_services
 
-bundle exec rake "$@"
-EXITVAL=$?
+if test "x${TEST_ALL_RUBIES}" != "x" && rbenv --version 2> /dev/null >&2; then
+    for v in $(rbenv whence ruby); do
+        echo "=== Running tests on ${v}"
+        if ! run_tests "${v}"; then
+            failures="${failures:+${failures} }${v}"
+        fi
+    done
+else
+    if ! run_tests "${TEST_RUBY_VERSION}"; then
+        failures="${TEST_RUBY_VERSION:-default version}"
+    fi
+fi
 
 cleanup
 
-exit ${EXITVAL}
+if test "x${failures}" != "x"; then
+    echo "Failed tests in ${failures}" >&2
+    exit 1
+fi

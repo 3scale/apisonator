@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if test -r ~/.bash_rbenv; then
+  source ~/.bash_rbenv
+  # else assume rbenv support is already loaded
+fi
+
+install_latest_bundler() {
+  # https://github.com/rubygems/rubygems/issues/2058
+  gem install --force bundler
+  rbenv rehash
+  bundle config --global jobs $(nproc)
+  bundle config --global cache_all false
+}
+
+update_env() {
+  if ! ruby -v 2> /dev/null; then
+    CONFIGURE_OPTS="${CONFIGURE_OPTS:---disable-install-doc}"  RUBY_BUILD_SKIP_MIRROR=1 rbenv install -s "${RBENV_VERSION:-}"
+    rbenv rehash
+    rbenv shell "${RBENV_VERSION:-}" 2> /dev/null
+    gem update --system
+  fi
+}
+
+if [[ "${BASH_SOURCE[0]}" = "${0}" ]]; then
+  set -eo pipefail
+  shopt -s failglob
+
+  update_env
+fi

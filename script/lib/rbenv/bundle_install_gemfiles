@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if test -r ~/.bash_rbenv; then
+  source ~/.bash_rbenv
+  # else assume rbenv support is already loaded
+fi
+
+bundle_cmd() {
+  local version="${1:-}"
+  local version_spec="${version:+_${version}_}"
+  echo "bundle ${version_spec}"
+}
+
+bundled_with() {
+  local lockfile="${1}"
+  cat ${lockfile} | grep -A 1 "^BUNDLED WITH$" | tail -n 1 | sed -e 's/\s//g'
+}
+
+ensure_bundler_version() {
+  local version="${1:-}"
+  $(bundle_cmd ${version}) --version 2> /dev/null >&2 ||
+    (gem install --force "bundler${version:+:${version}}" &&
+    rbenv rehash)
+}
+
+bundle_install_all_gemfiles() {
+  local array_requested=""
+  for lockfile in Gemfile*.lock; do
+    local gemfile="${lockfile%.lock}"
+    local requested="$(bundled_with ${lockfile})"
+    array_requested="${requested:-latest} ${array_requested}"
+    echo "Bundling ${gemfile} on $(ruby -v) with Bundler ${requested}"
+    ensure_bundler_version ${requested}
+    BUNDLE_GEMFILE=${gemfile} $(bundle_cmd ${requested}) install
+  done
+  echo "Installed Bundler versions:"
+  for v in ${array_requested}; do
+    echo ${v}
+  done | sort -u -r -V
+}
+
+if [[ "${BASH_SOURCE[0]}" = "${0}" ]]; then
+  set -eo pipefail
+  shopt -s failglob
+
+  bundle_install_all_gemfiles
+fi

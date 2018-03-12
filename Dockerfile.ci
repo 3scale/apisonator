@@ -1,0 +1,296 @@
+FROM centos:7
+MAINTAINER Alejandro Martinez Ruiz <amr@redhat.com>
+
+ARG CIRCLECI_TOOLS="git openssh-clients tar gzip ca-certificates"
+# set localtime to UTC and install basic build tools
+RUN (ln -s /usr/share/zoneinfo/UTC /etc/localtime 2> /dev/null || true) \
+    && yum update -y \
+    && yum install -y sudo git make gcc autoconf automake libtool gettext file \
+       ${CIRCLECI_TOOLS} \
+    && yum clean all
+
+ARG USER_NAME=ruby
+RUN useradd -m -d "/home/${USER_NAME}" -l -G wheel ${USER_NAME} \
+    && echo "${USER_NAME} ALL=(ALL:ALL) NOPASSWD: ALL" > \
+    "/etc/sudoers.d/${USER_NAME}" \
+    && chmod 0440 "/etc/sudoers.d/${USER_NAME}"
+
+USER "${USER_NAME}"
+
+# PostgreSQL installation
+ARG POSTGRES_BUILD_DEPS="bison flex zlib-devel readline-devel openssl-devel"
+RUN test "x${POSTGRES_BUILD_DEPS}" = "x" \
+    || sudo yum install -y ${POSTGRES_BUILD_DEPS}
+
+ARG POSTGRES_VERSION=REL9_5_12
+RUN curl -sSLf "https://github.com/postgres/postgres/archive/${POSTGRES_VERSION}.tar.gz" \
+    | tar -C "/home/${USER_NAME}" -xz
+
+ARG POSTGRES_PREFIX=/usr/local
+ARG POSTGRES_DATA_PREFIX=${POSTGRES_PREFIX}/pgsql
+ARG POSTGRES_CONFIGURE_OPTIONS
+ARG POSTGRES_MAKE_OPTIONS
+RUN cd ~/postgres-"${POSTGRES_VERSION}" \
+    && ./configure --prefix="${POSTGRES_PREFIX}" --includedir=/usr/local/include \
+       --with-openssl ${POSTGRES_CONFIGURE_OPTIONS} \
+    && make ${POSTGRES_MAKE_OPTIONS}
+RUN cd ~/postgres-"${POSTGRES_VERSION}" \
+    && sudo make install \
+    && rm -rf ~/postgres-"${POSTGRES_VERSION}" \
+    # the test tooling expects the pg_ctl binary in this directory
+    && sudo mkdir -p /usr/lib/postgresql/9.5/bin \
+    && sudo ln -sf "${POSTGRES_PREFIX}/bin/pg_ctl" /usr/lib/postgresql/9.5/bin/pg_ctl \
+    && sudo useradd postgres \
+    && sudo mkdir -p "${POSTGRES_DATA_PREFIX}/data" \
+    && sudo chown -R postgres: "${POSTGRES_DATA_PREFIX}" \
+    && sudo chmod -R go-rwx "${POSTGRES_DATA_PREFIX}"
+
+RUN sudo runuser -l postgres -c \
+    "${POSTGRES_PREFIX}/bin/initdb --pgdata='${POSTGRES_DATA_PREFIX}/data' --auth='trust'" < /dev/null \
+    && sudo runuser -l postgres -c \
+    "${POSTGRES_PREFIX}/bin/postgres -D '${POSTGRES_DATA_PREFIX}/data'" \
+      > /tmp/postgres.log 2>&1 & sleep 2 \
+    && sudo runuser -l postgres -c "${POSTGRES_PREFIX}/bin/createdb test" \
+    && sudo runuser -l postgres -c "${POSTGRES_PREFIX}/bin/psql test"
+
+# Twemproxy installation
+ARG TWEMPROXY_VERSION=0.4.1
+RUN curl -sSLf \
+    "https://codeload.github.com/twitter/twemproxy/tar.gz/v${TWEMPROXY_VERSION}" \
+    | tar -C "/home/${USER_NAME}" -xz
+
+ARG TWEMPROXY_CONFIGURE_OPTIONS
+ARG TWEMPROXY_BUILD_OPTIONS
+ARG TWEMPROXY_PREFIX=/opt/twemproxy
+RUN cd ~/twemproxy-"${TWEMPROXY_VERSION}" \
+    && autoreconf -fvi \
+    && ./configure --prefix="${TWEMPROXY_PREFIX}" ${TWEMPROXY_CONFIGURE_OPTIONS} \
+    && make ${TWEMPROXY_BUILD_OPTIONS}
+RUN cd ~/twemproxy-"${TWEMPROXY_VERSION}" \
+    && sudo make install \
+    && rm -rf ~/twemproxy-"${TWEMPROXY_VERSION}"
+
+# Redis installation
+ARG REDIS_VERSION=2.8.19
+RUN curl -sSLf "https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz" \
+    | tar -C "/home/${USER_NAME}" -xz
+
+ARG REDIS_BUILD_OPTIONS
+RUN cd ~/redis-"${REDIS_VERSION}" && make ${REDIS_BUILD_OPTIONS}
+ARG REDIS_PREFIX=/usr/local
+RUN cd ~/redis-"${REDIS_VERSION}" \
+    && sudo make PREFIX="${REDIS_PREFIX}" install \
+    && rm -rf ~/redis-"${REDIS_VERSION}"
+
+# not really meant to be changed
+ARG RBENV_ROOT="/home/${USER_NAME}/.rbenv"
+ENV RBENV_ROOT="${RBENV_ROOT}"
+ARG RBENV_BINPATH="${RBENV_ROOT}/bin"
+ARG RBENV_PATH="${RBENV_ROOT}/shims:${RBENV_BINPATH}"
+ARG RBENV_RUBYBUILD_ROOT="${RBENV_ROOT}/plugins/ruby-build"
+
+# update to git clone to include --shallow-submodules --no-tags --jobs $(nproc)
+# when newer git versions land in the base distro
+RUN git clone --recurse-submodules --depth 1 --no-checkout --progress \
+    https://github.com/rbenv/rbenv.git "${RBENV_ROOT}"
+
+RUN git clone --recurse-submodules --depth 1 --no-checkout --progress \
+    https://github.com/rbenv/ruby-build.git "${RBENV_RUBYBUILD_ROOT}"
+
+ARG RBENV_TAG=v1.1.1
+# update git fetch to include --jobs $(nproc) when newer git versions land
+RUN cd "${RBENV_ROOT}" \
+    && (git checkout -q -f "${RBENV_TAG}" 2> /dev/null \
+    || (git fetch --prune --depth 1 origin tag "${RBENV_TAG}" \
+    && git checkout -q -f "${RBENV_TAG}"))
+
+ARG RBENV_RUBYBUILD_TAG=v20180224
+RUN cd "${RBENV_RUBYBUILD_ROOT}" \
+    && (git checkout -q -f "${RBENV_RUBYBUILD_TAG}" 2> /dev/null \
+    || (git fetch --prune --depth 1 origin tag "${RBENV_RUBYBUILD_TAG}" \
+    && git checkout -q -f "${RBENV_RUBYBUILD_TAG}"))
+
+RUN sudo yum update -y
+RUN cd "${RBENV_ROOT}" && src/configure && make -C src || true
+
+RUN echo -n "export PATH=${RBENV_BINPATH}" >> ~/.bash_rbenv \
+    && echo ':~/.local/bin:$PATH' >> ~/.bash_rbenv \
+    && echo 'eval "$(rbenv init -)"' >> ~/.bash_rbenv \
+    && echo 'source ~/.bash_rbenv' >> ~/.profile
+
+ENV PATH="${RBENV_PATH}:~/.local/bin:${PATH}"
+
+ARG MRI_DEPS="bzip2 zlib-devel readline-devel openssl-devel libyaml-devel libffi-devel gdbm-devel ncurses-devel"
+RUN test "x${MRI_DEPS}" = "x" || sudo yum install -y ${MRI_DEPS}
+
+RUN echo 'gem: --no-document' >> ~/.gemrc \
+    && echo --color > ~/.rspec
+
+ARG CONFIGURE_OPTS=--disable-install-doc
+RUN mkdir -p ~/.local/bin \
+    && echo -e "#!/bin/bash\n\n" \
+       "source ~/.bash_rbenv\n\n" \
+       "install_latest_bundler() {\n" \
+       "  # https://github.com/rubygems/rubygems/issues/2058\n" \
+       "  gem install --force bundler\n" \
+       "  rbenv rehash\n" \
+       "  bundle config --global jobs \$(nproc)\n" \
+       "  bundle config --global cache_all false\n" \
+       "}\n\n" \
+       "update_env() {\n" \
+       "  if ! ruby -v 2> /dev/null; then\n" \
+       "    CONFIGURE_OPTS=\"\${CONFIGURE_OPTS:-${CONFIGURE_OPTS}}\" " \
+       "RUBY_BUILD_SKIP_MIRROR=1 rbenv install -s \"\${RBENV_VERSION:-}\"\n" \
+       "    rbenv rehash\n" \
+       "    rbenv shell \"\${RBENV_VERSION:-}\" 2> /dev/null\n" \
+       "    gem update --system\n" \
+       "  fi\n" \
+       "}\n\n" \
+       "if [[ \"\${BASH_SOURCE[0]}\" = \"\${0}\" ]]; then\n" \
+       "  set -eo pipefail\n" \
+       "  shopt -s failglob\n\n" \
+       "  update_env\n" \
+       "fi" \
+       > ~/.local/bin/rbenv_update_env \
+    && chmod +x ~/.local/bin/rbenv_update_env \
+    && echo -e "#!/bin/bash\n\n" \
+       "source ~/.bash_rbenv\n\n" \
+       "bundle_cmd() {\n" \
+       "  local version=\"\${1:-}\"\n" \
+       "  local version_spec=\"\${version:+_\${version}_}\"\n" \
+       "  echo \"bundle \${version_spec}\"\n" \
+       "}\n\n" \
+       "bundled_with() {\n" \
+       "  local lockfile=\"\${1}\"\n" \
+       "  cat \${lockfile} | grep -A 1 \"^BUNDLED WITH\$\" | tail -n 1 | sed -e 's/\s//g'\n" \
+       "}\n\n" \
+       "ensure_bundler_version() {\n" \
+       "  local version=\"\${1:-}\"\n" \
+       "  \$(bundle_cmd \${version}) --version 2> /dev/null >&2 ||\n" \
+       "    (gem install --force \"bundler\${version:+:\${version}}\" &&\n" \
+       "    rbenv rehash)\n" \
+       "}\n\n" \
+       "bundle_install_all_gemfiles() {\n" \
+       "  local array_requested=\"\"\n" \
+       "  for lockfile in Gemfile*.lock; do\n" \
+       "    local gemfile=\"\${lockfile%.lock}\"\n" \
+       "    local requested=\"\$(bundled_with \${lockfile})\"\n" \
+       "    array_requested=\"\${requested:-latest} \${array_requested}\"\n" \
+       "    echo \"Bundling \${gemfile} on \$(ruby -v) with Bundler \${requested}\"\n" \
+       "    ensure_bundler_version \${requested}\n" \
+       "    BUNDLE_GEMFILE=\${gemfile} \$(bundle_cmd \${requested}) install\n" \
+       "  done\n" \
+       "  echo \"Installed Bundler versions:\"\n" \
+       "  for v in \${array_requested}; do\n" \
+       "    echo \${v}\n" \
+       "  done | sort -u -r -V\n" \
+       "}\n\n" \
+       "if [[ \"\${BASH_SOURCE[0]}\" = \"\${0}\" ]]; then\n" \
+       "  set -eo pipefail\n" \
+       "  shopt -s failglob\n\n" \
+       "  bundle_install_all_gemfiles\n" \
+       "fi" \
+       > ~/.local/bin/bundle_install_gemfiles \
+    && chmod +x ~/.local/bin/bundle_install_gemfiles \
+    && echo -e "#!/bin/bash\n\n" \
+       "source ~/.bash_rbenv\n" \
+       "source \$(dirname \"\$(readlink -f \$0)\")/rbenv_update_env\n\n" \
+       "regex_escape() {\n" \
+       "  echo \"\${1}\" | sed -e 's/[]\/\$*.^[]/\\\\\\\\&/g'\n" \
+       "}\n\n" \
+       "match_version() {\n" \
+       "  local input=\"\${1}\"\n" \
+       "  local version_esc=\$(regex_escape \"\${2}\")\n" \
+       "  echo \"\${input}\" | grep -P \"^\s*\${version_esc}\" | sed -e \"s/[[:space:]]*\(\${version_esc}\(\.[0-9]\+\)*\).*/\1/\" | sort -V -r | head -n 1\n" \
+       "}\n\n" \
+       "similar_installed_version() {\n" \
+       "  local req=\"\${1}\"\n" \
+       "  match_version \"\$(rbenv versions --bare --skip-aliases)\" \"\${req}\"\n" \
+       "}\n\n" \
+       "set_ruby_version() {\n" \
+       "  local req=\"\${1}\"\n" \
+       "  local similar=\$(similar_installed_version \"\${req}\")\n" \
+       "  if test \"x\${similar}\" = \"x\"; then\n" \
+       "    return 1\n" \
+       "  fi\n" \
+       "  rbenv shell \"\${similar}\"\n" \
+       "}\n\n" \
+       "similar_installable_version() {\n" \
+       "  local req=\"\${1}\"\n" \
+       "  match_version \"\$(rbenv install -l)\" \"\${req}\"\n" \
+       "}\n\n" \
+       "install_all_rubies() {\n" \
+       "  for req in \"\${@}\"; do\n" \
+       "    if set_ruby_version \"\${req}\"; then\n" \
+       "      echo \"Skipping version \${req} as there is already version \$(rbenv version-name) installed\"\n" \
+       "      continue\n" \
+       "    fi\n" \
+       "    echo Installing \${req}\n" \
+       "    if ! RBENV_VERSION=\"\${req}\" update_env; then\n" \
+       "      echo \"Trying to pick up a similar version to \${req}\"\n" \
+       "      local new_version=\$(similar_installable_version \"\${req}\")\n" \
+       "      echo \"Picked up version \${new_version:-(default)}\"\n" \
+       "      RBENV_VERSION=\${new_version} update_env\n" \
+       "    fi\n" \
+       "  done\n" \
+       "}\n\n" \
+       "if [[ \"\${BASH_SOURCE[0]}\" = \"\${0}\" ]]; then\n" \
+       "  set -eo pipefail\n" \
+       "  shopt -s failglob\n\n" \
+       "  install_all_rubies \"\${@}\"\n" \
+       "fi" \
+       > ~/.local/bin/ruby_versions \
+    && chmod +x ~/.local/bin/ruby_versions \
+    && echo -e "#!/bin/bash\n\n" \
+       "source ~/.bash_rbenv\n" \
+       "source \$(dirname \"\$(readlink -f \$0)\")/bundle_install_gemfiles\n\n" \
+       "bundle_install_all_rubies() {\n" \
+       "  for ruby_version in \$(rbenv whence ruby); do\n" \
+       "    echo \"Switching to \${ruby_version}\"\n" \
+       "    rbenv shell \"\${ruby_version}\"\n" \
+       "    (bundle_install_all_gemfiles | tee /tmp/bundle_install.log)\n" \
+       "    BUNDLER_REQUESTED=\"\$(sed -e '1,/Installed Bundler versions:/d' /tmp/bundle_install.log)\"\n" \
+       "    rm -f /tmp/bundle_install.log\n" \
+       "    echo \"Bundler versions installed: \${BUNDLER_REQUESTED[*]}\"\n" \
+       "    echo -n \"Bundler versions available on \$(ruby -v): \"\n" \
+       "    echo \"\$(gem list bundler | " \
+       "grep ^bundler | cut -d' ' -f2- | " \
+       "sed -e 's/(\(.*\))/\1/g' -e 's/,//g' -e 's/default:\s*//g')\"\n" \
+       "  done\n" \
+       "}\n\n" \
+       "if [[ \"\${BASH_SOURCE[0]}\" = \"\${0}\" ]]; then\n" \
+       "  set -eo pipefail\n" \
+       "  shopt -s failglob\n\n" \
+       "  bundle_install_all_rubies\n" \
+       "fi" \
+       > ~/.local/bin/bundle_install_rubies \
+    && chmod +x ~/.local/bin/bundle_install_rubies
+
+COPY .ruby-* /tmp/apisonator/
+RUN sudo chown -R "${USER_NAME}": /tmp/apisonator \
+    && cd /tmp/apisonator \
+    && rbenv_update_env
+
+# specify all versions to be installed, partial versions also understood
+ARG RUBY_VERSIONS="2.2 2.3"
+RUN cd /tmp/apisonator \
+    && ruby_versions ${RUBY_VERSIONS}
+
+ARG APISONATOR_RUNTIME_DEPS="hostname"
+ARG APISONATOR_BUILD_DEPS
+# license_finder depends on which
+ARG APISONATOR_TEST_DEPS="which"
+RUN test "x${APISONATOR_RUNTIME_DEPS}${APISONATOR_BUILD_DEPS}${APISONATOR_TEST_DEPS}" = "x" \
+    || (sudo yum install -y ${APISONATOR_RUNTIME_DEPS} ${APISONATOR_BUILD_DEPS} \
+          ${APISONATOR_TEST_DEPS} \
+        && sudo yum clean all)
+
+COPY bin /tmp/apisonator/bin/
+COPY Gemfile* *.gemspec /tmp/apisonator/
+COPY lib/3scale/backend/version.rb /tmp/apisonator/lib/3scale/backend/
+RUN sudo chown -R "${USER_NAME}": /tmp/apisonator \
+    && cd /tmp/apisonator \
+    && bundle_install_rubies \
+    && rm -rf /tmp/apisonator
+
+ONBUILD ENV PATH="${RBENV_PATH}:~/.local/bin:${PATH}"

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if test -r ~/.bash_rbenv; then
+  source ~/.bash_rbenv
+  # else assume rbenv support is already loaded
+fi
+
+bundle_install_all_rubies() {
+  for ruby_version in $(rbenv whence ruby); do
+    echo "Switching to ${ruby_version}"
+    rbenv shell "${ruby_version}"
+    (bundle_install_all_gemfiles | tee /tmp/bundle_install.log)
+    BUNDLER_REQUESTED="$(sed -e '1,/Installed Bundler versions:/d' /tmp/bundle_install.log)"
+    rm -f /tmp/bundle_install.log
+    echo "Bundler versions installed: ${BUNDLER_REQUESTED[*]}"
+    echo -n "Bundler versions available on $(ruby -v): "
+    echo "$(gem list bundler |  grep ^bundler | cut -d' ' -f2- |  sed -e 's/(\(.*\))/\1/g' -e 's/,//g' -e 's/default:\s*//g')"
+  done
+}
+
+if [[ "${BASH_SOURCE[0]}" = "${0}" ]]; then
+  set -eo pipefail
+  shopt -s failglob
+
+  bundle_install_all_rubies
+fi
