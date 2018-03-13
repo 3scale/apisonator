@@ -9,11 +9,6 @@ software for details.
 
 ## Development environment set up
 
-The development environment currently needs a private container image. We
-recommend that for the time being you set up the project with a Ruby interpreter
-in your development machine and one of the multiple Ruby version and gemsets
-managers such as RVM or rbenv.
-
 To learn how to run the project once the environment has been set up, refer to
 the "Running" section.
 
@@ -43,10 +38,10 @@ environment and still be able to run whatever you need inside the Docker
 container.
 
 This Docker container is persistent, so your changes will be kept the next time
-you enter it. If you want to use a temporary, throw-away container you'd just
-run `make bash`, since it will autoremove the container on exit.
+you enter it.
 
-Getting rid of the persistent container is done with `make devclean`.
+Getting rid of the persistent container is done with `make dev-clean`, whereas
+removing its image is done using `make dev-clean-image`.
 
 #### Maintain your dependencies up-to-date
 
@@ -56,6 +51,9 @@ start breaking. You might want to make a habit of making sure dependencies are
 updated when you enter your container. Run this from the project directory:
 
 > $ `bundle install`
+
+The container image has additional tools to handle these dependencies for
+multiple Ruby versions. Check out the `scripts` directory if you are curious.
 
 #### Workflow
 
@@ -75,7 +73,7 @@ the private container image.
 
 Bear in mind that we can only provide best effort support for this.
 
-1. Install Redis v2.8.19 (or install it elsewhere).
+1. Install Redis v2.8.19 (or whichever version is recommended for use).
 2. Run `bundle install`.
 3. Configure Redis in `~/.3scale_backend.conf` as:
 
@@ -84,6 +82,15 @@ ThreeScale::Backend.configure do |config|
   config.redis.proxy = 'localhost:6379'
 end
 ```
+
+## Running tests
+
+You can either run them manually in the container-based development environment
+or have a container launched just for running the tests. For the latter you just
+need to run `make test`, and you can configure any additional environment
+variables for the test scripts like so:
+
+> `$ make DOCKER_OPTS="-e TEST_ALL_RUBIES=1" test`
 
 ### Testing API users from the outside
 
