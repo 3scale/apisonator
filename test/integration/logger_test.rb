@@ -24,11 +24,11 @@ class LoggerTest < Test::Unit::TestCase
 
   test 'log failed requests with request info and error info' do
     redis = Backend::Storage.instance
-    redis.expects(:get).raises(TimeoutError)
+    redis.expects(:get).raises(Timeout::Error)
 
     default_log_writer.any_instance.expects(:log_error).once
 
-    assert_raise TimeoutError do
+    assert_raise Timeout::Error do
       post '/transactions.xml?transactions[0]=foo2', provider_key: 'foo'
     end
   end
