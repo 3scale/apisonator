@@ -46,7 +46,7 @@ module ThreeScale
           private_constant :CONN_WHITELIST
 
           # Parameters regarding target server we will take from a config object
-          URL_WHITELIST = [:url, :proxy, :server, :sentinels].freeze
+          URL_WHITELIST = [:url, :proxy, :server, :sentinels, :role].freeze
           private_constant :URL_WHITELIST
 
           # these are the parameters we will take from a config object
@@ -182,6 +182,9 @@ module ThreeScale
           #   { host: "hostN", port: "portN" }
           # ]
           def cfg_sentinels_handler(options)
+            # get role attr and remove from options
+            # will only be validated and included when sentinels are valid
+            role = options.delete :role
             sentinels = options.delete :sentinels
             # The Redis client can't accept empty string or array of :sentinels
             return options if sentinels.nil? || sentinels.empty?
@@ -205,6 +208,8 @@ module ThreeScale
               end
             end.compact
 
+            # Handle role option when sentinels are validated
+            options[:role] = role if role && !role.empty?
             options
           end
 

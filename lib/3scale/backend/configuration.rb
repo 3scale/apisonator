@@ -23,9 +23,9 @@ module ThreeScale
       config.workers_logger_formatter = :text
 
       # Add configuration sections
-      config.add_section(:queues, :master_name, :sentinels,
+      config.add_section(:queues, :master_name, :sentinels, :role,
                          :connect_timeout, :read_timeout, :write_timeout)
-      config.add_section(:redis, :url, :proxy, :sentinels,
+      config.add_section(:redis, :url, :proxy, :sentinels, :role,
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:analytics_redis, :server,
                          :connect_timeout, :read_timeout, :write_timeout)
