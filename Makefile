@@ -5,6 +5,7 @@ BENCH = $(PROJECT_PATH)/bench.txt
 IMAGE_REPO = quay.io/3scale
 CI_IMAGE = $(IMAGE_REPO)/apisonator-ci
 
+
 .PHONY: default
 default: | clean test show_bench
 
