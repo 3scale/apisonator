@@ -72,8 +72,7 @@ container, since the container won't have your own tools and configurations.
 This is **unsupported** and **strongly discouraged** because it is the source of a lot
 of headaches and potential problems and introduces the need for us to document
 dependencies and config files here that are very likely to be outdated and
-incomplete. This is the current method available for people without access to
-the private container image.
+incomplete.
 
 Bear in mind that we can only provide best effort support for this.
 
