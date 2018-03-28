@@ -1,5 +1,9 @@
 # Apisonator
 
+[![Docker Repository on Quay](https://quay.io/repository/3scale/apisonator/status "Docker Repository on Quay")](https://quay.io/repository/3scale/apisonator)
+[![CircleCI](https://circleci.com/gh/3scale/apisonator.svg?style=shield)](https://circleci.com/gh/3scale/apisonator)
+[![Maintainability](https://api.codeclimate.com/v1/badges/d2cea8016f0089cb2fd6/maintainability)](https://codeclimate.com/github/3scale/apisonator/maintainability)
+
 This is Red Hat 3scale API Management Platform's Backend.
 
 This software is licensed under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0).
@@ -68,8 +72,7 @@ container, since the container won't have your own tools and configurations.
 This is **unsupported** and **strongly discouraged** because it is the source of a lot
 of headaches and potential problems and introduces the need for us to document
 dependencies and config files here that are very likely to be outdated and
-incomplete. This is the current method available for people without access to
-the private container image.
+incomplete.
 
 Bear in mind that we can only provide best effort support for this.
 
