@@ -41,6 +41,9 @@ your local apisonator directory, so you can edit files in your preferred
 environment and still be able to run whatever you need inside the Docker
 container.
 
+The listener service port (3000 by default) is automatically forwarded to the host machine. The `make dev` command can be executed with the environment variable `PORT` set to
+a different desired listener port value to forward on the host machine.
+
 This Docker container is persistent, so your changes will be kept the next time
 you enter it.
 

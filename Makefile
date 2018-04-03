@@ -40,6 +40,7 @@ dev-clean-image: dev-clean
 
 .PHONY: dev
 dev: export IMAGE_NAME?=apisonator-dev
+dev: export PORT?= 3000
 dev:
 	@docker history -q $(IMAGE_NAME) 2> /dev/null >&2 || $(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) dev-build
 	@if docker ps --filter name=apisonator-dev | grep -q $(IMAGE_NAME) 2> /dev/null >&2; then \
@@ -48,7 +49,7 @@ dev:
 	@if docker ps -a --filter name=apisonator-dev | grep -q $(IMAGE_NAME) 2> /dev/null >&2; then \
 		docker start -ai apisonator-dev ; \
 	else \
-		docker run -ti -h apisonator-dev -v \
+		docker run -ti -h apisonator-dev --expose=3000 -p $(PORT):3000 -v \
 		$(PROJECT_PATH):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'cd && pwd')/apisonator:z \
 		-u $$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -u'):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -g') \
 		--name apisonator-dev $(IMAGE_NAME) /bin/bash ; \
