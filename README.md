@@ -50,6 +50,10 @@ you enter it.
 Getting rid of the persistent container is done with `make dev-clean`, whereas
 removing its image is done using `make dev-clean-image`.
 
+Alternatively you can start a container with the service running with
+`make dev-service`. This rule is intended for when you want to test
+the service endpoint.
+
 #### Maintain your dependencies up-to-date
 
 Changes in code sometimes translate into changes in dependencies. If that is the
