@@ -1,5 +1,6 @@
 .bundle
 *.gem
+.vscode/
 
 lib/3scale/core
 lib/3scale/core.rb
