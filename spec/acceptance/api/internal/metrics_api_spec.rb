@@ -1,4 +1,4 @@
-require_relative '../../acceptance_spec_helper'
+require_relative '../../../spec_helpers/acceptance_spec_helper'
 
 resource 'Metrics (prefix: /services/:service_id/metrics)' do
   header 'Accept', 'application/json'
