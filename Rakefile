@@ -20,6 +20,8 @@ if saas?
   load 'lib/3scale/tasks/stats.rake'
 
   if testable_environment?
+
+    ENV['RACK_ENV'] = "test"
     require 'rake/testtask'
 
     task :default => [:test, :spec]
