@@ -65,8 +65,56 @@ if saas?
     end
 
     require 'rspec/core/rake_task'
-    desc 'Run specs'
-    RSpec::Core::RakeTask.new
+    spec_task_dependencies = ['spec:unit', 'spec:integration', 'spec:acceptance', 'spec:api', 'spec:use_cases']
+
+    desc 'Run RSpec tests'
+    task :spec => spec_task_dependencies
+
+    namespace :spec do
+
+      require 'rspec/core/rake_task'
+      desc 'Run all RSpec tests (unit, integration, acceptance, api, use_cases)'
+      task :all => spec_task_dependencies
+
+      desc 'Run RSpec unit tests'
+      RSpec::Core::RakeTask.new(:unit) do |task|
+        task.pattern = 'spec/unit/**/*_spec.rb'
+        #We require spec_helper because some tests
+        #do not include spec_helper by themselves
+        task.rspec_opts = '--require=spec_helper'
+      end
+
+      desc 'Run RSpec integration tests'
+      RSpec::Core::RakeTask.new(:integration) do |task|
+        task.pattern = 'spec/integration/**/*_spec.rb'
+        task.rspec_opts = '--require=spec_helper'
+      end
+
+      desc 'Run RSpec acceptance tests'
+      RSpec::Core::RakeTask.new(:acceptance) do |task|
+        task.pattern = 'spec/acceptance/**/*_spec.rb'
+        task.rspec_opts = '--require=spec_helper'
+      end
+
+      desc 'Run RSpec api tests'
+      RSpec::Core::RakeTask.new(:api) do |task|
+        task.pattern = 'spec/api/**/*_spec.rb'
+        task.rspec_opts = '--require=spec_helper'
+      end
+
+      desc 'Run RSpec use_cases tests'
+      RSpec::Core::RakeTask.new(:use_cases) do |task|
+        task.pattern = 'spec/use_cases/**/*_spec.rb'
+        task.rspec_opts = '--require=spec_helper'
+      end
+
+      desc 'Run RSpec test/s specified by input file pattern'
+      RSpec::Core::RakeTask.new(:specific, :test_name) do |task, task_args|
+        task.pattern = "#{task_args[:test_name]}"
+        task.rspec_opts = '--require=spec_helper'
+      end
+
+    end
 
     desc 'Generate API request documentation from API specs'
     RSpec::Core::RakeTask.new('docs:generate') do |t|
