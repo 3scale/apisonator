@@ -12,13 +12,14 @@ default: | clean test show_bench
 test: export BUILD_CI?=0
 test: export DEV_TOOLS?=""
 test: export IMAGE_NAME?=apisonator-test
+test: export CONTAINER_NAME?=apisonator-test
 test: DOCKER_OPTS?=
 test:
 	make -C $(PROJECT_PATH) -f $(MKFILE_PATH) dev-build
-	docker run -ti --rm -h apisonator-test -v \
+	docker run -ti --rm -h $(CONTAINER_NAME) -v \
 		$(PROJECT_PATH):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'cd && pwd')/apisonator:z \
 		-u $$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -u'):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -g') \
-	$(DOCKER_OPTS) --name apisonator-test $(IMAGE_NAME)
+	$(DOCKER_OPTS) --name $(CONTAINER_NAME) $(IMAGE_NAME)
 
 .PHONY: clean
 clean:
@@ -29,31 +30,46 @@ show_bench:
 	@ cat $(BENCH)
 
 .PHONY: dev-clean
+dev-clean: CONTAINER_NAME=apisonator-dev
 dev-clean:
-	-docker kill apisonator-dev
-	-docker rm apisonator-dev
+	-docker kill $(CONTAINER_NAME)
+	-docker rm $(CONTAINER_NAME)
+
+.PHONY: dev-service-clean
+dev-service-clean: CONTAINER_NAME=apisonator-dev-service
+dev-service-clean:
+	-docker kill $(CONTAINER_NAME)
+	-docker rm $(CONTAINER_NAME)
 
 .PHONY: dev-clean-image
 dev-clean-image: IMAGE_NAME?=apisonator-dev
-dev-clean-image: dev-clean
+dev-clean-image: dev-clean dev-service-clean
 	docker rmi $(IMAGE_NAME)
 
 .PHONY: dev
 dev: export IMAGE_NAME?=apisonator-dev
 dev: export PORT?= 3000
+dev: export CONTAINER_NAME?=apisonator-dev
+dev: export COMMAND?=/bin/bash
 dev:
 	@docker history -q $(IMAGE_NAME) 2> /dev/null >&2 || $(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) dev-build
-	@if docker ps --filter name=apisonator-dev | grep -q $(IMAGE_NAME) 2> /dev/null >&2; then \
-		echo "dev container already started" >&2; false ; \
+	@if docker ps --filter name=$(CONTAINER_NAME) --format "{{.Names}}" | grep -q '^$(CONTAINER_NAME)$$' 2> /dev/null >&2; then \
+		echo "$(CONTAINER_NAME) container already started" >&2; false ; \
 	fi
-	@if docker ps -a --filter name=apisonator-dev | grep -q $(IMAGE_NAME) 2> /dev/null >&2; then \
-		docker start -ai apisonator-dev ; \
+	@if docker ps -a --filter name=$(CONTAINER_NAME) --format "{{.Names}}" | grep -q '^$(CONTAINER_NAME)$$' 2> /dev/null >&2; then \
+		docker start -ai $(CONTAINER_NAME) ; \
 	else \
-		docker run -ti -h apisonator-dev --expose=3000 -p $(PORT):3000 -v \
+		docker run -ti -h $(CONTAINER_NAME) --expose=3000 -p $(PORT):3000 -v \
 		$(PROJECT_PATH):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'cd && pwd')/apisonator:z \
 		-u $$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -u'):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -g') \
-		--name apisonator-dev $(IMAGE_NAME) /bin/bash ; \
+		--name $(CONTAINER_NAME) $(IMAGE_NAME) $(COMMAND) ; \
 	fi
+
+.PHONY: dev-service
+dev-service: export CONTAINER_NAME?=apisonator-dev-service
+dev-service: export COMMAND=script/test_external
+dev-service:
+	$(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) dev
 
 .PHONY: dev-build
 dev-build: export BUILD_CI?=0
