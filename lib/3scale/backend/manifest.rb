@@ -8,6 +8,8 @@ module ThreeScale
       class << self
         PUMA_WORKERS = 'PUMA_WORKERS'.freeze
         private_constant :PUMA_WORKERS
+        PUMA_WORKERS_CPUMULT = 8
+        private_constant :PUMA_WORKERS_CPUMULT
 
         # Thread safety of our application. Turn this on if we ever are MT safe.
         def thread_safe?
@@ -25,7 +27,7 @@ module ThreeScale
               raise e, "PUMA_WORKERS environment var cannot be parsed: #{e.message}"
             end
           else
-            ncpus << 3
+            ncpus * PUMA_WORKERS_CPUMULT
           end
         end
 
