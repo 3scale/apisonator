@@ -102,6 +102,47 @@ variables for the test scripts like so:
 
 > `$ make DOCKER_OPTS="-e TEST_ALL_RUBIES=1" test`
 
+Another alternative to execute all tests from within the development environment
+where you should not need to manually start/stop the services before is to execute
+them from inside the development environment via this script:
+
+> `$ script/test`
+
+### Running tests (advanced)
+
+In order to run the tests manually in the container-based development, the services
+needed to run them correctly must be started before with:
+
+> `$ script/services start`
+
+Then you can execute the following commands to execute all tests:
+
+> `$ bundle exec rake`
+
+In case you need it/want it, it is possible to manually stop the services by executing:
+> `$ script/services stop`
+
+You can also specify execution of individual tests or type of tests.
+
+If the test is a Unit::Test type test (located in test directory) you can execute:
+> `$ bundle exec rake test:[unit|integration|special] [TEST=<test-file]>`
+
+If the test is a RSpec type test (located in spec directory) you can execute:
+> `$ bundle exec rake spec:[unit|integration|acceptance|api|use_cases] SPEC=<test-file>`
+
+Alternatively there is another syntax to execute a RSpec type test:
+> `$ bundle exec rake spec:specific[<test-file>]`
+
+where in this last case the [ ] characters must be literally placed.
+
+Finally, you can also execute tests with rspec directly with:
+
+> `$ RACK_ENV="test" bundle exec rspec --require=spec_helper <test-file>`
+
+For more information on accepted commands for testing with Rake you can execute:
+
+> `$ bundle exec rake -T`
+
 ### Testing API users from the outside
 
 You can test users of Apisonator API services by starting its dependencies and
