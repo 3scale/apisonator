@@ -21,6 +21,10 @@ module ThreeScale
           'invalid byte sequence in UTF-8'.freeze
         private_constant :INVALID_BYTE_SEQUENCE_ERR_MSG
 
+        INVALID_PERCENT_ENCODING_ERR_MSG = 'Invalid query parameters: '\
+        'invalid %-encoding'.freeze
+        private_constant :INVALID_PERCENT_ENCODING_ERR_MSG
+
         # Raised with invalid hash params such as:
         # usage[]=1&usage[metric]=1.
         # This is not the whole message. It contains the affected param at the end.
@@ -119,6 +123,9 @@ module ThreeScale
           elsif resp_body.start_with?(EXPECTED_HASH_ERR_MSG)
             delete_sinatra_error! env
             resp = respond_with 400, Backend::BadRequest.new.to_xml
+          elsif resp_body.start_with?(INVALID_PERCENT_ENCODING_ERR_MSG)
+            delete_sinatra_error! env
+            resp = respond_with 400, Backend::BadRequest.new(INVALID_PERCENT_ENCODING_ERR_MSG).to_xml
           end
 
           resp

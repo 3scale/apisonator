@@ -47,6 +47,21 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 'required_params_missing', node['code']
   end
 
+  def test_invalid_percent_encoding
+    # We pass a string and not a hash as a parameter due to
+    # the rack-test library performs modifications to the passed values
+    # (changes encoding, content-type, etc...) when a hash is passed,
+    # and we do not want to have any modifications to the content in this
+    # case.
+    post '/transactions.xml', 'testparam=value1%'
+
+    assert_equal 400, last_response.status
+
+    node = xml.at('error')
+    assert_equal Rack::ExceptionCatcher.const_get(:INVALID_PERCENT_ENCODING_ERR_MSG), node.content
+    assert_equal 'bad_request', node['code']
+  end
+
   def test_malformed_hash_param
     get '/transactions/authorize.xml', :provider_key => 'abc',
                                        :usage => { '' => 1, 'hits' => 1 }
