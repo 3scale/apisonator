@@ -68,14 +68,35 @@ module ThreeScale
         let(:service_ids_with_old_key) { [7001, 7002] }
         let(:use_case) { ProviderKeyChangeUseCase.new(old_key, new_key) }
 
+        def exercise_provider_service_memoizer(provider_key, service_id)
+          # Call the Service class methods just to force the memoization
+          # of them with specific values
+          Service.default_id(provider_key)
+          Service.authenticate_service_id(service_id, provider_key)
+          Service.load(provider_key)
+          Service.load_by_id(service_id)
+          Service.list(provider_key)
+          Service.provider_key_for(service_id)
+        end
+
+        def build_provider_service_memoizer_keys(provider_key, service_id)
+          Memoizer.build_keys_for_class(Service,
+            authenticate_service_id: [service_id, provider_key],
+            default_id: [provider_key],
+            load: [provider_key],
+            load_by_id: [service_id],
+            list: [provider_key],
+            provider_key_for: [service_id])
+        end
+
         before do
           service_ids_with_old_key.each do |service_id|
             Service.save! id: service_id, provider_key: old_key
           end
-          use_case.process
         end
 
         it 'changes the provider key of existing services' do
+          use_case.process
           expect(Service.list(new_key))
               .to eq service_ids_with_old_key.map(&:to_s)
 
@@ -85,18 +106,45 @@ module ThreeScale
         end
 
         it 'sets the default service for the new provider key' do
+          use_case.process
           expect(Service.default_id(new_key))
               .to eq service_ids_with_old_key.first.to_s
         end
 
         it 'removes (old) provider key data' do
+          use_case.process
           expect(Service.default_id(old_key)).to be nil
           expect(Service.list(old_key)).to be_empty
         end
 
         it 'changes the provider key associated with the affected services' do
+          use_case.process
           service_ids_with_old_key.each do |service_id|
             expect(Service.provider_key_for(service_id)).to eq new_key
+          end
+        end
+
+        it 'clears the Service cache keys of the old provider key' do
+          service_ids_with_old_key.each do |service_id|
+            exercise_provider_service_memoizer(old_key, service_id)
+            memoizer_keys = build_provider_service_memoizer_keys(old_key, service_id)
+
+            expect { use_case.process }
+            .to change { memoizer_keys.count { |k| Memoizer.memoized?(k) } }
+            .from(memoizer_keys.size)
+            .to(0)
+          end
+        end
+
+        it 'clears the Service cache keys of the new provider key' do
+          service_ids_with_old_key.each do |service_id|
+            exercise_provider_service_memoizer(new_key, service_id)
+            memoizer_keys = build_provider_service_memoizer_keys(new_key, service_id)
+
+            expect { use_case.process }
+            .to change { memoizer_keys.count { |k| Memoizer.memoized?(k) } }
+            .from(memoizer_keys.size)
+            .to(0)
           end
         end
       end
