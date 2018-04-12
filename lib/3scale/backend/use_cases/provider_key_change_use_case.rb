@@ -12,13 +12,17 @@ module ThreeScale
       def process
         default_service_id = Service.default_id(@old_key)
 
+        # Change the provider key on all the services and
+        # add all the services to the new provider
         service_ids.each do |service_id|
           storage.set Service.storage_key(service_id, :provider_key), @new_key
           storage.sadd Service.storage_key_by_provider(@new_key, :ids), service_id
         end
 
+        # Set the default service id to the new provider
         storage.set Service.storage_key_by_provider(@new_key, :id), default_service_id
 
+        # Remove the old provider key and services associated to it
         storage.del Service.storage_key_by_provider(@old_key, :id)
         storage.del Service.storage_key_by_provider(@old_key, :ids)
 
@@ -45,31 +49,10 @@ module ThreeScale
       end
 
       def clear_cache(service_ids)
-        keys = provider_cache_keys(@old_key) +
-          provider_cache_keys(@new_key) +
-          service_ids.map{ |id| Memoizer.build_key(Service, :load_by_id, id) } +
-          authentication_cache_keys(@old_key, service_ids) +
-          authentication_cache_keys(@new_key, service_ids) +
-          provider_keys_cache_keys(service_ids)
-
-        Memoizer.clear keys
-      end
-
-      def provider_cache_keys(key)
-        Memoizer.build_keys_for_class(Service,
-                                      default_id: [key],
-                                      load: [key],
-                                      list: [key]
-                                     )
-      end
-
-      def authentication_cache_keys(key, service_ids)
-        service_ids.map{ |id| Memoizer.build_key(Service,
-                                    :authenticate_service_id, id, key) }
-      end
-
-      def provider_keys_cache_keys(service_ids)
-        service_ids.map { |id| Memoizer.build_key(Service, :provider_key_for, id) }
+        service_ids.each do |service_id|
+          Service.clear_cache(@old_key, service_id)
+          Service.clear_cache(@new_key, service_id)
+        end
       end
 
     end
