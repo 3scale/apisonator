@@ -237,5 +237,33 @@ module Transactor
       assert_nil           month['exceeded']
       assert_equal 'true', day['exceeded']
     end
+
+    test '#to_xml shows the application id when OAuth is used' do
+      usage  = {:month => {@metric_id.to_s => 429}}
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage,
+                                      oauth: true)
+
+      doc = Nokogiri::XML(status.to_xml)
+
+      assert_equal @application.id,  doc.at('status application id').content
+    end
+
+    test '#to_xml shows the username along with the application when OAuth and a User are used' do
+      usage  = {:month => {@metric_id.to_s => 429}}
+      user = User.new(service_id: @service_id,
+                       username: "testusername")
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage,
+                                      oauth: true,
+                                      user: user
+                                      )
+      doc = Nokogiri::XML(status.to_xml)
+
+      assert_equal "testusername", doc.at('status user id').content
+      assert_equal @application.id, doc.at('status application id').content
+    end
   end
 end
