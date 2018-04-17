@@ -831,7 +831,14 @@ class ReportTest < Test::Unit::TestCase
                             1 => nil }
 
     assert_equal 400, last_response.status
-    assert_equal '', last_response.body
+    assert_not_equal '', last_response.body
+
+    assert_error_resp_with_exc(ThreeScale::Backend::TransactionsHasNilTransaction.new)
+  end
+
+  test 'params is not nil if no parameters are passed' do
+    post '/transactions.xml'
+    assert_not_nil last_request.params
   end
 
   test 'returns 403 if provider key is missing' do
@@ -870,7 +877,9 @@ class ReportTest < Test::Unit::TestCase
       :transactions => 'i_am_a_string_with_valid_encoding'
 
     assert_equal 400, last_response.status
-    assert_equal '', last_response.body
+    assert_not_equal '', last_response.body
+
+    assert_error_resp_with_exc(ThreeScale::Backend::TransactionsFormatInvalid.new)
   end
 
   test 'returns 400 and not valid data msg when params have an invalid encoding' do

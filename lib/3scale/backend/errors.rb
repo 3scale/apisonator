@@ -354,5 +354,24 @@ module ThreeScale
         super %(invalid Content-Type: #{content_type})
       end
     end
+
+    class TransactionsIsBlank < BadRequest
+      def initialize
+        super 'transactions parameter is blank'.freeze
+      end
+    end
+
+    class TransactionsFormatInvalid < BadRequest
+      def initialize
+        super 'transactions format is invalid'.freeze
+      end
+    end
+
+    class TransactionsHasNilTransaction < BadRequest
+      def initialize
+        super 'transactions has a nil transaction'.freeze
+      end
+    end
+
   end
 end
