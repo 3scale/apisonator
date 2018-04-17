@@ -433,12 +433,7 @@ module ThreeScale
         check_params_value_encoding!(params, REPORT_EXPECTED_PARAMS)
 
         transactions = params[:transactions]
-
-        if blank?(transactions) ||
-            !transactions.is_a?(Hash) ||
-            transactions.any? { |_id, data| data.nil? }
-          halt 400
-        end
+        check_transactions_validity(transactions)
 
         Transactor.report(provider_key, params[:service_id], transactions, response_code: 202, request: request_info)
         202
@@ -579,6 +574,20 @@ module ThreeScale
       def check_post_content_type!
         ctype = request.media_type
         raise ContentTypeInvalid, ctype if invalid_post_content_type?(ctype)
+      end
+
+      def check_transactions_validity(transactions)
+        if blank?(transactions)
+          raise TransactionsIsBlank
+        end
+
+        if !transactions.is_a?(Hash)
+          raise TransactionsFormatInvalid
+        end
+
+        if transactions.any? { |_id, data| data.nil? }
+          raise TransactionsHasNilTransaction
+        end
       end
 
       def application
