@@ -9,7 +9,7 @@ module ThreeScale
       attr_writer :metric_names
 
       def self.attribute_names
-        %i[service_id username state plan_id plan_name version
+        %i[service_id username state plan_id plan_name
            metric_names].freeze
       end
 
