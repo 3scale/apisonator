@@ -9,6 +9,8 @@ module ThreeScale
       enable :raise_errors
       disable :show_exceptions
 
+      include Logging
+
       ## ------------ DOCS --------------
       ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
       ##~ sapi = source2swagger.namespace(namespace)
@@ -416,7 +418,10 @@ module ThreeScale
         check_post_content_type!
 
         # 403 Forbidden for consistency (but we should return 400 Bad Request)
-        halt 403 if params.nil?
+        if params.nil?
+          logger.notify("listener: params hash is nil in method '/transactions.xml'")
+          halt 403
+        end
 
         # returns 403 when no provider key is given, even if other params have an invalid encoding
         provider_key = params[:provider_key] ||
