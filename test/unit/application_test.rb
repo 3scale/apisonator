@@ -47,6 +47,14 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal 'almost_awesome', newapp.plan_name
   end
 
+  test '#save raises an exception if no state is defined' do
+    assert_raise ApplicationHasNoState do
+      Application.save(service_id: '2001', id: '8011',
+                       plan_id: '3001', plan_name: 'awesome',
+                       redirect_url: 'bla')
+    end
+  end
+
   test '.load correctly creates an Application instance' do
     Application.save(service_id: '2001', id: '8012',
                      state: :active, redirect_url: 'bla')
