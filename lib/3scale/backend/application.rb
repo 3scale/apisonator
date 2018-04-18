@@ -178,6 +178,8 @@ module ThreeScale
       end
 
       def save
+        raise ApplicationHasNoState.new(id) if !state
+
         storage.pipelined do
           persist_attributes
           persist_set
