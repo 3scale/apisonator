@@ -85,6 +85,17 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
       # The returned data should not contain *some_param* attribute
       expect(app.to_hash).to eq application.merge(user_required: false)
     end
+
+    context 'with an application that has no state' do
+      let (:state) { nil }
+
+      example_request 'Trying to create the application' do
+        expect(status).to eq 400
+        expect(response_json['status']).to eq 'bad_request'
+        expect(response_json['error']).to match /has no state/i
+      end
+    end
+
   end
 
   put '/services/:service_id/applications/:id' do
@@ -155,6 +166,16 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(status).to eq 400
         expect(response_json['status']).to eq 'error'
         expect(response_json['error']).to match /missing parameter/i
+      end
+    end
+
+    context 'with an application that has no state' do
+      let (:state) { nil }
+
+      example_request 'Trying to create/update the application' do
+        expect(status).to eq 400
+        expect(response_json['status']).to eq 'bad_request'
+        expect(response_json['error']).to match /has no state/i
       end
     end
   end

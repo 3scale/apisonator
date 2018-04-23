@@ -373,5 +373,11 @@ module ThreeScale
       end
     end
 
+    class ApplicationHasNoState < BadRequest
+      def initialize(id)
+        super %(Application with id="#{id}" has no state )
+      end
+    end
+
   end
 end

@@ -18,8 +18,13 @@ module ThreeScale
           end
           app_attrs[:service_id] = service_id
           app_attrs[:id] = id
-          app = Application.save(app_attrs)
-          [201, headers, { status: :created, application: app.to_hash }.to_json]
+          begin
+            app = Application.save(app_attrs)
+          rescue ApplicationHasNoState => e
+            [400, headers, { status: :bad_request, error: e.message }.to_json]
+          else
+            [201, headers, { status: :created, application: app.to_hash }.to_json]
+          end
         end
 
         put '/:id' do |service_id, id|
@@ -27,8 +32,13 @@ module ThreeScale
           modified = Application.exists?(service_id, id)
           app_attrs[:service_id] = service_id
           app_attrs[:id] = id
-          app = Application.save(app_attrs)
-          { status: modified ? :modified : :created, application: app.to_hash }.to_json
+          begin
+            app = Application.save(app_attrs)
+          rescue ApplicationHasNoState => e
+            [400, headers, { status: :bad_request, error: e.message }.to_json]
+          else
+            { status: modified ? :modified : :created, application: app.to_hash }.to_json
+          end
         end
 
         delete '/:id' do |service_id, id|
