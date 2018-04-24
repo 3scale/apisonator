@@ -10,7 +10,19 @@ module ThreeScale
       def configure
         yield configuration
       end
+
+      private
+
+      def parse_int(value, default)
+        case value
+        when "", nil, false then default
+        else Integer(value)
+        end
+      end
     end
+
+    NOTIFICATION_BATCH_DEFAULT = 10000
+    private_constant :NOTIFICATION_BATCH_DEFAULT
 
     CONFIG_MASTER_METRICS_TRANSACTIONS_DEFAULT = "transactions".freeze
     private_constant :CONFIG_MASTER_METRICS_TRANSACTIONS_DEFAULT
@@ -49,10 +61,6 @@ module ThreeScale
       # Default config
       config.master_service_id  = 1
 
-      ## this means that there will be a NotifyJob for every X notifications (this is
-      ## the call to master)
-      config.notification_batch = 10000
-
       # This setting controls whether the listener can create event buckets in
       # Redis. We do not want all the listeners creating buckets yet, as we do
       # not know exactly the rate at which we can send events to Kinesis
@@ -69,6 +77,11 @@ module ThreeScale
         '~/.3scale_backend.conf',
         ENV['CONFIG_FILE']
       ].compact)
+
+      ## this means that there will be a NotifyJob for every X notifications (this is
+      ## the call to master)
+      config.notification_batch = parse_int(config.notification_batch,
+                                            NOTIFICATION_BATCH_DEFAULT)
 
       # Assign default values to some configuration values
       # that might been set in the config file but their
