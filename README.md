@@ -205,3 +205,25 @@ This is our basic integration flow:
 4. Merge to master.
 
 We keep stable branches receiving bug and security fixes for long term releases.
+
+### Releasing a new version
+
+Currently we need to follow this process:
+
+1. Change the contents of version.rb with the new version.
+2. Run `bundle install` with all Gemfiles to update all lockfiles.
+3. Run `rake license_finder:report:xml > licenses.xml`.
+4. (maybe) If you will generate a new CI image with `make ci-build`, change the
+   configuration of `.circleci/config.yml` to point to the future image.
+5. Modify CHANGELOG.md filling up data about notable changes.
+6. Review and commit "apisonator: release X.Y.Z".
+7. Verify the tests pass and fix any issue that crops up. If at all possible,
+   deploy the version as a pre-release in a staging environment for further
+   testing and early detection of issues.
+8. Generate a new shortlog with `bundle exec rake release:changelog` and add it
+   to CHANGELOG.md.
+9. If you did step 4, build the new CI image, rebuild the dev image based on it,
+   verify both work and tests pass using both, and push the CI image to quay.io.
+10. Post the PR on 3scale/apisonator.
+11. When merged, generate the tag with `rake release:tag` and push it. The tag
+    should be a signed, annotated tag, usually with the format `vX.Y.Z`.
