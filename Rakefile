@@ -128,9 +128,17 @@ if saas?
     task :release => ['release:tag', 'release:push']
 
     namespace :release do
+      task :changelog do
+        version = `git describe --abbrev=0`.chomp
+        STDOUT.puts "Changes from #{version} to HEAD\n\n"
+        system "git shortlog --no-merges #{version}.."
+      end
+
       task :tag do
         require File.dirname(__FILE__) + '/lib/3scale/backend/version'
-        system "git tag v#{ThreeScale::Backend::VERSION}"
+        version = "v#{ThreeScale::Backend::VERSION}"
+        STDOUT.puts "Creating tag #{version}"
+        system "git tag -sa #{version} -m \"#{version}\""
       end
 
       task :push do
