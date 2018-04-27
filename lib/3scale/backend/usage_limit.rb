@@ -3,7 +3,7 @@ module ThreeScale
     class UsageLimit
       include Storable
 
-      PERIODS = Period::ALL_DESC
+      PERIODS = (Period::ALL_DESC - [Period::Second]).freeze
 
       attr_accessor :service_id, :plan_id, :metric_id, :period, :value
 
