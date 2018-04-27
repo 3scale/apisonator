@@ -75,6 +75,19 @@ class UsageLimitTest < Test::Unit::TestCase
     assert usage_limits.empty?, 'Expected usage_limits to be empty'
   end
 
+  def test_usage_limit_periods_do_not_include_second
+    assert_nil(UsageLimit::PERIODS.find { |period| period == :second })
+  end
+
+  def test_save_refuses_second_as_period
+    UsageLimit.save(service_id: 2001,
+                    plan_id: 3001,
+                    metric_id: 4001,
+                    second: 100)
+
+    assert_nil UsageLimit.load_value(2001, 3001, 4001, :second)
+  end
+
   def test_load_value
     UsageLimit.save(:service_id => 2001,
                     :plan_id    => 3001,
