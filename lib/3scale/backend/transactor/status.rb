@@ -124,12 +124,12 @@ module ThreeScale
           end
 
           hierarchy_reports = [] if @hierarchy_ext
-          if !@application.nil? && !options[:exclude_application]
+          if !@application.nil?
             add_plan_section(xml, 'plan'.freeze, plan_name)
             add_reports_section(xml, application_usage_reports)
             hierarchy_reports.concat application_usage_reports if hierarchy_reports
           end
-          if !@user.nil? && !options[:exclude_user]
+          if !@user.nil?
             add_plan_section(xml, 'user_plan'.freeze, user_plan_name)
             add_reports_section(xml, user_usage_reports, true)
             hierarchy_reports.concat user_usage_reports if hierarchy_reports
@@ -200,16 +200,12 @@ module ThreeScale
         end
 
         def add_authorize_section(xml)
-          xml << '<authorized>'
           if authorized?
-            xml << 'true' \
-                   '</authorized>'
+            xml << '<authorized>true</authorized>'.freeze
           else
-            xml << 'false' \
-                   '</authorized>' \
-                   '<reason>' \
-                   "#{rejection_reason_text}" \
-                   '</reason>'
+            xml << '<authorized>false</authorized><reason>'.freeze
+            xml << rejection_reason_text
+            xml << '</reason>'.freeze
           end
         end
 
@@ -224,7 +220,7 @@ module ThreeScale
 
         def add_user_section(xml)
           if !@user.nil?
-            xml << "<user><id>#{@user.username}</id></user>"
+            xml << "<user><id>".freeze << @user.username << "</id></user>".freeze
           end
         end
 
