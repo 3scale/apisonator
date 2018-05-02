@@ -70,10 +70,6 @@ module ThreeScale
           @application.plan_name unless @application.nil?
         end
 
-        def application_plan_name
-           plan_name
-        end
-
         def user_plan_name
           @user.plan_name unless @user.nil?
         end
