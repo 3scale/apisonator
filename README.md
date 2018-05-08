@@ -215,13 +215,14 @@ Currently we need to follow this process:
 3. Run `rake license_finder:report:xml > licenses.xml`.
 4. (maybe) If you will generate a new CI image with `make ci-build`, change the
    configuration of `.circleci/config.yml` to point to the future image.
-5. Modify CHANGELOG.md filling up data about notable changes.
-6. Review and commit "apisonator: release X.Y.Z".
-7. Verify the tests pass and fix any issue that crops up. If at all possible,
+5. Modify CHANGELOG.md filling up data about notable changes along with
+   associated issue or PR numbers where available.
+6. Run task release:changelog:link_prs to link the issue or PR numbers in the
+   CHANGELOG.md file and check the diff makes sense.
+7. Review and commit "apisonator: release X.Y.Z".
+8. Verify the tests pass and fix any issue that crops up. If at all possible,
    deploy the version as a pre-release in a staging environment for further
    testing and early detection of issues.
-8. Generate a new shortlog with `bundle exec rake release:changelog` and add it
-   to CHANGELOG.md.
 9. If you did step 4, build the new CI image, rebuild the dev image based on it,
    verify both work and tests pass using both, and push the CI image to quay.io.
 10. Post the PR on 3scale/apisonator.
