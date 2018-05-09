@@ -123,10 +123,12 @@ if Environment.saas?
     task :release => ['release:tag', 'release:push']
 
     namespace :release do
-      task :changelog do
-        version = `git describe --abbrev=0`.chomp
-        STDOUT.puts "Changes from #{version} to HEAD\n\n"
-        system "git shortlog --no-merges #{version}.."
+      namespace :changelog do
+        task :shortlog do
+          version = `git describe --abbrev=0`.chomp
+          STDOUT.puts "Changes from #{version} to HEAD\n\n"
+          system "git shortlog --no-merges #{version}.."
+        end
       end
 
       task :tag do
