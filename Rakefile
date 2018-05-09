@@ -2,16 +2,11 @@
 
 require '3scale/backend/configuration'
 require '3scale/backend'
+require '3scale/tasks/helpers'
 
-def testable_environment?
-  !%w(preview production).include?(ENV['RACK_ENV'])
-end
+include ThreeScale::Tasks::Helpers
 
-def saas?
-  ThreeScale::Backend.configuration.saas
-end
-
-if saas?
+if Environment.saas?
   require '3scale/backend/logging/external'
 
   ThreeScale::Backend::Logging::External.setup_rake
@@ -19,7 +14,7 @@ if saas?
   load 'lib/3scale/tasks/swagger.rake'
   load 'lib/3scale/tasks/stats.rake'
 
-  if testable_environment?
+  if Environment.testable?
 
     ENV['RACK_ENV'] = "test"
     require 'rake/testtask'
