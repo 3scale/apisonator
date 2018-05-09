@@ -129,6 +129,48 @@ if Environment.saas?
           STDOUT.puts "Changes from #{version} to HEAD\n\n"
           system "git shortlog --no-merges #{version}.."
         end
+
+        # Link all issues and PRs in the changelog that have no link.
+        #
+        # By default links to PRs (althought GitHub redirects IIRC) but you can
+        # specify an issue link by preceding it with "issue"/"Issue" or specify
+        # a PR link (default) by preceding it with "PR".
+        task :link_prs, [:file] do |_, args|
+          file = args[:file] || File.join(File.dirname(__FILE__), 'CHANGELOG.md')
+
+          File.open file, File::RDWR do |f|
+            contents = f.read
+            contents.
+              # this regexp is not perfect but ok - ie. it would match issue(#5)
+              gsub!(/(\b|[^[:alnum]])([iI]ssue|PR)?([\([:space:]])#(\d+)/) do
+
+              # unfortunately gsub uses globals for groups :(
+              type_prefix, type, separator, number = $1, $2, $3, $4
+
+              link = case type.to_s.upcase
+              when 'ISSUE'
+                # even if quoted like this, remember that \ still escapes
+                %{https://github.com/3scale/apisonator/issues/%s}
+              else
+                # default to PR links
+                %{https://github.com/3scale/apisonator/pull/%s}
+              end
+
+              prefix = if type && separator == ' '
+                         # remove "issue "
+                         type_prefix
+                       else
+                         "#{type_prefix}#{separator}"
+                       end
+
+              prefix << "[##{number}](#{link % number})"
+            end
+
+            # Overwrite the changelog
+            f.seek 0, IO::SEEK_SET
+            f.write contents
+          end
+        end
       end
 
       task :tag do
