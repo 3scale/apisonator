@@ -36,7 +36,7 @@ GIT
 PATH
   remote: .
   specs:
-    3scale_backend (2.85.0)
+    3scale_backend (2.86.0)
 
 GEM
   remote: https://rubygems.org/
