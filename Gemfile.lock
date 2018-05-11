@@ -110,7 +110,7 @@ GEM
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
     net-ssh (4.2.0)
-    nokogiri (1.8.1)
+    nokogiri (1.8.2)
       mini_portile2 (~> 2.3.0)
     pg (0.20.0)
     pkg-config (1.1.9)
@@ -216,7 +216,7 @@ DEPENDENCIES
   license_finder (~> 3.0.4)
   license_finder_xml_reporter!
   mocha (~> 1.3)
-  nokogiri (~> 1.8.0)
+  nokogiri (~> 1.8.2)
   pg (= 0.20.0)
   pkg-config (~> 1.1.7)
   pry (~> 0.11.3)
