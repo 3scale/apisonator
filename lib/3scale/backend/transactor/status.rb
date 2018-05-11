@@ -70,10 +70,6 @@ module ThreeScale
           @application.plan_name unless @application.nil?
         end
 
-        def application_plan_name
-           plan_name
-        end
-
         def user_plan_name
           @user.plan_name unless @user.nil?
         end
@@ -118,42 +114,29 @@ module ThreeScale
         def to_xml(options = {})
           xml = ''
           xml << '<?xml version="1.0" encoding="UTF-8"?>'.freeze unless options[:skip_instruct]
-          xml << '<status><authorized>'.freeze
+          xml << '<status>'.freeze
 
-          if authorized?
-            xml << 'true</authorized>'.freeze
-          else
-            xml << 'false</authorized><reason>'.freeze
-            xml << rejection_reason_text
-            xml << '</reason>'.freeze
-          end
+          add_authorize_section(xml)
 
           if oauth
-            redirect_uri = application.redirect_url
-            xml << '<application>' \
-                   "<id>#{application.id}</id>" \
-                   "<key>#{application.keys.first}</key>" \
-                   "<#{@redirect_uri_field}>#{redirect_uri}</#{@redirect_uri_field}>" \
-                   '</application>'
-            if !@user.nil?
-              xml << "<user><id>#{@user.username}</id></user>"
-            end
+            add_application_section(xml)
+            add_user_section(xml)
           end
 
           hierarchy_reports = [] if @hierarchy_ext
-          if !@application.nil? && !options[:exclude_application]
-            add_plan(xml, 'plan'.freeze, plan_name)
-            xml << aux_reports_to_xml(application_usage_reports)
+          if !@application.nil?
+            add_plan_section(xml, 'plan'.freeze, plan_name)
+            add_reports_section(xml, application_usage_reports)
             hierarchy_reports.concat application_usage_reports if hierarchy_reports
           end
-          if !@user.nil? && !options[:exclude_user]
-            add_plan(xml, 'user_plan'.freeze, user_plan_name)
-            xml << aux_reports_to_xml(user_usage_reports, true)
+          if !@user.nil?
+            add_plan_section(xml, 'user_plan'.freeze, user_plan_name)
+            add_reports_section(xml, user_usage_reports, true)
             hierarchy_reports.concat user_usage_reports if hierarchy_reports
           end
 
           if hierarchy_reports
-            add_hierarchy(xml, hierarchy_reports)
+            add_hierarchy_section(xml, hierarchy_reports)
           end
 
           xml << '</status>'.freeze
@@ -194,7 +177,7 @@ module ThreeScale
           end
         end
 
-        def add_hierarchy(xml, reports)
+        def add_hierarchy_section(xml, reports)
           xml << '<hierarchy>'.freeze
           with_report_and_hierarchy(reports) do |ur, children|
             xml << '<metric name="'.freeze
@@ -211,9 +194,34 @@ module ThreeScale
           end
         end
 
-        def add_plan(xml, tag, plan_name)
+        def add_plan_section(xml, tag, plan_name)
           xml << "<#{tag}>"
           xml << plan_name.to_s.encode(xml: :text) << "</#{tag}>"
+        end
+
+        def add_authorize_section(xml)
+          if authorized?
+            xml << '<authorized>true</authorized>'.freeze
+          else
+            xml << '<authorized>false</authorized><reason>'.freeze
+            xml << rejection_reason_text
+            xml << '</reason>'.freeze
+          end
+        end
+
+        def add_application_section(xml)
+          redirect_uri = application.redirect_url
+          xml << '<application>' \
+                 "<id>#{application.id}</id>" \
+                 "<key>#{application.keys.first}</key>" \
+                 "<#{@redirect_uri_field}>#{redirect_uri}</#{@redirect_uri_field}>" \
+                 '</application>'
+        end
+
+        def add_user_section(xml)
+          if !@user.nil?
+            xml << "<user><id>".freeze << @user.username << "</id></user>".freeze
+          end
         end
 
         def load_usage_reports(what, type)
@@ -236,8 +244,7 @@ module ThreeScale
           reports
         end
 
-        def aux_reports_to_xml(reports, report_type_user = false)
-          xml = ''
+        def add_reports_section(xml, reports, report_type_user = false)
           unless reports.empty?
             xml_node = if report_type_user
                          'user_usage_reports>'.freeze
@@ -252,8 +259,6 @@ module ThreeScale
             xml << '</'.freeze
             xml << xml_node
           end
-
-          xml
         end
 
       end
