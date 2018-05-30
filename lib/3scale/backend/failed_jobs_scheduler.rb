@@ -66,7 +66,7 @@ module ThreeScale
 
         def dist_lock
           @dist_lock ||= DistributedLock.new(
-              self.name, TTL_RESCHEDULE_S, Storage.instance)
+              self.name, TTL_RESCHEDULE_S, Resque.redis)
         end
 
         def time_for_another_reschedule?(ttl_expiration_time)
