@@ -206,24 +206,21 @@ module ThreeScale
             end
           end
 
-          context 'with two calls in same moment (race condition)' do
-            it 'returns false the second time' do
-              original_method = EventStorage.method(:pending_ping?)
-              allow(EventStorage).to receive(:pending_ping?) do
-                original_method.call.tap { Thread.stop }
+          context 'with multiple calls at the same moment (race condition)' do
+            it 'returns falsey except for one successful case' do
+              num_threads = 4
+
+              threads = num_threads.times.map do
+                Thread.new { Thread.stop; EventStorage.ping_if_not_empty }
               end
 
-              threads = 2.times.map do
-                Thread.new { EventStorage.ping_if_not_empty }
+              values = threads.each do |t|
+                sleep 0.01 until t.stop?
               end
+                .map(&:wakeup)
+                .map(&:value)
 
-              threads.each do |thread|
-                sleep(0.01) while thread.status != 'sleep'
-              end
-
-              values = threads.each(&:wakeup).map { |thread| thread.join.value }
-
-              expect(values).to match_array([true, nil])
+              expect(values).to match_array([true] + [nil] * (num_threads - 1))
             end
           end
 
