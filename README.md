@@ -4,227 +4,218 @@
 [![CircleCI](https://circleci.com/gh/3scale/apisonator.svg?style=shield)](https://circleci.com/gh/3scale/apisonator)
 [![Maintainability](https://api.codeclimate.com/v1/badges/d2cea8016f0089cb2fd6/maintainability)](https://codeclimate.com/github/3scale/apisonator/maintainability)
 
-This is Red Hat 3scale API Management Platform's Backend.
-
 This software is licensed under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0).
 
 See the LICENSE and NOTICE files that should have been provided along with this
 software for details.
 
-## Development environment set up
+## Description
 
-To learn how to run the project once the environment has been set up, refer to
-the "Running" section.
+This is Red Hat 3scale API Management Platform's Backend.
+
+It has the following components:
+
+### Apisonator listener
+
+It provides the point of entry of the API Management Platform's Backend.
+The Service management API (SM API) is provided to authorize and report consumer
+API requests.
+
+Three main operations can be performed with this API:
+
+ * Report: Reports a number of hits to one or more metrics, performing the
+   corresponding metric aggregations
+ * Authorize: Authorize a request. The authorization of a request checks that:
+   * The provided API key to authorize the request is valid
+   * The current usage metrics of the API related to the request are within
+     the specified limits
+ * Authrep: Combination of both the above
+
+Make sure to read the corresponding Swagger-generated documentation of this
+operations, located in [docs/active_docs/Service Management API.json](docs%2Factive_docs%2FService%20Management%20API.json)
+
+It attempts to respond with lowest possible latency, performing minimal work
+and offloading other work to Apisonator workers by enqueuing tasks into job queues.
+
+This component needs access to a Redis database to perform the following actions:
+ * Enqueue reports, which will be processed by the Apisonator worker component
+ * Perform authorization of the requests
+
+These two actions can be configured to be performed in different Redis
+databases if desired (see the [Prerequisites](#prerequisites)
+and [Configuration](#configuration) sections).
+
+Finally, another API named 'Internal API' is provided to configure services
+in Apisonator. This API is intended only for administrative purposes and not
+for general consumption. Therefore, usage of this API should be protected or
+not exposed to untrusted parties. You can also generate its documentation with
+Rake tasks. The [Pisoni](https://github.com/3scale/pisoni) API client can be
+used to interact with the Internal API.
+
+To quickly test Apisonator, random services can be created and configured on it
+via the use of the 'Buddhi' tool located in our performance tests
+toolkit: [3scale perftest-toolkit](https://github.com/3scale/perftest-toolkit/).
+
+This component may also be referred to as '3scale_backend'.
+
+### Apisonator worker
+
+It is responsible for performing background tasks off-loaded from
+Apisonator listeners (enqueued jobs).
+
+The worker component takes care of running these enqueued jobs, mainly related
+to reporting of previous traffic.
+
+Specifically, this component:
+ * Dequeues and runs the report jobs that have been submitted to the Redis
+   background jobs database by the Apisonator listener/s or the
+   Apisonator failed jobs rescheduler
+ * Stores the results of running the report jobs in the Redis Storage database
+
+This component may also be referred to as '3scale_backend_worker'.
+
+### Apisonator failed jobs rescheduler
+
+This is a simple task that acts as a cron scheduler to requeue jobs that failed
+when being processed by an Apisonator worker. The jobs are requeued into
+the Redis background jobs database.
+
+This component may also be referred to as 'backend-cron'.
+
+## Development
+
+See the file [DEVELOPMENT](DEVELOPMENT.md)
+
+## How to run
+
+### Prerequisites
+
+* Docker (requires version 1.10.0 or later)
+* A Redis database, used to store API request statistics and services. Also
+  used to perform API requests authorizations. In Apisonator this database
+  is commonly referred to as 'Redis Storage'
+* A Redis database, used to store background jobs. The Redis Resque library
+  is used for this. In Apisonator this database is commonly referred to as
+  'Redis Resque', or as the 'background jobs database'
+
+The two previous Redis databases can be configured in the following ways:
+
+ * In a single machine/vm, using a single Redis process by specifying
+   different database identifiers, which is supported by the Redis URI
+	 specification. i.e. redis://host:port/0, redis://host:port/1
+ * In a single machine/vm, using different Redis processes with different
+   assigned ports
+ * In separate machines/vms
 
 The first thing you will need is cloning the project:
 > `$ git clone git@github.com:3scale/apisonator.git`
 
 Next cd into the directory, `cd apisonator`.
 
-### Containerized environment
+### Apisonator image generation
 
-#### Prerequisites
+Go to the `openshift` directory and execute `make build`. This will generate
+a local docker image named `amp:apisonator-<version_number>` based on CentOS 7.
 
-* Docker (requires version 1.10.0 or later)
+### Configuration
 
-#### With Docker
+To run any Apisonator component, application-related environment variables must
+be previously set. This can be done by setting them via the `--env` flag in
+Docker or by placing them in a ENV file and setting the ENV file in Docker via
+the `--env-file` flag.
 
-This requires GNU Make and has a single step:
+The most important variables to set are:
 
-1. Run: `make dev`
+ * CONFIG_QUEUES_MASTER_NAME: Set this to the [`redis://` URL](http://www.iana.org/assignments/uri-schemes/prov/redis)
+   of where the Redis Storage has been installed
+ * CONFIG_REDIS_PROXY: Set this to the [`redis://` URL](http://www.iana.org/assignments/uri-schemes/prov/redis)
+   of where the Redis Resque has been installed
+ * CONFIG_INTERNAL_API_USER: Set this to an arbitrary username <username>
+   that will be the one used to be able to use the Apisonator internal api
+ * CONFIG_INTERNAL_API_PASSWORD: Set this to an arbitrary
+   password <password> that will be the one used to be able to use the
+   Apisonator internal api
+ * RACK_ENV: Set this to 'production'
 
-This command will take care of downloading and building all dependencies. Once
-that is done, the process will be way faster the next time.
+A complete list of configuration variables that can be set can be
+found in the file `openshift/3scale_backend.conf`
 
-The project's source code will be available in `~/apisonator` and sync'ed with
-your local apisonator directory, so you can edit files in your preferred
-environment and still be able to run whatever you need inside the Docker
-container.
+An example of an ENV file can be found at `openshift/.env.test`
 
-The listener service port (3000 by default) is automatically forwarded to the host machine. The `make dev` command can be executed with the environment variable `PORT` set to
-a different desired listener port value to forward on the host machine.
+### Automatic execution (with Makefile)
 
-This Docker container is persistent, so your changes will be kept the next time
-you enter it.
+Makefile rules can be run to execute the different Apisonator components
+with some predefined behaviour. To do this a file named `.env` in
+the `openshift` directory must be created before.
 
-Getting rid of the persistent container is done with `make dev-clean`, whereas
-removing its image is done using `make dev-clean-image`.
+Once this has been performed, go to the `openshift` directory and execute
+one of the available Makefile commands to run Apisonator components:
 
-Alternatively you can start a container with the service running with
-`make dev-service`. This rule is intended for when you want to test
-the service endpoint.
+#### Apisonator Listener
 
-#### Maintain your dependencies up-to-date
-
-Changes in code sometimes translate into changes in dependencies. If that is the
-case, your container will lag behind in dependencies, and some things might just
-start breaking. You might want to make a habit of making sure dependencies are
-updated when you enter your container. Run this from the project directory:
-
-> $ `bundle install`
-
-The container image has additional tools to handle these dependencies for
-multiple Ruby versions. Check out the `scripts` directory if you are curious.
-
-#### Workflow
-
-Your project directory within the container is sync'ed with your local clone of
-the project so that changes in one reflect instantly in the other.
-
-We recommend editing code and committing locally, and executing tests within the
-container, since the container won't have your own tools and configurations.
-
-### On local machine (unsupported)
-
-This is **unsupported** and **strongly discouraged** because it is the source of a lot
-of headaches and potential problems and introduces the need for us to document
-dependencies and config files here that are very likely to be outdated and
-incomplete.
-
-Bear in mind that we can only provide best effort support for this.
-
-1. Install Redis v2.8.19 (or whichever version is recommended for use).
-2. Run `bundle install`.
-3. Configure Redis in `~/.3scale_backend.conf` as:
+Execute the Apisonator Listener, exposing the port 3001:
 
 ```
-ThreeScale::Backend.configure do |config|
-  config.redis.proxy = 'localhost:6379'
-end
+make listener
 ```
 
-## Running tests
+#### Apisonator Worker
 
-You can either run them manually in the container-based development environment
-or have a container launched just for running the tests. For the latter you just
-need to run `make test`, and you can configure any additional environment
-variables for the test scripts like so:
+```
+make worker
+```
 
-> `$ make DOCKER_OPTS="-e TEST_ALL_RUBIES=1" test`
+#### Apisonator failed jobs rescheduler
 
-Another alternative to execute all tests from within the development environment
-where you should not need to manually start/stop the services before is to execute
-them from inside the development environment via this script:
+Execute the 'cron' Apisonator component:
 
-> `$ script/test`
+```
+make cron
+```
 
-### Running tests (advanced)
+#### Apisonator bash shell
 
-In order to run the tests manually in the container-based development, the services
-needed to run them correctly must be started before with:
+Execute a bash shell with the Apisonator source code with all the available
+components:
 
-> `$ script/services start`
+```
+make bash
+```
 
-Then you can execute the following commands to execute all tests:
+### Manual execution
 
-> `$ bundle exec rake`
+Another way of executing the Apisonator components is by running a container
+using the previously generated Apisonator image:
 
-In case you need it/want it, it is possible to manually stop the services by executing:
-> `$ script/services stop`
+#### Apisonator Listener
 
-You can also specify execution of individual tests or type of tests.
+To run an Apisonator listener, the script bin/3scale_backend is used. To
+run it from a previously generated Apisonator docker image:
 
-If the test is a Unit::Test type test (located in test directory) you can execute:
-> `$ bundle exec rake test:[unit|integration|special] [TEST=<test-file]>`
+```
+docker run -it amp:apisonator-<version_number> -p 3001:3001 --env-file <myenv_file> 3scale_backend start -p 3001 -x /dev/stdout
+```
 
-If the test is a RSpec type test (located in spec directory) you can execute:
-> `$ bundle exec rake spec:[unit|integration|acceptance|api|use_cases] SPEC=<test-file>`
+You can see all the available options of the apisonator listener by executing:
 
-Alternatively there is another syntax to execute a RSpec type test:
-> `$ bundle exec rake spec:specific[<test-file>]`
+```
+docker run -it amp:apisonator-<version_number> 3scale_backend help
+```
 
-where in this last case the [ ] characters must be literally placed.
+#### Apisonator Worker
 
-Finally, you can also execute tests with rspec directly with:
+```
+docker run -it amp:apisonator-<version_number> 3scale_backend_worker --env-file <myenv_file>
+```
 
-> `$ RACK_ENV="test" bundle exec rspec --require=spec_helper <test-file>`
+#### Apisonator failed jobs rescheduler
 
-For more information on accepted commands for testing with Rake you can execute:
+```
+docker run -it  amp:apisonator-<version_number> backend-cron --env-file <myenv_file>
+```
 
-> `$ bundle exec rake -T`
+#### Apisonator bash shell
 
-### Testing API users from the outside
-
-You can test users of Apisonator API services by starting its dependencies and
-then apisonator itself:
-
-> `$ script/test_external`
-
-This will launch the application and wait for requests. You could now ie. launch
-`3scale_core`'s testing against this backend instance.
-
-You can hit CTRL+C at any time to exit. If you wanted to pass extra parameters
-for the launcher, such as daemonizing, you could run this:
-
-> `$ script/test_external -- -d`
-
-## Running
-
-Apisonator has its own application runner for the listener service:
-
-`bundle exec 3scale_backend help`
-
-That will give you a help message so that you figure out how to invoke it. Some
-advanced usage patterns are available, as well as support for multiple
-application servers. The usual invocation would look something like:
-
-> `$ bundle exec 3scale_backend start -p 3001`
-
-That would start the listener service in port 3001. There are however additional
-commands and flags that are worth knowing, so please take a look at the help
-message. An interesting command would be this one:
-
-> `$ bundle exec 3scale_backend -s puma -X "-w 3" start -p 3001`
-
-That would be identical to the command above, except it would force the server
-to be Puma with 3 workers. You can obtain more info about the server specific
-options with:
-
-> `$ bundle exec 3scale_backend -s puma help-server`
-
-Additional information which is really important to how the application runs can
-be found in the manifest:
-
-> `$ bundle exec 3scale_backend manifest`
-
-## Documentation
-
-Make sure to read the corresponding documentation in [ActiveDocs](https://support.3scale.net/reference/active-docs) for the external
-API. You can also generate the documentation of the Internal API with Rake tasks.
-
-## Integration flow
-
-This is our basic integration flow:
-
-1. Fork the project.
-2. Create a topic branch and add your changes there.
-3. Create a Pull Request. To accept a PR, we require:
-  1. The test suite should be green, both in the PR code and when merged.
-  2. The core team or other contributors should review it.
-  3. Someone in the core team should approve it.
-4. Merge to master.
-
-We keep stable branches receiving bug and security fixes for long term releases.
-
-### Releasing a new version
-
-Currently we need to follow this process:
-
-1. Change the contents of version.rb with the new version.
-2. Run `bundle install` with all Gemfiles to update all lockfiles.
-3. Run `rake license_finder:report:xml > licenses.xml`.
-4. (maybe) If you will generate a new CI image with `make ci-build`, change the
-   configuration of `.circleci/config.yml` to point to the future image.
-5. Modify CHANGELOG.md filling up data about notable changes along with
-   associated issue or PR numbers where available.
-6. Run task release:changelog:link_prs to link the issue or PR numbers in the
-   CHANGELOG.md file and check the diff makes sense.
-7. Review and commit "apisonator: release X.Y.Z".
-8. Verify the tests pass and fix any issue that crops up. If at all possible,
-   deploy the version as a pre-release in a staging environment for further
-   testing and early detection of issues.
-9. If you did step 4, build the new CI image, rebuild the dev image based on it,
-   verify both work and tests pass using both, and push the CI image to quay.io.
-10. Post the PR on 3scale/apisonator.
-11. When merged, generate the tag with `rake release:tag` and push it. The tag
-    should be a signed, annotated tag, usually with the format `vX.Y.Z`.
+```
+docker run -it amp:apisonator-<version_number> bash --env-file <myenv_file>
+```
