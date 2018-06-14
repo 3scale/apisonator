@@ -33,6 +33,7 @@ resource 'Services (prefix: /services)' do
   post '/services/' do
     parameter :service, 'Service attributes', required: true
 
+    let(:state) { :active }
     let(:service) do
       {
         id: '1002',
@@ -41,7 +42,8 @@ resource 'Services (prefix: /services)' do
         backend_version: 'oauth',
         default_user_plan_name: 'default user plan name',
         default_user_plan_id: 'plan ID',
-        default_service: true
+        default_service: true,
+        state: state
       }
     end
     let(:raw_post){ params.to_json }
@@ -81,6 +83,19 @@ resource 'Services (prefix: /services)' do
       # The returned data should not contain *some_param* attribute
       expect(svc.to_hash).to eq service.merge(user_registration_required: true)
     end
+
+    context 'with an service that has no state' do
+      let (:state) { nil }
+
+      example_request 'creating the service returns an active service' do
+        expect(status).to eq 201
+        expect(response_json['status']).to eq 'created'
+
+        svc = ThreeScale::Backend::Service.load_by_id('1002')
+        expect(svc.active?).to be_truthy
+      end
+    end
+
   end
 
   put '/services/:id' do
@@ -88,6 +103,7 @@ resource 'Services (prefix: /services)' do
     parameter :service, 'Service attributes', required: true
 
     let(:id){ 1001 }
+    let(:state) { :active }
     let(:service) do
       {
         provider_key: 'foo',
@@ -95,7 +111,8 @@ resource 'Services (prefix: /services)' do
         backend_version: 'oauth',
         default_user_plan_name: 'default user plan name',
         default_user_plan_id: 'plan ID',
-        default_service: true
+        default_service: true,
+        state: state
       }
     end
     let(:raw_post){ params.to_json }
