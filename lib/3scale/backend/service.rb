@@ -4,13 +4,13 @@ module ThreeScale
       include Storable
 
       # list of attributes to be fetched from storage
-      ATTRIBUTES = %i[referrer_filters_required backend_version
+      ATTRIBUTES = %i[state referrer_filters_required backend_version
                       user_registration_required default_user_plan_id
                       default_user_plan_name provider_key].freeze
       private_constant :ATTRIBUTES
 
       attr_accessor :provider_key, :id, :backend_version,
-        :default_user_plan_id, :default_user_plan_name
+        :default_user_plan_id, :default_user_plan_name, :state
       attr_writer :referrer_filters_required, :user_registration_required,
         :default_service
 
@@ -110,6 +110,7 @@ module ThreeScale
 
         def save!(attributes = {})
           massage_set_user_registration_required attributes
+          massage_attr_state(attributes)
 
           new(attributes).save!
         end
@@ -148,6 +149,7 @@ module ThreeScale
           service_attrs[:user_registration_required] =
             massage_get_user_registration_required(
               service_attrs[:user_registration_required])
+          massage_attr_state(service_attrs)
 
           service_attrs
         end
@@ -165,6 +167,10 @@ module ThreeScale
           end
         end
 
+        def massage_attr_state(attributes)
+          attributes[:state] = attributes[:state].to_sym unless attributes[:state].nil?
+        end
+
         def get_attr(id, attribute)
           storage.get(storage_key(id, attribute))
         end
@@ -172,6 +178,12 @@ module ThreeScale
         def default_service?(provider_key, id)
           default_id(provider_key) == id.to_s
         end
+      end
+
+      def initialize(attributes = {})
+        # default state
+        @state = :active
+        super(attributes)
       end
 
       def default_service?
@@ -210,6 +222,7 @@ module ThreeScale
       def to_hash
         {
           id: id,
+          state: state,
           provider_key: provider_key,
           backend_version: backend_version,
           referrer_filters_required: referrer_filters_required?,
@@ -218,6 +231,10 @@ module ThreeScale
           default_user_plan_name: default_user_plan_name,
           default_service: default_service?
         }
+      end
+
+      def active?
+        state == :active
       end
 
       private
@@ -278,6 +295,7 @@ module ThreeScale
         persist_attribute :default_user_plan_name, default_user_plan_name, true
         persist_attribute :backend_version, backend_version, true
         persist_attribute :provider_key, provider_key
+        persist_attribute :state, state.to_s if state
       end
 
       def persist_attribute(attribute, value, ignore_nils = false)
