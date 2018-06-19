@@ -4,18 +4,21 @@ resource 'Services (prefix: /services)' do
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
-  let(:id) { '1001' }
+  let(:someid) { '1001' }
+  let(:otherid) { '2001' }
   let(:invalid_id) { '2002' }
   let(:provider_key) { 'foo' }
+  let(:state) { :active }
 
   before do
-    @service = ThreeScale::Backend::Service.save!(provider_key: provider_key, id: id)
+    ThreeScale::Backend::Service.save!(provider_key: provider_key, id: someid)
+    ThreeScale::Backend::Service.save!(provider_key: provider_key, id: otherid, state: state)
   end
 
   get '/services/:id' do
     parameter :id, 'Service ID', required: true
 
-    let(:id) { '1001' }
+    let(:id) { someid }
 
     example_request 'Get Service by ID' do
       expect(response_json['service']['id']).to eq id
@@ -27,6 +30,54 @@ resource 'Services (prefix: /services)' do
       do_request(id: invalid_id)
       expect(status).to eq 404
       expect(response_json['error']).to match /not_found/
+    end
+
+    describe 'Get service and check state' do
+      context 'when state is not set' do
+        let(:id) { someid }
+        example_request 'Get Service by ID' do
+          expect(status).to eq 200
+          expect(response_json['service']['id']).to eq id
+          expect(response_json['service']['state']).to eq 'active'
+        end
+      end
+      context 'when state is active' do
+        let(:id) { otherid }
+        example_request 'Get Service by ID' do
+          expect(status).to eq 200
+          expect(response_json['service']['id']).to eq id
+          expect(response_json['service']['state']).to eq 'active'
+        end
+      end
+      context 'when state is set to nil' do
+        let(:id) { otherid }
+        let(:state) { nil }
+        example_request 'Get Service by ID' do
+          expect(status).to eq 200
+          expect(response_json['service']['id']).to eq id
+          expect(response_json['service']['state']).to eq 'suspended'
+        end
+      end
+      context 'when state is suspended' do
+        let(:state) { :suspended }
+        let(:id) { otherid }
+        example_request 'Get Service by ID' do
+          expect(status).to eq 200
+          expect(response_json['service']['id']).to eq id
+          expect(response_json['service']['state']).to eq state.to_s
+        end
+      end
+      context 'with an service that has invalid state in db' do
+        let(:id) { otherid }
+        let(:storage) { ThreeScale::Backend::Storage.instance }
+        example 'Get Service by ID should return inactive state' do
+          storage.set ThreeScale::Backend::Service.storage_key(id, 'state'), 'invalid_state'
+          do_request(id: id)
+          expect(status).to eq 200
+          expect(response_json['service']['id']).to eq id
+          expect(response_json['service']['state']).to eq 'suspended'
+        end
+      end
     end
   end
 
@@ -85,17 +136,28 @@ resource 'Services (prefix: /services)' do
     end
 
     context 'with an service that has no state' do
-      let (:state) { nil }
+      let(:state) { nil }
 
       example_request 'creating the service returns an active service' do
         expect(status).to eq 201
         expect(response_json['status']).to eq 'created'
 
         svc = ThreeScale::Backend::Service.load_by_id('1002')
+        expect(svc).not_to be_nil
         expect(svc.active?).to be_truthy
       end
     end
 
+    context 'Create a Service with invalid state' do
+      let(:state) { :invalid_state }
+
+      example_request 'returns inactive service' do
+        expect(status).to eq 201
+        svc = ThreeScale::Backend::Service.load_by_id('1002')
+        expect(svc).not_to be_nil
+        expect(svc.active?).to be_falsy
+      end
+    end
   end
 
   put '/services/:id' do
@@ -146,6 +208,29 @@ resource 'Services (prefix: /services)' do
 
       expect(status).to eq 400
       expect(response_json['error']).to match /require a default user plan/
+    end
+
+    context 'Create a service that has no state' do
+      let(:state) { nil }
+
+      example_request 'creating the service returns an active service' do
+        expect(status).to eq 200
+        expect(response_json['status']).to eq 'ok'
+
+        svc = ThreeScale::Backend::Service.load_by_id('1001')
+        expect(svc.active?).to be_truthy
+      end
+    end
+
+    context 'Create a Service with invalid state' do
+      let(:state) { :invalid_state }
+
+      example_request 'returns inactive service' do
+        expect(status).to eq 200
+        svc = ThreeScale::Backend::Service.load_by_id('1001')
+        expect(svc).not_to be_nil
+        expect(svc.active?).to be_falsy
+      end
     end
   end
 
