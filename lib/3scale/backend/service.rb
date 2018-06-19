@@ -9,8 +9,9 @@ module ThreeScale
                       default_user_plan_name provider_key].freeze
       private_constant :ATTRIBUTES
 
+      attr_reader :state
       attr_accessor :provider_key, :id, :backend_version,
-        :default_user_plan_id, :default_user_plan_name, :state
+        :default_user_plan_id, :default_user_plan_name
       attr_writer :referrer_filters_required, :user_registration_required,
         :default_service
 
@@ -110,7 +111,6 @@ module ThreeScale
 
         def save!(attributes = {})
           massage_set_user_registration_required attributes
-          massage_attr_state(attributes)
 
           new(attributes).save!
         end
@@ -149,7 +149,6 @@ module ThreeScale
           service_attrs[:user_registration_required] =
             massage_get_user_registration_required(
               service_attrs[:user_registration_required])
-          massage_attr_state(service_attrs)
 
           service_attrs
         end
@@ -165,10 +164,6 @@ module ThreeScale
             attributes[:user_registration_required] =
               (!val.nil? && val.to_i == 0) ? false : true
           end
-        end
-
-        def massage_attr_state(attributes)
-          attributes[:state] = attributes[:state].to_sym unless attributes[:state].nil?
         end
 
         def get_attr(id, attribute)
@@ -235,6 +230,11 @@ module ThreeScale
 
       def active?
         state == :active
+      end
+
+      def state=(value)
+        # anything but :active will be suspended
+        @state = value.nil? || value.to_sym != :active ? :suspended : :active
       end
 
       private
