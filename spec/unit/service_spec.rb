@@ -442,20 +442,23 @@ module ThreeScale
             # even when state is not set
             { id: '8001' }
           ].each do |svc_attrs|
-            expect(Service.save!(svc_attrs).active?).to be true
+            expect(Service.save!(svc_attrs).active?).to be_truthy
           end
         end
 
         it 'returns false when the service is disabled' do
           [
             { state: :suspended, id: '9001' },
+            { state: 'suspended', id: '9001' },
             { state: :something, id: '9001' },
+            { state: :disable, id: '9001' },
+            { state: :disabled, id: '9001' },
             { state: '1', id: '9001' },
             { state: '0', id: '9001' },
             { state: 'true', id: '9001' },
             { state: 'false', id: '9001' }
           ].each do |svc_attrs|
-            expect(Service.save!(svc_attrs).active?).to be false
+            expect(Service.save!(svc_attrs).active?).to be_falsy
           end
         end
       end
