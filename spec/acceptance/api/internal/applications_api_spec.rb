@@ -95,7 +95,16 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(response_json['error']).to match /has no state/i
       end
     end
+    context 'with a disabled service' do
+      let (:service_id) { '6666' }
 
+      example 'Trying to create/update the application' do
+        ThreeScale::Backend::Service.save! id: service_id, provider_key: 'bar', state: :suspended
+        do_request
+        expect(status).to eq 201
+        expect(response_json['status']).to eq 'created'
+      end
+    end
   end
 
   put '/services/:service_id/applications/:id' do
@@ -176,6 +185,17 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(status).to eq 400
         expect(response_json['status']).to eq 'bad_request'
         expect(response_json['error']).to match /has no state/i
+      end
+    end
+
+    context 'with a disabled service' do
+      let (:service_id) { '6666' }
+
+      example 'Trying to create/update the application' do
+        ThreeScale::Backend::Service.save! id: service_id, provider_key: 'bar', state: :suspended
+        do_request
+        expect(status).to eq 200
+        expect(response_json['status']).to eq 'created'
       end
     end
   end

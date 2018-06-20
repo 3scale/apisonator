@@ -103,6 +103,12 @@ module ThreeScale
       end
     end
 
+    class ServiceNotActive < Error
+      def initialize
+        super 'service is not active'.freeze
+      end
+    end
+
     class ApplicationNotActive < Error
       def initialize
         super 'application is not active'.freeze

@@ -74,7 +74,7 @@ Backend responses:
 * `409 Conflict`:
   - The request's reported usage goes over the limits set for that specific
   application or user or some other condition for this application (not enabled
-  or invalid/missing key) or service (not OAuth-enabled). Note that *this is not
+  or invalid/missing key) or service (not enabled or not OAuth-enabled). Note that *this is not
   an application or client error* but the reporting of a normal request telling
   the client that the usage exceeds limits.
 * `422 Unprocessable entity`:

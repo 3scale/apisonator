@@ -4,11 +4,12 @@ module ThreeScale
       include Storable
 
       # list of attributes to be fetched from storage
-      ATTRIBUTES = %i[referrer_filters_required backend_version
+      ATTRIBUTES = %i[state referrer_filters_required backend_version
                       user_registration_required default_user_plan_id
                       default_user_plan_name provider_key].freeze
       private_constant :ATTRIBUTES
 
+      attr_reader :state
       attr_accessor :provider_key, :id, :backend_version,
         :default_user_plan_id, :default_user_plan_name
       attr_writer :referrer_filters_required, :user_registration_required,
@@ -174,6 +175,12 @@ module ThreeScale
         end
       end
 
+      def initialize(attributes = {})
+        # default state
+        @state = :active
+        super(attributes)
+      end
+
       def default_service?
         @default_service
       end
@@ -210,6 +217,7 @@ module ThreeScale
       def to_hash
         {
           id: id,
+          state: state,
           provider_key: provider_key,
           backend_version: backend_version,
           referrer_filters_required: referrer_filters_required?,
@@ -218,6 +226,15 @@ module ThreeScale
           default_user_plan_name: default_user_plan_name,
           default_service: default_service?
         }
+      end
+
+      def active?
+        state == :active
+      end
+
+      def state=(value)
+        # anything but :active will be suspended
+        @state = value.nil? || value.to_sym != :active ? :suspended : :active
       end
 
       private
@@ -278,6 +295,7 @@ module ThreeScale
         persist_attribute :default_user_plan_name, default_user_plan_name, true
         persist_attribute :backend_version, backend_version, true
         persist_attribute :provider_key, provider_key
+        persist_attribute :state, state.to_s if state
       end
 
       def persist_attribute(attribute, value, ignore_nils = false)
