@@ -2,6 +2,32 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.87.0 - 2018-06-21
+
+### Added
+
+- Services now can be active (default) or inactive. Calls on inactive services
+  always fail, with authorizations being denied. ([#34](https://github.com/3scale/apisonator/issues/34))
+
+### Changed
+
+- Small cleaups and refactor of transactor code. ([#26](https://github.com/3scale/apisonator/pull/26))
+- Allow multiple job schedulers to be executed in parallel with multiple Resque
+  Redis servers. ([#29](https://github.com/3scale/apisonator/pull/29))
+- Revamp README.md so that it is more oriented to usage and extract dev
+  instructions to DEVELOPMENT.md. ([#33](https://github.com/3scale/apisonator/pull/33))
+
+### Fixes
+
+- Fix a race condition in a spec that tests a race condition. ([#32](https://github.com/3scale/apisonator/pull/32))
+
+### Security
+
+- Updated Sinatra to version 2.0.3 due to [CVE-2018-11627](https://nvd.nist.gov/vuln/detail/CVE-2018-11627). ([#30](https://github.com/3scale/apisonator/pull/30))
+- Updated Nokogiri to version 1.8.3 due to multiple libxml2 CVEs including
+  [CVE-2017-18258](https://nvd.nist.gov/vuln/detail/CVE-2017-18258).
+  This library is only used in the test suite. ([#28](https://github.com/3scale/apisonator/pull/28), [#37](https://github.com/3scale/apisonator/pull/37))
+
 ## 2.86.0 - 2018-05-10
 
 ### Added
