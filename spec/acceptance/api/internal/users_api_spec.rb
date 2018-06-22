@@ -144,4 +144,13 @@ resource 'Users (prefix: /services/:service_id/users)' do
     end
   end
 
+  delete '/services/:service_id/users' do
+    parameter :service_id, 'Service ID', required: true
+
+    example_request 'Deleting all Users of a Service' do
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'deleted'
+      expect(ThreeScale::Backend::User.exists?(service_id, username)).to be false
+    end
+  end
 end
