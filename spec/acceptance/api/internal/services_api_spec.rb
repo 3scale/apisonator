@@ -78,6 +78,17 @@ resource 'Services (prefix: /services)' do
           expect(response_json['service']['state']).to eq 'suspended'
         end
       end
+      context 'with an service that has no state in db' do
+        let(:id) { otherid }
+        let(:storage) { ThreeScale::Backend::Storage.instance }
+        example 'Get Service by ID should return inactive state' do
+          storage.del ThreeScale::Backend::Service.storage_key(id, 'state')
+          do_request(id: id)
+          expect(status).to eq 200
+          expect(response_json['service']['id']).to eq id
+          expect(response_json['service']['state']).to eq 'active'
+        end
+      end
     end
   end
 
