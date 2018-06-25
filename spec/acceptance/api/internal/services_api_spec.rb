@@ -55,7 +55,7 @@ resource 'Services (prefix: /services)' do
         example_request 'Get Service by ID' do
           expect(status).to eq 200
           expect(response_json['service']['id']).to eq id
-          expect(response_json['service']['state']).to eq 'suspended'
+          expect(response_json['service']['state']).to eq 'active'
         end
       end
       context 'when state is suspended' do
