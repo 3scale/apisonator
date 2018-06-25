@@ -176,8 +176,15 @@ module ThreeScale
       end
 
       def initialize(attributes = {})
-        # default state
-        @state = :active
+        # :state is set as active in this method when:
+        # - The state key is not present in the attributes hash
+        # - The state key is present in the attributes hash but it has
+        #   the nil value
+        # This is done in order to not break compatibility for existing
+        # Services saved in the database, that do not contain the state
+        # key.
+        attributes[:state] ||= :active
+
         super(attributes)
       end
 
@@ -233,8 +240,11 @@ module ThreeScale
       end
 
       def state=(value)
-        # anything but :active will be suspended
-        @state = value.nil? || value.to_sym != :active ? :suspended : :active
+        # only :active or nil will be considered as :active
+        # we assume nil is active because not having a state in an
+        # existing service means that is active in Services created before
+        # this change
+        @state = value.nil? || value.to_sym == :active ? :active : :suspended
       end
 
       private
