@@ -12,6 +12,12 @@ module ThreeScale
       UnspecifiedURIScheme = Class.new Error
       private_constant :UnspecifiedURIScheme
 
+      # Constant used for when batching of operations
+      # is desired/needed. Batching is performed when a lot
+      # of storage operations are need to be performed and we
+      # want to minimize database blocking of other clients
+      BATCH_SIZE = 400
+
       class UnspecifiedURI < Error
         def initialize
           super "Redis URL not specified with url, " \
