@@ -67,26 +67,13 @@ resource 'Services (prefix: /services)' do
           expect(response_json['service']['state']).to eq state.to_s
         end
       end
-      context 'with an service that has invalid state in db' do
+      context 'when state is set to an invalid state' do
+        let(:state) { :not_valid_state }
         let(:id) { otherid }
-        let(:storage) { ThreeScale::Backend::Storage.instance }
-        example 'Get Service by ID should return inactive state' do
-          storage.set ThreeScale::Backend::Service.storage_key(id, 'state'), 'invalid_state'
-          do_request(id: id)
+        example_request 'Get Service by ID' do
           expect(status).to eq 200
           expect(response_json['service']['id']).to eq id
           expect(response_json['service']['state']).to eq 'suspended'
-        end
-      end
-      context 'with an service that has no state in db' do
-        let(:id) { otherid }
-        let(:storage) { ThreeScale::Backend::Storage.instance }
-        example 'Get Service by ID should return inactive state' do
-          storage.del ThreeScale::Backend::Service.storage_key(id, 'state')
-          do_request(id: id)
-          expect(status).to eq 200
-          expect(response_json['service']['id']).to eq id
-          expect(response_json['service']['state']).to eq 'active'
         end
       end
     end
