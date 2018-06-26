@@ -480,6 +480,40 @@ module ThreeScale
           Service.delete_by_id(service_id)
         end
       end
+
+      describe '#active=' do
+        it 'when set to true, active? returns true' do
+          [
+            { state: :suspended, id: '9001', default_service: false },
+            { state: :active, id: '9001', default_service: false },
+            { state: :something, id: '9001', default_service: false },
+            { state: nil, id: '9001', default_service: false },
+            { state: "", id: '9001', default_service: false },
+            { id: '9001', default_service: false}
+          ].each do |svc_attrs|
+            service = Service.save!(svc_attrs)
+            service.active = true
+            expect(service.active?).to be true
+            Service.delete_by_id('9001')
+          end
+        end
+
+        it 'when set to false, active? returns false' do
+          [
+            { state: :suspended, id: '9001', default_service: false },
+            { state: :active, id: '9001', default_service: false },
+            { state: :something, id: '9001', default_service: false },
+            { state: nil, id: '9001', default_service: false },
+            { state: "", id: '9001', default_service: false },
+            { id: '9001', default_service: false}
+          ].each do |svc_attrs|
+            service = Service.save!(svc_attrs)
+            service.active = false
+            expect(service.active?).to be false
+            Service.delete_by_id('9001')
+          end
+        end
+      end
     end
   end
 end

@@ -238,6 +238,13 @@ module ThreeScale
       def active?
         state == :active
       end
+      alias_method :active, :active?
+
+      def active=(value)
+        self.state = value ? :active : :suspended
+      end
+
+      private
 
       def state=(value)
         # only :active or nil will be considered as :active
@@ -246,8 +253,6 @@ module ThreeScale
         # this change
         @state = value.nil? || value.to_sym == :active ? :active : :suspended
       end
-
-      private
 
       def delete_attributes
         keys = ATTRIBUTES.map { |attr| storage_key(attr) }
