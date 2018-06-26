@@ -440,7 +440,9 @@ module ThreeScale
             { state: :active, id: '8001' },
             { state: 'active', id: '8001' },
             # even when state is not set
-            { id: '8001' }
+            { id: '8001' },
+            # even when state is intentionally set as nil
+            { state: nil, id: '9001'}
           ].each do |svc_attrs|
             expect(Service.save!(svc_attrs).active?).to be_truthy
           end
@@ -459,6 +461,56 @@ module ThreeScale
             { state: 'false', id: '9001' }
           ].each do |svc_attrs|
             expect(Service.save!(svc_attrs).active?).to be_falsy
+          end
+        end
+
+        it 'returns true when the service does not have state in the DB' do
+          service_id = '9001'
+          Service.save!({state: :suspended, id: service_id, default_service: false})
+          Service.storage.del ThreeScale::Backend::Service.storage_key(service_id, 'state')
+          expect(Service.load_by_id(service_id).active?).to be true
+          Service.delete_by_id(service_id)
+        end
+
+        it 'returns false when the service has an invalid state in the DB' do
+          service_id = '9001'
+          Service.save!({state: :not_defined_state, id: service_id, default_service: false})
+          Service.storage.set ThreeScale::Backend::Service.storage_key(service_id, 'state'), 'not_defined_state'
+          expect(Service.load_by_id(service_id).active?).to be false
+          Service.delete_by_id(service_id)
+        end
+      end
+
+      describe '#active=' do
+        it 'when set to true, active? returns true' do
+          [
+            { state: :suspended, id: '9001', default_service: false },
+            { state: :active, id: '9001', default_service: false },
+            { state: :something, id: '9001', default_service: false },
+            { state: nil, id: '9001', default_service: false },
+            { state: "", id: '9001', default_service: false },
+            { id: '9001', default_service: false}
+          ].each do |svc_attrs|
+            service = Service.save!(svc_attrs)
+            service.active = true
+            expect(service.active?).to be true
+            Service.delete_by_id('9001')
+          end
+        end
+
+        it 'when set to false, active? returns false' do
+          [
+            { state: :suspended, id: '9001', default_service: false },
+            { state: :active, id: '9001', default_service: false },
+            { state: :something, id: '9001', default_service: false },
+            { state: nil, id: '9001', default_service: false },
+            { state: "", id: '9001', default_service: false },
+            { id: '9001', default_service: false}
+          ].each do |svc_attrs|
+            service = Service.save!(svc_attrs)
+            service.active = false
+            expect(service.active?).to be false
+            Service.delete_by_id('9001')
           end
         end
       end
