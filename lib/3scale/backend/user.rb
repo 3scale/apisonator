@@ -77,9 +77,7 @@ module ThreeScale
       def self.delete!(service_id, username)
         service = Service.load_by_id(service_id)
         raise UserRequiresValidService if service.nil?
-        ServiceUserManagementUseCase.new(service, username).delete
-        clear_cache(service_id, username)
-        storage.del(self.key(service_id, username))
+        delete_users_in_batch(service_id, [username])
       end
 
       def self.delete_all(service_id)
@@ -163,15 +161,14 @@ module ThreeScale
 
       def self.delete_users_in_batch(service_id, usernames)
         if usernames.size != 0
-          usernames.each do |username|
-            clear_cache(service_id, username)
-          end
           service_usernames_keys = usernames.map { |username| self.key(service_id, username) }
           storage.pipelined do
             storage.del(service_usernames_keys)
             storage.srem(self.service_users_set_key(service_id), usernames)
           end
-
+          usernames.each do |username|
+            clear_cache(service_id, username)
+          end
         end
       end
 
