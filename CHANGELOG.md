@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.87.1 - 2018-06-27
+
+### Fixes
+
+- Fix existing Services prior the 2.87.0 release not being set as active by
+  default [#39](https://github.com/3scale/apisonator/pull/39)
+
 ## 2.87.0 - 2018-06-21
 
 ### Added
