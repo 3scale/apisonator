@@ -22,7 +22,7 @@ module ThreeScale
 
           context 'with a invalid configuration' do
             it 'returns an exception' do
-              expect { conn }.to raise_error RuntimeError
+              expect { conn }.to raise_error(StandardError)
             end
           end
 
