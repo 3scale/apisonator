@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.87.2 - 2018-07-02
+
+### Changed
+
+- Allow defining Resque configuration without sentinels and defining non-localhost
+  Resque configuration for development and test environments. [#41](https://github.com/3scale/apisonator/pull/41)
+
 ## 2.87.1 - 2018-06-27
 
 ### Fixes
