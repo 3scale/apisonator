@@ -399,6 +399,20 @@ module ThreeScale
           expect(Service.default_id(service.provider_key)).to eq '7002'
         end
 
+        it 'deletes all service errors' do
+          Service.save! id: 7002, provider_key: 'foo', default_service: true
+          ErrorStorage.store(service.id, ApplicationNotFound.new('foo'))
+          ErrorStorage.store(service.id, ApplicationNotFound.new('foo2'))
+
+          expect { Service.delete_by_id(service.id) }
+            .to change { ErrorStorage.count(service.id) }.from(2).to(0)
+        end
+
+        it 'does not raise an exception when deleting a service without errors' do
+          Service.save! id: 7002, provider_key: 'foo', default_service: true
+          expect { Service.delete_by_id(service.id) }.to_not raise_error
+        end
+
         it 'raises an exception if you try to delete a default service' do
           expect { Service.delete_by_id(service.id) }.to raise_error(ServiceIsDefaultService)
 
