@@ -53,6 +53,9 @@ module ThreeScale
           CONFIG_WHITELIST = (URL_WHITELIST + CONN_WHITELIST).freeze
           private_constant :CONFIG_WHITELIST
 
+          DEFAULT_SENTINEL_PORT = 26379
+          private_constant :DEFAULT_SENTINEL_PORT
+
           # Generate an options hash suitable for Redis.new's constructor
           #
           # The options hash will overwrite any settings in the configuration,
@@ -198,15 +201,18 @@ module ThreeScale
                   raise InvalidURI.new("(sentinel #{sentinel.inspect})",
                                        'no host given')
                 end
-                sentinel.fetch(:port) do
-                  raise InvalidURI.new("(sentinel #{sentinel.inspect})",
-                                       'no port given')
-                end
                 sentinel
               else
                 sentinel_to_hash sentinel
               end
             end.compact
+
+            # For the sentinels that do not have the :port key or
+            # the port key is nil we configure them with the default
+            # sentinel port
+            options[:sentinels].each do |sentinel|
+              sentinel[:port] ||= DEFAULT_SENTINEL_PORT
+            end
 
             # Handle role option when sentinels are validated
             options[:role] = role if role && !role.empty?
