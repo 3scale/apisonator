@@ -223,7 +223,7 @@ class StorageTest < Test::Unit::TestCase
   def assert_client_config(client, url:, **conf)
     assert_equal client.options[:url], url
     conf.each do |k, v|
-      assert_equal client.options[k], v
+      assert_equal v, client.options[k]
     end
   end
 
