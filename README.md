@@ -11,7 +11,7 @@ software for details.
 
 ## Description
 
-This is Red Hat 3scale API Management Platform's Backend.
+This is the Red Hat 3scale API Management backend.
 
 It has the following components:
 
@@ -85,6 +85,15 @@ This component may also be referred to as 'backend-cron'.
 ## Development
 
 See the file [DEVELOPMENT](DEVELOPMENT.md)
+
+## Documentation
+
+You can find documentation about Apisonator (also called referred to as `3scale
+backend`) at the [Red Hat 3scale API Management product pages](https://access.redhat.com/products/red-hat-3scale/).
+
+Documentation about specific parts of Apisonator (APIs, specs, behaviour, etc)
+can be found in the [`docs`](https://github.com/3scale/apisonator/tree/master/docs) folder, though this is mostly meant for development and design purposes rather
+than user documentation.
 
 ## How to run
 
