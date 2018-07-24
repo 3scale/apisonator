@@ -16,9 +16,9 @@ module ThreeScale
             keys_for_bucket = []
 
             keys.each do |metric_type, prefix_key|
-              granularities(metric_type).each do |granularity|
+              Stats::Common.granularities(metric_type).each do |granularity|
                 key = counter_key(prefix_key, granularity.new(timestamp))
-                expire_time = expire_time_for_granularity(granularity)
+                expire_time = Stats::Common.expire_time_for_granularity(granularity)
 
                 store_key(cmd, key, value, expire_time)
 
@@ -47,17 +47,9 @@ module ThreeScale
 
           protected
 
-          def granularities(metric_type)
-            metric_type == :service ? Stats::Common::SERVICE_GRANULARITIES : Stats::Common::EXPANDED_GRANULARITIES
-          end
-
           def store_key(cmd, key, value, expire_time = nil)
             storage.send(cmd, key, value)
             storage.expire(key, expire_time) if expire_time
-          end
-
-          def expire_time_for_granularity(granularity)
-            Stats::Common::GRANULARITY_EXPIRATION_TIME[granularity]
           end
 
           def store_in_changed_keys(keys, bucket)

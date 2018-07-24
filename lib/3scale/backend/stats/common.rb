@@ -22,7 +22,14 @@ module ThreeScale
         # buckets.
         EXCLUDED_FOR_BUCKETS = [Period[:eternity], Period[:week]].freeze
 
+        # Return an array of granularities given a metric_type
+        def self.granularities(metric_type)
+          metric_type == :service ? SERVICE_GRANULARITIES : EXPANDED_GRANULARITIES
+        end
 
+        def self.expire_time_for_granularity(granularity)
+          GRANULARITY_EXPIRATION_TIME[granularity]
+        end
       end
     end
   end
