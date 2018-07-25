@@ -73,7 +73,7 @@ module ThreeScale
             }
 
             it 'returns a composed key not including a timestamp' do
-              expected = "stats/{service:1000}/#{expected_key_part}/metric:#{metric_id}/eternity"
+              expected = "stats/#{expected_key_part}/metric:#{metric_id}/eternity"
               expect(result).to eq(expected)
             end
           end
@@ -84,18 +84,25 @@ module ThreeScale
             }
 
             it 'returns a composed key including a timestamp' do
-              expected = "stats/{service:1000}/#{expected_key_part}/metric:#{metric_id}/hour:2014072918"
+              expected = "stats/#{expected_key_part}/metric:#{metric_id}/hour:2014072918"
               expect(result).to eq(expected)
             end
           end
         end
 
+        describe '.service_usage_value_key' do
+          it_behaves_like 'usage keys', currify(:service_usage_value_key, app.service_id),
+                          "{service:#{app.service_id}}"
+        end
+
         describe '.application_usage_value_key' do
-          it_behaves_like 'usage keys', currify(:application_usage_value_key, app.service_id, app.id), "cinstance:#{app.id}"
+          it_behaves_like 'usage keys', currify(:application_usage_value_key, app.service_id, app.id),
+                          "{service:#{app.service_id}}/cinstance:#{app.id}"
         end
 
         describe '.user_usage_value_key' do
-          it_behaves_like 'usage keys', currify(:user_usage_value_key, app.service_id, user.username), "uinstance:#{user.username}"
+          it_behaves_like 'usage keys', currify(:user_usage_value_key, app.service_id, user.username),
+                          "{service:#{app.service_id}}/uinstance:#{user.username}"
         end
 
         describe '.counter_key' do
