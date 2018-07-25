@@ -18,6 +18,7 @@ module ThreeScale
         let(:service_id)     { app.service_id }
         let(:application_id) { app.id }
         let(:metric_id)      { 100 }
+        let(:response_code)  { 403 }
         let(:user_id)        { user.username }
         let(:time)           { Time.utc(2014, 7, 29, 18, 25) }
 
@@ -102,6 +103,45 @@ module ThreeScale
 
         describe '.user_usage_value_key' do
           it_behaves_like 'usage keys', currify(:user_usage_value_key, app.service_id, user.username),
+                          "{service:#{app.service_id}}/uinstance:#{user.username}"
+        end
+
+        shared_examples_for 'response code keys' do |method, expected_key_part|
+          context 'with eternity granularity' do
+            let(:result) {
+              method.call(response_code, Period[:eternity, time])
+            }
+
+            it 'returns a composed key not including a timestamp' do
+              expected = "stats/#{expected_key_part}/response_code:#{response_code}/eternity"
+              expect(result).to eq(expected)
+            end
+          end
+
+          context 'with hour granularity' do
+            let(:result) {
+              method.call(response_code, Period[:hour, time])
+            }
+
+            it 'returns a composed key including a timestamp' do
+              expected = "stats/#{expected_key_part}/response_code:#{response_code}/hour:2014072918"
+              expect(result).to eq(expected)
+            end
+          end
+        end
+
+        describe '.service_response_code_value_key' do
+          it_behaves_like 'response code keys', currify(:service_response_code_value_key, app.service_id),
+                          "{service:#{app.service_id}}"
+        end
+
+        describe '.application_response_code_value_key' do
+          it_behaves_like 'response code keys', currify(:application_response_code_value_key, app.service_id, app.id),
+                          "{service:#{app.service_id}}/cinstance:#{app.id}"
+        end
+
+        describe '.user_response_code_key' do
+          it_behaves_like 'response code keys', currify(:user_response_code_value_key, app.service_id, user.username),
                           "{service:#{app.service_id}}/uinstance:#{user.username}"
         end
 

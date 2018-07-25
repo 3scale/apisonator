@@ -59,6 +59,29 @@ module ThreeScale
           encode_key(counter_key(metric_key, period))
         end
 
+        def service_response_code_value_key(service_id, response_code, period)
+          service_key        = service_key_prefix(service_id)
+          response_code_key  = response_code_key_prefix(service_key, response_code)
+
+          encode_key(counter_key(response_code_key, period))
+        end
+
+       def application_response_code_value_key(service_id, app_id, response_code, period)
+          service_key        = service_key_prefix(service_id)
+          app_key            = application_key_prefix(service_key, app_id)
+          response_code_key  = response_code_key_prefix(app_key, response_code)
+
+          encode_key(counter_key(response_code_key, period))
+        end
+
+        def user_response_code_value_key(service_id, user_id, response_code, period)
+          service_key         = service_key_prefix(service_id)
+          user_key            = user_key_prefix(service_key, user_id)
+          response_code_key   = response_code_key_prefix(user_key, response_code)
+
+          encode_key(counter_key(response_code_key, period))
+        end
+
         def counter_key(prefix, period)
           granularity = period.granularity
           key = "#{prefix}/#{granularity}"
