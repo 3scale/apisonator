@@ -36,7 +36,7 @@ module ThreeScale
           "#{prefix}/response_code:#{response_code}"
         end
 
-        def usage_value_key(service_id, app_id, metric_id, period)
+        def application_usage_value_key(service_id, app_id, metric_id, period)
           service_key = service_key_prefix(service_id)
           app_key     = application_key_prefix(service_key, app_id)
           metric_key  = metric_key_prefix(app_key, metric_id)

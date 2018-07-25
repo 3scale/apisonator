@@ -80,7 +80,7 @@ class ReportTest < Test::Unit::TestCase
 
     # Check counters of '@application'
     usage_keys = all_periods.map do |period|
-      Stats::Keys.usage_value_key(@application.service_id, @application.id, @metric_id, period)
+      Stats::Keys.application_usage_value_key(@application.service_id, @application.id, @metric_id, period)
     end
 
     usages = storage.mget(usage_keys)
@@ -88,7 +88,7 @@ class ReportTest < Test::Unit::TestCase
 
     # Check counters of 'second_app'
     usage_keys = all_periods.map do |period|
-      Stats::Keys.usage_value_key(second_app.service_id, second_app.id, @metric_id, period)
+      Stats::Keys.application_usage_value_key(second_app.service_id, second_app.id, @metric_id, period)
     end
 
     usages = storage.mget(usage_keys)

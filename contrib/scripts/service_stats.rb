@@ -40,7 +40,7 @@ class ServiceStats
     keys = []
 
     app_ids.product(metric_ids) do |app_id, metric_id|
-      keys << Stats::Keys.usage_value_key(service_id, app_id, metric_id, period, time)
+      keys << Stats::Keys.application_usage_value_key(service_id, app_id, metric_id, period, time)
     end
 
     kv = {}
