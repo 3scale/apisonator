@@ -5,20 +5,20 @@ module ThreeScale
         module Generator
           class Timestamp
             private
-
-            attr_accessor :granularity_idx, :granularity_name
-
-            def initialize(granularity_idx, granularity_name)
-              @granularity_idx = granularity_idx # The granularity index of this timestamp
-              @granularity_name = granularity_name
+            def get_metric_type_granularity_limits(periods)
+              # Array range goes from A to B, (B - A + 1) elements
+              return Range.new(0, periods.size - 1) if index_limits.nil?
+              limit_start = index_limits[0].granularity || 0
+              limit_end = index_limits[1].granularity || 0
+              Range.new(limit_start, limit_end)
             end
 
-            def get_granularity_limits(limits)
-              [limits[0].granularity, limits[1].granularity]
+            def get_granularity_limits
+              [index_limits[0].granularity, index_limits[1].granularity]
             end
 
-            def get_time_limits(limits)
-              Range.new(limits[0].ts, limits[1].ts)
+            def get_time_limits
+              Range.new(index_limits[0].ts, index_limits[1].ts)
             end
 
             # There are five cases to determine from what timestamp to what timestamp should we iterate
@@ -39,11 +39,11 @@ module ThreeScale
             # 5 - If there are limits, if neither of the granularities specified in the from and to limits match
             #     the granularity being processed, we iterate from the timestamp
             #     to the timestamp specified in the service_context
-            def get_timestamp_limits(service_context, limits)
-              return service_context.from, service_context.to if limits.nil?
+            def get_timestamp_limits(granularity_idx)
+              return service_context.from, service_context.to if index_limits.nil?
 
-              grn_start_lim, grn_end_lim = get_granularity_limits(limits)
-              ts_idx_lim = get_time_limits(limits)
+              grn_start_lim, grn_end_lim = get_granularity_limits
+              ts_idx_lim = get_time_limits
 
               from = service_context.from
               to = service_context.to
@@ -54,9 +54,18 @@ module ThreeScale
               [from, to]
             end
 
-            def get_time_generator(service_context, limits)
+            def generate_timestamp_key(period)
+              granularity = period.granularity
+              key = "#{granularity}"
+              if granularity.to_sym != :eternity
+                key += ":#{period.start.to_compact_s}"
+              end
+              key
+            end
+
+            def get_datetime_generator_for_granularity(granularity_name, granularity_index)
               Enumerator.new do |yielder|
-                from, to = get_timestamp_limits(service_context, limits).map do |ts|
+                from, to = get_timestamp_limits(granularity_index).map do |ts|
                   ## A problem has been detected here in this two lines. It seems it is caching
                   ## the @timestamp instance attribute for the Period[:month] even though
                   ## we recreate the period. It caches the entire Period instance
@@ -76,54 +85,36 @@ module ThreeScale
               end
             end
 
-            def generate_timestamp_key(period)
-              granularity = period.granularity
-              key = "#{granularity}"
-              if granularity.to_sym != :eternity
-                key += ":#{period.start.to_compact_s}"
-              end
-              key
-            end
-
-            def self.get_granularity_limits(granularity_list, limits)
-              # Array range goes from A to B, (B - A + 1) elements
-              return Range.new(0, granularity_list.size - 1) if limits.nil?
-              limit_start = limits[0].granularity || 0
-              limit_end = limits[1].granularity || 0
-              Range.new(limit_start, limit_end)
-            end
-
-            def self.granularity_to_period(grn_arr)
-              grn_arr.each_with_index.map do |name, idx|
-                Timestamp.new(idx, name.to_sym)
-              end
-            end
-
-            SERVICE_TIMESTAMPS = granularity_to_period(Stats::Common::PERMANENT_SERVICE_GRANULARITIES)
-            EXPANDED_TIMESTAMPS = granularity_to_period(Stats::Common::PERMANENT_EXPANDED_GRANULARITIES)
-
-            def self.timestamps(metric_type)
-              metric_type.to_sym == :service ? SERVICE_TIMESTAMPS : EXPANDED_TIMESTAMPS
-            end
-
-            def self.yield_timestamp(service_context, limits, yielder, period)
-              if period.send(:granularity_name) == :eternity
+            def yield_timestamp(datetime_gen, yielder, granularity_name, granularity_idx)
+              if granularity_name == :eternity
                 yielder << ['eternity', 0]
               else
-                period.send(:get_time_generator, service_context, limits).each do |datetime_key, ts|
-                  yielder << [datetime_key, period.send(:granularity_idx), ts]
+                datetime_gen.each do |datetime_key, ts|
+                  yielder << [datetime_key, granularity_idx, ts]
                 end
               end
             end
 
+            attr_reader :service_context, :index_limits, :metric_type
+
             public
 
-            #metric_type is 'service', 'application' or 'user'. Could be called key_type???
-            def self.get_time_generator(service_context, limits, metric_type)
+            def initialize(service_context, index_limits, metric_type)
+              @service_context = service_context
+              @index_limits = index_limits
+              @metric_type = metric_type
+            end
+
+            def get_time_generator
               Enumerator.new do |yielder|
-                grn_idx_lim = get_granularity_limits(timestamps(metric_type), limits)
-                timestamps(metric_type)[grn_idx_lim].each do |period|
-                  yield_timestamp(service_context, limits, yielder, period)
+                periods = metric_type.to_sym == :service ? Stats::Common::PERMANENT_SERVICE_GRANULARITIES : Stats::Common::PERMANENT_EXPANDED_GRANULARITIES
+                grn_idx_lim = get_metric_type_granularity_limits(periods)
+                periods[grn_idx_lim].each_with_index do |period, relative_index|
+                  # This is done because we are iterating a range and the indexes have moved
+                  # This works because ranges are ascending always
+                  grn_index = relative_index + grn_idx_lim.first
+                  datetime_gen = get_datetime_generator_for_granularity(period.to_sym, grn_index)
+                  yield_timestamp(datetime_gen, yielder, period.to_sym, grn_index)
                 end
               end
             end
