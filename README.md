@@ -202,7 +202,7 @@ To run an Apisonator listener, the script bin/3scale_backend is used. To
 run it from a previously generated Apisonator docker image:
 
 ```
-docker run -it amp:apisonator-<version_number> -p 3001:3001 --env-file <myenv_file> 3scale_backend start -p 3001 -x /dev/stdout
+docker run -p 3001:3001 --env-file <myenv_file> -it amp:apisonator-<version_number> 3scale_backend start -p 3001 -x /dev/stdout
 ```
 
 You can see all the available options of the apisonator listener by executing:
@@ -214,17 +214,17 @@ docker run -it amp:apisonator-<version_number> 3scale_backend help
 #### Apisonator Worker
 
 ```
-docker run -it amp:apisonator-<version_number> 3scale_backend_worker --env-file <myenv_file>
+docker run --env-file <myenv_file> -it amp:apisonator-<version_number> 3scale_backend_worker
 ```
 
 #### Apisonator failed jobs rescheduler
 
 ```
-docker run -it  amp:apisonator-<version_number> backend-cron --env-file <myenv_file>
+docker run --env-file <myenv_file> -it amp:apisonator-<version_number> backend-cron
 ```
 
 #### Apisonator bash shell
 
 ```
-docker run -it amp:apisonator-<version_number> bash --env-file <myenv_file>
+docker run --env-file <myenv_file> -it amp:apisonator-<version_number> bash
 ```
