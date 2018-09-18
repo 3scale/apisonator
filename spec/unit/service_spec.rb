@@ -432,7 +432,15 @@ module ThreeScale
           expect { Service.delete_by_id(service.id) }.to_not raise_error
         end
 
-        it 'raises an exception if you try to delete a default service' do
+        it 'deletes a service when it is the only one for the provider' do
+          Service.delete_by_id service.id
+
+          expect(Service.load_by_id(service.id)).to be nil
+        end
+
+        it 'raises an exception when deleting a default service and there are others' do
+          Service.save! id: 7002, provider_key: 'foo', default_service: false
+
           expect { Service.delete_by_id(service.id) }.to raise_error(ServiceIsDefaultService)
 
           expect(Service.load_by_id(service.id)).not_to be nil
