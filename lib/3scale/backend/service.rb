@@ -83,7 +83,10 @@ module ThreeScale
 
         def delete_by_id(service_id)
           service = load_by_id!(service_id)
-          raise ServiceIsDefaultService, service.id if service.default_service?
+
+          if service.default_service? and not service_is_the_only_one_for_provider(service_id)
+            raise ServiceIsDefaultService, service.id
+          end
 
           service.delete_data
           service.clear_cache
@@ -172,6 +175,12 @@ module ThreeScale
 
         def default_service?(provider_key, id)
           default_id(provider_key) == id.to_s
+        end
+
+        def service_is_the_only_one_for_provider(service_id)
+          provider_key = provider_key_for(service_id)
+          services = list(provider_key)
+          services.size == 1 and services[0] == service_id.to_s
         end
       end
 
