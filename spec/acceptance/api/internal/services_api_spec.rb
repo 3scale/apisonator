@@ -268,15 +268,37 @@ resource 'Services (prefix: /services)' do
     parameter :id, 'Service ID', required: true
 
     let(:raw_post) { params.to_json }
+    let(:default_service_id) { '1' }
+    let(:non_default_service_id) { '2' }
 
-    example_request 'Deleting a default service', id: 1001 do
+    before { ThreeScale::Backend::Storage.instance.flushdb }
+
+    example 'Deleting a default service when there are more' do
+      [default_service_id, non_default_service_id].each do |id|
+        ThreeScale::Backend::Service.save!(provider_key: provider_key, id: id)
+      end
+
+      do_request id: default_service_id
+
       expect(status).to eq 400
       expect(response_json['error']).to match /cannot be removed/
     end
 
+    example 'Deleting a default service when it is the only one' do
+      ThreeScale::Backend::Service.save!(provider_key: provider_key, id: default_service_id)
+
+      do_request id: default_service_id
+
+      expect(status).to eq 200
+      expect(response_json['status']).to eq 'deleted'
+    end
+
     example 'Deleting a non-default service' do
-      ThreeScale::Backend::Service.save!(provider_key: 'foo', id: 1002)
-      do_request id: 1002
+      [default_service_id, non_default_service_id].each do |id|
+        ThreeScale::Backend::Service.save!(provider_key: provider_key, id: id)
+      end
+
+      do_request id: non_default_service_id
 
       expect(status).to eq 200
       expect(response_json['status']).to eq 'deleted'
