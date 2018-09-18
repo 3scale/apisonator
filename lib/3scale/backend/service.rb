@@ -39,15 +39,6 @@ module ThreeScale
           default_id(provider_key) or raise ProviderKeyInvalid, provider_key
         end
 
-        def load(provider_key)
-          load_by_id default_id(provider_key)
-        end
-        memoize :load
-
-        def load!(provider_key)
-          load(provider_key) or raise ProviderKeyInvalid, provider_key
-        end
-
         def load_by_id(service_id)
           return if service_id.nil?
 
@@ -131,7 +122,6 @@ module ThreeScale
           keys = Memoizer.build_keys_for_class(self,
                     authenticate_service_id: [id, provider_key],
                     default_id: provider_key_arg,
-                    load: provider_key_arg,
                     load_by_id: [id],
                     list: provider_key_arg,
                     provider_key_for: [id])
