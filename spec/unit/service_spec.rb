@@ -55,42 +55,6 @@ module ThreeScale
         end
       end
 
-      describe '.load!' do
-        context 'when the provider exists' do
-          let(:provider_key) { 'a_key' }
-          let!(:service) do
-            Service.save!(provider_key: provider_key,
-                          id: '1',
-                          referrer_filters_required: false)
-          end
-
-          context 'and it has a default service' do
-            it 'returns it' do
-              expect(Service.load!(provider_key).to_hash).to eq service.to_hash
-            end
-          end
-
-          context 'and it does not have a default service' do
-            before do
-              service.delete_data
-              service.clear_cache
-            end
-
-            it "raises #{provider_key_invalid}" do
-              expect { Service.load!(provider_key) }
-                  .to raise_error provider_key_invalid
-            end
-          end
-        end
-
-        context 'when the provider does not exist' do
-          it "raises #{provider_key_invalid}" do
-            expect { Service.load!('a_key') }
-                .to raise_error provider_key_invalid
-          end
-        end
-      end
-
       describe '.load_by_id' do
         let(:service) do
           Service.save!(
@@ -432,7 +396,15 @@ module ThreeScale
           expect { Service.delete_by_id(service.id) }.to_not raise_error
         end
 
-        it 'raises an exception if you try to delete a default service' do
+        it 'deletes a service when it is the only one for the provider' do
+          Service.delete_by_id service.id
+
+          expect(Service.load_by_id(service.id)).to be nil
+        end
+
+        it 'raises an exception when deleting a default service and there are others' do
+          Service.save! id: 7002, provider_key: 'foo', default_service: false
+
           expect { Service.delete_by_id(service.id) }.to raise_error(ServiceIsDefaultService)
 
           expect(Service.load_by_id(service.id)).not_to be nil

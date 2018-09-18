@@ -73,7 +73,6 @@ module ThreeScale
           # of them with specific values
           Service.default_id(provider_key)
           Service.authenticate_service_id(service_id, provider_key)
-          Service.load(provider_key)
           Service.load_by_id(service_id)
           Service.list(provider_key)
           Service.provider_key_for(service_id)
@@ -83,7 +82,6 @@ module ThreeScale
           Memoizer.build_keys_for_class(Service,
             authenticate_service_id: [service_id, provider_key],
             default_id: [provider_key],
-            load: [provider_key],
             load_by_id: [service_id],
             list: [provider_key],
             provider_key_for: [service_id])
