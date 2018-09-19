@@ -2,6 +2,15 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.88.0 - 2018-09-19
+
+- Add documentation about utilization alerts. [#43](https://github.com/3scale/apisonator/pull/43)
+- When a Service is deleted delete all of its errors. [#44](https://github.com/3scale/apisonator/pull/44)
+- When a Service is deleted all its transactions are deleted. [#45](https://github.com/3scale/apisonator/pull/45)
+- Set sentinel default port when no port is provided in Redis sentinel configuration. [#46](https://github.com/3scale/apisonator/pull/46)
+- Fix apisonator docker commands order in README. [#49](https://github.com/3scale/apisonator/pull/49)
+- Allow deletion of default service when is the only existing one. [#51](https://github.com/3scale/apisonator/pull/51)
+
 ## 2.87.2 - 2018-07-02
 
 ### Changed
