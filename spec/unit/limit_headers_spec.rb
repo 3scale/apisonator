@@ -13,9 +13,10 @@ module ThreeScale
 
           context 'when only one report is received' do
             let(:report) do
-              double(period: Period::Month.new(Time.now.utc),
-                     remaining_same_calls: 10,
-                     remaining_time: 100)
+              object_double(Status::UsageReport.allocate,
+                            period: Period::Month.new(Time.now.utc),
+                            remaining_same_calls: 10,
+                            remaining_time: 100)
             end
 
             it 'returns the remaining and the reset time for that report' do
@@ -32,15 +33,17 @@ module ThreeScale
               let(:time) { Time.now.utc }
 
               let(:report_month) do
-                double(period: Period::Month.new(time),
-                       remaining_same_calls: 10,
-                       remaining_time: 100)
+                object_double(Status::UsageReport.allocate,
+                              period: Period::Month.new(time),
+                              remaining_same_calls: 10,
+                              remaining_time: 100)
               end
 
               let(:report_year) do
-                double(period: Period::Year.new(time),
-                       remaining_same_calls: 10,
-                       remaining_time: 200)
+                object_double(Status::UsageReport.allocate,
+                              period: Period::Year.new(time),
+                              remaining_same_calls: 10,
+                              remaining_time: 200)
               end
 
               it 'returns the remaining and reset time of the report with the '\
@@ -57,15 +60,17 @@ module ThreeScale
               let(:time) { Time.now.utc }
 
               let(:report_more_remaining) do
-                double(period: Period::Month.new(time),
-                       remaining_same_calls: 10,
-                       remaining_time: 100)
+                object_double(Status::UsageReport.allocate,
+                              period: Period::Month.new(time),
+                              remaining_same_calls: 10,
+                              remaining_time: 100)
               end
 
               let(:report_less_remaining) do
-                double(period: Period::Month.new(time),
-                       remaining_same_calls: report_more_remaining.remaining_same_calls - 1,
-                       remaining_time: 200)
+                object_double(Status::UsageReport.allocate,
+                              period: Period::Month.new(time),
+                              remaining_same_calls: report_more_remaining.remaining_same_calls - 1,
+                              remaining_time: 200)
               end
 
               it 'returns the remaining and reset time of the report with the '\
@@ -83,15 +88,17 @@ module ThreeScale
               let(:time) { Time.now.utc }
 
               let(:report_with_some_remaining) do
-                double(period: Period::Day.new(time),
-                       remaining_same_calls: 100,
-                       remaining_time: 65)
+                object_double(Status::UsageReport.allocate,
+                              period: Period::Day.new(time),
+                              remaining_same_calls: 100,
+                              remaining_time: 65)
               end
 
               let(:report_with_0_remaining) do
-                double(period: Period::Hour.new(time),
-                       remaining_same_calls: 0,
-                       remaining_time: 5)
+                object_double(Status::UsageReport.allocate,
+                              period: Period::Hour.new(time),
+                              remaining_same_calls: 0,
+                              remaining_time: 5)
               end
 
               it 'returns a remaining of 0 and the reset time of the report with 0 remaining' do
