@@ -57,16 +57,12 @@ module ThreeScale
           # is predicted, not to be reported. The number of identical calls
           # that could be performed is 10/2 = 5.
           #
-          # Returns 0 when not authorized.
           # Returns -1 when there is not a limit in the number of calls.
           def remaining_same_calls
-            return 0 unless authorized?
+            return 0 if remaining <= 0
 
-            usage = @status.actual_or_predicted_usage
-            return -1 unless usage
-
-            this_usage = compute_usage
-            this_usage > 0 ? remaining/this_usage : -1
+            usage = compute_usage
+            usage > 0 ? remaining/usage : -1
           end
 
           def usage
@@ -153,7 +149,7 @@ module ThreeScale
           def compute_usage
             usage = @status.usage || @status.predicted_usage
 
-            return 0 unless authorized? && usage
+            return 0 unless usage
 
             this_usage = usage[metric_name] || 0
             res = Usage.get_from(this_usage)
