@@ -72,6 +72,35 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
                  last_response.header['3scale-limit-reset']
   end
 
+  test_authrep 'response headers include correct information when rate-limited' do |e|
+    day_limit = { service_id: @service.id,
+                  plan_id: @plan_id,
+                  metric_id: @metric_id,
+                  day: 100 }
+    UsageLimit.save(day_limit)
+
+    hour_limit = { service_id: @service.id,
+                   plan_id: @plan_id,
+                   metric_id: @metric_id,
+                   hour: 10 } # Stricter limit for the hour
+    UsageLimit.save(hour_limit)
+
+    # 1 second remaining for the hour and 61 for the day.
+    current_time = Time.new(2018, 1, 1, 22, 59, 59)
+
+    # Go over limits for the hour
+    Timecop.freeze(current_time) do
+      get e,
+          { provider_key: @provider_key, app_id: @application.id,
+            usage: { 'hits' => hour_limit[:hour] + 1 } }, # Going over limits
+          'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
+    end
+
+    # Check that the remaining and reset refer to the hour limit
+    assert_equal 0, last_response.header['3scale-limit-remaining']
+    assert_equal 1, last_response.header['3scale-limit-reset']
+  end
+
   test_authrep 'remaining in limit headers is 0 when over limits' do |e|
     limit = 100
     limit_attrs = { service_id: @service.id,
