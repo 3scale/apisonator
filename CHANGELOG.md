@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.88.1 - 2018-10-10
+
+### Fixed
+
+- The Limit Headers now show the correct information when the request is
+  rate-limited. [#55](https://github.com/3scale/apisonator/pull/55)
+
 ## 2.88.0 - 2018-09-19
 
 - Add documentation about utilization alerts. [#43](https://github.com/3scale/apisonator/pull/43)
