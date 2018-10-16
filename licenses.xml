@@ -103,7 +103,7 @@
         </dependency>
             <dependency>
           <packageName>bundler</packageName>
-          <version>1.16.2</version>
+          <version>1.16.6</version>
           <licenses>
                           <license>
                 <name>MIT</name>
@@ -699,7 +699,7 @@
         </dependency>
             <dependency>
           <packageName>rubyzip</packageName>
-          <version>1.2.1</version>
+          <version>1.2.2</version>
           <licenses>
                           <license>
                 <name>Simplified BSD</name>
