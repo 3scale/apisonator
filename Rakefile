@@ -6,6 +6,9 @@ require '3scale/tasks/helpers'
 
 include ThreeScale::Tasks::Helpers
 
+load 'lib/3scale/tasks/connectivity.rake'
+
+
 if Environment.saas?
   require '3scale/backend/logging/external'
 
