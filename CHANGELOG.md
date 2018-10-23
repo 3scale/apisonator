@@ -2,6 +2,14 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.89.0 - 2018-10-23
+
+### Added
+- Tasks to check redis storage and queue storage connection. ([#58](https://github.com/3scale/apisonator/pull/58))
+
+### Security
+- Updated rubyzip to version 1.2.2 due to [CVE-2018-1000544](https://access.redhat.com/security/cve/cve-2018-1000544). ([#57](https://github.com/3scale/apisonator/pull/57))
+
 ## 2.88.1 - 2018-10-10
 
 ### Fixed
