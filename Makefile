@@ -84,14 +84,16 @@ dev-build: $(PROJECT_PATH)/Dockerfile
 		$(PROJECT_PATH)
 
 .PHONY: ci-build
-ci-build: export APISONATOR_REL?=v$(shell ruby -r$(PROJECT_PATH)/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
+ci-build: export APISONATOR_REL?=v$(shell docker run --rm -w /tmp/apisonator -v $(PROJECT_PATH):/tmp/apisonator:z \
+	$(CI_IMAGE) ruby -r/tmp/apisonator/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
 ci-build: $(PROJECT_PATH)/Dockerfile.ci
 	docker build -t apisonator-ci-layered:$(APISONATOR_REL) -f Dockerfile.ci $(PROJECT_PATH)
 	docker tag apisonator-ci-layered:$(APISONATOR_REL) apisonator-ci-layered:latest
 	$(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) ci-flatten
 
 .PHONY: ci-flatten
-ci-flatten: APISONATOR_REL?=v$(shell ruby -r$(PROJECT_PATH)/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
+ci-flatten: APISONATOR_REL?=v$(shell docker run --rm -w /tmp/apisonator -v $(PROJECT_PATH):/tmp/apisonator:z \
+	$(CI_IMAGE) ruby -r/tmp/apisonator/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
 ci-flatten: CI_USER?=$(shell docker run --rm apisonator-ci-layered:$(APISONATOR_REL) whoami)
 ci-flatten: CI_PATH?=$(shell docker run --rm apisonator-ci-layered:$(APISONATOR_REL) /bin/bash -c "echo \$${PATH}")
 ci-flatten:
