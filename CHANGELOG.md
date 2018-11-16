@@ -5,10 +5,12 @@ Notable changes to Apisonator will be tracked in this document.
 ## 2.89.0 - 2018-10-23
 
 ### Added
-- Tasks to check redis storage and queue storage connection. ([#58](https://github.com/3scale/apisonator/pull/58))
+
+- Tasks to check redis storage and queue storage connection. [#58](https://github.com/3scale/apisonator/pull/58)
 
 ### Security
-- Updated rubyzip to version 1.2.2 due to [CVE-2018-1000544](https://access.redhat.com/security/cve/cve-2018-1000544). ([#57](https://github.com/3scale/apisonator/pull/57))
+
+- Updated rubyzip to version 1.2.2 due to [CVE-2018-1000544](https://access.redhat.com/security/cve/cve-2018-1000544). [#57](https://github.com/3scale/apisonator/pull/57)
 
 ## 2.88.1 - 2018-10-10
 
@@ -19,12 +21,20 @@ Notable changes to Apisonator will be tracked in this document.
 
 ## 2.88.0 - 2018-09-19
 
+### Added
+
 - Add documentation about utilization alerts. [#43](https://github.com/3scale/apisonator/pull/43)
+- Set sentinel default port when no port is provided in Redis sentinel configuration. [#46](https://github.com/3scale/apisonator/pull/46)
+
+### Changed
+
 - When a Service is deleted delete all of its errors. [#44](https://github.com/3scale/apisonator/pull/44)
 - When a Service is deleted all its transactions are deleted. [#45](https://github.com/3scale/apisonator/pull/45)
-- Set sentinel default port when no port is provided in Redis sentinel configuration. [#46](https://github.com/3scale/apisonator/pull/46)
+- Allow deletion of default service when it is the only existing one. [#51](https://github.com/3scale/apisonator/pull/51)
+
+### Fixes
+
 - Fix apisonator docker commands order in README. [#49](https://github.com/3scale/apisonator/pull/49)
-- Allow deletion of default service when is the only existing one. [#51](https://github.com/3scale/apisonator/pull/51)
 
 ## 2.87.2 - 2018-07-02
 
