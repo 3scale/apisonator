@@ -112,7 +112,7 @@ GEM
     pry-doc (0.11.1)
       pry (~> 0.9)
       yard (~> 0.9)
-    rack (2.0.3)
+    rack (2.0.6)
     rack-protection (2.0.3)
       rack
     rack-test (0.8.2)
@@ -205,7 +205,7 @@ DEPENDENCIES
   pry-byebug (~> 3.5.1)
   pry-doc (~> 0.11.1)
   puma!
-  rack (= 2.0.3)
+  rack (~> 2.0.6)
   rack-test (~> 0.8.2)
   rake (= 10.4.2)
   redis (= 3.3.3)
