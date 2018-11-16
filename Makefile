@@ -16,7 +16,7 @@ test: export CONTAINER_NAME?=apisonator-test
 test: DOCKER_OPTS?=
 test:
 	make -C $(PROJECT_PATH) -f $(MKFILE_PATH) dev-build
-	docker run -ti --rm -h $(CONTAINER_NAME) -v \
+	docker run --rm -t -h $(CONTAINER_NAME) -v \
 		$(PROJECT_PATH):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'cd && pwd')/apisonator:z \
 		-u $$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -u'):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -g') \
 	$(DOCKER_OPTS) --name $(CONTAINER_NAME) $(IMAGE_NAME)
