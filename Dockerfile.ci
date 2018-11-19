@@ -49,7 +49,7 @@ RUN sudo runuser -l postgres -c \
     "${POSTGRES_PREFIX}/bin/initdb --pgdata='${POSTGRES_DATA_PREFIX}/data' --auth='trust'" < /dev/null \
     && sudo runuser -l postgres -c \
     "${POSTGRES_PREFIX}/bin/postgres -D '${POSTGRES_DATA_PREFIX}/data'" \
-      > /tmp/postgres.log 2>&1 & sleep 2 \
+      > /tmp/postgres.log 2>&1 & sleep 5 \
     && sudo runuser -l postgres -c "${POSTGRES_PREFIX}/bin/createdb test" \
     && sudo runuser -l postgres -c "${POSTGRES_PREFIX}/bin/psql test"
 
