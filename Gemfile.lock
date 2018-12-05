@@ -49,6 +49,16 @@ GEM
     airbrake (4.3.1)
       builder
       multi_json
+    async (1.15.1)
+      nio4r (~> 2.3)
+      timers (~> 4.1)
+    async-io (1.18.3)
+      async (~> 1.14)
+    async-redis (0.3.2)
+      async (~> 1.8)
+      async-io (~> 1.10)
+    async-rspec (1.12.0)
+      rspec (~> 3.0)
     aws-sdk (2.4.2)
       aws-sdk-resources (= 2.4.2)
     aws-sdk-core (2.4.2)
@@ -110,6 +120,7 @@ GEM
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
     net-ssh (4.2.0)
+    nio4r (2.3.1)
     nokogiri (1.9.1)
       mini_portile2 (~> 2.4.0)
     pg (0.20.0)
@@ -188,6 +199,7 @@ GEM
     thread_safe (0.3.6)
     tilt (2.0.8)
     timecop (0.9.1)
+    timers (4.3.0)
     tzinfo (1.2.4)
       thread_safe (~> 0.1)
     vegas (0.1.11)
@@ -205,6 +217,8 @@ PLATFORMS
 DEPENDENCIES
   3scale_backend!
   airbrake (= 4.3.1)
+  async-redis (~> 0.3.2)
+  async-rspec
   aws-sdk (= 2.4.2)
   benchmark-ips (~> 2.7.2)
   bugsnag (~> 6)
