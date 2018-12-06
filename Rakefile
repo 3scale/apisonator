@@ -229,7 +229,7 @@ if Environment.saas?
           $VERBOSE = prev_verbose_lvl
           LicenseFinder::CLI::Main.start [
             'report',
-            "--decisions-file=#{File.dirname(__FILE__)}/.dependency-decisions.yml",
+            "--decisions-file=#{File.dirname(__FILE__)}/.dependency_decisions.yml",
             '--format=xml'
           ]
         end
