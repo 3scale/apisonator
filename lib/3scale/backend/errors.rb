@@ -385,5 +385,10 @@ module ThreeScale
       end
     end
 
+    class DeleteServiceStatsValidationError < Error
+      def initialize(service_id, msg)
+        super "Delete stats job context validation error. Service: #{service_id}. Error: #{msg}"
+      end
+    end
   end
 end
