@@ -1,12 +1,10 @@
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
-SHELL = $(PROJECT_PATH)/script/make_report_time.sh
-BENCH = $(PROJECT_PATH)/bench.txt
 IMAGE_REPO = quay.io/3scale
 CI_IMAGE = $(IMAGE_REPO)/apisonator-ci
 
 .PHONY: default
-default: | clean test show_bench
+default: test
 
 .PHONY: test
 test: export BUILD_CI?=0
@@ -20,14 +18,6 @@ test:
 		$(PROJECT_PATH):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'cd && pwd')/apisonator:z \
 		-u $$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -u'):$$(docker run --rm $(IMAGE_NAME) /bin/bash -c 'id -g') \
 	$(DOCKER_OPTS) --name $(CONTAINER_NAME) $(IMAGE_NAME)
-
-.PHONY: clean
-clean:
-	-@ rm -f $(BENCH)
-
-.PHONY: show_bench
-show_bench:
-	@ cat $(BENCH)
 
 .PHONY: dev-clean
 dev-clean: CONTAINER_NAME=apisonator-dev
