@@ -4,7 +4,7 @@ IMAGE_REPO = quay.io/3scale
 CI_IMAGE = $(IMAGE_REPO)/apisonator-ci
 
 .PHONY: default
-default: | clean test
+default: | test
 
 .PHONY: test
 test: export BUILD_CI?=0
