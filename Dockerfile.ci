@@ -71,7 +71,7 @@ RUN cd ~/twemproxy-"${TWEMPROXY_VERSION}" \
     && rm -rf ~/twemproxy-"${TWEMPROXY_VERSION}"
 
 # Redis installation
-ARG REDIS_VERSION=2.8.19
+ARG REDIS_VERSION=3.2.12
 RUN curl -sSLf "https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz" \
     | tar -C "/home/${USER_NAME}" -xz
 
