@@ -4,11 +4,6 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
 
-  before(:all) do
-    ThreeScale::Backend::Storage.instance(true).flushdb
-    ThreeScale::Backend::Memoizer.reset!
-  end
-
   # Service IDs
   let(:service_id) { '1111' }
   let(:non_existing_service_id) { service_id.to_i.succ.to_s }
