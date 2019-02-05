@@ -80,7 +80,7 @@ class ReportTest < Test::Unit::TestCase
 
     # Check counters of '@application'
     usage_keys = all_periods.map do |period|
-      Stats::Keys.usage_value_key(@application.service_id, @application.id, @metric_id, period)
+      Stats::Keys.application_usage_value_key(@application.service_id, @application.id, @metric_id, period)
     end
 
     usages = storage.mget(usage_keys)
@@ -88,7 +88,7 @@ class ReportTest < Test::Unit::TestCase
 
     # Check counters of 'second_app'
     usage_keys = all_periods.map do |period|
-      Stats::Keys.usage_value_key(second_app.service_id, second_app.id, @metric_id, period)
+      Stats::Keys.application_usage_value_key(second_app.service_id, second_app.id, @metric_id, period)
     end
 
     usages = storage.mget(usage_keys)
@@ -96,10 +96,7 @@ class ReportTest < Test::Unit::TestCase
 
     # Check counters of the service (sum of the counters of the two apps)
     usage_keys = periods_service.map do |period|
-      # There's no way to build the key directly.
-      service_key_prefix = Stats::Keys.service_key_prefix(@service_id)
-      metric_key_prefix = Stats::Keys.metric_key_prefix(service_key_prefix, @metric_id)
-      Stats::Keys::counter_key(metric_key_prefix, period)
+      Stats::Keys.service_usage_value_key(@service_id, @metric_id, period)
     end
 
     usages = storage.mget(usage_keys)
