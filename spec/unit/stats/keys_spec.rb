@@ -90,8 +90,8 @@ module ThreeScale
           end
         end
 
-        describe '.usage_value_key' do
-          it_behaves_like 'usage keys', currify(:usage_value_key, app.service_id, app.id), "cinstance:#{app.id}"
+        describe '.application_usage_value_key' do
+          it_behaves_like 'usage keys', currify(:application_usage_value_key, app.service_id, app.id), "cinstance:#{app.id}"
         end
 
         describe '.user_usage_value_key' do
