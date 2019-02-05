@@ -96,7 +96,7 @@ GEM
       xml-simple
     metaclass (0.0.4)
     method_source (0.9.0)
-    mini_portile2 (2.3.0)
+    mini_portile2 (2.4.0)
     minitest (5.10.3)
     mocha (1.3.0)
       metaclass (~> 0.0.1)
@@ -110,8 +110,8 @@ GEM
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
     net-ssh (4.2.0)
-    nokogiri (1.8.3)
-      mini_portile2 (~> 2.3.0)
+    nokogiri (1.9.1)
+      mini_portile2 (~> 2.4.0)
     pg (0.20.0)
     pkg-config (1.1.9)
     power_assert (1.1.1)
@@ -217,7 +217,7 @@ DEPENDENCIES
   license_finder (~> 3.0.4)
   license_finder_xml_reporter!
   mocha (~> 1.3)
-  nokogiri (~> 1.8.3)
+  nokogiri (~> 1.9.1)
   pg (= 0.20.0)
   pkg-config (~> 1.1.7)
   pry (~> 0.11.3)
