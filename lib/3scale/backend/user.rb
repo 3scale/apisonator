@@ -77,13 +77,30 @@ module ThreeScale
       def self.delete!(service_id, username)
         service = Service.load_by_id(service_id)
         raise UserRequiresValidService if service.nil?
-        ServiceUserManagementUseCase.new(service, username).delete
-        clear_cache(service_id, username)
-        storage.del(self.key(service_id, username))
+        delete_users_in_batch(service_id, [username])
+      end
+
+      def self.delete_all(service_id)
+        service = Service.load_by_id(service_id)
+        raise UserRequiresValidService if service.nil?
+        current_scan_cursor_position = "0"
+        finished = false
+        users_set_key = service_users_set_key(service_id)
+        while !finished
+          (current_scan_cursor_position, current_usernames) =
+            storage.sscan(users_set_key, current_scan_cursor_position,
+                          { count: Storage::BATCH_SIZE })
+          delete_users_in_batch(service_id,  current_usernames)
+          finished = current_scan_cursor_position == "0"
+        end
       end
 
       def self.key(service_id, username)
         "service:#{service_id}/user:#{username}"
+      end
+
+      def self.service_users_set_key(service_id)
+        "service/id:#{service_id}/user_set"
       end
 
       def to_hash
@@ -140,6 +157,19 @@ module ThreeScale
       def self.clear_cache(service_id, user_id)
         key = Memoizer.build_key(self, :load_or_create!, service_id, user_id)
         Memoizer.clear key
+      end
+
+      def self.delete_users_in_batch(service_id, usernames)
+        if usernames.size != 0
+          service_usernames_keys = usernames.map { |username| self.key(service_id, username) }
+          storage.pipelined do
+            storage.del(service_usernames_keys)
+            storage.srem(self.service_users_set_key(service_id), usernames)
+          end
+          usernames.each do |username|
+            clear_cache(service_id, username)
+          end
+        end
       end
 
       def self.validate_attributes(attributes)

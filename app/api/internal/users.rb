@@ -44,6 +44,16 @@ module ThreeScale
             [400, headers, { status: :error, error: e.message }.to_json]
           end
         end
+
+        delete '' do |service_id|
+          begin
+            User.delete_all(service_id)
+            { status: :deleted}.to_json
+          rescue => e
+            [400, headers, { status: :error, error: e.message }.to_json]
+          end
+        end
+
       end
     end
   end

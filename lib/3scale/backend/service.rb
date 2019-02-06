@@ -257,7 +257,6 @@ module ThreeScale
 
       def delete_attributes
         keys = ATTRIBUTES.map { |attr| storage_key(attr) }
-        keys << storage_key(:user_set)
         keys << storage_key_by_provider(:id) if default_service?
         storage.del keys
       end
