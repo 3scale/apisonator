@@ -35,7 +35,8 @@ module TestHelpers
         end
 
         def mock_storage_client!
-          class << ::ThreeScale::Backend::Storage
+          require '3scale/backend/storage_async'
+          class << ::ThreeScale::Backend::StorageAsync::Client
             # ensure this does not get overwritten
             begin
               const_get(:RedisClientTest)
@@ -86,7 +87,7 @@ module TestHelpers
               attr_reader :inner
 
               def non_proxied_instances
-                ::ThreeScale::Backend::Storage.non_proxied_instances
+                ::ThreeScale::Backend::StorageAsync::Client.non_proxied_instances
               end
             end
             private_constant :RedisClientTest
@@ -114,7 +115,7 @@ module TestHelpers
         end
 
         def unmock_storage_client!
-          ::ThreeScale::Backend::Storage.singleton_class.instance_eval do
+          ::ThreeScale::Backend::StorageAsync::Client.singleton_class.instance_eval do
             remove_const :RedisClientTest
             remove_method :new
             alias_method :new, :orig_new
