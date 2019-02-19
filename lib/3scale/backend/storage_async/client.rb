@@ -24,6 +24,8 @@ module ThreeScale
         private_constant :HOST_PORT_REGEX
 
         class << self
+          attr_writer :instance
+
           def instance(reset = false)
             if reset || @instance.nil?
               @instance = new(configuration.redis)
@@ -40,6 +42,7 @@ module ThreeScale
 
           endpoint = Async::IO::Endpoint.tcp(host, port)
           @redis_async = Async::Redis::Client.new(endpoint)
+          @building_pipeline = false
         end
 
         # Now we are going to define the methods to run redis commands
@@ -130,8 +133,39 @@ module ThreeScale
           @redis_async.call(*args)
         end
 
+        # This method allows us to send pipelines like this:
+        # storage.pipelined do
+        #   storage.get('a')
+        #   storage.get('b')
+        # end
         def pipelined(&block)
-          # TODO
+          # This replaces the client with a Pipeline that accumulates the Redis
+          # commands run in a block and sends all of them in a single request.
+          #
+          # There's an important limitation: this assumes that the fiber will
+          # not yield in the block.
+
+          # When running a nested pipeline, we just need to continue
+          # accumulating commands.
+          if @building_pipeline
+            block.call
+            return
+          end
+
+          @building_pipeline = true
+
+          original = @redis_async
+          pipeline = Pipeline.new
+          @redis_async = pipeline
+
+          begin
+            block.call
+          ensure
+            @redis_async = original
+            @building_pipeline = false
+          end
+
+          pipeline.run(original)
         end
 
         def close
