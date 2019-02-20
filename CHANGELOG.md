@@ -2,6 +2,22 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.90.0 - 2019-02-20
+
+### Added
+
+- New endpoint in the internal API to delete the users of a service. [#38](https://github.com/3scale/apisonator/pull/38)
+
+### Changed
+
+- Updated rack to v2.0.6. [#63](https://github.com/3scale/apisonator/pull/63)
+- Updated Nokogiri to v1.9.1. [#70](https://github.com/3scale/apisonator/pull/70)
+
+### Fixed
+
+- Small fixes and improvements in the Makefiles and Dockerfiles used to build the docker images and the dev environment. [#61](https://github.com/3scale/apisonator/pull/61), [#64](https://github.com/3scale/apisonator/pull/64), [#67](https://github.com/3scale/apisonator/pull/67), [#68](https://github.com/3scale/apisonator/pull/68), [#69](https://github.com/3scale/apisonator/pull/69).
+
+
 ## 2.89.0 - 2018-10-23
 
 ### Added
