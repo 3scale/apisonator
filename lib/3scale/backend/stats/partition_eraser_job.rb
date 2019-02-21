@@ -7,7 +7,7 @@ module ThreeScale
       # Perform actual key deletion from a key partition definition
       class PartitionEraserJob < BackgroundJob
         # low priority queue
-        @queue = :main
+        @queue = :stats
 
         class << self
           include StorageHelpers
