@@ -8,6 +8,8 @@ module ThreeScale
         @queue = :stats
 
         class << self
+          include Configurable
+
           def perform_logged(_enqueue_time, service_id, applications, metrics, users,
                              from, to, context_info = {})
             job = DeleteJobDef.new(
@@ -25,9 +27,10 @@ module ThreeScale
 
             partition_generator = PartitionGenerator.new(stats_key_gen)
 
-            partition_generator.partitions(PARTITION_BATCH_SIZE).each do |idx|
+            partition_generator.partitions(configuration.stats.delete_partition_batch_size).each do |idx|
               Resque.enqueue(PartitionEraserJob, Time.now.getutc.to_f, service_id, applications,
-                             metrics, users, from, to, idx, PARTITION_BATCH_SIZE, context_info)
+                             metrics, users, from, to, idx,
+                             configuration.stats.delete_partition_batch_size, context_info)
             end
 
             [true, job.to_json]
