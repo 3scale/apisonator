@@ -1,8 +1,6 @@
 module ThreeScale
   module Backend
     module Stats
-      # TODO: from configuration
-      DELETE_BATCH_SIZE = 50
       # Job for deleting service stats
       # Perform actual key deletion from a key partition definition
       class PartitionEraserJob < BackgroundJob
@@ -11,6 +9,7 @@ module ThreeScale
 
         class << self
           include StorageHelpers
+          include Configurable
 
           def perform_logged(_enqueue_time, service_id, applications, metrics, users,
                              from, to, offset, length, context_info = {})
@@ -29,7 +28,7 @@ module ThreeScale
 
             stats_key_gen = KeyGenerator.new(stats_key_types)
 
-            stats_key_gen.keys.drop(offset).take(length).each_slice(DELETE_BATCH_SIZE) do |slice|
+            stats_key_gen.keys.drop(offset).take(length).each_slice(config.stats.delete_batch_size) do |slice|
               storage.del(slice)
             end
 
