@@ -102,8 +102,8 @@ RSpec.describe ThreeScale::Backend::Stats::DeleteJobDef do
       include_examples 'validation error'
     end
 
-    context 'applicatoins field constains element not string' do
-      let(:applications) { ['3', 6, '4'] }
+    context 'applicatoins field constains bad element' do
+      let(:applications) { ['3', {}, '4'] }
       include_examples 'validation error'
     end
 
@@ -117,8 +117,8 @@ RSpec.describe ThreeScale::Backend::Stats::DeleteJobDef do
       include_examples 'validation error'
     end
 
-    context 'metrics field constains element not string' do
-      let(:metrics) { ['3', 6, '4'] }
+    context 'metrics field constains element bad string' do
+      let(:metrics) { ['3', [], '4'] }
       include_examples 'validation error'
     end
 
@@ -132,8 +132,8 @@ RSpec.describe ThreeScale::Backend::Stats::DeleteJobDef do
       include_examples 'validation error'
     end
 
-    context 'users field constains element not string' do
-      let(:users) { ['3', 6, '4'] }
+    context 'users field constains element bad string' do
+      let(:users) { ['3', [], '4'] }
       include_examples 'validation error'
     end
   end
