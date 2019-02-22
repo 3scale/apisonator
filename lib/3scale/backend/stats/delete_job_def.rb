@@ -41,13 +41,19 @@ module ThreeScale
           raise_validation_error('from < to fields') if Time.at(to) < Time.at(from)
           # application is array
           raise_validation_error('applications field') unless applications.is_a? Array
-          raise_validation_error('applications values') unless applications.all? { |x| x.is_a? String }
+          raise_validation_error('applications values') unless applications.all? do |x|
+            x.is_a?(String) || x.is_a?(Integer)
+          end
           # metrics is array
           raise_validation_error('metrics field') unless metrics.is_a? Array
-          raise_validation_error('metrics values') unless metrics.all? { |x| x.is_a? String }
+          raise_validation_error('metrics values') unless metrics.all? do |x|
+            x.is_a?(String) || x.is_a?(Integer)
+          end
           # users is array
           raise_validation_error('users field') unless users.is_a? Array
-          raise_validation_error('users values') unless users.all? { |x| x.is_a? String }
+          raise_validation_error('users values') unless users.all? do |x|
+            x.is_a?(String) || x.is_a?(Integer)
+          end
         end
 
         def raise_validation_error(msg)
