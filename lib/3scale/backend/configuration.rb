@@ -48,7 +48,8 @@ module ThreeScale
       config.add_section(:queues, :master_name, :sentinels, :role,
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:redis, :url, :proxy, :sentinels, :role,
-                         :connect_timeout, :read_timeout, :write_timeout)
+                         :connect_timeout, :read_timeout, :write_timeout,
+                         :async)
       config.add_section(:analytics_redis, :server,
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:hoptoad, :service, :api_key)
