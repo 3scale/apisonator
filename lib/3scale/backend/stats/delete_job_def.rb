@@ -4,7 +4,7 @@ module ThreeScale
       class DeleteJobDef
         ATTRIBUTES = %i[service_id applications metrics users from to context_info].freeze
         private_constant :ATTRIBUTES
-        attr_accessor(*ATTRIBUTES)
+        attr_reader(*ATTRIBUTES)
 
         def self.attribute_names
           ATTRIBUTES
@@ -12,7 +12,7 @@ module ThreeScale
 
         def initialize(params = {})
           ATTRIBUTES.each do |key|
-            send("#{key}=", params[key]) unless params[key].nil?
+            instance_variable_set("@#{key}".to_sym, params[key]) unless params[key].nil?
           end
           validate
         end
