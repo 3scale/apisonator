@@ -25,9 +25,8 @@ module ThreeScale
 
             stats_key_gen = KeyGenerator.new(stats_key_types)
 
-            partition_generator = PartitionGenerator.new(stats_key_gen)
-
-            partition_generator.partitions(configuration.stats.delete_partition_batch_size).each do |idx|
+            # Generate partitions
+            0.step(stats_key_gen.keys.count, configuration.stats.delete_partition_batch_size).each do |idx|
               Resque.enqueue(PartitionEraserJob, Time.now.getutc.to_f, service_id, applications,
                              metrics, users, from, to, idx,
                              configuration.stats.delete_partition_batch_size, context_info)
