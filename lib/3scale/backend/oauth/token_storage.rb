@@ -94,7 +94,7 @@ module ThreeScale
                     Token.from_value token, service_id, value, ttl
                   end
                 end
-                .force.tap do
+                .tap do
                   # delete expired tokens (nil values) from token set
                   deltokens.each_slice(TOKEN_MAX_REDIS_SLICE_SIZE) do |delgrp|
                     storage.srem token_set, delgrp
@@ -185,10 +185,7 @@ module ThreeScale
             # TODO: provide a SSCAN interface with lazy enums because SMEMBERS
             # is prone to DoSing and timeouts
             def tokens_from(token_set)
-              # It is important that we make this a lazy enumerator. The
-              # laziness is maintained until some enumerator forces execution or
-              # the caller calls 'to_a' or 'force', whichever happens first.
-              storage.smembers(token_set).lazy
+              storage.smembers(token_set)
             end
 
             def tokens_n_keys(token_set, service_id)
@@ -198,15 +195,14 @@ module ThreeScale
                   Key.for token, service_id
                 end
               end
-              # Note: this is returning two lazy enumerators
+
               [token_groups, key_groups]
             end
 
-            # Provides grouped data (as sourced from the lazy iterators) which
-            # matches respectively in each array position, ie. 1st group of data
-            # contains a group of tokens, keys and values with ttls, and
-            # position N of the tokens group has key in position N of the keys
-            # group, and so on.
+            # Provides grouped data which matches respectively in each array
+            # position, ie. 1st group of data contains a group of tokens, keys
+            # and values with ttls, and position N of the tokens group has key
+            # in position N of the keys group, and so on.
             #
             # [[[token group], [key group], [value_with_ttls_group]], ...]
             #
