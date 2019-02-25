@@ -208,19 +208,24 @@ module ThreeScale
 
           context 'with multiple calls at the same moment (race condition)' do
             it 'returns falsey except for one successful case' do
-              num_threads = 4
+              # This test does not work when using the async storage. The async
+              # libs run async tasks inside Fibers and creating threads like in
+              # this test
+              unless ThreeScale::Backend.configuration.redis.async
+                num_threads = 4
 
-              threads = num_threads.times.map do
-                Thread.new { Thread.stop; EventStorage.ping_if_not_empty }
+                threads = num_threads.times.map do
+                  Thread.new { Thread.stop; EventStorage.ping_if_not_empty }
+                end
+
+                values = threads.each do |t|
+                  sleep 0.01 until t.stop?
+                end
+                  .map(&:wakeup)
+                  .map(&:value)
+
+                expect(values).to match_array([true] + [nil] * (num_threads - 1))
               end
-
-              values = threads.each do |t|
-                sleep 0.01 until t.stop?
-              end
-                .map(&:wakeup)
-                .map(&:value)
-
-              expect(values).to match_array([true] + [nil] * (num_threads - 1))
             end
           end
 
