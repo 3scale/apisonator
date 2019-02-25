@@ -6,9 +6,6 @@ module ThreeScale
       #
       class ResponseCodeServiceTypeFactory
         def self.create(job)
-          service_keypart = KeyPart.new(:service)
-          service_keypart << ServiceKeyPartGenerator.new(job)
-
           response_code_keypart = KeyPart.new(:response_code)
           response_code_keypart << ResponseCodeKeyPartGenerator.new(job)
 
@@ -17,8 +14,8 @@ module ThreeScale
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
-          KeyType.new(KeyPartFormatter::ResponseCodeServiceTypeFormatter.new).tap do |key_type|
-            key_type << service_keypart
+          formatter = KeyPartFormatter::ResponseCodeServiceTypeFormatter.new(job.service_id)
+          KeyType.new(formatter).tap do |key_type|
             key_type << response_code_keypart
             key_type << period_keypart
           end
@@ -30,9 +27,6 @@ module ThreeScale
       #
       class ResponseCodeApplicationTypeFactory
         def self.create(job)
-          service_keypart = KeyPart.new(:service)
-          service_keypart << ServiceKeyPartGenerator.new(job)
-
           application_keypart = KeyPart.new(:application)
           application_keypart << AppKeyPartGenerator.new(job)
 
@@ -44,8 +38,8 @@ module ThreeScale
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
-          KeyType.new(KeyPartFormatter::ResponseCodeApplicationTypeFormatter.new).tap do |key_type|
-            key_type << service_keypart
+          formatter = KeyPartFormatter::ResponseCodeApplicationTypeFormatter.new(job.service_id)
+          KeyType.new(formatter).tap do |key_type|
             key_type << application_keypart
             key_type << response_code_keypart
             key_type << period_keypart
@@ -58,9 +52,6 @@ module ThreeScale
       #
       class ResponseCodeUserTypeFactory
         def self.create(job)
-          service_keypart = KeyPart.new(:service)
-          service_keypart << ServiceKeyPartGenerator.new(job)
-
           user_keypart = KeyPart.new(:user)
           user_keypart << UserKeyPartGenerator.new(job)
 
@@ -72,8 +63,8 @@ module ThreeScale
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
-          KeyType.new(KeyPartFormatter::ResponseCodeUserTypeFormatter.new).tap do |key_type|
-            key_type << service_keypart
+          formatter = KeyPartFormatter::ResponseCodeUserTypeFormatter.new job.service_id
+          KeyType.new(formatter).tap do |key_type|
             key_type << user_keypart
             key_type << response_code_keypart
             key_type << period_keypart
@@ -86,9 +77,6 @@ module ThreeScale
       #
       class UsageServiceTypeFactory
         def self.create(job)
-          service_keypart = KeyPart.new(:service)
-          service_keypart << ServiceKeyPartGenerator.new(job)
-
           metric_keypart = KeyPart.new(:metric)
           metric_keypart << MetricKeyPartGenerator.new(job)
 
@@ -97,8 +85,8 @@ module ThreeScale
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
-          KeyType.new(KeyPartFormatter::UsageServiceTypeFormatter.new).tap do |key_type|
-            key_type << service_keypart
+          formatter = KeyPartFormatter::UsageServiceTypeFormatter.new job.service_id
+          KeyType.new(formatter).tap do |key_type|
             key_type << metric_keypart
             key_type << period_keypart
           end
@@ -110,9 +98,6 @@ module ThreeScale
       #
       class UsageApplicationTypeFactory
         def self.create(job)
-          service_keypart = KeyPart.new(:service)
-          service_keypart << ServiceKeyPartGenerator.new(job)
-
           metric_keypart = KeyPart.new(:metric)
           metric_keypart << MetricKeyPartGenerator.new(job)
 
@@ -124,8 +109,8 @@ module ThreeScale
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
-          KeyType.new(KeyPartFormatter::UsageApplicationTypeFormatter.new).tap do |key_type|
-            key_type << service_keypart
+          formatter = KeyPartFormatter::UsageApplicationTypeFormatter.new job.service_id
+          KeyType.new(formatter).tap do |key_type|
             key_type << metric_keypart
             key_type << application_keypart
             key_type << period_keypart
@@ -138,9 +123,6 @@ module ThreeScale
       #
       class UsageUserTypeFactory
         def self.create(job)
-          service_keypart = KeyPart.new(:service)
-          service_keypart << ServiceKeyPartGenerator.new(job)
-
           metric_keypart = KeyPart.new(:metric)
           metric_keypart << MetricKeyPartGenerator.new(job)
 
@@ -152,8 +134,8 @@ module ThreeScale
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
-          KeyType.new(KeyPartFormatter::UsageUserTypeFormatter.new).tap do |key_type|
-            key_type << service_keypart
+          formatter = KeyPartFormatter::UsageUserTypeFormatter.new job.service_id
+          KeyType.new(formatter).tap do |key_type|
             key_type << metric_keypart
             key_type << user_keypart
             key_type << period_keypart
