@@ -28,7 +28,12 @@ module ThreeScale
 
           def instance(reset = false)
             if reset || @instance.nil?
-              @instance = new(configuration.redis)
+              @instance = new(
+                  Storage::Helpers.config_with(
+                      configuration.redis,
+                      options: { default_url: "#{DEFAULT_HOST}:#{DEFAULT_PORT}" }
+                  )
+              )
             else
               @instance
             end
