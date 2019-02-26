@@ -1,4 +1,5 @@
-require '3scale/backend/stats/commons'
+require '3scale/backend/stats/codes_commons'
+require '3scale/backend/stats/period_commons'
 require '3scale/backend/stats/aggregator'
 require '3scale/backend/stats/delete_job_def'
 require '3scale/backend/stats/key_generator'

@@ -36,13 +36,13 @@ module ThreeScale
             end
 
             def values_to_inc(response_code)
-              keys = [Stats::Commons.get_http_code_group(response_code)]
+              keys = [Stats::CodesCommons.get_http_code_group(response_code)]
               keys << response_code.to_s if tracked_code?(response_code)
               keys
             end
 
             def tracked_code?(code)
-              Stats::Commons::TRACKED_CODES.include?(code)
+              Stats::CodesCommons::TRACKED_CODES.include?(code)
             end
           end
         end
