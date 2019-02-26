@@ -18,11 +18,11 @@ module ThreeScale
             keys.each do |metric_type, prefix_key|
               granularities(metric_type).each do |granularity|
                 key = counter_key(prefix_key, granularity.new(timestamp))
-                expire_time = Stats::Commons.expire_time_for_granularity(granularity)
+                expire_time = Stats::PeriodCommons.expire_time_for_granularity(granularity)
 
                 store_key(cmd, key, value, expire_time)
 
-                unless Stats::Commons::EXCLUDED_FOR_BUCKETS.include?(granularity)
+                unless Stats::PeriodCommons::EXCLUDED_FOR_BUCKETS.include?(granularity)
                   keys_for_bucket << key
                 end
               end
@@ -48,7 +48,7 @@ module ThreeScale
           protected
 
           def granularities(metric_type)
-            metric_type == :service ? Stats::Commons::SERVICE_GRANULARITIES : Stats::Commons::EXPANDED_GRANULARITIES
+            metric_type == :service ? Stats::PeriodCommons::SERVICE_GRANULARITIES : Stats::PeriodCommons::EXPANDED_GRANULARITIES
           end
 
           def store_key(cmd, key, value, expire_time = nil)

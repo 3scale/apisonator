@@ -36,7 +36,7 @@ module ThreeScale
         include KeyPartGenerator
 
         def items
-          Commons::TRACKED_CODES + Commons::HTTP_CODE_GROUPS_MAP.values
+          CodesCommons::TRACKED_CODES + CodesCommons::HTTP_CODE_GROUPS_MAP.values
         end
       end
 

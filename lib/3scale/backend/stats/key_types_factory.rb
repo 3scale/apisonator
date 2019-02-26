@@ -10,7 +10,7 @@ module ThreeScale
           response_code_keypart << ResponseCodeKeyPartGenerator.new(job)
 
           period_keypart = KeyPart.new(:period)
-          Commons::PERMANENT_SERVICE_GRANULARITIES.each do |granularity|
+          PeriodCommons::PERMANENT_SERVICE_GRANULARITIES.each do |granularity|
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
@@ -34,7 +34,7 @@ module ThreeScale
           response_code_keypart << ResponseCodeKeyPartGenerator.new(job)
 
           period_keypart = KeyPart.new(:period)
-          Commons::PERMANENT_EXPANDED_GRANULARITIES.each do |granularity|
+          PeriodCommons::PERMANENT_EXPANDED_GRANULARITIES.each do |granularity|
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
@@ -59,7 +59,7 @@ module ThreeScale
           response_code_keypart << ResponseCodeKeyPartGenerator.new(job)
 
           period_keypart = KeyPart.new(:period)
-          Commons::PERMANENT_EXPANDED_GRANULARITIES.each do |granularity|
+          PeriodCommons::PERMANENT_EXPANDED_GRANULARITIES.each do |granularity|
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
@@ -81,7 +81,7 @@ module ThreeScale
           metric_keypart << MetricKeyPartGenerator.new(job)
 
           period_keypart = KeyPart.new(:period)
-          Commons::PERMANENT_SERVICE_GRANULARITIES.each do |granularity|
+          PeriodCommons::PERMANENT_SERVICE_GRANULARITIES.each do |granularity|
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
@@ -105,7 +105,7 @@ module ThreeScale
           application_keypart << AppKeyPartGenerator.new(job)
 
           period_keypart = KeyPart.new(:period)
-          Commons::PERMANENT_EXPANDED_GRANULARITIES.each do |granularity|
+          PeriodCommons::PERMANENT_EXPANDED_GRANULARITIES.each do |granularity|
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
@@ -130,7 +130,7 @@ module ThreeScale
           user_keypart << UserKeyPartGenerator.new(job)
 
           period_keypart = KeyPart.new(:period)
-          Commons::PERMANENT_EXPANDED_GRANULARITIES.each do |granularity|
+          PeriodCommons::PERMANENT_EXPANDED_GRANULARITIES.each do |granularity|
             period_keypart << PERIOD_GENERATOR_MAP[granularity].new(job)
           end
 
