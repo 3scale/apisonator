@@ -8,14 +8,6 @@ module ThreeScale
         end
       end
 
-      class ServiceKeyPartGenerator
-        include KeyPartGenerator
-
-        def items
-          [job.service_id]
-        end
-      end
-
       class AppKeyPartGenerator
         include KeyPartGenerator
 
