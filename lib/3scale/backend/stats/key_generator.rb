@@ -4,7 +4,7 @@ module ThreeScale
       class KeyGenerator
         attr_reader :service_id, :applications, :metrics, :users, :from, :to
 
-        def initialize(service_id:, applications: [], metrics: [], users: [], from:, to:)
+        def initialize(service_id:, applications: [], metrics: [], users: [], from:, to:, **)
           @service_id = service_id
           @applications = applications
           @metrics = metrics
