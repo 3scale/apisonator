@@ -24,9 +24,7 @@ module ThreeScale
 
             validate_job(job, offset, length)
 
-            stats_key_types = KeyTypesFactory.create(job)
-
-            stats_key_gen = KeyGenerator.new(stats_key_types)
+            stats_key_gen = KeyGenerator.new(job.to_hash)
 
             stats_key_gen.keys.drop(offset).take(length).each_slice(config.stats.delete_batch_size) do |slice|
               storage.del(slice)
