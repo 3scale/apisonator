@@ -21,9 +21,7 @@ module ThreeScale
               to: to
             )
 
-            stats_key_types = KeyTypesFactory.create(job)
-
-            stats_key_gen = KeyGenerator.new(stats_key_types)
+            stats_key_gen = KeyGenerator.new(job.to_hash)
 
             # Generate partitions
             0.step(stats_key_gen.keys.count, configuration.stats.delete_partition_batch_size).each do |idx|
