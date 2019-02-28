@@ -11,7 +11,7 @@ module ThreeScale
 
         def application_usage(application, timestamp)
           usage application do |metric_id, period|
-            Stats::Keys.usage_value_key(
+            Stats::Keys.application_usage_value_key(
                 application.service_id, application.id, metric_id, period.new(timestamp))
           end
         end
