@@ -26,7 +26,7 @@ module ThreeScale
 
             stats_key_gen = KeyGenerator.new(job.to_hash)
 
-            stats_key_gen.keys.drop(offset).take(length).each_slice(config.stats.delete_batch_size) do |slice|
+            stats_key_gen.keys.drop(offset).take(length).each_slice(configuration.stats.delete_batch_size) do |slice|
               storage.del(slice)
             end
 
@@ -38,8 +38,6 @@ module ThreeScale
           private
 
           def validate_job(job, offset, length)
-            job.validate
-
             unless offset.is_a? Integer
               raise DeleteServiceStatsValidationError.new(job.service_id, 'offset field value ' \
                                                           "[#{offset}] validation error")
