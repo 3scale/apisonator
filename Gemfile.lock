@@ -49,12 +49,12 @@ GEM
     airbrake (4.3.1)
       builder
       multi_json
-    async (1.15.1)
+    async (1.15.2)
       nio4r (~> 2.3)
       timers (~> 4.1)
-    async-io (1.18.3)
+    async-io (1.18.5)
       async (~> 1.14)
-    async-redis (0.3.2)
+    async-redis (0.3.3)
       async (~> 1.8)
       async-io (~> 1.10)
     async-rspec (1.12.0)
@@ -217,7 +217,7 @@ PLATFORMS
 DEPENDENCIES
   3scale_backend!
   airbrake (= 4.3.1)
-  async-redis (~> 0.3.2)
+  async-redis (~> 0.3.3)
   async-rspec
   aws-sdk (= 2.4.2)
   benchmark-ips (~> 2.7.2)
