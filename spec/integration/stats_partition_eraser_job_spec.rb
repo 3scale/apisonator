@@ -24,8 +24,6 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
   let(:keys) { ThreeScale::Backend::Stats::KeyGenerator.new(job_params).keys }
 
   before :each do
-    storage.flushdb
-    ThreeScale::Backend::Worker::QUEUES.each { |queue| Resque.remove_queue(queue) }
     # populate all keys
     keys.each { |key| storage.set(key, 1) }
   end
@@ -38,9 +36,8 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
       # Try to process the job.
       ThreeScale::Backend::Worker.work(one_off: true)
       expect(keys.drop(offset).take(length).count).to be > 0
-      keys.drop(offset).take(length).each do |key|
-        expect(storage.get(key)).to be_nil
-      end
+      keys_to_be_deleted = keys.drop(offset).take(length)
+      expect(keys_to_be_deleted.none? { |key| storage.exists(key) })
     end
   end
 

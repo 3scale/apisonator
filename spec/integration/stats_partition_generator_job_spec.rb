@@ -22,7 +22,6 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionGeneratorJob do
   let(:num_keys_generated) { ThreeScale::Backend::Stats::KeyGenerator.new(job).keys.count }
 
   before :each do
-    ThreeScale::Backend::Worker::QUEUES.each { |queue| Resque.remove_queue(queue) }
     configuration.stats.delete_partition_batch_size = 100
   end
 
