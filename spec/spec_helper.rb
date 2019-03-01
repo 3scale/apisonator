@@ -48,6 +48,7 @@ RSpec.configure do |config|
 
   config.before :each do
     Resque::Failure.clear
+    ThreeScale::Backend::Worker::QUEUES.each { |queue| Resque.remove_queue(queue) }
     ThreeScale::Backend::Storage.instance(true).flushdb
     ThreeScale::Backend::Memoizer.reset!
   end
