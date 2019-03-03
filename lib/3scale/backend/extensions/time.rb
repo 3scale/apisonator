@@ -32,8 +32,32 @@ module ThreeScale
       #
       # That behavior does not happen with days ending with a 0:
       # Time.utc(2016, 1, 20, 0, 0, 0).to_compact_s # "20160120"
+
+      # Leap seconds would map to 60, so include it.
+      MODS = 61.times.map do |i|
+        i % 10
+      end.freeze
+      private_constant :MODS
+
+      DIVS = 61.times.map do |i|
+        i / 10
+      end.freeze
+      private_constant :DIVS
+
       def to_compact_s
-        strftime('%Y%m%d%H%M%S').sub(/0{0,6}$/, '')
+        s = year * 10000 +  month * 100 + day
+        if sec != 0
+          s = s * 100000 + hour * 1000 + min * 10
+          MODS[sec] == 0 ? s + DIVS[sec] : s * 10 + sec
+        elsif min != 0
+          s = s * 1000 + hour * 10
+          MODS[min] == 0 ? s + DIVS[min] : s * 10 + min
+        elsif hour != 0
+          s = s * 10
+          MODS[hour] == 0 ? s + DIVS[hour] : s * 10 + hour
+        else
+          s
+        end.to_s
       end
 
       def to_not_compact_s
