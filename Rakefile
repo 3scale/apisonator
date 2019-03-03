@@ -30,15 +30,24 @@ if Environment.saas?
     task :test => test_task_dependencies
 
     desc 'Benchmark'
-    task :bench do
+    task :bench, [:file] do |_, args|
       require 'benchmark/ips'
       require 'pathname'
       require File.dirname(__FILE__) + '/test/test_helpers/configuration'
 
-      FileList['bench/**/*_bench.rb'].each do |f|
-        bench = Pathname.new(f).relative_path_from(Pathname.new('./bench'))
-        puts "Running benchmark #{bench}"
-        load f
+      filelist = if args[:file]
+                   "#{args[:file].sub(/\Abench\//, '')}"
+                 else
+                   '**/*_bench.rb'
+                 end
+      FileList["#{File.dirname(__FILE__)}/bench/#{filelist}"].each do |f|
+        bench = Pathname.new(f).cleanpath
+        if bench.to_s.start_with?(File.dirname(__FILE__) + File::SEPARATOR)
+          puts "Running benchmark #{bench}"
+          load f
+        else
+          STDERR.puts "Ignoring path #{f} as it points outside the project"
+        end
       end
 
       puts "Benchmarks finished"
