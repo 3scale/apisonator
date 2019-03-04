@@ -19,11 +19,11 @@ module ThreeScale
           end
         end
 
-        private
-
         def new(options)
           Redis.new options
         end
+
+        private
 
         if ThreeScale::Backend.production?
           def get_options

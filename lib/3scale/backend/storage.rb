@@ -21,6 +21,10 @@ module ThreeScale
           storage_client_class.instance(reset)
         end
 
+        def new(options)
+          storage_client_class.new(options)
+        end
+
         private
 
         def storage_client_class
