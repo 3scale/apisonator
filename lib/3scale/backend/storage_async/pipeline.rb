@@ -6,6 +6,14 @@ module ThreeScale
       # request, instead of sending them one by one.
       class Pipeline
 
+        Error = Class.new StandardError
+
+        class PipelineSharedBetweenFibers < Error
+          def initialize
+            super 'several fibers are modifying the same Pipeline'
+          end
+        end
+
         # There are 2 groups of commands that need to be treated a bit
         # differently to follow the same interface as the redis-rb lib.
         # 1) The ones that need to return a bool when redis returns "1" or "0".
@@ -23,12 +31,20 @@ module ThreeScale
           # parameters for that command.
           # Ex: ['SET', 'some_key', 42].
           @commands = []
+
+          # Save the ID of the fiber that created the Pipeline so later we
+          # can check that this pipeline is not shared between fibers.
+          @fiber_id = Fiber.current.object_id
         end
 
         # In the async-redis lib, all the commands are run with .call:
         # client.call('GET', 'a'), client.call('SET', 'b', '1'), etc.
         # This method just accumulates the commands and their params.
         def call(*args)
+          if @fiber_id != Fiber.current.object_id
+            raise PipelineSharedBetweenFibers
+          end
+
           @commands << args
 
           # Some Redis commands in StorageAsync compare the result with 0.
