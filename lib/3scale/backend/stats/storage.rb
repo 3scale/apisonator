@@ -92,7 +92,7 @@ module ThreeScale
           def stats_storage_from_config
             options = Backend::Storage::Helpers.config_with(config.analytics_redis)
 
-            Redis.new(options)
+            Backend::Storage.new(options)
           end
 
           def config
