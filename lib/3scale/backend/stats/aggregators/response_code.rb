@@ -11,9 +11,6 @@ module ThreeScale
             include Keys
             include Base
 
-            TRACKED_CODES = [200, 404, 403, 500, 503].freeze
-            private_constant :TRACKED_CODES
-
             def aggregate(transaction, bucket = nil)
               keys_for_multiple_codes = keys_for_response_code(transaction)
               timestamp = transaction.timestamp
@@ -39,13 +36,13 @@ module ThreeScale
             end
 
             def values_to_inc(response_code)
-              keys = ["#{response_code / 100}XX"]
+              keys = [Stats::CodesCommons.get_http_code_group(response_code)]
               keys << response_code.to_s if tracked_code?(response_code)
               keys
             end
 
             def tracked_code?(code)
-              TRACKED_CODES.include?(code)
+              Stats::CodesCommons::TRACKED_CODES.include?(code)
             end
           end
         end
