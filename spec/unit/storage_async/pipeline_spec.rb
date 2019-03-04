@@ -30,6 +30,15 @@ module ThreeScale
               expect(subject.run(async_client)).to eq([nil, 'OK', '1'])
             end
           end
+
+          context 'When a fiber that is not the one that created the pipeline adds commands' do
+            it 'raises an error' do
+              pipeline = nil
+              Fiber.new { pipeline = Pipeline.new }.resume
+              expect { Fiber.new { pipeline.call('GET', 'some_key') }.resume }
+                  .to raise_error Pipeline::PipelineSharedBetweenFibers
+            end
+          end
         end
       end
     end
