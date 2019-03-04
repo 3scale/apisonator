@@ -1,5 +1,6 @@
 require 'rspec'
 require 'resque_spec'
+require 'async'
 
 if ENV['TEST_COVERAGE']
   require 'simplecov'
@@ -49,6 +50,19 @@ RSpec.configure do |config|
   config.before :each do
     ThreeScale::Backend::Storage.instance(true).flushdb
     ThreeScale::Backend::Memoizer.reset!
+  end
+
+  config.after :each do
+    ThreeScale::Backend::Storage.instance.close
+  end
+
+  config.around :each do |example|
+    Async.run do
+      # TODO: This is needed for the acceptance specs. Not sure why.
+      RSpec.current_example = example
+
+      example.run
+    end
   end
 end
 

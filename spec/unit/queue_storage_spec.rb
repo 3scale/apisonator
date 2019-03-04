@@ -2,8 +2,10 @@ require_relative '../spec_helper'
 
 module ThreeScale
   module Backend
-    describe QueueStorage do
-      describe "#connection" do
+    # Tests are run only when redis.async = false. These tests only check
+    # sentinels, which are not supported by the async client.
+    describe QueueStorage, if: false do
+      describe "#connection", if: ThreeScale::Backend.configuration.redis.async do
         let(:configuration) { ThreeScale::Backend::Configuration::Loader.new }
 
         context 'when environment is development' do

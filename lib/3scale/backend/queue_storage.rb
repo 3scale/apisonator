@@ -9,7 +9,7 @@ module ThreeScale
         options = Backend::Storage::Helpers.config_with(cfg.queues,
                                                         options: init_params)
 
-        Redis.new options
+        Storage.new(options)
       end
     end
   end

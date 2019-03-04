@@ -14,6 +14,7 @@ require 'nokogiri'
 require 'rack/test'
 require 'resque_unit'
 require 'timecop'
+require 'async'
 
 # Require test helpers.
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
@@ -34,4 +35,10 @@ class Test::Unit::TestCase
   include ThreeScale
   include ThreeScale::Backend
   include ThreeScale::Backend::Configurable
+
+  alias_method :original_run, :run
+
+  def run(*args, &blk)
+    Async.run { original_run(*args, &blk) }
+  end
 end

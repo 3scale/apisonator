@@ -272,7 +272,7 @@ RUN sudo chown -R "${USER_NAME}": /tmp/apisonator \
     && rbenv_update_env
 
 # specify all versions to be installed, partial versions also understood
-ARG RUBY_VERSIONS="2.2 2.3"
+ARG RUBY_VERSIONS="2.3"
 RUN cd /tmp/apisonator \
     && ruby_versions ${RUBY_VERSIONS}
 

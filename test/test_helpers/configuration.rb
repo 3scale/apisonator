@@ -7,4 +7,5 @@ ThreeScale::Backend.configure do |config|
   config.redshift.port = 5432
   config.redshift.dbname = 'test'
   config.redshift.user = 'postgres'
+  config.redis.async = true
 end

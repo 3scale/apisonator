@@ -27,6 +27,7 @@ group :test do
   gem 'rspec',         '~> 3.7.0', require: nil
   gem 'geminabox',     '~> 0.13.11', require: false
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
+  gem 'async-rspec'
 end
 
 group :development do
@@ -60,3 +61,4 @@ gem 'sinatra', '~> 2.0.3'
 gem 'sinatra-contrib', '~> 2.0.3'
 # Optional external error logging services
 gem 'bugsnag', '~> 6', require: nil
+gem 'async-redis', '~> 0.3.3', require: nil

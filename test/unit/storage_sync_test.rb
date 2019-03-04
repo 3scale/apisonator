@@ -2,43 +2,43 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class StorageTest < Test::Unit::TestCase
   def test_basic_operations
-    @storage = Storage.instance(true)
-    @storage.flushdb
-    assert_nil @storage.get('foo')
-    @storage.set('foo', 'bar')
-    assert_equal 'bar', @storage.get('foo')
+    storage = StorageSync.instance(true)
+    storage.del('foo')
+    assert_nil storage.get('foo')
+    storage.set('foo', 'bar')
+    assert_equal 'bar', storage.get('foo')
   end
 
   def test_redis_host_and_port
-    storage = Storage.send :new, url('127.0.0.1:6379')
+    storage = StorageSync.send :new, url('127.0.0.1:6379')
     assert_connection(storage)
   end
 
   def test_redis_url
-    storage = Storage.send :new, url('redis://127.0.0.1:6379/0')
+    storage = StorageSync.send :new, url('redis://127.0.0.1:6379/0')
     assert_connection(storage)
   end
 
   def test_redis_unix
-    storage = Storage.send :new, url('unix:///tmp/redis_unix.6379.sock')
+    storage = StorageSync.send :new, url('unix:///tmp/redis_unix.6379.sock')
     assert_connection(storage)
   end
 
   def test_redis_protected_url
     assert_nothing_raised do
-      Storage.send :new, url('redis://user:passwd@127.0.0.1:6379/0')
+      StorageSync.send :new, url('redis://user:passwd@127.0.0.1:6379/0')
     end
   end
 
   def test_redis_malformed_url
     assert_raise Storage::InvalidURI do
-      Storage.send :new, url('a_malformed_url:1:10')
+      StorageSync.send :new, url('a_malformed_url:1:10')
     end
   end
 
   def test_redis_url_without_scheme
     assert_nothing_raised do
-      Storage.send :new, url('foo')
+      StorageSync.send :new, url('foo')
     end
   end
 
@@ -47,7 +47,7 @@ class StorageTest < Test::Unit::TestCase
       url: 'redis://master-group-name',
       sentinels: ',redis://127.0.0.1:26379, ,    , 127.0.0.1:36379,'
     }
-    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
     assert_client_config(conn.client, url: config_obj[:url],
                                       sentinels: [{ host: '127.0.0.1', port: 26_379 },
@@ -59,7 +59,7 @@ class StorageTest < Test::Unit::TestCase
       url: 'redis://master-group-name',
       sentinels: 'redis://user:passw\,ord@127.0.0.1:26379 ,127.0.0.1:36379, ,'
     }
-    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
     assert_client_config(conn.client, url: config_obj[:url],
                                       sentinels: [{ host: '127.0.0.1', port: 26_379 },
@@ -71,7 +71,7 @@ class StorageTest < Test::Unit::TestCase
       url: 'redis://master-group-name',
       sentinels: ['redis://127.0.0.1:26379 ', ' 127.0.0.1:36379', nil]
     }
-    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
     assert_client_config(conn.client, url: config_obj[:url],
                                       sentinels: [{ host: '127.0.0.1', port: 26_379 },
@@ -86,7 +86,7 @@ class StorageTest < Test::Unit::TestCase
                   { host: '127.0.0.1', port: 36_379 },
                   nil]
     }
-    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
     assert_client_config(conn.client, url: config_obj[:url],
                                       sentinels: config_obj[:sentinels].compact.reject(&:empty?))
@@ -98,7 +98,7 @@ class StorageTest < Test::Unit::TestCase
       sentinels: 'redis://127.0.0.1:26379,a_malformed_url:1:10'
     }
     assert_raise Storage::InvalidURI do
-      Storage.send :new, Storage::Helpers.config_with(config_obj)
+      StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     end
   end
 
@@ -107,7 +107,7 @@ class StorageTest < Test::Unit::TestCase
       url: 'master-group-name', # url of the sentinel master name conf
       sentinels: 'redis://127.0.0.1:26379'
     }
-    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
     assert_client_config(conn.client, url: "redis://#{config_obj[:url]}",
                                       sentinels: [{ host: '127.0.0.1', port: 26_379 }])
@@ -121,7 +121,7 @@ class StorageTest < Test::Unit::TestCase
                   { host: '192.168.1.2', port: nil },
                   { host: '127.0.0.1', port: 36379 }]
     }
-    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
     assert_client_config(conn.client, url: config_obj[:url],
                                       sentinels: [{ host: '127.0.0.1', port: default_sentinel_port },
@@ -138,7 +138,7 @@ class StorageTest < Test::Unit::TestCase
                   '192.168.1.1', '127.0.0.1:36379',
                   'redis://127.0.0.1:46379']
     }
-    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn.client)
     assert_client_config(conn.client, url: config_obj[:url],
                                       sentinels: [{ host: '127.0.0.2', port: default_sentinel_port },
@@ -155,7 +155,7 @@ class StorageTest < Test::Unit::TestCase
         sentinels: 'redis://127.0.0.1:26379',
         role: role
       }
-      conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+      conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
       assert_sentinel_connector(conn.client)
       assert_client_config(conn.client, url: config_obj[:url],
                                         sentinels: [{ host: '127.0.0.1', port: 26_379 }],
@@ -186,13 +186,13 @@ class StorageTest < Test::Unit::TestCase
 
   def test_redis_no_scheme
     assert_nothing_raised do
-      Storage.send :new, url('backend-redis:6379')
+      StorageSync.send :new, url('backend-redis:6379')
     end
   end
 
   def test_redis_unknown_scheme
     assert_raise ArgumentError do
-      Storage.send :new, url('myscheme://127.0.0.1:6379')
+      StorageSync.send :new, url('myscheme://127.0.0.1:6379')
     end
   end
 

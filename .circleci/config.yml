@@ -64,11 +64,6 @@ jobs:
 
       #run tests!
       - run:
-          name: Run tests on Ruby 2.2
-          command: |
-            TEST_RUBY_VERSION=2.2 script/ci
-
-      - run:
           name: Run tests on Ruby 2.3
           command: |
             TEST_RUBY_VERSION=2.3 script/ci
