@@ -31,7 +31,7 @@ module ThreeScale
         end
 
         def response_codes
-          CodesCommons::TRACKED_CODES + CodesCommons::HTTP_CODE_GROUPS_MAP.values
+          CodesCommons::TRACKED_CODES + CodesCommons::TRACKED_CODE_GROUPS
         end
 
         def response_code_service_keys
