@@ -2,6 +2,18 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+
+## 2.91.0 - 2019-03-05
+
+### Added
+
+- New endpoint in the internal API to delete the stats of a service. [#72](https://github.com/3scale/apisonator/pull/72), [#73](https://github.com/3scale/apisonator/pull/73), [#74](https://github.com/3scale/apisonator/pull/74), [#78](https://github.com/3scale/apisonator/pull/78), [#82](https://github.com/3scale/apisonator/pull/82).
+
+### Changed
+
+- Rakefile now accepts a list of files as an argument in the "bench" target [#79](https://github.com/3scale/apisonator/pull/79)
+
+
 ## 2.90.0 - 2019-02-20
 
 ### Added
