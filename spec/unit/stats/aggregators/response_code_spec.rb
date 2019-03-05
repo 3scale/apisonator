@@ -41,9 +41,17 @@ module ThreeScale
               transaction.response_code = "4xx9"
               expect(aggregator.aggregate(transaction).length).to eq(0)
             end
+            
+            it 'returns empty for 100 response_codes' do
+              transaction.response_code = "100"
+              expect(aggregator.aggregate(transaction).length).to eq(0)
+            end
 
+            it 'returns empty for 304 response_codes' do
+              transaction.response_code = "304"
+              expect(aggregator.aggregate(transaction).length).to eq(0)
+            end
           end
-
         end
       end
     end
