@@ -1,7 +1,6 @@
 require '3scale/backend/configuration'
 require '3scale/backend/logging/worker'
 require '3scale/backend/logging/external'
-require '3scale/backend/job_fetcher'
 
 module ThreeScale
   module Backend
@@ -10,21 +9,27 @@ module ThreeScale
     # this stripping is that the resque one does fork before processing each job, and that
     # is too slow.
 
-    class Worker
+    # This is a module that's meant to be included from the different workers.
+    # Now we have WorkerSync and WorkerAsync. Those classes need to implement
+    # #work, which is responsible for fetching jobs from the queue and running
+    # them by calling perform(job).
+    module Worker
       include Resque::Helpers
       include Configurable
-
-      def initialize(options)
-        trap('TERM') { shutdown }
-        trap('INT')  { shutdown }
-
-        @one_off = options[:one_off]
-      end
 
       def self.new(options = {})
         Logging::Worker.configure_logging(self, options[:log_file])
         Logging::External.setup_worker
-        super
+
+        if options[:async]
+          # Conditional require is done to require async-* libs only when
+          # needed and avoid possible side-effects.
+          require '3scale/backend/worker_async'
+          WorkerAsync.new(options)
+        else
+          require '3scale/backend/worker_sync'
+          WorkerSync.new(options)
+        end
       end
 
       # == Options
@@ -33,24 +38,12 @@ module ThreeScale
       #
       def self.work(options = {})
         Process.setproctitle("3scale_backend_worker #{Backend::VERSION}")
+        options[:async] = configuration.redis.async
         new(options).work
       end
 
       def work
-        job_fetcher = JobFetcher.new
-
-        register_worker
-
-        loop do
-          break if @shutdown
-
-          job = job_fetcher.fetch
-          perform(job) if job
-
-          break if one_off?
-        end
-
-        unregister_worker
+        raise 'Missing implementation of #work'
       end
 
       def shutdown
