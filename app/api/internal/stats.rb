@@ -6,6 +6,9 @@ module ThreeScale
           respond_with_404('service not found') unless Service.exists?(params[:service_id])
         end
 
+        # This is very slow and needs to be disabled until the performance
+        # issues are solved. In the meanwhile, the job will just return OK.
+=begin
         delete '' do |service_id|
           delete_stats_job_attrs = api_params Stats::DeleteJobDef
           delete_stats_job_attrs[:service_id] = service_id
@@ -18,6 +21,10 @@ module ThreeScale
           else
             { status: :to_be_deleted }.to_json
           end
+=end
+
+        delete '' do |service_id|
+          { status: :to_be_deleted }.to_json
         end
       end
     end
