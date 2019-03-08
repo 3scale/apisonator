@@ -2,6 +2,12 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.91.1 - 2019-03-08
+
+### Changed
+
+- The endpoint of the internal API to delete stats of a service has been disabled because of performance issues. It will be re-enabled once those are solved. [#87](https://github.com/3scale/apisonator/pull/87)
+
 
 ## 2.91.0 - 2019-03-05
 
