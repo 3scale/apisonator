@@ -76,7 +76,7 @@ RSpec.describe ThreeScale::Backend::Stats::KeyGenerator do
     end
   end
 
-  subject { described_class.new(job_params).keys }
+  subject { described_class.new(job_params).keys.to_a }
 
   context 'responsecode_service keys' do
     it 'include expected keys' do
