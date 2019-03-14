@@ -61,6 +61,18 @@ module ThreeScale
       config.add_section(:master, :metrics)
       config.add_section(:worker_prometheus_metrics, :enabled, :port)
 
+      config.add_section(
+          :async_worker,
+
+          # Max number of jobs in the reactor
+          :max_concurrent_jobs,
+          # Max number of jobs in memory pending to be added to the reactor
+          :max_pending_jobs,
+          # Seconds to wait before fetching more jobs when the number of jobs
+          # in memory has reached max_pending_jobs.
+          :seconds_before_fetching_more
+      )
+
       # Configure nested fields
       master_metrics = [:transactions, :transactions_authorize]
       config.master.metrics = Struct.new(*master_metrics).new
