@@ -2,6 +2,7 @@ module ThreeScale
   module Backend
     class JobFetcher
       include Resque::Helpers
+      include Configurable
 
       # the order is relevant
       QUEUES = [:priority, :main, :stats].freeze
@@ -10,11 +11,23 @@ module ThreeScale
       REDIS_TIMEOUT = 60
       private_constant :REDIS_TIMEOUT
 
+      DEFAULT_MAX_PENDING_JOBS = 100
+      private_constant :DEFAULT_MAX_PENDING_JOBS
+
+      DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS = 1.0/100
+      private_constant :DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS
+
       # The default redis_client is the one defined in Resque::Helpers
       def initialize(redis_client: redis, fetch_timeout: REDIS_TIMEOUT)
         @redis = redis_client
         @fetch_timeout = fetch_timeout
         @queues ||= QUEUES.map { |q| "queue:#{q}" }
+
+        @max_pending_jobs = configuration.async_worker.max_pending_jobs ||
+            DEFAULT_MAX_PENDING_JOBS
+
+        @wait_before_fetching_more = configuration.async_worker.seconds_before_fetching_more ||
+            DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS
       end
 
       def fetch
@@ -43,6 +56,27 @@ module ThreeScale
           Worker.logger.notify(e)
           nil
         end
+      end
+
+      # Note: this method calls #close on job_queue after receiving #shutdown.
+      # That signals to the caller that there won't be any more jobs.
+      def start(job_queue)
+        loop do
+          break if @shutdown
+
+          if job_queue.size >= @max_pending_jobs
+            sleep @wait_before_fetching_more
+          else
+            job = fetch
+            job_queue << job if job
+          end
+        end
+
+        job_queue.close
+      end
+
+      def shutdown
+        @shutdown = true
       end
     end
   end
