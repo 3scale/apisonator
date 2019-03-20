@@ -24,11 +24,11 @@ Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file
 ThreeScale::Backend::Worker.new
 
 Test::Unit.at_start do
-  TestHelpers::Storage::Mock.mock_storage_client!
+  TestHelpers::Storage::Mock.mock_storage_clients
 end
 
 Test::Unit.at_exit do
-  TestHelpers::Storage::Mock.unmock_storage_client!
+  TestHelpers::Storage::Mock.unmock_storage_clients
 end
 
 class Test::Unit::TestCase

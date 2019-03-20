@@ -38,11 +38,11 @@ RSpec.configure do |config|
     require_relative '../test/test_helpers/configuration'
     require_relative '../test/test_helpers/storage'
 
-    TestHelpers::Storage::Mock.mock_storage_client!
+    TestHelpers::Storage::Mock.mock_storage_clients
   end
 
   config.after :suite do
-    TestHelpers::Storage::Mock.unmock_storage_client!
+    TestHelpers::Storage::Mock.unmock_storage_clients
   end
 
   config.mock_with :rspec
