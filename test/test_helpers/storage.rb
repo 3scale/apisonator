@@ -1,3 +1,6 @@
+require '3scale/backend/storage_async'
+require '3scale/backend/storage_sync'
+
 module TestHelpers
   module Storage
     # Test::Unit hooks, just include TestHelpers::Storage in a testcase if you
@@ -10,13 +13,13 @@ module TestHelpers
 
     module Hooks
       def startup
-        Mock.mock_storage_client!
+        Mock.mock_storage_clients
         super
       end
 
       def shutdown
         super
-        Mock.unmock_storage_client!
+        Mock.unmock_storage_clients
       end
     end
     private_constant :Hooks
@@ -24,6 +27,12 @@ module TestHelpers
     module Mock
       DEFAULT_NODES = ["127.0.0.1:7379", "127.0.0.1:7380"].freeze
       private_constant :DEFAULT_NODES
+
+      STORAGE_CLASSES = [
+          ThreeScale::Backend::StorageAsync::Client,
+          ThreeScale::Backend::StorageSync
+      ].freeze
+      private_constant :STORAGE_CLASSES
 
       class << self
         def set_nodes(*nodes)
@@ -34,9 +43,18 @@ module TestHelpers
           @nodes || DEFAULT_NODES
         end
 
-        def mock_storage_client!
-          require '3scale/backend/storage_async'
-          class << ::ThreeScale::Backend::StorageAsync::Client
+        def mock_storage_clients
+          STORAGE_CLASSES.each { |klass| mock_storage_client!(klass) }
+        end
+
+        def unmock_storage_clients
+          STORAGE_CLASSES.each { |klass| unmock_storage_client!(klass) }
+        end
+
+        private
+
+        def mock_storage_client!(storage_client_class)
+          class << storage_client_class
             # ensure this does not get overwritten
             begin
               const_get(:RedisClientTest)
@@ -87,7 +105,17 @@ module TestHelpers
               attr_reader :inner
 
               def non_proxied_instances
-                ::ThreeScale::Backend::StorageAsync::Client.non_proxied_instances
+                klass = case inner
+                        when ThreeScale::Backend::StorageAsync::Client
+                          inner.class
+                        when Redis
+                          # inner is a Redis instance when using the sync storage
+                          ThreeScale::Backend::StorageSync
+                        else
+                          raise 'Unknown inner storage class'
+                        end
+
+                klass.non_proxied_instances
               end
             end
             private_constant :RedisClientTest
@@ -114,8 +142,8 @@ module TestHelpers
           end
         end
 
-        def unmock_storage_client!
-          ::ThreeScale::Backend::StorageAsync::Client.singleton_class.instance_eval do
+        def unmock_storage_client!(storage_client_class)
+          storage_client_class.singleton_class.instance_eval do
             remove_const :RedisClientTest
             remove_method :new
             alias_method :new, :orig_new
