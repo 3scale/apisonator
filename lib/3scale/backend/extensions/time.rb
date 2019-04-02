@@ -6,7 +6,7 @@ module ThreeScale
       ONE_DAY    = 24 * ONE_HOUR
 
       def beginning_of_bucket(seconds_in_bucket)
-        if seconds_in_bucket > 30 || seconds_in_bucket < 1 || !seconds_in_bucket.is_a?(Fixnum)
+        if seconds_in_bucket > 30 || seconds_in_bucket < 1 || !seconds_in_bucket.is_a?(Integer)
           raise Exception, "seconds_in_bucket cannot be larger than 30 seconds or smaller than 1"
         end
         norm_sec = (sec/seconds_in_bucket)*seconds_in_bucket
