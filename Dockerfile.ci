@@ -104,7 +104,7 @@ RUN cd "${RBENV_ROOT}" \
     || (git fetch --prune --depth 1 origin tag "${RBENV_TAG}" \
     && git checkout -q -f "${RBENV_TAG}"))
 
-ARG RBENV_RUBYBUILD_TAG=v20180224
+ARG RBENV_RUBYBUILD_TAG=v20190130
 RUN cd "${RBENV_RUBYBUILD_ROOT}" \
     && (git checkout -q -f "${RBENV_RUBYBUILD_TAG}" 2> /dev/null \
     || (git fetch --prune --depth 1 origin tag "${RBENV_RUBYBUILD_TAG}" \
@@ -272,7 +272,7 @@ RUN sudo chown -R "${USER_NAME}": /tmp/apisonator \
     && rbenv_update_env
 
 # specify all versions to be installed, partial versions also understood
-ARG RUBY_VERSIONS="2.2 2.3"
+ARG RUBY_VERSIONS="2.2 2.3 2.6"
 RUN cd /tmp/apisonator \
     && ruby_versions ${RUBY_VERSIONS}
 

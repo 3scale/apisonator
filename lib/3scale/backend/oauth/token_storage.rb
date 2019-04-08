@@ -112,7 +112,7 @@ module ThreeScale
             # user_id, but we are currently not doing that.
             #
             def remove_tokens(service_id, app_id, user_id = nil)
-              filter = lambda do |_t, _k, v, _ttl|
+              filter = lambda do |(_t, _k, v, _ttl)|
                 user_id == Value.from(v).last
               end if user_id
               remove_tokens_by service_id, app_id, &filter

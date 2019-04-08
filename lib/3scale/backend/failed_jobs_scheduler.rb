@@ -19,8 +19,12 @@ module ThreeScale
       MAX_JOBS_TO_RESCHEDULE = 20_000
       private_constant :MAX_JOBS_TO_RESCHEDULE
 
+      # Needed only for Ruby < 2.4. Remove after we drop support for < 2.4.
       PATTERN_FIXNUM_JOB_ERROR = /undefined method `\[\]=' for .*:Fixnum*/.freeze
       private_constant :PATTERN_FIXNUM_JOB_ERROR
+
+      PATTERN_INTEGER_JOB_ERROR = /undefined method `\[\]=' for .*:Integer*/.freeze
+      private_constant :PATTERN_INTEGER_JOB_ERROR
 
       NO_JOBS_IN_QUEUE_ERROR = "undefined method `[]=' for nil:NilClass".freeze
       private_constant :NO_JOBS_IN_QUEUE_ERROR
@@ -122,7 +126,7 @@ module ThreeScale
           # We need to make sure that we remove 'jobs' like this from the
           # queue, otherwise, they'll be retried forever.
 
-          if PATTERN_FIXNUM_JOB_ERROR =~ error_msg
+          if PATTERN_FIXNUM_JOB_ERROR =~ error_msg || PATTERN_INTEGER_JOB_ERROR =~ error_msg
             true
           elsif NO_JOBS_IN_QUEUE_ERROR == error_msg
             false
