@@ -19,7 +19,16 @@ function do_license_check()
 
 function do_test()
 {
-    bundle_exec rake "$@"
+    echo "Running tests using the $1 Redis driver"
+
+    case $1 in
+    sync)
+        CONFIG_REDIS_ASYNC=false bundle_exec rake
+        ;;
+    async)
+        CONFIG_REDIS_ASYNC=true bundle_exec rake
+        ;;
+    esac
 }
 
 function run_tests()
@@ -32,7 +41,7 @@ function run_tests()
 
     export RACK_ENV=test
 
-    do_license_check && do_test
+    do_license_check && do_test "sync" && do_test "async"
 }
 
 trap 'cleanup' INT

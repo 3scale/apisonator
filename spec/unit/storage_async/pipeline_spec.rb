@@ -10,6 +10,11 @@ module ThreeScale
 
           subject { Pipeline.new }
 
+          # Spec helpers make sure to cleanup instances of Storage, but in this
+          # case, we are using the client directly with a host/port so we need
+          # this to call flushdb().
+          before { async_client.flushdb! }
+
           context 'When the list of commands is empty' do
             it 'returns an empty array' do
               expect(subject.run(async_client)).to be_empty
