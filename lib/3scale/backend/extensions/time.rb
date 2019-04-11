@@ -44,6 +44,11 @@ module ThreeScale
       end.freeze
       private_constant :DIVS
 
+      # This function is equivalent to:
+      # strftime('%Y%m%d%H%M%S').sub(/0{0,6}$/, '').
+      #
+      # When profiling, we found that this method was one of the ones which
+      # consumed more CPU time so we decided to optimize it.
       def to_compact_s
         s = year * 10000 +  month * 100 + day
         if sec != 0
