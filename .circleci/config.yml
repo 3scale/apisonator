@@ -74,6 +74,11 @@ jobs:
             TEST_RUBY_VERSION=2.3 script/ci
 
       - run:
+          name: Run tests on Ruby 2.5
+          command: |
+            TEST_RUBY_VERSION=2.5 script/ci
+
+      - run:
           name: Run tests on Ruby 2.6
           command: |
             TEST_RUBY_VERSION=2.6 script/ci
