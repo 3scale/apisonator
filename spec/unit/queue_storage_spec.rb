@@ -11,7 +11,7 @@ module ThreeScale
           subject(:conn)    { QueueStorage.connection(environment, configuration) }
 
           it 'returns a non sentinel connection' do
-            connector = conn.client.instance_variable_get(:@connector)
+            connector = conn.instance_variable_get(:@client).instance_variable_get(:@connector)
             expect(connector).to_not be_an_instance_of(Redis::Client::Connector::Sentinel)
           end
         end
@@ -35,7 +35,7 @@ module ThreeScale
             end
 
             it 'returns a sentinel connection' do
-              connector = conn.client.instance_variable_get(:@connector)
+              connector = conn.instance_variable_get(:@client).instance_variable_get(:@connector)
               expect(connector).to be_an_instance_of(Redis::Client::Connector::Sentinel)
             end
           end

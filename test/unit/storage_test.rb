@@ -48,10 +48,10 @@ class StorageTest < Test::Unit::TestCase
       sentinels: ',redis://127.0.0.1:26379, ,    , 127.0.0.1:36379,'
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn.client)
-    assert_client_config(conn.client, url: config_obj[:url],
-                                      sentinels: [{ host: '127.0.0.1', port: 26_379 },
-                                                  { host: '127.0.0.1', port: 36_379 }])
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: config_obj[:url],
+                               sentinels: [{ host: '127.0.0.1', port: 26_379 },
+                                           { host: '127.0.0.1', port: 36_379 }])
   end
 
   def test_sentinels_connection_string_escaped
@@ -60,10 +60,10 @@ class StorageTest < Test::Unit::TestCase
       sentinels: 'redis://user:passw\,ord@127.0.0.1:26379 ,127.0.0.1:36379, ,'
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn.client)
-    assert_client_config(conn.client, url: config_obj[:url],
-                                      sentinels: [{ host: '127.0.0.1', port: 26_379 },
-                                                  { host: '127.0.0.1', port: 36_379 }])
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: config_obj[:url],
+                               sentinels: [{ host: '127.0.0.1', port: 26_379 },
+                                           { host: '127.0.0.1', port: 36_379 }])
   end
 
   def test_sentinels_connection_array_strings
@@ -72,10 +72,10 @@ class StorageTest < Test::Unit::TestCase
       sentinels: ['redis://127.0.0.1:26379 ', ' 127.0.0.1:36379', nil]
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn.client)
-    assert_client_config(conn.client, url: config_obj[:url],
-                                      sentinels: [{ host: '127.0.0.1', port: 26_379 },
-                                                  { host: '127.0.0.1', port: 36_379 }])
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: config_obj[:url],
+                               sentinels: [{ host: '127.0.0.1', port: 26_379 },
+                                           { host: '127.0.0.1', port: 36_379 }])
   end
 
   def test_sentinels_connection_array_hashes
@@ -87,9 +87,9 @@ class StorageTest < Test::Unit::TestCase
                   nil]
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn.client)
-    assert_client_config(conn.client, url: config_obj[:url],
-                                      sentinels: config_obj[:sentinels].compact.reject(&:empty?))
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: config_obj[:url],
+                               sentinels: config_obj[:sentinels].compact.reject(&:empty?))
   end
 
   def test_sentinels_malformed_url
@@ -108,9 +108,9 @@ class StorageTest < Test::Unit::TestCase
       sentinels: 'redis://127.0.0.1:26379'
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn.client)
-    assert_client_config(conn.client, url: "redis://#{config_obj[:url]}",
-                                      sentinels: [{ host: '127.0.0.1', port: 26_379 }])
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: "redis://#{config_obj[:url]}",
+                               sentinels: [{ host: '127.0.0.1', port: 26_379 }])
   end
 
   def test_sentinels_array_hashes_default_port
@@ -122,12 +122,12 @@ class StorageTest < Test::Unit::TestCase
                   { host: '127.0.0.1', port: 36379 }]
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn.client)
-    assert_client_config(conn.client, url: config_obj[:url],
-                                      sentinels: [{ host: '127.0.0.1', port: default_sentinel_port },
-                                                  { host: '192.168.1.1', port: default_sentinel_port },
-                                                  { host: '192.168.1.2', port: default_sentinel_port },
-                                                  { host: '127.0.0.1', port: 36379 }])
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: config_obj[:url],
+                               sentinels: [{ host: '127.0.0.1', port: default_sentinel_port },
+                                           { host: '192.168.1.1', port: default_sentinel_port },
+                                           { host: '192.168.1.2', port: default_sentinel_port },
+                                           { host: '127.0.0.1', port: 36379 }])
   end
 
   def test_sentinels_array_strings_default_port
@@ -139,13 +139,13 @@ class StorageTest < Test::Unit::TestCase
                   'redis://127.0.0.1:46379']
     }
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn.client)
-    assert_client_config(conn.client, url: config_obj[:url],
-                                      sentinels: [{ host: '127.0.0.2', port: default_sentinel_port },
-                                                  { host: '127.0.0.1', port: default_sentinel_port },
-                                                  { host: '192.168.1.1', port: default_sentinel_port },
-                                                  { host: '127.0.0.1', port: 36379 },
-                                                  { host: '127.0.0.1', port: 46379 }])
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: config_obj[:url],
+                               sentinels: [{ host: '127.0.0.2', port: default_sentinel_port },
+                                           { host: '127.0.0.1', port: default_sentinel_port },
+                                           { host: '192.168.1.1', port: default_sentinel_port },
+                                           { host: '127.0.0.1', port: 36379 },
+                                           { host: '127.0.0.1', port: 46379 }])
   end
 
   def test_sentinels_correct_role
@@ -156,10 +156,10 @@ class StorageTest < Test::Unit::TestCase
         role: role
       }
       conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
-      assert_sentinel_connector(conn.client)
-      assert_client_config(conn.client, url: config_obj[:url],
-                                        sentinels: [{ host: '127.0.0.1', port: 26_379 }],
-                                        role: role)
+      assert_sentinel_connector(conn)
+      assert_client_config(conn, url: config_obj[:url],
+                                 sentinels: [{ host: '127.0.0.1', port: 26_379 }],
+                                 role: role)
     end
   end
 
@@ -216,11 +216,12 @@ class StorageTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_connector(client)
-    connector = client.instance_variable_get(:@connector)
+    connector = client.instance_variable_get(:@client).instance_variable_get(:@connector)
     assert_instance_of Redis::Client::Connector::Sentinel, connector
   end
 
-  def assert_client_config(client, url:, **conf)
+  def assert_client_config(conn, url:, **conf)
+    client = conn.instance_variable_get(:@client)
     assert_equal client.options[:url], url
     conf.each do |k, v|
       assert_equal v, client.options[k]
