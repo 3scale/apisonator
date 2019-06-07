@@ -174,8 +174,8 @@ module ThreeScale
           #   "redis_url0,redis_url1,redis_url2,....,redis_urlN"
           # Or an Array of Strings representing one URL each:
           #   ["redis_url0", "redis_url1", ..., "redis_urlN"]
-          # Or an Array of Hashes with ":host" and ":port" keys:
-          #   [{ host: "srv0", port: 7379 }, { host: "srv1", port: 7379 }, ...]
+          # Or an Array of Hashes with ":host", ":port", and ":password" (optional) keys:
+          #   [{ host: "srv0", port: 7379 }, { host: "srv1", port: 7379, password: "abc" }, ...]
           #
           # When using the String input, the comma "," character is the
           # delimiter between URLs and the "\" character is the escaper that
@@ -186,7 +186,7 @@ module ThreeScale
           # [
           #   { host: "host0", port: "port0" },
           #   { host: "host1", port: "port1" },
-          #   { host: "host2", port: "port2" },
+          #   { host: "host2", port: "port2", password: "abc" },
           #   ...
           #   { host: "hostN", port: "portN" }
           # ]
@@ -218,6 +218,7 @@ module ThreeScale
             # sentinel port
             options[:sentinels].each do |sentinel|
               sentinel[:port] ||= DEFAULT_SENTINEL_PORT
+              sentinel.delete(:password) if sentinel[:password].nil? || sentinel[:password].empty?
             end
 
             # Handle role option when sentinels are validated
@@ -239,7 +240,7 @@ module ThreeScale
             # it is safe to perform URI parsing now
             uri = URI.parse valid_uri_str
 
-            { host: uri.host, port: uri.port }
+            { host: uri.host, port: uri.port, password: uri.password }
           end
 
           # split a string by a delimiter character with escaping
