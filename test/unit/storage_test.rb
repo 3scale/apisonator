@@ -62,7 +62,7 @@ class StorageTest < Test::Unit::TestCase
     conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_connector(conn)
     assert_client_config(conn, url: config_obj[:url],
-                               sentinels: [{ host: '127.0.0.1', port: 26_379 },
+                               sentinels: [{ host: '127.0.0.1', port: 26_379, password: 'passw,ord' },
                                            { host: '127.0.0.1', port: 36_379 }])
   end
 
@@ -146,6 +146,38 @@ class StorageTest < Test::Unit::TestCase
                                            { host: '192.168.1.1', port: default_sentinel_port },
                                            { host: '127.0.0.1', port: 36379 },
                                            { host: '127.0.0.1', port: 46379 }])
+  end
+
+  def test_sentinels_array_hashes_password
+    config_obj = {
+        url: 'redis://master-group-name',
+        sentinels: [{ host: '192.168.1.1', port: 3333, password: 'abc' },
+                    { host: '192.168.1.2', port: 4444, password: '' },
+                    { host: '192.168.1.3', port: 5555, password: nil }]
+    }
+
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: config_obj[:url],
+                         sentinels: [{ host: '192.168.1.1', port: 3333, password: 'abc' },
+                                     { host: '192.168.1.2', port: 4444 },
+                                     { host: '192.168.1.3', port: 5555 }])
+  end
+
+  def test_sentinels_array_strings_password
+    config_obj = {
+        url: 'redis://master-group-name',
+        sentinels: ['redis://:abc@192.168.1.1:3333',
+                    '192.168.1.2:4444',
+                    'redis://192.168.1.3:5555']
+    }
+
+    conn = Storage.send :orig_new, Storage::Helpers.config_with(config_obj)
+    assert_sentinel_connector(conn)
+    assert_client_config(conn, url: config_obj[:url],
+                         sentinels: [{ host: '192.168.1.1', port: 3333, password: 'abc' },
+                                     { host: '192.168.1.2', port: 4444 },
+                                     { host: '192.168.1.3', port: 5555 }])
   end
 
   def test_sentinels_correct_role
