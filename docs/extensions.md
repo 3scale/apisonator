@@ -55,6 +55,8 @@ non-existing metrics occur):
 * `3scale-limit-reset`: An integer stating the amount of seconds left for the
   current limiting period to elapse. A negative integer value means there is no
   limit in time.
+* `3scale-limit-max-value`: An integer stating the maximum total number of hits
+  allowed in the current limiting period.
 
 When a `usage` is specified, only the metrics specified in that usage and their
 parent metrics are taken into account when calculating the limit headers.

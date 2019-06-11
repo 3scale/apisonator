@@ -14,7 +14,8 @@ module ThreeScale
             if report && report.remaining_same_calls != -1
               {
                 remaining: report.remaining_same_calls,
-                reset: report.remaining_time(now)
+                reset: report.remaining_time(now),
+                'max-value': report.max_value
               }
             else
               UNCONSTRAINED
