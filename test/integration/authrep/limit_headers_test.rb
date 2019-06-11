@@ -70,6 +70,8 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
     remaining_secs_in_day = (Period::Day.new(current_time).finish - current_time).ceil
     assert_equal remaining_secs_in_day,
                  last_response.header['3scale-limit-reset']
+
+    assert_equal limit_metric1, last_response.header['3scale-limit-max-value']
   end
 
   test_authrep 'response headers include correct information when rate-limited' do |e|
@@ -99,6 +101,7 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
     # Check that the remaining and reset refer to the hour limit
     assert_equal 0, last_response.header['3scale-limit-remaining']
     assert_equal 1, last_response.header['3scale-limit-reset']
+    assert_equal hour_limit[:hour], last_response.header['3scale-limit-max-value']
   end
 
   test_authrep 'remaining in limit headers is 0 when over limits' do |e|
@@ -127,6 +130,8 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
     remaining_secs_in_day = (Period::Day.new(current_time).finish - current_time).ceil
     assert_equal remaining_secs_in_day,
                  last_response.header['3scale-limit-reset']
+
+    assert_equal limit, last_response.header['3scale-limit-max-value']
   end
 
   test_authrep 'when a usage is passed, only take into account the metrics in the usage' do |e|
@@ -168,6 +173,8 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
 
     assert_equal (Period::Day.new(current_time).finish - current_time).ceil,
                  last_response.header['3scale-limit-reset']
+
+    assert_equal limit, last_response.header['3scale-limit-max-value']
   end
 
   test_authrep 'when a usage is passed, remaining/reset can refer to a parent metric' do |e|
@@ -207,6 +214,8 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
 
     assert_equal (Period::Day.new(current_time).finish - current_time).ceil,
                  last_response.header['3scale-limit-reset']
+
+    assert_equal parent_limit, last_response.header['3scale-limit-max-value']
   end
 
   test_authrep 'remaining and reset in headers are negative when there are no limits' do |e|
@@ -217,6 +226,7 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
 
     assert last_response.header['3scale-limit-remaining'].to_i < 0
     assert last_response.header['3scale-limit-reset'].to_i < 0
+    assert_nil last_response.header['3scale-limit-max-value']
   end
 
   test_authrep 'reset in limit headers is negative when the period is eternity' do |e|
@@ -239,6 +249,8 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
                  last_response.header['3scale-limit-remaining']
 
     assert last_response.header['3scale-limit-reset'].to_i < 0
+
+    assert_equal limit, last_response.header['3scale-limit-max-value']
   end
 
   test_authrep 'limit headers are not returned when there is an error != limits exceeded' do |e|
@@ -256,6 +268,7 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
 
     assert_nil last_response.header['3scale-limit-reset']
     assert_nil last_response.header['3scale-limit-remaining']
+    assert_nil last_response.header['3scale-limit-max-value']
 
     # application_key_invalid as an example of check performed in a validator.
     @application.create_key('foo')
@@ -267,6 +280,7 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
 
     assert_nil last_response.header['3scale-limit-reset']
     assert_nil last_response.header['3scale-limit-remaining']
+    assert_nil last_response.header['3scale-limit-max-value']
   end
 
   test_authrep 'response headers do not include limit headers whe not asked via extensions' do |e|
@@ -280,5 +294,6 @@ class AuthrepLimitHeadersTest < Test::Unit::TestCase
 
     assert_nil last_response.header['3scale-limit-remaining']
     assert_nil last_response.header['3scale-limit-reset']
+    assert_nil last_response.header['3scale-limit-max-value']
   end
 end
