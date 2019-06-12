@@ -2,6 +2,20 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.92.0 - 2019-06-12
+
+### Added
+
+- Support for password-protected Redis sentinels [#101](https://github.com/3scale/apisonator/pull/101)
+- New limit header with the max value for the limit [#103](https://github.com/3scale/apisonator/pull/103)
+- CI tests now run on Ruby 2.5 and Ruby 2.6 too [#84](https://github.com/3scale/apisonator/pull/84), [#97](https://github.com/3scale/apisonator/pull/97)
+
+### Changed
+
+- Updated redis gem to v4.1.1 [#99](https://github.com/3scale/apisonator/pull/99)
+- Performance optimizations in some time methods [#80](https://github.com/3scale/apisonator/pull/80), [#81](https://github.com/3scale/apisonator/pull/81)
+
+
 ## 2.91.1 - 2019-03-08
 
 ### Changed
