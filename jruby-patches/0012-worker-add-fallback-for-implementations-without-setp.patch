@@ -1,0 +1,31 @@
+From 5501763b8c24084fdd053b003c1945f9559d5057 Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Tue, 7 Jul 2015 02:50:06 +0200
+Subject: [PATCH 12/16] worker: add fallback for implementations without
+ setproctitle()
+
+---
+ lib/3scale/backend/worker.rb | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/lib/3scale/backend/worker.rb b/lib/3scale/backend/worker.rb
+index 7c253d06a..21ff23bf2 100644
+--- a/lib/3scale/backend/worker.rb
++++ b/lib/3scale/backend/worker.rb
+@@ -40,7 +40,12 @@ module ThreeScale
+       # - :one_off           - if true, will process one job, then quit
+       #
+       def self.work(options = {})
+-        Process.setproctitle("3scale_backend_worker #{ThreeScale::Backend::VERSION}")
++        title = "3scale_backend_worker #{ThreeScale::Backend::VERSION}"
++        if Process.respond_to? :setproctitle
++          Process.setproctitle(title)
++        else
++          $0 = title
++        end
+         new(options).work
+       end
+ 
+-- 
+2.21.0
+

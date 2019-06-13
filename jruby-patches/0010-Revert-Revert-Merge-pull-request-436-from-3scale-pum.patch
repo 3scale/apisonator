@@ -1,0 +1,49 @@
+From 577dc1407b3538170f1a4668b340629ae3dae18c Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Mon, 28 Sep 2015 17:54:26 +0200
+Subject: [PATCH 10/16] Revert "Revert "Merge pull request #436 from
+ 3scale/puma-default-server""
+
+This reverts commit f5e87710eefd4566e0675da0964db94f0a5d7b80.
+---
+ Gemfile                      | 9 +++------
+ lib/3scale/backend/server.rb | 2 +-
+ 2 files changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/Gemfile b/Gemfile
+index a3f7157bf..591f9eb44 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -15,13 +15,10 @@ platform :ruby do
+ end
+ 
+ # Default server by platform
+-platform :mri do
+-  gem 'thin', '= 1.6.3'
+-  gem 'puma', '= 2.13.4', groups: [:development, :test]
+-end
++gem 'puma', '= 2.13.4'
+ 
+-platform :jruby, :rbx do
+-  gem 'puma', '= 2.13.4'
++platform :mri do
++  gem 'thin', '= 1.6.3', groups: [:development, :test]
+ end
+ 
+ group :test do
+diff --git a/lib/3scale/backend/server.rb b/lib/3scale/backend/server.rb
+index 62af5e78f..925654aa1 100644
+--- a/lib/3scale/backend/server.rb
++++ b/lib/3scale/backend/server.rb
+@@ -47,7 +47,7 @@ module ThreeScale
+         private
+ 
+         def get_server(server_name)
+-          server_name ||= RUBY_ENGINE == 'ruby' ? :thin : :puma
++          server_name ||= :puma
+           server_name = server_name.to_s.tr('-', '_')
+           require "3scale/backend/server/#{server_name}"
+           class_name = server_name.split('_').map(&:capitalize).join
+-- 
+2.21.0
+

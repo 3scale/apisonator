@@ -1,0 +1,59 @@
+From 28a4b73dcbabd652f6f36854f9247f87177bcdb6 Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Tue, 7 Jul 2015 01:23:48 +0200
+Subject: [PATCH 07/16] test/transaction_storage: convert YAJL to JSON
+
+---
+ test/unit/transaction_storage_test.rb | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/test/unit/transaction_storage_test.rb b/test/unit/transaction_storage_test.rb
+index 61bd9c555..30b38f5e6 100644
+--- a/test/unit/transaction_storage_test.rb
++++ b/test/unit/transaction_storage_test.rb
+@@ -49,7 +49,7 @@ class TransactionStorageTest < Test::Unit::TestCase
+                  'usage'          => { metric_id_one => 1 },
+                  'timestamp'      => '2010-09-10 17:04:00 UTC' }
+ 
+-    assert_equal expected, Yajl::Parser.parse(transactions[0])
++    assert_equal expected, JSON.parse(transactions[0])
+ 
+     # Service two
+     transactions = @storage.lrange("transactions/service_id:#{service_id_two}", 0, -1)
+@@ -59,7 +59,7 @@ class TransactionStorageTest < Test::Unit::TestCase
+                  'usage'          => { metric_id_two => 2 },
+                  'timestamp'      => '2010-09-10 17:10:00 UTC' }
+ 
+-    assert_equal expected, Yajl::Parser.parse(transactions[0])
++    assert_equal expected, JSON.parse(transactions[0])
+   end
+ 
+   test '#list returns transactions from the storage' do
+@@ -67,14 +67,18 @@ class TransactionStorageTest < Test::Unit::TestCase
+     application_id_two = next_id
+ 
+     @storage.lpush("transactions/service_id:#{@service_id}",
+-                   Yajl::Encoder.encode(application_id: application_id_one,
+-                                        usage:          { @metric_id => 1 },
+-                                        timestamp:      '2010-09-10 11:00:00 UTC'))
++                   {
++                     application_id: application_id_one,
++                     usage:          { @metric_id => 1 },
++                     timestamp:      '2010-09-10 11:00:00 UTC'
++                   }.to_json)
+ 
+     @storage.lpush("transactions/service_id:#{@service_id}",
+-                   Yajl::Encoder.encode(application_id: application_id_two,
+-                                        usage:          { @metric_id => 2 },
+-                                        timestamp:      '2010-09-10 11:02:00 UTC'))
++                   {
++                     application_id: application_id_two,
++                     usage:          { @metric_id => 2 },
++                     timestamp:      '2010-09-10 11:02:00 UTC'
++                   }.to_json)
+ 
+     expected = [
+       {
+-- 
+2.21.0
+

@@ -1,0 +1,62 @@
+From 1e80d2be126173185c947397be46765dfa7f81e9 Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Mon, 28 Sep 2015 17:55:16 +0200
+Subject: [PATCH 11/16] Gemfile: use puma 2.14.0
+
+---
+ Gemfile                           | 2 +-
+ Gemfile.lock                      | 4 ++--
+ lib/3scale/backend/server/puma.rb | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Gemfile b/Gemfile
+index 591f9eb44..4f462533d 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -15,7 +15,7 @@ platform :ruby do
+ end
+ 
+ # Default server by platform
+-gem 'puma', '= 2.13.4'
++gem 'puma', '= 2.14.0'
+ 
+ platform :mri do
+   gem 'thin', '= 1.6.3', groups: [:development, :test]
+diff --git a/Gemfile.lock b/Gemfile.lock
+index 3bb7448dc..9197b4179 100644
+--- a/Gemfile.lock
++++ b/Gemfile.lock
+@@ -125,7 +125,7 @@ GEM
+     pry-doc (0.8.0)
+       pry (~> 0.9)
+       yard (~> 0.8)
+-    puma (2.13.4)
++    puma (2.14.0)
+     rack (1.6.4)
+     rack-protection (1.5.3)
+       rack
+@@ -226,7 +226,7 @@ DEPENDENCIES
+   pry (~> 0.10.1)
+   pry-byebug (~> 3.2.0)
+   pry-doc (~> 0.8.0)
+-  puma (= 2.13.4)
++  puma (= 2.14.0)
+   rack-test (~> 0.6.2)
+   resque_spec (~> 0.15.0)
+   resque_unit (~> 0.4.4)
+diff --git a/lib/3scale/backend/server/puma.rb b/lib/3scale/backend/server/puma.rb
+index bd0f3ec26..52c2fb02b 100644
+--- a/lib/3scale/backend/server/puma.rb
++++ b/lib/3scale/backend/server/puma.rb
+@@ -34,7 +34,7 @@ module ThreeScale
+             # rackup file goes last
+             puma_argv << [options[:config]] unless options[:config].nil?
+ 
+-            puma_config_hack! options[:log_file], '2.13.4'
++            puma_config_hack! options[:log_file], '2.14.0'
+ 
+             @cli = ::Puma::CLI.new(puma_argv.flatten)
+ 
+-- 
+2.21.0
+

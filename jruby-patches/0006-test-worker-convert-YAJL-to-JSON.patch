@@ -1,0 +1,25 @@
+From 06eb19ed49cd7f943e8561d04bfe60f1b441960c Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Tue, 7 Jul 2015 01:19:29 +0200
+Subject: [PATCH 06/16] test/worker: convert YAJL to JSON
+
+---
+ test/unit/worker_test.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/unit/worker_test.rb b/test/unit/worker_test.rb
+index 39471b782..c7efb1227 100644
+--- a/test/unit/worker_test.rb
++++ b/test/unit/worker_test.rb
+@@ -33,7 +33,7 @@ class WorkerTest < Test::Unit::TestCase
+   end
+ 
+   def test_format_of_a_job
+-    encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [{'0'=> {:app_id => "app_id with spaces"}}])
++    encoded_job = { class: 'TestJob', args: [ {'0' => { app_id: 'app_id with spaces' } } ] }.to_json
+     assert_equal '{"class":"TestJob","args":[{"0":{"app_id":"app_id with spaces"}}]}', encoded_job
+   end
+ 
+-- 
+2.21.0
+

@@ -1,0 +1,37 @@
+From c82599d6c9bdb9c1c90319e6e3b0b4e9c32db430 Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Tue, 7 Jul 2015 02:33:07 +0200
+Subject: [PATCH 15/16] Dockerfile: depend on the new dev-backend-jruby image
+ with JRuby 9K
+
+---
+ Dockerfile | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/Dockerfile b/Dockerfile
+index 63ed85d84..a6b987b60 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -1,4 +1,4 @@
+-FROM quay.io/3scale/docker:dev-backend-2.2.2
++FROM quay.io/3scale/docker:dev-backend-jruby-9.0
+ MAINTAINER Toni Reina <toni@3scale.net>
+ 
+ USER ruby
+@@ -18,6 +18,7 @@ RUN ruby -e "begin; Gem::Specification.find_by_name('cubert-server', Gem::Requir
+ RUN chown -R ruby:ruby /tmp/backend/ /home/ruby/.ssh
+ 
+ USER ruby
++
+ RUN bundle install
+ 
+ USER root
+@@ -34,4 +35,4 @@ RUN bundle install
+ USER root
+ 
+ # and this is needed to switch to an unprivileged user for running the suite
+-CMD ["/bin/bash", "-c", "cd /home/ruby/backend && su ruby -c 'script/ci'"]
++CMD ["/bin/bash", "-c", "cd /home/ruby/backend && su ruby -c 'PATH=$PATH:/opt/jruby/bin script/ci'"]
+-- 
+2.21.0
+

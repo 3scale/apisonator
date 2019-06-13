@@ -1,0 +1,53 @@
+From 61a0c31669debe69a23d2e99074f32395712bc59 Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Tue, 7 Jul 2015 01:06:30 +0200
+Subject: [PATCH 01/16] log_request_storage: DRY up a dup hash that just
+ changes one field
+
+---
+ lib/3scale/backend/log_request_storage.rb | 24 +++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/lib/3scale/backend/log_request_storage.rb b/lib/3scale/backend/log_request_storage.rb
+index 183c95682..48bc037df 100644
+--- a/lib/3scale/backend/log_request_storage.rb
++++ b/lib/3scale/backend/log_request_storage.rb
+@@ -28,23 +28,23 @@ module ThreeScale
+         key_service = queue_key_service(transaction[:service_id])
+         key_app = queue_key_application(transaction[:service_id], transaction[:application_id])
+ 
+-        begin
+-          value = encode(:application_id => transaction[:application_id],
+-                        :service_id     => transaction[:service_id],
+-                        :log            => transaction[:log],
+-                        :usage          => transaction[:usage],
+-                        :timestamp      => transaction[:timestamp])
+-          decode(value)
++        value_hash = {
++          application_id: transaction[:application_id],
++          service_id:     transaction[:service_id],
++          log:            transaction[:log],
++          usage:          transaction[:usage],
++          timestamp:      transaction[:timestamp]
++        }
+ 
++        begin
++          value = encode(value_hash)
++          decode(value) # XXX is this needed at all?
+         rescue Yajl::ParseError
+           log = {'request' => 'Error: the log entry could not be stored. Please use UTF8 encoding.',
+                  'response' => 'N/A',
+                  'code' => 'N/A'}
+-          value = encode(:application_id => transaction[:application_id],
+-                        :service_id     => transaction[:service_id],
+-                        :log            => log,
+-                        :usage          => transaction[:usage],
+-                        :timestamp      => transaction[:timestamp])
++          value_hash[:log] = log
++          value = encode(value_hash)
+         end
+ 
+         storage.lpush(key_service,value)
+-- 
+2.21.0
+

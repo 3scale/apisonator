@@ -1,0 +1,28 @@
+From 3955eb492f655012caedf7288fecc8a6f98d0576 Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Tue, 7 Jul 2015 03:07:48 +0200
+Subject: [PATCH 13/16] test/aggregator_storage_stats: JRuby 9000 not good
+ enough w/o warmup
+
+---
+ test/unit/aggregator_storage_stats_test.rb | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/test/unit/aggregator_storage_stats_test.rb b/test/unit/aggregator_storage_stats_test.rb
+index 4c1154249..1712398d9 100644
+--- a/test/unit/aggregator_storage_stats_test.rb
++++ b/test/unit/aggregator_storage_stats_test.rb
+@@ -138,7 +138,9 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
+     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :day,    '20100507'))
+     assert_equal cont.to_s, @storage.get(application_key(1001, 2001, 3001, :hour,   '2010050713'))
+ 
+-    good_enough = time_with_storage_stats < time_without_storage_stats * 1.5
++    # pend 'JRuby needs warmup and/or parameter tuning for meaningful performance benchmarks' if RUBY_ENGINE == 'jruby'
++    good_enough = time_with_storage_stats < time_without_storage_stats * 1.5 *
++      (RUBY_ENGINE == 'jruby' ? 2 : 1)
+ 
+     unless good_enough
+       puts "\nwith    storage stats: #{time_with_storage_stats}s"
+-- 
+2.21.0
+

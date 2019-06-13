@@ -1,0 +1,55 @@
+From 743e187a5d2391ed34778ff1058dee6c22e28b21 Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Tue, 7 Jul 2015 01:09:52 +0200
+Subject: [PATCH 08/16] Gemfile: drop YAJL for JSON
+
+---
+ Gemfile               | 1 -
+ Gemfile.lock          | 2 --
+ lib/3scale/backend.rb | 1 -
+ 3 files changed, 4 deletions(-)
+
+diff --git a/Gemfile b/Gemfile
+index 2671c2125..4b320909d 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -11,7 +11,6 @@ gemspec
+ #
+ platform :ruby do
+   gem 'thin', '= 1.6.3'
+-  gem 'yajl-ruby', '= 1.1.0'
+   gem 'pry-byebug', '~> 3.2.0', groups: [:development, :test]
+ end
+ 
+diff --git a/Gemfile.lock b/Gemfile.lock
+index f244e4eab..795a41671 100644
+--- a/Gemfile.lock
++++ b/Gemfile.lock
+@@ -208,7 +208,6 @@ GEM
+     webmock (1.17.4)
+       addressable (>= 2.2.7)
+       crack (>= 0.3.2)
+-    yajl-ruby (1.1.0)
+     yard (0.8.7.6)
+ 
+ PLATFORMS
+@@ -233,4 +232,3 @@ DEPENDENCIES
+   sshkit
+   thin (= 1.6.3)
+   timecop (~> 0.7.1)
+-  yajl-ruby (= 1.1.0)
+diff --git a/lib/3scale/backend.rb b/lib/3scale/backend.rb
+index 4e3399f99..0c1f3641e 100644
+--- a/lib/3scale/backend.rb
++++ b/lib/3scale/backend.rb
+@@ -19,7 +19,6 @@ require 'resque'
+ require 'securerandom'
+ require 'sinatra/base'
+ require 'time'
+-require 'yajl'
+ require 'yaml'
+ require 'digest/md5'
+ 
+-- 
+2.21.0
+

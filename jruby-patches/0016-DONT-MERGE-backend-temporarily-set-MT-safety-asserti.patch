@@ -1,0 +1,26 @@
+From 711f484c11c82934f36456d0e8db4a1840c718fb Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Fri, 28 Aug 2015 11:52:52 +0200
+Subject: [PATCH 16/16] [DONT MERGE] backend: temporarily set MT-safety
+ assertion to true
+
+---
+ lib/3scale/backend.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/3scale/backend.rb b/lib/3scale/backend.rb
+index 0b342b585..11d77c552 100644
+--- a/lib/3scale/backend.rb
++++ b/lib/3scale/backend.rb
+@@ -65,7 +65,7 @@ module ThreeScale
+   module Backend
+     # Thread safety of our application. Turn this on if we ever are MT safe.
+     def self.thread_safe?
+-      false
++      true
+     end
+ 
+     def self.root_dir
+-- 
+2.21.0
+

@@ -1,0 +1,46 @@
+From 351552409bf7b072c12bdb134ac6632d11ee1e1b Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Tue, 7 Jul 2015 02:01:06 +0200
+Subject: [PATCH 03/16] transactor: catch JSON::GeneratorError when enqueuing
+ invalid UTF-8 for logs
+
+Unfortunately, that crappy software named Resque was silently using
+Yajl for encoding JSON. It would swallow malformed UTF-8 and explode
+on parsing, for which we added some code to just leave an error
+message in the log record.
+
+This commit moves that handling to the enqueuing time, since JSON
+will barf on encoding time as opposed to Yajl.
+---
+ lib/3scale/backend/transactor.rb | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/lib/3scale/backend/transactor.rb b/lib/3scale/backend/transactor.rb
+index 1ad7c527c..8b3db54f9 100644
+--- a/lib/3scale/backend/transactor.rb
++++ b/lib/3scale/backend/transactor.rb
+@@ -162,7 +162,20 @@ module ThreeScale
+         end
+ 
+         if (usage || params[:log]) && ((status && status.authorized?) || (status.nil? && status_result))
+-          report_enqueue(service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "user_id" => username, "log" => params[:log]}}))
++          enqueue_value = { 0 => { 'app_id' => application_id, 'usage' => usage, 'user_id' => username, 'log' => params[:log] } }
++          begin
++            report_enqueue(service_id, enqueue_value)
++          rescue JSON::GeneratorError
++            # catch the case that we got invalid UTF-8 in the log and just fill
++            # in with an error message instead of bailing out.
++            # Note: we catch all and retry, not only the "partial character in
++            # source, but hit end" error, just in case we can fix other
++            # problems and/or that message changes.
++            enqueue_value[0]['log'] = {'request' => 'Error: the log entry could not be stored. Please use UTF8 encoding.',
++                                       'response' => 'N/A',
++                                       'code' => 'N/A'}
++            report_enqueue(service_id, enqueue_value)
++          end
+           val = usage ? usage.size : 0
+           ## FIXME: we need to account for the log_request to, so far we are not counting them, to be defined a metric
+           notify(provider_key, 'transactions/authorize' => 1, 'transactions/create_multiple' => 1, 'transactions' => val)
+-- 
+2.21.0
+

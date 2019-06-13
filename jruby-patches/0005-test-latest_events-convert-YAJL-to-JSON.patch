@@ -1,0 +1,51 @@
+From ceb7bca2c8974118449e4a2ae5f7ca8e74316da5 Mon Sep 17 00:00:00 2001
+From: Alejandro Martinez Ruiz <alex@flawedcode.org>
+Date: Mon, 6 Jul 2015 19:52:42 +0200
+Subject: [PATCH 05/16] test/latest_events: convert YAJL to JSON
+
+---
+ test/integration/latest_events_test.rb | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/test/integration/latest_events_test.rb b/test/integration/latest_events_test.rb
+index 267266645..a15cba213 100644
+--- a/test/integration/latest_events_test.rb
++++ b/test/integration/latest_events_test.rb
+@@ -248,6 +248,10 @@ class LatestEventsTest < Test::Unit::TestCase
+ 
+   private
+ 
++  def parse_json(json)
++    JSON.parse(json, quirks_mode: true)
++  end
++
+   def internal_api
+     Rack::Test::Session.new(
+       Rack::MockSession.new(ThreeScale::Backend::API::Internal)
+@@ -258,20 +262,20 @@ class LatestEventsTest < Test::Unit::TestCase
+     response = internal_api.get '/events/'
+     assert_equal 200, response.status
+ 
+-    Yajl::Parser.parse(response.body)["events"]
++    parse_json(response.body)["events"]
+   end
+ 
+   def delete_events(upto_id)
+     response = internal_api.delete '/events/', { upto_id: upto_id }.to_json
+     assert_equal 200, response.status
+ 
+-    Yajl::Parser.parse(response.body)["num_events"]
++    parse_json(response.body)["num_events"]
+   end
+ 
+   def delete_event(id)
+     response = internal_api.delete "/events/#{id}"
+     assert_equal 200, response.status
+-    assert_equal "deleted", Yajl::Parser.parse(response.body)["status"]
++    assert_equal "deleted", parse_json(response.body)["status"]
+   end
+ 
+   def filter_events_by_type(type)
+-- 
+2.21.0
+
