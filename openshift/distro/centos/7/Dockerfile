@@ -36,7 +36,7 @@
 
 FROM centos:7
 
-ARG RUBY_SCL=rh-ruby23
+ARG RUBY_SCL=rh-ruby25
 ARG BUILD_DEP_PKGS="make gcc git"
 # Turn off for release mode to produce smaller layers.
 ARG CACHE_FRIENDLY=true

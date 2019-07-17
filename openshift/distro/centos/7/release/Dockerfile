@@ -10,7 +10,7 @@
 #
 FROM centos:7
 
-ARG RUBY_SCL=rh-ruby23
+ARG RUBY_SCL=rh-ruby25
 
 # Configure yum, install SCL, update, install Ruby and clean.
 RUN sed -i /etc/yum.conf -e \
