@@ -12,7 +12,7 @@
 #
 FROM centos:7
 
-ARG RUBY_SCL=rh-ruby23
+ARG RUBY_SCL=rh-ruby25
 ARG BUILD_DEP_PKGS="make gcc git"
 ARG PUMA_WORKERS=1
 
