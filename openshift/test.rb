@@ -16,7 +16,9 @@ uri.path = '/internal/'
 puts "Backend endpoint: #{uri}"
 puts
 
-ThreeScale::Core.donbot_url = uri
+ThreeScale::Core.url = uri
+ThreeScale::Core.username = ENV['CONFIG_INTERNAL_API_USER']
+ThreeScale::Core.password = ENV['CONFIG_INTERNAL_API_PASSWORD']
 
 service_id = ENV.fetch('SERVICE_ID', SecureRandom.hex(4))
 provider_key = ENV.fetch('PROVIDER_KEY', SecureRandom.uuid)

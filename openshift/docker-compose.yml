@@ -12,6 +12,8 @@ services:
       CONFIG_REDIS_PROXY: redis:6379
       CONFIG_QUEUES_MASTER_NAME: redis:6379
       RACK_ENV: production
+      CONFIG_INTERNAL_API_USER: user
+      CONFIG_INTERNAL_API_PASSWORD: password
   worker:
     image: ${LOCAL_IMAGE}
     command: 3scale_backend_worker start --ontop
@@ -23,11 +25,11 @@ services:
       RACK_ENV: production
   test:
     build:
-      dockerfile: Dockerfile.core
+      dockerfile: Dockerfile.pisoni
       context: .
       args:
-        - CORE_VERSION=1.20.0
-    command: ruby test.rb
+        PISONI_VERSION: 1.27.0
+    command: ruby /opt/app/test.rb
     depends_on:
       - listener
       - worker
@@ -35,5 +37,7 @@ services:
       - ./test.rb:/opt/app/test.rb:ro
     environment:
       BACKEND_ENDPOINT: http://listener:3000
+      CONFIG_INTERNAL_API_USER: user
+      CONFIG_INTERNAL_API_PASSWORD: password
   redis:
     image: redis:alpine
