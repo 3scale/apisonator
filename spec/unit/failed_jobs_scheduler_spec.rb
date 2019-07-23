@@ -51,8 +51,6 @@ module ThreeScale
             # 4) Unknown.
             if failed_jobs[index] == 'invalid_encoding'
               raise Resque::Helpers::DecodeException
-            elsif failed_jobs[index] == 'fixnum_job' # Needed for Ruby < 2.4
-              raise Exception.new("undefined method `[]=' for 123:Fixnum")
             elsif failed_jobs[index] == 'integer_job'
               raise Exception.new("undefined method `[]=' for 123:Integer'")
             elsif failed_jobs[index] == 'no_jobs_in_queue'
@@ -220,12 +218,6 @@ module ThreeScale
             context 'and it is because the job has invalid encoding (raises DecodeException)' do
               include_examples 'jobs that fail to be re-enqueued',
                 %w(job1 job2 invalid_encoding job3), 1, true
-            end
-
-            # Needed only for Ruby < 2.4
-            context 'and it is because the job is a Fixnum' do
-              include_examples 'jobs that fail to be re-enqueued',
-                               %w(job1 job2 fixnum_job job3), 1, true
             end
 
             context 'and it is because the job is an Integer' do
