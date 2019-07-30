@@ -27,6 +27,12 @@ module ThreeScale
       def self.new(options = {})
         Logging::Worker.configure_logging(self, options[:log_file])
         Logging::External.setup_worker
+
+        if configuration.worker_prometheus_metrics.enabled
+          require '3scale/backend/worker_metrics'
+          WorkerMetrics.start_metrics_server
+        end
+
         super
       end
 

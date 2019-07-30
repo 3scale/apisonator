@@ -1,6 +1,10 @@
+require '3scale/backend/worker_metrics'
+
 module ThreeScale
   module Backend
     describe Worker do
+      include SpecHelpers::ConfigHelper
+
       # It is a private method, I know, but it was causing an important bug
       # (workers crashing when decoding non-utf8 arguments for jobs), so it
       # makes sense to test it.
@@ -87,6 +91,28 @@ module ThreeScale
           it 'notifies the logger' do
             expect(described_class.logger).to receive(:notify)
             subject.send :reserve
+          end
+        end
+      end
+
+      describe '.new' do
+        after(:all) { reset_worker_prometheus_metrics_state }
+
+        context 'when Prometheus metrics are enabled' do
+          before { enable_worker_prometheus_metrics }
+
+          it 'starts the metrics server' do
+            expect(WorkerMetrics).to receive(:start_metrics_server)
+            Worker.new
+          end
+        end
+
+        context 'when Prometheus metrics are disabled' do
+          before { disable_worker_prometheus_metrics }
+
+          it 'does not start the metrics server' do
+            expect(WorkerMetrics).not_to receive(:start_metrics_server)
+            Worker.new
           end
         end
       end
