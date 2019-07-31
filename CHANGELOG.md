@@ -2,6 +2,12 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.93.0 - 2019-07-31
+
+### Changed
+
+- Dropped support for Ruby < 2.4 [#109](https://github.com/3scale/apisonator/pull/109)
+
 ## 2.92.0 - 2019-06-12
 
 ### Added
