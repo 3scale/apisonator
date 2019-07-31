@@ -36,10 +36,10 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - rbenv-dependencies-{{ checksum ".ruby-version" }}
+          - v1-rbenv-dependencies-{{ checksum ".ruby-version" }}
           - v1-dependencies-{{ checksum "Gemfile.lock" }}
           # fallback to using the latest cache if no exact match is found
-          - rbenv-dependencies-
+          - v1-rbenv-dependencies-
           - v1-dependencies-
 
       - run:
@@ -50,7 +50,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.rbenv
-          key: rbenv-dependencies-{{ checksum ".ruby-version" }}
+          key: v1-rbenv-dependencies-{{ checksum ".ruby-version" }}
 
       - run:
           name: bundle install
