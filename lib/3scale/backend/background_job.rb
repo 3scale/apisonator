@@ -2,6 +2,7 @@ module ThreeScale
   module Backend
 
     class BackgroundJob
+      include Configurable
 
       EMPTY_HOOKS = [].freeze
       Error = Class.new StandardError
@@ -42,6 +43,10 @@ module ThreeScale
               " #{(end_time - start_time).round(5)}" +
               " #{(end_time.to_f - enqueue_time).round(5)}"+
               " #{stats_mem[:size]} #{stats_mem[:count]} #{stats_mem[:hits]}")
+
+            if configuration.worker_prometheus_metrics.enabled
+              update_prometheus_metrics(end_time - start_time)
+            end
           else
             Worker.logger.error("#{log_class_name} " + message)
           end
@@ -49,6 +54,11 @@ module ThreeScale
 
         def log_class_name
           self.name.split('::').last
+        end
+
+        def update_prometheus_metrics(runtime)
+          WorkerMetrics.increase_job_count(log_class_name)
+          WorkerMetrics.report_runtime(log_class_name, runtime)
         end
       end
     end
