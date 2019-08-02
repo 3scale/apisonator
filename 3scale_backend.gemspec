@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Adam Ciganek", "Tiago Macedo", "Josep M. Pujol",
                    "Toni Reina", "Wojciech Ogrodowczyk",
                    "Alejandro Martinez Ruiz", "David Ortiz Lopez",
-                   "Eguzki Astiz Lezaun"]
+                   "Eguzki Astiz Lezaun", "Miguel Soriano Domenech"]
   s.email       = 'backend@3scale.net'
   s.homepage    = 'http://www.3scale.net'
   s.summary     = '3scale web service management system backend'
