@@ -22,8 +22,10 @@ module ThreeScale
       let(:metrics_port) { 9394 }
 
       default_metrics_enabled = Backend.configuration.worker_prometheus_metrics
+      original_redis_async = Backend.configuration.redis_async
 
       before do
+        config.redis.async = false
         Service.save!(provider_key: provider_key, id: service_id)
         Application.save(service_id: service_id, id: app_id, state: :active)
         Metric.save(service_id: service_id, id: metric_id, name: metric_name)
@@ -31,6 +33,7 @@ module ThreeScale
 
       after do
         config.worker_prometheus_metrics.enabled = default_metrics_enabled
+        config.redis.async = original_redis_async
       end
 
       context 'when prometheus metrics are enabled' do
