@@ -1,6 +1,7 @@
 require '3scale/backend/configuration'
 require '3scale/backend/logging/worker'
 require '3scale/backend/logging/external'
+require '3scale/backend/job_fetcher'
 
 module ThreeScale
   module Backend
@@ -12,10 +13,6 @@ module ThreeScale
     class Worker
       include Resque::Helpers
       include Configurable
-
-      # the order is relevant
-      QUEUES = [:priority, :main, :stats]
-      REDIS_TIMEOUT = 60
 
       def initialize(options)
         trap('TERM') { shutdown }
@@ -46,12 +43,14 @@ module ThreeScale
       end
 
       def work
+        job_fetcher = JobFetcher.new
+
         register_worker
 
         loop do
           break if @shutdown
 
-          job = reserve
+          job = job_fetcher.fetch
           perform(job) if job
 
           break if one_off?
@@ -65,7 +64,7 @@ module ThreeScale
       end
 
       def to_s
-        @to_s ||= "#{hostname}:#{Process.pid}:#{QUEUES.join(',')}"
+        @to_s ||= "#{hostname}:#{Process.pid}"
       end
 
       def one_off?
@@ -73,35 +72,6 @@ module ThreeScale
       end
 
       private
-
-      def reserve
-        @queues ||= QUEUES.map { |q| "queue:#{q}" }
-        encoded_job = redis.blpop(*@queues, timeout: redis_timeout)
-
-        return nil if encoded_job.nil? || encoded_job.empty?
-
-        begin
-          # Resque::Job.new accepts a queue name as a param. It is very
-          # important to set here the same name as the one we set when calling
-          # Resque.enqueue. Resque.enqueue uses the @queue ivar in
-          # BackgroundJob classes as the name of the queue, and then, it stores
-          # the job in a queue called resque:queue:_@queue_. 'resque:' is the
-          # namespace and 'queue:' is added automatically. That's why we need
-          # to call blpop on 'queue:#{q}' above. However, when creating the job
-          # we cannot set 'queue:#{q}' as the name. Otherwise, if it fails and
-          # it is re-queued, it will end up in resque:queue:queue:_@queue_
-          # instead of resque:queue:_@queue_.
-          encoded_job[0].sub!('queue:', '')
-          Resque::Job.new(encoded_job[0],
-                          Yajl::Parser.parse(encoded_job[1], check_utf8: false))
-        rescue Exception => e
-          # I think that the only exception that can be raised here is
-          # Yajl::ParseError. However, this is a critical part of the code so
-          # we will capture all of them just to be safe.
-          Worker.logger.notify(e)
-          nil
-        end
-      end
 
       def perform(job)
         job.perform
@@ -115,10 +85,6 @@ module ThreeScale
 
       def unregister_worker
         redis.srem(:workers, self)
-      end
-
-      def redis_timeout
-        REDIS_TIMEOUT
       end
 
       def hostname

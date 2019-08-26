@@ -30,6 +30,7 @@ if ENV['TEST_COVERAGE']
 end
 
 require_relative '../lib/3scale/backend.rb'
+require_relative '../lib/3scale/backend/job_fetcher'
 require_relative '../test/test_helpers/sequences.rb'
 
 RSpec.configure do |config|
@@ -48,7 +49,7 @@ RSpec.configure do |config|
 
   config.before :each do
     Resque::Failure.clear
-    ThreeScale::Backend::Worker::QUEUES.each { |queue| Resque.remove_queue(queue) }
+    ThreeScale::Backend::JobFetcher.const_get(:QUEUES).each { |queue| Resque.remove_queue(queue) }
     ThreeScale::Backend::Storage.instance(true).flushdb
     ThreeScale::Backend::Memoizer.reset!
   end

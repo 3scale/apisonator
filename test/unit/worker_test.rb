@@ -27,11 +27,6 @@ class WorkerTest < Test::Unit::TestCase
     Metric.save(:service_id => @service_id, :id => @metric_id, :name => 'hits')
   end
 
-  def test_queue_name
-    assert_equal :priority, Worker::QUEUES[0]
-    assert_equal :main, Worker::QUEUES[1]
-  end
-
   def test_format_of_a_job
     encoded_job = Yajl::Encoder.encode(:class => 'TestJob', :args => [{'0'=> {:app_id => "app_id with spaces"}}])
     assert_equal '{"class":"TestJob","args":[{"0":{"app_id":"app_id with spaces"}}]}', encoded_job
@@ -39,14 +34,12 @@ class WorkerTest < Test::Unit::TestCase
 
   def test_no_jobs_in_the_queue
     redis = Redis.any_instance
-    redis.expects(:blpop).with(*Worker::QUEUES.map{|q| "resque:queue:#{q}"}, {:timeout => 60}).returns(nil)
+    redis.expects(:blpop).returns(nil)
 
     Worker.work(:one_off => true)
   end
 
   def test_logging_works
-    Backend::Worker.any_instance.expects(:redis_timeout).returns(1)
-
     Timecop.freeze(Time.utc(2011, 12, 12, 11, 48)) do
       log_file = "/tmp/temp_3scale_backend_worker.log"
       FileUtils.remove_file(log_file, :force => true)
@@ -63,10 +56,6 @@ class WorkerTest < Test::Unit::TestCase
                     Time.utc(2011, 12, 12, 11, 48).to_f,
                     {}]
 
-      ## WARNING: we cannot do the call below, because worker fetches from redis, and resque_unit keeps it in
-      ## memory. Get rid of resque_unit some time soon
-      ## it will block for a minute
-
       ## creates the log file when on new
       worker = Backend::Worker.new(:one_off => true, :log_file => log_file)
 
@@ -75,7 +64,14 @@ class WorkerTest < Test::Unit::TestCase
 
       ## creates the log file when on work
       FileUtils.remove_file(log_file, :force => true)
-      worker = Backend::Worker.work(:one_off => true, :log_file => log_file)
+      worker = Backend::Worker.new(:one_off => true, :log_file => log_file)
+
+      # Report something and then call shutdown so the worker does not wait for
+      # more jobs.
+      Transactor.report(@provider_key, @service_id, '0' => {})
+      worker.shutdown
+
+      worker.work
 
       line = File.new(log_file,"r").read
       assert_equal "# Logfile created on 2011-12-12 11:48:00 UTC by logger.rb", line.split("/").first
