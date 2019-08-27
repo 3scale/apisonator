@@ -149,6 +149,19 @@ module ThreeScale
           hierarchy(service_id, false)[id.to_s]
         end
 
+        # Returns the "descendants" of a metric, that is, its children,
+        # grandchildren, etc. in the metric hierarchy of the given service.
+        # In other words, the "descendants" of a metric are its children plus
+        # the descendants of each of them.
+        def descendants(service_id, metric_name)
+          metrics_hierarchy = hierarchy(service_id)
+          children = metrics_hierarchy[metric_name] || []
+
+          children.reduce(children) do |acc, child|
+            acc + descendants(service_id, child)
+          end
+        end
+
         # Given an array of metrics, returns an array without duplicates that
         # includes the names of the metrics that are parent of at least one of
         # the given metrics.
