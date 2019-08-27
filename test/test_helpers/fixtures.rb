@@ -209,5 +209,57 @@ module TestHelpers
 
       { app: app, user: user }
     end
+
+    # Sets a service with a metric hierarchy with the number of levels specified.
+    # Generates only one metric on each level.
+    #
+    # Returns a hash with provider_key, service_id, app_id and metrics. metrics
+    # is an ordered array where the pos 0 represents the metric in the highest
+    # level of the hierarchy. Each metric has: id, name, and limit.
+    def setup_service_with_metric_hierarchy(levels, oauth: false)
+      provider_key = next_id
+      service_id = next_id
+      Service.save!(provider_key: provider_key,
+                    id: service_id,
+                    backend_version: (oauth ? :oauth : '2'))
+
+      app_id = next_id
+      plan_id = next_id
+      Application.save(service_id: service_id,
+                       id: app_id,
+                       state: :active,
+                       plan_id: plan_id)
+
+      # The metric at pos 0 is the highest one in the hierarchy.
+      # The higher the metric in the hierarchy, the higher its limit is.
+      metrics_attrs = levels.times.map do |i|
+        { id: next_id, name: "metric_#{i}", limit: (levels - i)*10 }
+      end
+
+      # Instantiate the metrics and set the children.
+      current = nil
+      metrics_attrs.reverse_each do |metric_attrs|
+        children = Array(current)
+        current = Metric.new(service_id: service_id,
+                             id: metric_attrs[:id],
+                             name: metric_attrs[:name],
+                             children: children)
+      end
+      current.save if current # save() stores all the children recursively
+
+      metrics_attrs.each do |metric|
+        UsageLimit.save(service_id: service_id,
+                        plan_id: plan_id,
+                        metric_id: metric[:id],
+                        day: metric[:limit])
+      end
+
+      {
+        provider_key: provider_key,
+        service_id: service_id,
+        app_id: app_id,
+        metrics: metrics_attrs
+      }
+    end
   end
 end
