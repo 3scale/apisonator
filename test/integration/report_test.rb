@@ -1025,4 +1025,30 @@ class ReportTest < Test::Unit::TestCase
     assert_equal '1', @storage.get(response_code_key(@service_id, '200', :day, '20170101'))
     assert_equal '1', @storage.get(response_code_key(@service_id, '2XX', :day, '20170101'))
   end
+
+  test 'propagates the reports to all the levels in the hierarchy' do
+    test_setup = setup_service_with_metric_hierarchy(3)
+
+    bottom_metric = test_setup[:metrics].last
+
+    current_time = Time.utc(2017, 1, 1)
+    Timecop.freeze(current_time) do
+      post '/transactions.xml',
+           provider_key: test_setup[:provider_key],
+           service_id: test_setup[:service_id],
+           transactions: { 0 => { app_id: test_setup[:app_id],
+                                  usage: { bottom_metric[:name] => 1 } } }
+
+      Resque.run!
+    end
+
+    assert_equal 202, last_response.status
+
+    app = Application.load!(test_setup[:service_id], test_setup[:app_id])
+    usages = Usage.application_usage(app, current_time)[Period::Day]
+    metric_ids = test_setup[:metrics].map { |metric| metric[:id] }
+    all_increased = metric_ids.all? { |metric_id| usages[metric_id] == 1 }
+
+    assert_true all_increased
+  end
 end
