@@ -20,7 +20,7 @@ module ThreeScale
       def fetch
         encoded_job = @redis.blpop(*@queues, timeout: @fetch_timeout)
 
-        return nil if encoded_job.blank?
+        return nil if encoded_job.nil? || encoded_job.empty?
 
         begin
           # Resque::Job.new accepts a queue name as a param. It is very
