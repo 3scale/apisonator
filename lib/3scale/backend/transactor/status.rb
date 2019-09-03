@@ -155,12 +155,14 @@ module ThreeScale
           return all_reports if (@usage.nil? || @usage.empty?)
 
           metric_names_in_usage = @usage.keys
-          metrics = metric_names_in_usage | parents_names(metric_names_in_usage)
+          metrics = metric_names_in_usage | ascendants_names(metric_names_in_usage)
           all_reports.select { |report| metrics.include?(report.metric_name) }
         end
 
-        def parents_names(metric_names)
-          Metric.parents(@service_id, metric_names)
+        def ascendants_names(metric_names)
+          metric_names.flat_map do |metric_name|
+            Metric.ascendants(@service_id, metric_name)
+          end
         end
 
         # make sure the keys are Periods
