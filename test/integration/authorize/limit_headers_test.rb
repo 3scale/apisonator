@@ -295,4 +295,42 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
     assert_nil last_response.header['3scale-limit-reset']
     assert_nil last_response.header['3scale-limit-max-value']
   end
+
+  test 'works with metric hierarchies of more than 2 levels' do
+    levels = rand(3..10)
+    test_setup = setup_service_with_metric_hierarchy(levels, set_limits: false)
+    metric_at_top = test_setup[:metrics].first
+    metric_at_bottom = test_setup[:metrics].last
+
+    # Set a limit only for the metric at the top of the hierarchy.
+    # When reporting a hit at the top level we should see the metric at the top
+    # in the resp headers.
+    daily_limit = 100
+    UsageLimit.save(service_id: test_setup[:service_id],
+                    plan_id: test_setup[:plan_id],
+                    metric_id: metric_at_top[:id],
+                    day: daily_limit)
+
+    usage_to_report = 10
+    current_time = Time.now.utc
+    seconds_remaining_day = (Period::Day.new(current_time).finish - current_time).ceil
+
+    Timecop.freeze(Time.now.utc) do
+      get '/transactions/authorize.xml',
+          { provider_key: test_setup[:provider_key],
+            app_id: test_setup[:app_id],
+            usage: { metric_at_bottom[:name] => usage_to_report }
+          },
+          'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
+    end
+
+    assert_equal daily_limit/usage_to_report,
+                 last_response.header['3scale-limit-remaining']
+
+    assert_equal seconds_remaining_day,
+                 last_response.header['3scale-limit-reset']
+
+    assert_equal daily_limit,
+                 last_response.header['3scale-limit-max-value']
+  end
 end
