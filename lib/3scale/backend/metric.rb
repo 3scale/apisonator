@@ -162,6 +162,17 @@ module ThreeScale
           end
         end
 
+        # Returns the "ascendants" of a metric, that is, its parent,
+        # grandparent, etc. The "ascendants" of a metric are its parent plus
+        # the ascendants of the parent.
+        def ascendants(service_id, metric_name)
+          parents_of_metric = parents(service_id, [metric_name])
+
+          parents_of_metric.reduce(parents_of_metric) do |acc, parent|
+            acc + ascendants(service_id, parent)
+          end
+        end
+
         # Given an array of metrics, returns an array without duplicates that
         # includes the names of the metrics that are parent of at least one of
         # the given metrics.

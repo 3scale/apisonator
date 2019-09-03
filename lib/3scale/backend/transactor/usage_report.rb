@@ -154,7 +154,7 @@ module ThreeScale
             this_usage = usage[metric_name] || 0
             res = Usage.get_from(this_usage)
 
-            add_children_usage(usage, res)
+            add_descendants_usage(usage, res)
           end
 
           # helper to compute the current usage value after applying a possibly
@@ -171,20 +171,6 @@ module ThreeScale
             else
               current_value
             end
-          end
-
-          def add_children_usage(usages, parent_usage)
-            res = parent_usage
-            children = hierarchy[metric_name]
-            if children
-              # this is a parent metric, so we need to add usage we got
-              # explicited in the usage parameter
-              children.each do |child|
-                child_usage = usages[child]
-                res = Usage.get_from child_usage, res
-              end
-            end
-            res
           end
 
           def add_descendants_usage(usages, parent_usage)
