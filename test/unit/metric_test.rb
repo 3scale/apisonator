@@ -261,4 +261,17 @@ class MetricTest < Test::Unit::TestCase
       descendants.sort == metrics[idx+1..-1].map(&:name).sort
     end
   end
+
+  def test_ascendants
+    service_id = next_id
+    Service.save!(provider_key: 'a_provider_key', id: service_id)
+    levels = rand(3..10)
+    metrics = gen_hierarchy_one_metric_per_level(service_id, levels)
+
+    assert_true metrics.each_with_index.all? do |metric, idx|
+      ascendants = Metric.ascendants(service_id, metric.name)
+
+      ascendants.sort == metrics.take(idx).(&:name).sort
+    end
+  end
 end
