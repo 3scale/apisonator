@@ -216,7 +216,7 @@ module TestHelpers
     # Returns a hash with provider_key, service_id, app_id and metrics. metrics
     # is an ordered array where the pos 0 represents the metric in the highest
     # level of the hierarchy. Each metric has: id, name, and limit.
-    def setup_service_with_metric_hierarchy(levels, oauth: false)
+    def setup_service_with_metric_hierarchy(levels, set_limits: true, oauth: false)
       provider_key = next_id
       service_id = next_id
       Service.save!(provider_key: provider_key,
@@ -247,17 +247,20 @@ module TestHelpers
       end
       current.save if current # save() stores all the children recursively
 
-      metrics_attrs.each do |metric|
-        UsageLimit.save(service_id: service_id,
-                        plan_id: plan_id,
-                        metric_id: metric[:id],
-                        day: metric[:limit])
+      if set_limits
+        metrics_attrs.each do |metric|
+          UsageLimit.save(service_id: service_id,
+                          plan_id: plan_id,
+                          metric_id: metric[:id],
+                          day: metric[:limit])
+        end
       end
 
       {
         provider_key: provider_key,
         service_id: service_id,
         app_id: app_id,
+        plan_id: plan_id,
         metrics: metrics_attrs
       }
     end
