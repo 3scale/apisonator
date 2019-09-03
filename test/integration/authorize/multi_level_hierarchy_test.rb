@@ -4,6 +4,8 @@ class AuthorizeMultiLevelHierarchyTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
   include TestHelpers::AuthorizeAssertions
+  include TestHelpers::Extensions
+  include TestHelpers::MetricsHierarchy
 
   def setup
     @storage = Storage.instance(true)
@@ -88,5 +90,25 @@ class AuthorizeMultiLevelHierarchyTest < Test::Unit::TestCase
     end
 
     assert_true all_present
+  end
+
+  test 'response includes correct hierarchy extension info when n_levels > 2' do
+    get '/transactions/authorize.xml',
+        {
+          provider_key: @test_setup[:provider_key],
+          service_id: @test_setup[:service_id],
+          app_id: @test_setup[:app_id],
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::HIERARCHY
+
+    Resque.run!
+
+    xml_resp = Nokogiri::XML(last_response.body)
+    children_xml_correct = @test_setup[:metrics].each_cons(2).all? do |parent, child|
+      children_resp = extract_children_from_resp(xml_resp, parent[:name])
+      children_resp == [child[:name]]
+    end
+
+    assert_true children_xml_correct
   end
 end

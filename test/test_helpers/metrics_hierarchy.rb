@@ -19,5 +19,16 @@ module TestHelpers
 
       metrics
     end
+
+    # Extracts from an XML response, the children of the given metric. Note that
+    # the XML will only contain that info when the hierarchy extension is
+    # enabled.
+    def extract_children_from_resp(xml_response_body, parent_name)
+      xml_response_body.at('hierarchy')
+                       .at("metric[name = '#{parent_name}']")
+                       .attribute('children')
+                       .value
+                       .split # They are separated by spaces
+    end
   end
 end
