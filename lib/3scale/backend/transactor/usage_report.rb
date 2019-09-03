@@ -167,7 +167,7 @@ module ThreeScale
               # this is an auth/authrep request and therefore we should sum the usage
               computed_usage = Usage.get_from this_usage, current_value
               # children can alter the resulting current value
-              add_children_usage(usage, computed_usage)
+              add_descendants_usage(usage, computed_usage)
             else
               current_value
             end
@@ -185,6 +185,15 @@ module ThreeScale
               end
             end
             res
+          end
+
+          def add_descendants_usage(usages, parent_usage)
+            descendants = Metric.descendants(@status.service_id, metric_name)
+
+            descendants.reduce(parent_usage) do |acc, descendant|
+              descendant_usage = usages[descendant]
+              Usage.get_from descendant_usage, acc
+            end
           end
         end
       end

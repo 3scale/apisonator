@@ -2,6 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class MetricTest < Test::Unit::TestCase
   include TestHelpers::Sequences
+  include TestHelpers::MetricsHierarchy
 
   attr_reader :storage
 
@@ -245,5 +246,19 @@ class MetricTest < Test::Unit::TestCase
     parent.save
 
     assert_equal(['parent'], Metric.parents(service_id, %w(child1 child2)))
+  end
+
+  def test_descendants
+    service_id = next_id
+    Service.save!(provider_key: 'a_provider_key', id: service_id)
+    levels = rand(3..10)
+    metrics = gen_hierarchy_one_metric_per_level(service_id, levels)
+
+    assert_true metrics.each_with_index.all? do |metric, idx|
+      descendants = Metric.descendants(service_id, metric.name)
+
+      # The descendants could be in any order
+      descendants.sort == metrics[idx+1..-1].map(&:name).sort
+    end
   end
 end
