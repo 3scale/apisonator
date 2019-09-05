@@ -2,6 +2,17 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.94.0 - 2019-09-04
+
+### Added
+
+- Prometheus metrics for workers [#111](https://github.com/3scale/apisonator/pull/111)
+- Support for metric hierarchies with more than 2 levels [#119](https://github.com/3scale/apisonator/pull/119), [#121](https://github.com/3scale/apisonator/pull/121), [#122](https://github.com/3scale/apisonator/pull/122)
+
+### Changed
+
+- Updated Nokogiri to v1.10.4 [#118](https://github.com/3scale/apisonator/pull/118)
+
 ## 2.93.0 - 2019-07-31
 
 ### Changed
