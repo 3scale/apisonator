@@ -161,6 +161,7 @@ module ThreeScale
             acc + descendants(service_id, child)
           end
         end
+        memoize :descendants
 
         # Returns the "ascendants" of a metric, that is, its parent,
         # grandparent, etc. The "ascendants" of a metric are its parent plus
@@ -172,6 +173,7 @@ module ThreeScale
             acc + ascendants(service_id, parent)
           end
         end
+        memoize :ascendants
 
         # Given an array of metrics, returns an array without duplicates that
         # includes the names of the metrics that are parent of at least one of
