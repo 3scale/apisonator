@@ -2,6 +2,12 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.94.1 - 2019-09-09
+
+### Changed
+
+- Perf optimization: `Metric.ascendants` and `Metric.descendants` are memoized now [#124](https://github.com/3scale/apisonator/pull/124)
+
 ## 2.94.0 - 2019-09-04
 
 ### Added
