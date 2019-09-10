@@ -2,6 +2,12 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.94.2 - 2019-09-10
+
+### Changed
+
+- Perf optimization: `Usage.usage` is more efficient now because it does not create unnecessary instance periods [#126](https://github.com/3scale/apisonator/pull/126)
+
 ## 2.94.1 - 2019-09-09
 
 ### Changed
