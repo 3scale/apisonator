@@ -3,16 +3,16 @@ module ThreeScale
     class Usage
       class << self
         def user_usage(user, timestamp)
-          usage user do |metric_id, period|
+          usage(user, timestamp) do |metric_id, instance_period|
             Stats::Keys.user_usage_value_key(
-                user.service_id, user.username, metric_id, period.new(timestamp))
+                user.service_id, user.username, metric_id, instance_period)
           end
         end
 
         def application_usage(application, timestamp)
-          usage application do |metric_id, period|
+          usage(application, timestamp) do |metric_id, instance_period|
             Stats::Keys.application_usage_value_key(
-                application.service_id, application.id, metric_id, period.new(timestamp))
+                application.service_id, application.id, metric_id, instance_period)
           end
         end
 
@@ -32,11 +32,21 @@ module ThreeScale
 
         private
 
-        def usage(obj)
+        def usage(obj, timestamp)
+          # The timestamp does not change, so we can generate all the
+          # instantiated periods just once.
+          # This is important. Without this, the code can generate many instance
+          # periods and it ends up consuming a significant part of the total CPU
+          # time.
+          instance_periods = Period::instance_periods_for_ts(timestamp)
+
           pairs = metric_period_pairs obj.usage_limits
           return {} if pairs.empty?
 
-          keys = pairs.map(&Proc.new)
+          keys = pairs.map do |(metric_id, period)|
+            yield metric_id, instance_periods[period]
+          end
+
           values = {}
           pairs.zip(storage.mget(keys)) do |(metric_id, period), value|
             values[period] ||= {}

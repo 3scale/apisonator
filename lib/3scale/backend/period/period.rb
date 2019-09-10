@@ -197,6 +197,10 @@ module ThreeScale
           ts ? klass.new(ts) : klass
         end
 
+        def instance_periods_for_ts(timestamp)
+          Hash.new { |hash, period| hash[period] = period.new(timestamp) }
+        end
+
         alias_method :[], :from
 
         include HelperMethods
