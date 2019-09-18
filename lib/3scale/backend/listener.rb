@@ -433,9 +433,7 @@ module ThreeScale
         app_id = params[:app_id]
         raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
 
-        # Users do not need to exist, since they can be "created" on-demand.
-        OAuth::Token::Storage.create(params[:token], service_id, app_id,
-                                     params[:user_id], params[:ttl])
+        OAuth::Token::Storage.create(params[:token], service_id, app_id, params[:ttl])
       end
 
       delete '/services/:service_id/oauth_access_tokens/:token.xml' do
@@ -460,7 +458,7 @@ module ThreeScale
 
         raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
 
-        @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id, params[:user_id]
+        @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id
         builder :oauth_access_tokens
       end
 
@@ -470,8 +468,7 @@ module ThreeScale
         service_id = params[:service_id]
         ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
 
-        @token_to_app_id, @token_to_user_id =
-          OAuth::Token::Storage.get_credentials(params[:token], service_id)
+        @token_to_app_id = OAuth::Token::Storage.get_credentials(params[:token], service_id)
 
         builder :oauth_app_id_by_token
       end

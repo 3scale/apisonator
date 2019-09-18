@@ -9,7 +9,6 @@ xml.oauth_access_tokens do
     #
     # Just enforce the ttl to be -1 when there is none.
     attrs = { :ttl => t.ttl || -1 }
-    attrs[:user_id] = t.user_id if t.user_id
     xml.oauth_access_token t.token, attrs
   end
 end
