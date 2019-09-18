@@ -105,15 +105,6 @@ resource 'Services (prefix: /services)' do
       expect(svc.to_hash).to eq service.merge(user_registration_required: true)
     end
 
-    example 'Try creating a Service with invalid data' do
-      do_request(service: { user_registration_required: false,
-                            default_user_plan_name: nil,
-                            default_user_plan_id: nil })
-
-      expect(status).to eq 400
-      expect(response_json['error']).to match /require a default user plan/
-    end
-
     example 'Try creating a Service without specifying the service parameter in the body' do
       do_request(service: nil)
 
@@ -197,15 +188,6 @@ resource 'Services (prefix: /services)' do
       # The returned data should not contain *some_param* attribute
       expect(svc.to_hash).to eq service.merge(id: '1001',
                                               user_registration_required: true)
-    end
-
-    example 'Try updating Service with invalid data' do
-      do_request(service: { user_registration_required: false,
-                            default_user_plan_name: nil,
-                            default_user_plan_id: nil })
-
-      expect(status).to eq 400
-      expect(response_json['error']).to match /require a default user plan/
     end
 
     context 'Create a service that has no state' do
