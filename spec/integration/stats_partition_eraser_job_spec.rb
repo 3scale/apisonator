@@ -4,7 +4,6 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
   let(:service_id) { '123456' }
   let(:applications) { %w[1] }
   let(:metrics) { %w[10] }
-  let(:users) { %w[] }
   let(:from) { Time.new(2002, 11, 31).to_i }
   let(:to) { from }
   let(:offset) { 5 }
@@ -14,7 +13,6 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
       service_id: service_id,
       applications: applications,
       metrics: metrics,
-      users: users,
       from: from,
       to: to
     }
@@ -31,7 +29,7 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
   it 'partition keys are deleted' do
     without_resque_spec do
       Resque.enqueue(described_class, Time.now.getutc.to_f, service_id, applications,
-                     metrics, users, from, to, offset, length, nil)
+                     metrics, from, to, offset, length, nil)
       expect(Resque.size(stats_queue)).to eq 1
       # Try to process the job.
       ThreeScale::Backend::Worker.work(one_off: true)
@@ -44,7 +42,7 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
   it 'keys outside partition are not deleted' do
     without_resque_spec do
       Resque.enqueue(described_class, Time.now.getutc.to_f, service_id, applications,
-                     metrics, users, from, to, offset, length, nil)
+                     metrics, from, to, offset, length, nil)
       expect(Resque.size(stats_queue)).to eq 1
       # Try to process the job.
       ThreeScale::Backend::Worker.work(one_off: true)
