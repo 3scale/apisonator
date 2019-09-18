@@ -21,67 +21,23 @@ class OauthBasicTestWithAccessTokens < Test::Unit::TestCase
                                     :plan_id    => @plan_id,
                                     :plan_name  => @plan_name)
 
-    @user = User.save!(service_id: @service_id, username: 'pantxo', plan_id: '1', plan_name: 'plan')
-
     @metric_id = next_id
     Metric.save(:service_id => @service.id, :id => @metric_id, :name => 'hits')
 
     @access_token = 'valid-token'
-    @access_token_user = 'valid-user-token'
 
     post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
                                                              :app_id => @application.id,
                                                              :token => @access_token,
                                                              :ttl => 60
     assert_equal 200, last_response.status
-    assert_equal [@application.id, nil],
+    assert_equal @application.id,
       OAuth::Token::Storage.get_credentials(@access_token, @service.id)
-
-    post "/services/#{@service.id}/oauth_access_tokens.xml", :provider_key => @provider_key,
-                                                             :app_id => @application.id,
-                                                             :token => @access_token_user,
-                                                             :user_id => @user.username,
-                                                             :ttl => 60
-    assert_equal 200, last_response.status
-    assert_equal [@application.id, @user.username],
-      OAuth::Token::Storage.get_credentials(@access_token_user, @service.id)
   end
 
   test 'successful authorize responds with 200' do
     get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
                                              :access_token => @access_token
-
-    assert_equal 200, last_response.status
-  end
-
-  test 'authorization with a user token with no user specified succeeds' do
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token_user
-
-    assert_equal 200, last_response.status
-  end
-
-  test 'authorization with a user token with user specified succeeds' do
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token_user,
-                                             :user_id      => @user.username
-
-    assert_equal 200, last_response.status
-  end
-
-  test 'authorization with a user token with a made up user specified succeeds' do
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token_user,
-                                             :user_id      => 'invented_user'
-
-    assert_equal 200, last_response.status
-  end
-
-  test 'authorization with a global token with user specified succeeds' do
-    # specifying user_id should make no difference to the OAuth token code
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :access_token => @access_token,
-                                             :user_id      => @user.username
 
     assert_equal 200, last_response.status
   end
