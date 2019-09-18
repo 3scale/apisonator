@@ -13,7 +13,7 @@ module ThreeScale
       DEADLINE_RANGE = (-REPORT_DEADLINE_PAST..REPORT_DEADLINE_FUTURE).freeze
       private_constant :DEADLINE_RANGE
 
-      ATTRIBUTES = [:service_id, :application_id, :user_id, :timestamp,
+      ATTRIBUTES = [:service_id, :application_id, :timestamp,
                     :log, :usage, :response_code]
       private_constant :ATTRIBUTES
 

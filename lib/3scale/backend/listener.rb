@@ -46,15 +46,6 @@ module ThreeScale
       ##~ @parameter_user_key_inline = @parameter_user_key.clone
       ##~ @parameter_user_key_inline["description_inline"]  = true
 
-      ##~ @parameter_user_id = {"name" => "user_id", "dataType" => "string", "paramType" => "query"}
-      ##~ @parameter_user_id["description"] = "User id. String identifying an end user. Required only when the application is rate limiting end users. The End User plans feature is not available in all 3scale plans."
-      ##~ @parameter_user_id_inline = @parameter_user_id.clone
-      ##~ @parameter_user_id_inline["description_inline"] = true
-      ##
-      ##~ @parameter_user_id_oauth = {"name" => "user_id", "dataType" => "string", "paramType" => "query"}
-      ##~ @parameter_user_id_oauth["description"] = "User id. String identifying an end user. Used only when the application is rate limiting end users and the specified token is not associated to a user. The End User plans feature is not available in all 3scale plans."
-      ##
-
       ##~ @parameter_referrer = {"name" => "referrer", "dataType" => "string", "required" => false, "paramType" => "query"}
       ##~ @parameter_referrer["description"] = "Referrer IP Address or Domain. Required only if referrer filtering is enabled. If special value '*' (wildcard) is passed, the referrer check is bypassed."
       ##
@@ -99,7 +90,6 @@ module ThreeScale
       ##~ @parameter_transaction_app_id["parameters"] = []
       ##
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_app_id_inline
-      ##~ @parameter_transaction_app_id["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_app_id["parameters"] << @timestamp
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_usage
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_log
@@ -109,7 +99,6 @@ module ThreeScale
       ##~ @parameter_transaction_api_key["parameters"] = []
 
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_key_inline
-      ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_api_key["parameters"] << @timestamp
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_usage
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_log
@@ -119,7 +108,6 @@ module ThreeScale
       ##~ @parameter_transaction_oauth["parameters"] = []
 
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_client_id_inline
-      ##~ @parameter_transaction_oauth["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_oauth["parameters"] << @timestamp
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_usage
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_log
@@ -228,7 +216,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_app_id
       ##~ op.parameters.add @parameter_app_key
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage_predicted
       ##
       ##~ a = sapi.apis.add
@@ -244,7 +231,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_user_key
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage_predicted
       ##
       get '/transactions/authorize.xml' do
@@ -276,7 +262,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id_oauth
       ##~ op.parameters.add @parameter_usage_predicted
       ##~ op.parameters.add @parameter_redirect_url
       ##~ op.parameters.add @parameter_redirect_uri
@@ -309,7 +294,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_app_id
       ##~ op.parameters.add @parameter_app_key
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
       ##~ op.parameters.add @parameter_log
       ##
@@ -326,7 +310,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_user_key
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
       ##~ op.parameters.add @parameter_log
       ##
@@ -353,7 +336,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id_oauth
       ##~ op.parameters.add @parameter_usage
       ##~ op.parameters.add @parameter_log
       ##~ op.parameters.add @parameter_redirect_url

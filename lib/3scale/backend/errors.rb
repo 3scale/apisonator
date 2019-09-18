@@ -201,13 +201,6 @@ module ThreeScale
     class UnsupportedApiVersion < Error
     end
 
-    # new errors for the user limiting
-    class UserNotDefined < Error
-      def initialize(id)
-        super %(application with id="#{id}" requires a user (user_id))
-      end
-    end
-
     class TransactionTimestampNotWithinRange < Error
     end
 
@@ -223,65 +216,15 @@ module ThreeScale
       end
     end
 
-    class UserRequiresRegistration < Error
-      def initialize(service_id, user_id)
-        super %(user with user_id="#{user_id}" requires registration to use service with id="#{service_id}")
-      end
-    end
-
-    class ServiceCannotUseUserId < Error
-      def initialize(service_id)
-        super %(service with service_id="#{service_id}" does not have access to end user plans, user_id is not allowed)
-      end
-    end
-
     class ServiceLoadInconsistency < Error
       def initialize(service_id, other_service_id)
         super %(service.load_by_id with id="#{service_id}" loaded the service with id="#{other_service_id}")
       end
     end
 
-    # FIXME: this has to be about the only service-related error without
-    # a service id in the reported message.
-    class ServiceRequiresDefaultUserPlan < Error
-      def initialize
-        super 'Services without the need for registered users require a default user plan'.freeze
-      end
-    end
-
     class ServiceIsDefaultService < Error
       def initialize(id = nil)
         super %(Service id="#{id}" is the default service, cannot be removed)
-      end
-    end
-
-    class ServiceRequiresRegisteredUser < Error
-      def initialize(id = nil)
-        super %(Service id="#{id}" requires users to be registered beforehand)
-      end
-    end
-
-    class UserRequiresUsername < Error
-      def initialize
-        super 'User requires username'.freeze
-      end
-    end
-
-    class UserRequiresServiceId < Error
-      def initialize
-        super 'User requires a service ID'.freeze
-      end
-    end
-
-    class UserRequiresValidService < Error
-      def initialize
-        super 'User requires a valid service, the service does not exist'.freeze
-      end
-    end
-
-    class UserRequiresDefinedPlan < Error
-      def initialize
-        super 'User requires a defined plan'.freeze
       end
     end
 

@@ -22,12 +22,6 @@ module ThreeScale
           "#{prefix}/cinstances"
         end
 
-        # @note For backwards compatibility, the key is called uinstance.
-        # It will be eventually renamed to user.
-        def user_key_prefix(prefix, user_id)
-          "#{prefix}/uinstance:#{user_id}"
-        end
-
         def metric_key_prefix(prefix, metric_id)
           "#{prefix}/metric:#{metric_id}"
         end
@@ -51,14 +45,6 @@ module ThreeScale
           encode_key(counter_key(metric_key, period))
         end
 
-        def user_usage_value_key(service_id, user_id, metric_id, period)
-          service_key = service_key_prefix(service_id)
-          user_key    = user_key_prefix(service_key, user_id)
-          metric_key  = metric_key_prefix(user_key, metric_id)
-
-          encode_key(counter_key(metric_key, period))
-        end
-
         def service_response_code_value_key(service_id, response_code, period)
           service_key        = service_key_prefix(service_id)
           response_code_key  = response_code_key_prefix(service_key, response_code)
@@ -66,18 +52,10 @@ module ThreeScale
           encode_key(counter_key(response_code_key, period))
         end
 
-       def application_response_code_value_key(service_id, app_id, response_code, period)
+        def application_response_code_value_key(service_id, app_id, response_code, period)
           service_key        = service_key_prefix(service_id)
           app_key            = application_key_prefix(service_key, app_id)
           response_code_key  = response_code_key_prefix(app_key, response_code)
-
-          encode_key(counter_key(response_code_key, period))
-        end
-
-        def user_response_code_value_key(service_id, user_id, response_code, period)
-          service_key         = service_key_prefix(service_id)
-          user_key            = user_key_prefix(service_key, user_id)
-          response_code_key   = response_code_key_prefix(user_key, response_code)
 
           encode_key(counter_key(response_code_key, period))
         end
@@ -114,17 +92,10 @@ module ThreeScale
 
           method = "#{item}_key_prefix".to_sym
 
-          keys = {
+          {
             service:     public_send(method, service_key, value),
             application: public_send(method, application_key, value),
           }
-
-          if transaction.user_id
-            user_key = user_key_prefix(service_key, transaction.user_id)
-            keys[:user] = public_send(method, user_key, value)
-          end
-
-          keys
         end
 
       end

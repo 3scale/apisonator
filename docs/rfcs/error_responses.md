@@ -190,8 +190,6 @@ ie. parameter X is missing or not matching criteria Y.
       One or more required parameters are missing.
     - `usage_value_invalid`:
       One or more usage values for a given metric are missing or invalid.
-    - `user_not_defined`:
-      The application requires a user_id parameter but it is missing or invalid.
     - `service_id_missing`:
       The service ID is missing or blank.
 

@@ -11,13 +11,12 @@ module ThreeScale
           include StorageHelpers
           include Configurable
 
-          def perform_logged(_enqueue_time, service_id, applications, metrics, users,
+          def perform_logged(_enqueue_time, service_id, applications, metrics,
                              from, to, offset, length, context_info = {})
             job = DeleteJobDef.new(
               service_id: service_id,
               applications: applications,
               metrics: metrics,
-              users: users,
               from: from,
               to: to
             )
