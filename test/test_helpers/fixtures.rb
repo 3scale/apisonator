@@ -172,44 +172,6 @@ module TestHelpers
       end
     end
 
-    # Given a service and a metric ID, creates a user and an app for that
-    # service and creates usage limits with different max for both.
-    # Returns a hash with 2 keys: :user, and :app.
-    # Side effect: modifies the given service so we can register users
-    def limited_app_and_user!(service, metric_id, app_daily_limit, user_daily_limit)
-      # Set up the service so we can register users
-      service.user_registration_required = false
-      service.default_user_plan_name = 'default_user_plan'
-      service.default_user_plan_id = next_id
-      service.save!
-
-      # Set up the app and its limits
-      app_plan_id = next_id
-      UsageLimit.save(service_id: service.id,
-                      plan_id: app_plan_id,
-                      metric_id: metric_id,
-                      day: app_daily_limit)
-      app = Application.save(service_id: service.id,
-                             id: next_id,
-                             state: :active,
-                             plan_id: app_plan_id,
-                             user_required: true)
-
-      # Set up the user and its limits
-      user_plan_id = next_id
-      UsageLimit.save(service_id: service.id,
-                      plan_id: user_plan_id,
-                      metric_id: metric_id,
-                      day: user_daily_limit)
-      user = User.new(service_id: service.id,
-                      username: 'Bob',
-                      state: :active,
-                      plan_id: user_plan_id)
-      user.save
-
-      { app: app, user: user }
-    end
-
     # Sets a service with a metric hierarchy with the number of levels specified.
     # Generates only one metric on each level.
     #
