@@ -164,6 +164,9 @@ module ThreeScale
           provider_key_from(params[:service_token], params[:service_id])
 
         raise_provider_key_error(params) if blank?(provider_key)
+
+        check_no_user_id
+
         halt 403 unless valid_usage_params?
 
         # As params is passed to other methods, we need to overwrite the
@@ -566,6 +569,20 @@ module ThreeScale
 
         if transactions.any? { |_id, data| data.nil? }
           raise TransactionsHasNilTransaction
+        end
+
+        if transactions.any? { |_id, data| data.is_a?(Hash) && data[:user_id] }
+          raise EndUsersNoLongerSupported
+        end
+      end
+
+      # In previous versions it was possible to authorize by end-user.
+      # Apisonator used the "user_id" param to do that.
+      # That's no longer supported, and we want to raise an error when we
+      # detect that param to let the user know that.
+      def check_no_user_id
+        if params && params[:user_id]
+          raise EndUsersNoLongerSupported
         end
       end
 
