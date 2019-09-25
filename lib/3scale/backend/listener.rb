@@ -46,15 +46,6 @@ module ThreeScale
       ##~ @parameter_user_key_inline = @parameter_user_key.clone
       ##~ @parameter_user_key_inline["description_inline"]  = true
 
-      ##~ @parameter_user_id = {"name" => "user_id", "dataType" => "string", "paramType" => "query"}
-      ##~ @parameter_user_id["description"] = "User id. String identifying an end user. Required only when the application is rate limiting end users. The End User plans feature is not available in all 3scale plans."
-      ##~ @parameter_user_id_inline = @parameter_user_id.clone
-      ##~ @parameter_user_id_inline["description_inline"] = true
-      ##
-      ##~ @parameter_user_id_oauth = {"name" => "user_id", "dataType" => "string", "paramType" => "query"}
-      ##~ @parameter_user_id_oauth["description"] = "User id. String identifying an end user. Used only when the application is rate limiting end users and the specified token is not associated to a user. The End User plans feature is not available in all 3scale plans."
-      ##
-
       ##~ @parameter_referrer = {"name" => "referrer", "dataType" => "string", "required" => false, "paramType" => "query"}
       ##~ @parameter_referrer["description"] = "Referrer IP Address or Domain. Required only if referrer filtering is enabled. If special value '*' (wildcard) is passed, the referrer check is bypassed."
       ##
@@ -99,7 +90,6 @@ module ThreeScale
       ##~ @parameter_transaction_app_id["parameters"] = []
       ##
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_app_id_inline
-      ##~ @parameter_transaction_app_id["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_app_id["parameters"] << @timestamp
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_usage
       ##~ @parameter_transaction_app_id["parameters"] << @parameter_log
@@ -109,7 +99,6 @@ module ThreeScale
       ##~ @parameter_transaction_api_key["parameters"] = []
 
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_key_inline
-      ##~ @parameter_transaction_api_key["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_api_key["parameters"] << @timestamp
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_usage
       ##~ @parameter_transaction_api_key["parameters"] << @parameter_log
@@ -119,7 +108,6 @@ module ThreeScale
       ##~ @parameter_transaction_oauth["parameters"] = []
 
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_client_id_inline
-      ##~ @parameter_transaction_oauth["parameters"] << @parameter_user_id_inline
       ##~ @parameter_transaction_oauth["parameters"] << @timestamp
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_usage
       ##~ @parameter_transaction_oauth["parameters"] << @parameter_log
@@ -176,6 +164,9 @@ module ThreeScale
           provider_key_from(params[:service_token], params[:service_id])
 
         raise_provider_key_error(params) if blank?(provider_key)
+
+        check_no_user_id
+
         halt 403 unless valid_usage_params?
 
         # As params is passed to other methods, we need to overwrite the
@@ -228,7 +219,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_app_id
       ##~ op.parameters.add @parameter_app_key
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage_predicted
       ##
       ##~ a = sapi.apis.add
@@ -244,7 +234,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_user_key
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage_predicted
       ##
       get '/transactions/authorize.xml' do
@@ -276,7 +265,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id_oauth
       ##~ op.parameters.add @parameter_usage_predicted
       ##~ op.parameters.add @parameter_redirect_url
       ##~ op.parameters.add @parameter_redirect_uri
@@ -309,7 +297,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_app_id
       ##~ op.parameters.add @parameter_app_key
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
       ##~ op.parameters.add @parameter_log
       ##
@@ -326,7 +313,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_service_id
       ##~ op.parameters.add @parameter_user_key
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id
       ##~ op.parameters.add @parameter_usage
       ##~ op.parameters.add @parameter_log
       ##
@@ -353,7 +339,6 @@ module ThreeScale
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
-      ##~ op.parameters.add @parameter_user_id_oauth
       ##~ op.parameters.add @parameter_usage
       ##~ op.parameters.add @parameter_log
       ##~ op.parameters.add @parameter_redirect_url
@@ -451,9 +436,7 @@ module ThreeScale
         app_id = params[:app_id]
         raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
 
-        # Users do not need to exist, since they can be "created" on-demand.
-        OAuth::Token::Storage.create(params[:token], service_id, app_id,
-                                     params[:user_id], params[:ttl])
+        OAuth::Token::Storage.create(params[:token], service_id, app_id, params[:ttl])
       end
 
       delete '/services/:service_id/oauth_access_tokens/:token.xml' do
@@ -478,7 +461,7 @@ module ThreeScale
 
         raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
 
-        @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id, params[:user_id]
+        @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id
         builder :oauth_access_tokens
       end
 
@@ -488,8 +471,7 @@ module ThreeScale
         service_id = params[:service_id]
         ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
 
-        @token_to_app_id, @token_to_user_id =
-          OAuth::Token::Storage.get_credentials(params[:token], service_id)
+        @token_to_app_id = OAuth::Token::Storage.get_credentials(params[:token], service_id)
 
         builder :oauth_app_id_by_token
       end
@@ -587,6 +569,20 @@ module ThreeScale
 
         if transactions.any? { |_id, data| data.nil? }
           raise TransactionsHasNilTransaction
+        end
+
+        if transactions.any? { |_id, data| data.is_a?(Hash) && data[:user_id] }
+          raise EndUsersNoLongerSupported
+        end
+      end
+
+      # In previous versions it was possible to authorize by end-user.
+      # Apisonator used the "user_id" param to do that.
+      # That's no longer supported, and we want to raise an error when we
+      # detect that param to let the user know that.
+      def check_no_user_id
+        if params && params[:user_id]
+          raise EndUsersNoLongerSupported
         end
       end
 

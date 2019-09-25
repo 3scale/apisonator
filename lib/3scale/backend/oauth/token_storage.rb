@@ -22,7 +22,7 @@ module ThreeScale
             include Backend::Logging
             include Backend::StorageHelpers
 
-            def create(token, service_id, app_id, user_id, ttl = nil)
+            def create(token, service_id, app_id, ttl = nil)
               raise AccessTokenFormatInvalid if token.nil? || token.empty? ||
                 !token.is_a?(String) || token.bytesize > MAXIMUM_TOKEN_SIZE
 
@@ -32,7 +32,7 @@ module ThreeScale
               key = Key.for token, service_id
               raise AccessTokenAlreadyExists.new(token) unless storage.get(key).nil?
 
-              value = Value.for(app_id, user_id)
+              value = Value.for app_id
               token_set = Key::Set.for(service_id, app_id)
 
               store_token token, token_set, key, value, ttl
@@ -41,14 +41,13 @@ module ThreeScale
 
             # Deletes a token
             #
-            # Returns the associated [app_id, user_id] or nil
+            # Returns the associated app_id or nil
             #
             def delete(token, service_id)
               key = Key.for token, service_id
               val = storage.get key
               if val
-                val = Value.from val
-                app_id = val.first
+                app_id = Value.from val
                 token_set = Key::Set.for(service_id, app_id)
 
                 existed, * = remove_a_token token_set, token, key
@@ -63,36 +62,32 @@ module ThreeScale
               val
             end
 
-            # Get a token's associated [app_id, user_id]
+            # Get a token's associated app_id
             def get_credentials(token, service_id)
-              ids = Value.from(storage.get(Key.for(token, service_id)))
-              raise AccessTokenInvalid.new token if ids.first.nil?
-              ids
+              app_id = Value.from(storage.get(Key.for(token, service_id)))
+              raise AccessTokenInvalid.new token if app_id.nil?
+              app_id
             end
 
-            # This is used to list tokens by service, app and possibly user.
+            # This is used to list tokens by service and app.
             #
             # Note: this deletes tokens that have not been found from the set of
             # tokens for the given app - those have to be expired tokens.
-            def all_by_service_and_app(service_id, app_id, user_id = nil)
+            def all_by_service_and_app(service_id, app_id)
               token_set = Key::Set.for(service_id, app_id)
               deltokens = []
               tokens_n_values_flat(token_set, service_id)
                 .select do |(token, _key, value, _ttl)|
-                  app_id, uid = Value.from value
+                  app_id = Value.from value
                   if app_id.nil?
                     deltokens << token
                     false
                   else
-                    !user_id || uid == user_id
+                    true
                   end
                 end
                 .map do |(token, _key, value, ttl)|
-                  if user_id
-                    Token.new token, service_id, app_id, user_id, ttl
-                  else
-                    Token.from_value token, service_id, value, ttl
-                  end
+                  Token.from_value token, service_id, value, ttl
                 end
                 .force.tap do
                   # delete expired tokens (nil values) from token set
@@ -102,38 +97,25 @@ module ThreeScale
                 end
             end
 
-            # Remove tokens by app_id and optionally user_id.
-            #
-            # If user_id is nil or unspecified, this will remove all app tokens
+            # Remove tokens by app_id.
             #
             # Triggered by Application deletion.
             #
-            # TODO: we could expose the ability to delete all tokens for a given
-            # user_id, but we are currently not doing that.
-            #
-            def remove_tokens(service_id, app_id, user_id = nil)
-              filter = lambda do |(_t, _k, v, _ttl)|
-                user_id == Value.from(v).last
-              end if user_id
-              remove_tokens_by service_id, app_id, &filter
+            def remove_tokens(service_id, app_id)
+              remove_tokens_by service_id, app_id
             end
 
 
             private
 
-            # Remove all tokens or only those selected by a block
+            # Remove all tokens
             #
             # I thought of leaving this one public, but remove_*_tokens removed
             # my use cases for the time being.
-            def remove_tokens_by(service_id, app_id, &blk)
+            def remove_tokens_by(service_id, app_id)
               token_set = Key::Set.for(service_id, app_id)
 
-              # No block? Just remove everything and smile!
-              if blk.nil?
-                remove_whole_token_set(token_set, service_id)
-              else
-                remove_token_set_by(token_set, service_id, &blk)
-              end
+              remove_whole_token_set(token_set, service_id)
             end
 
             def remove_token_set_by(token_set, service_id, &blk)

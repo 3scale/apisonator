@@ -2,13 +2,12 @@ module ThreeScale
   module Backend
     module Stats
       class KeyGenerator
-        attr_reader :service_id, :applications, :metrics, :users, :from, :to
+        attr_reader :service_id, :applications, :metrics, :from, :to
 
-        def initialize(service_id:, applications: [], metrics: [], users: [], from:, to:, **)
+        def initialize(service_id:, applications: [], metrics: [], from:, to:, **)
           @service_id = service_id
           @applications = applications
           @metrics = metrics
-          @users = users
           @from = from
           @to = to
         end
@@ -16,10 +15,8 @@ module ThreeScale
         def keys
           response_code_service_keys +
             response_code_application_keys +
-            response_code_user_keys +
             usage_service_keys +
-            usage_application_keys +
-            usage_user_keys
+            usage_application_keys
         end
 
         private
@@ -53,16 +50,6 @@ module ThreeScale
           end
         end
 
-        def response_code_user_keys
-          periods(PeriodCommons::PERMANENT_EXPANDED_GRANULARITIES).flat_map do |period|
-            response_codes.flat_map do |response_code|
-              users.flat_map do |user|
-                Keys.user_response_code_value_key(service_id, user, response_code, period)
-              end
-            end
-          end
-        end
-
         def usage_service_keys
           periods(PeriodCommons::PERMANENT_SERVICE_GRANULARITIES).flat_map do |period|
             metrics.flat_map do |metric|
@@ -76,16 +63,6 @@ module ThreeScale
             metrics.flat_map do |metric|
               applications.flat_map do |application|
                 Keys.application_usage_value_key(service_id, application, metric, period)
-              end
-            end
-          end
-        end
-
-        def usage_user_keys
-          periods(PeriodCommons::PERMANENT_EXPANDED_GRANULARITIES).flat_map do |period|
-            users.flat_map do |user|
-              metrics.flat_map do |metric|
-                Keys.user_usage_value_key(service_id, user, metric, period)
               end
             end
           end

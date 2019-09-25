@@ -4,7 +4,6 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionGeneratorJob do
   let(:service_id) { '123456' }
   let(:applications) { %w[1] }
   let(:metrics) { %w[10] }
-  let(:users) { %w[100] }
   let(:from) { Time.new(2002, 10, 31).to_i }
   let(:to) { Time.new(2002, 11, 30).to_i }
   let(:job) do
@@ -12,7 +11,6 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionGeneratorJob do
       service_id: service_id,
       applications: applications,
       metrics: metrics,
-      users: users,
       from: from,
       to: to
     )

@@ -345,11 +345,6 @@ module ThreeScale
           service.save!
           expect(Memoizer.memoized?(Memoizer.build_key(Service, :default_id, 'foo'))).to be false
         end
-
-        it 'validates user_registration_required field' do
-          service.user_registration_required = false
-          expect { service.save! }.to raise_error(ServiceRequiresDefaultUserPlan)
-        end
       end
 
       describe '.delete_by_id' do

@@ -13,10 +13,6 @@ RSpec.shared_examples 'job hash is correct' do
     expect(job).to include(metrics: metrics)
   end
 
-  it 'has users' do
-    expect(job).to include(users: users)
-  end
-
   it 'has from' do
     expect(job).to include(from: from)
   end
@@ -36,7 +32,6 @@ RSpec.describe ThreeScale::Backend::Stats::DeleteJobDef do
   let(:service_id) { 'some_service_id' }
   let(:applications) { %w[1 2 3] }
   let(:metrics) { %w[10 20 30] }
-  let(:users) { %w[100 200 300] }
   let(:from) { Time.new(2002, 10, 31).to_i }
   let(:to) { Time.new(2003, 10, 31).to_i }
   let(:params) do
@@ -44,7 +39,6 @@ RSpec.describe ThreeScale::Backend::Stats::DeleteJobDef do
       service_id: service_id,
       applications: applications,
       metrics: metrics,
-      users: users,
       from: from,
       to: to
     }
@@ -121,21 +115,6 @@ RSpec.describe ThreeScale::Backend::Stats::DeleteJobDef do
       let(:metrics) { ['3', [], '4'] }
       include_examples 'validation error'
     end
-
-    context 'users field is nil' do
-      let(:users) { nil }
-      include_examples 'validation error'
-    end
-
-    context 'users field is not array' do
-      let(:users) { 3 }
-      include_examples 'validation error'
-    end
-
-    context 'users field constains element bad string' do
-      let(:users) { ['3', [], '4'] }
-      include_examples 'validation error'
-    end
   end
 
   context '#run_async' do
@@ -148,7 +127,7 @@ RSpec.describe ThreeScale::Backend::Stats::DeleteJobDef do
       expect(ThreeScale::Backend::Stats::PartitionGeneratorJob).to have_queued(anything,
                                                                                service_id,
                                                                                applications,
-                                                                               metrics, users,
+                                                                               metrics,
                                                                                from, to, nil)
     end
   end

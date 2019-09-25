@@ -200,7 +200,6 @@ module ThreeScale
       end
 
       def save!
-        validate_user_registration_required
         set_as_default_if_needed
         persist
         clear_cache
@@ -270,15 +269,6 @@ module ThreeScale
 
       def storage_key_by_provider(attribute)
         self.class.storage_key_by_provider provider_key, attribute
-      end
-
-      def validate_user_registration_required
-        @user_registration_required = true if @user_registration_required.nil?
-
-        if !user_registration_required? &&
-          (default_user_plan_id.nil? || default_user_plan_name.nil?)
-          raise ServiceRequiresDefaultUserPlan
-        end
       end
 
       def set_as_default_if_needed

@@ -2,7 +2,7 @@ module ThreeScale
   module Backend
     module Stats
       class DeleteJobDef
-        ATTRIBUTES = %i[service_id applications metrics users from to context_info].freeze
+        ATTRIBUTES = %i[service_id applications metrics from to context_info].freeze
         private_constant :ATTRIBUTES
         attr_reader(*ATTRIBUTES)
 
@@ -19,7 +19,7 @@ module ThreeScale
 
         def run_async
           Resque.enqueue(PartitionGeneratorJob, Time.now.getutc.to_f, service_id, applications,
-                         metrics, users, from, to, context_info)
+                         metrics, from, to, context_info)
         end
 
         def to_json
@@ -47,11 +47,6 @@ module ThreeScale
           # metrics is array
           raise_validation_error('metrics field') unless metrics.is_a? Array
           raise_validation_error('metrics values') unless metrics.all? do |x|
-            x.is_a?(String) || x.is_a?(Integer)
-          end
-          # users is array
-          raise_validation_error('users field') unless users.is_a? Array
-          raise_validation_error('users values') unless users.all? do |x|
             x.is_a?(String) || x.is_a?(Integer)
           end
         end

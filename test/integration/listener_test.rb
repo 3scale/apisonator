@@ -74,9 +74,33 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 'bad_request', node['code']
   end
 
+  def test_unsupported_end_users_auth
+    get '/transactions/authorize.xml', provider_key: 'pk', user_id: '123'
+    check_end_users_not_supported_error(last_response)
+
+    get '/transactions/authrep.xml', provider_key: 'pk', user_id: '123'
+    check_end_users_not_supported_error(last_response)
+  end
+
+  def test_unsupported_end_users_report
+    post '/transactions.xml',
+         provider_key: 'pk',
+         service_id: '42',
+         transactions: { 0 => { user_id: '123', usage: { 'hits' => 1 } } }
+
+    check_end_users_not_supported_error(last_response)
+  end
+
   private
 
   def xml
     Nokogiri::XML(last_response.body)
+  end
+
+  def check_end_users_not_supported_error(last_response)
+    assert_equal 400, last_response.status
+    node = xml.at('error')
+    assert_equal 'End-users are no longer supported, do not specify the user_id parameter', node.content
+    assert_equal 'end_users_no_longer_supported', node['code']
   end
 end

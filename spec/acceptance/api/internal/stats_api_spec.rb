@@ -9,7 +9,6 @@ resource 'Stats (prefix: /services/:service_id/stats)' do
   let(:provider_key) { 'statsfoo' }
   let(:applications) { %w[1 2 3] }
   let(:metrics) { %w[10 20 30] }
-  let(:users) { %w[100 200 300] }
   let(:from) { Time.new(2002, 10, 31).to_i }
   let(:to) { Time.new(2003, 10, 31).to_i }
   let(:req_body) do
@@ -17,7 +16,6 @@ resource 'Stats (prefix: /services/:service_id/stats)' do
       deletejobdef: {
         applications: applications,
         metrics: metrics,
-        users: users,
         from: from,
         to: to
       }

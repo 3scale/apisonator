@@ -4,15 +4,7 @@ module ThreeScale
       class Limits < Base
 
         def apply
-          limits_app_ok = status.application ? valid_limits_app? : true
-
-          limits_ok = if limits_app_ok
-                        status.user ? valid_limits_user? : true
-                      else
-                        false
-                      end
-
-          limits_ok ? succeed! : fail!(LimitsExceeded.new)
+          valid_limits_app? ? succeed! : fail!(LimitsExceeded.new)
         end
 
         private
@@ -30,10 +22,6 @@ module ThreeScale
 
         def valid_limits_app?
           valid_limits?(status.values, status.application.usage_limits)
-        end
-
-        def valid_limits_user?
-          valid_limits?(status.user_values, status.user.usage_limits)
         end
 
         def valid_limits?(values, limits)

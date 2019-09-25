@@ -32,7 +32,7 @@ module ThreeScale
             before do
               expect(ReportJob)
                   .to receive(:parse_transactions)
-                          .and_raise(Backend::ServiceRequiresRegisteredUser.new(service_id))
+                          .and_raise(Backend::UserKeyInvalid.new('some_user_key'))
             end
 
             it 'rescues the exception' do

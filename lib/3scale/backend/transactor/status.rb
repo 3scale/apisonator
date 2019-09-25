@@ -16,13 +16,11 @@ module ThreeScale
           @usage           = attributes[:usage]
           @predicted_usage = attributes[:predicted_usage]
           @values          = filter_values(attributes[:values] || {})
-          @user            = attributes[:user]
-          @user_values     = filter_values(attributes[:user_values])
           @timestamp       = attributes[:timestamp] || Time.now.getutc
           @hierarchy_ext   = attributes[:hierarchy]
 
           raise 'service_id not specified' if @service_id.nil?
-          raise ':application is required' if @application.nil? && @user.nil?
+          raise ':application is required' if @application.nil?
 
           @redirect_uri_field = REDIRECT_URI_FIELD
           @authorized  = true
@@ -33,8 +31,6 @@ module ThreeScale
         attr_reader :oauth
         attr_accessor :redirect_uri_field
         attr_accessor :values
-        attr_reader :user
-        attr_accessor :user_values
 
         def reject!(error)
           @authorized = false
@@ -70,34 +66,17 @@ module ThreeScale
           @application.plan_name unless @application.nil?
         end
 
-        def user_plan_name
-          @user.plan_name unless @user.nil?
-        end
-
         def application_usage_reports
-          @usage_report ||= load_usage_reports @application, :application
+          @usage_report ||= load_usage_reports @application
         end
 
-        def user_usage_reports
-          @user_usage_report ||= load_usage_reports @user, :user
-        end
-
-        def value_for_usage_limit(usage_limit, type = :application)
-          if type==:application
-            values = @values[usage_limit.period]
-          else
-            values = @user_values[usage_limit.period]
-          end
+        def value_for_usage_limit(usage_limit)
+          values = @values[usage_limit.period]
           values && values[usage_limit.metric_id] || 0
         end
 
         def value_for_application_usage_limit(usage_limit)
           values = @values[usage_limit.period]
-          values && values[usage_limit.metric_id] || 0
-        end
-
-        def value_for_user_usage_limit(usage_limit)
-          values = @user_values[usage_limit.period]
           values && values[usage_limit.metric_id] || 0
         end
 
@@ -120,7 +99,6 @@ module ThreeScale
 
           if oauth
             add_application_section(xml)
-            add_user_section(xml)
           end
 
           hierarchy_reports = [] if @hierarchy_ext
@@ -128,11 +106,6 @@ module ThreeScale
             add_plan_section(xml, 'plan'.freeze, plan_name)
             add_reports_section(xml, application_usage_reports)
             hierarchy_reports.concat application_usage_reports if hierarchy_reports
-          end
-          if !@user.nil?
-            add_plan_section(xml, 'user_plan'.freeze, user_plan_name)
-            add_reports_section(xml, user_usage_reports, true)
-            hierarchy_reports.concat user_usage_reports if hierarchy_reports
           end
 
           if hierarchy_reports
@@ -144,13 +117,12 @@ module ThreeScale
 
         private
 
-        # Returns the app usage reports and user usage reports needed to
-        # construct the limit headers. If the status does not have a 'usage',
-        # this method returns all the usage reports. Otherwise, it returns the
-        # reports associated with the metrics present in the 'usage' and their
-        # parents.
+        # Returns the app usage reports needed to construct the limit headers.
+        # If the status does not have a 'usage', this method returns all the
+        # usage reports. Otherwise, it returns the reports associated with the
+        # metrics present in the 'usage' and their parents.
         def reports_to_calculate_limit_headers
-          all_reports = application_usage_reports + user_usage_reports
+          all_reports = application_usage_reports
 
           return all_reports if (@usage.nil? || @usage.empty?)
 
@@ -220,13 +192,7 @@ module ThreeScale
                  '</application>'
         end
 
-        def add_user_section(xml)
-          if !@user.nil?
-            xml << "<user><id>".freeze << @user.username << "</id></user>".freeze
-          end
-        end
-
-        def load_usage_reports(what, type)
+        def load_usage_reports(application)
           # We might have usage limits that apply to metrics that no longer
           # exist. In that case, the usage limit refers to a metric ID that no
           # longer has a name associated to it. When that happens, we do not
@@ -236,23 +202,19 @@ module ThreeScale
           # for some of the usage limits.
 
           reports = []
-          if !what.nil?
-            what.usage_limits.each do |usage_limit|
-              if what.metric_name(usage_limit.metric_id)
-                reports << UsageReport.new(self, usage_limit, type)
+          if !application.nil?
+            application.usage_limits.each do |usage_limit|
+              if application.metric_name(usage_limit.metric_id)
+                reports << UsageReport.new(self, usage_limit)
               end
             end
           end
           reports
         end
 
-        def add_reports_section(xml, reports, report_type_user = false)
+        def add_reports_section(xml, reports)
           unless reports.empty?
-            xml_node = if report_type_user
-                         'user_usage_reports>'.freeze
-                       else
-                         'usage_reports>'.freeze
-                       end
+            xml_node = 'usage_reports>'.freeze
             xml << '<'.freeze
             xml << xml_node
             reports.each do |report|

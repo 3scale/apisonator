@@ -14,31 +14,23 @@ module ThreeScale
         end
 
         post '/' do
-          begin
-            svc_attrs = api_params Service
-            service = Service.save!(svc_attrs)
-            [201, headers, {service: service.to_hash, status: :created}.to_json]
-          rescue ServiceRequiresDefaultUserPlan => e
-            respond_with_400 e
-          end
+          svc_attrs = api_params Service
+          service = Service.save!(svc_attrs)
+          [201, headers, {service: service.to_hash, status: :created}.to_json]
         end
 
         put '/:id' do
-          begin
-            svc_attrs = api_params Service
-            service = Service.load_by_id(params[:id])
-            if service
-              svc_attrs.each do |attr, value|
-                service.send "#{attr}=", value
-              end
-              service.save!
-            else
-              service = Service.save!(svc_attrs)
+          svc_attrs = api_params Service
+          service = Service.load_by_id(params[:id])
+          if service
+            svc_attrs.each do |attr, value|
+              service.send "#{attr}=", value
             end
-            {service: service.to_hash, status: :ok}.to_json
-          rescue ServiceRequiresDefaultUserPlan => e
-            respond_with_400 e
+            service.save!
+          else
+            service = Service.save!(svc_attrs)
           end
+          {service: service.to_hash, status: :ok}.to_json
         end
 
         put '/change_provider_key/:key' do

@@ -152,7 +152,7 @@ module ThreeScale
                                               values: usage)
 
               max_utilization, max_record = Alerts.utilization(
-                  status.application_usage_reports, status.user_usage_reports)
+                  status.application_usage_reports)
 
               if max_utilization >= 0.0
                 Alerts.update_utilization(service_id,

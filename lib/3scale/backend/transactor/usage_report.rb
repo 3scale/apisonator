@@ -5,20 +5,14 @@ module ThreeScale
         class UsageReport
           attr_reader :type, :period
 
-          def initialize(status, usage_limit, type)
+          def initialize(status, usage_limit)
             @status      = status
             @usage_limit = usage_limit
-            @type        = type
             @period      = usage_limit.period.new(status.timestamp)
           end
 
           def metric_name
-            @metric_name ||=
-              if @type == :application
-                @status.application.metric_name(metric_id)
-              else
-                @status.user.metric_name(metric_id)
-              end
+            @metric_name ||= @status.application.metric_name(metric_id)
           end
 
           def metric_id
@@ -30,7 +24,7 @@ module ThreeScale
           end
 
           def current_value
-            @current_value ||= @status.value_for_usage_limit(@usage_limit, @type)
+            @current_value ||= @status.value_for_usage_limit(@usage_limit)
           end
 
           # Returns -1 if the period is eternity. Otherwise, returns the time

@@ -37,22 +37,11 @@ The Redis layout for mapping a token to a service is a single key-value:
 * `oauth_access_tokens/service:#{service_id}/#{token}`
 
 So it depends only on a service. This key is known as the `token_key`. The value
-of this key *must* contain an application identifier and *optionally* a user
-identifier.
+of this key *must* contain an application identifier.
 
-When a user identifier is NOT present, and the application identifier is
-'app_id', the value has the form:
+The application identifier is 'app_id' and the value has the form:
 
 * `app_id`
-
-When a user identifier IS present and is 'user_id', the value has the form:
-
-* `user_len:7/user_id/app_id`
-
-Notice that in the latter case a prefix `user_len` and an integer have been
-added, as well as separators `/` to encode the additional information. The
-integer is the amount of characters that the `user_id` has. This has to be like
-this because both `app_id` and `user_id` are basically free-form.
 
 Appropriate checks are in place to parse the above possibilities.
 
@@ -72,17 +61,11 @@ Their format is:
 
 * `"oauth_access_tokens/service:#{service_id}/app:#{app_id}/"`
 
-The remaining question is how do we know which users have tokens. We basically
-walk the set of tokens and filter them according to the user we are interested
-in. Because users can be totally made up and never used again (ie. not stored at
-all because they might be temporary), we should not store relationships.
-
 ### Redis steps
 
 When storing a new token, we add `token_key` in Redis and assign an optional TTL
 to it if the token expires after a certain amount of time. The value of such key
-is the (application id, user id) referred, with the user specific prefix if
-applicable.
+is the application id referred.
 
 We also add the token to the `token_set_key` so that we can list the tokens for
 that application. We do the reverse steps when deleting.
@@ -99,10 +82,6 @@ This is the feature that requires walking the token set.
 > in the endpoint (or a way to stream results) and we don't yet use Redis' scan
 > support anywhere in the codebase to avoid blocking the database.
 
-When we list the tokens for a given service and application, we want to list
-*all* of them, that is, including user-specific tokens. We also support listing
-those that apply to a single user alone.
-
 Additionally, we want to take the opportunity to make some janitorial work.
 Because tokens can expire, we check that they are still valid, and if not, do
 all the related housekeeping.
@@ -111,20 +90,19 @@ When we are done, we return the tokens in an array.
 
 ### Redis steps
 
-First thing we do is getting the members of the `token_set_key` set. We then
-filter the tokens if we're interested in a specific user identifier.
+First thing we do is getting the members of the `token_set_key` set.
 
 For each token we get, we build its `token_key` and get it from Redis. If the
-result was not nil, it means we got a correct tuple of (application id, user id),
-and thus create a new `OAuth::Token` object ready to be returned.
+result was not nil, it means we got a correct application id, and thus create a
+new `OAuth::Token` object ready to be returned.
 
 If the result *was* nil, it means that token is no longer valid (expired). In
 that case, we remove the token from the `token_set_key` set.
 
 # Authorization
 
-Authorization is granted or denied based on the application id and user id that
-the token points to. Obviously, no authorization will occur if there is no such
-mapping. However, *all and any* application and user identifiers provided
-through parameters will take precedence over identifiers found through the
-token. (this, inexplicably, totally bypasses `user_key` at the moment).
+Authorization is granted or denied based on the application id that the token
+points to. Obviously, no authorization will occur if there is no such mapping.
+However, *all and any* application identifiers provided through parameters will
+take precedence over identifiers found through the token. (this, inexplicably,
+totally bypasses `user_key` at the moment).

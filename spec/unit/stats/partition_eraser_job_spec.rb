@@ -4,14 +4,13 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
   let(:service_id) { '123456' }
   let(:applications) { %w[] }
   let(:metrics) { %w[] }
-  let(:users) { %w[] }
   let(:from) { Time.new(2002, 10, 31).to_i }
   let(:to) { Time.new(2002, 11, 30).to_i }
   let(:offset) { 5 }
   let(:length) { 10 }
 
   subject do
-    described_class.perform_logged(nil, service_id, applications, metrics, users, from, to,
+    described_class.perform_logged(nil, service_id, applications, metrics, from, to,
                                    offset, length, nil)
   end
 

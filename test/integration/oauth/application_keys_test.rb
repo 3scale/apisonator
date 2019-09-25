@@ -16,10 +16,6 @@ class OauthApplicationKeysTest < Test::Unit::TestCase
                                     :state      => :active,
                                     :plan_id    => @plan_id,
                                     :plan_name  => @plan_name)
-    @user = User.save!(:username => 'some_user',
-                       :service_id => @service.id,
-                       :plan_id => '1',
-                       :plan_name => 'some_plan')
   end
 
   test 'succeeds if no application key is defined nor passed' do
@@ -85,22 +81,5 @@ class OauthApplicationKeysTest < Test::Unit::TestCase
                                              :app_key      => ''
 
     assert_not_authorized 'application key is missing'
-  end
-
-  test 'succeeds if app_id and user_id are specified' do
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id       => @application.id,
-                                             :user_id      => @user.username
-
-    assert_authorized
-  end
-
-  test 'succeeds if app_id and user_id are specified while having an app_key' do
-    @application.create_key
-    get '/transactions/oauth_authorize.xml', :provider_key => @provider_key,
-                                             :app_id       => @application.id,
-                                             :user_id      => @user.username
-
-    assert_authorized
   end
 end

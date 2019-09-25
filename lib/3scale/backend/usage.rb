@@ -2,13 +2,6 @@ module ThreeScale
   module Backend
     class Usage
       class << self
-        def user_usage(user, timestamp)
-          usage(user, timestamp) do |metric_id, instance_period|
-            Stats::Keys.user_usage_value_key(
-                user.service_id, user.username, metric_id, instance_period)
-          end
-        end
-
         def application_usage(application, timestamp)
           usage(application, timestamp) do |metric_id, instance_period|
             Stats::Keys.application_usage_value_key(
