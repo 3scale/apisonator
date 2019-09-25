@@ -96,7 +96,7 @@ apisonator_worker_job_runtime_seconds_count{type="ReportJob"} \d+\.\d+
           sleep(1) # The web server takes a bit to start
 
           expect { Net::HTTP.get('localhost', metrics_endpoint, metrics_port) }
-                 .to raise_error(Errno::EADDRNOTAVAIL)
+            .to raise_error(SystemCallError)
         end
       end
 
