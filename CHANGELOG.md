@@ -2,6 +2,12 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.95.0 - 2019-09-25
+
+### Changed
+
+- Dropped support for end-users [#128](https://github.com/3scale/apisonator/pull/128)
+
 ## 2.94.2 - 2019-09-10
 
 ### Changed
