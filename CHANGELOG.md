@@ -2,6 +2,14 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.96.0 - 2019-09-30
+
+## Added
+
+- Support for non-blocking Redis calls using the redis-async gem. The feature is
+opt-in and can be enabled only in workers for now. The feature is enabled with
+`CONFIG_REDIS_ASYNC=true` [#96](https://github.com/3scale/apisonator/pull/96)
+
 ## 2.95.0 - 2019-09-25
 
 ### Changed

@@ -3,7 +3,7 @@
   <dependencies>
           <dependency>
         <packageName>3scale_backend</packageName>
-        <version>2.95.0</version>
+        <version>2.96.0</version>
         <licenses>
                       <license>
               <name>Apache 2.0</name>
@@ -24,6 +24,46 @@
           <dependency>
         <packageName>airbrake</packageName>
         <version>4.3.1</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>async</packageName>
+        <version>1.20.1</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>async-io</packageName>
+        <version>1.25.0</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>async-redis</packageName>
+        <version>0.3.4</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>async-rspec</packageName>
+        <version>1.13.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -154,6 +194,16 @@
           <dependency>
         <packageName>concurrent-ruby</packageName>
         <version>1.0.5</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>console</packageName>
+        <version>1.4.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -434,6 +484,16 @@
                   </licenses>
       </dependency>
           <dependency>
+        <packageName>nio4r</packageName>
+        <version>2.4.0</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
         <packageName>nokogiri</packageName>
         <version>1.10.4</version>
         <licenses>
@@ -678,6 +738,26 @@
                   </licenses>
       </dependency>
           <dependency>
+        <packageName>rspec-files</packageName>
+        <version>1.0.1</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>rspec-memory</packageName>
+        <version>1.0.1</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
         <packageName>rspec-mocks</packageName>
         <version>3.7.0</version>
         <licenses>
@@ -844,6 +924,16 @@
           <dependency>
         <packageName>timecop</packageName>
         <version>0.9.1</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>timers</packageName>
+        <version>4.3.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
