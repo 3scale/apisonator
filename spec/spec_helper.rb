@@ -1,5 +1,6 @@
 require 'rspec'
 require 'resque_spec'
+require 'async'
 
 if ENV['TEST_COVERAGE']
   require 'simplecov'
@@ -38,11 +39,11 @@ RSpec.configure do |config|
     require_relative '../test/test_helpers/configuration'
     require_relative '../test/test_helpers/storage'
 
-    TestHelpers::Storage::Mock.mock_storage_client!
+    TestHelpers::Storage::Mock.mock_storage_clients
   end
 
   config.after :suite do
-    TestHelpers::Storage::Mock.unmock_storage_client!
+    TestHelpers::Storage::Mock.unmock_storage_clients
   end
 
   config.mock_with :rspec
@@ -52,6 +53,19 @@ RSpec.configure do |config|
     ThreeScale::Backend::JobFetcher.const_get(:QUEUES).each { |queue| Resque.remove_queue(queue) }
     ThreeScale::Backend::Storage.instance(true).flushdb
     ThreeScale::Backend::Memoizer.reset!
+  end
+
+  config.after :each do
+    ThreeScale::Backend::Storage.instance.close
+  end
+
+  config.around :each do |example|
+    Async.run do
+      # TODO: This is needed for the acceptance specs. Not sure why.
+      RSpec.current_example = example
+
+      example.run
+    end
   end
 end
 

@@ -2,6 +2,8 @@ require_relative '../spec_helper'
 
 module ThreeScale
   module Backend
+    # Tests are run only when redis.async = false. These tests only check
+    # sentinels, which are not supported by the async client.
     describe QueueStorage do
       describe "#connection" do
         let(:configuration) { ThreeScale::Backend::Configuration::Loader.new }
@@ -11,8 +13,7 @@ module ThreeScale
           subject(:conn)    { QueueStorage.connection(environment, configuration) }
 
           it 'returns a non sentinel connection' do
-            connector = conn.instance_variable_get(:@client).instance_variable_get(:@connector)
-            expect(connector).to_not be_an_instance_of(Redis::Client::Connector::Sentinel)
+            expect(is_sentinel?(conn)).to be false
           end
         end
 
@@ -35,11 +36,27 @@ module ThreeScale
             end
 
             it 'returns a sentinel connection' do
-              connector = conn.instance_variable_get(:@client).instance_variable_get(:@connector)
-              expect(connector).to be_an_instance_of(Redis::Client::Connector::Sentinel)
+              # This test only need to run when async.redis = false because the
+              # async-client does not support sentinels.
+              # I could not find a better place for the "if", because the
+              # config is not initialized outside here.
+
+              unless ThreeScale::Backend.configuration.redis.async
+                expect(is_sentinel?(conn)).to be true
+              end
             end
           end
         end
+      end
+
+      private
+
+      def is_sentinel?(connection)
+        connector = connection.instance_variable_get(:@inner)
+                              .instance_variable_get(:@client)
+                              .instance_variable_get(:@connector)
+
+        connector.instance_of?(Redis::Client::Connector::Sentinel)
       end
     end
   end

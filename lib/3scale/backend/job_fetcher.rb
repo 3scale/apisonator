@@ -2,6 +2,7 @@ module ThreeScale
   module Backend
     class JobFetcher
       include Resque::Helpers
+      include Configurable
 
       # the order is relevant
       QUEUES = [:priority, :main, :stats].freeze
@@ -10,16 +11,48 @@ module ThreeScale
       REDIS_TIMEOUT = 60
       private_constant :REDIS_TIMEOUT
 
+      DEFAULT_MAX_PENDING_JOBS = 100
+      private_constant :DEFAULT_MAX_PENDING_JOBS
+
+      DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS = 1.0/100
+      private_constant :DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS
+
+      RedisConnectionError = Class.new(RuntimeError)
+
       # The default redis_client is the one defined in Resque::Helpers
       def initialize(redis_client: redis, fetch_timeout: REDIS_TIMEOUT)
         @redis = redis_client
         @fetch_timeout = fetch_timeout
         @queues ||= QUEUES.map { |q| "queue:#{q}" }
+
+        @max_pending_jobs = configuration.async_worker.max_pending_jobs ||
+            DEFAULT_MAX_PENDING_JOBS
+
+        @wait_before_fetching_more = configuration.async_worker.seconds_before_fetching_more ||
+            DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS
+      end
+
+      def pop_from_queue
+        begin
+          encoded_job = @redis.blpop(*@queues, timeout: @fetch_timeout)
+        rescue Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE => e
+          raise RedisConnectionError.new(e.message)
+        rescue Redis::CommandError => e
+          # Redis::CommandError from redis-rb can be raised for multiple
+          # reasons, so we need to check the error message to distinguish
+          # connection errors from the rest.
+          if e.message == 'ERR Connection timed out'.freeze
+            raise RedisConnectionError.new(e.message)
+          else
+            raise e
+          end
+        end
+
+        encoded_job
       end
 
       def fetch
-        encoded_job = @redis.blpop(*@queues, timeout: @fetch_timeout)
-
+        encoded_job = pop_from_queue
         return nil if encoded_job.nil? || encoded_job.empty?
 
         begin
@@ -43,6 +76,46 @@ module ThreeScale
           Worker.logger.notify(e)
           nil
         end
+      end
+
+      # Note: this method calls #close on job_queue after receiving #shutdown.
+      # That signals to the caller that there won't be any more jobs.
+      def start(job_queue)
+        loop do
+          break if @shutdown
+
+          if job_queue.size >= @max_pending_jobs
+            sleep @wait_before_fetching_more
+          else
+            begin
+              job = fetch
+            rescue RedisConnectionError => e
+              # If there has been a connection error or a timeout we wait a bit
+              # because normally, it will be a temporary problem.
+              # In the future, we might want to put a limit in the total number
+              # of attempts or implement exponential backoff retry times.
+              Worker.logger.notify(e)
+              sleep(1)
+
+              # Re-instantiate Redis instance. This is needed to recover from
+              # Errno::EPIPE, not sure if there are others.
+              @redis = ThreeScale::Backend::QueueStorage.connection(
+                  ThreeScale::Backend.environment,
+                  ThreeScale::Backend.configuration
+              )
+             # If there is a different kind of error, it's probably a
+             # programming error. Like sending an invalid blpop command to
+             # Redis. In that case, let the worker crash.
+            end
+            job_queue << job if job
+          end
+        end
+
+        job_queue.close
+      end
+
+      def shutdown
+        @shutdown = true
       end
     end
   end

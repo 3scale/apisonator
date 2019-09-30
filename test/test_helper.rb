@@ -14,6 +14,7 @@ require 'nokogiri'
 require 'rack/test'
 require 'resque_unit'
 require 'timecop'
+require 'async'
 
 # Require test helpers.
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
@@ -23,15 +24,21 @@ Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file
 ThreeScale::Backend::Worker.new
 
 Test::Unit.at_start do
-  TestHelpers::Storage::Mock.mock_storage_client!
+  TestHelpers::Storage::Mock.mock_storage_clients
 end
 
 Test::Unit.at_exit do
-  TestHelpers::Storage::Mock.unmock_storage_client!
+  TestHelpers::Storage::Mock.unmock_storage_clients
 end
 
 class Test::Unit::TestCase
   include ThreeScale
   include ThreeScale::Backend
   include ThreeScale::Backend::Configurable
+
+  alias_method :original_run, :run
+
+  def run(*args, &blk)
+    Async.run { original_run(*args, &blk) }
+  end
 end

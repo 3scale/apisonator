@@ -48,7 +48,8 @@ module ThreeScale
       config.add_section(:queues, :master_name, :sentinels, :role,
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:redis, :url, :proxy, :sentinels, :role,
-                         :connect_timeout, :read_timeout, :write_timeout)
+                         :connect_timeout, :read_timeout, :write_timeout,
+                         :async)
       config.add_section(:analytics_redis, :server,
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:hoptoad, :service, :api_key)
@@ -59,6 +60,18 @@ module ThreeScale
       config.add_section(:oauth, :max_token_size)
       config.add_section(:master, :metrics)
       config.add_section(:worker_prometheus_metrics, :enabled, :port)
+
+      config.add_section(
+          :async_worker,
+
+          # Max number of jobs in the reactor
+          :max_concurrent_jobs,
+          # Max number of jobs in memory pending to be added to the reactor
+          :max_pending_jobs,
+          # Seconds to wait before fetching more jobs when the number of jobs
+          # in memory has reached max_pending_jobs.
+          :seconds_before_fetching_more
+      )
 
       # Configure nested fields
       master_metrics = [:transactions, :transactions_authorize]

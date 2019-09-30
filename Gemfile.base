@@ -27,6 +27,7 @@ group :test do
   gem 'rspec',         '~> 3.7.0', require: nil
   gem 'geminabox',     '~> 0.13.11', require: false
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
+  gem 'async-rspec'
 end
 
 group :development do
@@ -61,3 +62,4 @@ gem 'sinatra-contrib', '~> 2.0.3'
 gem 'bugsnag', '~> 6', require: nil
 gem 'prometheus-client'
 gem 'yabeda-prometheus', '= 0.1.4'
+gem 'async-redis', '~> 0.3.4'
