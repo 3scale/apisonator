@@ -62,4 +62,4 @@ gem 'sinatra-contrib', '~> 2.0.3'
 gem 'bugsnag', '~> 6', require: nil
 gem 'prometheus-client'
 gem 'yabeda-prometheus', '= 0.1.4'
-gem 'async-redis', '~> 0.3.4'
+gem 'async-redis', '~> 0.4.1'
