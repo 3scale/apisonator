@@ -41,15 +41,16 @@ GEM
     airbrake (4.3.1)
       builder
       multi_json
-    async (1.20.1)
+    async (1.22.0)
       console (~> 1.0)
       nio4r (~> 2.3)
       timers (~> 4.1)
     async-io (1.25.0)
       async (~> 1.14)
-    async-redis (0.3.4)
+    async-redis (0.4.1)
       async (~> 1.8)
       async-io (~> 1.10)
+      protocol-redis (~> 0.2.0)
     async-rspec (1.13.0)
       rspec (~> 3.0)
       rspec-files (~> 1.0)
@@ -114,7 +115,7 @@ GEM
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
     net-ssh (4.2.0)
-    nio4r (2.4.0)
+    nio4r (2.5.2)
     nokogiri (1.10.4)
       mini_portile2 (~> 2.4.0)
     parslet (1.8.2)
@@ -123,6 +124,7 @@ GEM
     power_assert (1.1.1)
     prometheus-client (0.9.0)
       quantile (~> 0.2.1)
+    protocol-redis (0.2.0)
     pry (0.11.3)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
@@ -226,7 +228,7 @@ PLATFORMS
 DEPENDENCIES
   3scale_backend!
   airbrake (= 4.3.1)
-  async-redis (~> 0.3.4)
+  async-redis (~> 0.4.1)
   async-rspec
   aws-sdk (= 2.4.2)
   benchmark-ips (~> 2.7.2)
