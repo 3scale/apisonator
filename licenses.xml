@@ -3,7 +3,7 @@
   <dependencies>
           <dependency>
         <packageName>3scale_backend</packageName>
-        <version>2.96.0</version>
+        <version>2.96.1</version>
         <licenses>
                       <license>
               <name>Apache 2.0</name>
@@ -33,7 +33,7 @@
       </dependency>
           <dependency>
         <packageName>async</packageName>
-        <version>1.20.1</version>
+        <version>1.22.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -53,7 +53,7 @@
       </dependency>
           <dependency>
         <packageName>async-redis</packageName>
-        <version>0.3.4</version>
+        <version>0.4.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -485,7 +485,7 @@
       </dependency>
           <dependency>
         <packageName>nio4r</packageName>
-        <version>2.4.0</version>
+        <version>2.5.2</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -554,6 +554,16 @@
                       <license>
               <name>Apache 2.0</name>
               <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>protocol-redis</packageName>
+        <version>0.2.0</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
             </license>
                   </licenses>
       </dependency>
@@ -789,7 +799,7 @@
       </dependency>
           <dependency>
         <packageName>rubyzip</packageName>
-        <version>1.2.3</version>
+        <version>2.0.0</version>
         <licenses>
                       <license>
               <name>Simplified BSD</name>
