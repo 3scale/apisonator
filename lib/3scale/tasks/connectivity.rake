@@ -1,31 +1,41 @@
 namespace :connectivity do
   desc 'Check connectivity of Redis Storage'
   task :redis_storage_check do
-    begin
       redis_instance = ThreeScale::Backend::Storage.instance
-      redis_instance.ping
-    rescue => e
-      warn "Error connecting to Redis Storage: #{e}"
-      exit(false)
-    else
-      puts "Connection to Redis Storage (#{redis_instance.id}) performed successfully"
-    end
+
+      if Environment.using_async_redis?
+        async_ping(redis_instance, 'storage')
+      else
+        ping(redis_instance, 'storage')
+      end
   end
 
   desc 'Check connectivity of Redis Queue Storage'
   task :redis_storage_queue_check do
-    begin
       redis_instance = ThreeScale::Backend::QueueStorage.connection(
         ThreeScale::Backend.environment,
         ThreeScale::Backend.configuration,
       )
-      redis_instance.ping
-    rescue => e
-      warn "Error connecting to Redis Queue Storage: #{e}"
-      exit(false)
-    else
-      puts "Connection to Redis Queue Storage (#{redis_instance.id}) performed successfully"
-    end
+
+      if Environment.using_async_redis?
+        async_ping(redis_instance, 'queue storage')
+      else
+        ping(redis_instance, 'queue storage')
+      end
   end
 
+  private
+
+  def async_ping(redis_instance, storage_type)
+    Async { ping(redis_instance, storage_type) }
+  end
+
+  def ping(redis_instance, storage_type)
+    redis_instance.ping
+  rescue => e
+    warn "Error connecting to Redis #{storage_type}: #{e}"
+    exit(false)
+  else
+    puts "Connection to Redis #{storage_type} performed successfully"
+  end
 end
