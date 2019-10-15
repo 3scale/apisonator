@@ -13,6 +13,10 @@ module ThreeScale
         def saas?
           ThreeScale::Backend.configuration.saas
         end
+
+        def using_async_redis?
+          ThreeScale::Backend.configuration.redis.async
+        end
       end
     end
   end
