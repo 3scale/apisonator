@@ -246,7 +246,14 @@ end
 
 desc 'Reschedule failed jobs'
 task :reschedule_failed_jobs do
-  result = ThreeScale::Backend::FailedJobsScheduler.reschedule_failed_jobs
+  reschedule_method = ThreeScale::Backend::FailedJobsScheduler.method(:reschedule_failed_jobs)
+
+  result = if Environment.using_async_redis?
+             Async { reschedule_method.call }.result
+           else
+             reschedule_method.call
+           end
+
   puts "Rescheduled: #{result[:rescheduled]}. "\
        "Failed and discarded: #{result[:failed_while_rescheduling]}. "\
        "Pending failed jobs: #{result[:failed_current]}."
