@@ -82,3 +82,5 @@ of `spec_helper.rb` in order to make the acceptance tests pass.
 - Cannot use threads in the reactor. There's one test of the suite that fails
 with the async client because of this. It's in the specs for `EventStorage` and
 its context is `with multiple calls at the same moment (race condition)`.
+
+- Cannot use Redis logical databases. See [issue #135](https://github.com/3scale/apisonator/issues/135)
