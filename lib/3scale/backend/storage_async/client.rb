@@ -86,6 +86,7 @@ module ThreeScale
           :lrange,
           :ltrim,
           :mget,
+          :ping,
           :rpush,
           :scard,
           :setex,
