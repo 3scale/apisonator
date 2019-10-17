@@ -2,6 +2,16 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.96.2 - 2019-10-17
+
+### Added
+
+- Async params can be configured using environment variables [PR #138](https://github.com/3scale/apisonator/pull/138)
+
+### Fixed
+
+- Rake tasks now work when using the async redis client [PR #137](https://github.com/3scale/apisonator/pull/137) 
+
 ## 2.96.1 - 2019-10-10
 
 ### Changed
