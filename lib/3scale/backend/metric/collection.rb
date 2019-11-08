@@ -24,10 +24,10 @@ module ThreeScale
         #
         #   {1001 => 42, 1002 => 42}
         #
-        def process_usage(raw_usage)
+        def process_usage(raw_usage, flat_usage = false)
           return {} unless raw_usage
           usage = parse_usage(raw_usage)
-          process_parents(usage)
+          flat_usage ? usage : process_parents(usage)
         end
 
         private
