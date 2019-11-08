@@ -100,7 +100,8 @@ module ThreeScale
           # hierarchy parameter adds information in the response needed
           # to derive which limits affect directly or indirectly the
           # metrics for which authorization is requested.
-          hierarchy:       extensions[:hierarchy] == '1'
+          hierarchy:       extensions[:hierarchy] == '1',
+          flat_usage:      extensions[:flat_usage] == '1'
         }
 
         application.load_metric_names
@@ -146,7 +147,7 @@ module ThreeScale
 
         if (usage || params[:log]) && status.authorized?
           application_id = status.application.id
-          report_enqueue(status.service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "log" => params[:log]}}), {})
+          report_enqueue(status.service_id, { 0 => {"app_id" => application_id, "usage" => usage, "log" => params[:log] } }, request: { extensions: request_info[:extensions] })
           notify_authrep(provider_key, usage ? 1 : 0)
         else
           notify_authorize(provider_key)
