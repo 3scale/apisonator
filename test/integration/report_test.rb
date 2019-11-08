@@ -5,6 +5,7 @@ class ReportTest < Test::Unit::TestCase
   include TestHelpers::Integration
   include TestHelpers::StorageKeys
   include Backend::StorageHelpers
+  include TestHelpers::Extensions
 
   def setup
     @storage = Storage.instance(true)
@@ -1013,5 +1014,39 @@ class ReportTest < Test::Unit::TestCase
     all_increased = metric_ids.all? { |metric_id| usages[metric_id] == 1 }
 
     assert_true all_increased
+  end
+
+  test 'does not propagate the reported usage through the hierarchy with flat usage extension' do
+    test_setup = setup_service_with_metric_hierarchy(3)
+
+    bottom_metric = test_setup[:metrics].last
+
+    current_time = Time.utc(2017, 1, 1)
+    Timecop.freeze(current_time) do
+      post '/transactions.xml', {
+          provider_key: test_setup[:provider_key],
+          service_id: test_setup[:service_id],
+          transactions: { 0 => { app_id: test_setup[:app_id],
+                                 usage: { bottom_metric[:name] => 1 } } },
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::FLAT_USAGE
+      Resque.run!
+    end
+
+    assert_equal 202, last_response.status
+
+    app = Application.load!(test_setup[:service_id], test_setup[:app_id])
+    usages = Usage.application_usage(app, current_time)[Period::Day]
+    metrics = test_setup[:metrics]
+    not_increased, increased = metrics.map { |metric| metric[:name] }
+      .zip(metrics.map { |metric| metric[:id] })
+      .partition { |_, metric_id| usages[metric_id] < 1 }
+      .map(&:to_h)
+
+    assert not_increased.any?
+    assert increased.any?
+    assert_equal not_increased.size, metrics.size - 1
+    assert_equal increased.size, 1
+    assert increased.include?(bottom_metric[:name])
   end
 end
