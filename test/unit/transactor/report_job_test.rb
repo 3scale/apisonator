@@ -21,7 +21,9 @@ module Transactor
         with([{:service_id     => @service_id,
                :application_id => @application_id,
                :timestamp      => nil,
-               :usage          => {@metric_id => 1}}])
+               :usage          => {@metric_id => 1}}],
+               {},
+             )
 
       Transactor::ReportJob.perform(
         @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f, @context_info)
@@ -33,8 +35,8 @@ module Transactor
       Transactor::ReportJob.perform(
         @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
                       '1' => {'app_id' => 'boo',           'usage' => {'hits' => 1}}},
-                     @context_info,
-                     Time.now.getutc.to_f)
+                     Time.now.getutc.to_f,
+                     @context_info)
     end
 
     test 'does not process any transaction if at least one has invalid metric' do
@@ -43,8 +45,8 @@ module Transactor
       Transactor::ReportJob.perform(
         @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
                       '1' => {'app_id' => @application_id, 'usage' => {'foos' => 1}}},
-                     @context_info,
-                     Time.now.getutc.to_f)
+                     Time.now.getutc.to_f,
+                     @context_info)
     end
 
     test 'does not process any transaction if at least one has invalid usage value' do
@@ -53,8 +55,8 @@ module Transactor
       Transactor::ReportJob.perform(
         @service_id, {'0' => {'app_id' => @application_id, 'usage' => {'hits' => 1}},
                       '1' => {'app_id' => @application_id, 'usage' => {'hits' => 'a lot!'}}},
-                     @context_info,
-                     Time.now.getutc.to_f)
+                     Time.now.getutc.to_f,
+                     @context_info)
     end
 
     test 'does not process any transaction if no usage is defined' do
@@ -119,7 +121,9 @@ module Transactor
         with([{:service_id     => @service_id,
                :application_id => @application_id,
                :timestamp      => nil,
-               :usage          => {@metric_id => 1}}])
+               :usage          => {@metric_id => 1}}],
+               {},
+            )
 
       Transactor::ReportJob.perform(
         @service_id, {'0' => {'user_key' => user_key, 'usage' => {'hits' => 1}}}, Time.now.getutc.to_f, @context_info)
