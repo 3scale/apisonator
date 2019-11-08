@@ -4,7 +4,7 @@ module ThreeScale
       class Limits < Base
 
         def apply
-          valid_limits_app? ? succeed! : fail!(LimitsExceeded.new)
+          valid_limits? ? succeed! : fail!(LimitsExceeded.new)
         end
 
         private
@@ -20,13 +20,11 @@ module ThreeScale
           values
         end
 
-        def valid_limits_app?
-          valid_limits?(status.values, status.application.usage_limits)
-        end
-
-        def valid_limits?(values, limits)
-          processed_values = process(values, params[:usage])
-          limits.all? { |limit| limit.validate(processed_values) }
+        def valid_limits?
+          processed_values = process(status.values, params[:usage])
+          status.application.usage_limits.all? do |limit|
+            limit.validate(processed_values)
+          end
         end
 
         def filter_metrics(values, metric_ids)
