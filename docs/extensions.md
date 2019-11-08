@@ -14,6 +14,27 @@ Such extensions can be used as specified in the API Extensions RFC.
 
 ## List of supported extensions
 
+### flat_usage (integer)
+
+This extension applies to the usage data passed in to any call that accepts
+usages. It instructs the software to _assume_ that the client has computed the
+relations between the usage methods so that, ie. if method `m` is a parent of
+method/metric `n`, then any reported hit to `n` has been added to `m`, which in
+turn should also be present in the usage specified by the client. Note that
+failing to compute this properly will result in data that does not make sense,
+such as having a limited parent with a children that goes over the parent
+limits.
+
+#### Accepted values
+
+- 0: disable the extension (default)
+- 1: enable the extension, blindly trust the specified usage values (unsafe)
+
+Values over 1 are currently undefined, but in the future could provide some
+checking to ensure data is consistent, ie. usage data with `n` incremented in
+5 necessarily means `n` parent, if existing, should be specified with a minimum
+of 5, not counting any other potential children.
+
 ### no_body (boolean)
 
 This instructs the software to avoid generating response bodies for certain endpoints.
