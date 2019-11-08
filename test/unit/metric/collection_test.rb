@@ -113,5 +113,27 @@ module Metric
         processed[metric.id] == 2
       end
     end
+
+    def test_process_usage_ignores_hierarchy_when_asked_to_via_flat_usage
+      metric = Metric.new(:service_id => 1001, :id => 2001, :name => 'hits')
+      metric.children << Metric.new(:id => 2002, :name => 'hits_child_1')
+      metric.children << Metric.new(:id => 2003, :name => 'hits_child_2')
+      metric.save
+
+      metrics = Metric::Collection.new(1001)
+
+      assert_equal({'2002' => 2, '2003' => 3},
+        metrics.process_usage({'hits_child_1' => 2, 'hits_child_2' => 3}, true))
+      assert_equal({'2001' => 6, '2002' => 2, '2003' => 3},
+        metrics.process_usage({'hits' => 6, 'hits_child_1' => 2, 'hits_child_2' => 3}, true))
+
+      assert_equal({'2001' => '#6'},
+                   metrics.process_usage({'hits' => '#6'}, true))
+      assert_equal({'2002' => '#6'},
+                   metrics.process_usage({'hits_child_1' => '#6'}, true))
+      assert_equal({'2002' => '#6', '2003' => '#11'},
+                   metrics.process_usage({'hits_child_1' => '#6',
+                                          'hits_child_2' => '#11'}, true))
+    end
   end
 end
