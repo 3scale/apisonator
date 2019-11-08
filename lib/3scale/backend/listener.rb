@@ -174,7 +174,7 @@ module ThreeScale
         # not null/empty.
         params[:provider_key] = provider_key
 
-        auth_status = Transactor.send method_name, provider_key, params, threescale_extensions
+        auth_status = Transactor.send method_name, provider_key, params, request: request_info
         response_auth_call(auth_status)
       rescue ThreeScale::Backend::Error => error
         begin
@@ -610,6 +610,7 @@ module ThreeScale
           ip: request.ip,
           content_type: request.content_type,
           content_length: request.content_length,
+          extensions: threescale_extensions,
         }
       end
 
