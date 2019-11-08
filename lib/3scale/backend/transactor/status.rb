@@ -18,6 +18,7 @@ module ThreeScale
           @values          = filter_values(attributes[:values] || {})
           @timestamp       = attributes[:timestamp] || Time.now.getutc
           @hierarchy_ext   = attributes[:hierarchy]
+          @flat_usage_ext  = attributes[:flat_usage]
 
           raise 'service_id not specified' if @service_id.nil?
           raise ':application is required' if @application.nil?
@@ -31,6 +32,10 @@ module ThreeScale
         attr_reader :oauth
         attr_accessor :redirect_uri_field
         attr_accessor :values
+
+        def flat_usage
+          @flat_usage_ext
+        end
 
         def reject!(error)
           @authorized = false
