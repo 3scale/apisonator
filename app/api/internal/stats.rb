@@ -23,7 +23,17 @@ module ThreeScale
           end
 =end
 
+        # This is an alternative to the above. It just adds the service to a
+        # Redis set to marked is as "to be deleted".
+        # Later a script can read that set and actually delete the keys.
+        # Read the docs of the Stats::Cleaner class for more details.
+        #
+        # Notice that this method ignores the "from" and "to" parameters. When
+        # system calls this method, they're always interested in deleting all
+        # the keys. They were just passing "from" and "to" to make the
+        # implementation of the option above easier.
         delete '' do |service_id|
+          Stats::Cleaner.mark_service_to_be_deleted(service_id)
           { status: :to_be_deleted }.to_json
         end
       end
