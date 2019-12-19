@@ -128,4 +128,27 @@ namespace :stats do
       puts redshift_importer.consistent_data?
     end
   end
+
+  desc 'Delete stats of services marked for deletion'
+  task :cleanup, [:redis_urls, :log_deleted_keys] do |_, args|
+    redis_urls = args[:redis_urls] && args[:redis_urls].split(' ')
+
+    if redis_urls.nil? || redis_urls.empty?
+      puts 'No Redis URLs specified'
+      exit(false)
+    end
+
+    redis_clients = redis_urls.map do |redis_url|
+      parsed_uri = URI.parse(ThreeScale::Backend::Storage::Helpers.send(
+        :to_redis_uri, redis_url)
+      )
+      Redis.new(host: parsed_uri.host, port: parsed_uri.port)
+    end
+
+    log_deleted = args[:log_deleted_keys] == 'true' ? STDOUT : nil
+
+    ThreeScale::Backend::Stats::Cleaner.delete!(
+      redis_clients, log_deleted_keys: log_deleted
+    )
+  end
 end

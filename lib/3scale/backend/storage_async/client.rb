@@ -151,6 +151,15 @@ module ThreeScale
           @redis_async.call(*args)
         end
 
+        def scan(cursor, opts = {})
+          args = ['SCAN', cursor]
+
+          args += ['MATCH', opts[:match]] if opts[:match]
+          args += ['COUNT', opts[:count]] if opts[:count]
+
+          @redis_async.call(*args)
+        end
+
         # This method allows us to send pipelines like this:
         # storage.pipelined do
         #   storage.get('a')
