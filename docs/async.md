@@ -84,3 +84,6 @@ with the async client because of this. It's in the specs for `EventStorage` and
 its context is `with multiple calls at the same moment (race condition)`.
 
 - Cannot use Redis logical databases. See [issue #135](https://github.com/3scale/apisonator/issues/135)
+
+- We need to monkey-patch `Resque.enqueue` of the Resque lib. See the
+`Backend::StorageAsync::ResqueExtensions` module for more details.
