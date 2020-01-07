@@ -24,20 +24,20 @@ module ThreeScale
         notify_report(provider_key, transactions.size)
       end
 
-      def authorize(provider_key, params, extensions = {})
-        do_authorize :authorize, provider_key, params, extensions
+      def authorize(provider_key, params, context_info = {})
+        do_authorize :authorize, provider_key, params, context_info
       end
 
-      def oauth_authorize(provider_key, params, extensions = {})
-        do_authorize :oauth_authorize, provider_key, params, extensions
+      def oauth_authorize(provider_key, params, context_info = {})
+        do_authorize :oauth_authorize, provider_key, params, context_info
       end
 
-      def authrep(provider_key, params, extensions = {})
-        do_authrep :authrep, provider_key, params, extensions
+      def authrep(provider_key, params, context_info = {})
+        do_authrep :authrep, provider_key, params, context_info
       end
 
-      def oauth_authrep(provider_key, params, extensions = {})
-        do_authrep :oauth_authrep, provider_key, params, extensions
+      def oauth_authrep(provider_key, params, context_info = {})
+        do_authrep :oauth_authrep, provider_key, params, context_info
       end
 
       def utilization(service_id, application_id)
@@ -53,7 +53,7 @@ module ThreeScale
 
       private
 
-      def validate(oauth, provider_key, report_usage, params, extensions)
+      def validate(oauth, provider_key, report_usage, params, request_info)
         service = Service.load_with_provider_key!(params[:service_id], provider_key)
         # service_id cannot be taken from params since it might be missing there
         service_id = service.id
@@ -89,6 +89,7 @@ module ThreeScale
                                                           params[:user_key])
         now          = Time.now.getutc
         usage_values = Usage.application_usage(application, now)
+        extensions   = request_info && request_info[:extensions] || {}
         status_attrs = {
           service_id:      service_id,
           application:     application,
@@ -99,7 +100,8 @@ module ThreeScale
           # hierarchy parameter adds information in the response needed
           # to derive which limits affect directly or indirectly the
           # metrics for which authorization is requested.
-          hierarchy:       extensions[:hierarchy] == '1'
+          hierarchy:       extensions[:hierarchy] == '1',
+          flat_usage:      extensions[:flat_usage] == '1'
         }
 
         application.load_metric_names
@@ -126,14 +128,15 @@ module ThreeScale
         app_id
       end
 
-      def do_authorize(method, provider_key, params, extensions)
+      def do_authorize(method, provider_key, params, context_info)
         notify_authorize(provider_key)
-        validate(method == :oauth_authorize, provider_key, false, params, extensions)
+        validate(method == :oauth_authorize, provider_key, false, params, context_info[:request])
       end
 
-      def do_authrep(method, provider_key, params, extensions)
+      def do_authrep(method, provider_key, params, context_info)
+        request_info = context_info[:request] || {}
         status = begin
-                   validate(method == :oauth_authrep, provider_key, true, params, extensions)
+                   validate(method == :oauth_authrep, provider_key, true, params, request_info)
                  rescue ApplicationNotFound => e
                    # we still want to track these
                    notify_authorize(provider_key)
@@ -144,7 +147,7 @@ module ThreeScale
 
         if (usage || params[:log]) && status.authorized?
           application_id = status.application.id
-          report_enqueue(status.service_id, ({ 0 => {"app_id" => application_id, "usage" => usage, "log" => params[:log]}}), {})
+          report_enqueue(status.service_id, { 0 => {"app_id" => application_id, "usage" => usage, "log" => params[:log] } }, request: { extensions: request_info[:extensions] })
           notify_authrep(provider_key, usage ? 1 : 0)
         else
           notify_authorize(provider_key)

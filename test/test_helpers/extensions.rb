@@ -10,6 +10,7 @@ module TestHelpers
       REJECTION_REASON_HEADER = URI.encode('rejection_reason_header=1').freeze
       HIERARCHY = URI.encode('hierarchy=1').freeze
       LIMIT_HEADERS = URI.encode('limit_headers=1').freeze
+      FLAT_USAGE = URI.encode('flat_usage=1').freeze
     end
 
     module ClassMethods

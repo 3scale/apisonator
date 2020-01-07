@@ -602,7 +602,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     # We have 1 parent metric and 2 children metrics, one of them limited.
     # When we add usage over the "hits" limit for the unlimited metric, we
     # should see an auth denied, and also children information in the hits usage
-    # report (and none elsewhere).
+    # report (and none elsewhere), unless we use the "flat_usage" extension.
 
     Timecop.freeze(Time.utc(2010, 5, 15)) do
       get '/transactions/authorize.xml', {
@@ -658,5 +658,82 @@ class AuthorizeBasicTest < Test::Unit::TestCase
       assert_not_authorized
       assertions.call false
     end
+  end
+
+  test 'flat usage extensions ignores established hierarchy when passing in usage data' do
+    plan_id          = next_id
+    parent           = 'parent_metric'
+    parent_id        = next_id
+    metric_child1    = 'child_metric_1'
+    metric_child1_id = next_id
+    metric_child2    = 'child_metric_2'
+    metric_child2_id = next_id
+    parent_limit = 5
+    child1_limit = parent_limit + 1
+
+    application = Application.save(:service_id => @service.id,
+                                   :id         => next_id,
+                                   :state      => :active,
+                                   :plan_id    => plan_id,
+                                   :plan_name  => 'someplan')
+
+    Metric.save(:service_id => @service.id, :id => parent_id, :name => parent)
+    Metric.save(:service_id => @service.id, :id => metric_child1_id,
+                :name => metric_child1, parent_id: parent_id)
+    Metric.save(:service_id => @service.id, :id => metric_child2_id,
+                :name => metric_child2, parent_id: parent_id)
+
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => plan_id,
+                    :metric_id  => parent_id,
+                    :day => parent_limit)
+    UsageLimit.save(:service_id => @service.id,
+                    :plan_id    => plan_id,
+                    :metric_id  => metric_child1_id,
+                    :day => child1_limit)
+
+    # Test that hitting children over the parent limit does not translate to
+    # the parent so that the call is still authorized.
+    get '/transactions/authorize.xml', {
+      :provider_key => @provider_key,
+      :app_id       => application.id,
+      :usage        => { metric_child2 => parent_limit + 1 },
+    },
+    'HTTP_3SCALE_OPTIONS' => Extensions::FLAT_USAGE
+    Resque.run!
+
+    assert_authorized
+
+    get '/transactions/authorize.xml', {
+      :provider_key => @provider_key,
+      :app_id       => application.id,
+      :usage        => { metric_child1 => child1_limit,
+                         metric_child2 => parent_limit + 1 },
+    },
+    'HTTP_3SCALE_OPTIONS' => Extensions::FLAT_USAGE
+    Resque.run!
+
+    assert_authorized
+
+    # Using flat usage still goes over the limits of specified metrics
+    get '/transactions/authorize.xml', {
+      :provider_key => @provider_key,
+      :app_id       => application.id,
+      :usage        => { parent => parent_limit + 1 },
+    },
+    'HTTP_3SCALE_OPTIONS' => Extensions::FLAT_USAGE
+    Resque.run!
+
+    assert_not_authorized
+
+    get '/transactions/authorize.xml', {
+      :provider_key => @provider_key,
+      :app_id       => application.id,
+      :usage        => { metric_child1 => child1_limit + 1 },
+    },
+    'HTTP_3SCALE_OPTIONS' => Extensions::FLAT_USAGE
+    Resque.run!
+
+    assert_not_authorized
   end
 end

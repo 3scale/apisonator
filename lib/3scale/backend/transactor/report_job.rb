@@ -8,8 +8,11 @@ module ThreeScale
 
         class << self
           def perform_logged(service_id, raw_transactions, _enqueue_time, context_info = {})
-            transactions = parse_transactions(service_id, raw_transactions)
-            ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
+            context_info ||= {} # avoid nils potentially existing in older versions
+            request_info = context_info['request'.freeze] || {}
+
+            transactions = parse_transactions(service_id, raw_transactions, request_info)
+            ProcessJob.perform(transactions, context_info) if !transactions.nil? && transactions.size > 0
 
             # Last field was logs.size. Set it to 0 until we modify our parsers.
             [true, "#{service_id} #{transactions.size} 0"]
@@ -33,13 +36,14 @@ module ThreeScale
             @args[2]
           end
 
-          def parse_transactions(service_id, raw_transactions)
+          def parse_transactions(service_id, raw_transactions, request_info)
             transactions = []
+            exts = request_info['extensions'.freeze]&.symbolize_names || {}
 
             group_by_application_id(service_id, raw_transactions) do |app_id, group|
               group.each do |raw_transaction|
 
-                transaction = compose_transaction(service_id, app_id, raw_transaction)
+                transaction = compose_transaction(service_id, app_id, raw_transaction, exts)
                 log         = raw_transaction['log']
 
                 transaction[:response_code] = log['code'] if transaction && log
@@ -59,7 +63,7 @@ module ThreeScale
             end.each(&block)
           end
 
-          def compose_transaction(service_id, app_id, raw_transaction)
+          def compose_transaction(service_id, app_id, raw_transaction, extensions)
             usage = raw_transaction['usage']
 
             if usage && !usage.empty?
@@ -68,7 +72,8 @@ module ThreeScale
                 service_id:     service_id,
                 application_id: app_id,
                 timestamp:      raw_transaction['timestamp'],
-                usage:          metrics.process_usage(usage),
+                usage:          metrics.process_usage(usage,
+                                                      extensions[:flat_usage] == '1'),
               }
             end
           end

@@ -8,11 +8,12 @@ module ThreeScale
       MAX_NUM_ERRORS = 1000
 
       def store(service_id, error, context_info = {})
+        request_info = context_info[:request] || {}
         storage.lpush(queue_key(service_id),
                       encode(code:         error.code,
                              message:      error.message,
                              timestamp:    Time.now.getutc.to_s,
-                             context_info: context_info))
+                             context_info: request_info))
         storage.ltrim(queue_key(service_id), 0, MAX_NUM_ERRORS - 1)
       end
 
