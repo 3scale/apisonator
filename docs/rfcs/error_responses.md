@@ -74,9 +74,7 @@ Backend responses:
 * `409 Conflict`:
   - The request's reported usage goes over the limits set for that specific
   application or user or some other condition for this application (not enabled
-  or invalid/missing key) or service (not enabled or not OAuth-enabled). Note that *this is not
-  an application or client error* but the reporting of a normal request telling
-  the client that the usage exceeds limits.
+  or invalid/missing key) or service (not enabled or not OAuth-enabled).
 * `422 Unprocessable entity`:
   - One or more required parameters are missing or have invalid data.
 * `500 Internal Server Error`:
@@ -109,6 +107,12 @@ convenient both from the computational and the security points of view. For
 example, you would not want to disclose some sensitive details like secrets or
 specify the whole list of not found entities if just finding one is enough for
 an error response.
+
+Note that authorization failures returning a 409 HTTP status code don't currently
+use this scheme due to backwards compatibility reasons and the fact that in most
+cases failed authorizations when integration is correctly done are not errors but
+just a "No" response to the question "Is this usage authorized?". See the
+`authorization_failed` error below for details.
 
 ## Currently known `error_code`s and proposed classification
 
@@ -165,7 +169,11 @@ ie. parameter X is missing or not matching criteria Y.
     - `metric_invalid`:
       The specified metric was not found.
 * `authorization_failed`:
-  [409] Authorization denied because of rate limiting or wrong credentials
+  [409] Authorization denied because of rate limiting or wrong credentials.
+  *Note*: the description of the below codes is always placed in the reason
+  tag of the XML response, and the code itself is not specified under the
+  error_code tag, but available as the value of a header if the rejection reason
+  extension is enabled.
     - `limits_exceeded`:
       The limit for a current period on a reported metric has been exceeded.
     - `oauth_not_enabled`:
