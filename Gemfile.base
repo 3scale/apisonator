@@ -63,3 +63,4 @@ gem 'bugsnag', '~> 6', require: nil
 gem 'prometheus-client'
 gem 'yabeda-prometheus', '= 0.1.4'
 gem 'async-redis', '~> 0.4.1'
+gem 'falcon', '~> 0.34'
