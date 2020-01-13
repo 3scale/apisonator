@@ -2,15 +2,26 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.97.0 - 2020-01-13
+
+### Added
+
+- New "flat_usage" extension, useful for caching. [#142](https://github.com/3scale/apisonator/pull/142)
+
+### Changed
+
+- New approach to delete the stats of a service [#143](https://github.com/3scale/apisonator/pull/143)
+- Updated Rack to 2.0.8 [#144](https://github.com/3scale/apisonator/pull/144)
+
 ## 2.96.2 - 2019-10-17
 
 ### Added
 
-- Async params can be configured using environment variables [PR #138](https://github.com/3scale/apisonator/pull/138)
+- Async params can be configured using environment variables [#138](https://github.com/3scale/apisonator/pull/138)
 
 ### Fixed
 
-- Rake tasks now work when using the async redis client [PR #137](https://github.com/3scale/apisonator/pull/137) 
+- Rake tasks now work when using the async redis client [#137](https://github.com/3scale/apisonator/pull/137)
 
 ## 2.96.1 - 2019-10-10
 
