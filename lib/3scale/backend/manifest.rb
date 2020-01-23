@@ -6,6 +6,8 @@ module ThreeScale
   module Backend
     module Manifest
       class << self
+        LISTENER_WORKERS = 'LISTENER_WORKERS'.freeze
+        private_constant :LISTENER_WORKERS
         PUMA_WORKERS = 'PUMA_WORKERS'.freeze
         private_constant :PUMA_WORKERS
         PUMA_WORKERS_CPUMULT = 8
@@ -16,19 +18,15 @@ module ThreeScale
           false
         end
 
-        # Compute workers based on PUMA_WORKERS env variable
-        # If PUMA_WORKERS does not exist or is empty, use number of cpus
+        # Compute workers based on LISTENER_WORKERS and PUMA_WORKERS env
+        # variables. The former takes precedence.
+        # If those envs do not exist or are empty, use number of cpus
         def compute_workers(ncpus)
           return 0 unless Process.respond_to?(:fork)
-          if ENV[PUMA_WORKERS] && !ENV[PUMA_WORKERS].empty?
-            begin
-              Integer(ENV[PUMA_WORKERS])
-            rescue => e
-              raise e, "PUMA_WORKERS environment var cannot be parsed: #{e.message}"
-            end
-          else
+
+          compute_workers_from_env(LISTENER_WORKERS) ||
+            compute_workers_from_env(PUMA_WORKERS) ||
             ncpus * PUMA_WORKERS_CPUMULT
-          end
         end
 
         def server_model
@@ -63,6 +61,18 @@ module ThreeScale
             thread_safe: thread_safe?,
             server_model: server_model,
           }
+        end
+
+        private
+
+        def compute_workers_from_env(env_name)
+          if ENV[env_name] && !ENV[env_name].empty?
+            begin
+              Integer(ENV[env_name])
+            rescue => e
+              raise e, "#{env_name} environment var cannot be parsed: #{e.message}"
+            end
+          end
         end
       end
     end
