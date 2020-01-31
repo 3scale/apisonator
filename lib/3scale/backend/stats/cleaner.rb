@@ -76,11 +76,13 @@ module ThreeScale
             services = services_to_delete
             logger.info("Going to delete the stats keys for these services: #{services.to_a}")
 
-            redis_conns.each do |redis_conn|
-              delete_keys(redis_conn, services, log_deleted_keys)
-            end
+            unless services.empty?
+              redis_conns.each do |redis_conn|
+                delete_keys(redis_conn, services, log_deleted_keys)
+              end
 
-            remove_services_from_delete_set(services)
+              remove_services_from_delete_set(services)
+            end
 
             logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
           end
