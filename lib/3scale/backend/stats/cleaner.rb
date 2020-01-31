@@ -143,15 +143,27 @@ module ThreeScale
             return false unless is_stats_key?(key)
 
             service_in_key = service_from_stats_key(key)
-            services_to_delete.include?(service_in_key)
+            service_in_key && services_to_delete.include?(service_in_key)
           end
 
           def is_stats_key?(key)
-            key.start_with?(STATS_KEY_PREFIX)
+            # A key that starts with STATS_KEY_PREFIX is a stats key except if it
+            # follows this pattern: /STATS_KEY_PREFIX{service:.*}\/cinstances/. That's a
+            # type of key used only for the "first traffic" event
+            # (ApplicationEvents.first_traffic).
+            key.start_with?(STATS_KEY_PREFIX) && !key.match(/cinstances/)
           end
 
+          # Returns nil when there's not a service encoded in the key or when
+          # the stats key has an invalid format.
           def service_from_stats_key(stats_key)
             StatsParser.parse(stats_key, nil)[:service]
+          rescue StatsParser::StatsKeyValueInvalid
+            # This could happen with legacy stats keys. For example, a long time
+            # ago some stats keys had a "city" and a "country" encoded, but
+            # always empty. That format has not been used in a long time. We'll
+            # simply ignore those keys.
+            nil
           end
         end
       end
