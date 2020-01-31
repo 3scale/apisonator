@@ -81,6 +81,8 @@ module ThreeScale
             end
 
             remove_services_from_delete_set(services)
+
+            logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
           end
 
           private
