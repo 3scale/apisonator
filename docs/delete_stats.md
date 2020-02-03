@@ -7,7 +7,7 @@ keys associated with a service in an efficient way.
 
 Instead of deleting those stats keys automatically, Apisonator stores the
 service IDs in Redis so that their stats can be deleted later. There's a rake
-task to do that, `task:cleanup`. To run it, just send the Redis servers as a
+task to do that, `stats:cleanup`. To run it, just send the Redis servers as a
 parameter like this, separated by spaces:
 ```
 bundle exec rake stats:cleanup["127.0.0.1:9998 127.0.0.1:9999"]
