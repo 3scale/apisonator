@@ -1,7 +1,38 @@
 #!/usr/bin/env ruby
 
-reschedule_jobs_freq = (ENV['RESCHEDULE_JOBS_FREQ'] || 300).to_i
-loop do
-  system('rake', '--trace=stdout', 'reschedule_failed_jobs') or raise 'task crashed'
-  ENV['ONCE'] ? exit : sleep(reschedule_jobs_freq)
+DEFAULT_RESCHEDULE_JOBS_FREQ = 300
+DEFAULT_DELETE_STATS_FREQ = 60*60*24 # 1 day
+
+# The logger used in the delete stats code defaults to /tmp/backend_logger.log
+# When running this executable STDOUT is more convenient to check that
+# everything is working correctly.
+ENV['CONFIG_LOG_PATH'] ||= 'dev/stdout'
+
+def run_rake_task_in_thread(name, freq, check_once = false)
+  Thread.new do
+    loop do
+      begin
+        system('rake', '--trace=stdout', name)
+      rescue StandardError => e
+        puts "Error in task #{name}: #{e}"
+      end
+
+      exit if check_once && ENV['ONCE']
+
+      sleep(freq)
+    end
+  end
 end
+
+reschedule_failed_jobs_thread = run_rake_task_in_thread(
+   'reschedule_failed_jobs',
+   (ENV['RESCHEDULE_JOBS_FREQ'] || DEFAULT_RESCHEDULE_JOBS_FREQ).to_i,
+   true
+)
+
+delete_stats_thread = run_rake_task_in_thread(
+  "stats:cleanup[#{ENV['CONFIG_REDIS_PROXY']}]",
+  (ENV['DELETE_STATS_FREQ'] || DEFAULT_DELETE_STATS_FREQ).to_i,
+)
+
+[reschedule_failed_jobs_thread, delete_stats_thread].each(&:join)
