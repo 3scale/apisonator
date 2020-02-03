@@ -76,11 +76,34 @@ module ThreeScale
             services = services_to_delete
             logger.info("Going to delete the stats keys for these services: #{services.to_a}")
 
-            redis_conns.each do |redis_conn|
-              delete_keys(redis_conn, services, log_deleted_keys)
+            unless services.empty?
+              delete_successful = true
+              redis_conns.each do |redis_conn|
+                begin
+                  delete_keys(redis_conn, services, log_deleted_keys)
+                # If it's a connection error, mark as failed and continue
+                # cleaning other shards. If it's another kind of error, it
+                # could be a bug, so better re-raise.
+                rescue Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE => e
+                  logger.error("Error while deleting stats of server #{redis_conn}: #{e}")
+                  delete_successful = false
+                rescue Redis::CommandError => e
+                  # Redis::CommandError from redis-rb can be raised for multiple
+                  # reasons, so we need to check the error message to distinguish
+                  # connection errors from the rest.
+                  if e.message == 'ERR Connection timed out'.freeze
+                    logger.error("Error while deleting stats of server #{redis_conn}: #{e}")
+                    delete_successful = false
+                  else
+                    raise e
+                  end
+                end
+              end
+
+              remove_services_from_delete_set(services) if delete_successful
             end
 
-            remove_services_from_delete_set(services)
+            logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
           end
 
           private
@@ -143,15 +166,27 @@ module ThreeScale
             return false unless is_stats_key?(key)
 
             service_in_key = service_from_stats_key(key)
-            services_to_delete.include?(service_in_key)
+            service_in_key && services_to_delete.include?(service_in_key)
           end
 
           def is_stats_key?(key)
-            key.start_with?(STATS_KEY_PREFIX)
+            # A key that starts with STATS_KEY_PREFIX is a stats key except if it
+            # follows this pattern: /STATS_KEY_PREFIX{service:.*}\/cinstances/. That's a
+            # type of key used only for the "first traffic" event
+            # (ApplicationEvents.first_traffic).
+            key.start_with?(STATS_KEY_PREFIX) && !key.match(/cinstances/)
           end
 
+          # Returns nil when there's not a service encoded in the key or when
+          # the stats key has an invalid format.
           def service_from_stats_key(stats_key)
             StatsParser.parse(stats_key, nil)[:service]
+          rescue StatsParser::StatsKeyValueInvalid
+            # This could happen with legacy stats keys. For example, a long time
+            # ago some stats keys had a "city" and a "country" encoded, but
+            # always empty. That format has not been used in a long time. We'll
+            # simply ignore those keys.
+            nil
           end
         end
       end

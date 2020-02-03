@@ -109,6 +109,15 @@ module ThreeScale
             # Non-stats keys
             k1: 'v1', k2: 'v2', k3: 'v3',
 
+            # Starts with "stats/" but it's not a stats key, it's used for the
+            # "first traffic" event.
+            'stats/{service:s1}/cinstances' => 'some_val',
+
+            # Legacy or corrupted keys that look like stats keys but should be
+            # ignored.
+            'stats/{service:s1}/city:/metric:m1/day:20191216' => 1, # 'city' no longer used
+            'stats/{service:s1}/%?!`:m1/day:20191216' => 2, # corrupted.
+
             # Stats keys, service level
             'stats/{service:s1}/metric:m1/day:20191216' => 10,
             'stats/{service:s1}/metric:m1/year:20190101' => 100,
