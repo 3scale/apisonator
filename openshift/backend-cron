@@ -3,6 +3,11 @@
 DEFAULT_RESCHEDULE_JOBS_FREQ = 300
 DEFAULT_DELETE_STATS_FREQ = 60*60*24 # 1 day
 
+# The logger used in the delete stats code defaults to /tmp/backend_logger.log
+# When running this executable STDOUT is more convenient to check that
+# everything is working correctly.
+ENV['CONFIG_LOG_PATH'] ||= 'dev/stdout'
+
 def run_rake_task_in_thread(name, freq, check_once = false)
   Thread.new do
     loop do
