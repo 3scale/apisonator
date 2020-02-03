@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-reschedule_jobs_freq = ENV['RESCHEDULE_JOBS_FREQ'] || 300
+reschedule_jobs_freq = (ENV['RESCHEDULE_JOBS_FREQ'] || 300).to_i
 loop do
   system('rake', '--trace=stdout', 'reschedule_failed_jobs') or raise 'task crashed'
   ENV['ONCE'] ? exit : sleep(reschedule_jobs_freq)
