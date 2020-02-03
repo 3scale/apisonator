@@ -77,11 +77,30 @@ module ThreeScale
             logger.info("Going to delete the stats keys for these services: #{services.to_a}")
 
             unless services.empty?
+              delete_successful = true
               redis_conns.each do |redis_conn|
-                delete_keys(redis_conn, services, log_deleted_keys)
+                begin
+                  delete_keys(redis_conn, services, log_deleted_keys)
+                # If it's a connection error, mark as failed and continue
+                # cleaning other shards. If it's another kind of error, it
+                # could be a bug, so better re-raise.
+                rescue Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE => e
+                  logger.error("Error while deleting stats of server #{redis_conn}: #{e}")
+                  delete_successful = false
+                rescue Redis::CommandError => e
+                  # Redis::CommandError from redis-rb can be raised for multiple
+                  # reasons, so we need to check the error message to distinguish
+                  # connection errors from the rest.
+                  if e.message == 'ERR Connection timed out'.freeze
+                    logger.error("Error while deleting stats of server #{redis_conn}: #{e}")
+                    delete_successful = false
+                  else
+                    raise e
+                  end
+                end
               end
 
-              remove_services_from_delete_set(services)
+              remove_services_from_delete_set(services) if delete_successful
             end
 
             logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
