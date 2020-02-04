@@ -2,6 +2,22 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.98.0 - 2020-02-04
+
+### Added
+
+- Listeners can now be deployed in async mode using Falcon. Still experimental
+[#150](https://github.com/3scale/apisonator/pull/150)
+- Added the delete stats task to the `backend-cron` executable
+[#156](https://github.com/3scale/apisonator/pull/156)
+
+### Fixed
+
+- Fixed a minor bug in the stats deletion feature. The task no longer crashes
+with invalid keys [#154](https://github.com/3scale/apisonator/pull/154)
+- `backend-cron` no longer crashes when `RESCHEDULE_JOBS_FREQ` is set
+[#155](https://github.com/3scale/apisonator/pull/155)
+
 ## 2.97.0 - 2020-01-13
 
 ### Added
