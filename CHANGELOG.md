@@ -2,6 +2,14 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.98.1 - 2020-02-18
+
+### Fixed
+
+- No longer crashes when the address of a sentinel cannot be resolved. It tries
+to connect to another sentinel in the list instead.
+[#158](https://github.com/3scale/apisonator/pull/158)
+
 ## 2.98.0 - 2020-02-04
 
 ### Added
