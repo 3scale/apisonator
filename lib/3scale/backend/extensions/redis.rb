@@ -27,6 +27,10 @@ class Redis
                 return result
               end
             rescue BaseConnectionError
+            rescue RuntimeError => exception
+              # Needed because when the sentinel address cannot be resolved it
+              # raises this instead of "BaseConnectionError"
+              raise unless exception.message =~ /Name or service not known/
             ensure
               client.disconnect
             end
