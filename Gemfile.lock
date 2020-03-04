@@ -177,7 +177,7 @@ GEM
       rack
     rack-test (0.8.2)
       rack (>= 1.0, < 3)
-    rake (10.4.2)
+    rake (13.0.1)
     redis (4.1.1)
     redis-namespace (1.6.0)
       redis (>= 3.0.4)
@@ -292,7 +292,7 @@ DEPENDENCIES
   puma!
   rack (~> 2.0.8)
   rack-test (~> 0.8.2)
-  rake (= 10.4.2)
+  rake (~> 13.0)
   redis (= 4.1.1)
   resque!
   resque_spec (~> 0.17.0)

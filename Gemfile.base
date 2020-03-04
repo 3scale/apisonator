@@ -50,7 +50,7 @@ gem 'gli', '~> 2.16.1', require: nil
 gem 'daemons', '= 1.2.4'
 
 # Production gems
-gem 'rake', '= 10.4.2'
+gem 'rake', '~> 13.0'
 gem 'builder', '= 3.2.3'
 gem 'redis', '= 4.1.1'
 # Use a patched resque to allow reusing their Airbrake Failure class
