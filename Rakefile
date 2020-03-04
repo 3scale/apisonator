@@ -60,16 +60,19 @@ if Environment.saas?
       Rake::TestTask.new(:unit) do |task|
         task.test_files = FileList['test/unit/**/*_test.rb']
         task.verbose = true
+        task.warning = false
       end
 
       Rake::TestTask.new(:integration) do |task|
         task.test_files = FileList['test/integration/**/*_test.rb']
         task.verbose = true
+        task.warning = false
       end
 
       Rake::TestTask.new(:special) do |task|
         task.test_files = FileList['test/special/**/*_test.rb']
         task.verbose = true
+        task.warning = false
       end
     end
 
