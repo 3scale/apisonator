@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.98.2 - 2020-03-05
+
+### Changed
+
+- Updated Nokogiri to v1.10.9 [#163](https://github.com/3scale/apisonator/pull/163)
+- Updated Rake to v13.0.1 [#162](https://github.com/3scale/apisonator/pull/162)
+
 ## 2.98.1 - 2020-02-18
 
 ### Fixed
