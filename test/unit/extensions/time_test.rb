@@ -182,12 +182,13 @@ module Extensions
     def test_parse_to_utc_returns_nil_on_invalid_input
       assert_nil Time.parse_to_utc(nil)
       assert_nil Time.parse_to_utc('')
-      assert_nil Time.parse_to_utc(0)
       assert_nil Time.parse_to_utc({:a => 10})
-      assert_nil Time.parse_to_utc('0')
+      assert_nil Time.parse_to_utc('0x')
+      assert_nil Time.parse_to_utc('x0')
       assert_nil Time.parse_to_utc('2011/11')
       assert_nil Time.parse_to_utc('2011/18/20')
       assert_nil Time.parse_to_utc('choke on this!')
+      assert_nil Time.parse_to_utc('2012garbage2012')
     end
 
     def test_beginning_of_bucket
