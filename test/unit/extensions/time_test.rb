@@ -191,6 +191,14 @@ module Extensions
       assert_nil Time.parse_to_utc('2012garbage2012')
     end
 
+    # FIXME: the current parsing of timestamps for dates is not well validated and takes some clearly
+    # invalud input as some date (depending on contents) due to the usage of Date._parse.
+    def test_parse_to_utc_returns_nil_on_obviously_invalid_input_it_used_to_swallow
+      pend 'Time.parse_to_utc validation failure, see https://github.com/3scale/apisonator/pull/167#issuecomment-597586622' do
+        assert_nil Time.parse_to_utc('201210garbage201210')
+      end
+    end
+
     def test_beginning_of_bucket
       assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(1).to_not_compact_s
       assert_equal '20091103123456', Time.utc(2009, 11,  3, 12, 34, 56).beginning_of_bucket(2).to_not_compact_s
