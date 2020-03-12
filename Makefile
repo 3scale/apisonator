@@ -2,7 +2,7 @@ MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
 IMAGE_REPO = quay.io/3scale
 CI_IMAGE = $(IMAGE_REPO)/apisonator-ci
-DOCKER ?= $(shell which podman 2> /dev/null || which docker 2> /dev/null || echo "docker")
+DOCKER ?= $(shell which docker 2> /dev/null || which podman 2> /dev/null || echo "docker")
 
 .PHONY: default
 default: test
