@@ -367,25 +367,6 @@ module ThreeScale
             .to change { ErrorStorage.count(service.id) }.from(2).to(0)
         end
 
-        it 'deletes all service latest transactions' do
-          Service.save! id: 7002, provider_key: 'foo', default_service: true
-          transactions = []
-          transactions << ThreeScale::Backend::Transaction.new(
-            service_id: service.id,
-            application_id: 'test_application1_id',
-            usage: 'test_usage_1',
-            timestamp: Time.now)
-          transactions << ThreeScale::Backend::Transaction.new(
-              service_id: service.id,
-              application_id: 'test_application2_id',
-              usage: 'test_usage_2',
-              timestamp: Time.now)
-          TransactionStorage.store_all(transactions)
-
-          expect { Service.delete_by_id(service.id) }
-            .to change { TransactionStorage.list(service.id).size }.from(2).to(0)
-        end
-
         it 'does not raise an exception when deleting a service without errors or latest transactions' do
           Service.save! id: 7002, provider_key: 'foo', default_service: true
           expect { Service.delete_by_id(service.id) }.to_not raise_error

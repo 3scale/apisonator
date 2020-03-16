@@ -53,22 +53,6 @@ module Transactor
       end
     end
 
-    def test_stores
-      transaction_time = Time.utc(2010, 9, 9, 23, 55, 45)
-      current_time = transaction_time + 30
-
-      Timecop.freeze(current_time) do
-        TransactionStorage.expects(:store_all).with do |transactions|
-          transactions.all? do |t|
-            t.is_a?(Transaction) && t.timestamp == transaction_time
-          end
-        end
-
-        Transactor::ProcessJob.perform(
-          [default_transaction_attributes.merge('timestamp' => transaction_time.to_s)])
-      end
-    end
-
     def test_handles_transactions_with_utc_timestamps
       transaction_time = Time.utc(2010, 5, 7, 18, 11, 25)
       current_time = transaction_time + 30

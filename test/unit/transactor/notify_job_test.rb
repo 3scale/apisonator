@@ -15,7 +15,7 @@ module Transactor
         with([{:service_id     => @master_service_id,
                :application_id => @provider_application_id,
                :timestamp      => Time.utc(2010, 7, 29, 18, 21),
-               :usage          => {@master_hits_id => 1, @master_authorizes_id => 1}}], :master => true)
+               :usage          => {@master_hits_id => 1, @master_authorizes_id => 1}}])
 
       Transactor::NotifyJob.perform(@provider_key,
                                     {'transactions/authorize' => 1},

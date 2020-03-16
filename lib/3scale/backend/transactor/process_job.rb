@@ -11,9 +11,8 @@ module ThreeScale
       class ProcessJob
 
         class << self
-          def perform(transactions, options = {})
+          def perform(transactions)
             transactions = preprocess(transactions)
-            TransactionStorage.store_all(transactions) unless options[:master]
             Stats::Aggregator.process(transactions)
           end
 

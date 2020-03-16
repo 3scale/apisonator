@@ -21,7 +21,7 @@ module ThreeScale
                 application_id: application_id,
                 timestamp: timestamp,
                 usage: master_metrics.process_usage(usage)
-              }], :master => true)
+              }])
             end
             [true, "#{provider_key} #{application_id || '--'}"]
           end

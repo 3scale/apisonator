@@ -84,7 +84,6 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
   before do
     ThreeScale::Backend::Service.save!(provider_key: provider_key,
                                        id: service_id)
-    ThreeScale::Backend::TransactionStorage.delete_all(service_id)
 
     [test_app, unlimited_plan_app, zero_limits_plan_app].each do |app|
       ThreeScale::Backend::Application.save(app)
