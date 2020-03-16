@@ -12,7 +12,7 @@ module ThreeScale
             request_info = context_info['request'.freeze] || {}
 
             transactions = parse_transactions(service_id, raw_transactions, request_info)
-            ProcessJob.perform(transactions, context_info) if !transactions.nil? && transactions.size > 0
+            ProcessJob.perform(transactions) if !transactions.nil? && transactions.size > 0
 
             # Last field was logs.size. Set it to 0 until we modify our parsers.
             [true, "#{service_id} #{transactions.size} 0"]

@@ -218,7 +218,6 @@ module ThreeScale
         delete_from_lists
         delete_attributes
         ErrorStorage.delete_all(id)
-        TransactionStorage.delete_all(id)
       end
 
       def to_hash
