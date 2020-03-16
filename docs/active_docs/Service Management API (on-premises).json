@@ -576,7 +576,7 @@
                   "dataType": "string",
                   "required": false,
                   "paramType": "query",
-                  "description": "If passed, it should be the time when the transaction took place. Format: YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00",
+                  "description": "If passed, it should be the time when the transaction took place. Format: Either a UNIX UTC timestamp (seconds from the UNIX Epoch), or YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00.",
                   "description_inline": true
                 },
                 {
@@ -669,7 +669,7 @@
                   "dataType": "string",
                   "required": false,
                   "paramType": "query",
-                  "description": "If passed, it should be the time when the transaction took place. Format: YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00",
+                  "description": "If passed, it should be the time when the transaction took place. Format: Either a UNIX UTC timestamp (seconds from the UNIX Epoch), or YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00.",
                   "description_inline": true
                 },
                 {
@@ -762,7 +762,7 @@
                   "dataType": "string",
                   "required": false,
                   "paramType": "query",
-                  "description": "If passed, it should be the time when the transaction took place. Format: YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00",
+                  "description": "If passed, it should be the time when the transaction took place. Format: Either a UNIX UTC timestamp (seconds from the UNIX Epoch), or YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00.",
                   "description_inline": true
                 },
                 {

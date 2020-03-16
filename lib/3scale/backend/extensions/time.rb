@@ -70,34 +70,36 @@ module ThreeScale
          hour * 10000 + min * 100 + sec).to_s
       end
 
-      private
-
       module ClassMethods
         def parse_to_utc(input)
-          parts = nil
+          input = input.to_s
 
-          begin
-            parts = Date._parse(input.to_s)
-          rescue TypeError => e
+          # Test firts for a UNIX timestamp, since it is the most useful way to specify UTC time
+          parse_unix_timestamp(input) || parse_non_unix_timestamp(input)
+        end
+
+        private
+
+        def parse_non_unix_timestamp(ts)
+          parts = Date._parse ts
+
+          if parts.has_key?(:year) && parts.has_key?(:mon) && parts.has_key?(:mday)
+            utc_time = Time.utc(parts[:year],
+                                parts[:mon],
+                                parts[:mday],
+                                parts[:hour],
+                                parts[:min],
+                                parts[:sec],
+                                parts[:sec_fraction])
+
+            parts[:offset] ? utc_time - parts[:offset] : utc_time
           end
+        rescue
+          # if nothing can be parsed, just return nil
+        end
 
-          return if parts.nil? || parts.empty? || !parts.has_key?(:year) || !parts.has_key?(:mon) || !parts.has_key?(:mday)
-
-          time = nil
-          begin
-            time = Time.utc(parts[:year],
-                            parts[:mon],
-                            parts[:mday],
-                            parts[:hour],
-                            parts[:min],
-                            parts[:sec],
-                            parts[:sec_fraction])
-            time -= parts[:offset] if parts[:offset]
-
-          rescue ArgumentError => e
-          end
-
-          return time
+        def parse_unix_timestamp(ts)
+          Time.at(Integer ts) rescue nil
         end
       end
     end

@@ -160,6 +160,20 @@ class ReportTest < Test::Unit::TestCase
     end
   end
 
+  test 'successful report with UNIX timestamped transactions' do
+    Timecop.freeze(Time.utc(2010, 4, 23, 00, 00)) do
+      post '/transactions.xml',
+        :provider_key => @provider_key,
+        :transactions => {0 => {:app_id    => @application.id,
+                                :usage     => {'hits' => 1},
+                                :timestamp => '1271980765'}} # UNIX ts for 22/04/2010 23:59
+      Resque.run!
+
+      key = service_key(@service_id, @metric_id, :hour, '2010042223')
+      assert_equal 1, @storage.get(key).to_i
+    end
+  end
+
   test 'report uses current time if timestamp is blank' do
     Timecop.freeze(Time.utc(2010, 8, 19, 11, 24)) do
       post '/transactions.xml',
@@ -591,17 +605,17 @@ class ReportTest < Test::Unit::TestCase
     Timecop.freeze(Time.utc(2010, 5, 12, 13, 33)) do
       post '/transactions.xml',
         :provider_key => @provider_key,
-        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2012'}}
+        :transactions => {0 => {:app_id => @application.id, :usage => {'hits' => 1}, :timestamp => '2012garbage2012'}}
       Resque.run!
 
-      # This part is tricky. '2012' is an invalid timestamp, so it gets set to
-      # the current timestamp. As a result, month 20121001 is not incremented,
-      # but month 20100501 is.
+      # This part is tricky. '2012garbage2012' is an invalid timestamp, so
+      # it gets set to the current timestamp. As a result, month 20120101 is
+      # not incremented, but month 20100501 is.
 
-      assert_equal 1, @storage.get(application_key(@service_id,
+      assert_equal 0, @storage.get(application_key(@service_id,
                                                    @application.id,
                                                    @metric_id,
-                                                   :month, '20121001')).to_i
+                                                   :month, '20120101')).to_i
 
       assert_equal 2, @storage.get(application_key(@service_id,
                                                    @application.id,

@@ -72,7 +72,7 @@ module ThreeScale
       ##~ @parameter_usage_predicted["parameters"] << @parameter_usage_fields
       ##
       ##~ @timestamp = {"name" => "timestamp", "dataType" => "string", "required" => false, "paramType" => "query"}
-      ##~ @timestamp["description"] = "If passed, it should be the time when the transaction took place. Format: YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00"
+      ##~ @timestamp["description"] = "If passed, it should be the time when the transaction took place. Format: Either a UNIX UTC timestamp (seconds from the UNIX Epoch), or YYYY-MM-DD HH:MM:SS for UTC, add -HH:MM or +HH:MM for time offset. For instance, 2011-12-30 22:15:31 -08:00."
       ##~ @timestamp["description_inline"] = true
       ##
       ##~ @parameter_log = {"name" => "log", "dataType" => "hash", "required" => false, "paramType" => "query", "allowMultiple" => false}
