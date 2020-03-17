@@ -55,7 +55,7 @@ module ThreeScale
           expect(resp).to match(
 /TYPE apisonator_worker_job_count counter
 # HELP apisonator_worker_job_count Total number of jobs processed
-apisonator_worker_job_count{type="ReportJob"} #{n_jobs}
+apisonator_worker_job_count{type="ReportJob"} #{n_jobs}(\.0)?
 # TYPE apisonator_worker_job_runtime_seconds histogram
 # HELP apisonator_worker_job_runtime_seconds How long jobs take to run
 .*
