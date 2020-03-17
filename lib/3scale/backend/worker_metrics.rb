@@ -2,15 +2,20 @@ require 'yabeda/prometheus'
 
 Yabeda.configure do
   group :apisonator_worker do
-    counter :job_count, comment: "Total number of jobs processed"
+    counter :job_count do
+      comment "Total number of jobs processed"
+      tags %i[type]
+    end
 
     histogram :job_runtime do
       comment "How long jobs take to run"
       unit :seconds
+      tags %i[type]
       buckets [0.005, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
     end
   end
 end
+Yabeda.configure!
 
 module ThreeScale
   module Backend

@@ -60,7 +60,6 @@ gem 'sinatra', '~> 2.0.3'
 gem 'sinatra-contrib', '~> 2.0.3'
 # Optional external error logging services
 gem 'bugsnag', '~> 6', require: nil
-gem 'prometheus-client'
-gem 'yabeda-prometheus', '= 0.1.4'
+gem 'yabeda-prometheus', '~> 0.5.0'
 gem 'async-redis', '~> 0.4.1'
 gem 'falcon', '~> 0.34'
