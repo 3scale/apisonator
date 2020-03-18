@@ -2,6 +2,7 @@ require '3scale/backend/configuration'
 require '3scale/backend/logging/middleware'
 require '3scale/backend/util'
 require '3scale/backend/rack/exception_catcher'
+require '3scale/backend/rack/prometheus'
 require '3scale/backend'
 
 require 'rack'
@@ -12,6 +13,10 @@ module ThreeScale
       def self.run(rack)
         rack.instance_eval do
           Backend::Logging::External.setup_rack self
+
+          if Backend.configuration.listener_prometheus_metrics.enabled
+            use Rack::Prometheus
+          end
 
           loggers = Backend.configuration.request_loggers
           log_writers = Backend::Logging::Middleware.writers loggers
