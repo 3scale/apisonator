@@ -54,9 +54,6 @@ if Environment.saas?
     end
 
     namespace :test do
-      desc 'Run all tests (unit, integration and special)'
-      task :all => ['test:unit', 'test:integration', 'test:special']
-
       Rake::TestTask.new(:unit) do |task|
         task.test_files = FileList['test/unit/**/*_test.rb']
         task.verbose = true
@@ -65,12 +62,6 @@ if Environment.saas?
 
       Rake::TestTask.new(:integration) do |task|
         task.test_files = FileList['test/integration/**/*_test.rb']
-        task.verbose = true
-        task.warning = false
-      end
-
-      Rake::TestTask.new(:special) do |task|
-        task.test_files = FileList['test/special/**/*_test.rb']
         task.verbose = true
         task.warning = false
       end
