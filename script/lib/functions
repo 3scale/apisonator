@@ -43,16 +43,8 @@ function stop_redis {
 }
 
 function start_twemproxy {
-    # try to locate the config dir
-    local configdir
     local basedir="${SCRIPT_DIR:-$(pwd -P)}"
-    if [ -r ${basedir}/config/twemproxy.yml ]; then
-        configdir="${basedir}/config"
-    elif [ -r ${basedir}/script/config/twemproxy.yml ]; then
-        configdir="${basedir}/script/config"
-    else
-        configdir="/vagrant/script/config"
-    fi
+    local configdir="${basedir}/config"
     /opt/twemproxy/sbin/nutcracker -m 512 -o /tmp/nutcracker-$(date +"%Y%m%d%H%M%S").log -p "${TWEMPROXY_PIDFILE}" -d -c ${configdir}/twemproxy.yml
 }
 
