@@ -43,7 +43,7 @@ group :development, :test do
 end
 
 # Default server by platform
-gem 'puma', git: 'https://github.com/3scale/puma', ref: '9b17499eeb491ab951e519f48416540629d085ec'
+gem 'puma', git: 'https://github.com/3scale/puma', ref: 'b034371406690d3e6c2a9301c4a48bd721f3efc3'
 # gems required by the runner
 gem 'gli', '~> 2.16.1', require: nil
 # Workers

@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/3scale/puma
-  revision: 9b17499eeb491ab951e519f48416540629d085ec
-  ref: 9b17499eeb491ab951e519f48416540629d085ec
+  revision: b034371406690d3e6c2a9301c4a48bd721f3efc3
+  ref: b034371406690d3e6c2a9301c4a48bd721f3efc3
   specs:
     puma (2.15.3)
 

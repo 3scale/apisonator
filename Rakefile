@@ -68,7 +68,9 @@ if Environment.saas?
     end
 
     require 'rspec/core/rake_task'
-    spec_task_dependencies = ['spec:unit', 'spec:integration', 'spec:acceptance', 'spec:api', 'spec:use_cases']
+    spec_task_dependencies = [
+      'spec:unit', 'spec:integration', 'spec:acceptance', 'spec:api', 'spec:use_cases', 'spec:server'
+    ]
 
     desc 'Run RSpec tests'
     task :spec => spec_task_dependencies
@@ -76,7 +78,7 @@ if Environment.saas?
     namespace :spec do
 
       require 'rspec/core/rake_task'
-      desc 'Run all RSpec tests (unit, integration, acceptance, api, use_cases)'
+      desc 'Run all RSpec tests (unit, integration, acceptance, api, use_cases, server)'
       task :all => spec_task_dependencies
 
       desc 'Run RSpec unit tests'
@@ -108,6 +110,12 @@ if Environment.saas?
       desc 'Run RSpec use_cases tests'
       RSpec::Core::RakeTask.new(:use_cases) do |task|
         task.pattern = 'spec/use_cases/**/*_spec.rb'
+        task.rspec_opts = '--require=spec_helper'
+      end
+
+      desc 'Run Rspec server tests'
+      RSpec::Core::RakeTask.new(:server) do |task|
+        task.pattern = 'spec/server/**/*_spec.rb'
         task.rspec_opts = '--require=spec_helper'
       end
 
