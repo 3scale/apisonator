@@ -188,10 +188,7 @@ tag ''
 # activate_control_app 'unix:///var/run/pumactl.sock', { no_token: true }
 
 before_fork do
-  # Config is not loaded at this point, so read ENV instead.
-  if ENV['CONFIG_LISTENER_PROMETHEUS_METRICS_ENABLED'].to_s == 'true'
-    require_relative '../lib/3scale/backend/listener_metrics'
-    prometheus_port = ENV['CONFIG_LISTENER_PROMETHEUS_METRICS_PORT']
-    ThreeScale::Backend::ListenerMetrics.start_metrics_server(prometheus_port)
-  end
+  # Note that this file will be copied to 'config' when building the image, so
+  # the require needs to be relative to that path.
+  require_relative '../lib/3scale/prometheus_server'
 end
