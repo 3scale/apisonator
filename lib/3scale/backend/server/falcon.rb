@@ -18,6 +18,10 @@ module ThreeScale
           argv_add argv, true, '--bind', 'http://0.0.0.0'
           argv_add argv, options[:port], '--port', options[:port]
 
+          # Starts the prometheus server if needed. Just once even when spanning
+          # multiple workers.
+          argv_add argv, true, '--preload', 'lib/3scale/prometheus_server.rb'
+
           server_model = manifest[:server_model]
           argv_add argv, true, '--count', server_model[:workers].to_s
         end
