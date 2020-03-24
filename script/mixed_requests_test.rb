@@ -57,7 +57,9 @@ def start_falcon
 end
 
 def shutdown_falcon
-  system("ps axf | grep falcon | grep -v \"grep\" | tr -s ' ' | cut -d ' ' -f 2 | xargs kill")
+  # First SIGTERM is ignored in Falcon v0.35.x
+  # https://github.com/socketry/falcon/issues/109
+  2.times { system("pkill -u #{Process.euid} -f \"ruby .*falcon\"") }
 end
 
 def start_apisonator_worker
