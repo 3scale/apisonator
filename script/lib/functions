@@ -44,7 +44,14 @@ function stop_redis {
 
 function start_twemproxy {
     local basedir="${SCRIPT_DIR:-$(pwd -P)}"
-    local configdir="${basedir}/config"
+
+    local configdir
+    if [ -r ${basedir}/config/twemproxy.yml ]; then
+        configdir="${basedir}/config"
+    else
+        configdir="${basedir}/script/config"
+    fi
+
     /opt/twemproxy/sbin/nutcracker -m 512 -o /tmp/nutcracker-$(date +"%Y%m%d%H%M%S").log -p "${TWEMPROXY_PIDFILE}" -d -c ${configdir}/twemproxy.yml
 }
 
