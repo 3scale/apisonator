@@ -57,9 +57,7 @@ def start_falcon
 end
 
 def shutdown_falcon
-  # First SIGTERM is ignored in Falcon v0.35.x
-  # https://github.com/socketry/falcon/issues/109
-  2.times { system("pkill -u #{Process.euid} -f \"ruby .*falcon\"") }
+  system("pkill -u #{Process.euid} -f \"ruby .*falcon\"")
 end
 
 def start_apisonator_worker
