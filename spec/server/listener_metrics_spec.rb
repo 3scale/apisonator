@@ -157,9 +157,7 @@ module ThreeScale
         if server == :puma
           system("bundle exec bin/3scale_backend stop -p #{port}")
         else # stop not implemented in Falcon
-          # Need to send 2 SIGTERMs because a bug in falcon v0.35.x
-          # https://github.com/socketry/falcon/issues/109
-          2.times { system("pkill -u #{Process.euid} -f \"ruby .*falcon\"") }
+          system("pkill -u #{Process.euid} -f \"ruby .*falcon\"")
         end
         sleep(2) # Give it some time to stop
       end
