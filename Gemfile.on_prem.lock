@@ -42,7 +42,7 @@ GEM
       console (~> 1.0)
       nio4r (~> 2.3)
       timers (~> 4.1)
-    async-container (0.16.3)
+    async-container (0.16.4)
       async (~> 1.0)
       async-io (~> 1.26)
       process-group
