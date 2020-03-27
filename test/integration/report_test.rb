@@ -1004,6 +1004,24 @@ class ReportTest < Test::Unit::TestCase
     assert_equal '1', @storage.get(response_code_key(@service_id, '2XX', :day, '20170101'))
   end
 
+  test 'no longer supported log attrs (request, response) are ignored in report jobs' do
+      post '/transactions.xml',
+           :provider_key => @provider_key,
+           :service_id => @service_id,
+           :transactions => { 0 => { :app_id => @application.id,
+                                     :usage => { 'hits' => 1 },
+                                     :log => { 'code' => 200,
+                                               'request' => 'some_request',
+                                               'response' => 'some_response' } } }
+
+      enqueued_job = Resque.list_range(:priority)
+
+      # transactions is the second arg ([1]), we only sent one (['0'])
+      transaction = enqueued_job['args'][1]['0']
+      assert_nil transaction['log']['request']
+      assert_nil transaction['log']['response']
+end
+
   test 'propagates the reports to all the levels in the hierarchy' do
     test_setup = setup_service_with_metric_hierarchy(3)
 
