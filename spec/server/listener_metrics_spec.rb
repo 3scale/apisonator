@@ -149,8 +149,14 @@ module ThreeScale
         # Send logs to /dev/null to avoid cluttering the output
         start_ok = system("#{envs_str} bundle exec bin/3scale_backend " +
                           "-s #{server} start -p #{listener_port} 2> /dev/null &")
-        raise 'Failed to start Puma' unless start_ok
-        sleep(2) # Give it some time to be ready
+        raise 'Failed to start Listener' unless start_ok
+
+        if server == :puma
+          wait_for_puma_control_socket
+        else
+          # Give it some time to start
+          sleep 2
+        end
       end
 
       def stop_listener(port, server)
@@ -160,6 +166,14 @@ module ThreeScale
           system("pkill -u #{Process.euid} -f \"ruby .*falcon\"")
         end
         sleep(2) # Give it some time to stop
+      end
+
+      def wait_for_puma_control_socket
+        Timeout::timeout(5) do
+          until system("bundle exec bin/3scale_backend status")
+            sleep 0.1
+          end
+        end
       end
 
       def do_auth(listener_host, listener_port, args)
