@@ -1,5 +1,6 @@
 require_relative '../spec_helper'
 require '3scale/backend/worker_metrics'
+require '3scale/backend/worker_sync'
 
 require 'net/http'
 
@@ -21,6 +22,10 @@ module ThreeScale
       let(:metrics_endpoint) { '/metrics' }
       let(:metrics_port) { 9394 }
 
+      # For this test, it does not really matter if we use a sync or async
+      # worker.
+      let(:worker) { WorkerSync.new(one_off: true) }
+
       default_metrics_enabled = Backend.configuration.worker_prometheus_metrics
       original_redis_async = Backend.configuration.redis_async
 
@@ -39,8 +44,9 @@ module ThreeScale
       context 'when prometheus metrics are enabled' do
         before do
           enable_worker_prometheus_metrics
+          WorkerMetrics.start_metrics_server
           report_jobs(n_jobs)
-          process_jobs(n_jobs)
+          process_jobs(worker, n_jobs)
         end
 
         after do
@@ -92,7 +98,7 @@ apisonator_worker_job_runtime_seconds_count{type="ReportJob"} \d+\.\d+
         before do
           disable_worker_prometheus_metrics
           report_jobs(n_jobs)
-          process_jobs(n_jobs)
+          process_jobs(worker, n_jobs)
         end
 
         it 'does not expose them' do
@@ -117,9 +123,9 @@ apisonator_worker_job_runtime_seconds_count{type="ReportJob"} \d+\.\d+
         end
       end
 
-      def process_jobs(num)
+      def process_jobs(worker, num)
         without_resque_spec do
-          num.times { Worker.work(one_off: true) }
+          num.times { worker.work }
         end
       end
 
