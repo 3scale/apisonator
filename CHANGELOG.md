@@ -2,6 +2,32 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.99.0 - 2020-03-31
+
+### Added
+
+- Support for specifying transaction timestamps as UNIX epoch timestamps
+([#167](https://github.com/3scale/apisonator/pull/167))
+- Prometheus metrics for the listener
+([#174](https://github.com/3scale/apisonator/pull/174),
+[#178](https://github.com/3scale/apisonator/pull/178))
+
+### Changed
+
+- Updated yabeda-prometheus to v0.5.0
+([#171](https://github.com/3scale/apisonator/pull/171))
+- Updated async-container to v0.16.4
+([#179](https://github.com/3scale/apisonator/pull/179))
+- Stopped propagating unused log attributes unnecessarily
+([#180](https://github.com/3scale/apisonator/pull/180))
+- No longer sets a default of 1 for `CONFIG_NOTIFICATION_BATCH` in the
+Dockerfiles ([#183](https://github.com/3scale/apisonator/pull/183))
+
+### Removed
+
+- The "latest transactions" functionality has been removed. It was no longer
+needed by Porta ([#169](https://github.com/3scale/apisonator/pull/169))
+
 ## 2.98.1.1 - 2020-03-05
 
 ### Changed
