@@ -88,7 +88,6 @@ ENV TZ=:/etc/localtime \
     RACK_ENV=production \
     CONFIG_SAAS=false \
     CONFIG_LOG_PATH=/tmp/ \
-    CONFIG_NOTIFICATION_BATCH=1 \
     CONFIG_WORKERS_LOG_FILE=/dev/stdout \
     PUMA_WORKERS=${PUMA_WORKERS}
 
