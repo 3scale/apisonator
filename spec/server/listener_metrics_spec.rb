@@ -162,10 +162,18 @@ module ThreeScale
       def stop_listener(port, server)
         if server == :puma
           system("bundle exec bin/3scale_backend stop -p #{port}")
+          sleep(2) # Give it some time to stop
         else # stop not implemented in Falcon
           system("pkill -u #{Process.euid} -f \"ruby .*falcon\"")
+          sleep(2) # Give it some time to stop
+
+          # TODO: investigate why occasionally Falcon does not kill its children
+          # processes ("Falcon Server").
+          if system("pkill -u #{Process.euid} -f \"Falcon Server\"")
+            sleep(2)
+            system("pkill --signal SIGKILL -u #{Process.euid} -f \"Falcon Server\"")
+          end
         end
-        sleep(2) # Give it some time to stop
       end
 
       def wait_for_puma_control_socket
