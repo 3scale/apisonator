@@ -3,6 +3,7 @@ require '3scale/backend/logging/middleware'
 require '3scale/backend/util'
 require '3scale/backend/rack/exception_catcher'
 require '3scale/backend/rack/prometheus'
+require '3scale/backend/rack/internal_error_catcher'
 require '3scale/backend'
 
 require 'rack'
@@ -12,6 +13,8 @@ module ThreeScale
     module Rack
       def self.run(rack)
         rack.instance_eval do
+          use Rack::InternalErrorCatcher if Backend.production?
+
           Backend::Logging::External.setup_rack self
 
           if Backend.configuration.listener_prometheus_metrics.enabled
