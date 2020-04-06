@@ -50,9 +50,6 @@ clients.
 means that any gem except the ones in the [async group in
 GitHub](https://github.com/socketry) is very likely to block.
 
-- For now, this feature is only implemented in the workers. The idea is to
-enable it in the listeners too after we verify that everything works well.
-
 - The whole test suite needs to be run both with the async client and the sync
 one. The reason is that our tests are highly coupled with Redis, even the unit
 ones. Running the test suite with only one of the clients is risky.
