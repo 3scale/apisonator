@@ -109,7 +109,7 @@ module ThreeScale
 
           it 'does not open the metrics port' do
             expect { Net::HTTP.get(listener_host, metrics_endpoint, metrics_port) }
-              .to raise_error(Errno::EADDRNOTAVAIL)
+              .to raise_error(SystemCallError)
           end
         end
 
