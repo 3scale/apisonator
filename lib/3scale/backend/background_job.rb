@@ -9,11 +9,10 @@ module ThreeScale
 
       class << self
         def perform(*args)
-          @args = args
-          perform_wrapper
+          perform_wrapper(args)
         end
 
-        def perform_logged
+        def perform_logged(*_args)
           raise "This should be overloaded."
         end
 
@@ -25,13 +24,13 @@ module ThreeScale
 
         private
 
-        def enqueue_time
-          @args.last or raise('Enqueue time not specified')
+        def enqueue_time(args)
+          args.last or raise('Enqueue time not specified')
         end
 
-        def perform_wrapper
+        def perform_wrapper(args)
           start_time = Time.now.getutc
-          status_ok, message = perform_logged(*@args)
+          status_ok, message = perform_logged(*args)
           stats_mem = Memoizer.stats
           end_time = Time.now.getutc
 
@@ -41,7 +40,7 @@ module ThreeScale
           if status_ok
             Worker.logger.info(prefix +
               " #{(end_time - start_time).round(5)}" +
-              " #{(end_time.to_f - enqueue_time).round(5)}"+
+              " #{(end_time.to_f - enqueue_time(args)).round(5)}"+
               " #{stats_mem[:size]} #{stats_mem[:count]} #{stats_mem[:hits]}")
 
             if configuration.worker_prometheus_metrics.enabled
