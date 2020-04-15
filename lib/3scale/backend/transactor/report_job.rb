@@ -32,8 +32,8 @@ module ThreeScale
 
           private
 
-          def enqueue_time
-            @args[2]
+          def enqueue_time(args)
+            args[2]
           end
 
           def parse_transactions(service_id, raw_transactions, request_info)

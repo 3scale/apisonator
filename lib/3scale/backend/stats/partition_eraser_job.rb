@@ -48,8 +48,8 @@ module ThreeScale
             end
           end
 
-          def enqueue_time
-            @args[0]
+          def enqueue_time(args)
+            args[0]
           end
         end
       end
