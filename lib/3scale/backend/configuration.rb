@@ -91,6 +91,8 @@ module ThreeScale
       # rake task: stats:buckets:enable
       config.can_create_event_buckets = !production?
 
+      config.legacy_referrer_filters = false
+
       # Load configuration from a file.
       config.load!([
         '/etc/3scale_backend.conf',
