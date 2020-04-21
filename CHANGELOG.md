@@ -2,6 +2,27 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.100.0 - 2020-04-21
+
+### Added
+
+- The behavior of the referrer filters validator is now configurable
+([#190](https://github.com/3scale/apisonator/pull/190)).
+
+### Fixed
+
+- When running the listeners in async mode, Apisonator no longer returns
+exception messages to the caller
+([#186](https://github.com/3scale/apisonator/pull/186)).
+- Fixed a small concurrency issue when running the workers in async mode. It
+only affected to some job run times that appear in the logs
+([#191](https://github.com/3scale/apisonator/pull/191)).
+
+### Removed
+
+- Deleted some unused rake tasks for uploading swagger specs
+([#193](https://github.com/3scale/apisonator/pull/193)).
+
 ## 2.99.0 - 2020-03-31
 
 ### Added
