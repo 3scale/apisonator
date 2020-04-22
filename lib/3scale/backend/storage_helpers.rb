@@ -44,9 +44,13 @@ module ThreeScale
               connect_timeout: 5,
               read_timeout: 3,
               write_timeout: 3,
-              # this is set to zero to avoid potential double transactions
-              # see https://github.com/redis/redis-rb/issues/668
-              reconnect_attempts: 0,
+              # Note that we can set reconnect_attempts to >= 0 because we use
+              # our redis-rb fork which implements a workaround for this issue
+              # that shows that when there might be duplicated transactions when
+              # there's a timeout: https://github.com/redis/redis-rb/issues/668
+              # We should investigate if there are edge cases that can lead to
+              # duplicated commands because of this setting.
+              reconnect_attempts: 1,
               # use by default the C extension client
               driver: :hiredis
           }.freeze
