@@ -28,7 +28,7 @@ GIT
 PATH
   remote: .
   specs:
-    3scale_backend (2.100.0)
+    apisonator (2.100.0)
 
 GEM
   remote: https://rubygems.org/
@@ -255,7 +255,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  3scale_backend!
+  apisonator!
   async-redis (~> 0.4.1)
   async-rspec
   benchmark-ips (~> 2.7.2)

@@ -5,7 +5,7 @@ $:.unshift lib unless $:.include?(lib)
 require '3scale/backend/version'
 
 Gem::Specification.new do |s|
-  s.name        = '3scale_backend'
+  s.name        = 'apisonator'
   s.version     = ThreeScale::Backend::VERSION
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Adam Ciganek", "Tiago Macedo", "Josep M. Pujol",
@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
   s.summary     = '3scale web service management system backend'
   s.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'
   s.license     = 'Apache-2.0'
+  s.metadata    = { 'source_code_uri' => 'https://github.com/3scale/apisonator' }
 
   s.required_ruby_version     = ">= 2.4.0"
   s.required_rubygems_version = ">= 1.3.7"
