@@ -98,9 +98,9 @@ RUN source scl_source enable ${RUBY_SCL} \
  && chmod 644 /etc/3scale_backend.conf \
  && BACKEND_VERSION=$(gem build apisonator.gemspec | \
       sed -n -e 's/^\s*Version\:\s*\([^[:space:]]*\)$/\1/p') \
- && gem unpack "3scale_backend-${BACKEND_VERSION}.gem" --target=/opt/ruby \
- && cd "/opt/ruby/3scale_backend-${BACKEND_VERSION}" \
- && cp -a /tmp/app/.bundle "/opt/ruby/3scale_backend-${BACKEND_VERSION}/" \
+ && gem unpack "apisonator-${BACKEND_VERSION}.gem" --target=/opt/ruby \
+ && cd "/opt/ruby/apisonator-${BACKEND_VERSION}" \
+ && cp -a /tmp/app/.bundle "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
  && if test "${DELETE_UNUSED_GEMFILES}x" = "truex"; then \
       echo "Deleting the following unused Gemfile files:"; \
       find . -maxdepth 1 -regex \./Gemfile"\(\..*\)?" \
