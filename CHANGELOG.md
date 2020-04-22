@@ -2,6 +2,15 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.100.1 - 2020-04-22
+
+### Changed
+
+- Now we are using our own redis-rb fork. It includes a fix that should reduce
+the number of 5xx errors caused by Redis connection errors
+([#205](https://github.com/3scale/apisonator/pull/205)).
+- Updated hiredis to v0.6.3 ([#204](https://github.com/3scale/apisonator/pull/204)).
+
 ## 2.100.0 - 2020-04-21
 
 ### Added
