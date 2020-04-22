@@ -116,7 +116,7 @@ GEM
       reentrant_flock
       sinatra (>= 1.2.7)
     gli (2.16.1)
-    hiredis (0.6.1)
+    hiredis (0.6.3)
     httpclient (2.8.3)
     i18n (0.9.1)
       concurrent-ruby (~> 1.0)
@@ -284,7 +284,7 @@ DEPENDENCIES
   falcon (~> 0.35)
   geminabox (~> 0.13.11)
   gli (~> 2.16.1)
-  hiredis (= 0.6.1)
+  hiredis (~> 0.6.1)
   license_finder (~> 5)
   mocha (~> 1.3)
   nokogiri (~> 1.10.8)
