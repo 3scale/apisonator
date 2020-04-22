@@ -5,7 +5,6 @@ require 'builder'
 require 'hiredis'
 
 require 'redis'
-require '3scale/backend/extensions/redis'
 
 require 'resque'
 require 'securerandom'
