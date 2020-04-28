@@ -12,9 +12,9 @@ module ThreeScale
       include Logging
 
       ## ------------ DOCS --------------
-      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ namespace = "Service Management API"
       ##~ sapi = source2swagger.namespace(namespace)
-      ##~ sapi.basePath = "https://su1.3scale.net"
+      ##~ sapi.basePath = ""
       ##~ sapi.swaggerVersion = "0.1a"
       ##~ sapi.apiVersion = "1.0"
       ##
@@ -190,7 +190,7 @@ module ThreeScale
       private :do_api_method
 
       ## ------------ DOCS --------------
-      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ namespace = "Service Management API"
       ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/authorize.xml", "format" => "xml"
@@ -243,7 +243,7 @@ module ThreeScale
       end
 
       ## ------------ DOCS --------------
-      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ namespace = "Service Management API"
       ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/oauth_authorize.xml", "format" => "xml"
@@ -276,7 +276,7 @@ module ThreeScale
       end
 
       ## ------------ DOCS --------------
-      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ namespace = "Service Management API"
       ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/authrep.xml", "format" => "xml"
@@ -323,7 +323,7 @@ module ThreeScale
       end
 
       ## ------------ DOCS --------------
-      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ namespace = "Service Management API"
       ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions/oauth_authrep.xml", "format" => "xml"
@@ -351,7 +351,7 @@ module ThreeScale
       end
 
       ## ------------ DOCS --------------
-      ##~ namespace = ENV['SAAS_SWAGGER'] == "1" ? "Service Management API" : "Service Management API (on-premises)"
+      ##~ namespace = "Service Management API"
       ##~ sapi = source2swagger.namespace(namespace)
       ##~ a = sapi.apis.add
       ##~ a.set "path" => "/transactions.xml", "format" => "xml"
