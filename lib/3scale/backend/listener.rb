@@ -432,54 +432,58 @@ module ThreeScale
 
       ## OAUTH ACCESS TOKENS
 
-      post '/services/:service_id/oauth_access_tokens.xml' do
-        check_post_content_type!
-        require_params! :service_id, :token
+      # These endpoints are deprecated and are going to be removed. For now,
+      # let's disable them.
+      if Backend.test?
+        post '/services/:service_id/oauth_access_tokens.xml' do
+          check_post_content_type!
+          require_params! :service_id, :token
 
-        service_id = params[:service_id]
-        ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
+          service_id = params[:service_id]
+          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
 
-        app_id = params[:app_id]
-        raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
+          app_id = params[:app_id]
+          raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
 
-        OAuth::Token::Storage.create(params[:token], service_id, app_id, params[:ttl])
-      end
+          OAuth::Token::Storage.create(params[:token], service_id, app_id, params[:ttl])
+        end
 
-      delete '/services/:service_id/oauth_access_tokens/:token.xml' do
-        require_params! :service_id, :token
+        delete '/services/:service_id/oauth_access_tokens/:token.xml' do
+          require_params! :service_id, :token
 
-        service_id = params[:service_id]
-        ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
+          service_id = params[:service_id]
+          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
 
-        token = params[:token]
+          token = params[:token]
 
-        # TODO: perhaps improve this to list the deleted tokens?
-        raise AccessTokenInvalid, token unless OAuth::Token::Storage.delete(token, service_id)
-      end
+          # TODO: perhaps improve this to list the deleted tokens?
+          raise AccessTokenInvalid, token unless OAuth::Token::Storage.delete(token, service_id)
+        end
 
-      get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-        require_params! :service_id, :app_id
+        get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
+          require_params! :service_id, :app_id
 
-        service_id = params[:service_id]
-        ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
+          service_id = params[:service_id]
+          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
 
-        app_id = params[:app_id]
+          app_id = params[:app_id]
 
-        raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
+          raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
 
-        @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id
-        builder :oauth_access_tokens
-      end
+          @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id
+          builder :oauth_access_tokens
+        end
 
-      get '/services/:service_id/oauth_access_tokens/:token.xml' do
-        require_params! :service_id, :token
+        get '/services/:service_id/oauth_access_tokens/:token.xml' do
+          require_params! :service_id, :token
 
-        service_id = params[:service_id]
-        ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
+          service_id = params[:service_id]
+          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
 
-        @token_to_app_id = OAuth::Token::Storage.get_credentials(params[:token], service_id)
+          @token_to_app_id = OAuth::Token::Storage.get_credentials(params[:token], service_id)
 
-        builder :oauth_app_id_by_token
+          builder :oauth_app_id_by_token
+        end
       end
 
       get '/check.txt' do
