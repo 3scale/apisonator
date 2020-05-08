@@ -2,6 +2,19 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.100.2 - 2020-05-08
+
+### Changed
+
+- The Prometheus histogram buckets of the workers have been adjusted to be more
+informative ([#208](https://github.com/3scale/apisonator/pull/208)).
+
+### Removed
+
+- The deprecated endpoints to create, delete, and list oauth tokens have been
+disabled ([#212](https://github.com/3scale/apisonator/pull/212)).
+
+
 ## 2.100.1 - 2020-04-22
 
 ### Changed
