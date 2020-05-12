@@ -62,6 +62,13 @@ sentinels.
 - Applies to: listener, worker, cron.
 - Format: integer (seconds).
 
+### CONFIG_REDIS_MAX_CONNS
+
+- Max number of connections.
+- Optional. Defaults to 10.
+- Applies to: listener, worker, cron.
+- Format: integer (seconds).
+
 
 ## Redis queues
 
@@ -106,6 +113,13 @@ sentinels.
 
 - Write timeout.
 - Optional. Defaults to 3.
+- Applies to: listener, worker, cron.
+- Format: integer (seconds).
+
+### CONFIG_QUEUES_MAX_CONNS
+
+- Max number of connections.
+- Optional. Defaults to 10.
 - Applies to: listener, worker, cron.
 - Format: integer (seconds).
 
