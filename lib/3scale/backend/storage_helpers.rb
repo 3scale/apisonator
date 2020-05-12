@@ -52,13 +52,18 @@ module ThreeScale
               # duplicated commands because of this setting.
               reconnect_attempts: 1,
               # use by default the C extension client
-              driver: :hiredis
+              driver: :hiredis,
+              # applies only to async mode. The sync library opens 1 connection
+              # per process.
+              max_connections: 10,
           }.freeze
           private_constant :CONN_OPTIONS
 
           # CONN_WHITELIST - Connection options that can be specified in config
           # Note: we don't expose reconnect_attempts until the bug above is fixed
-          CONN_WHITELIST = [:connect_timeout, :read_timeout, :write_timeout].freeze
+          CONN_WHITELIST = [
+            :connect_timeout, :read_timeout, :write_timeout, :max_connections
+          ].freeze
           private_constant :CONN_WHITELIST
 
           # Parameters regarding target server we will take from a config object
