@@ -25,7 +25,6 @@ group :test do
   gem 'resque_spec',   '~> 0.17.0'
   gem 'timecop',       '~> 0.9.1'
   gem 'rspec',         '~> 3.7.0', require: nil
-  gem 'geminabox',     '~> 0.13.11', require: false
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
   gem 'async-rspec'
 end
