@@ -80,11 +80,6 @@ module ThreeScale
           values && values[usage_limit.metric_id] || 0
         end
 
-        def value_for_application_usage_limit(usage_limit)
-          values = @values[usage_limit.period]
-          values && values[usage_limit.metric_id] || 0
-        end
-
         # provides a hierarchy hash with metrics as symbolic names
         def hierarchy
           @hierarchy ||= Metric.hierarchy service_id
