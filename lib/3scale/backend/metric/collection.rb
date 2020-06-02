@@ -75,10 +75,7 @@ module ThreeScale
         end
 
         def load_metric_id(name)
-          Memoizer.memoize_block(Memoizer.build_key(self,
-                                        :load_metric_id, @service_id, name)) do
-            storage.get(encode_key("metric/service_id:#{@service_id}/name:#{name}/id"))
-          end || raise(MetricInvalid.new(name))
+          Metric.load_id(@service_id, name) || raise(MetricInvalid.new(name))
         end
 
         ## accepts postive integers or positive integers preffixed with # (for sets)
