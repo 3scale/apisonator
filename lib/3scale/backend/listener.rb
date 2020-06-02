@@ -604,10 +604,6 @@ module ThreeScale
         end
       end
 
-      def application
-        @application ||= Application.load_by_id_or_user_key!(service_id, params[:app_id], params[:user_key])
-      end
-
       def service_id
         if params[:service_id].nil? || params[:service_id].empty?
           @service_id ||= Service.default_id!(params[:provider_key])
