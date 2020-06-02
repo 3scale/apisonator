@@ -481,4 +481,45 @@ class ApplicationTest < Test::Unit::TestCase
 
     assert application.has_referrer_filters?
   end
+
+  test '.load_usage_limits_affected_by only loads the limits affected by the metrics passed' do
+    service_id = '1001'
+    plan_id = '2001'
+    metric_1_id = '3001'
+    metric_2_id = '3002'
+    metric_3_id = '3003'
+    metric_4_id = '3004'
+    metric_5_id = '3005'
+    metric_ids = [metric_1_id, metric_2_id, metric_3_id, metric_4_id, metric_5_id]
+
+    # Create 5 metrics: m1, m2, m3, m4, m5.
+    # m1 is a parent of m2 and m3 is a parent of m4.
+    [
+      Metric.new(service_id: service_id, id: metric_1_id, name: 'm1', children: [
+        Metric.new(service_id: service_id, id: metric_2_id, name: 'm2')
+      ]),
+      Metric.new(service_id: service_id, id: metric_3_id, name: 'm3', children: [
+        Metric.new(service_id: service_id, id: metric_4_id, name: 'm4')
+      ]),
+      Metric.new(service_id: service_id, id: metric_5_id, name: 'm5')
+    ].each(&:save)
+
+    # Create 2 limits for m1, and 1 for the rest of metrics.
+    UsageLimit.save(service_id: service_id, plan_id: plan_id, metric_id: metric_1_id, month: 100)
+    metric_ids.each do |metric_id|
+      UsageLimit.save(service_id: service_id, plan_id: plan_id, metric_id: metric_id, day: 10)
+    end
+
+    application = Application.save(
+      service_id: service_id, id: '4000', state: :active, plan_id: plan_id, plan_name: 'some_plan'
+    )
+
+    # When passing m2 and m3, we should also get the limits that apply to m1,
+    # because it's a parent of m2.
+    application.load_usage_limits_affected_by(['m2', 'm3'])
+    assert_equal 4, application.usage_limits.count
+    assert_equal 2, application.usage_limits.count { |limit| limit.metric_id == metric_1_id }
+    assert_equal 1, application.usage_limits.count { |limit| limit.metric_id == metric_2_id }
+    assert_equal 1, application.usage_limits.count { |limit| limit.metric_id == metric_3_id }
+  end
 end
