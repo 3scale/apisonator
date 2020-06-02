@@ -22,19 +22,14 @@ module ThreeScale
 
         def load_all(service_id, plan_id)
           metric_ids = Metric.load_all_ids(service_id)
-          return metric_ids if metric_ids.empty?
-
-          results = []
-          with_pairs_and_values service_id, plan_id, metric_ids do |pair, value|
-            value and results << new(service_id: service_id,
-                                     plan_id: plan_id,
-                                     metric_id: pair[0],
-                                     period: pair[1],
-                                     value: value.to_i)
-          end
-          results
+          generate_for_metrics(service_id, plan_id, metric_ids)
         end
         memoize :load_all
+
+        def load_for_affecting_metrics(service_id, plan_id, metric_ids)
+          generate_for_metrics(service_id, plan_id, metric_ids)
+        end
+        memoize :load_for_affecting_metrics
 
         def load_value(service_id, plan_id, metric_id, period)
           raw_value = storage.get(key(service_id, plan_id, metric_id, period))
@@ -78,6 +73,20 @@ module ThreeScale
 
         def key_for_period(key_pre, period)
           encode_key(key_pre + period.to_s)
+        end
+
+        def generate_for_metrics(service_id, plan_id, metric_ids)
+          return metric_ids if metric_ids.empty?
+
+          results = []
+          with_pairs_and_values service_id, plan_id, metric_ids do |pair, value|
+            value and results << new(service_id: service_id,
+                                     plan_id: plan_id,
+                                     metric_id: pair[0],
+                                     period: pair[1],
+                                     value: value.to_i)
+          end
+          results
         end
 
         # yields [pair(metric_id, period), value]
