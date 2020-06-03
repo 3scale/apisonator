@@ -246,6 +246,38 @@ class AuthorizeBasicTest < Test::Unit::TestCase
     assert_equal '', last_response.body
   end
 
+  test 'a request without "no_body" works as expected after making a request with "no_body"' do
+    # A call with no_body enabled only loads the limits that affect the metrics
+    # of the request. This test checks that all the limits appear in the XML of
+    # a subsequent call.
+
+    UsageLimit.save(
+      service_id: @service_id, plan_id: @plan_id, metric_id: @metric_id, day: 10
+    )
+
+    other_metric_id = next_id
+    Metric.save(service_id: @service_id, id: other_metric_id, name: 'some_metric')
+    UsageLimit.save(
+      service_id: @service_id, plan_id: @plan_id, metric_id: other_metric_id, day: 20
+    )
+
+    get '/transactions/authorize.xml',
+        { provider_key: @provider_key, app_id: @application.id },
+        'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
+
+    assert_equal 200, last_response.status
+    assert_equal '', last_response.body
+
+    get '/transactions/authorize.xml',
+        { provider_key: @provider_key, app_id: @application.id }
+
+    assert_equal 200, last_response.status
+
+    doc = Nokogiri::XML(last_response.body)
+    assert_not_nil doc.at('usage_report[metric = "hits"][period = "day"]')
+    assert_not_nil doc.at('usage_report[metric = "some_metric"][period = "day"]')
+  end
+
   test 'response contains usage reports marked as exceeded on exceeded client usage limits' do
     UsageLimit.save(:service_id => @service.id,
                     :plan_id    => @plan_id,
