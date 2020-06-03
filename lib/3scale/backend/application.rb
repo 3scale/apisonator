@@ -223,6 +223,10 @@ module ThreeScale
         @usage_limits ||= UsageLimit.load_all(service_id, plan_id)
       end
 
+      def load_all_usage_limits
+        @usage_limits = UsageLimit.load_all(service_id, plan_id)
+      end
+
       # Loads the usage limits affected by the metrics received, that is, the
       # limits that are defined for those metrics plus all their ancestors in
       # the metrics hierarchy.
