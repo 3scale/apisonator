@@ -66,6 +66,31 @@ class UsageLimitTest < Test::Unit::TestCase
     assert_equal 3, usage_limits.count
   end
 
+  def test_load_for_affecting_metrics
+    service_id = 2001
+    plan_id = 3001
+    metric_1_id = 4001
+    metric_2_id = 4002
+
+    Metric.save(service_id: service_id, id: metric_1_id, name: 'some_metric')
+    Metric.save(service_id: service_id, id: metric_2_id, name: 'another_metric')
+
+    # 2 limits for the first metric and 1 for the second
+    UsageLimit.save(service_id: service_id, plan_id: plan_id, metric_id: metric_1_id, month: 10)
+    UsageLimit.save(service_id: service_id, plan_id: plan_id, metric_id: metric_1_id, week: 5)
+    UsageLimit.save(service_id: service_id, plan_id: plan_id, metric_id: metric_2_id, month: 20)
+
+    # returns only the 2 limits of the first metric
+    usage_limits = UsageLimit.load_for_affecting_metrics(service_id, plan_id, [metric_1_id])
+    assert_equal 2, usage_limits.count
+    assert usage_limits.all? { |limit| limit.metric_id == metric_1_id }
+
+    # returns only the limit of the second metric
+    usage_limits = UsageLimit.load_for_affecting_metrics(service_id, plan_id, [metric_2_id])
+    assert_equal 1, usage_limits.count
+    assert_equal metric_2_id, usage_limits.first.metric_id
+  end
+
   def test_load_all_returns_empty_array_if_there_are_no_metrics
     UsageLimit.load_all(2001, 3001).each do |ul|
       UsageLimit.delete(ul.service_id, ul.plan_id, ul.metric_id, ul.period)

@@ -87,9 +87,13 @@ module ThreeScale
         application = Application.load_by_id_or_user_key!(service_id,
                                                           app_id,
                                                           params[:user_key])
+
+        extensions = request_info && request_info[:extensions] || {}
+
+        preload_usage_limits(application, extensions[:no_body], params[:usage])
+
         now          = Time.now.getutc
         usage_values = Usage.application_usage(application, now)
-        extensions   = request_info && request_info[:extensions] || {}
         status_attrs = {
           service_id:      service_id,
           application:     application,
@@ -167,6 +171,27 @@ module ThreeScale
 
       def report_enqueue(service_id, data, context_info)
         Resque.enqueue(ReportJob, service_id, data, Time.now.getutc.to_f, context_info)
+      end
+
+      # Loads the usage limits that are needed to authorize the current request.
+      # These are the cases:
+      # - When no_body is enabled, we only need to load the limits related with
+      # the metrics included in the request, that is, the ones included plus all
+      # their ancestors in the hierarchy. That's all we need to verify if the
+      # request is within the limits defined.
+      # - When no_body is disabled, we need to load all the limits because they
+      # are needed to generate the XML response.
+      # - When the usage reported in the request is empty, apisonator returns
+      # "limits_exceeded" if any of the limits defined has been violated. That's
+      # why in that scenario we need to load all the limits.
+      def preload_usage_limits(application, no_body_enabled, usage_in_params)
+        metric_names_in_usage = usage_in_params&.keys || {}
+
+        if no_body_enabled && !metric_names_in_usage.empty?
+          application.load_usage_limits_affected_by(metric_names_in_usage)
+        else
+          application.load_all_usage_limits
+        end
       end
 
       def storage

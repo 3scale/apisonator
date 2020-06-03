@@ -223,6 +223,24 @@ module ThreeScale
         @usage_limits ||= UsageLimit.load_all(service_id, plan_id)
       end
 
+      def load_all_usage_limits
+        @usage_limits = UsageLimit.load_all(service_id, plan_id)
+      end
+
+      # Loads the usage limits affected by the metrics received, that is, the
+      # limits that are defined for those metrics plus all their ancestors in
+      # the metrics hierarchy.
+      def load_usage_limits_affected_by(metric_names)
+        metric_ids = metric_names.flat_map do |name|
+          [name] + Metric.ascendants(service_id, name)
+        end.uniq.map do |name|
+          Metric.load_id(service_id, name)
+        end
+
+        # IDs are sorted to be able to use the memoizer
+        @usage_limits = UsageLimit.load_for_affecting_metrics(service_id, plan_id, metric_ids.sort)
+      end
+
       def active?
         state == :active
       end
