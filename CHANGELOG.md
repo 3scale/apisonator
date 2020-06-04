@@ -2,6 +2,24 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.101.0 - 2020-06-04
+
+### Added
+
+- Introduced the `CONFIG_REDIS_MAX_CONNS` and `CONFIG_QUEUES_MAX_CONNS` ENVs to
+configure the max number of Redis connections when using the async mode
+([#214](https://github.com/3scale/apisonator/pull/214)).
+
+### Changed
+
+- Perf optimization: loading the usage limits is now done more efficiently.
+There is a noticeable improvement in requests with `no_body` enabled for
+services with many metrics defined
+([#221](https://github.com/3scale/apisonator/pull/221)).
+- Updated activesupport to 5.2.4.3
+([#217](https://github.com/3scale/apisonator/pull/217)).
+
+
 ## 2.100.2 - 2020-05-08
 
 ### Changed
