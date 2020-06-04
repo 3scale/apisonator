@@ -522,4 +522,14 @@ class ApplicationTest < Test::Unit::TestCase
     assert_equal 1, application.usage_limits.count { |limit| limit.metric_id == metric_2_id }
     assert_equal 1, application.usage_limits.count { |limit| limit.metric_id == metric_3_id }
   end
+
+  test '.load_usage_limits_affected_by raises MetricInvalid when a metric does not exist' do
+    application = Application.save(
+      service_id: '1000', id: '2000', state: :active, plan_id: '3000', plan_name: 'some_plan'
+    )
+
+    assert_raise MetricInvalid do
+      application.load_usage_limits_affected_by(['non_existing'])
+    end
+  end
 end
