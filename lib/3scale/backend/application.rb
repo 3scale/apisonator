@@ -230,11 +230,12 @@ module ThreeScale
       # Loads the usage limits affected by the metrics received, that is, the
       # limits that are defined for those metrics plus all their ancestors in
       # the metrics hierarchy.
+      # Raises MetricInvalid when a metric does not exist.
       def load_usage_limits_affected_by(metric_names)
         metric_ids = metric_names.flat_map do |name|
           [name] + Metric.ascendants(service_id, name)
         end.uniq.map do |name|
-          Metric.load_id(service_id, name)
+          Metric.load_id(service_id, name) || raise(MetricInvalid.new(name))
         end
 
         # IDs are sorted to be able to use the memoizer
