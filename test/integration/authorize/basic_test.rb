@@ -779,4 +779,17 @@ class AuthorizeBasicTest < Test::Unit::TestCase
 
     assert_error_resp_with_exc(ThreeScale::Backend::MetricInvalid.new('non_existing'))
   end
+
+  test 'returns error when the usage includes a metric that does not exist and no_body=true' do
+    get '/transactions/authorize.xml',
+        {
+          provider_key: @provider_key,
+          app_id: @application.id,
+          usage: { 'hits' => 1, 'non_existing' => 1 }
+        },
+        'HTTP_3SCALE_OPTIONS' => Extensions::NO_BODY
+
+    assert_equal ThreeScale::Backend::MetricInvalid.new('non_existing').http_code,
+                 last_response.status
+  end
 end
