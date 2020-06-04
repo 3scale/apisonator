@@ -957,4 +957,15 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal 409, last_response.status
     assert_nil last_response.header['3scale-rejection-reason']
   end
+
+  test_authrep 'returns error when the usage includes a metric that does not exist' do |e|
+    get e,
+        {
+          provider_key: @provider_key,
+          app_id: @application.id,
+          usage: { 'non_existing' => 1 }
+        }
+
+    assert_error_resp_with_exc(ThreeScale::Backend::MetricInvalid.new('non_existing'))
+  end
 end

@@ -730,4 +730,15 @@ class OauthBasicTest < Test::Unit::TestCase
 
     end
   end
+
+  test 'returns error when the usage includes a metric that does not exist' do
+    get '/transactions/oauth_authorize.xml',
+        {
+          provider_key: @provider_key,
+          app_id: @application.id,
+          usage: { 'non_existing' => 1 }
+        }
+
+    assert_error_resp_with_exc(ThreeScale::Backend::MetricInvalid.new('non_existing'))
+  end
 end
