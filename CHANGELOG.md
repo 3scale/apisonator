@@ -2,6 +2,15 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 2.101.1 - 2020-06-05
+
+### Fixed
+
+- Fixed a bug introduced in the previous version that made apisonator return an
+error when authorizing some requests with the `no_body` option enabled
+([#224](https://github.com/3scale/apisonator/pull/224)).
+
+
 ## 2.101.0 - 2020-06-04
 
 ### Added
