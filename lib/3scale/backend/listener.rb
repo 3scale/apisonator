@@ -128,8 +128,6 @@ module ThreeScale
         disable :dump_errors
       end
 
-      set :views, File.dirname(__FILE__) + '/views'
-
       use Backend::Rack::ExceptionCatcher
 
       before do
