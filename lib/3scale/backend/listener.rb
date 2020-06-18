@@ -428,62 +428,6 @@ module ThreeScale
         202
       end
 
-      ## OAUTH ACCESS TOKENS
-
-      # These endpoints are deprecated and are going to be removed. For now,
-      # let's disable them.
-      if Backend.test?
-        post '/services/:service_id/oauth_access_tokens.xml' do
-          check_post_content_type!
-          require_params! :service_id, :token
-
-          service_id = params[:service_id]
-          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
-
-          app_id = params[:app_id]
-          raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
-
-          OAuth::Token::Storage.create(params[:token], service_id, app_id, params[:ttl])
-        end
-
-        delete '/services/:service_id/oauth_access_tokens/:token.xml' do
-          require_params! :service_id, :token
-
-          service_id = params[:service_id]
-          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
-
-          token = params[:token]
-
-          # TODO: perhaps improve this to list the deleted tokens?
-          raise AccessTokenInvalid, token unless OAuth::Token::Storage.delete(token, service_id)
-        end
-
-        get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-          require_params! :service_id, :app_id
-
-          service_id = params[:service_id]
-          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
-
-          app_id = params[:app_id]
-
-          raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
-
-          @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id
-          builder :oauth_access_tokens
-        end
-
-        get '/services/:service_id/oauth_access_tokens/:token.xml' do
-          require_params! :service_id, :token
-
-          service_id = params[:service_id]
-          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
-
-          @token_to_app_id = OAuth::Token::Storage.get_credentials(params[:token], service_id)
-
-          builder :oauth_app_id_by_token
-        end
-      end
-
       get '/check.txt' do
         content_type 'text/plain'
         body 'ok'
@@ -514,10 +458,6 @@ module ThreeScale
 
       def valid_usage_params?
         params[:usage].nil? || params[:usage].is_a?(Hash)
-      end
-
-      def require_params!(*keys)
-        raise RequiredParamsMissing unless params && keys.all? { |key| !blank?(params[key]) }
       end
 
       def check_params_value_encoding!(input_params, params_to_validate)
@@ -647,15 +587,6 @@ module ThreeScale
         raise ProviderKeyOrServiceTokenRequired if blank?(token)
         raise ServiceIdMissing if blank?(id)
         raise ServiceTokenInvalid.new(token, id)
-      end
-
-      def ensure_authenticated!(provider_key, service_token, service_id)
-        if blank?(provider_key)
-          key = provider_key_from(service_token, service_id)
-          raise_provider_key_error(params) if blank?(key)
-        elsif !Service.authenticate_service_id(service_id, provider_key)
-          raise ProviderKeyInvalid, provider_key
-        end
       end
 
       def response_auth_call(auth_status)
