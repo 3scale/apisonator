@@ -30,9 +30,6 @@ module ThreeScale
       ##~ @parameter_app_id_inline = @parameter_app_id.clone
       ##~ @parameter_app_id_inline["description_inline"] = true
       ##
-      ##~ @parameter_access_token = {"name" => "access_token", "dataType" => "string", "required" => false, "paramType" => "query", "threescale_name" => "access_tokens"}
-      ##~ @parameter_access_token["description"] = "OAuth token used for authorizing if you don't use client_id with client_secret."
-      ##
       ##~ @parameter_client_id = {"name" => "app_id", "dataType" => "string", "required" => false, "paramType" => "query", "threescale_name" => "app_ids"}
       ##~ @parameter_client_id["description"] = "Client Id (identifier of the application if the auth. pattern is OAuth, note that client_id == app_id)"
       ##~ @parameter_client_id_inline = @parameter_client_id.clone
@@ -249,7 +246,7 @@ module ThreeScale
       ##~ op.summary = "Authorize (OAuth authentication mode pattern)"
       ##
       ##~ op.description = "<p>Read-only operation to authorize an application in the OAuth authentication pattern."
-      ##~ @oauth_security = "<p>When using this endpoint please pay attention at your handling of app_id and app_key parameters. If you don't specify an app_key, the endpoint assumes the app_id specified has already been authenticated by other means. If you specify the app_key parameter, even if it is empty, it will be checked against the application's keys. If you don't trust the app_id value you have, either use app keys and specify one or use access_token and avoid the app_id parameter."
+      ##~ @oauth_security = "<p>When using this endpoint please pay attention at your handling of app_id and app_key parameters. If you don't specify an app_key, the endpoint assumes the app_id specified has already been authenticated by other means. If you specify the app_key parameter, even if it is empty, it will be checked against the application's keys. If you don't trust the app_id value you have, use app keys and specify one."
       ##~ @oauth_desc_response = "<p>This call returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
       ##~ op.description = op.description + @oauth_security + @oauth_desc_response
       ##~ op.description = op.description + " " + @authorize_desc + " " + @authorize_desc_response
@@ -260,7 +257,6 @@ module ThreeScale
       ##
       ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
-      ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
@@ -334,7 +330,6 @@ module ThreeScale
       ##
       ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
-      ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
