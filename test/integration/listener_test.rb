@@ -38,15 +38,6 @@ class ListenerTest < Test::Unit::TestCase
     end
   end
 
-  def test_missing_required_parameters
-    post '/services/123/oauth_access_tokens.xml', :provider_key => 'foo' # no :token
-    assert_equal 422, last_response.status
-
-    node = xml.at('error')
-    assert_equal 'missing required parameters', node.content
-    assert_equal 'required_params_missing', node['code']
-  end
-
   def test_invalid_percent_encoding
     # We pass a string and not a hash as a parameter due to
     # the rack-test library performs modifications to the passed values

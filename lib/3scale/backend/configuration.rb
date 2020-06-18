@@ -57,7 +57,6 @@ module ThreeScale
       config.add_section(:redshift, :host, :port, :dbname, :user, :password)
       config.add_section(:statsd, :host, :port)
       config.add_section(:internal_api, :user, :password)
-      config.add_section(:oauth, :max_token_size)
       config.add_section(:master, :metrics)
       config.add_section(:worker_prometheus_metrics, :enabled, :port)
       config.add_section(:listener_prometheus_metrics, :enabled, :port)

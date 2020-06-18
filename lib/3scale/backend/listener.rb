@@ -30,9 +30,6 @@ module ThreeScale
       ##~ @parameter_app_id_inline = @parameter_app_id.clone
       ##~ @parameter_app_id_inline["description_inline"] = true
       ##
-      ##~ @parameter_access_token = {"name" => "access_token", "dataType" => "string", "required" => false, "paramType" => "query", "threescale_name" => "access_tokens"}
-      ##~ @parameter_access_token["description"] = "OAuth token used for authorizing if you don't use client_id with client_secret."
-      ##
       ##~ @parameter_client_id = {"name" => "app_id", "dataType" => "string", "required" => false, "paramType" => "query", "threescale_name" => "app_ids"}
       ##~ @parameter_client_id["description"] = "Client Id (identifier of the application if the auth. pattern is OAuth, note that client_id == app_id)"
       ##~ @parameter_client_id_inline = @parameter_client_id.clone
@@ -114,8 +111,7 @@ module ThreeScale
 
 
       AUTH_AUTHREP_COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze,
-                                    'user_key'.freeze, 'provider_key'.freeze,
-                                    'access_token'.freeze].freeze
+                                    'user_key'.freeze, 'provider_key'.freeze].freeze
       private_constant :AUTH_AUTHREP_COMMON_PARAMS
 
       REPORT_EXPECTED_PARAMS = ['provider_key'.freeze,
@@ -127,8 +123,6 @@ module ThreeScale
       configure :production do
         disable :dump_errors
       end
-
-      set :views, File.dirname(__FILE__) + '/views'
 
       use Backend::Rack::ExceptionCatcher
 
@@ -252,7 +246,7 @@ module ThreeScale
       ##~ op.summary = "Authorize (OAuth authentication mode pattern)"
       ##
       ##~ op.description = "<p>Read-only operation to authorize an application in the OAuth authentication pattern."
-      ##~ @oauth_security = "<p>When using this endpoint please pay attention at your handling of app_id and app_key parameters. If you don't specify an app_key, the endpoint assumes the app_id specified has already been authenticated by other means. If you specify the app_key parameter, even if it is empty, it will be checked against the application's keys. If you don't trust the app_id value you have, either use app keys and specify one or use access_token and avoid the app_id parameter."
+      ##~ @oauth_security = "<p>When using this endpoint please pay attention at your handling of app_id and app_key parameters. If you don't specify an app_key, the endpoint assumes the app_id specified has already been authenticated by other means. If you specify the app_key parameter, even if it is empty, it will be checked against the application's keys. If you don't trust the app_id value you have, use app keys and specify one."
       ##~ @oauth_desc_response = "<p>This call returns extra data (secret and redirect_url) needed to power OAuth APIs. It's only available for users with OAuth enabled APIs."
       ##~ op.description = op.description + @oauth_security + @oauth_desc_response
       ##~ op.description = op.description + " " + @authorize_desc + " " + @authorize_desc_response
@@ -263,7 +257,6 @@ module ThreeScale
       ##
       ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
-      ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
@@ -337,7 +330,6 @@ module ThreeScale
       ##
       ##~ op.parameters.add @parameter_service_token
       ##~ op.parameters.add @parameter_service_id
-      ##~ op.parameters.add @parameter_access_token
       ##~ op.parameters.add @parameter_client_id
       ##~ op.parameters.add @parameter_app_key_oauth
       ##~ op.parameters.add @parameter_referrer
@@ -430,62 +422,6 @@ module ThreeScale
         202
       end
 
-      ## OAUTH ACCESS TOKENS
-
-      # These endpoints are deprecated and are going to be removed. For now,
-      # let's disable them.
-      if Backend.test?
-        post '/services/:service_id/oauth_access_tokens.xml' do
-          check_post_content_type!
-          require_params! :service_id, :token
-
-          service_id = params[:service_id]
-          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
-
-          app_id = params[:app_id]
-          raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
-
-          OAuth::Token::Storage.create(params[:token], service_id, app_id, params[:ttl])
-        end
-
-        delete '/services/:service_id/oauth_access_tokens/:token.xml' do
-          require_params! :service_id, :token
-
-          service_id = params[:service_id]
-          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
-
-          token = params[:token]
-
-          # TODO: perhaps improve this to list the deleted tokens?
-          raise AccessTokenInvalid, token unless OAuth::Token::Storage.delete(token, service_id)
-        end
-
-        get '/services/:service_id/applications/:app_id/oauth_access_tokens.xml' do
-          require_params! :service_id, :app_id
-
-          service_id = params[:service_id]
-          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
-
-          app_id = params[:app_id]
-
-          raise ApplicationNotFound, app_id unless Application.exists?(service_id, app_id)
-
-          @tokens = OAuth::Token::Storage.all_by_service_and_app service_id, app_id
-          builder :oauth_access_tokens
-        end
-
-        get '/services/:service_id/oauth_access_tokens/:token.xml' do
-          require_params! :service_id, :token
-
-          service_id = params[:service_id]
-          ensure_authenticated!(params[:provider_key], params[:service_token], service_id)
-
-          @token_to_app_id = OAuth::Token::Storage.get_credentials(params[:token], service_id)
-
-          builder :oauth_app_id_by_token
-        end
-      end
-
       get '/check.txt' do
         content_type 'text/plain'
         body 'ok'
@@ -516,10 +452,6 @@ module ThreeScale
 
       def valid_usage_params?
         params[:usage].nil? || params[:usage].is_a?(Hash)
-      end
-
-      def require_params!(*keys)
-        raise RequiredParamsMissing unless params && keys.all? { |key| !blank?(params[key]) }
       end
 
       def check_params_value_encoding!(input_params, params_to_validate)
@@ -649,15 +581,6 @@ module ThreeScale
         raise ProviderKeyOrServiceTokenRequired if blank?(token)
         raise ServiceIdMissing if blank?(id)
         raise ServiceTokenInvalid.new(token, id)
-      end
-
-      def ensure_authenticated!(provider_key, service_token, service_id)
-        if blank?(provider_key)
-          key = provider_key_from(service_token, service_id)
-          raise_provider_key_error(params) if blank?(key)
-        elsif !Service.authenticate_service_id(service_id, provider_key)
-          raise ProviderKeyInvalid, provider_key
-        end
       end
 
       def response_auth_call(auth_status)

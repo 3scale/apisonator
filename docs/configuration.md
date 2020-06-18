@@ -304,13 +304,6 @@ each job.
 - Applies to: listener.
 - Format: integer.
 
-### CONFIG_OAUTH_MAX_TOKEN_SIZE
-
-- Max size of oauth tokens.
-- Optional: defaults to 3584.
-- Applies to: listener.
-- Format: integer (bytes).
-
 ### LISTENER_WORKERS
 
 - Number of worker processes of the listener.

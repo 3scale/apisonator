@@ -65,19 +65,7 @@ module ThreeScale
         params[:app_id] = nil if app_id && app_id.empty?
 
         if oauth
-          if app_id.nil?
-            access_token = params[:access_token]
-            access_token = nil if access_token && access_token.empty?
-
-            if access_token.nil?
-              raise ApplicationNotFound.new nil if app_id.nil?
-            else
-              app_id = get_token_ids(access_token, service_id, app_id)
-              # update params, since they are checked elsewhere
-              params[:app_id] = app_id
-            end
-          end
-
+          raise ApplicationNotFound.new nil if app_id.nil?
           validators = Validators::OAUTH_VALIDATORS
         else
           validators = Validators::VALIDATORS
