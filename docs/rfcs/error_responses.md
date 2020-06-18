@@ -129,14 +129,10 @@ ie. parameter X is missing or not matching criteria Y.
 
 * `error`:
   [400] Generic client error. Not to be used if a more specific code exists.
-    - `access_token_storage_error`:
-      There was an error when trying to access the OAuth token storage.
     - `not_valid_data`:
       Found data not being valid UTF-8.
     - `bad_request`:
       The request contains syntax errors.
-    - `access_token_already_exists`:
-      OAuth access token is already registered in the system.
     - `content_type_invalid`:
       A request was performed with an invalid Content-Type header. This usually
       happens when POST'ing with a header with anything other than either
@@ -162,8 +158,6 @@ ie. parameter X is missing or not matching criteria Y.
   refers to a non-existing endpoint (such as Sinatra not matching a route).
     - `application_not_found`:
       Application id was not found.
-    - `application_token_invalid`:
-      The specified token was not found.
     - `service_id_invalid`:
       The specified service id was not found.
     - `metric_invalid`:
