@@ -114,8 +114,7 @@ module ThreeScale
 
 
       AUTH_AUTHREP_COMMON_PARAMS = ['service_id'.freeze, 'app_id'.freeze, 'app_key'.freeze,
-                                    'user_key'.freeze, 'provider_key'.freeze,
-                                    'access_token'.freeze].freeze
+                                    'user_key'.freeze, 'provider_key'.freeze].freeze
       private_constant :AUTH_AUTHREP_COMMON_PARAMS
 
       REPORT_EXPECTED_PARAMS = ['provider_key'.freeze,
