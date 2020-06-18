@@ -201,25 +201,25 @@ class ApplicationTest < Test::Unit::TestCase
   test 'extract_id! returns application id if valid application id passed' do
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
 
-    assert_equal '2001', Application.extract_id!('1001', '2001', nil, nil)
+    assert_equal '2001', Application.extract_id!('1001', '2001', nil)
   end
 
   test 'extract_id! returns application id if valid user key passed' do
     Application.save(:service_id => '1001', :id => '2001', :state => :active)
     Application.save_id_by_key('1001', 'foobar', '2001')
 
-    assert_equal '2001', Application.extract_id!('1001', nil, 'foobar', nil)
+    assert_equal '2001', Application.extract_id!('1001', nil, 'foobar')
   end
 
   test 'extract_id! raises an exception if application id is invalid' do
     assert_raise ApplicationNotFound do
-      Application.extract_id!('1001', '2001', nil, nil)
+      Application.extract_id!('1001', '2001', nil)
     end
   end
 
   test 'extract_id! raises an exception if user key is invalid' do
     assert_raise UserKeyInvalid do
-      Application.extract_id!('1001', nil, 'foobar', nil)
+      Application.extract_id!('1001', nil, 'foobar')
     end
   end
 
@@ -227,7 +227,7 @@ class ApplicationTest < Test::Unit::TestCase
     Application.save_id_by_key('1001', 'foobar', '2001')
 
     assert_raise ApplicationNotFound do
-      Application.extract_id!('1001', nil, 'foobar', nil)
+      Application.extract_id!('1001', nil, 'foobar')
     end
   end
 
@@ -236,59 +236,15 @@ class ApplicationTest < Test::Unit::TestCase
     Application.save_id_by_key('1001', 'foobar', '2001')
 
     assert_raise AuthenticationError do
-      Application.extract_id!('1001', '2001', 'foobar', nil)
+      Application.extract_id!('1001', '2001', 'foobar')
     end
   end
 
-  test 'extract_id! raises an exception if neither application id, nor user key is passed, nor access_token' do
+  test 'extract_id! raises an exception if neither application id, nor user key is passed' do
     assert_raise ApplicationNotFound do
-      Application.extract_id!('1001', nil, nil, nil)
+      Application.extract_id!('1001', nil, nil)
     end
   end
-
-  test 'extract_id! handles access_token' do
-
-    Application.save(:service_id => '1001', :id => '2001', :state => :active)
-    OAuth::Token::Storage.create('token', '1001', '2001')
-    assert_equal '2001', Application.extract_id!('1001', nil, nil, 'token')
-
-  end
-
-  test 'extract_id! fails when access token is not mapped to an app_id' do
-
-     Application.save(:service_id => '1001', :id => '2001', :state => :active)
-     OAuth::Token::Storage.create('token', '1001', '2001')
-
-     assert_raise AccessTokenInvalid do
-       Application.extract_id!('1001', nil, nil, 'fake-token')
-     end
-
-  end
-
-  test 'extract_id! fails when access token is mapped to an app_id that does not exist' do
-
-     Application.save(:service_id => '1001', :id => '2001', :state => :active)
-     OAuth::Token::Storage.create('token', '1001', 'fake')
-
-     assert_raise ApplicationNotFound do
-       Application.extract_id!('1001', nil, nil, 'token')
-     end
-
-  end
-
-  test 'extract_id! app_id takes precedence to access_token' do
-
-    Application.save(:service_id => '1001', :id => '2001', :state => :active)
-    Application.save(:service_id => '1001', :id => '3001', :state => :active)
-
-    assert OAuth::Token::Storage.create('token', '1001', '3001')
-
-    assert_equal '3001', Application.extract_id!('1001', nil, nil, 'token')
-
-    assert_equal '2001', Application.extract_id!('1001', '2001', nil, 'token')
-
-  end
-
 
   test '#active? returns true if application is in active state' do
     application = Application.new(:state => :active)
