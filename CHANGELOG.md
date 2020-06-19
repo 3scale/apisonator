@@ -2,6 +2,15 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.0.0 - 2020-06-19
+
+### Removed
+
+- Apisonator no longer supports the native oauth authorization mode. This is a
+feature that was deprecated a long time ago
+([#226](https://github.com/3scale/apisonator/pull/226)).
+
+
 ## 2.101.1 - 2020-06-05
 
 ### Fixed
