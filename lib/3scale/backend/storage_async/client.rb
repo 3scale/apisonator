@@ -47,7 +47,7 @@ module ThreeScale
 
           endpoint = Async::IO::Endpoint.tcp(host, port)
           @redis_async = Async::Redis::Client.new(
-            endpoint, connection_limit: opts[:max_connections]
+            endpoint, limit: opts[:max_connections]
           )
           @building_pipeline = false
         end
