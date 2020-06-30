@@ -66,14 +66,15 @@ GEM
     async-http-cache (0.1.5)
       async-http
       protocol-http (~> 0.14)
-    async-io (1.27.5)
+    async-io (1.27.7)
       async (~> 1.14)
     async-pool (0.2.0)
       async (~> 1.8)
-    async-redis (0.4.1)
+    async-redis (0.5.0)
       async (~> 1.8)
       async-io (~> 1.10)
-      protocol-redis (~> 0.2.0)
+      async-pool (~> 0.2)
+      protocol-redis (~> 0.5.0)
     async-rspec (1.13.0)
       rspec (~> 3.0)
       rspec-files (~> 1.0)
@@ -161,7 +162,7 @@ GEM
     protocol-http2 (0.11.6)
       protocol-hpack (~> 1.4)
       protocol-http (~> 0.15)
-    protocol-redis (0.2.0)
+    protocol-redis (0.5.0)
     pry (0.11.3)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
@@ -266,7 +267,7 @@ PLATFORMS
 DEPENDENCIES
   airbrake (= 4.3.1)
   apisonator!
-  async-redis (~> 0.4.1)
+  async-redis (~> 0.5)
   async-rspec
   aws-sdk (= 2.4.2)
   benchmark-ips (~> 2.7.2)
