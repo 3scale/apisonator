@@ -2,6 +2,20 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.0.1 - 2020-07-14
+
+### Fixed
+
+- The Prometheus counter of "5xx" errors has been fixed
+([#230](https://github.com/3scale/apisonator/pull/230)).
+
+### Changed
+
+- Gem updates: rack to v2.1.4
+([#228](https://github.com/3scale/apisonator/pull/228)) and async-redis to
+v0.5.0 ([#229](https://github.com/3scale/apisonator/pull/229)).
+
+
 ## 3.0.0 - 2020-06-19
 
 ### Removed
