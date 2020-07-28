@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.0.1.1 - 2020-07-28
+
+### Changed
+
+- Updated json gem to v2.3.1
+([#232](https://github.com/3scale/apisonator/pull/232)).
+
 ## 3.0.1 - 2020-07-14
 
 ### Fixed
