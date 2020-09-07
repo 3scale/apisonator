@@ -71,16 +71,5 @@ module Transactor
         # ...
       end
     end
-
-    def test_raises_if_master_service_id_is_invalid
-      Transactor::NotifyJob.configuration.stubs(:master_service_id).returns(nil)
-
-      assert_raises Transactor::NotifyJob::InvalidMasterServiceId do
-        Transactor::NotifyJob.perform(@provider_key,
-                                      {'transactions/authorize' => 1},
-                                      Time.utc(2010, 7, 29, 18, 21),
-                                      Time.utc(2010, 7, 29, 18, 21).to_f)
-      end
-    end
   end
 end

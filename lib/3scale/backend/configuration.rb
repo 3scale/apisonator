@@ -1,6 +1,7 @@
 require '3scale/backend/configuration/loader'
 require '3scale/backend/environment'
 require '3scale/backend/configurable'
+require '3scale/backend/errors'
 
 module ThreeScale
   module Backend
@@ -118,6 +119,10 @@ module ThreeScale
       config.master.metrics.transactions_authorize = config.master.metrics.transactions_authorize.to_s
       if config.master.metrics.transactions_authorize.empty?
         config.master.metrics.transactions_authorize = CONFIG_MASTER_METRICS_TRANSACTIONS_AUTHORIZE_DEFAULT
+      end
+
+      if config.master_service_id.nil? || config.master_service_id.to_s.empty?
+        raise InvalidMasterServiceId
       end
 
       # can_create_event_buckets is just for our SaaS analytics system.

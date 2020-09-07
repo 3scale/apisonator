@@ -7,8 +7,6 @@ module ThreeScale
         extend Configurable
         @queue = :main
 
-        InvalidMasterServiceId = Class.new(ThreeScale::Backend::Error)
-
         class << self
           def perform_logged(provider_key, usage, timestamp, _enqueue_time)
             application_id = Application.load_id_by_key(master_service_id, provider_key)
@@ -29,15 +27,7 @@ module ThreeScale
           private
 
           def master_service_id
-            value = configuration.master_service_id
-
-            unless value
-              raise InvalidMasterServiceId,
-                    "Can't find master service id. Make sure the \"master_service_id\" "\
-                    'configuration value is set correctly'
-            end
-
-            value.to_s
+            configuration.master_service_id.to_s
           end
         end
       end
