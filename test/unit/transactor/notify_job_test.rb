@@ -80,5 +80,22 @@ module Transactor
         # ...
       end
     end
+
+    def test_timestamp_outside_defined_range_notifies_the_error_and_logs_it
+      Worker.logger.expects(:notify).with { |e| e.is_a?(TransactionTimestampTooOld) }
+      Worker.logger.expects(:error).with do |msg|
+        msg.match?("NotifyJob #{@provider_key} #{@provider_application_id} "\
+                   "reporting transactions older than "\
+                   "#{Transaction.const_get(:REPORT_DEADLINE_PAST)} seconds is not allowed")
+      end
+
+      now = Time.now.utc
+      job_timestamp = now - Transaction.const_get(:REPORT_DEADLINE_PAST) - 1
+
+      Transactor::NotifyJob.perform(@provider_key,
+                                    {'transactions/authorize' => 1},
+                                    job_timestamp,
+                                    job_timestamp.to_f)
+    end
   end
 end
