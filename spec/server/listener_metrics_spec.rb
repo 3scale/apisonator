@@ -54,10 +54,16 @@ module ThreeScale
             # - 1 authorize (authorized)
             # - 2 authreps authorized
             # - 2 authreps unauthorized, one that returns 403 and another that returns 404
+            # - A valid request to the internal API (get services) and an invalid one.
             do_auth(listener_host, listener_port, args)
             2.times { do_authrep(listener_host, listener_port, args) }
             do_authrep(listener_host, listener_port, args.merge(user_key: 'invalid')) # 403
             do_authrep(listener_host, listener_port, args.merge(metric_name: 'invalid')) # 404
+
+            # Internal API requests
+            [service_id, 'invalid'].each do |id|
+              get_service_internal_api(listener_host, listener_port, id)
+            end
           end
 
           after do
@@ -69,7 +75,7 @@ module ThreeScale
             metrics_resp = Net::HTTP.get(listener_host, metrics_endpoint, metrics_port)
 
             # These are some lines that we know that should be part of the output.
-            check_lines = [
+            auth_report_lines = [
               '# TYPE apisonator_listener_response_codes counter',
               '# HELP apisonator_listener_response_codes Response codes',
               'apisonator_listener_response_codes{request_type="authrep",resp_code="2xx"} 2.0',
@@ -82,7 +88,17 @@ module ThreeScale
               'apisonator_listener_response_times_seconds_count{request_type="authrep"} 4.0',
             ]
 
-            expect(metrics_resp).to include(*check_lines)
+            internal_api_lines = [
+              '# TYPE apisonator_listener_internal_api_response_codes counter',
+              '# HELP apisonator_listener_internal_api_response_codes Response codes',
+              'apisonator_listener_internal_api_response_codes{request_type="services",resp_code="2xx"} 1.0',
+              'apisonator_listener_internal_api_response_codes{request_type="services",resp_code="404"} 1.0',
+              '# TYPE apisonator_listener_internal_api_response_times_seconds histogram',
+              '# HELP apisonator_listener_internal_api_response_times_seconds Response times',
+              'apisonator_listener_internal_api_response_times_seconds_count{request_type="services"} 2.0',
+            ]
+
+            expect(metrics_resp).to include(*(auth_report_lines + internal_api_lines))
           end
         end
 
@@ -200,6 +216,10 @@ module ThreeScale
 
       def authrep_query(args)
         '/transactions/authrep.xml?' + parsed_query_args(args)
+      end
+
+      def get_service_internal_api(listener_host, listener_port, service_id)
+        Net::HTTP.get(listener_host, "/internal/services/#{service_id}", listener_port)
       end
 
       def parsed_query_args(args)
