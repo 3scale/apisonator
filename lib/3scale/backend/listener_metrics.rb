@@ -4,14 +4,34 @@ require 'rack'
 module ThreeScale
   module Backend
     class ListenerMetrics
-      REQUEST_TYPES = {
+      AUTH_AND_REPORT_REQUEST_TYPES = {
         '/transactions/authorize.xml' => 'authorize',
         '/transactions/oauth_authorize.xml' => 'authorize_oauth',
         '/transactions/authrep.xml' => 'authrep',
         '/transactions/oauth_authrep.xml' => 'authrep_oauth',
         '/transactions.xml' => 'report'
       }
-      private_constant :REQUEST_TYPES
+      private_constant :AUTH_AND_REPORT_REQUEST_TYPES
+
+      INTERNAL_API_PATHS = [
+        [/\/services\/.*\/alert_limits/, 'alerts'],
+        [/\/services\/.*\/applications\/.*\/keys/, 'application_keys'],
+        [/\/services\/.*\/applications\/.*\/referrer_filters/, 'application_referrer_filters'],
+        [/\/services\/.*\/applications/, 'applications'],
+        [/\/services\/.*\/errors/, 'errors'],
+        [/\/events/, 'events'],
+        [/\/services\/.*\/metrics/, 'metrics'],
+        [/\/service_tokens/, 'service_tokens'],
+        [/\/services/, 'services'],
+        [/\/services\/.*\/stats/, 'stats'],
+        [/\/services\/.*\/plans\/.*\/usagelimits/, 'usage_limits'],
+        [/\/services\/.*\/applications\/.*\/utilization/, 'utilization'],
+      ].freeze
+      private_constant :INTERNAL_API_PATHS
+
+      # Most requests will be under 100ms, so use a higher granularity from there
+      TIME_BUCKETS = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.25, 0.5, 0.75, 1]
+      private_constant :TIME_BUCKETS
 
       class << self
         ERRORS_4XX_TO_TRACK = Set[403, 404, 409].freeze
@@ -27,9 +47,12 @@ module ThreeScale
         end
 
         def report_resp_code(path, resp_code)
-          Yabeda.apisonator_listener.response_codes.increment(
+          req_type = req_type(path)
+          prometheus_group = prometheus_group(req_type)
+
+          Yabeda.send(prometheus_group).response_codes.increment(
             {
-              request_type: REQUEST_TYPES[path],
+              request_type: req_type,
               resp_code: code_group(resp_code)
             },
             by: 1
@@ -37,8 +60,11 @@ module ThreeScale
         end
 
         def report_response_time(path, request_time)
-          Yabeda.apisonator_listener.response_times.measure(
-            { request_type: REQUEST_TYPES[path] },
+          req_type = req_type(path)
+          prometheus_group = prometheus_group(req_type)
+
+          Yabeda.send(prometheus_group).response_times.measure(
+            { request_type: req_type },
             request_time
           )
         end
@@ -69,8 +95,21 @@ module ThreeScale
                 comment 'Response times'
                 unit :seconds
                 tags %i[request_type]
-                # Most requests will be under 100ms, so use a higher granularity from there
-                buckets [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.25, 0.5, 0.75, 1]
+                buckets TIME_BUCKETS
+              end
+            end
+
+            group :apisonator_listener_internal_api do
+              counter :response_codes do
+                comment 'Response codes'
+                tags %i[request_type resp_code]
+              end
+
+              histogram :response_times do
+                comment 'Response times'
+                unit :seconds
+                tags %i[request_type]
+                buckets TIME_BUCKETS
               end
             end
           end
@@ -91,6 +130,24 @@ module ThreeScale
             '5xx'.freeze
           else
             'unknown'.freeze
+          end
+        end
+
+        def req_type(path)
+          AUTH_AND_REPORT_REQUEST_TYPES[path] || internal_api_req_type(path)
+        end
+
+        def internal_api_req_type(path)
+          (_regex, type) = INTERNAL_API_PATHS.find { |(regex, _)| regex.match path }
+          type
+        end
+
+        # Returns the group as defined in .define_metrics
+        def prometheus_group(request_type)
+          if AUTH_AND_REPORT_REQUEST_TYPES.values.include? request_type
+            :apisonator_listener
+          else
+            :apisonator_listener_internal_api
           end
         end
       end
