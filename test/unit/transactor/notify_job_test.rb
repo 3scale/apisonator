@@ -11,65 +11,91 @@ module Transactor
     end
 
     def test_processes_the_transactions
+      now = Time.now.utc
+
       Transactor::ProcessJob.expects(:perform).
         with([{:service_id     => @master_service_id,
                :application_id => @provider_application_id,
-               :timestamp      => Time.utc(2010, 7, 29, 18, 21),
+               :timestamp      => now,
                :usage          => {@master_hits_id => 1, @master_authorizes_id => 1}}])
 
       Transactor::NotifyJob.perform(@provider_key,
                                     {'transactions/authorize' => 1},
-                                    Time.utc(2010, 7, 29, 18, 21),
-                                    Time.utc(2010, 7, 29, 18, 21).to_f)
+                                    now,
+                                    now.to_f)
     end
 
     def test_does_not_raise_an_exception_if_provider_key_is_invalid
+      now = Time.now.utc
+
       assert_nothing_raised do
         Transactor::NotifyJob.perform('foo',
                                       {'transactions/authorize' => 1},
-                                      Time.utc(2010, 7, 29, 18, 21),
-                                      Time.utc(2010, 7, 29, 18, 21).to_f)
+                                      now,
+                                      now.to_f)
       end
     end
 
     def test_does_not_report_error_if_provider_key_is_invalid
+      now = Time.now.utc
       ErrorStorage.expects(:store).never
 
       Transactor::NotifyJob.perform('foo',
                                     {'transactions/authorize' => 1},
-                                    Time.utc(2010, 7, 29, 18, 21),
-                                    Time.utc(2010, 7, 29, 18, 21).to_f)
+                                    now,
+                                    now.to_f)
     end
 
     def test_does_not_process_the_transactions_if_provider_key_is_invalid
+      now = Time.now.utc
       Transactor::ProcessJob.expects(:perform).never
 
       Transactor::NotifyJob.perform('foo',
                                     {'transactions/authorize' => 1},
-                                    Time.utc(2010, 7, 29, 18, 21),
-                                    Time.utc(2010, 7, 29, 18, 21).to_f)
+                                    now,
+                                    now.to_f)
     end
 
     def test_raises_an_exception_if_metrics_are_invalid
+      now = Time.now.utc
+
       assert_raises MetricInvalid do
         Transactor::NotifyJob.perform(@provider_key,
                                       {'transactions/invalid_metric' => 1},
-                                      Time.utc(2010, 7, 29, 18, 21),
-                                      Time.utc(2010, 7, 29, 18, 21).to_f)
+                                      now,
+                                      now.to_f)
       end
     end
 
     def test_does_not_process_the_transactions_if_metrics_are_invalid
+      now = Time.now.utc
       Transactor::ProcessJob.expects(:perform).never
 
       begin
         Transactor::NotifyJob.perform(@provider_key,
                                       {'transactions/invalid_metric' => 1},
-                                      Time.utc(2010, 7, 29, 18, 21),
-                                      Time.utc(2010, 7, 29, 18, 21).to_f)
+                                      now,
+                                      now.to_f)
       rescue MetricInvalid
         # ...
       end
+    end
+
+    def test_timestamp_outside_defined_range_notifies_the_error_and_logs_it
+      Worker.logger.expects(:notify).with { |e| e.is_a?(TransactionTimestampTooOld) }
+      Worker.logger.expects(:error).with do |msg|
+        msg.match?("NotifyJob #{@provider_key} #{@provider_application_id} "\
+                   "reporting transactions older than "\
+                   "#{Transaction.const_get(:REPORT_DEADLINE_PAST)} seconds is not allowed")
+      end
+
+      now = Time.now.utc
+      job_timestamp = now - Transaction.const_get(:REPORT_DEADLINE_PAST) - 1
+
+      Transactor::NotifyJob.perform(@provider_key,
+                                    {'transactions/authorize' => 1},
+                                    job_timestamp,
+                                    job_timestamp.to_f)
     end
   end
 end
