@@ -22,9 +22,6 @@ module ThreeScale
       end
     end
 
-    MASTER_SERVICE_ID_DEFAULT = 1
-    private_constant :MASTER_SERVICE_ID_DEFAULT
-
     NOTIFICATION_BATCH_DEFAULT = 10000
     private_constant :NOTIFICATION_BATCH_DEFAULT
 
@@ -119,10 +116,6 @@ module ThreeScale
       config.master.metrics.transactions_authorize = config.master.metrics.transactions_authorize.to_s
       if config.master.metrics.transactions_authorize.empty?
         config.master.metrics.transactions_authorize = CONFIG_MASTER_METRICS_TRANSACTIONS_AUTHORIZE_DEFAULT
-      end
-
-      if config.master_service_id.to_s.empty?
-        config.master_service_id = MASTER_SERVICE_ID_DEFAULT
       end
 
       # can_create_event_buckets is just for our SaaS analytics system.
