@@ -22,6 +22,9 @@ module ThreeScale
       end
     end
 
+    MASTER_SERVICE_ID_DEFAULT = 1
+    private_constant :MASTER_SERVICE_ID_DEFAULT
+
     NOTIFICATION_BATCH_DEFAULT = 10000
     private_constant :NOTIFICATION_BATCH_DEFAULT
 
@@ -78,9 +81,6 @@ module ThreeScale
       master_metrics = [:transactions, :transactions_authorize]
       config.master.metrics = Struct.new(*master_metrics).new
 
-      # Default config
-      config.master_service_id  = 1
-
       # This setting controls whether the listener can create event buckets in
       # Redis. We do not want all the listeners creating buckets yet, as we do
       # not know exactly the rate at which we can send events to Kinesis
@@ -121,8 +121,8 @@ module ThreeScale
         config.master.metrics.transactions_authorize = CONFIG_MASTER_METRICS_TRANSACTIONS_AUTHORIZE_DEFAULT
       end
 
-      if config.master_service_id.nil? || config.master_service_id.to_s.empty?
-        raise InvalidMasterServiceId
+      if config.master_service_id.to_s.empty?
+        config.master_service_id = MASTER_SERVICE_ID_DEFAULT
       end
 
       # can_create_event_buckets is just for our SaaS analytics system.
