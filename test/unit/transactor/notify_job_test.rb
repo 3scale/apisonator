@@ -56,29 +56,14 @@ module Transactor
                                     now.to_f)
     end
 
-    def test_raises_an_exception_if_metrics_are_invalid
+    def test_master_metrics_not_defined_notifies_the_error_and_logs_it
       now = Time.now.utc
+      invalid_metric = 'transactions/invalid_metric'
 
-      assert_raises MetricInvalid do
-        Transactor::NotifyJob.perform(@provider_key,
-                                      {'transactions/invalid_metric' => 1},
-                                      now,
-                                      now.to_f)
-      end
-    end
+      Worker.logger.expects(:notify).with { |e| e.is_a?(MetricInvalid) }
+      Worker.logger.expects(:error).with("NotifyJob metric \"#{invalid_metric}\" is invalid")
 
-    def test_does_not_process_the_transactions_if_metrics_are_invalid
-      now = Time.now.utc
-      Transactor::ProcessJob.expects(:perform).never
-
-      begin
-        Transactor::NotifyJob.perform(@provider_key,
-                                      {'transactions/invalid_metric' => 1},
-                                      now,
-                                      now.to_f)
-      rescue MetricInvalid
-        # ...
-      end
+      Transactor::NotifyJob.perform(@provider_key, { invalid_metric => 1 }, now, now.to_f)
     end
 
     def test_timestamp_outside_defined_range_notifies_the_error_and_logs_it

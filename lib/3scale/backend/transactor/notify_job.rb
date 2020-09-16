@@ -21,6 +21,18 @@ module ThreeScale
                   timestamp: timestamp,
                   usage: master_metrics.process_usage(usage)
                 }])
+              rescue MetricInvalid => e
+                # This happens when the master account in Porta does not have
+                # the notify metrics defined (by default "transactions" and
+                # "transactions/authorize"). These metrics need to be created in
+                # Porta, Apisonator does not have a way to guarantee that
+                # they're defined.
+                # Notice that this rescue prevents the job from being retried.
+                # Apisonator can't know when the metrics will be created (if
+                # ever) so it's better to log the error rather than retrying
+                # these jobs for an undefined period of time.
+                Worker.logger.notify(e)
+                return [false, "#{e}"]
               rescue TransactionTimestampNotWithinRange => e
                 # This is very unlikely to happen. The timestamps in a notify
                 # job are not set by users, they are set by the listeners. If
