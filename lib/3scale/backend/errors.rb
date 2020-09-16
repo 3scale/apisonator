@@ -303,12 +303,5 @@ module ThreeScale
         super 'End-users are no longer supported, do not specify the user_id parameter'.freeze
       end
     end
-
-    class InvalidMasterServiceId < Error
-      def initialize
-        super "Can't find master service id. Make sure the \"master_service_id\" "\
-              'configuration value is set correctly'.freeze
-      end
-    end
   end
 end
