@@ -144,6 +144,24 @@ module Transactor
 
       self.configuration = bkp_configuration
     end
+
+    test 'does not batch anything when master service ID is not set' do
+      original_config = configuration.clone
+
+      [nil, ""].each do |master_service_id|
+        configuration.master_service_id = master_service_id
+
+        provider_key = 'some_provider_key'
+        Transactor.notify_authorize(provider_key)
+        Transactor.notify_authrep(provider_key, 1)
+        Transactor.notify_report(provider_key, 1)
+
+        assert_equal 0, @storage.llen(Transactor.key_for_notifications_batch) # nothing batched
+        assert_equal 0, Resque.queues[:main].size # nothing enqueued
+      end
+
+      self.configuration = original_config
+    end
   end
 end
 
