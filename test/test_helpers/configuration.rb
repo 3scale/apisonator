@@ -1,6 +1,7 @@
 require '3scale/backend'
 
 ThreeScale::Backend.configure do |config|
+  config.master_service_id = 1
   config.stats.bucket_size  = 5
   config.notification_batch = 5
   config.redshift.host = 'localhost'

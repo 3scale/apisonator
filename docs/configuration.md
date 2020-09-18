@@ -158,14 +158,15 @@ send events to Porta.
 ### CONFIG_MASTER_SERVICE_ID
 
 - The service ID of the master account in Porta.
-- Optional. Defaults to 1.
-- Applies to: worker.
+- Optional. If not provided, Apisonator does not report metrics to the master
+account of Porta.
+- Applies to: listener, worker.
 - Format: string.
 
 ### CONFIG_MASTER_METRICS_TRANSACTIONS
 
-- Name of the metric configured in the master account of Porta to
-track the number of report calls.
+- Name of the metric configured in the master account of Porta to track the
+number of report calls. Applies only when `CONFIG_MASTER_SERVICE_ID` is set.
 - Optional. Defaults to "transactions".
 - Applies to: listener.
 - Format: string.
@@ -173,7 +174,7 @@ track the number of report calls.
 ### CONFIG_MASTER_METRICS_TRANSACTIONS_AUTHORIZE
 
 - Name of the metric configured in the master account of Porta to track the
-number of authorize calls.
+number of authorize calls. Applies only when `CONFIG_MASTER_SERVICE_ID` is set.
 - Optional. Defaults to "transactions/authorize".
 - Applies to: listener.
 - Format: string.

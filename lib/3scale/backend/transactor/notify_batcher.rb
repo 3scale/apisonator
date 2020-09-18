@@ -30,9 +30,13 @@ module ThreeScale
         end
 
         def notify(provider_key, usage)
-          # batch several notifications together so that we can process just one
+          # We need the master service ID to report its metrics. If it's not
+          # set, we don't need to notify anything.
+          # Batch several notifications together so that we can process just one
           # job for a group of them.
-          notify_batch(provider_key, usage)
+          unless configuration.master_service_id.to_s.empty?
+            notify_batch(provider_key, usage)
+          end
         end
 
         def notify_batch(provider_key, usage)
