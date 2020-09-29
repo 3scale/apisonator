@@ -6,12 +6,15 @@ how they work so that users can understand why that is the case.
 
 ### Utilization percentages
 
-Apisonator will emit alerts to the administrative instance for traffic crossing
+Apisonator emits alerts to the administrative instance for traffic crossing
 the following utilization percentage of an application _if configured to do so_:
 
 0, 50, 80, 90, 100, 120, 150, 200, 300
 
 However, only one alert percentage is to be notified in any given 24h period.
+
+At the time when utilization percentage is computed, if trafic has crossed 2 or more utilization percentages (e.g 90, 100), an alert is emitted only for the largest utilization percentage level ( eg 100). Alert for the smaller utilization percentages that have also been crossed (eg 90) will be skipped but maybe emitted later.
+
 
 ### Alert notification
 
@@ -27,9 +30,6 @@ period (ie. hour), or even if the alert would be emitted for a different metric.
 
 If, however, the utilization percentage would have not been notified in the
 previous 24 hours, such as 150, then it is notified.
-
-If traffic increase crosses 2 or more utilization percentages (e.g 90, 100) for which an alert has not been emitted, then an alert is emitted only for the largest utiliziation percentage level ( eg 100). Alert
-s for the other lesser utilization percentages that have been crossed (eg 90) will be skipped and may be emitted later, creating a potential gap in alerts.
 
 ### Issues
 
