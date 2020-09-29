@@ -28,6 +28,9 @@ period (ie. hour), or even if the alert would be emitted for a different metric.
 If, however, the utilization percentage would have not been notified in the
 previous 24 hours, such as 150, then it is notified.
 
+If traffic increase crosses 2 or more utilization percentages (e.g 90, 100) for which an alert has not been emitted, then an alert is emitted only for the largest utiliziation percentage level ( eg 100). Alert
+s for the other lesser utilization percentages that have been crossed (eg 90) will be skipped and may be emitted later, creating a potential gap in alerts.
+
 ### Issues
 
 This behaviour is surprising to users because they might expect an alert
