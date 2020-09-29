@@ -11,9 +11,9 @@ the following utilization percentage of an application _if configured to do so_:
 
 0, 50, 80, 90, 100, 120, 150, 200, 300
 
-However, only one alert percentage is to be notified in any given 24h period.
-
 At the time when utilization percentage is computed, if trafic has crossed 2 or more utilization percentages (e.g 90, 100), an alert is emitted only for the largest utilization percentage level ( eg 100). Alert for the smaller utilization percentages that have also been crossed (eg 90) will be skipped but maybe emitted later.
+
+However, only one alert percentage is to be notified in any given 24h period.
 
 
 ### Alert notification
