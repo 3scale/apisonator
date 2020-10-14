@@ -2,6 +2,26 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.1.0 - 2020-10-14
+
+### Added
+
+- Prometheus metrics for the internal API
+([#236](https://github.com/3scale/apisonator/pull/236)).
+- Docs with a detailed explanation about how counter updates are performed
+([#239](https://github.com/3scale/apisonator/pull/239)).
+
+### Changed
+
+- NotifyJobs are run only when the service ID is explicitly defined
+([#238](https://github.com/3scale/apisonator/pull/238)).
+
+### Fixed
+
+- Fixed corner case that raised "TransactionTimestampNotWithinRange" in notify
+jobs ([#235](https://github.com/3scale/apisonator/pull/235)).
+
+
 ## 3.0.1.1 - 2020-07-28
 
 ### Changed
