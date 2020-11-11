@@ -1,7 +1,7 @@
 # Limits
 
 There is a surprisingly common test people like to perform when they first encounter
-Apisonator's limits. This test consists on setting up a service, an application, and
+Apisonator's limits. This test consists of setting up a service, an application, and
 a limit to an arbitrary metric, and trying it out.
 
 For example, setting up a 5/minute limit on the "Hits" metric.
@@ -57,7 +57,7 @@ multiple tests capturing the output to files. In general, you will see that when
 a few requests are performed in parallel, you'll see the above behavior. On the other
 hand, when you invoke the requests serially, you'll see the expected behavior.
 
-Also note that one of the issues people get caught by surprise in is issuing requests
+Also, note that one of the issues people get caught by surprise in is issuing requests
 in different limiting periods. The time Apisonator has is the time it will use to
 classify counters, so pay attention to the responses containing the start and end of
 the period. If you use minutes to test this you could be unlucky and start your test
@@ -74,7 +74,7 @@ running on a container:
 You can omit the `PARALLEL=y` setting to perform requests serially, or you could
 introduce small pauses in between parallel requests with ie. `SLEEP=0.01`.
 
-In general if you want accuracy to be greater you will have to increase the number
+In general, if you want accuracy to be greater you will have to increase the number
 of workers processing background jobs (ie. backend-worker). Those workers have
 historically worked in one job at a time, so if you have up to N parallel requests
 in-flight, you want at least N such workers. (Note: async mode when enabled will
