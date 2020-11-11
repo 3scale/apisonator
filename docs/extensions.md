@@ -16,13 +16,13 @@ Such extensions can be used as specified in the API Extensions RFC.
 
 ### flat_usage (integer)
 
-This extension applies to the usage data passed in to any call that accepts
+This extension applies to the usage data passed into any call that accepts
 usages. It instructs the software to _assume_ that the client has computed the
 relations between the usage methods so that, ie. if method `m` is a parent of
 method/metric `n`, then any reported hit to `n` has been added to `m`, which in
 turn should also be present in the usage specified by the client. Note that
 failing to compute this properly will result in data that does not make sense,
-such as having a limited parent with a children that goes over the parent
+such as having a limited parent with a child that goes over the parent
 limits.
 
 #### Accepted values
@@ -38,7 +38,7 @@ of 5, not counting any other potential children.
 ### no_body (boolean)
 
 This instructs the software to avoid generating response bodies for certain endpoints.
-In particular, this is useful to avoid generating large response in the authorization
+In particular, this is useful to avoid generating a large response in the authorization
 endpoints, but can also apply to other endpoints as long as it makes sense to avoid
 generating the response's body.
 
@@ -69,11 +69,11 @@ calling endpoints that perform authorizations _and such endpoints can be
 processed correctly_ (ie. no other errors such as authentication or
 non-existing metrics occur):
 
-* `3scale-limit-remaining`: An integer stating the amount of hits left for the
+* `3scale-limit-remaining`: An integer stating the number of hits left for the
   _full combination_ of metrics authorized in this call before the rate limiting
   logic would start denying authorizations _for the current period_. A negative
-  integer value means there is no limit in the amount of hits.
-* `3scale-limit-reset`: An integer stating the amount of seconds left for the
+  integer value means there is no limit in the number of hits.
+* `3scale-limit-reset`: An integer stating the number of seconds left for the
   current limiting period to elapse. A negative integer value means there is no
   limit in time.
 * `3scale-limit-max-value`: An integer stating the maximum total number of hits
@@ -97,16 +97,16 @@ a period of a minute.
 
 #### Caching remaining hits
 
-Relying on the amount of hits declared in the header for caching purposes should
+Relying on the number of hits declared in the header for caching purposes should
 be done carefully to take into account potential concurrent requests reporting
-hits to any one of the metrics in the authorization call. Additionally there is
+hits to any one of the metrics in the authorization call. Additionally, there is
 also the possibility that limits that apply could be updated in the meantime.
 Out of band mechanisms for detecting that limits have been changed and caching
 must be invalidated are out of scope for this extension.
 
 #### Limit Reset
 
-The time in the limit reset header specifies the amount of seconds after which
+The time in the limit reset header specifies the number of seconds after which
 the limiting period is guaranteed to expire (unless it is a negative value) and
 a new limit will be considered. That does not take into account networking or
 processing delays, and it is a rounded up value representing the clock
@@ -129,7 +129,7 @@ elapsed can be used to obtain nominal values.
 #### Performance
 
 Note that this extension forces backend to compute the headers and thus lower
-performance (ie. response time) is to be expected, specially when a large amount
+performance (ie. response time) is to be expected, especially when a large number
 of limits apply.
 
 #### Accepted values
