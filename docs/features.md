@@ -19,7 +19,7 @@ Apisonator.
 
 Requests are authorized based on some credentials that identify a service
 (provider key, service token) and some credentials that identify an application
-(app ID + app key, user key, oauth token).
+(app ID + app key, user key, OAuth token).
 
 ## Rate-limit of applications
 
@@ -33,15 +33,14 @@ account the counters starting from Jan 1st 2020, not from a year ago.
 
 Apisonator aggregates usage stats by the same periods used for rate-limiting,
 except for minute. It aggregates data by {service, metric} and also {service,
-application, metric}. This allows external system to query the usage for a given
+application, metric}. This allows an external system to query the usage for a given
 month, year, etc. efficiently.
 
 ## Aggregation of response codes
 
 Apisonator also aggregates response codes using the same periods used to
 aggregate usage stats. These response codes are the ones returned by the
-upstream API and are sent to Apisonator via APIcast or other integration
-mechanism (Istio adapter, Java plugin, etc.).
+upstream API and are sent to Apisonator via APIcast or other integration mechanisms (Istio adapter, Java plugin, etc.).
 
 ## Quotas
 
