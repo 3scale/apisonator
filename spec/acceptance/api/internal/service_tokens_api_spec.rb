@@ -36,6 +36,36 @@ resource 'Service Tokens (prefix: /service_tokens)' do
     end
   end
 
+  get '/service_tokens/:token/:service_id/provider_key' do
+    let(:token) { 'a_token' }
+    let(:service_id) { 'a_service_id' }
+
+    context 'Get the provider key sending a (token, service_id) pair that exists' do
+      let(:provider_key) { 'a_provider_key' }
+
+      before do
+        ThreeScale::Backend::Service.save!(provider_key: provider_key, id: service_id)
+        ThreeScale::Backend::ServiceToken.save(token, service_id)
+      end
+
+      example 'Get the provider key' do
+        do_request({ token: token, service_id: service_id })
+        expect(status).to eq 200
+        expect(response_json['provider_key']).to eq provider_key
+      end
+    end
+
+    context 'When the (token, service_id) pair does not exist' do
+      before { ThreeScale::Backend::ServiceToken.delete(token, service_id) }
+
+      example 'Try to get the provider key' do
+        do_request({ token: token, service_id: service_id })
+        expect(status).to eq 404
+        expect(response_json['error']).to eq 'token/service combination not found'
+      end
+    end
+  end
+
   post '/service_tokens/' do
     parameter :service_tokens, 'Service Tokens', required: true
 
