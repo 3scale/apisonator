@@ -7,6 +7,14 @@ module ThreeScale
           ServiceToken.exists?(token, service_id) ? 200 : 404
         end
 
+        get '/:token/:service_id/provider_key' do |token, service_id|
+          if ServiceToken.exists?(token, service_id)
+            { status: :found, provider_key: Service.provider_key_for(service_id) }.to_json
+          else
+            respond_with_404('token/service combination not found'.freeze)
+          end
+        end
+
         post '/' do
           check_tokens_param!
 
