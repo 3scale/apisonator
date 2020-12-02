@@ -49,7 +49,14 @@ module ThreeScale
             ThreeScale::Backend::Metric.save(
               service_id: service_id, id: metric_id, name: metric_name
             )
+          end
 
+          after do
+            stop_listener(listener_port, server)
+            delete_config_file(config_file)
+          end
+
+          it 'shows Prometheus metrics for auths and reports' do
             # Do requests to generate some metrics:
             # - 1 authorize (authorized)
             # - 2 authreps authorized
@@ -60,18 +67,6 @@ module ThreeScale
             do_authrep(listener_host, listener_port, args.merge(user_key: 'invalid')) # 403
             do_authrep(listener_host, listener_port, args.merge(metric_name: 'invalid')) # 404
 
-            # Internal API requests
-            [service_id, 'invalid'].each do |id|
-              get_service_internal_api(listener_host, listener_port, id)
-            end
-          end
-
-          after do
-            stop_listener(listener_port, server)
-            delete_config_file(config_file)
-          end
-
-          it 'shows metrics in Prometheus format' do
             metrics_resp = Net::HTTP.get(listener_host, metrics_endpoint, metrics_port)
 
             # These are some lines that we know that should be part of the output.
@@ -88,6 +83,16 @@ module ThreeScale
               'apisonator_listener_response_times_seconds_count{request_type="authrep"} 4.0',
             ]
 
+            expect(metrics_resp).to include(*auth_report_lines)
+          end
+
+          it 'shows Prometheus metrics for the internal API' do
+            [service_id, 'invalid'].each do |id|
+              get_service_internal_api(listener_host, listener_port, id)
+            end
+
+            metrics_resp = Net::HTTP.get(listener_host, metrics_endpoint, metrics_port)
+
             internal_api_lines = [
               '# TYPE apisonator_listener_internal_api_response_codes counter',
               '# HELP apisonator_listener_internal_api_response_codes Response codes',
@@ -98,7 +103,7 @@ module ThreeScale
               'apisonator_listener_internal_api_response_times_seconds_count{request_type="services"} 2.0',
             ]
 
-            expect(metrics_resp).to include(*(auth_report_lines + internal_api_lines))
+            expect(metrics_resp).to include(*internal_api_lines)
           end
         end
 
