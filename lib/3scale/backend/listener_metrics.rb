@@ -13,19 +13,21 @@ module ThreeScale
       }
       private_constant :AUTH_AND_REPORT_REQUEST_TYPES
 
+      # Only the first match is taken into account, that's why for example,
+      # "/\/services\/.*\/stats/" needs to appear before "/\/services/"
       INTERNAL_API_PATHS = [
         [/\/services\/.*\/alert_limits/, 'alerts'],
         [/\/services\/.*\/applications\/.*\/keys/, 'application_keys'],
         [/\/services\/.*\/applications\/.*\/referrer_filters/, 'application_referrer_filters'],
+        [/\/services\/.*\/applications\/.*\/utilization/, 'utilization'],
         [/\/services\/.*\/applications/, 'applications'],
         [/\/services\/.*\/errors/, 'errors'],
         [/\/events/, 'events'],
         [/\/services\/.*\/metrics/, 'metrics'],
         [/\/service_tokens/, 'service_tokens'],
-        [/\/services/, 'services'],
         [/\/services\/.*\/stats/, 'stats'],
         [/\/services\/.*\/plans\/.*\/usagelimits/, 'usage_limits'],
-        [/\/services\/.*\/applications\/.*\/utilization/, 'utilization'],
+        [/\/services/, 'services'],
       ].freeze
       private_constant :INTERNAL_API_PATHS
 
