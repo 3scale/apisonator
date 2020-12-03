@@ -13,19 +13,21 @@ module ThreeScale
       }
       private_constant :AUTH_AND_REPORT_REQUEST_TYPES
 
+      # Only the first match is taken into account, that's why for example,
+      # "/\/services\/.*\/stats/" needs to appear before "/\/services/"
       INTERNAL_API_PATHS = [
-        [/\/services\/.*\/alert_limits/, 'alerts'],
-        [/\/services\/.*\/applications\/.*\/keys/, 'application_keys'],
-        [/\/services\/.*\/applications\/.*\/referrer_filters/, 'application_referrer_filters'],
-        [/\/services\/.*\/applications/, 'applications'],
-        [/\/services\/.*\/errors/, 'errors'],
-        [/\/events/, 'events'],
-        [/\/services\/.*\/metrics/, 'metrics'],
-        [/\/service_tokens/, 'service_tokens'],
-        [/\/services/, 'services'],
-        [/\/services\/.*\/stats/, 'stats'],
-        [/\/services\/.*\/plans\/.*\/usagelimits/, 'usage_limits'],
-        [/\/services\/.*\/applications\/.*\/utilization/, 'utilization'],
+        [/\/services\/.*\/alert_limits/, 'alerts'.freeze],
+        [/\/services\/.*\/applications\/.*\/keys/, 'application_keys'.freeze],
+        [/\/services\/.*\/applications\/.*\/referrer_filters/, 'application_referrer_filters'.freeze],
+        [/\/services\/.*\/applications\/.*\/utilization/, 'utilization'.freeze],
+        [/\/services\/.*\/applications/, 'applications'.freeze],
+        [/\/services\/.*\/errors/, 'errors'.freeze],
+        [/\/events/, 'events'.freeze],
+        [/\/services\/.*\/metrics/, 'metrics'.freeze],
+        [/\/service_tokens/, 'service_tokens'.freeze],
+        [/\/services\/.*\/stats/, 'stats'.freeze],
+        [/\/services\/.*\/plans\/.*\/usagelimits/, 'usage_limits'.freeze],
+        [/\/services/, 'services'.freeze],
       ].freeze
       private_constant :INTERNAL_API_PATHS
 

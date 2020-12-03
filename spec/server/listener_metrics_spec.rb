@@ -4,10 +4,11 @@ require '3scale/backend'
 
 module ThreeScale
   module Backend
+    # The port is not the standard one to avoid clashes with other tests
+    LISTENER_PORT = 4000
+    LISTENER_HOST = 'localhost'
+
     describe Listener do
-      # The port is not the standard one to avoid clashes with other tests
-      let(:listener_port) { 4000 }
-      let(:listener_host) { 'localhost' }
       let(:config_file) { '/tmp/.3scale_backend_listener_metrics_test.config' }
       let(:metrics_endpoint) { '/metrics' }
       let(:metrics_port) { 9394 }
@@ -19,6 +20,9 @@ module ThreeScale
         let(:user_key) { 'uk' }
         let(:metric_id) { '1' }
         let(:metric_name) { 'hits' }
+        let(:service_token) { 'some_token' }
+        let(:plan_id) { '1' }
+        let(:limit_period) { 'hour' }
 
         let(:args) do
           {
@@ -35,44 +39,48 @@ module ThreeScale
         shared_examples_for 'listener with metrics' do |server|
           before do
             write_config_file(config_file)
-            start_listener(config_file, true, listener_port, metrics_port, server)
+            start_listener(config_file, true, LISTENER_PORT, metrics_port, server)
 
             ThreeScale::Backend::Service.save!(
               provider_key: provider_key, id: service_id
             )
+
             ThreeScale::Backend::Application.save(
-              service_id: service_id, id: app_id, state: :active
+              service_id: service_id, id: app_id, state: :active, plan_id: plan_id
             )
+
             ThreeScale::Backend::Application.save_id_by_key(
               service_id, user_key, app_id
             )
+
             ThreeScale::Backend::Metric.save(
               service_id: service_id, id: metric_id, name: metric_name
             )
 
+            ThreeScale::Backend::ServiceToken.save(service_token, service_id)
+
+            ThreeScale::Backend::UsageLimit.save(
+              service_id: service_id, plan_id: plan_id, metric_id: metric_id, hour: 10
+            )
+          end
+
+          after do
+            stop_listener(LISTENER_PORT, server)
+            delete_config_file(config_file)
+          end
+
+          it 'shows Prometheus metrics for auths and reports' do
             # Do requests to generate some metrics:
             # - 1 authorize (authorized)
             # - 2 authreps authorized
             # - 2 authreps unauthorized, one that returns 403 and another that returns 404
             # - A valid request to the internal API (get services) and an invalid one.
-            do_auth(listener_host, listener_port, args)
-            2.times { do_authrep(listener_host, listener_port, args) }
-            do_authrep(listener_host, listener_port, args.merge(user_key: 'invalid')) # 403
-            do_authrep(listener_host, listener_port, args.merge(metric_name: 'invalid')) # 404
+            do_auth(args)
+            2.times { do_authrep(args) }
+            do_authrep(args.merge(user_key: 'invalid')) # 403
+            do_authrep(args.merge(metric_name: 'invalid')) # 404
 
-            # Internal API requests
-            [service_id, 'invalid'].each do |id|
-              get_service_internal_api(listener_host, listener_port, id)
-            end
-          end
-
-          after do
-            stop_listener(listener_port, server)
-            delete_config_file(config_file)
-          end
-
-          it 'shows metrics in Prometheus format' do
-            metrics_resp = Net::HTTP.get(listener_host, metrics_endpoint, metrics_port)
+            metrics_resp = Net::HTTP.get(LISTENER_HOST, metrics_endpoint, metrics_port)
 
             # These are some lines that we know that should be part of the output.
             auth_report_lines = [
@@ -88,17 +96,80 @@ module ThreeScale
               'apisonator_listener_response_times_seconds_count{request_type="authrep"} 4.0',
             ]
 
+            expect(metrics_resp).to include(*auth_report_lines)
+          end
+
+          it 'shows Prometheus metrics for the internal API' do
             internal_api_lines = [
               '# TYPE apisonator_listener_internal_api_response_codes counter',
               '# HELP apisonator_listener_internal_api_response_codes Response codes',
-              'apisonator_listener_internal_api_response_codes{request_type="services",resp_code="2xx"} 1.0',
-              'apisonator_listener_internal_api_response_codes{request_type="services",resp_code="404"} 1.0',
               '# TYPE apisonator_listener_internal_api_response_times_seconds histogram',
               '# HELP apisonator_listener_internal_api_response_times_seconds Response times',
-              'apisonator_listener_internal_api_response_times_seconds_count{request_type="services"} 2.0',
             ]
 
-            expect(metrics_resp).to include(*(auth_report_lines + internal_api_lines))
+            request_types = [
+              [
+                'alerts',
+                proc { get_alerts_internal_api(service_id) }
+              ],
+              [
+                'application_keys',
+                proc { get_app_keys_internal_api(service_id, app_id) }
+              ],
+              [
+                'application_referrer_filters',
+                proc { get_app_referrer_filters_internal_api(service_id, app_id) }
+              ],
+              [
+                'applications',
+                proc { get_app_internal_api(service_id, app_id) }
+              ],
+              [
+                'errors',
+                proc { get_errors_internal_api(service_id) }
+              ],
+              [
+                'events',
+                proc { get_events_internal_api }
+              ],
+              [
+                'metrics',
+                proc { get_metric_internal_api(service_id, metric_id) }
+              ],
+              [
+                'service_tokens',
+                proc { get_service_token_internal_api(service_token, service_id) }
+              ],
+              [
+                'services',
+                proc { get_service_internal_api(service_id) }
+              ],
+              [
+                'stats',
+                proc { delete_stats_internal_api(service_id) }
+              ],
+              [
+                'usage_limits',
+                proc { get_usage_limits_internal_api(service_id, plan_id, metric_id, limit_period) }
+              ],
+              [
+                'utilization',
+                proc { get_utilization_internal_api(service_id, app_id) }
+              ]
+            ]
+
+            request_types.each do |(request_type, blk)|
+              n_calls = rand(1..5)
+              n_calls.times &blk
+              internal_api_lines << "apisonator_listener_internal_api_response_codes" +
+                                    "{request_type=\"#{request_type}\",resp_code=\"2xx\"} #{n_calls}.0"
+              internal_api_lines << "apisonator_listener_internal_api_response_times_seconds_count" +
+                                    "{request_type=\"#{request_type}\"} #{n_calls}.0"
+            end
+
+            metrics_resp = Net::HTTP.get(LISTENER_HOST, metrics_endpoint, metrics_port)
+
+            expect(metrics_resp).to include(*internal_api_lines)
           end
         end
 
@@ -115,16 +186,16 @@ module ThreeScale
         shared_examples_for 'listener without metrics' do |server|
           before do
             write_config_file(config_file)
-            start_listener(config_file, false, listener_port, metrics_port, server)
+            start_listener(config_file, false, LISTENER_PORT, metrics_port, server)
           end
 
           after do
-            stop_listener(listener_port, server)
+            stop_listener(LISTENER_PORT, server)
             delete_config_file(config_file)
           end
 
           it 'does not open the metrics port' do
-            expect { Net::HTTP.get(listener_host, metrics_endpoint, metrics_port) }
+            expect { Net::HTTP.get(LISTENER_HOST, metrics_endpoint, metrics_port) }
               .to raise_error(SystemCallError)
           end
         end
@@ -200,14 +271,20 @@ module ThreeScale
         end
       end
 
-      def do_auth(listener_host, listener_port, args)
-        query = auth_query(args)
-        Net::HTTP.get(listener_host, query, listener_port)
+      def do_get_req(path)
+        Net::HTTP.get(LISTENER_HOST, path, LISTENER_PORT)
       end
 
-      def do_authrep(listener_host, listener_port, args)
-        query = authrep_query(args)
-        Net::HTTP.get(listener_host, query, listener_port)
+      def do_delete_req(path)
+        Net::HTTP.new(LISTENER_HOST, LISTENER_PORT).delete(path)
+      end
+
+      def do_auth(args)
+        do_get_req(auth_query(args))
+      end
+
+      def do_authrep(args)
+        do_get_req(authrep_query(args))
       end
 
       def auth_query(args)
@@ -218,8 +295,61 @@ module ThreeScale
         '/transactions/authrep.xml?' + parsed_query_args(args)
       end
 
-      def get_service_internal_api(listener_host, listener_port, service_id)
-        Net::HTTP.get(listener_host, "/internal/services/#{service_id}", listener_port)
+      def do_internal_api_get_req(path)
+        do_get_req("/internal#{path}")
+      end
+
+      def do_internal_api_delete_req(path)
+        do_delete_req("/internal#{path}")
+      end
+
+      def get_service_internal_api(service_id)
+        do_internal_api_get_req("/services/#{service_id}")
+      end
+
+      def get_alerts_internal_api(service_id)
+        do_internal_api_get_req("/services/#{service_id}/alert_limits/")
+      end
+
+      def get_app_keys_internal_api(service_id, app_id)
+        do_internal_api_get_req("/services/#{service_id}/applications/#{app_id}/keys/")
+      end
+
+      def get_app_referrer_filters_internal_api(service_id, app_id)
+        do_internal_api_get_req("/services/#{service_id}/applications/#{app_id}/referrer_filters")
+      end
+
+      def get_app_internal_api(service_id, app_id)
+        do_internal_api_get_req("/services/#{service_id}/applications/#{app_id}")
+      end
+
+      def get_errors_internal_api(service_id)
+        do_internal_api_get_req("/services/#{service_id}/errors/")
+      end
+
+      def get_events_internal_api
+        do_internal_api_get_req("/events/")
+      end
+
+      def get_metric_internal_api(service_id, metric_id)
+        do_internal_api_get_req("/services/#{service_id}/metrics/#{metric_id}")
+      end
+
+      def get_service_token_internal_api(token, service_id)
+        do_internal_api_get_req("/service_tokens/#{token}/#{service_id}/provider_key")
+      end
+
+      def delete_stats_internal_api(service_id)
+        do_internal_api_delete_req("/services/#{service_id}/stats")
+      end
+
+      def get_usage_limits_internal_api(service_id, plan_id, metric_id, period)
+        do_internal_api_get_req("/services/#{service_id}/plans/#{plan_id}/usagelimits/" +
+                                "#{metric_id}/#{period}")
+      end
+
+      def get_utilization_internal_api(service_id, app_id)
+        do_internal_api_get_req("/services/#{service_id}/applications/#{app_id}/utilization/")
       end
 
       def parsed_query_args(args)
