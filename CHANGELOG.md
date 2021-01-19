@@ -2,6 +2,25 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.2.0 - 2021-01-19
+
+### Added
+
+- New endpoint in the internal API to get the provider key for a given (token,
+service_id) pair ([#243](https://github.com/3scale/apisonator/pull/243)).
+
+### Changed
+
+- The config file used when running in a Docker image now parses "1" and "true"
+(case-insensitive) as true
+([#245](https://github.com/3scale/apisonator/pull/245)).
+
+### Fixed
+
+- Fixed some metrics of the internal API that were not being counted
+correctly([#244](https://github.com/3scale/apisonator/pull/244)).
+
+
 ## 3.1.0 - 2020-10-14
 
 ### Added
