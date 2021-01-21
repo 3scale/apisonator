@@ -20,8 +20,14 @@ module ThreeScale
       def report(provider_key, service_id, transactions, context_info = {})
         service = Service.load_with_provider_key!(service_id, provider_key)
 
-        report_enqueue(service.id, transactions, context_info)
-        notify_report(provider_key, transactions.size)
+        # A usage of 0 does not affect rate-limits or stats, so we do not need
+        # to report it.
+        filtered_transactions = filter_usages_with_0(transactions.clone)
+
+        return if filtered_transactions.empty?
+
+        report_enqueue(service.id, filtered_transactions, context_info)
+        notify_report(provider_key, filtered_transactions.size)
       end
 
       def authorize(provider_key, params, context_info = {})
@@ -180,6 +186,24 @@ module ThreeScale
         else
           application.load_all_usage_limits
         end
+      end
+
+      def filter_usages_with_0(transactions)
+        res = transactions
+
+        # There are plenty of existing tests using both a string and a symbol
+        # when accessing the usage.
+        usage_key = ['usage'.freeze, :usage]
+
+        res.each do |_idx, tx|
+          usage_key.each { |k| tx[k]&.reject! { |_metric, delta| delta.to_s == '0'.freeze } }
+        end
+
+        res.reject! do |_idx, tx|
+          usage_key.all? { |k| tx[k].nil? || tx[k].empty? }
+        end
+
+        res
       end
 
       def storage
