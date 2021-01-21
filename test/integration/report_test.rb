@@ -1033,8 +1033,6 @@ class ReportTest < Test::Unit::TestCase
   end
 
   test 'report can include a response code' do
-    Time.now.utc
-
     current_time = Time.utc(2017, 1, 1)
 
     Timecop.freeze(current_time) do
