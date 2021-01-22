@@ -420,4 +420,45 @@ class TransactorTest < Test::Unit::TestCase
       Transactor.send(method, @provider_key, :service_id => service.id)
     end
   end
+
+  test_authrep 'does not include usages of 0 when it generates a report job' do |_ , method|
+    current_time = Time.now
+    metric_name = 'some_metric'
+    Metric.save(service_id: @service_id, id: next_id, name: metric_name)
+
+    Timecop.freeze(current_time) do
+      Transactor.send(
+        method,
+        @provider_key,
+        service_id: @service_id,
+        app_id: @application_one.id,
+        usage: { 'hits' => 0, metric_name => 1},
+        timestamp: current_time
+      )
+    end
+
+    assert_queued(
+      Transactor::ReportJob,
+      [
+        @service_id,
+        # Notice that 'Hits' does not appear because it had a usage of 0
+        { 0 => { 'app_id' => @application_one.id, 'usage' => { metric_name => 1}, 'log' => nil } },
+        current_time.to_f,
+        { 'request' => { 'extensions' => nil } }
+      ]
+    )
+  end
+
+  test_authrep 'does not enqueue a report job if there is not a metric with usage != 0' do |_, method|
+    Transactor.send(
+      method,
+      @provider_key,
+      service_id: @service_id,
+      app_id: @application_one.id,
+      usage: { 'hits' => 0 },
+      timestamp: Time.now
+    )
+
+    assert_empty Resque.queues[:priority]
+  end
 end
