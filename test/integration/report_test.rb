@@ -261,6 +261,55 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 'usage value "tons!" for metric "hits" is invalid', error[:message]
   end
 
+  test 'report does not create keys with usage == 0' do
+    hits_id = @metric_id
+    metric_name = 'some_metric'
+    metric_id = next_id
+    Metric.save(service_id: @service_id, id: metric_id, name: metric_name)
+
+    current_time = Time.now
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml',
+           provider_key: @provider_key,
+           transactions: {
+             0 => {
+               app_id: @application.id,
+               usage: { 'hits' => 0, metric_name => 1 },
+               timestamp: Time.now
+             },
+           }
+
+      Resque.run!
+    end
+
+    assert_equal 202, last_response.status
+
+    # 'Hits' was 0, so there shouldn't be a stats key for it.
+    hits_key_created = @storage.exists(
+      application_key(
+        @service_id,
+        @application.id,
+        hits_id,
+        :month,
+        Period::Boundary.start_of(:month, current_time.getutc).to_compact_s
+      )
+    )
+    assert_false hits_key_created
+
+    # The other metric had a non-zero usage so there should be a stats key for it.
+    # Check just the month key in this test as an example. Other tests check all
+    # the keys.
+    reported_metric_stats_key = application_key(
+      @service_id,
+      @application.id,
+      metric_id,
+      :month,
+      Period::Boundary.start_of(:month, current_time.getutc).to_compact_s
+    )
+    assert_equal 1, @storage.get(reported_metric_stats_key).to_i
+  end
+
   test 'report does not aggregate anything when at least one transaction is invalid' do
     post '/transactions.xml',
        :provider_key => @provider_key,
@@ -984,8 +1033,6 @@ class ReportTest < Test::Unit::TestCase
   end
 
   test 'report can include a response code' do
-    Time.now.utc
-
     current_time = Time.utc(2017, 1, 1)
 
     Timecop.freeze(current_time) do

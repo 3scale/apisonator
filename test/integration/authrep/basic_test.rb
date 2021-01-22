@@ -5,6 +5,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
   include TestHelpers::Integration
   include TestHelpers::Extensions
+  include TestHelpers::StorageKeys
 
   include TestHelpers::AuthRep
 
@@ -620,8 +621,6 @@ class AuthrepBasicTest < Test::Unit::TestCase
   end
 
   test_authrep 'regression test for bug on reporting hits and the method of hits at the same time' do |e|
-    # http://3scale.airbrake.io/errors/39117266
-
     @child_metric_id = next_id
 
     m1 = Metric.save(:service_id => @service.id,
@@ -980,5 +979,51 @@ class AuthrepBasicTest < Test::Unit::TestCase
 
     assert_equal ThreeScale::Backend::MetricInvalid.new('non_existing').http_code,
                  last_response.status
+  end
+
+  test_authrep 'does not create stats keys with usage == 0' do |e|
+    hits_id = @metric_id
+    metric_name = 'some_metric'
+    metric_id = next_id
+    Metric.save(service_id: @service_id, id: metric_id, name: metric_name)
+
+    current_time = Time.now
+
+    Timecop.freeze(current_time) do
+      get e,
+          {
+            provider_key: @provider_key,
+            app_id: @application.id,
+            usage: { 'hits' => 0, metric_name => 1 }
+          }
+
+      Resque.run!
+    end
+
+    assert_equal 200, last_response.status
+
+    # 'Hits' was 0, so there shouldn't be a stats key for it.
+    hits_key_created = @storage.exists(
+      application_key(
+        @service_id,
+        @application.id,
+        hits_id,
+        :month,
+        Period::Boundary.start_of(:month, current_time.getutc).to_compact_s
+      )
+    )
+    assert_false hits_key_created
+
+    # The other metric had a non-zero usage so there should be a stats key for it.
+    # Check just the month key in this test as an example. Other tests check all
+    # the keys.
+    reported_metric_stats_key = application_key(
+      @service_id,
+      @application.id,
+      metric_id,
+      :month,
+      Period::Boundary.start_of(:month, current_time.getutc).to_compact_s
+    )
+    assert_equal 1, @storage.get(reported_metric_stats_key).to_i
   end
 end

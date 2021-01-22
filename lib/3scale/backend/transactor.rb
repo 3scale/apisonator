@@ -20,8 +20,14 @@ module ThreeScale
       def report(provider_key, service_id, transactions, context_info = {})
         service = Service.load_with_provider_key!(service_id, provider_key)
 
-        report_enqueue(service.id, transactions, context_info)
-        notify_report(provider_key, transactions.size)
+        # A usage of 0 does not affect rate-limits or stats, so we do not need
+        # to report it.
+        filtered_transactions = filter_usages_with_0(transactions.clone)
+
+        return if filtered_transactions.empty?
+
+        report_enqueue(service.id, filtered_transactions, context_info)
+        notify_report(provider_key, filtered_transactions.size)
       end
 
       def authorize(provider_key, params, context_info = {})
@@ -137,9 +143,17 @@ module ThreeScale
 
         usage = params[:usage]
 
-        if (usage || params[:log]) && status.authorized?
+        filtered_usage = filter_metrics_without_inc(usage.clone) if usage
+
+        if ((filtered_usage && !filtered_usage.empty?) || params[:log]) && status.authorized?
           application_id = status.application.id
-          report_enqueue(status.service_id, { 0 => {"app_id" => application_id, "usage" => usage, "log" => params[:log] } }, request: { extensions: request_info[:extensions] })
+
+          report_enqueue(
+            status.service_id,
+            { 0 => {"app_id" => application_id, "usage" => filtered_usage, "log" => params[:log] } },
+            request: { extensions: request_info[:extensions] }
+          )
+
           notify_authrep(provider_key, usage ? 1 : 0)
         else
           notify_authorize(provider_key)
@@ -180,6 +194,19 @@ module ThreeScale
         else
           application.load_all_usage_limits
         end
+      end
+
+      def filter_usages_with_0(transactions)
+        # There are plenty of existing tests using both a string and a symbol
+        # when accessing the usage.
+        transactions.delete_if do |_idx, tx|
+          (usage = tx['usage'.freeze] || tx[:usage]) or next
+          filter_metrics_without_inc(usage).empty?
+        end
+      end
+
+      def filter_metrics_without_inc(usage)
+        usage.delete_if { |_metric, delta| delta.to_s == '0'.freeze }
       end
 
       def storage
