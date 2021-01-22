@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.2.1 - 2021-01-22
+
+### Fixed
+
+- Reports of 0 hits no longer generate unnecessary stats keys in Redis
+([#247](https://github.com/3scale/apisonator/pull/247)).
+
 ## 3.2.0 - 2021-01-19
 
 ### Added
