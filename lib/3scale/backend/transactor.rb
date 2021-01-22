@@ -143,7 +143,7 @@ module ThreeScale
 
         usage = params[:usage]
 
-        filtered_usage = usage&.reject { |_metric, delta| delta.to_s == '0' }
+        filtered_usage = filter_metrics_without_inc(usage.clone) if usage
 
         if ((filtered_usage && !filtered_usage.empty?) || params[:log]) && status.authorized?
           application_id = status.application.id
@@ -197,21 +197,16 @@ module ThreeScale
       end
 
       def filter_usages_with_0(transactions)
-        res = transactions
-
         # There are plenty of existing tests using both a string and a symbol
         # when accessing the usage.
-        usage_key = ['usage'.freeze, :usage]
-
-        res.each do |_idx, tx|
-          usage_key.each { |k| tx[k]&.reject! { |_metric, delta| delta.to_s == '0'.freeze } }
+        transactions.delete_if do |_idx, tx|
+          (usage = tx['usage'.freeze] || tx[:usage]) or next
+          filter_metrics_without_inc(usage).empty?
         end
+      end
 
-        res.reject! do |_idx, tx|
-          usage_key.all? { |k| tx[k].nil? || tx[k].empty? }
-        end
-
-        res
+      def filter_metrics_without_inc(usage)
+        usage.delete_if { |_metric, delta| delta.to_s == '0'.freeze }
       end
 
       def storage
