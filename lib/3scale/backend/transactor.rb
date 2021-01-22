@@ -143,9 +143,17 @@ module ThreeScale
 
         usage = params[:usage]
 
-        if (usage || params[:log]) && status.authorized?
+        filtered_usage = usage&.reject { |_metric, delta| delta.to_s == '0' }
+
+        if ((filtered_usage && !filtered_usage.empty?) || params[:log]) && status.authorized?
           application_id = status.application.id
-          report_enqueue(status.service_id, { 0 => {"app_id" => application_id, "usage" => usage, "log" => params[:log] } }, request: { extensions: request_info[:extensions] })
+
+          report_enqueue(
+            status.service_id,
+            { 0 => {"app_id" => application_id, "usage" => filtered_usage, "log" => params[:log] } },
+            request: { extensions: request_info[:extensions] }
+          )
+
           notify_authrep(provider_key, usage ? 1 : 0)
         else
           notify_authorize(provider_key)
