@@ -621,8 +621,6 @@ class AuthrepBasicTest < Test::Unit::TestCase
   end
 
   test_authrep 'regression test for bug on reporting hits and the method of hits at the same time' do |e|
-    # http://3scale.airbrake.io/errors/39117266
-
     @child_metric_id = next_id
 
     m1 = Metric.save(:service_id => @service.id,
