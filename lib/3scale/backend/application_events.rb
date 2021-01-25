@@ -40,10 +40,8 @@ module ThreeScale
       private
 
       def self.first_traffic(service_id, application_id)
-        key = Stats::Keys.applications_key_prefix(
-          Stats::Keys.service_key_prefix(service_id)
-        )
-        if storage.sadd(key, encode_key(application_id))
+        if storage.sadd(Stats::Keys.set_of_apps_with_traffic(service_id),
+                        encode_key(application_id))
           EventStorage.store(:first_traffic,
                              { service_id:     service_id,
                                application_id: application_id,
