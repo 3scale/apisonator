@@ -70,6 +70,12 @@ module ThreeScale
           key
         end
 
+        def set_of_apps_with_traffic(service_id)
+          Stats::Keys.applications_key_prefix(
+            Stats::Keys.service_key_prefix(service_id)
+          )
+        end
+
         # We want all the buckets to go to the same Redis shard.
         # The reason is that SUNION support in Twemproxy requires that the
         # supplied keys hash to the same server.
