@@ -135,6 +135,57 @@ module ThreeScale
           end
         end
 
+        describe '.delete_stats_keys_with_usage_0' do
+          let(:stats_with_usage_0) do
+            stats_keys = stats_keys_with_random_ids
+            Hash[stats_keys.zip(Array.new(stats_keys.size, 0))]
+          end
+
+          let(:stats_with_non_zero_usage) do
+            stats_keys = stats_keys_with_random_ids
+            Hash[stats_keys.zip(Array.new(stats_keys.size, rand(1..10)))]
+          end
+
+          before do
+            [stats_with_usage_0, stats_with_non_zero_usage, non_stats_keys].each do |key_vals|
+              key_vals.each { |k, v| storage.set(k, v) }
+            end
+          end
+
+          it 'deletes the stats with usage 0' do
+            Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+            expect(stats_with_usage_0.keys.none? { |k| storage.exists(k) }).to be true
+          end
+
+          it 'does not delete the stats with usage != 0' do
+            Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+            expect(stats_with_non_zero_usage.keys.all? { |k| storage.exists(k) }). to be true
+          end
+
+          it 'does not delete non-stats keys' do
+            Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+            expect(non_stats_keys.keys.all? { |k| storage.exists(k) }).to be true
+          end
+
+          context 'with the option to log deleted keys enabled' do
+            let(:log_to) { double(STDOUT) }
+
+            before do
+              allow(log_to).to receive(:puts)
+            end
+
+            it 'logs the deleted keys, one per line' do
+              Cleaner.delete_stats_keys_set_to_0(
+                non_proxied_instances, log_deleted_keys: log_to
+              )
+
+              stats_with_usage_0.keys.each do |k|
+                expect(log_to).to have_received(:puts).with(k)
+              end
+            end
+          end
+        end
+
         private
 
         def non_stats_keys
@@ -150,6 +201,20 @@ module ThreeScale
             'stats/{service:s1}/city:/metric:m1/day:20191216' => 1, # 'city' no longer used
             'stats/{service:s1}/%?!`:m1/day:20191216' => 2, # corrupted.
           }
+        end
+
+        def stats_keys_with_random_ids
+          [
+            # Stats key, service level
+            "stats/{service:#{next_id}}/metric:#{next_id}/day:20191216",
+
+            # Stats key, app level
+            "stats/{service:#{next_id}}/cinstance:#{next_id}/metric:#{next_id}/day:20191216",
+
+            # Response codes
+            "stats/{service:#{next_id}}/response_code:200/day:20191216",
+            "stats/{service:#{next_id}}/cinstance:#{next_id}/response_code:200/day:20191216",
+          ]
         end
       end
     end
