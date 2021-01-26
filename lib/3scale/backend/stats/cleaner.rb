@@ -96,6 +96,30 @@ module ThreeScale
             logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
           end
 
+          # Deletes all the stats keys set to 0.
+          #
+          # Stats keys set to 0 are useless and occupy Redis memory
+          # unnecessarily. They were generated due to a bug in previous versions
+          # of Apisonator.
+          # Ref: https://github.com/3scale/apisonator/pull/247
+          #
+          # As the .delete function, this one also receives a collection of
+          # instantiated Redis clients and those need to connect to Redis
+          # servers directly.
+          #
+          # @param [Array] redis_conns Instantiated Redis clients.
+          # @param [IO] log_deleted_keys IO where to write the logs. Defaults to
+          #             nil (logs nothing).
+          def delete_stats_keys_set_to_0(redis_conns, log_deleted_keys: nil)
+            redis_conns.each do |redis_conn|
+              begin
+                delete_stats_keys_with_val_0(redis_conn, log_deleted_keys)
+              rescue => e
+                handle_redis_exception(e, redis_conn)
+              end
+            end
+          end
+
           private
 
           def handle_redis_exception(exception, redis_conn)
@@ -196,6 +220,30 @@ module ThreeScale
             # always empty. That format has not been used in a long time. We'll
             # simply ignore those keys.
             nil
+          end
+
+          def delete_stats_keys_with_val_0(redis_conn, log_deleted_keys)
+            cursor = 0
+
+            loop do
+              cursor, keys = redis_conn.scan(cursor, count: SCAN_SLICE)
+
+              stats_keys = keys.select { |k| is_stats_key?(k) }
+
+              unless stats_keys.empty?
+                values = redis_conn.mget(*stats_keys)
+                to_delete = stats_keys.zip(values).select { |_, v| v == '0'.freeze }.map(&:first)
+
+                unless to_delete.empty?
+                  redis_conn.del(to_delete)
+                  to_delete.each { |k| log_deleted_keys.puts k } if log_deleted_keys
+                end
+              end
+
+              break if cursor.to_i == 0
+
+              sleep(SLEEP_BETWEEN_SCANS)
+            end
           end
         end
       end
