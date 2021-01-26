@@ -45,6 +45,9 @@ module ThreeScale
         STATS_KEY_PREFIX = 'stats/'.freeze
         private_constant :STATS_KEY_PREFIX
 
+        REDIS_CONN_ERRORS = [Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE].freeze
+        private_constant :REDIS_CONN_ERRORS
+
         class << self
           include Logging
           def mark_service_to_be_deleted(service_id)
@@ -81,22 +84,9 @@ module ThreeScale
               redis_conns.each do |redis_conn|
                 begin
                   delete_keys(redis_conn, services, log_deleted_keys)
-                # If it's a connection error, mark as failed and continue
-                # cleaning other shards. If it's another kind of error, it
-                # could be a bug, so better re-raise.
-                rescue Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE => e
-                  logger.error("Error while deleting stats of server #{redis_conn}: #{e}")
+                rescue => e
+                  handle_redis_exception(e, redis_conn)
                   delete_successful = false
-                rescue Redis::CommandError => e
-                  # Redis::CommandError from redis-rb can be raised for multiple
-                  # reasons, so we need to check the error message to distinguish
-                  # connection errors from the rest.
-                  if e.message == 'ERR Connection timed out'.freeze
-                    logger.error("Error while deleting stats of server #{redis_conn}: #{e}")
-                    delete_successful = false
-                  else
-                    raise e
-                  end
                 end
               end
 
@@ -107,6 +97,25 @@ module ThreeScale
           end
 
           private
+
+          def handle_redis_exception(exception, redis_conn)
+            # If it's a connection error, simply log so we can continue with
+            # other shards. If it's another kind of error, it could be caused by
+            # a bug, so better re-raise.
+
+            case exception
+            when *REDIS_CONN_ERRORS
+              logger.error("Error while deleting stats of server #{redis_conn}: #{exception}")
+            when Redis::CommandError
+              if exception.message == 'ERR Connection timed out'.freeze
+                logger.error("Error while deleting stats of server #{redis_conn}: #{exception}")
+              else
+                raise exception
+              end
+            else
+              raise exception
+            end
+          end
 
           # Returns a set with the services included in the
           # SET_WITH_SERVICES_MARKED_FOR_DELETION Redis set.
