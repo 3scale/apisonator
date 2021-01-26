@@ -261,27 +261,49 @@ task :reschedule_failed_jobs do
        "Pending failed jobs: #{result[:failed_current]}."
 end
 
-desc 'Delete stats of services marked for deletion'
 namespace :stats do
+  desc 'Delete stats of services marked for deletion'
   task :cleanup, [:redis_urls, :log_deleted_keys] do |_, args|
-    redis_urls = args[:redis_urls] && args[:redis_urls].split(' ')
+    redis_conns = redis_conns(args[:redis_urls])
 
-    if redis_urls.nil? || redis_urls.empty?
+    if redis_conns.empty?
       puts 'No Redis URLs specified'
       exit(false)
     end
 
-    redis_clients = redis_urls.map do |redis_url|
-      parsed_uri = URI.parse(ThreeScale::Backend::Storage::Helpers.send(
-        :to_redis_uri, redis_url)
-      )
-      Redis.new(host: parsed_uri.host, port: parsed_uri.port)
-    end
-
-    log_deleted = args[:log_deleted_keys] == 'true' ? STDOUT : nil
-
     ThreeScale::Backend::Stats::Cleaner.delete!(
-      redis_clients, log_deleted_keys: log_deleted
+      redis_conns, log_deleted_keys: logger_for_deleted_keys(args[:log_deleted_keys])
     )
   end
+
+  desc 'Delete stats keys set to 0'
+  task :delete_stats_keys_set_to_0, [:redis_urls, :log_deleted_keys] do |_, args|
+    redis_conns = redis_conns(args[:redis_urls])
+
+    if redis_conns.empty?
+      puts 'No Redis URLs specified'
+      exit(false)
+    end
+
+    ThreeScale::Backend::Stats::Cleaner.delete_stats_keys_set_to_0(
+      redis_conns, log_deleted_keys: logger_for_deleted_keys(args[:log_deleted_keys])
+    )
+  end
+end
+
+def redis_conns(urls)
+  redis_urls = urls && urls.split(' ')
+
+  return [] if redis_urls.nil? || redis_urls.empty?
+
+  redis_urls.map do |redis_url|
+    parsed_uri = URI.parse(ThreeScale::Backend::Storage::Helpers.send(
+      :to_redis_uri, redis_url)
+    )
+    Redis.new(host: parsed_uri.host, port: parsed_uri.port)
+  end
+end
+
+def logger_for_deleted_keys(arg_log_deleted_keys)
+  arg_log_deleted_keys == 'true' ? STDOUT : nil
 end
