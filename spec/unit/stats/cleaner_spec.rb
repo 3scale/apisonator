@@ -4,29 +4,64 @@ module ThreeScale
   module Backend
     module Stats
       describe Cleaner do
+        include TestHelpers::Sequences
+
         let(:storage) { Backend::Storage.instance }
         let(:non_proxied_instances) { storage.send(:non_proxied_instances) }
-
-        # These are hashes Redis key-value
-        let(:keys_not_to_be_deleted) { fixtures_redis_keys }
-        let(:keys_to_be_deleted) { fixtures_redis_keys_to_delete }
-        let(:all_keys) { keys_not_to_be_deleted.merge(keys_to_be_deleted) }
-
-        let(:services_to_be_deleted) do # According to the fixtures defined
-          ['service_to_delete_1', 'service_to_delete_2']
-        end
-
-        let(:redis_set_marked_to_be_deleted) do
-          described_class.const_get(:KEY_SERVICES_TO_DELETE)
-        end
-
         let(:logger) { object_double(Backend.logger) }
+
         before do
           allow(logger).to receive(:info)
           allow(described_class).to receive(:logger).and_return(logger)
         end
 
         describe 'delete' do
+          let(:services_to_be_deleted) do
+            ['service_to_delete_1', 'service_to_delete_2']
+          end
+
+          # Defined according to the 2 services above
+          let(:keys_to_be_deleted) do
+            {
+              # Stats keys, service level
+              'stats/{service:service_to_delete_1}/metric:m1/day:20191216' => 10,
+              'stats/{service:service_to_delete_2}/metric:m1/year:20190101' => 100,
+
+              # Stats keys, app level
+              'stats/{service:service_to_delete_1}/cinstance:app1/metric:m1/day:20191216' => 10,
+              'stats/{service:service_to_delete_2}/cinstance:app1/metric:m1/year:20190101' => 100,
+
+              # Response codes
+              'stats/{service:service_to_delete_1}/response_code:200/day:20191216' => 2,
+              'stats/{service:service_to_delete_2}/cinstance:app2/response_code:200/day:20191216' => 3
+            }
+          end
+
+          # Notice that these do not belong to the 2 services defined above
+          let(:keys_not_to_be_deleted) do
+            non_stats_keys.merge(
+              {
+                # Stats keys, service level
+                'stats/{service:s1}/metric:m1/day:20191216' => 10,
+                'stats/{service:s1}/metric:m1/year:20190101' => 100,
+
+                # Stats keys, app level
+                'stats/{service:s1}/cinstance:app1/metric:m1/day:20191216' => 10,
+                'stats/{service:s1}/cinstance:app1/metric:m1/year:20190101' => 100,
+
+                # Response codes
+                'stats/{service:s2}/response_code:200/day:20191216' => 2,
+                'stats/{service:s2}/cinstance:app2/response_code:200/day:20191216' => 3
+              }
+            )
+          end
+
+          let(:all_keys) { keys_not_to_be_deleted.merge(keys_to_be_deleted) }
+
+          let(:redis_set_marked_to_be_deleted) do
+            described_class.const_get(:KEY_SERVICES_TO_DELETE)
+          end
+
           before do # Fill Redis
             all_keys.each { |k, v| storage.set(k, v) }
           end
@@ -102,11 +137,8 @@ module ThreeScale
 
         private
 
-        # The two helpers below are just used to fill Redis with some keys
-
-        def fixtures_redis_keys
+        def non_stats_keys
           {
-            # Non-stats keys
             k1: 'v1', k2: 'v2', k3: 'v3',
 
             # Starts with "stats/" but it's not a stats key, it's used for the
@@ -117,34 +149,6 @@ module ThreeScale
             # ignored.
             'stats/{service:s1}/city:/metric:m1/day:20191216' => 1, # 'city' no longer used
             'stats/{service:s1}/%?!`:m1/day:20191216' => 2, # corrupted.
-
-            # Stats keys, service level
-            'stats/{service:s1}/metric:m1/day:20191216' => 10,
-            'stats/{service:s1}/metric:m1/year:20190101' => 100,
-
-            # Stats keys, app level
-            'stats/{service:s1}/cinstance:app1/metric:m1/day:20191216' => 10,
-            'stats/{service:s1}/cinstance:app1/metric:m1/year:20190101' => 100,
-
-            # Response codes
-            'stats/{service:s2}/response_code:200/day:20191216' => 2,
-            'stats/{service:s2}/cinstance:app2/response_code:200/day:20191216' => 3
-          }
-        end
-
-        def fixtures_redis_keys_to_delete
-          {
-            # Stats keys, service level
-            'stats/{service:service_to_delete_1}/metric:m1/day:20191216' => 10,
-            'stats/{service:service_to_delete_2}/metric:m1/year:20190101' => 100,
-
-            # Stats keys, app level
-            'stats/{service:service_to_delete_1}/cinstance:app1/metric:m1/day:20191216' => 10,
-            'stats/{service:service_to_delete_2}/cinstance:app1/metric:m1/year:20190101' => 100,
-
-            # Response codes
-            'stats/{service:service_to_delete_1}/response_code:200/day:20191216' => 2,
-            'stats/{service:service_to_delete_2}/cinstance:app2/response_code:200/day:20191216' => 3
           }
         end
       end
