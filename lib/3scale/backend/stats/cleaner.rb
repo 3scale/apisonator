@@ -48,6 +48,9 @@ module ThreeScale
         REDIS_CONN_ERRORS = [Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE].freeze
         private_constant :REDIS_CONN_ERRORS
 
+        MAX_RETRIES_REDIS_ERRORS = 3
+        private_constant :MAX_RETRIES_REDIS_ERRORS
+
         class << self
           include Logging
           def mark_service_to_be_deleted(service_id)
@@ -90,7 +93,7 @@ module ThreeScale
                 end
               end
 
-              remove_services_from_delete_set(services) if delete_successful
+              with_retries { remove_services_from_delete_set(services) } if delete_successful
             end
 
             logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
@@ -166,19 +169,21 @@ module ThreeScale
             cursor = 0
 
             loop do
-              cursor, keys = redis_conn.scan(cursor, count: SCAN_SLICE)
+              with_retries do
+                cursor, keys = redis_conn.scan(cursor, count: SCAN_SLICE)
 
-              to_delete = keys.select { |key| delete_key?(key, services) }
+                to_delete = keys.select { |key| delete_key?(key, services) }
 
-              unless to_delete.empty?
-                if log_deleted_keys
-                  values = redis_conn.mget(*(to_delete.to_a))
-                  to_delete.each_with_index do |k, i|
-                    log_deleted_keys.puts "#{k} #{values[i]}"
+                unless to_delete.empty?
+                  if log_deleted_keys
+                    values = redis_conn.mget(*(to_delete.to_a))
+                    to_delete.each_with_index do |k, i|
+                      log_deleted_keys.puts "#{k} #{values[i]}"
+                    end
                   end
-                end
 
-                redis_conn.del(to_delete)
+                  redis_conn.del(to_delete)
+                end
               end
 
               break if cursor.to_i == 0
@@ -226,23 +231,36 @@ module ThreeScale
             cursor = 0
 
             loop do
-              cursor, keys = redis_conn.scan(cursor, count: SCAN_SLICE)
+              with_retries do
+                cursor, keys = redis_conn.scan(cursor, count: SCAN_SLICE)
 
-              stats_keys = keys.select { |k| is_stats_key?(k) }
+                stats_keys = keys.select { |k| is_stats_key?(k) }
 
-              unless stats_keys.empty?
-                values = redis_conn.mget(*stats_keys)
-                to_delete = stats_keys.zip(values).select { |_, v| v == '0'.freeze }.map(&:first)
+                unless stats_keys.empty?
+                  values = redis_conn.mget(*stats_keys)
+                  to_delete = stats_keys.zip(values).select { |_, v| v == '0'.freeze }.map(&:first)
 
-                unless to_delete.empty?
-                  redis_conn.del(to_delete)
-                  to_delete.each { |k| log_deleted_keys.puts k } if log_deleted_keys
+                  unless to_delete.empty?
+                    redis_conn.del(to_delete)
+                    to_delete.each { |k| log_deleted_keys.puts k } if log_deleted_keys
+                  end
                 end
               end
 
               break if cursor.to_i == 0
 
               sleep(SLEEP_BETWEEN_SCANS)
+            end
+          end
+
+          def with_retries(max = MAX_RETRIES_REDIS_ERRORS)
+            retries = 0
+            begin
+              yield
+            rescue Exception => e
+              retries += 1
+              retry if retries < max
+              raise e
             end
           end
         end

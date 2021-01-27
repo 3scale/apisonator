@@ -151,6 +151,13 @@ module ThreeScale
               expect { Cleaner.delete!(non_proxied_instances) }.not_to raise_error
               expect(logger).to have_received(:error)
             end
+
+            it 'retries' do
+              Cleaner.delete!(non_proxied_instances)
+              expect(non_proxied_instances.first)
+                .to have_received(:scan)
+                .exactly(Cleaner.const_get(:MAX_RETRIES_REDIS_ERRORS)).times
+            end
           end
         end
 
@@ -219,6 +226,13 @@ module ThreeScale
               end.not_to raise_error
 
               expect(logger).to have_received(:error)
+            end
+
+            it 'retries' do
+              Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+              expect(non_proxied_instances.first)
+                .to have_received(:scan)
+                .exactly(Cleaner.const_get(:MAX_RETRIES_REDIS_ERRORS)).times
             end
           end
         end
