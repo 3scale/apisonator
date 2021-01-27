@@ -45,6 +45,12 @@ module ThreeScale
         STATS_KEY_PREFIX = 'stats/'.freeze
         private_constant :STATS_KEY_PREFIX
 
+        REDIS_CONN_ERRORS = [Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE].freeze
+        private_constant :REDIS_CONN_ERRORS
+
+        MAX_RETRIES_REDIS_ERRORS = 3
+        private_constant :MAX_RETRIES_REDIS_ERRORS
+
         class << self
           include Logging
           def mark_service_to_be_deleted(service_id)
@@ -77,36 +83,72 @@ module ThreeScale
             logger.info("Going to delete the stats keys for these services: #{services.to_a}")
 
             unless services.empty?
-              delete_successful = true
-              redis_conns.each do |redis_conn|
+              _ok, failed = redis_conns.partition do |redis_conn|
                 begin
                   delete_keys(redis_conn, services, log_deleted_keys)
-                # If it's a connection error, mark as failed and continue
-                # cleaning other shards. If it's another kind of error, it
-                # could be a bug, so better re-raise.
-                rescue Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE => e
-                  logger.error("Error while deleting stats of server #{redis_conn}: #{e}")
-                  delete_successful = false
-                rescue Redis::CommandError => e
-                  # Redis::CommandError from redis-rb can be raised for multiple
-                  # reasons, so we need to check the error message to distinguish
-                  # connection errors from the rest.
-                  if e.message == 'ERR Connection timed out'.freeze
-                    logger.error("Error while deleting stats of server #{redis_conn}: #{e}")
-                    delete_successful = false
-                  else
-                    raise e
-                  end
+                  true
+                rescue => e
+                  handle_redis_exception(e, redis_conn)
+                  false
                 end
               end
 
-              remove_services_from_delete_set(services) if delete_successful
+              with_retries { remove_services_from_delete_set(services) } if failed.empty?
+
+              failed.each do |failed_conn|
+                logger.error("Error while deleting stats of server #{failed_conn}")
+              end
             end
 
             logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
           end
 
+          # Deletes all the stats keys set to 0.
+          #
+          # Stats keys set to 0 are useless and occupy Redis memory
+          # unnecessarily. They were generated due to a bug in previous versions
+          # of Apisonator.
+          # Ref: https://github.com/3scale/apisonator/pull/247
+          #
+          # As the .delete function, this one also receives a collection of
+          # instantiated Redis clients and those need to connect to Redis
+          # servers directly.
+          #
+          # @param [Array] redis_conns Instantiated Redis clients.
+          # @param [IO] log_deleted_keys IO where to write the logs. Defaults to
+          #             nil (logs nothing).
+          def delete_stats_keys_set_to_0(redis_conns, log_deleted_keys: nil)
+            _ok, failed = redis_conns.partition do |redis_conn|
+              begin
+                delete_stats_keys_with_val_0(redis_conn, log_deleted_keys)
+                true
+              rescue => e
+                handle_redis_exception(e, redis_conn)
+                false
+              end
+            end
+
+            failed.each do |failed_conn|
+              logger.error("Error while deleting stats of server #{failed_conn}")
+            end
+          end
+
           private
+
+          def handle_redis_exception(exception, redis_conn)
+            # If it's a connection error, do nothing so we can continue with
+            # other shards. If it's another kind of error, it could be caused by
+            # a bug, so better re-raise.
+
+            case exception
+            when *REDIS_CONN_ERRORS
+              # Do nothing.
+            when Redis::CommandError
+              raise exception if exception.message != 'ERR Connection timed out'.freeze
+            else
+              raise exception
+            end
+          end
 
           # Returns a set with the services included in the
           # SET_WITH_SERVICES_MARKED_FOR_DELETION Redis set.
@@ -133,19 +175,21 @@ module ThreeScale
             cursor = 0
 
             loop do
-              cursor, keys = redis_conn.scan(cursor, count: SCAN_SLICE)
+              with_retries do
+                cursor, keys = redis_conn.scan(cursor, count: SCAN_SLICE)
 
-              to_delete = keys.select { |key| delete_key?(key, services) }
+                to_delete = keys.select { |key| delete_key?(key, services) }
 
-              unless to_delete.empty?
-                if log_deleted_keys
-                  values = redis_conn.mget(*(to_delete.to_a))
-                  to_delete.each_with_index do |k, i|
-                    log_deleted_keys.puts "#{k} #{values[i]}"
+                unless to_delete.empty?
+                  if log_deleted_keys
+                    values = redis_conn.mget(*(to_delete.to_a))
+                    to_delete.each_with_index do |k, i|
+                      log_deleted_keys.puts "#{k} #{values[i]}"
+                    end
                   end
-                end
 
-                redis_conn.del(to_delete)
+                  redis_conn.del(to_delete)
+                end
               end
 
               break if cursor.to_i == 0
@@ -187,6 +231,43 @@ module ThreeScale
             # always empty. That format has not been used in a long time. We'll
             # simply ignore those keys.
             nil
+          end
+
+          def delete_stats_keys_with_val_0(redis_conn, log_deleted_keys)
+            cursor = 0
+
+            loop do
+              with_retries do
+                cursor, keys = redis_conn.scan(cursor, count: SCAN_SLICE)
+
+                stats_keys = keys.select { |k| is_stats_key?(k) }
+
+                unless stats_keys.empty?
+                  values = redis_conn.mget(*stats_keys)
+                  to_delete = stats_keys.zip(values).select { |_, v| v == '0'.freeze }.map(&:first)
+
+                  unless to_delete.empty?
+                    redis_conn.del(to_delete)
+                    to_delete.each { |k| log_deleted_keys.puts k } if log_deleted_keys
+                  end
+                end
+              end
+
+              break if cursor.to_i == 0
+
+              sleep(SLEEP_BETWEEN_SCANS)
+            end
+          end
+
+          def with_retries(max = MAX_RETRIES_REDIS_ERRORS)
+            retries = 0
+            begin
+              yield
+            rescue Exception => e
+              retries += 1
+              retry if retries < max
+              raise e
+            end
           end
         end
       end
