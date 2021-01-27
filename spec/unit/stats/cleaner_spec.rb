@@ -133,6 +133,25 @@ module ThreeScale
               expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
             end
           end
+
+          context 'when there are redis connection errors' do
+            before do
+              services_to_be_deleted.each do |service|
+                Cleaner.mark_service_to_be_deleted(service)
+              end
+
+              allow(logger).to receive(:error)
+
+              # Using scan just because it's the first command called.
+              allow(non_proxied_instances.first)
+                .to receive(:scan).and_raise(Errno::ECONNREFUSED)
+            end
+
+            it 'logs an error without raising' do
+              expect { Cleaner.delete!(non_proxied_instances) }.not_to raise_error
+              expect(logger).to have_received(:error)
+            end
+          end
         end
 
         describe '.delete_stats_keys_with_usage_0' do
@@ -182,6 +201,24 @@ module ThreeScale
               stats_with_usage_0.keys.each do |k|
                 expect(log_to).to have_received(:puts).with(k)
               end
+            end
+          end
+
+          context 'when there are redis connection errors' do
+            before do
+              allow(logger).to receive(:error)
+
+              # Using scan just because it's the first command called.
+              allow(non_proxied_instances.first)
+                .to receive(:scan).and_raise(Errno::ECONNREFUSED)
+            end
+
+            it 'logs an error without raising' do
+              expect do
+                Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+              end.not_to raise_error
+
+              expect(logger).to have_received(:error)
             end
           end
         end
