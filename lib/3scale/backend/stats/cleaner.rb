@@ -83,17 +83,21 @@ module ThreeScale
             logger.info("Going to delete the stats keys for these services: #{services.to_a}")
 
             unless services.empty?
-              delete_successful = true
-              redis_conns.each do |redis_conn|
+              _ok, failed = redis_conns.partition do |redis_conn|
                 begin
                   delete_keys(redis_conn, services, log_deleted_keys)
+                  true
                 rescue => e
                   handle_redis_exception(e, redis_conn)
-                  delete_successful = false
+                  false
                 end
               end
 
-              with_retries { remove_services_from_delete_set(services) } if delete_successful
+              with_retries { remove_services_from_delete_set(services) } if failed.empty?
+
+              failed.each do |failed_conn|
+                logger.error("Error while deleting stats of server #{failed_conn}")
+              end
             end
 
             logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
@@ -114,31 +118,33 @@ module ThreeScale
           # @param [IO] log_deleted_keys IO where to write the logs. Defaults to
           #             nil (logs nothing).
           def delete_stats_keys_set_to_0(redis_conns, log_deleted_keys: nil)
-            redis_conns.each do |redis_conn|
+            _ok, failed = redis_conns.partition do |redis_conn|
               begin
                 delete_stats_keys_with_val_0(redis_conn, log_deleted_keys)
+                true
               rescue => e
                 handle_redis_exception(e, redis_conn)
+                false
               end
+            end
+
+            failed.each do |failed_conn|
+              logger.error("Error while deleting stats of server #{failed_conn}")
             end
           end
 
           private
 
           def handle_redis_exception(exception, redis_conn)
-            # If it's a connection error, simply log so we can continue with
+            # If it's a connection error, do nothing so we can continue with
             # other shards. If it's another kind of error, it could be caused by
             # a bug, so better re-raise.
 
             case exception
             when *REDIS_CONN_ERRORS
-              logger.error("Error while deleting stats of server #{redis_conn}: #{exception}")
+              # Do nothing.
             when Redis::CommandError
-              if exception.message == 'ERR Connection timed out'.freeze
-                logger.error("Error while deleting stats of server #{redis_conn}: #{exception}")
-              else
-                raise exception
-              end
+              raise exception if exception.message != 'ERR Connection timed out'.freeze
             else
               raise exception
             end
