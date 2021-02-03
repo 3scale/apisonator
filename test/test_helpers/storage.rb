@@ -100,6 +100,11 @@ module TestHelpers
                 inner.respond_to_missing? m
               end
 
+              # Needed to call Redis::Namespace.new(). Used in WorkerAsync.
+              def respond_to?(m)
+                inner.respond_to?(m)
+              end
+
               private
 
               attr_reader :inner
