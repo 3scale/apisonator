@@ -3,6 +3,8 @@ require_relative '../spec_helper'
 module ThreeScale
   module Backend
     context 'when failed jobs are rescheduled' do
+      include SpecHelpers::WorkerHelper
+
       let(:provider_key) { 'a_provider_key' }
       let(:service_id) { 'a_service_id' }
       let(:app_id) { 'an_app_id' }
@@ -46,7 +48,7 @@ module ThreeScale
 
           # Try to process the job. It will fail and will be moved to the
           # failed jobs queue.
-          Worker.work(one_off: true)
+          process_one_job
           expect(Resque.size(queue)).to be_zero
           expect(Resque::Failure.count).to eq 1
 

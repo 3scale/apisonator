@@ -1,6 +1,8 @@
 require_relative '../spec_helper'
 
 RSpec.describe ThreeScale::Backend::Stats::PartitionGeneratorJob do
+  include SpecHelpers::WorkerHelper
+
   let(:service_id) { '123456' }
   let(:applications) { %w[1] }
   let(:metrics) { %w[10] }
@@ -27,8 +29,7 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionGeneratorJob do
     without_resque_spec do
       job.run_async
       expect(Resque.size(stats_queue)).to eq 1
-      # Try to process the job.
-      ThreeScale::Backend::Worker.work(one_off: true)
+      process_one_job
       expect(Resque.size(stats_queue)).to eq((num_keys_generated.to_f / configuration.stats.delete_partition_batch_size).ceil)
     end
   end
