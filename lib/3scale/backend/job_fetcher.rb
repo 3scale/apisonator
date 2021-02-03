@@ -32,25 +32,6 @@ module ThreeScale
             DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS
       end
 
-      def pop_from_queue
-        begin
-          encoded_job = @redis.blpop(*@queues, timeout: @fetch_timeout)
-        rescue Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE => e
-          raise RedisConnectionError.new(e.message)
-        rescue Redis::CommandError => e
-          # Redis::CommandError from redis-rb can be raised for multiple
-          # reasons, so we need to check the error message to distinguish
-          # connection errors from the rest.
-          if e.message == 'ERR Connection timed out'.freeze
-            raise RedisConnectionError.new(e.message)
-          else
-            raise e
-          end
-        end
-
-        encoded_job
-      end
-
       def fetch
         encoded_job = pop_from_queue
         return nil if encoded_job.nil? || encoded_job.empty?
@@ -116,6 +97,27 @@ module ThreeScale
 
       def shutdown
         @shutdown = true
+      end
+
+      private
+
+      def pop_from_queue
+        begin
+          encoded_job = @redis.blpop(*@queues, timeout: @fetch_timeout)
+        rescue Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE => e
+          raise RedisConnectionError.new(e.message)
+        rescue Redis::CommandError => e
+          # Redis::CommandError from redis-rb can be raised for multiple
+          # reasons, so we need to check the error message to distinguish
+          # connection errors from the rest.
+          if e.message == 'ERR Connection timed out'.freeze
+            raise RedisConnectionError.new(e.message)
+          else
+            raise e
+          end
+        end
+
+        encoded_job
       end
     end
   end
