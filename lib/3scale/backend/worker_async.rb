@@ -1,4 +1,5 @@
 require 'async'
+require 'redis-namespace'
 require '3scale/backend/job_fetcher'
 
 module ThreeScale
@@ -10,6 +11,9 @@ module ThreeScale
       DEFAULT_MAX_CONCURRENT_JOBS = 20
       private_constant :DEFAULT_MAX_CONCURRENT_JOBS
 
+      RESQUE_REDIS_NAMESPACE = :resque
+      private_constant :RESQUE_REDIS_NAMESPACE
+
       def initialize(options = {})
         trap('TERM') { shutdown }
         trap('INT')  { shutdown }
@@ -17,7 +21,7 @@ module ThreeScale
         @one_off = options[:one_off]
         @jobs = Queue.new # Thread-safe queue
 
-        @job_fetcher = options[:job_fetcher] || JobFetcher.new
+        @job_fetcher = options[:job_fetcher] || JobFetcher.new(redis_client: redis_client)
 
         @max_concurrent_jobs = configuration.async_worker.max_concurrent_jobs ||
             DEFAULT_MAX_CONCURRENT_JOBS
@@ -82,6 +86,19 @@ module ThreeScale
         Thread.new do
           Async { @job_fetcher.start(@jobs) }
         end
+      end
+
+      # Returns a new Redis client with namespace "resque".
+      # In the async worker, the job fetcher runs in a separate thread, and we
+      # need to avoid sharing an already instantiated client like the one in
+      # Resque::Helpers initialized in lib/3scale/backend.rb (Resque.redis).
+      # Failing to do so, will raise errors because of fibers shared across
+      # threads.
+      def redis_client
+        Redis::Namespace.new(
+          RESQUE_REDIS_NAMESPACE,
+          redis: QueueStorage.connection(Backend.environment, Backend.configuration)
+        )
       end
     end
   end

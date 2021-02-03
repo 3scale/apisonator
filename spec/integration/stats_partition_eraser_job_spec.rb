@@ -1,6 +1,8 @@
 require_relative '../spec_helper'
 
 RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
+  include SpecHelpers::WorkerHelper
+
   let(:service_id) { '123456' }
   let(:applications) { %w[1] }
   let(:metrics) { %w[10] }
@@ -31,8 +33,7 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
       Resque.enqueue(described_class, Time.now.getutc.to_f, service_id, applications,
                      metrics, from, to, offset, length, nil)
       expect(Resque.size(stats_queue)).to eq 1
-      # Try to process the job.
-      ThreeScale::Backend::Worker.work(one_off: true)
+      process_one_job
       expect(keys.drop(offset).take(length).count).to be > 0
       keys_to_be_deleted = keys.drop(offset).take(length)
       expect(keys_to_be_deleted.none? { |key| storage.exists(key) })
@@ -44,8 +45,7 @@ RSpec.describe ThreeScale::Backend::Stats::PartitionEraserJob do
       Resque.enqueue(described_class, Time.now.getutc.to_f, service_id, applications,
                      metrics, from, to, offset, length, nil)
       expect(Resque.size(stats_queue)).to eq 1
-      # Try to process the job.
-      ThreeScale::Backend::Worker.work(one_off: true)
+      process_one_job
       expected_undeleted_keys = keys.take(offset) + keys.drop(offset + length)
       expect(expected_undeleted_keys.count).to be > 0
       expected_undeleted_keys.each { |key| expect(storage.get(key)).to eq '1' }
