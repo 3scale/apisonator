@@ -33,8 +33,9 @@ class WorkerTest < Test::Unit::TestCase
   end
 
   def test_no_jobs_in_the_queue
-    redis = Redis.any_instance
-    redis.expects(:blpop).returns(nil)
+    # Stub blpop to avoid waiting until timeout.
+    Redis.any_instance.stubs(:blpop).returns(nil)
+    StorageAsync::Client.any_instance.stubs(:blpop).returns(nil)
 
     Worker.work(:one_off => true)
   end
