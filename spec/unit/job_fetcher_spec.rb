@@ -245,6 +245,29 @@ module ThreeScale
                 .at_least(1).times
           end
         end
+
+        context 'when there is an error not related with Redis connectivity' do
+          let(:error) { Exception.new('Some error') }
+          let(:queue) { Queue.new }
+          let(:job_fetcher) { JobFetcher.new(redis_client: test_redis) }
+
+          before do
+            allow(test_redis).to receive(:blpop).and_raise error
+            allow(Worker.logger).to receive(:notify)
+          end
+
+          it 'closes the queue' do
+            Thread.new { job_fetcher.start(queue) }.join
+
+            expect(queue.closed?).to be true
+          end
+
+          it 'notifies the error' do
+            Thread.new { job_fetcher.start(queue) }.join
+
+            expect(Worker.logger).to have_received(:notify).with(error)
+          end
+        end
       end
     end
   end

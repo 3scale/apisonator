@@ -92,6 +92,9 @@ module ThreeScale
           end
         end
 
+      rescue Exception => e
+        Worker.logger.notify(e)
+      ensure
         job_queue.close
       end
 

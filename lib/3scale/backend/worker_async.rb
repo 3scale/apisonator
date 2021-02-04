@@ -68,6 +68,10 @@ module ThreeScale
           # unblocks when there are new jobs or when .close() is called
           job = @jobs.pop
 
+          # If job is nil, it means that the queue is closed. No more jobs are
+          # going to be pushed, so shutdown.
+          shutdown unless job
+
           break if @shutdown
 
           @reactor.async { perform(job) }
