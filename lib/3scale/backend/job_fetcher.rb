@@ -80,10 +80,11 @@ module ThreeScale
 
               # Re-instantiate Redis instance. This is needed to recover from
               # Errno::EPIPE, not sure if there are others.
-              @redis = ThreeScale::Backend::QueueStorage.connection(
-                  ThreeScale::Backend.environment,
-                  ThreeScale::Backend.configuration
+              @redis = Redis::Namespace.new(
+                WorkerAsync.const_get(:RESQUE_REDIS_NAMESPACE),
+                redis: QueueStorage.connection(Backend.environment, Backend.configuration)
               )
+
              # If there is a different kind of error, it's probably a
              # programming error. Like sending an invalid blpop command to
              # Redis. In that case, let the worker crash.
