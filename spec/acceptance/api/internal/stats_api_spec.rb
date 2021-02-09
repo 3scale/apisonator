@@ -36,19 +36,6 @@ resource 'Stats (prefix: /services/:service_id/stats)' do
         ResqueSpec.reset!
       end
 
-      # The endpoint is disabled for now, just test that it returns 200
-=begin
-      example_request 'Deleting stats' do
-        expect(status).to eq 200
-        expect(response_json['status']).to eq 'to_be_deleted'
-        expect(ThreeScale::Backend::Stats::PartitionGeneratorJob).to have_queued(anything,
-                                                                                 existing_service_id,
-                                                                                 applications,
-                                                                                 metrics, users,
-                                                                                 from, to, nil)
-      end
-=end
-
       example_request 'Deleting stats' do
         expect(status).to eq 200
         expect(response_json['status']).to eq 'to_be_deleted'
@@ -62,15 +49,5 @@ resource 'Stats (prefix: /services/:service_id/stats)' do
         expect(status).to eq 404
       end
     end
-
-=begin
-    context 'invalid param sent' do
-      let(:from) { 'adfsadfasd' }
-
-      example_request 'Deleting stats' do
-        expect(status).to eq 400
-      end
-    end
-=end
   end
 end
