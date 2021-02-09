@@ -1,8 +1,4 @@
 require '3scale/backend/stats/codes_commons'
 require '3scale/backend/stats/period_commons'
 require '3scale/backend/stats/aggregator'
-require '3scale/backend/stats/delete_job_def'
-require '3scale/backend/stats/key_generator'
-require '3scale/backend/stats/partition_generator_job'
-require '3scale/backend/stats/partition_eraser_job'
 require '3scale/backend/stats/cleaner'

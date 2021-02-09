@@ -292,12 +292,6 @@ module ThreeScale
       end
     end
 
-    class DeleteServiceStatsValidationError < Error
-      def initialize(service_id, msg)
-        super "Delete stats job context validation error. Service: #{service_id}. Error: #{msg}"
-      end
-    end
-
     class EndUsersNoLongerSupported < BadRequest
       def initialize
         super 'End-users are no longer supported, do not specify the user_id parameter'.freeze

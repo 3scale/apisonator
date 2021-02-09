@@ -12,9 +12,6 @@ module ThreeScale
         GRANULARITY_EXPIRATION_TIME = { Period[:minute] => 180 }.freeze
         private_constant :GRANULARITY_EXPIRATION_TIME
 
-        PERMANENT_SERVICE_GRANULARITIES = (SERVICE_GRANULARITIES - GRANULARITY_EXPIRATION_TIME.keys).freeze
-        PERMANENT_EXPANDED_GRANULARITIES = (EXPANDED_GRANULARITIES - GRANULARITY_EXPIRATION_TIME.keys).freeze
-
         # We are not going to send metrics with granularity 'eternity' or
         # 'week' to Kinesis, so there is no point in storing them in Redis
         # buckets.
