@@ -2,6 +2,27 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.3.0 - 2021-02-09
+
+### Added
+
+- Rake task to delete stats keys set to 0 in the DB left there because of [this
+issue](https://github.com/3scale/apisonator/pull/247)
+([#250](https://github.com/3scale/apisonator/pull/250)).
+
+### Fixed
+
+- Made the worker more reliable when configured in async mode. Now it handles
+connection errors better
+([#253](https://github.com/3scale/apisonator/pull/253)),
+([#254](https://github.com/3scale/apisonator/pull/254)), and
+([#255](https://github.com/3scale/apisonator/pull/255)).
+
+### Changed
+
+- Updated async-redis to v0.5.1
+([#251](https://github.com/3scale/apisonator/pull/251)).
+
 ## 3.2.1 - 2021-01-22
 
 ### Fixed

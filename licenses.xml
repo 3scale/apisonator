@@ -23,7 +23,7 @@
       </dependency>
           <dependency>
         <packageName>apisonator</packageName>
-        <version>3.2.1</version>
+        <version>3.3.0</version>
         <licenses>
                       <license>
               <name>Apache 2.0</name>
@@ -93,7 +93,7 @@
       </dependency>
           <dependency>
         <packageName>async-redis</packageName>
-        <version>0.5.0</version>
+        <version>0.5.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -525,7 +525,7 @@
       </dependency>
           <dependency>
         <packageName>nio4r</packageName>
-        <version>2.5.2</version>
+        <version>2.5.4</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -769,7 +769,7 @@
       </dependency>
           <dependency>
         <packageName>redis-namespace</packageName>
-        <version>1.6.0</version>
+        <version>1.8.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -1043,7 +1043,7 @@
       </dependency>
           <dependency>
         <packageName>timers</packageName>
-        <version>4.3.0</version>
+        <version>4.3.2</version>
         <licenses>
                       <license>
               <name>MIT</name>
