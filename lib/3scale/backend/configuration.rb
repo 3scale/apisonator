@@ -32,8 +32,6 @@ module ThreeScale
 
     CONFIG_DELETE_STATS_BATCH_SIZE = 50
     private_constant :CONFIG_DELETE_STATS_BATCH_SIZE
-    CONFIG_DELETE_STATS_PARTITION_BATCH_SIZE = 1000
-    private_constant :CONFIG_DELETE_STATS_PARTITION_BATCH_SIZE
 
     @configuration = Configuration::Loader.new
 
@@ -54,7 +52,7 @@ module ThreeScale
       config.add_section(:analytics_redis, :server,
                          :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:hoptoad, :service, :api_key)
-      config.add_section(:stats, :bucket_size, :delete_batch_size, :delete_partition_batch_size)
+      config.add_section(:stats, :bucket_size, :delete_batch_size)
       config.add_section(:redshift, :host, :port, :dbname, :user, :password)
       config.add_section(:statsd, :host, :port)
       config.add_section(:internal_api, :user, :password)
@@ -124,9 +122,6 @@ module ThreeScale
 
       config.stats.delete_batch_size = parse_int(config.stats.delete_batch_size,
                                                  CONFIG_DELETE_STATS_BATCH_SIZE)
-
-      config.stats.delete_partition_batch_size = parse_int(config.stats.delete_partition_batch_size,
-                                                           CONFIG_DELETE_STATS_PARTITION_BATCH_SIZE)
 
       # often we don't have a log_file setting - generate it here from
       # the log_path setting.
