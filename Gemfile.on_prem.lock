@@ -35,7 +35,7 @@ GIT
 PATH
   remote: .
   specs:
-    apisonator (3.2.1)
+    apisonator (3.3.0)
 
 GEM
   remote: https://rubygems.org/
