@@ -4,6 +4,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
   include TestHelpers::AuthorizeAssertions
   include TestHelpers::Fixtures
   include TestHelpers::Integration
+  include TestHelpers::StorageKeys
 
   def setup
     @storage = Storage.instance(true)
@@ -259,5 +260,51 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
          assert_authorized
        end
      end
+  end
+
+  test 'does not create stats keys when setting the usage to 0 (#0)' do
+    hits_id = @metric_id
+    current_time = Time.now
+
+    Timecop.freeze(current_time) do
+      get '/transactions/authrep.xml',
+           provider_key: @provider_key,
+           app_id: @application.id,
+           usage: { 'hits' => '#0' }
+
+      Resque.run!
+    end
+
+    stats_keys = app_keys_for_all_periods(@service_id, @application.id, hits_id, current_time)
+    stats_keys_created = stats_keys.any? { |key| @storage.exists(key) }
+    assert_false stats_keys_created
+  end
+
+  test 'deletes existing stats keys when setting the usage to 0 (#0)' do
+    hits_id = @metric_id
+    current_time = Time.now
+
+    # Report something to generate stats keys
+    Timecop.freeze(current_time) do
+      get '/transactions/authrep.xml',
+          provider_key: @provider_key,
+          app_id: @application.id,
+          usage: { 'hits' => 10 }
+
+      Resque.run!
+    end
+
+    Timecop.freeze(current_time) do
+      get '/transactions/authrep.xml',
+          provider_key: @provider_key,
+          app_id: @application.id,
+          usage: { 'hits' => '#0' }
+
+      Resque.run!
+    end
+
+    stats_keys = app_keys_for_all_periods(@service_id, @application.id, hits_id, current_time)
+    stats_keys_created = stats_keys.any? { |key| @storage.exists(key) }
+    assert_false stats_keys_created
   end
 end
