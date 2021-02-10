@@ -310,6 +310,71 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 1, @storage.get(reported_metric_stats_key).to_i
   end
 
+  test 'report does not create stats keys when setting the usage to 0 (#0)' do
+    hits_id = @metric_id
+    current_time = Time.now
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml',
+           provider_key: @provider_key,
+           transactions: {
+             0 => {
+               app_id: @application.id,
+               usage: { 'hits' => '#0' },
+               timestamp: Time.now
+             },
+           }
+
+      Resque.run!
+    end
+
+    assert_equal 202, last_response.status
+
+    stats_keys = app_keys_for_all_periods(@service_id, @application.id, hits_id, current_time)
+    stats_keys_created = stats_keys.any? { |key| @storage.exists(key) }
+    assert_false stats_keys_created
+  end
+
+  test 'report deletes existing stats keys when setting the usage to 0 (#0)' do
+    hits_id = @metric_id
+    current_time = Time.now
+
+    # Report something to generate stats keys
+    Timecop.freeze(current_time) do
+      post '/transactions.xml',
+           provider_key: @provider_key,
+           transactions: {
+             0 => {
+               app_id: @application.id,
+               usage: { 'hits' => 10 },
+               timestamp: Time.now
+             },
+           }
+
+      Resque.run!
+    end
+
+    Timecop.freeze(current_time) do
+      post '/transactions.xml',
+           provider_key: @provider_key,
+           transactions: {
+             0 => {
+               app_id: @application.id,
+               usage: { 'hits' => '#0' },
+               timestamp: Time.now
+             },
+           }
+
+      Resque.run!
+    end
+
+    assert_equal 202, last_response.status
+
+    stats_keys = app_keys_for_all_periods(@service_id, @application.id, hits_id, current_time)
+    stats_keys_created = stats_keys.any? { |key| @storage.exists(key) }
+    assert_false stats_keys_created
+  end
+
   test 'report does not aggregate anything when at least one transaction is invalid' do
     post '/transactions.xml',
        :provider_key => @provider_key,
