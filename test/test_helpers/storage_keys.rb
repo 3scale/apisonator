@@ -26,5 +26,18 @@ module TestHelpers
       end
     end
 
+    def app_keys_for_all_periods(service_id, app_id, metric_id, time)
+      time_utc = time.getutc
+
+      ThreeScale::Backend::Period::SYMBOLS.map do |period|
+        application_key(
+          service_id,
+          app_id,
+          metric_id,
+          period,
+          ThreeScale::Backend::Period::Boundary.start_of(period, time_utc).to_compact_s
+        )
+      end
+    end
   end
 end
