@@ -154,6 +154,27 @@ class TransactorTest < Test::Unit::TestCase
     )
   end
 
+  test 'report includes usages with "set to 0" (#0) when it generates a report job' do
+    current_time = Time.now
+
+    transactions = {
+      '0' => {
+        app_id: @application_one.id,
+        usage: { 'hits' => '#0' },
+        timestamp: current_time
+      }
+    }
+
+    Timecop.freeze(current_time) do
+      Transactor.report(@provider_key, @service_id, transactions)
+    end
+
+    assert_queued(
+      Transactor::ReportJob,
+      [@service_id, transactions, current_time.to_f, @context_info]
+    )
+  end
+
   test 'report does not enqueue a job if there is not at least a transaction with usage != 0' do
     transactions = {
       '0' => {
@@ -443,6 +464,31 @@ class TransactorTest < Test::Unit::TestCase
         @service_id,
         # Notice that 'Hits' does not appear because it had a usage of 0
         { 0 => { 'app_id' => @application_one.id, 'usage' => { metric_name => 1}, 'log' => nil } },
+        current_time.to_f,
+        { 'request' => { 'extensions' => nil } }
+      ]
+    )
+  end
+
+  test_authrep 'includes usages with "set to 0" (#0) when it generates a report job' do |_ , method|
+    current_time = Time.now
+
+    Timecop.freeze(current_time) do
+      Transactor.send(
+        method,
+        @provider_key,
+        service_id: @service_id,
+        app_id: @application_one.id,
+        usage: { 'hits' => '#0' },
+        timestamp: current_time
+      )
+    end
+
+    assert_queued(
+      Transactor::ReportJob,
+      [
+        @service_id,
+        { 0 => { 'app_id' => @application_one.id, 'usage' => { 'hits' => '#0' }, 'log' => nil } },
         current_time.to_f,
         { 'request' => { 'extensions' => nil } }
       ]
