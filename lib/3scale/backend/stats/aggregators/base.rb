@@ -20,7 +20,14 @@ module ThreeScale
                 key = counter_key(prefix_key, granularity.new(timestamp))
                 expire_time = Stats::PeriodCommons.expire_time_for_granularity(granularity)
 
-                store_key(cmd, key, value, expire_time)
+                # We don't need to store stats keys set to 0. It wastes Redis
+                # memory because for rate-limiting and stats, a key of set to 0
+                # is equivalent to a key that does not exist.
+                if cmd == :set && value == 0
+                  storage.del(key)
+                else
+                  store_key(cmd, key, value, expire_time)
+                end
 
                 unless Stats::PeriodCommons::EXCLUDED_FOR_BUCKETS.include?(granularity)
                   keys_for_bucket << key
