@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.3.1 - 2021-02-11
+
+### Fixed
+
+- Usages with `#0` (set to 0) no longer generate unnecessary stats keys in Redis
+([#258](https://github.com/3scale/apisonator/pull/258)).
+
 ## 3.3.0 - 2021-02-09
 
 ### Added
