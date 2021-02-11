@@ -1,9 +1,10 @@
 GIT
   remote: https://github.com/3scale/puma
-  revision: b034371406690d3e6c2a9301c4a48bd721f3efc3
-  ref: b034371406690d3e6c2a9301c4a48bd721f3efc3
+  revision: c0601d08695839b8ffd0f380e91c3b91c1e8b754
+  branch: 3scale-4.3.7
   specs:
-    puma (2.15.3)
+    puma (4.3.7)
+      nio4r (~> 2.0)
 
 GIT
   remote: https://github.com/3scale/redis-rb
