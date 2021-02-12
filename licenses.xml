@@ -23,7 +23,7 @@
       </dependency>
           <dependency>
         <packageName>apisonator</packageName>
-        <version>3.3.1</version>
+        <version>3.3.1.1</version>
         <licenses>
                       <license>
               <name>Apache 2.0</name>
@@ -709,7 +709,7 @@
       </dependency>
           <dependency>
         <packageName>puma</packageName>
-        <version>2.15.3</version>
+        <version>4.3.7</version>
         <licenses>
                       <license>
               <name>New BSD</name>

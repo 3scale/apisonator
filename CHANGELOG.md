@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.3.1.1 - 2021-02-12
+
+### Changed
+
+- Updated our Puma fork to v4.3.7
+([#261](https://github.com/3scale/apisonator/pull/261)).
+
 ## 3.3.1 - 2021-02-11
 
 ### Fixed
