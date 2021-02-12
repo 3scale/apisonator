@@ -6,11 +6,11 @@ module TestHelpers
     end
 
     module ExtensionConstants
-      NO_BODY = URI.encode('no_body=1').freeze
-      REJECTION_REASON_HEADER = URI.encode('rejection_reason_header=1').freeze
-      HIERARCHY = URI.encode('hierarchy=1').freeze
-      LIMIT_HEADERS = URI.encode('limit_headers=1').freeze
-      FLAT_USAGE = URI.encode('flat_usage=1').freeze
+      NO_BODY = URI.encode_www_form(no_body: 1).freeze
+      REJECTION_REASON_HEADER = URI.encode_www_form(rejection_reason_header: 1).freeze
+      HIERARCHY = URI.encode_www_form(hierarchy: 1).freeze
+      LIMIT_HEADERS = URI.encode_www_form(limit_headers: 1).freeze
+      FLAT_USAGE = URI.encode_www_form(flat_usage: 1).freeze
     end
 
     module ClassMethods
