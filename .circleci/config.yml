@@ -21,7 +21,7 @@ jobs:
 
     docker:
       # specify the version you desire here
-       - image: quay.io/3scale/apisonator-ci:v2.93.0
+       - image: quay.io/3scale/apisonator-ci:v3.3.1.1
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -36,11 +36,11 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-rbenv-dependencies-{{ checksum ".ruby-version" }}
-          - v1-dependencies-{{ checksum "Gemfile.lock" }}
+          - v2-rbenv-dependencies-{{ checksum ".ruby-version" }}
+          - v2-dependencies-{{ checksum "Gemfile.lock" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-rbenv-dependencies-
-          - v1-dependencies-
+          - v2-rbenv-dependencies-
+          - v2-dependencies-
 
       - run:
           name: rbenv update
@@ -50,7 +50,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.rbenv
-          key: v1-rbenv-dependencies-{{ checksum ".ruby-version" }}
+          key: v2-rbenv-dependencies-{{ checksum ".ruby-version" }}
 
       - run:
           name: bundle install
@@ -60,7 +60,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.rbenv/versions
-          key: v1-dependencies-{{ checksum "Gemfile.lock" }}
+          key: v2-dependencies-{{ checksum "Gemfile.lock" }}
 
       #run tests!
       - run:
@@ -74,9 +74,9 @@ jobs:
             TEST_RUBY_VERSION=2.5 script/ci
 
       - run:
-          name: Run tests on Ruby 2.6
+          name: Run tests on Ruby 2.7
           command: |
-            TEST_RUBY_VERSION=2.6 script/ci
+            TEST_RUBY_VERSION=2.7 script/ci
 
       #- run:
       #    name: Run tests on all Rubies
