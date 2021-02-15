@@ -21,7 +21,7 @@ jobs:
 
     docker:
       # specify the version you desire here
-       - image: quay.io/3scale/apisonator-ci:v2.93.0
+       - image: quay.io/3scale/apisonator-ci:v3.3.1.1
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -74,9 +74,9 @@ jobs:
             TEST_RUBY_VERSION=2.5 script/ci
 
       - run:
-          name: Run tests on Ruby 2.6
+          name: Run tests on Ruby 2.7
           command: |
-            TEST_RUBY_VERSION=2.6 script/ci
+            TEST_RUBY_VERSION=2.7 script/ci
 
       #- run:
       #    name: Run tests on all Rubies
