@@ -97,14 +97,14 @@ RUN git clone --recurse-submodules --depth 1 --no-checkout --progress \
 RUN git clone --recurse-submodules --depth 1 --no-checkout --progress \
     https://github.com/rbenv/ruby-build.git "${RBENV_RUBYBUILD_ROOT}"
 
-ARG RBENV_TAG=v1.1.1
+ARG RBENV_TAG=v1.1.2
 # update git fetch to include --jobs $(nproc) when newer git versions land
 RUN cd "${RBENV_ROOT}" \
     && (git checkout -q -f "${RBENV_TAG}" 2> /dev/null \
     || (git fetch --prune --depth 1 origin tag "${RBENV_TAG}" \
     && git checkout -q -f "${RBENV_TAG}"))
 
-ARG RBENV_RUBYBUILD_TAG=v20190130
+ARG RBENV_RUBYBUILD_TAG=v20210119
 RUN cd "${RBENV_RUBYBUILD_ROOT}" \
     && (git checkout -q -f "${RBENV_RUBYBUILD_TAG}" 2> /dev/null \
     || (git fetch --prune --depth 1 origin tag "${RBENV_RUBYBUILD_TAG}" \
@@ -248,6 +248,7 @@ RUN mkdir -p ~/.local/bin \
        "  for ruby_version in \$(rbenv whence ruby); do\n" \
        "    echo \"Switching to \${ruby_version}\"\n" \
        "    rbenv shell \"\${ruby_version}\"\n" \
+       "    gem update --system\n" \
        "    (bundle_install_all_gemfiles | tee /tmp/bundle_install.log)\n" \
        "    BUNDLER_REQUESTED=\"\$(sed -e '1,/Installed Bundler versions:/d' /tmp/bundle_install.log)\"\n" \
        "    rm -f /tmp/bundle_install.log\n" \
@@ -272,7 +273,7 @@ RUN sudo chown -R "${USER_NAME}": /tmp/apisonator \
     && rbenv_update_env
 
 # specify all versions to be installed, partial versions also understood
-ARG RUBY_VERSIONS="2.4 2.5 2.6"
+ARG RUBY_VERSIONS="2.4 2.5 2.7"
 RUN cd /tmp/apisonator \
     && ruby_versions ${RUBY_VERSIONS}
 
