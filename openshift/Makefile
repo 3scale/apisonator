@@ -30,7 +30,7 @@ NAME:=amp
 NAMESPACE:=quay.io/3scale
 ENVIRONMENT:=production
 
-DISTRO:=centos/7
+DISTRO:=ubi/8
 DOCKERFILE_PATH=$(THISDIR_PATH)/distro/$(DISTRO)
 
 include $(THISDIR_PATH)/mk/git-export-sources.mk
