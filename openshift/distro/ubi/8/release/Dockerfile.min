@@ -1,4 +1,5 @@
-# 3scale Backend CentOS image for minimal space release.
+# 3scale Backend image using the Red Hat 8 Universal Base Image (UBI) for
+# minimal space release.
 #
 # Everything is set up in a single RUN command.
 #
@@ -6,20 +7,20 @@
 #
 # Knobs you should know about:
 #
-# - RUBY_SCL: Software Collections Library for the Ruby version used.
+# - RUBY_VERSION: Ruby version used.
 # - BUILD_DEP_PKGS: Packages needed to build/install the project.
 # - PUMA_WORKERS: (edit ENV) Default number of Puma workers to serve the app.
 #
-FROM centos:7
 
-ARG RUBY_SCL=rh-ruby25
-ARG BUILD_DEP_PKGS="make gcc git"
+FROM registry.access.redhat.com/ubi8/ubi-minimal
+
+ARG RUBY_VERSION="2.7"
+ARG BUILD_DEPS="tar make file findutils git patch gcc automake autoconf libtool redhat-rpm-config openssl-devel ruby-devel"
 ARG PUMA_WORKERS=1
 
 # Set TZ to avoid glibc wasting time with unneeded syscalls
 ENV TZ=:/etc/localtime \
-    HOME=/tmp/ \
-    ENV_SETUP=". scl_source enable ${RUBY_SCL}" \
+    HOME=/home \
     # App-specific env
     RACK_ENV=production \
     CONFIG_SAAS=false \
@@ -27,21 +28,22 @@ ENV TZ=:/etc/localtime \
     CONFIG_WORKERS_LOG_FILE=/dev/stdout \
     PUMA_WORKERS=${PUMA_WORKERS}
 
-WORKDIR /tmp/app
-COPY . ./
+WORKDIR "${HOME}/app"
 
-# Configure yum, install SCL, update, install Ruby and clean.
-RUN sed -i /etc/yum.conf -e \
-      '/^\(clean_requirements_on_remove\|history_record\|tsflags\|logfile\)=/d' -e \
-      's/^\(\[main\]\b.*\)$/\1\nclean_requirements_on_remove=1\nhistory_record=0\ntsflags=nodocs\nlogfile=\/dev\/null\n/' \
-      /etc/yum.conf \
- && yum install -y centos-release-scl \
- && yum -y update \
- && yum -y install ${RUBY_SCL} ${RUBY_SCL}-ruby-devel ${RUBY_SCL}-rubygem-bundler \
- && yum -y autoremove \
- && yum -y clean all \
- && source scl_source enable ${RUBY_SCL} \
- && gem env \
+# Copy sources
+COPY --chown=1001:1001 ./ "${HOME}/app/"
+
+RUN echo -e "[ruby]\nname=ruby\nstream=${RUBY_VERSION}\nprofiles=\nstate=enabled\n" > /etc/dnf/modules.d/ruby.module \
+ && microdnf update --nodocs \
+ && microdnf install --nodocs ruby \
+ && chown -R 1001:1001 "${HOME}" \
+ && microdnf install --nodocs ${BUILD_DEPS} \
+ && mkdir -p "${HOME}/.gem/bin" \
+ && echo "gem: --bindir ~/.gem/bin" > "${HOME}/.gemrc" \
+ && gem uninstall --executables bundler \
+ && BUNDLED_WITH=$(cat Gemfile.on_prem.lock | \
+      grep -A 1 "^BUNDLED WITH$" | tail -n 1 | sed -e 's/\s//g') \
+ && gem install -N bundler --version "${BUNDLED_WITH}" \
  && echo Using $(bundle --version) \
  && bundle config --local silence_root_warning 1 \
  && bundle config --local disable_shared_gems 1 \
@@ -53,26 +55,17 @@ RUN sed -i /etc/yum.conf -e \
       sed -n -e 's/^\s*Version\:\s*\([^[:space:]]*\)$/\1/p') \
  && gem unpack "apisonator-${BACKEND_VERSION}.gem" --target=/opt/ruby \
  && cd "/opt/ruby/apisonator-${BACKEND_VERSION}" \
- && cp -a /tmp/app/.bundle "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
+ && cp -a ${HOME}/app/.bundle "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
  && echo "Deleting the following unused Gemfile files:" \
  && find . -maxdepth 1 -regex \./Gemfile"\(\..*\)?" \
       ! -regex \./$(sed -e 's/[^^]/[&]/g; s/\^/\\^/g' <<< Gemfile.on_prem)"\(\.lock\)?" \
       ! -name Gemfile.base -print -delete \
- && yum -y install ${BUILD_DEP_PKGS} \
- && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
-
- # bundler does not place the .so in the correct dir
- && PUMA_DIR=$(bundle show puma) \
- && ln -s $(find "${PUMA_DIR}" -name puma_http11.so) "${PUMA_DIR}"/lib/puma \
-
- && yum -y remove ${BUILD_DEP_PKGS} \
- && yum -y autoremove \
- && yum -y clean all \
+ && bundle install --jobs $(grep -c processor /proc/cpuinfo) \
  && ln -s ${PWD} /opt/app \
- && cp /tmp/app/openshift/config/puma.rb ./config/ \
- && cp -n /tmp/app/openshift/backend-cron /usr/local/sbin/backend-cron \
- && cp -n /tmp/app/openshift/entrypoint.sh ./ \
- && rm -rf /tmp/app \
+ && cp ${HOME}/app/openshift/config/puma.rb ./config/ \
+ && cp -n ${HOME}/app/openshift/backend-cron /usr/local/sbin/backend-cron \
+ && cp -n ${HOME}/app/openshift/entrypoint.sh ./ \
+ && rm -rf ${HOME}/app \
  && mkdir -p -m 0770 /var/run/3scale/ \
  && mkdir -p -m 0770 /var/log/backend/ \
  && touch /var/log/backend/3scale_backend{,_worker}.log \

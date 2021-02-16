@@ -1,13 +1,11 @@
-# 3scale Backend CentOS image
+# 3scale Backend image using the Red Hat 8 Universal Base Image (UBI) as base
 #
 # This image is meant for flexibility building different configurations.
 #
 # Knobs you should know about:
 #
-# - RUBY_SCL: Software Collections Library for the Ruby version used.
-# - BUILD_DEP_PKGS: Packages needed to build/install the project.
-# - CACHE_FRIENDLY: Improve caching when rebuilding at the cost of bigger size.
-# - GEM_UPDATE: Update Rubygems to the latest version.
+# - RUBY_VERSION: Ruby version used.
+# - BUILD_DEPS: Packages needed to build/install the project.
 # - BUNDLE_VERSION_MATCH: Install the Bundler version used by the lockfile
 #                         instead of using the SCL version.
 # - BUNDLE_GEMFILE: Gemfile name to pin Bundler to.
@@ -23,7 +21,6 @@
 #
 # - Development/Test: just use default values.
 # - Release:
-#   - CACHE_FRIENDLY: false
 #   - GEM_UPDATE: false
 #   - BUNDLE_VERSION_MATCH: false
 #   - BUNDLE_GEMFILE: Gemfile for SaaS, Gemfile.on_prem for on-premises.
@@ -34,50 +31,43 @@
 #                   with number of cpus being a good heuristic.
 #
 
-FROM centos:7
+FROM registry.access.redhat.com/ubi8/ubi-minimal
 
-ARG RUBY_SCL=rh-ruby25
-ARG BUILD_DEP_PKGS="make gcc git"
-# Turn off for release mode to produce smaller layers.
-ARG CACHE_FRIENDLY=true
+ENV HOME=/home
+WORKDIR "${HOME}/app"
 
-# Configure yum, install SCL, update, install Ruby and clean.
-RUN sed -i /etc/yum.conf -e \
-      '/^\(clean_requirements_on_remove\|history_record\|tsflags\|logfile\)=/d' -e \
-      's/^\(\[main\]\b.*\)$/\1\nclean_requirements_on_remove=1\nhistory_record=0\ntsflags=nodocs\nlogfile=\/dev\/null\n/' \
-      /etc/yum.conf \
- && yum install -y centos-release-scl \
- && yum -y update \
- && yum -y install ${RUBY_SCL} ${RUBY_SCL}-ruby-devel \
- && if test "${CACHE_FRIENDLY}x" = "truex"; then \
-      yum -y install ${BUILD_DEP_PKGS} ; \
-    fi \
- && yum -y autoremove \
- && yum -y clean all
+ARG RUBY_VERSION="2.7"
+ARG RUNTIME_DEPS="ruby"
 
-WORKDIR /tmp/app
+RUN echo -e "[ruby]\nname=ruby\nstream=${RUBY_VERSION}\nprofiles=\nstate=enabled\n" > /etc/dnf/modules.d/ruby.module \
+ && microdnf update --nodocs \
+ && microdnf install --nodocs ${RUNTIME_DEPS} \
+ && chown -R 1001:1001 "${HOME}"
 
-# Gem updating should be turned off for productisation
-ARG GEM_UPDATE=true
+ARG BUILD_DEPS="tar make file findutils git patch gcc automake autoconf libtool redhat-rpm-config openssl-devel ruby-devel"
+
+RUN microdnf install --nodocs ${BUILD_DEPS}
+
 # Bundler should be kept as-is for productisation
 ARG BUNDLE_VERSION_MATCH=true
+# If the above is false
+ARG BUNDLE_VERSION="2.2.9"
+
 ARG BUNDLE_GEMFILE=Gemfile.on_prem
 ARG BUNDLE_WITHOUT=development:test
 
-# Install and/or update Rubygems and Bundler, and configure the latter.
-COPY ${BUNDLE_GEMFILE}.lock ./
-RUN source scl_source enable ${RUBY_SCL} \
- && if test "${GEM_UPDATE}x" = "truex"; then \
-      gem update --system -N ; \
-    fi \
- && gem env \
+COPY --chown=1001:1001 ${BUNDLE_GEMFILE}.lock "${HOME}/app/"
+
+RUN mkdir -p "${HOME}/.gem/bin" \
+ && echo "gem: --bindir ~/.gem/bin" > "${HOME}/.gemrc"
+
+RUN gem uninstall --executables bundler \
  && BUNDLED_WITH=$(cat ${BUNDLE_GEMFILE}.lock | \
       grep -A 1 "^BUNDLED WITH$" | tail -n 1 | sed -e 's/\s//g') \
  && if test "${BUNDLE_VERSION_MATCH}x" = "truex"; then \
-      gem install -N bundler --version ${BUNDLED_WITH} ; \
+      gem install -N bundler --version "${BUNDLED_WITH}"; \
     else \
-      yum install -y ${RUBY_SCL}-rubygem-bundler \
-        && yum -y autoremove && yum -y clean all ; \
+      gem install -N bundler --version "${BUNDLE_VERSION}"; \
     fi \
  && echo Using $(bundle --version), originally bundled with ${BUNDLED_WITH} \
  && bundle config --local silence_root_warning 1 \
@@ -85,7 +75,8 @@ RUN source scl_source enable ${RUBY_SCL} \
  && bundle config --local without ${BUNDLE_WITHOUT} \
  && bundle config --local gemfile ${BUNDLE_GEMFILE}
 
-COPY . ./
+# Copy sources
+COPY --chown=1001:1001 ./ "${HOME}/app/"
 
 ARG DELETE_UNUSED_GEMFILES=true
 # Turn off for productisation
@@ -93,39 +84,27 @@ ARG CONFIG_SAAS=false
 
 # Builds a clean source tree and deploys it with Bundler.
 # Sets the right configuration and permissions.
-RUN source scl_source enable ${RUBY_SCL} \
- && cp -n openshift/3scale_backend.conf /etc/ \
+RUN cp -n openshift/3scale_backend.conf /etc/ \
  && chmod 644 /etc/3scale_backend.conf \
  && BACKEND_VERSION=$(gem build apisonator.gemspec | \
       sed -n -e 's/^\s*Version\:\s*\([^[:space:]]*\)$/\1/p') \
  && gem unpack "apisonator-${BACKEND_VERSION}.gem" --target=/opt/ruby \
  && cd "/opt/ruby/apisonator-${BACKEND_VERSION}" \
- && cp -a /tmp/app/.bundle "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
+ && cp -a ${HOME}/app/.bundle "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
  && if test "${DELETE_UNUSED_GEMFILES}x" = "truex"; then \
       echo "Deleting the following unused Gemfile files:"; \
       find . -maxdepth 1 -regex \./Gemfile"\(\..*\)?" \
       ! -regex \./$(sed -e 's/[^^]/[&]/g; s/\^/\\^/g' <<< ${BUNDLE_GEMFILE})"\(\.lock\)?" \
       ! -name Gemfile.base -print -delete; \
     fi \
- && if test "${CACHE_FRIENDLY}x" != "truex"; then \
-      yum -y install ${BUILD_DEP_PKGS} ; \
-    fi \
- && bundle install --deployment --jobs $(grep -c processor /proc/cpuinfo) \
-
- # bundler does not place the .so in the correct dir
- && PUMA_DIR=$(bundle show puma) \
- && ln -s $(find "${PUMA_DIR}" -name puma_http11.so) "${PUMA_DIR}"/lib/puma \
-
- && yum -y remove ${BUILD_DEP_PKGS} \
- && yum -y autoremove \
- && yum -y clean all \
+ && bundle install --jobs $(grep -c processor /proc/cpuinfo) \
  && ln -s ${PWD} /opt/app \
  && if test "${CONFIG_SAAS}x" != "truex"; then \
-      cp /tmp/app/openshift/config/puma.rb ./config/ ; \
+      cp ${HOME}/app/openshift/config/puma.rb ./config/ ; \
     fi \
- && cp -n /tmp/app/openshift/backend-cron /usr/local/sbin/backend-cron \
- && cp -n /tmp/app/openshift/entrypoint.sh ./ \
- && rm -rf /tmp/app \
+ && cp -n ${HOME}/app/openshift/backend-cron /usr/local/sbin/backend-cron \
+ && cp -n ${HOME}/app/openshift/entrypoint.sh ./ \
+ && rm -rf ${HOME}/app \
  && mkdir -p -m 0770 /var/run/3scale/ \
  && mkdir -p -m 0770 /var/log/backend/ \
  && touch /var/log/backend/3scale_backend{,_worker}.log \
@@ -142,8 +121,6 @@ ARG RACK_ENV=production
 
 # Set TZ to avoid glibc wasting time with unneeded syscalls
 ENV TZ=:/etc/localtime \
-    HOME=/tmp/ \
-    ENV_SETUP=". scl_source enable ${RUBY_SCL}" \
     # App-specific env
     RACK_ENV=${RACK_ENV} \
     CONFIG_SAAS=${CONFIG_SAAS} \
