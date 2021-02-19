@@ -61,4 +61,13 @@ class AggregatorTest < Test::Unit::TestCase
 
     assert_equal '666', @storage.get(application_key(1001, 2001, 3001, :hour, '2010050713'))
   end
+
+  # Ref: https://github.com/3scale/apisonator/issues/264
+  test 'process does not raise when the application no longer exists' do
+    Application.delete(default_transaction.service_id, default_transaction.application_id)
+
+    assert_nothing_raised do
+      Stats::Aggregator.process([default_transaction])
+    end
+  end
 end

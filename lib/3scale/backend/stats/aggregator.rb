@@ -145,6 +145,10 @@ module ThreeScale
               application = Backend::Application.load(service_id,
                                                       values[:application_id])
 
+              # The app could have been deleted at some point since the job was
+              # enqueued. No need to update alerts in that case.
+              next unless application
+
               application.load_metric_names
               usage = Usage.application_usage(application, current_timestamp)
               status = Transactor::Status.new(service_id: service_id,
