@@ -9,7 +9,6 @@ module ThreeScale
     LISTENER_HOST = 'localhost'
 
     describe Listener do
-      let(:config_file) { '/tmp/.3scale_backend_listener_metrics_test.config' }
       let(:metrics_endpoint) { '/metrics' }
       let(:metrics_port) { 9394 }
 
@@ -38,8 +37,7 @@ module ThreeScale
 
         shared_examples_for 'listener with metrics' do |server|
           before do
-            write_config_file(config_file)
-            start_listener(config_file, true, LISTENER_PORT, metrics_port, server)
+            start_listener(true, LISTENER_PORT, metrics_port, server)
 
             ThreeScale::Backend::Service.save!(
               provider_key: provider_key, id: service_id
@@ -66,7 +64,6 @@ module ThreeScale
 
           after do
             stop_listener(LISTENER_PORT, server)
-            delete_config_file(config_file)
           end
 
           it 'shows Prometheus metrics for auths and reports' do
@@ -185,13 +182,11 @@ module ThreeScale
       context 'when listener metrics are not enabled' do
         shared_examples_for 'listener without metrics' do |server|
           before do
-            write_config_file(config_file)
-            start_listener(config_file, false, LISTENER_PORT, metrics_port, server)
+            start_listener(false, LISTENER_PORT, metrics_port, server)
           end
 
           after do
             stop_listener(LISTENER_PORT, server)
-            delete_config_file(config_file)
           end
 
           it 'does not open the metrics port' do
@@ -211,25 +206,11 @@ module ThreeScale
 
       private
 
-      def write_config_file(path)
-        File.open(path, 'w+') do |f|
-          f.write("ThreeScale::Backend.configure do |config|\n"\
-              " config.listener_prometheus_metrics.enabled = ENV['CONFIG_LISTENER_PROMETHEUS_METRICS_ENABLED'].to_s == 'true'\n"\
-              " config.listener_prometheus_metrics.port = ENV['CONFIG_LISTENER_PROMETHEUS_METRICS_PORT']\n"\
-              "end\n")
-        end
-      end
-
-      def delete_config_file(path)
-        File.delete(path)
-      end
-
-      def start_listener(config_file, metrics_enabled, listener_port, metrics_port, server)
+      def start_listener(metrics_enabled, listener_port, metrics_port, server)
         envs = {
           LISTENER_WORKERS: 2, # To check that metrics are accurate with multiple workers
           CONFIG_LISTENER_PROMETHEUS_METRICS_ENABLED: metrics_enabled,
           CONFIG_LISTENER_PROMETHEUS_METRICS_PORT: metrics_port,
-          CONFIG_FILE: config_file
         }
         envs_str = envs.map { |env, val| "#{env}=#{val}" }.join(' ')
 

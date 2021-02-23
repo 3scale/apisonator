@@ -17,7 +17,10 @@ module ThreeScale
 
           Backend::Logging::External.setup_rack self
 
-          if Backend.configuration.listener_prometheus_metrics.enabled
+          # Notice that this cannot be specified via config, it needs to be an
+          # ENV because the metric server is started in Puma/Falcon
+          # "before_fork" and the configuration is not loaded at that point.
+          if ENV['CONFIG_LISTENER_PROMETHEUS_METRICS_ENABLED'].to_s.downcase.freeze == 'true'.freeze
             use Rack::Prometheus
           end
 
