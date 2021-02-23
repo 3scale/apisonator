@@ -2,6 +2,29 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.3.2 - 2021-02-23
+
+### Fixed
+
+- Fixed nil exception in `Aggregator.process`
+([#269](https://github.com/3scale/apisonator/pull/269)).
+
+### Changed
+
+- Updated to Ruby 2.7 in Docker images
+([#265](https://github.com/3scale/apisonator/pull/265)) and
+([#266](https://github.com/3scale/apisonator/pull/266)).
+- Updated pry to 0.14.0 and pry-doc to 1.1.0
+([#267](https://github.com/3scale/apisonator/pull/267)).
+- Updated Docker image to be based on RHEL UBI 8
+([#268](https://github.com/3scale/apisonator/pull/268)).
+
+### Removed
+
+- Removed redundant prometheus config params
+(`listener_prometheus_metrics.enabled` and `listener_prometheus_metrics.port`)
+([#270](https://github.com/3scale/apisonator/pull/270)).
+
 ## 3.3.1.1 - 2021-02-12
 
 ### Changed
