@@ -6,11 +6,10 @@ module ThreeScale
 
         # The compacted hour in the params refers to the
         # TimeHacks.to_compact_s method.
-        def alert_keys(service_id, app_id, discrete_utilization, compacted_hour_start)
+        def alert_keys(service_id, app_id, discrete_utilization)
           {
             already_notified: key_already_notified(service_id, app_id, discrete_utilization),
             allowed: key_allowed_set(service_id),
-            current_max: key_current_max(service_id, app_id, compacted_hour_start),
             current_id: key_current_id
           }
         end
@@ -29,11 +28,6 @@ module ThreeScale
         def key_allowed_set(service_id)
           prefix = key_prefix(service_id)
           "#{prefix}allowed_set"
-        end
-
-        def key_current_max(service_id, app_id, compacted_hour_start)
-          prefix = key_prefix(service_id, app_id)
-          "#{prefix}#{compacted_hour_start}/current_max"
         end
 
         def key_current_id
@@ -77,25 +71,12 @@ module ThreeScale
 
       def update_utilization(service_id, app_id, max_utilization, max_record, timestamp)
         discrete = utilization_discrete(max_utilization)
-        max_utilization_i = (max_utilization * 100.0).round
 
-        beginning_of_day = Period::Boundary.day_start(timestamp)
-        period_hour = Period::Boundary.hour_start(timestamp).to_compact_s
-        # UNIX timestamp for key expiration - add 1 day + 5 mins
-        expire_at = (beginning_of_day + 86700).to_i
+        keys = alert_keys(service_id, app_id, discrete)
 
-        keys = alert_keys(service_id, app_id, discrete, period_hour)
-
-        already_alerted, allowed, current_max, _ = storage.pipelined do
+        already_alerted, allowed = storage.pipelined do
           storage.get(keys[:already_notified])
           storage.sismember(keys[:allowed], discrete)
-          storage.get(keys[:current_max])
-          storage.expireat(keys[:current_max], expire_at)
-        end
-
-        ## update the status of utilization
-        if max_utilization_i > current_max.to_i
-          storage.set(keys[:current_max], max_utilization_i)
         end
 
         if already_alerted.nil? && allowed && discrete.to_i > 0
