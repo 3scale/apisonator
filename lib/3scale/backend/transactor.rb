@@ -88,8 +88,6 @@ module ThreeScale
                                                           app_id,
                                                           params[:user_key])
 
-        extensions = request_info && request_info[:extensions] || {}
-
         preload_usage_limits(application, extensions[:no_body], params[:usage])
 
         now          = Time.now.getutc
