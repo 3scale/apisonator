@@ -149,6 +149,12 @@ module ThreeScale
               # enqueued. No need to update alerts in that case.
               next unless application
 
+              # The operations below are costly. They load all the usage limits
+              # and current usages to find the current utilization levels.
+              # That's why before that, we check if there are any alerts that
+              # can be raised.
+              next unless Alerts.can_raise_more_alerts?(service_id, values[:application_id])
+
               application.load_metric_names
               usage = Usage.application_usage(application, current_timestamp)
               status = Transactor::Status.new(service_id: service_id,

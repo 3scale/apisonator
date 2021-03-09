@@ -37,12 +37,23 @@ module ThreeScale
 
       extend self
       extend KeyHelpers
+      include Memoizer::Decorator
 
       ALERT_TTL       = 24*3600 # 1 day (only one message per day)
       ## zero must be here and sorted, yes or yes
       ALERT_BINS      = [0, 50, 80, 90, 100, 120, 150, 200, 300].freeze
       FIRST_ALERT_BIN = ALERT_BINS.first
       RALERT_BINS     = ALERT_BINS.reverse.freeze
+
+      def can_raise_more_alerts?(service_id, app_id)
+        allowed_bins = allowed_set_for_service(service_id).sort
+
+        return false if allowed_bins.empty?
+
+        # If the bin with the highest value has already been notified, there's
+        # no need to notify anything else.
+        not notified?(service_id, app_id, allowed_bins.last)
+      end
 
       def utilization(app_usage_reports)
         max_utilization = -1.0
@@ -109,6 +120,16 @@ module ThreeScale
         "#{record.metric_name} per #{record.period}: "\
         "#{record.current_value}/#{record.max_value}"
       end
+
+      def allowed_set_for_service(service_id)
+        storage.smembers(key_allowed_set(service_id)).map(&:to_i) # Redis returns strings always
+      end
+      memoize :allowed_set_for_service
+
+      def notified?(service_id, app_id, bin)
+        storage.get(key_already_notified(service_id, app_id, bin))
+      end
+      memoize :notified?
 
       def storage
         Storage.instance
