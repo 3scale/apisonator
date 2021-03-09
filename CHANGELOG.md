@@ -2,6 +2,18 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.3.3 - 2021-03-09
+
+### Changed
+
+- Check if alerts can be raised before calculating utilization (perf
+optimization) ([#275](https://github.com/3scale/apisonator/pull/275)).
+
+### Removed
+
+- Stop maintaining unused "current_max" key in Alerts
+([#272](https://github.com/3scale/apisonator/pull/272)).
+
 ## 3.3.2 - 2021-02-23
 
 ### Fixed
