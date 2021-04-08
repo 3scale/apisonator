@@ -5,12 +5,11 @@ module ThreeScale
 
       # list of attributes to be fetched from storage
       ATTRIBUTES = %i[state referrer_filters_required backend_version
-                      default_user_plan_id default_user_plan_name provider_key].freeze
+                      default_user_plan_name provider_key].freeze
       private_constant :ATTRIBUTES
 
       attr_reader :state
-      attr_accessor :provider_key, :id, :backend_version,
-        :default_user_plan_id, :default_user_plan_name
+      attr_accessor :provider_key, :id, :backend_version, :default_user_plan_name
       attr_writer :referrer_filters_required, :default_service
 
       class << self
@@ -203,7 +202,6 @@ module ThreeScale
           provider_key: provider_key,
           backend_version: backend_version,
           referrer_filters_required: referrer_filters_required?,
-          default_user_plan_id: default_user_plan_id,
           default_user_plan_name: default_user_plan_name,
           default_service: default_service?
         }
@@ -269,7 +267,6 @@ module ThreeScale
 
       def persist_attributes
         persist_attribute :referrer_filters_required, referrer_filters_required? ? 1 : 0
-        persist_attribute :default_user_plan_id, default_user_plan_id, true
         persist_attribute :default_user_plan_name, default_user_plan_name, true
         persist_attribute :backend_version, backend_version, true
         persist_attribute :provider_key, provider_key

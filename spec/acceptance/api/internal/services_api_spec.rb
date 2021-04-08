@@ -90,7 +90,6 @@ resource 'Services (prefix: /services)' do
         referrer_filters_required: true,
         backend_version: 'oauth',
         default_user_plan_name: 'default user plan name',
-        default_user_plan_id: 'plan ID',
         default_service: true,
         state: state
       }
@@ -161,7 +160,6 @@ resource 'Services (prefix: /services)' do
         referrer_filters_required: true,
         backend_version: 'oauth',
         default_user_plan_name: 'default user plan name',
-        default_user_plan_id: 'plan ID',
         default_service: true,
         state: state
       }
