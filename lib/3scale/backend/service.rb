@@ -5,15 +5,13 @@ module ThreeScale
 
       # list of attributes to be fetched from storage
       ATTRIBUTES = %i[state referrer_filters_required backend_version
-                      user_registration_required default_user_plan_id
-                      default_user_plan_name provider_key].freeze
+                      default_user_plan_id default_user_plan_name provider_key].freeze
       private_constant :ATTRIBUTES
 
       attr_reader :state
       attr_accessor :provider_key, :id, :backend_version,
         :default_user_plan_id, :default_user_plan_name
-      attr_writer :referrer_filters_required, :user_registration_required,
-        :default_service
+      attr_writer :referrer_filters_required, :default_service
 
       class << self
         include Memoizer::Decorator
@@ -104,8 +102,6 @@ module ThreeScale
         memoize :list
 
         def save!(attributes = {})
-          massage_set_user_registration_required attributes
-
           new(attributes).save!
         end
 
@@ -139,24 +135,8 @@ module ThreeScale
         def massage_service_attrs(service_attrs)
           service_attrs[:referrer_filters_required] =
             service_attrs[:referrer_filters_required].to_i > 0
-          service_attrs[:user_registration_required] =
-            massage_get_user_registration_required(
-              service_attrs[:user_registration_required])
 
           service_attrs
-        end
-
-        # nil => true, 1 => true, '1' => true, 0 => false, '0' => false
-        def massage_get_user_registration_required(value)
-          value.nil? ? true : value.to_i > 0
-        end
-
-        def massage_set_user_registration_required(attributes)
-          if attributes[:user_registration_required].nil?
-            val = storage.get(storage_key(attributes[:id], :user_registration_required))
-            attributes[:user_registration_required] =
-              (!val.nil? && val.to_i == 0) ? false : true
-          end
         end
 
         def get_attr(id, attribute)
@@ -195,10 +175,6 @@ module ThreeScale
         @referrer_filters_required
       end
 
-      def user_registration_required?
-        @user_registration_required
-      end
-
       def save!
         set_as_default_if_needed
         persist
@@ -227,7 +203,6 @@ module ThreeScale
           provider_key: provider_key,
           backend_version: backend_version,
           referrer_filters_required: referrer_filters_required?,
-          user_registration_required: user_registration_required?,
           default_user_plan_id: default_user_plan_id,
           default_user_plan_name: default_user_plan_name,
           default_service: default_service?
@@ -294,7 +269,6 @@ module ThreeScale
 
       def persist_attributes
         persist_attribute :referrer_filters_required, referrer_filters_required? ? 1 : 0
-        persist_attribute :user_registration_required, user_registration_required? ? 1 : 0
         persist_attribute :default_user_plan_id, default_user_plan_id, true
         persist_attribute :default_user_plan_name, default_user_plan_name, true
         persist_attribute :backend_version, backend_version, true
