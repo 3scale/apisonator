@@ -89,8 +89,6 @@ resource 'Services (prefix: /services)' do
         provider_key: 'foo',
         referrer_filters_required: true,
         backend_version: 'oauth',
-        default_user_plan_name: 'default user plan name',
-        default_user_plan_id: 'plan ID',
         default_service: true,
         state: state
       }
@@ -102,7 +100,7 @@ resource 'Services (prefix: /services)' do
       expect(response_json['status']).to eq 'created'
 
       svc = ThreeScale::Backend::Service.load_by_id('1002')
-      expect(svc.to_hash).to eq service.merge(user_registration_required: true)
+      expect(svc.to_hash).to eq service
     end
 
     example 'Try creating a Service without specifying the service parameter in the body' do
@@ -121,7 +119,7 @@ resource 'Services (prefix: /services)' do
       expect(svc).not_to be_nil
       expect(svc).not_to respond_to :some_param
       # The returned data should not contain *some_param* attribute
-      expect(svc.to_hash).to eq service.merge(user_registration_required: true)
+      expect(svc.to_hash).to eq service
     end
 
     context 'with an service that has no state' do
@@ -160,8 +158,6 @@ resource 'Services (prefix: /services)' do
         provider_key: 'foo',
         referrer_filters_required: true,
         backend_version: 'oauth',
-        default_user_plan_name: 'default user plan name',
-        default_user_plan_id: 'plan ID',
         default_service: true,
         state: state
       }
@@ -173,8 +169,7 @@ resource 'Services (prefix: /services)' do
       expect(response_json['status']).to eq 'ok'
 
       svc = ThreeScale::Backend::Service.load_by_id('1001')
-      expect(svc.to_hash).to eq service.merge(id: '1001',
-                                              user_registration_required: true)
+      expect(svc.to_hash).to eq service.merge(id: '1001')
     end
 
     example 'Update Service by ID using extra params that should be ignored' do
@@ -186,8 +181,7 @@ resource 'Services (prefix: /services)' do
       expect(svc).not_to be_nil
       expect(svc).not_to respond_to :some_param
       # The returned data should not contain *some_param* attribute
-      expect(svc.to_hash).to eq service.merge(id: '1001',
-                                              user_registration_required: true)
+      expect(svc.to_hash).to eq service.merge(id: '1001')
     end
 
     context 'Create a service that has no state' do

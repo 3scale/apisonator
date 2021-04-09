@@ -80,32 +80,6 @@ module ThreeScale
         it 'changes filters_required field to a Boolean' do
           expect(result.referrer_filters_required?).to be true
         end
-
-        describe 'user_registration_required' do
-          it 'defaults to true when not set' do
-            service = Service.save!(provider_key: 'foo', id: '7001')
-            result = Service.load_by_id(service.id)
-
-            expect(result.user_registration_required?).to be true
-          end
-
-          it 'changes to Boolean when set to Integer' do
-            service = Service.save!(
-              provider_key: 'foo', id: '7001', user_registration_required: 1)
-            result = Service.load_by_id(service.id)
-
-            expect(result.user_registration_required?).to be true
-          end
-
-          it 'is false when set to false' do
-            service = Service.save!(provider_key: 'foo', id: '7001',
-              user_registration_required: false, default_user_plan_id: '1001',
-              default_user_plan_name: "user_plan_name")
-            result = Service.load_by_id(service.id)
-
-            expect(result.user_registration_required?).to be false
-          end
-        end
       end
 
       describe '.load_with_provider_key!' do
@@ -286,28 +260,6 @@ module ThreeScale
             Service.save! id: 7002, provider_key: 'foo'
 
             expect(Service.default_id('foo')).to eq '7001'
-          end
-        end
-
-        describe 'user_registration_required massaging' do
-          it 'sets the attibute to false when already false' do
-            Service.save!(provider_key: 'foo', id: 7001,
-              user_registration_required: false, default_user_plan_id: '1001',
-              default_user_plan_name: "user_plan_name")
-
-            expect(Service.load_by_id(7001).user_registration_required?).to be false
-          end
-
-          it 'sets the attibute to true when nil' do
-            Service.save!(provider_key: 'foo', id: 7001, user_registration_required: nil)
-
-            expect(Service.load_by_id(7001).user_registration_required?).to be true
-          end
-
-          it 'sets the attibute to true when already true' do
-            Service.save!(provider_key: 'foo', id: 7001, user_registration_required: true)
-
-            expect(Service.load_by_id(7001).user_registration_required?).to be true
           end
         end
       end
