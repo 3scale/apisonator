@@ -8,6 +8,7 @@ coverage
 
 .*.swp
 *~
+.env
 vendor
 docs/internal_api
 .vagrant/
