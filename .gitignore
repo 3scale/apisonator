@@ -8,6 +8,10 @@ coverage
 
 .*.swp
 *~
+.env
+.ruby-gemset
+.ruby-version
+.tool-versions
 vendor
 docs/internal_api
 .vagrant/
