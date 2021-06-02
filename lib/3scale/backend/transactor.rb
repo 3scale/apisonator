@@ -61,6 +61,8 @@ module ThreeScale
 
       def validate(oauth, provider_key, report_usage, params, request_info)
         service = Service.load_with_provider_key!(params[:service_id], provider_key)
+        oidc_service = !oauth && service.backend_version == 'oauth'.freeze
+
         # service_id cannot be taken from params since it might be missing there
         service_id = service.id
 
@@ -70,12 +72,18 @@ module ThreeScale
         # significant.
         params[:app_id] = nil if app_id && app_id.empty?
 
-        if oauth
-          raise ApplicationNotFound.new nil if app_id.nil?
-          validators = Validators::OAUTH_VALIDATORS
-        else
-          validators = Validators::VALIDATORS
-        end
+        # While OIDC without an app_id makes little sense, we would break existing
+        # behaviour when calling non oauth_auth*.xml endpoints if we returned an
+        # error here, so only do this for oauth_auth*.xml endpoints.
+        raise ApplicationNotFound.new nil if oauth && app_id.nil?
+
+        validators = if oidc_service
+                       Validators::OIDC_VALIDATORS
+                     elsif oauth
+                       Validators::OAUTH_VALIDATORS
+                     else
+                       Validators::VALIDATORS
+                     end
 
         params[:user_key] = nil if params[:user_key] && params[:user_key].empty?
         application = Application.load_by_id_or_user_key!(service_id,
