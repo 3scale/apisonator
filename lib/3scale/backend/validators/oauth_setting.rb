@@ -3,7 +3,7 @@ module ThreeScale
     module Validators
       class OauthSetting < Base
         def apply
-          if service.backend_version == 'oauth'
+          if service.backend_version == 'oauth'.freeze
             succeed!
           else
             fail!(OauthNotEnabled.new)
