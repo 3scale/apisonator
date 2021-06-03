@@ -108,24 +108,6 @@ module ThreeScale
         apply_validators(validators, status_attrs, params)
       end
 
-      def get_token_ids(token, service_id, app_id)
-        begin
-          token_aid = OAuth::Token::Storage.get_credentials(token, service_id)
-        rescue AccessTokenInvalid => e
-          # Yep, well, er. Someone specified that it is OK to have an
-          # invalid token if an app_id is specified. Somehow passing in
-          # a user_key is still not enough, though...
-          raise e if app_id.nil?
-        end
-
-        # We only take the token ids into account if we had no parameter ids
-        if app_id.nil?
-          app_id = token_aid
-        end
-
-        app_id
-      end
-
       def do_authorize(method, provider_key, params, context_info)
         notify_authorize(provider_key)
         validate(method == :oauth_authorize, provider_key, false, params, context_info[:request])
