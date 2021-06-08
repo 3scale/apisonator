@@ -35,6 +35,33 @@ checking to ensure data is consistent, ie. usage data with `n` incremented in
 5 necessarily means `n` parent, if existing, should be specified with a minimum
 of 5, not counting any other potential children.
 
+### list_app_keys (integer)
+
+This extension just outputs an XML `app_keys` section in authorization responses
+so that application keys registered to it will be listed there with the following
+format:
+
+> \<app_keys app="app_id" svc="service_id"\>
+>   \<key id="app_key1"/\>
+>    ...
+>   \<key id="app_keyN"/\>
+> \</app_keys>
+
+Applications that don't have associated keys will just show an empty `app_keys`
+section. Also do note that at the time of writing there is a maximum of 256
+such keys listed, and there is no guarantee that two successive calls will end
+up returning the same 256 keys for larger sets, nor the same order in any case.
+
+#### Accepted values
+
+- 0: disable the extension (default)
+- 1: enable the extension, always output the app_keys section regardless of
+     whether an application actually has any associated keys.
+
+Values over 1 are currently undefined, but in the future they might become
+significant. For example they could provide the maximum number of desired
+application keys returned.
+
 ### no_body (boolean)
 
 This instructs the software to avoid generating response bodies for certain endpoints.
