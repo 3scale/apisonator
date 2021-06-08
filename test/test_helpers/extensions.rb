@@ -11,6 +11,7 @@ module TestHelpers
       HIERARCHY = URI.encode_www_form(hierarchy: 1).freeze
       LIMIT_HEADERS = URI.encode_www_form(limit_headers: 1).freeze
       FLAT_USAGE = URI.encode_www_form(flat_usage: 1).freeze
+      LIST_APP_KEYS = URI.encode_www_form(list_app_keys: 1).freeze
     end
 
     module ClassMethods
