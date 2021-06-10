@@ -4,6 +4,8 @@ module ThreeScale
       module All
         TIME_FORMAT          = '%Y-%m-%d %H:%M:%S %z'.freeze
         PIPELINED_SLICE_SIZE = 400
+        SLEEP_BETWEEN_SCANS = 0.01 # In seconds
+        SCAN_SLICE = 500
       end
 
       def self.included(base)
