@@ -97,4 +97,68 @@ class BackendVersionTest < Test::Unit::TestCase
       assert_not_authorized 'application key is missing'
     end
   end
+
+  test 'when backend_version is 2 and we switch to oauth, there is no complaint about missing app_keys when calling auth endpoints' do
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: '2'
+
+    application_key_one = @application.create_key
+    application_key_two = @application.create_key
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_not_authorized
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :app_key      => application_key_one
+    assert_authorized
+
+    Memoizer.reset!
+
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: 'oauth'
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_authorized
+  end
+
+  test 'when backend_version is 2 and we switch to oauth, app_keys are checked if passing in app_key' do
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: '2'
+
+    application_key_one = @application.create_key
+    application_key_two = @application.create_key
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_not_authorized
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :app_key      => application_key_one
+    assert_authorized
+
+    Memoizer.reset!
+
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: 'oauth'
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :app_key      => 'invalid_key'
+
+    assert_not_authorized
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id,
+                                       :app_key      => application_key_one
+
+    assert_authorized
+
+    get '/transactions/authorize.xml', :provider_key => @provider_key,
+                                       :app_id       => @application.id
+
+    assert_authorized
+  end
 end

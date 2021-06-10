@@ -21,6 +21,13 @@ module ThreeScale
       OAUTH_VALIDATORS = ([Validators::OauthSetting,
                            Validators::OauthKey,
                            Validators::RedirectURI] + COMMON_VALIDATORS).freeze
+
+      # OIDC specific validators will only check app keys when app_key is given.
+      #
+      # No need to add OauthSetting, since we need to check that to tell
+      # OIDC apart from the rest when calling authrep.xml (note lack of
+      # the oauth_ prefix).
+      OIDC_VALIDATORS = ([Validators::OauthKey] + COMMON_VALIDATORS).freeze
     end
   end
 end
