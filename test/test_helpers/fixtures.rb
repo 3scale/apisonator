@@ -92,6 +92,13 @@ module TestHelpers
       @service = Service.save!(provider_key: @provider_key, id: @service_id, backend_version: 'oauth')
     end
 
+    # alternative fixture which won't overwrite @service
+    def setup_oauth_provider_fixtures_noclobber
+      setup_provider_fixtures
+      @service_oauth_id = next_id
+      @service_oauth = Service.save!(provider_key: @provider_key, id: @service_oauth_id, backend_version: 'oauth')
+    end
+
     def setup_oauth_provider_fixtures_multiple_services
       setup_provider_fixtures_multiple_services
       @service_1 = Service.save!(:provider_key => @provider_key, :id => @service_1.id, backend_version: 'oauth')

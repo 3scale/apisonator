@@ -24,6 +24,17 @@ module Transactor
                                         :plan_id    => @plan_id,
                                         :plan_name  => @plan_name)
 
+      @application_w_keys = Application.new(:service_id => @service_id,
+                                            :id         => next_id,
+                                            :plan_id    => @plan_id,
+                                            :plan_name  => @plan_name)
+
+      @keys = 3.times.map { |i| "key_#{i}" }
+
+      @keys.each do |k|
+        @application_w_keys.create_key k
+      end
+
       Metric.save(:service_id => @service_id,
                   :id         => @metric_id,
                   :name       => @metric_name)
@@ -248,6 +259,43 @@ module Transactor
       doc = Nokogiri::XML(status.to_xml)
 
       assert_equal @application.id,  doc.at('status application id').content
+    end
+
+    test '#to_xml lists application keys section when list_app_keys ext is enabled' do
+      usage  = {:month => {@metric_id.to_s => 429}}
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      list_app_keys: 1,
+                                      values: usage,
+                                      oauth: true)
+
+      doc = Nokogiri::XML(status.to_xml)
+
+      app_keys = doc.at 'app_keys'
+      assert_not_nil app_keys
+      assert_equal @application.id, app_keys['app']
+      assert_equal @service_id, app_keys['svc']
+      keys = doc.search 'app_keys key'
+      assert_empty keys
+    end
+
+    test '#to_xml lists application keys section with keys when list_app_keys ext is enabled' do
+      usage  = {:month => {@metric_id.to_s => 429}}
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application_w_keys,
+                                      list_app_keys: 1,
+                                      values: usage,
+                                      oauth: true)
+
+      doc = Nokogiri::XML(status.to_xml)
+
+      app_keys = doc.at 'app_keys'
+      assert_not_nil app_keys
+      assert_equal @application_w_keys.id, app_keys['app']
+      assert_equal @service_id, app_keys['svc']
+      keys = doc.search('app_keys key').map { |k| k['id'] }
+      assert_not_empty keys
+      assert_equal @keys.sort, keys.sort
     end
   end
 end

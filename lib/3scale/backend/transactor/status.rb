@@ -8,17 +8,23 @@ module ThreeScale
         # We only use 'redirect_uri' if a request sent such a param. See #397.
         REDIRECT_URI_FIELD = 'redirect_url'.freeze
         private_constant :REDIRECT_URI_FIELD
+        # Maximum number of keys to list when using the list_app_keys extension
+        # At the time of writing System/Porta has a limit of 5 different app_keys
+        # at any given moment, but this could change anytime.
+        LIST_APP_KEYS_MAX = 256
+        private_constant :LIST_APP_KEYS_MAX
 
         def initialize(attributes)
-          @service_id      = attributes[:service_id]
-          @application     = attributes[:application]
-          @oauth           = attributes[:oauth]
-          @usage           = attributes[:usage]
-          @predicted_usage = attributes[:predicted_usage]
-          @values          = filter_values(attributes[:values] || {})
-          @timestamp       = attributes[:timestamp] || Time.now.getutc
-          @hierarchy_ext   = attributes[:hierarchy]
-          @flat_usage_ext  = attributes[:flat_usage]
+          @service_id        = attributes[:service_id]
+          @application       = attributes[:application]
+          @oauth             = attributes[:oauth]
+          @usage             = attributes[:usage]
+          @predicted_usage   = attributes[:predicted_usage]
+          @values            = filter_values(attributes[:values] || {})
+          @timestamp         = attributes[:timestamp] || Time.now.getutc
+          @hierarchy_ext     = attributes[:hierarchy]
+          @flat_usage_ext    = attributes[:flat_usage]
+          @list_app_keys_ext = attributes[:list_app_keys]
 
           raise 'service_id not specified' if @service_id.nil?
           raise ':application is required' if @application.nil?
@@ -106,6 +112,7 @@ module ThreeScale
             add_plan_section(xml, 'plan'.freeze, plan_name)
             add_reports_section(xml, application_usage_reports)
             hierarchy_reports.concat application_usage_reports if hierarchy_reports
+            add_app_keys_section xml if @list_app_keys_ext
           end
 
           if hierarchy_reports
@@ -159,6 +166,17 @@ module ThreeScale
             xml << (children ? children.join(' '.freeze) : '') << '"/>'.freeze
           end
           xml << '</hierarchy>'.freeze
+        end
+
+        def add_app_keys_section(xml)
+          xml << '<app_keys app="'.freeze
+          xml << @application.id << '" svc="'.freeze
+          xml << @service_id << '">'.freeze
+          @application.keys.take(LIST_APP_KEYS_MAX).each do |key|
+            xml << '<key id="'.freeze
+            xml << key << '"/>'.freeze
+          end
+          xml << '</app_keys>'.freeze
         end
 
         # helper to iterate over reports and get relevant hierarchy info
