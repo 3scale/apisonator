@@ -141,14 +141,23 @@ module ThreeScale
             transactions.group_by { |tx| tx.application_id }.each do |app_id, txs|
               service_id = txs.first.service_id # All the txs of an app belong to the same service
 
-              # The operations below are costly. They load all the usage limits
-              # and current usages to find the current utilization levels.
-              # That's why before that, we check if there are any alerts that
-              # can be raised.
+              # Finding the max utilization can be costly because it involves
+              # loading usage limits and current usages. That's why before that,
+              # we check if there are any alerts that can be raised.
               next unless Alerts.can_raise_more_alerts?(service_id, app_id)
 
               begin
-                max_utilization = Utilization.max_in_all_metrics(service_id, app_id)
+                max_utilization = if Alerts::UsagesChecked.need_to_check_all?(service_id, app_id)
+                                    Utilization.max_in_all_metrics(service_id, app_id).tap do
+                                      Alerts::UsagesChecked.mark_all_checked(service_id, app_id)
+                                    end
+                                  else
+                                    # metrics_ids here includes the metrics
+                                    # explicitly reported plus their parents in
+                                    # the hierarchy.
+                                    metric_ids = txs.map { |tx| tx.usage.keys }.flatten.uniq
+                                    Utilization.max_in_metrics(service_id, app_id, metric_ids)
+                                  end
               rescue ApplicationNotFound
                 # The app could have been deleted at some point since the job
                 # was enqueued. No need to update alerts in that case.

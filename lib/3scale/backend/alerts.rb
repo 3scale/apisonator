@@ -135,9 +135,10 @@ module ThreeScale
         end
 
         if already_alerted.nil? && allowed && discrete.to_i > 0
-          next_id, _ = storage.pipelined do
+          next_id, _, _ = storage.pipelined do
             storage.incr(keys[:current_id])
             storage.setex(keys[:already_notified], ALERT_TTL, "1")
+            UsagesChecked.invalidate(service_id, app_id)
           end
 
           alert = { :id => next_id,
