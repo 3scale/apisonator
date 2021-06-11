@@ -33,6 +33,11 @@ module ThreeScale
         def key_current_id
           'alerts/current_id'.freeze
         end
+
+        def key_usage_already_checked(service_id, app_id)
+          prefix = key_prefix(service_id, app_id)
+          "#{prefix}usage_already_checked"
+        end
       end
 
       extend self
@@ -44,6 +49,70 @@ module ThreeScale
       ALERT_BINS      = [0, 50, 80, 90, 100, 120, 150, 200, 300].freeze
       FIRST_ALERT_BIN = ALERT_BINS.first
       RALERT_BINS     = ALERT_BINS.reverse.freeze
+
+      # This class is useful to reduce the amount of information that we need to
+      # fetch from Redis to determine whether an alert should be raised.
+      # In summary, alerts are raised at the application level and we need to
+      # wait for 24h before raising a new one for the same level (ALERTS_BIN
+      # above).
+      #
+      # This class allows us to check all the usage limits once and then not
+      # check all of them again (just the ones in the report job) until:
+      # 1) A specific alert has expired (24h passed since it was triggered).
+      # 2) A new alert bin is enabled for the service.
+      class UsagesChecked
+        extend KeyHelpers
+        extend StorageHelpers
+        include Memoizer::Decorator
+
+        def self.need_to_check_all?(service_id, app_id)
+          !storage.exists(key_usage_already_checked(service_id, app_id))
+        end
+        memoize :need_to_check_all?
+
+        def self.mark_all_checked(service_id, app_id)
+          ttl = ALERT_BINS.map do |bin|
+            ttl = storage.ttl(key_already_notified(service_id, app_id, bin))
+
+            # Redis returns -2 if key does not exist, and -1 if it exists without
+            # a TTL (we know this should not happen for the alert bins).
+            # In those cases we should just set the TTL to the max (ALERT_TTL).
+            ttl >= 0 ? ttl : ALERT_TTL
+          end.min
+
+          storage.setex(key_usage_already_checked(service_id, app_id), ttl, '1'.freeze)
+          Memoizer.clear(Memoizer.build_key(self, :need_to_check_all?, service_id, app_id))
+        end
+
+        def self.invalidate(service_id, app_id)
+          storage.del(key_usage_already_checked(service_id, app_id))
+        end
+
+        def self.invalidate_for_service(service_id)
+          app_ids = []
+          cursor = 0
+
+          loop do
+            cursor, ids = storage.sscan(
+              Application.applications_set_key(service_id), cursor, count: SCAN_SLICE
+            )
+
+            app_ids += ids
+
+            break if cursor.to_i == 0
+          end
+
+          invalidate_batch(service_id, app_ids)
+        end
+
+        def self.invalidate_batch(service_id, app_ids)
+          app_ids.each_slice(PIPELINED_SLICE_SIZE) do |ids|
+            keys = ids.map { |app_id| key_usage_already_checked(service_id, app_id) }
+            storage.del(keys)
+          end
+        end
+        private_class_method :invalidate_batch
+      end
 
       def can_raise_more_alerts?(service_id, app_id)
         allowed_bins = allowed_set_for_service(service_id).sort
