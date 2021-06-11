@@ -55,33 +55,8 @@ module ThreeScale
         not notified?(service_id, app_id, allowed_bins.last)
       end
 
-      def utilization(app_usage_reports)
-        max_utilization = -1.0
-        max_record = nil
-        max = proc do |item|
-          if item.max_value > 0
-            utilization = item.current_value / item.max_value.to_f
-
-            if utilization > max_utilization
-              max_record = item
-              max_utilization = utilization
-            end
-          end
-        end
-
-        app_usage_reports.each(&max)
-
-        if max_utilization == -1
-          ## case that all the limits have max_value==0
-          max_utilization = 0
-          max_record = app_usage_reports.first
-        end
-
-        [max_utilization, max_record]
-      end
-
-      def update_utilization(service_id, app_id, max_utilization, max_record, timestamp)
-        discrete = utilization_discrete(max_utilization)
+      def update_utilization(service_id, app_id, utilization)
+        discrete = utilization_discrete(utilization.ratio)
 
         keys = alert_keys(service_id, app_id, discrete)
 
@@ -98,11 +73,11 @@ module ThreeScale
 
           alert = { :id => next_id,
                     :utilization => discrete,
-                    :max_utilization => max_utilization,
+                    :max_utilization => utilization.ratio,
                     :application_id => app_id,
                     :service_id => service_id,
-                    :timestamp => timestamp,
-                    :limit => formatted_limit(max_record) }
+                    :timestamp => Time.now.utc,
+                    :limit => utilization.to_s }
 
           Backend::EventStorage::store(:alert, alert)
         end
@@ -114,11 +89,6 @@ module ThreeScale
         RALERT_BINS.find do |b|
           u >= b
         end || FIRST_ALERT_BIN
-      end
-
-      def formatted_limit(record)
-        "#{record.metric_name} per #{record.period}: "\
-        "#{record.current_value}/#{record.max_value}"
       end
 
       def allowed_set_for_service(service_id)
