@@ -2,6 +2,25 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.4.0 - 2021-06-14
+
+### Added
+
+- New extension that list the keys of an application
+([#284](https://github.com/3scale/apisonator/pull/284)).
+
+### Changed
+
+- It is now possible to use OIDC in the auth and authrep endpoints
+([#280](https://github.com/3scale/apisonator/pull/280)).
+- Updated multi-json to 1.15.0
+([#278](https://github.com/3scale/apisonator/pull/278)).
+
+### Removed
+
+- Deleted unused service attributes related with deleted end-users functionality
+([#277](https://github.com/3scale/apisonator/pull/277)).
+
 ## 3.3.3 - 2021-03-09
 
 ### Changed

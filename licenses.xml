@@ -23,7 +23,7 @@
       </dependency>
           <dependency>
         <packageName>apisonator</packageName>
-        <version>3.3.3</version>
+        <version>3.4.0</version>
         <licenses>
                       <license>
               <name>Apache 2.0</name>
@@ -475,7 +475,7 @@
       </dependency>
           <dependency>
         <packageName>multi_json</packageName>
-        <version>1.13.1</version>
+        <version>1.15.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
