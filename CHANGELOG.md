@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.4.1 - 2021-06-16
+
+### Changed
+
+- Introduced performance optimizations around alerts detection
+([#287](https://github.com/3scale/apisonator/pull/287)).
+
 ## 3.4.0 - 2021-06-14
 
 ### Added

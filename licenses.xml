@@ -23,7 +23,7 @@
       </dependency>
           <dependency>
         <packageName>apisonator</packageName>
-        <version>3.4.0</version>
+        <version>3.4.1</version>
         <licenses>
                       <license>
               <name>Apache 2.0</name>
