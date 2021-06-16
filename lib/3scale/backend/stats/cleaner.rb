@@ -36,12 +36,6 @@ module ThreeScale
         KEY_SERVICES_TO_DELETE = 'set_with_services_marked_for_deletion'.freeze
         private_constant :KEY_SERVICES_TO_DELETE
 
-        SLEEP_BETWEEN_SCANS = 0.01 # In seconds
-        private_constant :SLEEP_BETWEEN_SCANS
-
-        SCAN_SLICE = 500
-        private_constant :SCAN_SLICE
-
         STATS_KEY_PREFIX = 'stats/'.freeze
         private_constant :STATS_KEY_PREFIX
 

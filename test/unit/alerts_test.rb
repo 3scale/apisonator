@@ -8,6 +8,9 @@ class AlertsTest < Test::Unit::TestCase
     @storage = Storage.instance(true)
     @service_id = next_id
     @application_id = next_id
+    Application.save(
+      service_id: @service_id, id: @application_id, state: :active, plan_id: @plan_id
+    )
   end
 
   test 'check proper use of bins' do
@@ -45,5 +48,70 @@ class AlertsTest < Test::Unit::TestCase
     @storage.set(key_already_notified, '1')
 
     assert_true(Alerts.can_raise_more_alerts?(@service_id, @application_id))
+  end
+
+  # Tests for Alerts::UsagesChecked start here
+
+  test 'when marking as checked, it also sets the key with the minimal TTL among the notified bins' do
+    min_ttl = 60
+
+    key_bin_50 = Alerts.send(:key_already_notified, @service_id, @application_id, 50)
+    @storage.setex(key_bin_50, min_ttl*2, '1')
+
+    key_bin_80 = Alerts.send(:key_already_notified, @service_id, @application_id, 80)
+    @storage.setex(key_bin_80, min_ttl, '1')
+
+    Alerts::UsagesChecked.mark_all_checked(@service_id, @application_id)
+
+    assert_false Alerts::UsagesChecked.need_to_check_all?(@service_id, @application_id)
+
+    # The 80% bin has a lower TTL. We cannot guarantee the exact TTL because
+    # some time might pass between the moment we create the key and check its
+    # TTL, but we know it needs to be <= min_ttl and close to it.
+    key_checked = Alerts.send(:key_usage_already_checked, @service_id, @application_id)
+    assert_true (min_ttl-10..min_ttl).include?(@storage.ttl(key_checked))
+  end
+
+  test 'when marking as checked, sets the key with TTL = 1 day if none of the bins are set as notified' do
+    Alerts::UsagesChecked.mark_all_checked(@service_id, @application_id)
+
+    assert_false Alerts::UsagesChecked.need_to_check_all?(@service_id, @application_id)
+
+    # We can't guarantee that the TTL will be exactly one day because some
+    # seconds might pass between the moment we create the key and check the TTL,
+    # but it should be pretty close.
+    key_checked = Alerts.send(:key_usage_already_checked, @service_id, @application_id)
+    assert_true (Alerts::ALERT_TTL-10..Alerts::ALERT_TTL).include?(@storage.ttl(key_checked))
+  end
+
+  test 'can invalidate for a single app' do
+    other_app_id = next_id
+    Application.save(service_id: @service_id, id: other_app_id, state: :active, plan_id: @plan_id)
+
+    [@application_id, other_app_id].each do |app_id|
+      Alerts::UsagesChecked.mark_all_checked(@service_id, app_id)
+    end
+
+    Alerts::UsagesChecked.invalidate(@service_id, @application_id)
+    Memoizer.reset!
+
+    assert_true Alerts::UsagesChecked.need_to_check_all?(@service_id, @application_id)
+    assert_false Alerts::UsagesChecked.need_to_check_all?(@service_id, other_app_id)
+  end
+
+  test 'can invalidate for the whole service' do
+    other_app_id = next_id
+    Application.save(service_id: @service_id, id: other_app_id, state: :active, plan_id: @plan_id)
+
+    [@application_id, other_app_id].each do |app_id|
+      Alerts::UsagesChecked.mark_all_checked(@service_id, app_id)
+    end
+
+    Alerts::UsagesChecked.invalidate_for_service(@service_id)
+    Memoizer.reset!
+
+    assert_true [@application_id, other_app_id].all? do |app_id|
+      Alerts::UsagesChecked.need_to_check_all?(@service_id, app_id)
+    end
   end
 end
