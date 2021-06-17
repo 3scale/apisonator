@@ -2,6 +2,13 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.4.2 - 2021-06-17
+
+### Fixed
+
+- Fixed exception raised when TTL = 0 in `UsagesChecked.mark_all_checked`
+([#290](https://github.com/3scale/apisonator/pull/290)).
+
 ## 3.4.1 - 2021-06-16
 
 ### Changed
