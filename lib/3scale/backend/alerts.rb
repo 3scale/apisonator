@@ -80,8 +80,13 @@ module ThreeScale
             ttl >= 0 ? ttl : ALERT_TTL
           end.min
 
-          storage.setex(key_usage_already_checked(service_id, app_id), ttl, '1'.freeze)
-          Memoizer.clear(Memoizer.build_key(self, :need_to_check_all?, service_id, app_id))
+          # Setex fails when ttl = 0. Also, if it's 0, we don't need to mark it
+          # as checked, because the "already_notified" key for the bin is just
+          # about to expire, so we'll need to check all the usages.
+          if ttl > 0
+            storage.setex(key_usage_already_checked(service_id, app_id), ttl, '1'.freeze)
+            Memoizer.clear(Memoizer.build_key(self, :need_to_check_all?, service_id, app_id))
+          end
         end
 
         def self.invalidate(service_id, app_id)
