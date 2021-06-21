@@ -1,3 +1,4 @@
+require 'pry'
 module ThreeScale
   module Backend
     describe EventStorage do
@@ -189,8 +190,10 @@ module ThreeScale
           context 'when a ping was executed previously' do
             context 'and ping TTL is expired' do
               before do
-                stub_const("ThreeScale::Backend::EventStorage::PING_TTL", 0)
                 EventStorage.ping_if_not_empty
+
+                # Simulate expired TTL
+                EventStorage.send(:storage).del(EventStorage.send(:events_ping_key))
               end
 
               it { expect(subject).to be true }
