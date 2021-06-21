@@ -84,21 +84,15 @@ module ThreeScale
           URI(events_hook)
         end
 
-        def expire_last_ping
-          storage.expire(events_ping_key, PING_TTL)
-        end
-
         def pending_ping?
           ## the queue is not empty and more than timeout has passed
           ## since the front-end was notified
-          events_set_size, ping_key_value = storage.pipelined do
+          events_set_size, can_ping = storage.pipelined do
             storage.zcard(events_queue_key)
-            storage.incr(events_ping_key)
+            storage.set(events_ping_key, '1'.freeze, ex: PING_TTL, nx: true)
           end
 
-          return false unless ping_key_value.to_i == 1
-          expire_last_ping
-          events_set_size > 0
+          can_ping && events_set_size > 0
         end
 
         def decode_event(raw_event)
