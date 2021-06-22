@@ -88,7 +88,7 @@ module ThreeScale
           ## the queue is not empty and more than timeout has passed
           ## since the front-end was notified
           events_set_size, can_ping = storage.pipelined do
-            storage.zcard(events_queue_key)
+            size
             storage.set(events_ping_key, '1'.freeze, ex: PING_TTL, nx: true)
           end
 
