@@ -4,7 +4,10 @@ module ThreeScale
   module Backend
     class EventStorage
       PING_TTL    = 60
-      EVENT_TYPES = [:first_traffic, :first_daily_traffic, :alert]
+      private_constant :PING_TTL
+
+      EVENT_TYPES = [:first_traffic, :first_daily_traffic, :alert].freeze
+      private_constant :EVENT_TYPES
 
       class << self
         include StorageHelpers
