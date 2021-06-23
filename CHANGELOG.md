@@ -2,6 +2,14 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## 3.4.3 - 2021-06-23
+
+### Fixed
+
+- Fixed bug that causes Apisonator to stop pinging Porta to fetch events. This
+bug triggers very rarely
+([#292](https://github.com/3scale/apisonator/pull/292)).
+
 ## 3.4.2 - 2021-06-17
 
 ### Fixed
