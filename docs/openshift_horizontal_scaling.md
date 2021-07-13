@@ -81,15 +81,11 @@ deploy 1 Falcon worker per pod.
 ### Set up horizontal pod autoscaling
 
 We need to decide the target CPU usage. It is defined as a percentage of the
-requested CPU cores. In a default installation, the backend-listener pod
-requests 0.5 CPU cores. In an ideal case, we know that both the listener and the
+requested CPU cores. In an ideal case, we know that both the listener and the
 worker should use 1 CPU core when using the async redis lib. However, we need to
 leave some margin for possible inefficiencies, so we can target 0.8 CPU cores,
-for example. 0.8/0.5 = 1.6, so we need to define a CPU % of 160 for the
-listener. In a default installation, the backend-worker pod requests 0.150 CPU
-cores. Following the same logic, we need to define a target CPU of 533
-(0.8/0.150 = 5.33). Pay attention to the CPU request of each pod, as they might
-change between versions, and adapt the target CPU % values accordingly.
+for example. Thus, if we define, for example, a request of 1 CPU for each pod,
+we could set the target CPU usage to 80%.
 
 We also need to define the minimum and the maximum number of pods. The example
 below uses 1 and 10, but adapt those values according to the resources available
@@ -97,8 +93,8 @@ in your Openshift cluster.
 
 Configure HPA both in listeners and workers:
 ```bash
-oc autoscale dc/backend-listener --min 1 --max 10 --cpu-percent=160
-oc autoscale dc/backend-worker --min 1 --max 10 --cpu-percent=533
+oc autoscale dc/backend-listener --min 1 --max 10 --cpu-percent=80
+oc autoscale dc/backend-worker --min 1 --max 10 --cpu-percent=80
 ```
 
 To check the decisions made by the auto-scaler as well as information about the
