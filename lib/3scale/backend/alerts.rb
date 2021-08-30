@@ -33,11 +33,6 @@ module ThreeScale
         def key_current_id
           'alerts/current_id'.freeze
         end
-
-        def key_usage_already_checked(service_id, app_id)
-          prefix = key_prefix(service_id, app_id)
-          "#{prefix}usage_already_checked"
-        end
       end
 
       extend self
@@ -50,70 +45,6 @@ module ThreeScale
       FIRST_ALERT_BIN = ALERT_BINS.first
       RALERT_BINS     = ALERT_BINS.reverse.freeze
 
-      # This class is useful to reduce the amount of information that we need to
-      # fetch from Redis to determine whether an alert should be raised.
-      # In summary, alerts are raised at the application level and we need to
-      # wait for 24h before raising a new one for the same level (ALERTS_BIN
-      # above).
-      #
-      # This class allows us to check all the usage limits once and then not
-      # check all of them again (just the ones in the report job) until:
-      # 1) A specific alert has expired (24h passed since it was triggered).
-      # 2) A new alert bin is enabled for the service.
-      class UsagesChecked
-        extend KeyHelpers
-        extend StorageHelpers
-        include Memoizer::Decorator
-
-        def self.need_to_check_all?(service_id, app_id)
-          !storage.exists(key_usage_already_checked(service_id, app_id))
-        end
-        memoize :need_to_check_all?
-
-        def self.mark_all_checked(service_id, app_id)
-          ttl = ALERT_BINS.map do |bin|
-            ttl = storage.ttl(key_already_notified(service_id, app_id, bin))
-
-            # Redis returns -2 if key does not exist, and -1 if it exists without
-            # a TTL (we know this should not happen for the alert bins).
-            # In those cases we should just set the TTL to the max (ALERT_TTL).
-            ttl >= 0 ? ttl : ALERT_TTL
-          end.min
-
-          storage.setex(key_usage_already_checked(service_id, app_id), ttl, '1'.freeze)
-          Memoizer.clear(Memoizer.build_key(self, :need_to_check_all?, service_id, app_id))
-        end
-
-        def self.invalidate(service_id, app_id)
-          storage.del(key_usage_already_checked(service_id, app_id))
-        end
-
-        def self.invalidate_for_service(service_id)
-          app_ids = []
-          cursor = 0
-
-          loop do
-            cursor, ids = storage.sscan(
-              Application.applications_set_key(service_id), cursor, count: SCAN_SLICE
-            )
-
-            app_ids += ids
-
-            break if cursor.to_i == 0
-          end
-
-          invalidate_batch(service_id, app_ids)
-        end
-
-        def self.invalidate_batch(service_id, app_ids)
-          app_ids.each_slice(PIPELINED_SLICE_SIZE) do |ids|
-            keys = ids.map { |app_id| key_usage_already_checked(service_id, app_id) }
-            storage.del(keys)
-          end
-        end
-        private_class_method :invalidate_batch
-      end
-
       def can_raise_more_alerts?(service_id, app_id)
         allowed_bins = allowed_set_for_service(service_id).sort
 
@@ -124,8 +55,33 @@ module ThreeScale
         not notified?(service_id, app_id, allowed_bins.last)
       end
 
-      def update_utilization(service_id, app_id, utilization)
-        discrete = utilization_discrete(utilization.ratio)
+      def utilization(app_usage_reports)
+        max_utilization = -1.0
+        max_record = nil
+        max = proc do |item|
+          if item.max_value > 0
+            utilization = item.current_value / item.max_value.to_f
+
+            if utilization > max_utilization
+              max_record = item
+              max_utilization = utilization
+            end
+          end
+        end
+
+        app_usage_reports.each(&max)
+
+        if max_utilization == -1
+          ## case that all the limits have max_value==0
+          max_utilization = 0
+          max_record = app_usage_reports.first
+        end
+
+        [max_utilization, max_record]
+      end
+
+      def update_utilization(service_id, app_id, max_utilization, max_record, timestamp)
+        discrete = utilization_discrete(max_utilization)
 
         keys = alert_keys(service_id, app_id, discrete)
 
@@ -135,19 +91,18 @@ module ThreeScale
         end
 
         if already_alerted.nil? && allowed && discrete.to_i > 0
-          next_id, _, _ = storage.pipelined do
+          next_id, _ = storage.pipelined do
             storage.incr(keys[:current_id])
             storage.setex(keys[:already_notified], ALERT_TTL, "1")
-            UsagesChecked.invalidate(service_id, app_id)
           end
 
           alert = { :id => next_id,
                     :utilization => discrete,
-                    :max_utilization => utilization.ratio,
+                    :max_utilization => max_utilization,
                     :application_id => app_id,
                     :service_id => service_id,
-                    :timestamp => Time.now.utc,
-                    :limit => utilization.to_s }
+                    :timestamp => timestamp,
+                    :limit => formatted_limit(max_record) }
 
           Backend::EventStorage::store(:alert, alert)
         end
@@ -159,6 +114,11 @@ module ThreeScale
         RALERT_BINS.find do |b|
           u >= b
         end || FIRST_ALERT_BIN
+      end
+
+      def formatted_limit(record)
+        "#{record.metric_name} per #{record.period}: "\
+        "#{record.current_value}/#{record.max_value}"
       end
 
       def allowed_set_for_service(service_id)

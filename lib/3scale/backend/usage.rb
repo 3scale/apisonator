@@ -3,16 +3,9 @@ module ThreeScale
     class Usage
       class << self
         def application_usage(application, timestamp)
-          usage(application.usage_limits, timestamp) do |metric_id, instance_period|
+          usage(application, timestamp) do |metric_id, instance_period|
             Stats::Keys.application_usage_value_key(
                 application.service_id, application.id, metric_id, instance_period)
-          end
-        end
-
-        def application_usage_for_limits(application, timestamp, usage_limits)
-          usage(usage_limits, timestamp) do |metric_id, instance_period|
-            Stats::Keys.application_usage_value_key(
-              application.service_id, application.id, metric_id, instance_period)
           end
         end
 
@@ -32,7 +25,7 @@ module ThreeScale
 
         private
 
-        def usage(usage_limits, timestamp)
+        def usage(obj, timestamp)
           # The timestamp does not change, so we can generate all the
           # instantiated periods just once.
           # This is important. Without this, the code can generate many instance
@@ -40,7 +33,7 @@ module ThreeScale
           # time.
           instance_periods = Period::instance_periods_for_ts(timestamp)
 
-          pairs = metric_period_pairs usage_limits
+          pairs = metric_period_pairs obj.usage_limits
           return {} if pairs.empty?
 
           keys = pairs.map do |(metric_id, period)|

@@ -59,7 +59,7 @@ module ThreeScale
             touched_apps = aggregate(transactions, current_bucket)
 
             ApplicationEvents.generate(touched_apps.values)
-            update_alerts(transactions)
+            update_alerts(touched_apps)
             begin
               ApplicationEvents.ping
             rescue ApplicationEvents::PingFailed => e
@@ -137,35 +137,39 @@ module ThreeScale
             logger.info(MAX_BUCKETS_CREATED_MSG)
           end
 
-          def update_alerts(transactions)
-            transactions.group_by { |tx| tx.application_id }.each do |app_id, txs|
-              service_id = txs.first.service_id # All the txs of an app belong to the same service
+          def update_alerts(applications)
+            current_timestamp = Time.now.getutc
 
-              # Finding the max utilization can be costly because it involves
-              # loading usage limits and current usages. That's why before that,
-              # we check if there are any alerts that can be raised.
-              next unless Alerts.can_raise_more_alerts?(service_id, app_id)
+            applications.each do |_appid, values|
+              service_id = values[:service_id]
+              application = Backend::Application.load(service_id,
+                                                      values[:application_id])
 
-              begin
-                max_utilization = if Alerts::UsagesChecked.need_to_check_all?(service_id, app_id)
-                                    Utilization.max_in_all_metrics(service_id, app_id).tap do
-                                      Alerts::UsagesChecked.mark_all_checked(service_id, app_id)
-                                    end
-                                  else
-                                    # metrics_ids here includes the metrics
-                                    # explicitly reported plus their parents in
-                                    # the hierarchy.
-                                    metric_ids = txs.map { |tx| tx.usage.keys }.flatten.uniq
-                                    Utilization.max_in_metrics(service_id, app_id, metric_ids)
-                                  end
-              rescue ApplicationNotFound
-                # The app could have been deleted at some point since the job
-                # was enqueued. No need to update alerts in that case.
-                next
-              end
+              # The app could have been deleted at some point since the job was
+              # enqueued. No need to update alerts in that case.
+              next unless application
 
-              if max_utilization && max_utilization.ratio > 0
-                Alerts.update_utilization(service_id, app_id, max_utilization)
+              # The operations below are costly. They load all the usage limits
+              # and current usages to find the current utilization levels.
+              # That's why before that, we check if there are any alerts that
+              # can be raised.
+              next unless Alerts.can_raise_more_alerts?(service_id, values[:application_id])
+
+              application.load_metric_names
+              usage = Usage.application_usage(application, current_timestamp)
+              status = Transactor::Status.new(service_id: service_id,
+                                              application: application,
+                                              values: usage)
+
+              max_utilization, max_record = Alerts.utilization(
+                  status.application_usage_reports)
+
+              if max_utilization >= 0.0
+                Alerts.update_utilization(service_id,
+                                          values[:application_id],
+                                          max_utilization,
+                                          max_record,
+                                          current_timestamp)
               end
             end
           end

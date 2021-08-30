@@ -9,11 +9,7 @@ module ThreeScale
       attr_accessor :service_id, :value
 
       def save
-        if valid?
-          res = storage.sadd(key_allowed_set(service_id), value.to_i)
-          Alerts::UsagesChecked.invalidate_for_service(service_id)
-          res
-        end
+        storage.sadd(key_allowed_set(service_id), value.to_i) if valid?
       end
 
       def to_hash
