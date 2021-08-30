@@ -84,14 +84,6 @@ class AlertsTest < Test::Unit::TestCase
     assert_true (Alerts::ALERT_TTL-10..Alerts::ALERT_TTL).include?(@storage.ttl(key_checked))
   end
 
-  test 'when marking as checked, does not set the key if there is a bin with TTL=0' do
-    Storage.instance.stubs(:ttl).returns(0)
-
-    Alerts::UsagesChecked.mark_all_checked(@service_id, @application_id)
-
-    assert_true Alerts::UsagesChecked.need_to_check_all?(@service_id, @application_id)
-  end
-
   test 'can invalidate for a single app' do
     other_app_id = next_id
     Application.save(service_id: @service_id, id: other_app_id, state: :active, plan_id: @plan_id)
