@@ -1,3 +1,3 @@
 status = ["ci/circleci: build"]
-pr_status = ["ci/circleci: build", "workflow", "codeclimate"]
+pr_status = ["ci/circleci: build", "workflow"]
 delete_merged_branches = true
