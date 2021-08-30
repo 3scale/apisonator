@@ -3,7 +3,7 @@ module ThreeScale
     module Transactor
       class Status
         class UsageReport
-          attr_reader :type, :usage_limit, :period
+          attr_reader :type, :period
 
           def initialize(status, usage_limit)
             @status      = status

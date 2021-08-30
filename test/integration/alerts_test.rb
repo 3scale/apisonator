@@ -62,12 +62,9 @@ class AlertsTest < Test::Unit::TestCase
       Resque.run!
     end
 
-    # Now we are 3 days later, this should report a violation again.
-    # Notice that we need to delete the keys that would be automatically deleted
-    # with their TTL.
+    ## now we are 3.0 days later, this should report a violation again
     tmp_res = @storage.del("alerts/service_id:#{@service_id}/app_id:#{@application_id1}/#{90}/already_notified")
     assert_equal tmp_res, 1
-    Alerts::UsagesChecked.invalidate(@service_id, @application_id1)
 
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*3.0) do
       Transactor.report(@provider_key,
@@ -147,12 +144,10 @@ class AlertsTest < Test::Unit::TestCase
       Resque.run!
     end
 
-    # Now we are 3 days later, this should report a violation again.
-    # Notice that we need to delete the keys that would be automatically deleted
-    # with their TTL.
+    ## now we are 3.0 days later, this should report a violation again
     tmp_res = @storage.del("alerts/service_id:#{@service_id}/app_id:#{@application_id1}/#{90}/already_notified")
+
     assert_equal tmp_res, 1
-    Alerts::UsagesChecked.invalidate(@service_id, @application_id1)
 
     Timecop.freeze(timestamp + Alerts::ALERT_TTL*3.0) do
       Transactor.report(@provider_key,
