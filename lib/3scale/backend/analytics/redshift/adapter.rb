@@ -297,7 +297,7 @@ module ThreeScale
             end
 
             def redshift_connection
-              @connection ||= PGconn.new(redshift_config)
+              @connection ||= PG::Connection.new(redshift_config)
             end
 
             def execute_command(command)
