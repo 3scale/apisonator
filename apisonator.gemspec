@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.license     = 'Apache-2.0'
   s.metadata    = { 'source_code_uri' => 'https://github.com/3scale/apisonator' }
 
-  s.required_ruby_version     = ">= 2.4.0"
+  s.required_ruby_version     = ">= 2.7.0"
   s.required_rubygems_version = ">= 1.3.7"
 
   s.files = Dir.glob('{lib,bin,app,config}/**/*')
