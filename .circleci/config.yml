@@ -38,9 +38,6 @@ jobs:
           keys:
           - v2-rbenv-dependencies-{{ checksum ".ruby-version" }}
           - v2-dependencies-{{ checksum "Gemfile.lock" }}
-          # fallback to using the latest cache if no exact match is found
-          - v2-rbenv-dependencies-
-          - v2-dependencies-
 
       - run:
           name: rbenv update
