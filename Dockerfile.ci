@@ -22,7 +22,7 @@ ARG POSTGRES_BUILD_DEPS="bison flex zlib-devel readline-devel openssl-devel"
 RUN test "x${POSTGRES_BUILD_DEPS}" = "x" \
     || sudo yum install -y ${POSTGRES_BUILD_DEPS}
 
-ARG POSTGRES_VERSION=REL9_5_12
+ARG POSTGRES_VERSION=REL_10_17
 RUN curl -sSLf "https://github.com/postgres/postgres/archive/${POSTGRES_VERSION}.tar.gz" \
     | tar -C "/home/${USER_NAME}" -xz
 
@@ -71,7 +71,7 @@ RUN cd ~/twemproxy-"${TWEMPROXY_VERSION}" \
     && rm -rf ~/twemproxy-"${TWEMPROXY_VERSION}"
 
 # Redis installation
-ARG REDIS_VERSION=3.2.12
+ARG REDIS_VERSION=5.0.3
 RUN curl -sSLf "https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz" \
     | tar -C "/home/${USER_NAME}" -xz
 
@@ -104,7 +104,7 @@ RUN cd "${RBENV_ROOT}" \
     || (git fetch --prune --depth 1 origin tag "${RBENV_TAG}" \
     && git checkout -q -f "${RBENV_TAG}"))
 
-ARG RBENV_RUBYBUILD_TAG=v20210119
+ARG RBENV_RUBYBUILD_TAG=v20210825
 RUN cd "${RBENV_RUBYBUILD_ROOT}" \
     && (git checkout -q -f "${RBENV_RUBYBUILD_TAG}" 2> /dev/null \
     || (git fetch --prune --depth 1 origin tag "${RBENV_RUBYBUILD_TAG}" \
@@ -273,7 +273,7 @@ RUN sudo chown -R "${USER_NAME}": /tmp/apisonator \
     && rbenv_update_env
 
 # specify all versions to be installed, partial versions also understood
-ARG RUBY_VERSIONS="2.4 2.5 2.7"
+ARG RUBY_VERSIONS="2.7"
 RUN cd /tmp/apisonator \
     && ruby_versions ${RUBY_VERSIONS}
 
