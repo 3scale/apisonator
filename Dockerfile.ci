@@ -143,7 +143,7 @@ RUN mkdir -p ~/.local/bin \
        "RUBY_BUILD_SKIP_MIRROR=1 rbenv install -s \"\${RBENV_VERSION:-}\"\n" \
        "    rbenv rehash\n" \
        "    rbenv shell \"\${RBENV_VERSION:-}\" 2> /dev/null\n" \
-       "    gem update --system '2.7.8'\n" \
+       "    gem update --system\n" \
        "  fi\n" \
        "}\n\n" \
        "if [[ \"\${BASH_SOURCE[0]}\" = \"\${0}\" ]]; then\n" \
