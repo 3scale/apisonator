@@ -1,13 +1,14 @@
 FROM centos:8
 MAINTAINER Alejandro Martinez Ruiz <amr@redhat.com>
 
-ARG CIRCLECI_TOOLS="git openssh-clients tar gzip ca-certificates"
+ARG CIRCLECI_TOOLS="git openssh-clients tar gzip ca-certificates glibc-locale-source glibc-langpack-en"
 # set localtime to UTC and install basic build tools
 RUN (ln -s /usr/share/zoneinfo/UTC /etc/localtime 2> /dev/null || true) \
     && dnf update -y \
     && dnf install -y sudo git make gcc autoconf automake libtool gettext file \
        ${CIRCLECI_TOOLS} \
-    && dnf clean all
+    && dnf clean all \
+    && localedef -c -f UTF-8 -i en_US en_US.UTF-8
 
 ARG USER_NAME=ruby
 RUN useradd -m -d "/home/${USER_NAME}" -l -G wheel ${USER_NAME} \
@@ -54,9 +55,9 @@ RUN sudo runuser -l postgres -c \
     && sudo runuser -l postgres -c "${POSTGRES_PREFIX}/bin/psql test"
 
 # Twemproxy installation
-ARG TWEMPROXY_VERSION=0.4.1
+ARG TWEMPROXY_VERSION=0.5.0
 RUN curl -sSLf \
-    "https://codeload.github.com/twitter/twemproxy/tar.gz/v${TWEMPROXY_VERSION}" \
+    "https://github.com/twitter/twemproxy/releases/download/0.5.0/twemproxy-${TWEMPROXY_VERSION}.tar.gz" \
     | tar -C "/home/${USER_NAME}" -xz
 
 ARG TWEMPROXY_CONFIGURE_OPTIONS
