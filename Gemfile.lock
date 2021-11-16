@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/3scale/puma
-  revision: c0601d08695839b8ffd0f380e91c3b91c1e8b754
-  branch: 3scale-4.3.7
+  revision: e7d3c53583db8d3e33a74f23f4afb59f3f29a330
+  branch: 3scale-4.3.9
   specs:
-    puma (4.3.7)
+    puma (4.3.9)
       nio4r (~> 2.0)
 
 GIT
