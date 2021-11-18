@@ -82,6 +82,14 @@ ci-build: $(PROJECT_PATH)/Dockerfile.ci
 	$(DOCKER) tag apisonator-ci-layered:$(APISONATOR_REL) apisonator-ci-layered:latest
 	$(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) ci-flatten
 
+.PHONY: ci-build-s390x
+ci-build-s390x: export APISONATOR_REL?=v$(shell $(DOCKER) run --rm -w /tmp/apisonator -v $(PROJECT_PATH):/tmp/apisonator:z \
+	$(CI_IMAGE) ruby -r/tmp/apisonator/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
+ci-build-s390x: $(PROJECT_PATH)/Dockerfile.ci.s390x
+	$(DOCKER) build -t apisonator-ci-layered:$(APISONATOR_REL) -f Dockerfile.ci.s390x $(PROJECT_PATH)
+	$(DOCKER) tag apisonator-ci-layered:$(APISONATOR_REL) apisonator-ci-layered:latest
+	$(MAKE) -C $(PROJECT_PATH) -f $(MKFILE_PATH) ci-flatten
+
 .PHONY: ci-flatten
 ci-flatten: APISONATOR_REL?=v$(shell $(DOCKER) run --rm -w /tmp/apisonator -v $(PROJECT_PATH):/tmp/apisonator:z \
 	$(CI_IMAGE) ruby -r/tmp/apisonator/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
