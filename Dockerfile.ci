@@ -1,4 +1,4 @@
-FROM centos:8
+FROM quay.io/centos/centos:stream9
 MAINTAINER Alejandro Martinez Ruiz <amr@redhat.com>
 
 ARG CIRCLECI_TOOLS="git openssh-clients tar gzip ca-certificates glibc-locale-source glibc-langpack-en"
@@ -57,7 +57,7 @@ RUN sudo runuser -l postgres -c \
 # Twemproxy installation
 ARG TWEMPROXY_VERSION=0.5.0
 RUN curl -sSLf \
-    "https://github.com/twitter/twemproxy/releases/download/0.5.0/twemproxy-${TWEMPROXY_VERSION}.tar.gz" \
+    "https://github.com/twitter/twemproxy/releases/download/${TWEMPROXY_VERSION}/twemproxy-${TWEMPROXY_VERSION}.tar.gz" \
     | tar -C "/home/${USER_NAME}" -xz
 
 ARG TWEMPROXY_CONFIGURE_OPTIONS
@@ -72,7 +72,7 @@ RUN cd ~/twemproxy-"${TWEMPROXY_VERSION}" \
     && rm -rf ~/twemproxy-"${TWEMPROXY_VERSION}"
 
 # Redis installation
-ARG REDIS_VERSION=5.0.3
+ARG REDIS_VERSION=5.0.8
 RUN curl -sSLf "https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz" \
     | tar -C "/home/${USER_NAME}" -xz
 
@@ -121,12 +121,21 @@ RUN echo -n "export PATH=${RBENV_BINPATH}" >> ~/.bash_rbenv \
 
 ENV PATH="${RBENV_PATH}:/home/${USER_NAME}/.local/bin:${PATH}"
 
-ARG MRI_DEPS="bzip2 zlib-devel readline-devel openssl-devel libffi-devel gdbm-devel ncurses-devel"
+ARG MRI_DEPS="bzip2 zlib-devel readline-devel openssl-devel libffi-devel ncurses-devel libdb-devel perl procps-ng"
 RUN test "x${MRI_DEPS}" = "x" || sudo dnf install -y ${MRI_DEPS}
+
+ARG OPENSSL_SRC_PATH=/home/${USER_NAME}/openssl_1_1_1
+ARG OPENSSL_INSTALL_PATH=/usr/local/opt/openssl
+RUN git clone -b OpenSSL_1_1_1-stable --single-branch https://github.com/openssl/openssl.git ${OPENSSL_SRC_PATH} \
+    && cd ${OPENSSL_SRC_PATH_PATH} \
+    && ./config --prefix=${OPENSSL_INSTALL_PATH} \
+    && make \
+    && sudo make install
 
 RUN echo 'gem: --no-document' >> ~/.gemrc \
     && echo --color > ~/.rspec
 
+ARG RUBY_CONFIGURE_OPTS="--with-openssl-dir=${OPENSSL_INSTALL_PATH}"
 ARG CONFIGURE_OPTS=--disable-install-doc
 RUN mkdir -p ~/.local/bin \
     && echo -e "#!/bin/bash\n\n" \
