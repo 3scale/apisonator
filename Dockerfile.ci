@@ -127,7 +127,7 @@ RUN test "x${MRI_DEPS}" = "x" || sudo dnf install -y ${MRI_DEPS}
 ARG OPENSSL_SRC_PATH=/home/${USER_NAME}/openssl_1_1_1
 ARG OPENSSL_INSTALL_PATH=/usr/local/opt/openssl
 RUN git clone -b OpenSSL_1_1_1-stable --single-branch https://github.com/openssl/openssl.git ${OPENSSL_SRC_PATH} \
-    && cd ${OPENSSL_SRC_PATH_PATH} \
+    && cd ${OPENSSL_SRC_PATH} \
     && ./config --prefix=${OPENSSL_INSTALL_PATH} \
     && make \
     && sudo make install
