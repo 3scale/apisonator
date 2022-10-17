@@ -49,7 +49,7 @@ GEM
     airbrake (4.3.1)
       builder
       multi_json
-    async (1.24.2)
+    async (1.26.2)
       console (~> 1.0)
       nio4r (~> 2.3)
       timers (~> 4.1)
@@ -69,8 +69,8 @@ GEM
       protocol-http (~> 0.14)
     async-io (1.27.7)
       async (~> 1.14)
-    async-pool (0.2.0)
-      async (~> 1.8)
+    async-pool (0.3.12)
+      async (>= 1.25)
     async-redis (0.5.1)
       async (~> 1.8)
       async-io (~> 1.10)
@@ -272,6 +272,7 @@ PLATFORMS
 DEPENDENCIES
   airbrake (= 4.3.1)
   apisonator!
+  async-pool (~> 0.3.12)
   async-redis (~> 0.5.1)
   async-rspec
   aws-sdk (= 2.4.2)
