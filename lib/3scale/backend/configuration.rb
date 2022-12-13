@@ -37,6 +37,7 @@ module ThreeScale
 
     # assign @configuration first, since code can depend on the attr_reader
     @configuration.tap do |config|
+      config.saas = false
       config.request_loggers = [:text]
       config.workers_logger_formatter = :text
 
@@ -46,12 +47,7 @@ module ThreeScale
       config.add_section(:redis, :url, :proxy, :sentinels, :role,
                          :connect_timeout, :read_timeout, :write_timeout, :max_connections,
                          :async)
-      config.add_section(:analytics_redis, :server,
-                         :connect_timeout, :read_timeout, :write_timeout)
       config.add_section(:hoptoad, :service, :api_key)
-      config.add_section(:stats, :bucket_size, :delete_batch_size)
-      config.add_section(:redshift, :host, :port, :dbname, :user, :password)
-      config.add_section(:statsd, :host, :port)
       config.add_section(:internal_api, :user, :password)
       config.add_section(:master, :metrics)
       config.add_section(:worker_prometheus_metrics, :enabled, :port)
@@ -71,16 +67,6 @@ module ThreeScale
       # Configure nested fields
       master_metrics = [:transactions, :transactions_authorize]
       config.master.metrics = Struct.new(*master_metrics).new
-
-      # This setting controls whether the listener can create event buckets in
-      # Redis. We do not want all the listeners creating buckets yet, as we do
-      # not know exactly the rate at which we can send events to Kinesis
-      # without problems.
-      # By default, we will allow creating buckets in any environment that is
-      # not 'production'.
-      # Notice that in order to create buckets, you also need to execute this
-      # rake task: stats:buckets:enable
-      config.can_create_event_buckets = !production?
 
       config.legacy_referrer_filters = false
 
@@ -111,13 +97,6 @@ module ThreeScale
       if config.master.metrics.transactions_authorize.empty?
         config.master.metrics.transactions_authorize = CONFIG_MASTER_METRICS_TRANSACTIONS_AUTHORIZE_DEFAULT
       end
-
-      # can_create_event_buckets is just for our SaaS analytics system.
-      # If SaaS has been set to false, we need to disable buckets too.
-      config.can_create_event_buckets = false unless config.saas
-
-      config.stats.delete_batch_size = parse_int(config.stats.delete_batch_size,
-                                                 CONFIG_DELETE_STATS_BATCH_SIZE)
 
       # often we don't have a log_file setting - generate it here from
       # the log_path setting.

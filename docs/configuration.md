@@ -326,30 +326,6 @@ each job.
 - Applies to: cron.
 - Format: integer (seconds).
 
-
-## Analytics
-
-### CONFIG_CAN_CREATE_EVENT_BUCKETS
-
-- Allows the listener to create temporary buckets that contain the stats keys
-that were updated in the last few minutes. This is useful to be able to export
-the latest updates to external analytics systems.
-- Optional. Defaults to false. To enable this feature, this env needs to be set
-to true, but it also needs to be enabled using a rake task:
-`stats:buckets:enable`. This feature can only be enabled when
-`CONFIG_SAAS=true`.
-- Applies to: worker.
-- Format: true or false.
-
-### CONFIG_STATS_BUCKET_SIZE
-
-- How many seconds of changes to store on each bucket when
-`CONFIG_CAN_CREATE_EVENT_BUCKETS=true`.
-- Optional. Defaults to 5. This only applies when
-`CONFIG_CAN_CREATE_EVENT_BUCKETS=true`.
-- Applies to: worker.
-- Format: integer.
-
 ## Environment
 
 ### RACK_ENV

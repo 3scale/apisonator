@@ -8,13 +8,11 @@ include ThreeScale::Tasks::Helpers
 
 load 'lib/3scale/tasks/connectivity.rake'
 
-
 require '3scale/backend/logging/external'
 
 ThreeScale::Backend::Logging::External.setup_rake
 
 load 'lib/3scale/tasks/swagger.rake'
-load 'lib/3scale/tasks/stats.rake'
 
 if Environment.testable?
 
