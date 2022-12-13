@@ -4,8 +4,7 @@ module ThreeScale
       include Storable
 
       # list of attributes to be fetched from storage
-      ATTRIBUTES = [:state, :plan_id, :plan_name, :redirect_url,
-                    :user_required].freeze
+      ATTRIBUTES = [:state, :plan_id, :plan_name, :redirect_url].freeze
       private_constant :ATTRIBUTES
 
       attr_accessor :service_id, :id, *ATTRIBUTES
@@ -19,7 +18,6 @@ module ThreeScale
           plan_id: plan_id,
           plan_name: plan_name,
           redirect_url: redirect_url,
-          user_required: user_required
         }
       end
 
@@ -42,22 +40,17 @@ module ThreeScale
           values = storage.mget(storage_key(service_id, id, :state),
                                 storage_key(service_id, id, :plan_id),
                                 storage_key(service_id, id, :plan_name),
-                                storage_key(service_id, id, :redirect_url),
-                                storage_key(service_id, id, :user_required))
-          state, plan_id, plan_name, redirect_url, user_required = values
+                                storage_key(service_id, id, :redirect_url))
+          state, plan_id, plan_name, redirect_url = values
 
           # save a network call by just checking state here for existence
           return nil unless state
-
-          ## the default value is false
-          user_required = user_required.to_i > 0
 
           new(service_id: service_id,
               id: id,
               state: state.to_sym,
               plan_id: plan_id,
               plan_name: plan_name,
-              user_required: user_required,
               redirect_url: redirect_url)
         end
         memoize :load
@@ -168,10 +161,6 @@ module ThreeScale
 
           yield app_id or raise ApplicationNotFound, app_id
         end
-      end
-
-      def user_required?
-        @user_required
       end
 
       def save
@@ -334,7 +323,6 @@ module ThreeScale
         storage.set(storage_key(:state), state.to_s) if state
         storage.set(storage_key(:plan_id), plan_id) if plan_id
         storage.set(storage_key(:plan_name), plan_name) if plan_name
-        storage.set(storage_key(:user_required), user_required? ? 1 : 0)
         storage.set(storage_key(:redirect_url), redirect_url) if redirect_url
       end
 
