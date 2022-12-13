@@ -32,8 +32,6 @@ Gem::Specification.new do |s|
   s.files << 'Gemfile.base'
   s.files << 'Gemfile'
   s.files << 'Gemfile.lock'
-  s.files << 'Gemfile.on_prem'
-  s.files << 'Gemfile.on_prem.lock'
   s.files << 'licenses.xml'
   # License
   s.files << 'LICENSE'
