@@ -1,7 +1,6 @@
 REDIS_PORTS=(7379 7380 6379)
 REDIS_UNIX_SOCKET_PREFIX="/tmp/redis_unix"
 TWEMPROXY_PIDFILE="/tmp/twemproxy_backend_tests.pid"
-POSTGRES_PIDFILE="/tmp/postgres_backend_tests.pid"
 
 # helper for daemonizing processes from the shell
 function daemonize {
@@ -59,23 +58,14 @@ function stop_twemproxy {
     kill_pidfile ${TWEMPROXY_PIDFILE}
 }
 
-function start_postgresql {
-    daemonize sudo -u postgres sh -c '/usr/lib/postgresql/9.5/bin/pg_ctl -D /usr/local/pgsql/data start' > /dev/null
-}
-
-function stop_postgresql {
-    sudo kill -TERM `sudo head -1 /usr/local/pgsql/data/postmaster.pid`
-}
-
 function start_services {
-    start_postgresql
     start_redis
     start_twemproxy
 }
 
 function stop_services {
     local pids
-    for fn in stop_redis stop_twemproxy stop_postgresql; do
+    for fn in stop_redis stop_twemproxy; do
 	eval "${fn}" &
 	pids[${fn}]=$!
     done
