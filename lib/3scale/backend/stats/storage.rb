@@ -1,6 +1,5 @@
 require_relative '../storage'
 require_relative 'keys'
-require '3scale/backend/analytics/kinesis/adapter'
 require '3scale/backend/stats/bucket_reader'
 require '3scale/backend/stats/bucket_storage'
 require '3scale/backend/stats/stats_parser'
@@ -59,14 +58,6 @@ module ThreeScale
             @bucket_reader ||= BucketReader.new(config.stats.bucket_size,
                                                 bucket_storage,
                                                 storage)
-          end
-
-          def kinesis_adapter
-            @kinesis_adapter ||= Analytics::Kinesis::Adapter.new(
-              config.kinesis_stream_name,
-              kinesis_client,
-              stats_storage
-            )
           end
 
           private

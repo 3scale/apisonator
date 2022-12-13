@@ -51,7 +51,6 @@ require '3scale/backend/service_token'
 require '3scale/backend/distributed_lock'
 require '3scale/backend/failed_jobs_scheduler'
 require '3scale/backend/transactor'
-require '3scale/backend/saas'
 require '3scale/backend/listener'
 
 Resque.redis = ThreeScale::Backend::QueueStorage.connection(

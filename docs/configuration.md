@@ -245,13 +245,6 @@ print the logs in both formats.
 
 ## Feature flags
 
-### CONFIG_SAAS
-
-- Enables certain features that are only useful for 3scale SaaS.
-- Optional. Defaults to false.
-- Applies to: listener, worker, cron.
-- Format: true or false.
-
 ### CONFIG_LEGACY_REFERRER_FILTERS
 
 - Selects the implementation of the referrer filter validator. When set to true,
@@ -356,70 +349,6 @@ to true, but it also needs to be enabled using a rake task:
 `CONFIG_CAN_CREATE_EVENT_BUCKETS=true`.
 - Applies to: worker.
 - Format: integer.
-
-### CONFIG_KINESIS_STREAM_NAME
-
-- Kinesis stream name.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: string.
-
-### CONFIG_KINESIS_REGION
-
-- Kinesis stream region.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: string.
-
-### CONFIG_AWS_ACCESS_KEY_ID
-
-- AWS access key to authenticate with Kinesis.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: string.
-
-### CONFIG_AWS_SECRET_ACCESS_KEY
-
-- AWS secret access key to authenticate with Kinesis and Redshift.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: string.
-
-### CONFIG_REDSHIFT_HOST
-
-- Redshift host.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: string.
-
-### CONFIG_REDSHIFT_PORT
-
-- Redshift port.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: integer.
-
-### CONFIG_REDSHIFT_DBNAME
-
-- Redshift database name.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: string.
-
-### CONFIG_REDSHIFT_USER
-
-- Redshift user.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: string.
-
-### CONFIG_REDSHIFT_PASSWORD
-
-- Redshift user.
-- Optional. Only applies when the analytics system is enabled.
-- Applies to: worker.
-- Format: string.
-
 
 ## Environment
 

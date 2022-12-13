@@ -29,17 +29,17 @@ RUN microdnf install --nodocs ${BUILD_DEPS}
 RUN mkdir -p "${HOME}/.gem/bin" \
  && echo "gem: --bindir ~/.gem/bin" > "${HOME}/.gemrc"
 
-COPY --chown=1001:1001 Gemfile.on_prem.lock "${HOME}/app/"
+COPY --chown=1001:1001 Gemfile.lock "${HOME}/app/"
 
 RUN gem uninstall --executables bundler \
- && BUNDLED_WITH=$(cat Gemfile.on_prem.lock | \
+ && BUNDLED_WITH=$(cat Gemfile.lock | \
       grep -A 1 "^BUNDLED WITH$" | tail -n 1 | sed -e 's/\s//g') \
  && gem install -N bundler --version "${BUNDLED_WITH}" \
  && echo Using $(bundle --version) \
  && bundle config --local silence_root_warning 1 \
  && bundle config --local disable_shared_gems 1 \
  && bundle config --local without development:test \
- && bundle config --local gemfile Gemfile.on_prem
+ && bundle config --local gemfile Gemfile
 
 # Copy sources
 COPY --chown=1001:1001 ./ "${HOME}/app/"
@@ -55,7 +55,7 @@ RUN cp -n openshift/3scale_backend.conf /etc/ \
  && cp -a ${HOME}/app/.bundle "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
  && echo "Deleting the following unused Gemfile files:" \
  && find . -maxdepth 1 -regex \./Gemfile"\(\..*\)?" \
-      ! -regex \./$(sed -e 's/[^^]/[&]/g; s/\^/\\^/g' <<< Gemfile.on_prem)"\(\.lock\)?" \
+      ! -regex \./$(sed -e 's/[^^]/[&]/g; s/\^/\\^/g' <<< Gemfile)"\(\.lock\)?" \
       ! -name Gemfile.base -print -delete \
  && bundle install --jobs $(grep -c processor /proc/cpuinfo) \
  && ln -s ${PWD} /opt/app \
@@ -80,7 +80,6 @@ ARG PUMA_WORKERS=1
 ENV TZ=:/etc/localtime \
     # App-specific env
     RACK_ENV=production \
-    CONFIG_SAAS=false \
     CONFIG_LOG_PATH=/tmp/ \
     CONFIG_WORKERS_LOG_FILE=/dev/stdout \
     PUMA_WORKERS=${PUMA_WORKERS}

@@ -37,9 +37,6 @@ module ThreeScale
 
     # assign @configuration first, since code can depend on the attr_reader
     @configuration.tap do |config|
-      # To distinguish between SaaS and on-premises mode.
-      config.saas = true
-
       config.request_loggers = [:text]
       config.workers_logger_formatter = :text
 
