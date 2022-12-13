@@ -1,5 +1,4 @@
 require '3scale/backend/logging'
-require '3scale/backend/stats/storage'
 require '3scale/backend/stats/keys'
 require '3scale/backend/application_events'
 require '3scale/backend/transaction'
@@ -42,20 +41,6 @@ module ThreeScale
           def process(transactions)
             current_bucket = nil
 
-            if configuration.can_create_event_buckets
-              # Only disable indicating emergency if bucket storage is enabled.
-              # Otherwise, we might indicate emergency when a user manually
-              # disabled it previously.
-              if Storage.enabled? && buckets_limit_exceeded?
-                Storage.disable!(true)
-                log_bucket_creation_disabled
-              elsif save_in_bucket?
-                Storage.enable! unless Storage.enabled?
-                current_bucket = Time.now.utc.beginning_of_bucket(stats_bucket_size)
-                                             .to_not_compact_s
-              end
-            end
-
             touched_apps = aggregate(transactions, current_bucket)
 
             ApplicationEvents.generate(touched_apps.values)
@@ -97,24 +82,8 @@ module ThreeScale
             end
           end
 
-          def save_in_bucket?
-            if Storage.enabled?
-              true
-            else
-              Storage.last_disable_was_emergency? && bucket_storage.pending_buckets_size == 0
-            end
-          end
-
-          def stats_bucket_size
-            @stats_bucket_size ||= (configuration.stats.bucket_size || 5)
-          end
-
           def storage
             Backend::Storage.instance
-          end
-
-          def bucket_storage
-            Stats::Storage.bucket_storage
           end
 
           # Return a Hash with needed info to update usages and alerts.

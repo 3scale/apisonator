@@ -11,7 +11,6 @@
 # - BUNDLE_GEMFILE: Gemfile name to pin Bundler to.
 # - BUNDLE_WITHOUT: List of Bundler groups to skip.
 # - DELETE_UNUSED_GEMFILES: Deletes unused Gemfiles in the root directory.
-# - CONFIG_SAAS: true for a SaaS image. false for an on-premises image.
 # - PUMA_WORKERS: Default number of Puma workers to serve the app.
 #
 # Profiles you should use:
@@ -23,10 +22,8 @@
 # - Release:
 #   - GEM_UPDATE: false
 #   - BUNDLE_VERSION_MATCH: false
-#   - BUNDLE_GEMFILE: Gemfile for SaaS, Gemfile.on_prem for on-premises.
 #   - BUNDLE_WITHOUT: development:test
 #   - DELETE_UNUSED_GEMFILES: true
-#   - CONFIG_SAAS: true for SaaS, false for on-premises.
 #   - PUMA_WORKERS: number of Puma worker processes - depends on intended usage,
 #                   with number of cpus being a good heuristic.
 #
@@ -53,7 +50,7 @@ ARG BUNDLE_VERSION_MATCH=true
 # If the above is false
 ARG BUNDLE_VERSION="2.2.9"
 
-ARG BUNDLE_GEMFILE=Gemfile.on_prem
+ARG BUNDLE_GEMFILE=Gemfile
 ARG BUNDLE_WITHOUT=development:test
 
 COPY --chown=1001:1001 ${BUNDLE_GEMFILE}.lock "${HOME}/app/"
@@ -79,8 +76,6 @@ RUN gem uninstall --executables bundler \
 COPY --chown=1001:1001 ./ "${HOME}/app/"
 
 ARG DELETE_UNUSED_GEMFILES=true
-# Turn off for productisation
-ARG CONFIG_SAAS=false
 
 # Builds a clean source tree and deploys it with Bundler.
 # Sets the right configuration and permissions.
@@ -99,9 +94,7 @@ RUN cp -n openshift/3scale_backend.conf /etc/ \
     fi \
  && bundle install --jobs $(grep -c processor /proc/cpuinfo) \
  && ln -s ${PWD} /opt/app \
- && if test "${CONFIG_SAAS}x" != "truex"; then \
-      cp ${HOME}/app/openshift/config/puma.rb ./config/ ; \
-    fi \
+ && cp ${HOME}/app/openshift/config/puma.rb ./config/ \
  && cp -n ${HOME}/app/openshift/backend-cron /usr/local/sbin/backend-cron \
  && cp -n ${HOME}/app/openshift/entrypoint.sh ./ \
  && rm -rf ${HOME}/app \
@@ -123,7 +116,6 @@ ARG RACK_ENV=production
 ENV TZ=:/etc/localtime \
     # App-specific env
     RACK_ENV=${RACK_ENV} \
-    CONFIG_SAAS=${CONFIG_SAAS} \
     CONFIG_LOG_PATH=/tmp/ \
     CONFIG_WORKERS_LOG_FILE=/dev/stdout \
     PUMA_WORKERS=${PUMA_WORKERS}
