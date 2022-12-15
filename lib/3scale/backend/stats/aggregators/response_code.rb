@@ -11,16 +11,12 @@ module ThreeScale
             include Keys
             include Base
 
-            def aggregate(transaction, bucket = nil)
+            def aggregate(transaction)
               keys_for_multiple_codes = keys_for_response_code(transaction)
               timestamp = transaction.timestamp
 
-              # For now, we are not interested in storing response codes in
-              # buckets, that is the reason why set bucket to nil.
-              bucket = nil
-
               keys_for_multiple_codes.each do |keys|
-                aggregate_values(1, timestamp, keys, :incrby, bucket)
+                aggregate_values(1, timestamp, keys, :incrby)
               end
             end
 
