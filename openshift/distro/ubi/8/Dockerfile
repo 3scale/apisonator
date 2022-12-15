@@ -10,7 +10,6 @@
 #                         instead of using the SCL version.
 # - BUNDLE_GEMFILE: Gemfile name to pin Bundler to.
 # - BUNDLE_WITHOUT: List of Bundler groups to skip.
-# - DELETE_UNUSED_GEMFILES: Deletes unused Gemfiles in the root directory.
 # - PUMA_WORKERS: Default number of Puma workers to serve the app.
 #
 # Profiles you should use:
@@ -23,7 +22,6 @@
 #   - GEM_UPDATE: false
 #   - BUNDLE_VERSION_MATCH: false
 #   - BUNDLE_WITHOUT: development:test
-#   - DELETE_UNUSED_GEMFILES: true
 #   - PUMA_WORKERS: number of Puma worker processes - depends on intended usage,
 #                   with number of cpus being a good heuristic.
 #
@@ -75,8 +73,6 @@ RUN gem uninstall --executables bundler \
 # Copy sources
 COPY --chown=1001:1001 ./ "${HOME}/app/"
 
-ARG DELETE_UNUSED_GEMFILES=true
-
 # Builds a clean source tree and deploys it with Bundler.
 # Sets the right configuration and permissions.
 RUN cp -n openshift/3scale_backend.conf /etc/ \
@@ -86,12 +82,6 @@ RUN cp -n openshift/3scale_backend.conf /etc/ \
  && gem unpack "apisonator-${BACKEND_VERSION}.gem" --target=/opt/ruby \
  && cd "/opt/ruby/apisonator-${BACKEND_VERSION}" \
  && cp -a ${HOME}/app/.bundle "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
- && if test "${DELETE_UNUSED_GEMFILES}x" = "truex"; then \
-      echo "Deleting the following unused Gemfile files:"; \
-      find . -maxdepth 1 -regex \./Gemfile"\(\..*\)?" \
-      ! -regex \./$(sed -e 's/[^^]/[&]/g; s/\^/\\^/g' <<< ${BUNDLE_GEMFILE})"\(\.lock\)?" \
-      ! -name Gemfile.base -print -delete; \
-    fi \
  && bundle install --jobs $(grep -c processor /proc/cpuinfo) \
  && ln -s ${PWD} /opt/app \
  && cp ${HOME}/app/openshift/config/puma.rb ./config/ \
