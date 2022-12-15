@@ -2,6 +2,17 @@
 
 Notable changes to Apisonator will be tracked in this document.
 
+## Unreleased
+
+### Changed
+
+- storage_async/async_redis: read all responses in pipelines ([#302](https://github.com/3scale/apisonator/pull/302))
+- [REVERTED] PR [#287](https://github.com/3scale/apisonator/pull/287) and [#290](https://github.com/3scale/apisonator/pull/290) ([#306](https://github.com/3scale/apisonator/pull/306))
+- Ruby 2.7, Redis 5.0.3 ([#309](https://github.com/3scale/apisonator/pull/309))
+- Puma 4.3.9 ([#315](https://github.com/3scale/apisonator/pull/315))
+- Async-pool 0.3.12 ([#324](https://github.com/3scale/apisonator/pull/324))
+- Remove SaaS mode ([#325](https://github.com/3scale/apisonator/pull/325))
+
 ## 3.4.3 - 2021-06-23
 
 ### Fixed
