@@ -22,7 +22,7 @@ group :test do
 
   gem 'benchmark-ips', '~> 2.7.2'
   gem 'mocha',         '~> 1.3'
-  gem 'nokogiri',      '~> 1.12.5'
+  gem 'nokogiri',      '~> 1.13.10'
   gem 'pkg-config',    '~> 1.1.7'
   gem 'resque_unit',   '~> 0.4.4', source: 'https://rubygems.org'
   gem 'test-unit',     '~> 3.2.6'
