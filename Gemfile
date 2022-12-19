@@ -58,7 +58,7 @@ gem 'builder', '= 3.2.3'
 # Use a patched resque to allow reusing their Airbrake Failure class
 gem 'resque', git: 'https://github.com/3scale/resque', branch: '3scale'
 gem 'redis-namespace', '~>1.8.0'
-gem 'rack', '~> 2.1.4'
+gem 'rack', '~> 2.2.4'
 gem 'sinatra', '~> 2.0.3'
 gem 'sinatra-contrib', '~> 2.0.3'
 # Optional external error logging services
