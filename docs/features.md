@@ -76,12 +76,6 @@ under the master account.
 In Porta, this is used to know the usage that each provider makes of the
 platform and apply pricing plans based on this usage.
 
-## Export data to Analytics system
-
-Apisonator provides a system to export usage data. That data can be used in an
-analytics system. We have used this system to export data via Kinesis to Amazon
-Redshift.
-
 ## Internal management API
 
 There's an API that exposes CRUD endpoints for many of the domain entities

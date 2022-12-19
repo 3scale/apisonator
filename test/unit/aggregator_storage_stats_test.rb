@@ -12,9 +12,6 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     @storage.flushdb
     seed_data
 
-    Stats::Storage.enable!
-    Memoizer.reset!
-
     Resque.reset!
     Memoizer.reset!
 
@@ -24,14 +21,6 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     @plan_id = 'test_plan_id'
     @plan_name = 'test_plan_name'
     @metric_id = 'test_metric_id'
-  end
-
-  def stats_bucket_size
-    Stats::Aggregator.send(:stats_bucket_size)
-  end
-
-  def bucket_storage
-    Stats::Aggregator.send(:bucket_storage)
   end
 
   test 'process increments_all_stats_counters' do
@@ -73,35 +62,6 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
     assert_equal nil, @storage.get(app_response_code_key(1001, 2001, '209', :hour, '2010050713'))
   end
 
-  test 'when storage stats is disabled nothing gets logged' do
-    Stats::Storage.disable!
-    Memoizer.reset! # the flag to know if storage stats is enabled is memoized
-
-    Stats::Aggregator.process(Array.new(10, default_transaction))
-    assert_equal 0, bucket_storage.pending_buckets_size
-  end
-
-  test 'delete all buckets and keys' do
-    timestamp = Time.now.utc - 1000
-    n_buckets = 5
-
-    n_buckets.times do
-      Timecop.freeze(timestamp) do
-        Stats::Aggregator.process([default_transaction])
-      end
-
-      timestamp += stats_bucket_size
-    end
-
-    assert_equal n_buckets, @storage.keys('{stats_bucket}:*').size
-    assert_equal n_buckets, Stats::BucketStorage.new(@storage).pending_buckets_size
-
-    Stats::BucketStorage.new(@storage).delete_all_buckets_and_keys(silent: true)
-
-    assert_equal 0, @storage.keys('{stats_bucket}:*').size
-    assert_equal 0, Stats::BucketStorage.new(@storage).pending_buckets_size
-  end
-
   test 'process updates application set' do
     Stats::Aggregator.process([default_transaction])
 
@@ -122,84 +82,5 @@ class AggregatorStorageStatsTest < Test::Unit::TestCase
 
     assert ttl >  0
     assert ttl <= 180
-  end
-
-  test 'does not open a new stats buckets when the limit has been exceeded' do
-    n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
-    mocked_bucket_storage = Object.new
-    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
-    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
-    Stats::Aggregator.logger.stubs(:info)
-
-    Stats::Aggregator.expects(:prepare_stats_buckets).never
-    Stats::Aggregator.process([default_transaction])
-  end
-
-  test 'writes log when the limit has been exceeded' do
-    n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
-    mocked_bucket_storage = Object.new
-    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
-    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
-
-    Stats::Aggregator.logger.expects(:info).with(Stats::Aggregator.const_get(:MAX_BUCKETS_CREATED_MSG))
-    Stats::Aggregator.process([default_transaction])
-  end
-
-  test 'disables bucket storage if buckets limit has been exceeded' do
-    n_buckets = Stats::Aggregator.const_get(:MAX_BUCKETS) + 1
-    mocked_bucket_storage = Object.new
-    mocked_bucket_storage.define_singleton_method(:pending_buckets_size) { n_buckets }
-    Stats::Aggregator.stubs(:bucket_storage).returns(mocked_bucket_storage)
-    Stats::Aggregator.logger.stubs(:info)
-
-    Stats::Aggregator.process([default_transaction])
-
-    Memoizer.reset! # because Stats::Storage.enabled? is memoized
-    assert_false Stats::Storage.enabled?
-    assert_true Stats::Storage.last_disable_was_emergency?
-  end
-
-  test 'does not disable bucket storage if already disabled even if bucket limit is exceeded' do
-    Stats::Storage.disable!
-
-    Stats::Storage.expects(:disable!).never
-    Stats::Aggregator.process([default_transaction])
-  end
-
-  test 'does not store buckets if the option was disabled manually' do
-    Stats::Storage.disable!
-    Stats::Aggregator.process([default_transaction])
-
-    assert_equal 0, bucket_storage.pending_buckets_size
-  end
-
-  test 'does not store buckets if option disabled because an emergency and pending buckets > 0' do
-    keys = ['key1', 'key2']
-    bucket = '20170102120000'
-    bucket_storage.put_in_bucket(keys, bucket)
-
-    Stats::Storage.disable!(true)
-    Stats::Aggregator.process([default_transaction])
-
-    assert_equal({ bucket => keys.size }, bucket_storage.pending_keys_by_bucket)
-  end
-
-  test 'stores buckets if option disabled because an emergency and there are no pending buckets' do
-    # No pending buckets at the start of the test
-
-    Stats::Storage.disable!(true)
-    Stats::Aggregator.process([default_transaction])
-
-    assert_equal 1, bucket_storage.pending_buckets_size
-  end
-
-  test 're-enables bucket storage if disabled because emergency and there are no pending buckets' do
-    # No pending buckets at the start of the test
-
-    Stats::Storage.disable!(true)
-    Stats::Aggregator.process([default_transaction])
-    Memoizer.reset! # because Stats::Storage.enabled? is memoized
-
-    assert_true Stats::Storage.enabled?
   end
 end

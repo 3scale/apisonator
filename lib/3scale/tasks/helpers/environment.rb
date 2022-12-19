@@ -10,10 +10,6 @@ module ThreeScale
           !%w(preview production).include?(ENV['RACK_ENV'])
         end
 
-        def saas?
-          ThreeScale::Backend.configuration.saas
-        end
-
         def using_async_redis?
           ThreeScale::Backend.configuration.redis.async
         end
