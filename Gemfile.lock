@@ -8,7 +8,7 @@ GIT
 
 GIT
   remote: https://github.com/3scale/redis-rb
-  revision: 35301b3d952975300a4cb30d408ae3b5969d0440
+  revision: 7210a9d6cf733fe5a1ad0dd20f5f613167743810
   branch: apisonator
   specs:
     redis (4.1.3)
