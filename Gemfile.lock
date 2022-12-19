@@ -245,7 +245,7 @@ GEM
     yabeda-prometheus (0.5.0)
       prometheus-client (~> 1.0)
       yabeda (~> 0.5)
-    yajl-ruby (1.3.1)
+    yajl-ruby (1.4.3)
     yard (0.9.26)
 
 PLATFORMS
@@ -289,7 +289,7 @@ DEPENDENCIES
   test-unit (~> 3.2.6)
   timecop (~> 0.9.1)
   yabeda-prometheus (~> 0.5.0)
-  yajl-ruby (~> 1.3.1)
+  yajl-ruby (~> 1.4.3)
 
 BUNDLED WITH
    2.2.26
