@@ -15,7 +15,7 @@ GIT
 
 GIT
   remote: https://github.com/3scale/resque
-  revision: 88839e71756ea9b6edfc9426a0af71e94109c135
+  revision: db327e389cf2fc572a503c47b19871ed899356d1
   branch: 3scale
   specs:
     resque (1.27.4)
