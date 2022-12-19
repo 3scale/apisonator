@@ -1,5 +1,5 @@
 FROM quay.io/3scale/apisonator-ci
-MAINTAINER Alejandro Martinez Ruiz <amr@redhat.com>
+MAINTAINER Eguzki Astiz Lezaun <eastizle@redhat.com>
 
 ARG APP_HOME
 RUN mkdir "${APP_HOME}"
