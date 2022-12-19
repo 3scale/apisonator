@@ -70,7 +70,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
       expect(response_json['status']).to eq 'created'
 
       app = ThreeScale::Backend::Application.load(service_id, id)
-      expect(app.to_hash).to eq application.merge(user_required: false)
+      expect(app.to_hash).to eq application
     end
 
     example 'Create an Application with extra params that should be ignored' do
@@ -83,7 +83,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
       expect(app).not_to be_nil
       expect(app).not_to respond_to :some_param
       # The returned data should not contain *some_param* attribute
-      expect(app.to_hash).to eq application.merge(user_required: false)
+      expect(app.to_hash).to eq application
     end
 
     context 'with an application that has no state' do
@@ -136,7 +136,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(response_json['status']).to eq 'modified'
 
         app = ThreeScale::Backend::Application.load(service_id, id)
-        expect(app.to_hash).to eq application.merge(user_required: false)
+        expect(app.to_hash).to eq application
       end
 
       example 'updating the application with extra params that should be ignored' do
@@ -149,7 +149,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(app).not_to be_nil
         expect(app).not_to respond_to :some_param
         # The returned data should not contain *some_param* attribute
-        expect(app.to_hash).to eq application.merge(user_required: false)
+        expect(app.to_hash).to eq application
       end
     end
 
@@ -163,8 +163,7 @@ resource 'Applications (prefix: /services/:service_id/applications)' do
         expect(response_json['status']).to eq 'created'
 
         app = ThreeScale::Backend::Application.load(service_id, non_existing_id)
-        expect(app.to_hash).to eq application.merge(id: non_existing_id,
-                                                    user_required: false)
+        expect(app.to_hash).to eq application.merge(id: non_existing_id)
       end
     end
 
