@@ -37,7 +37,7 @@ jobs:
       - restore_cache:
           keys:
           - v2-rbenv-dependencies-20221222-{{ checksum ".ruby-version" }}
-          - v2-dependencies-{{ checksum "Gemfile.lock" }}
+          - v2-dependencies-v2-{{ checksum "Gemfile.lock" }}
 
       - run:
           name: rbenv update
@@ -57,7 +57,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.rbenv/versions
-          key: v2-dependencies-{{ checksum "Gemfile.lock" }}
+          key: v2-dependencies-v2-{{ checksum "Gemfile.lock" }}
 
       #run tests!
       - run:
