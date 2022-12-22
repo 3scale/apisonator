@@ -21,7 +21,7 @@ jobs:
 
     docker:
       # specify the version you desire here
-       - image: quay.io/3scale/apisonator-ci:20210902
+       - image: quay.io/3scale/apisonator-ci:20221222
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
