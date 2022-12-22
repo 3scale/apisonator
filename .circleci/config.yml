@@ -21,7 +21,7 @@ jobs:
 
     docker:
       # specify the version you desire here
-       - image: quay.io/3scale/apisonator-ci:20210902
+       - image: quay.io/3scale/apisonator-ci:20221222
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -36,8 +36,8 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v2-rbenv-dependencies-20210902-{{ checksum ".ruby-version" }}
-          - v2-dependencies-{{ checksum "Gemfile.lock" }}
+          - v2-rbenv-dependencies-20221222-{{ checksum ".ruby-version" }}
+          - v2-dependencies-v2-{{ checksum "Gemfile.lock" }}
 
       - run:
           name: rbenv update
@@ -47,7 +47,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.rbenv
-          key: v2-rbenv-dependencies-20210902-{{ checksum ".ruby-version" }}
+          key: v2-rbenv-dependencies-20221222-{{ checksum ".ruby-version" }}
 
       - run:
           name: bundle install
@@ -57,7 +57,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.rbenv/versions
-          key: v2-dependencies-{{ checksum "Gemfile.lock" }}
+          key: v2-dependencies-v2-{{ checksum "Gemfile.lock" }}
 
       #run tests!
       - run:
