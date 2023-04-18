@@ -25,7 +25,7 @@ group :test do
   gem 'nokogiri',      '~> 1.14.3'
   gem 'pkg-config',    '~> 1.1.7'
   gem 'resque_unit',   '~> 0.4.4', source: 'https://rubygems.org'
-  gem 'test-unit',     '~> 3.2.6'
+  gem 'test-unit',     '~> 3.5'
   gem 'resque_spec',   '~> 0.17.0'
   gem 'timecop',       '~> 0.9.1'
   gem 'rspec',         '~> 3.7.0', require: nil
@@ -38,7 +38,7 @@ group :development do
   gem 'source2swagger', git: 'https://github.com/3scale/source2swagger', branch: 'backend'
   gem 'pry',      '~> 0.14'
   gem 'pry-doc',  '~> 1.1'
-  gem 'license_finder', '~> 5'
+  gem 'license_finder', '~> 7.0'
 end
 
 group :development, :test do
@@ -57,16 +57,17 @@ gem 'rake', '~> 13.0'
 gem 'builder', '= 3.2.3'
 # Use a patched resque to allow reusing their Airbrake Failure class
 gem 'resque', git: 'https://github.com/3scale/resque', branch: '3scale'
-gem 'redis-namespace', '~>1.8.0'
+gem 'redis-namespace', '~>1.8'
 gem 'rack', '~> 2.2.6'
-gem 'sinatra', '~> 2.0.3'
-gem 'sinatra-contrib', '~> 2.0.3'
+gem 'sinatra', '~> 2.2.4'
+gem 'sinatra-contrib', '~> 2.2.4'
 # Optional external error logging services
 gem 'bugsnag', '~> 6', require: nil
 gem 'yabeda-prometheus', '~> 0.5.0'
-gem 'async-redis', '~> 0.5.1'
+gem 'async-redis', '~> 0.7.0'
 gem 'async-pool', '~> 0.3.12'
 gem 'falcon', '~> 0.35'
+gem 'webrick', '~> 1.8'
 
 # Use a patched redis-rb that fixes an issue when trying to connect with
 # sentinels and avoids retrying calls when there's a timeout to prevent

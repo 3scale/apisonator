@@ -12,14 +12,14 @@ Gem::Specification.new do |s|
                    "Toni Reina", "Wojciech Ogrodowczyk",
                    "Alejandro Martinez Ruiz", "David Ortiz Lopez",
                    "Eguzki Astiz Lezaun", "Miguel Soriano Domenech"]
-  s.email       = 'backend@3scale.net'
-  s.homepage    = 'http://www.3scale.net'
+  s.email       = '3scale-engineering@redhat.com'
+  s.homepage    = 'https://www.redhat.com/en/technologies/jboss-middleware/3scale'
   s.summary     = '3scale web service management system backend'
   s.description = 'This gem provides a daemon that handles authorization and reporting of web services managed by 3scale.'
   s.license     = 'Apache-2.0'
   s.metadata    = { 'source_code_uri' => 'https://github.com/3scale/apisonator' }
 
-  s.required_ruby_version     = ">= 2.7.0"
+  s.required_ruby_version     = ">= 3.0"
   s.required_rubygems_version = ">= 1.3.7"
 
   s.files = Dir.glob('{lib,bin,app,config}/**/*')

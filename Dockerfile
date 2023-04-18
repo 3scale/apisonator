@@ -1,4 +1,4 @@
-FROM quay.io/3scale/apisonator-ci:20221222
+FROM quay.io/3scale/apisonator-ci:20230418-02
 MAINTAINER Eguzki Astiz Lezaun <eastizle@redhat.com>
 
 ARG APP_HOME
