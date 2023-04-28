@@ -269,6 +269,6 @@ class StorageTest < Test::Unit::TestCase
   end
 
   def url(url)
-    Storage::Helpers.config_with(url: url)
+    Storage::Helpers.config_with({ url: url })
   end
 end

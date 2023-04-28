@@ -1,17 +1,17 @@
 ---
-- - :whitelist
+- - :permit
   - MIT
   - :who: 3scale Engineering
     :why:
     :versions: []
     :when: 2016-08-16 09:25:15.635515271 Z
-- - :whitelist
+- - :permit
   - Apache 2.0
   - :who: 3scale Engineering
     :why:
     :versions: []
     :when: 2016-08-16 09:26:31.814319646 Z
-- - :whitelist
+- - :permit
   - MIT-LICENSE
   - :who: 3scale Engineering
     :why: It's the same as MIT
@@ -30,37 +30,37 @@
     :why: It's this project.
     :versions: []
     :when: 2016-08-18 15:18:39.314149125 Z
-- - :whitelist
+- - :permit
   - BSD
   - :who: Jeff Kaufmann and Richard Fontana (Red Hat Legal)
     :why:
     :versions: []
     :when: 2016-11-23 11:02:51.564502000 Z
-- - :whitelist
+- - :permit
   - New BSD
   - :who: Jeff Kaufmann and Richard Fontana (Red Hat Legal)
     :why:
     :versions: []
     :when: 2016-11-23 11:03:04.247155000 Z
-- - :whitelist
+- - :permit
   - ruby
   - :who: Jeff Kaufmann and Richard Fontana (Red Hat Legal)
     :why:
     :versions: []
     :when: 2016-11-23 11:03:15.526798000 Z
-- - :whitelist
+- - :permit
   - Simplified BSD
   - :who: Jeff Kaufmann and Richard Fontana (Red Hat Legal)
     :why:
     :versions: []
     :when: 2016-11-23 11:03:33.341497000 Z
-- - :whitelist
+- - :permit
   - LGPLv2+
   - :who: Jeff Kaufmann and Richard Fontana (Red Hat Legal)
     :why:
     :versions: []
     :when: 2016-11-23 11:04:13.584885000 Z
-- - :whitelist
+- - :permit
   - 2-clause BSDL
   - :who: Jeff Kaufmann and Richard Fontana (Red Hat Legal)
     :why:

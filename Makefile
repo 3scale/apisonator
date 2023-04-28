@@ -1,7 +1,7 @@
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
 IMAGE_REPO = quay.io/3scale
-CI_IMAGE = $(IMAGE_REPO)/apisonator-ci:20221222
+CI_IMAGE = $(IMAGE_REPO)/apisonator-ci:20230418-02
 DOCKER ?= $(shell which podman 2> /dev/null || which docker 2> /dev/null || echo "docker")
 
 .PHONY: default
@@ -76,7 +76,7 @@ dev-build: $(PROJECT_PATH)/Dockerfile
 
 .PHONY: ci-build
 ci-build: export APISONATOR_REL?=v$(shell $(DOCKER) run --rm -w /tmp/apisonator -v $(PROJECT_PATH):/tmp/apisonator:z \
-	$(CI_IMAGE) ruby -r/tmp/apisonator/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
+	ruby:3 ruby -r/tmp/apisonator/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
 ci-build: $(PROJECT_PATH)/Dockerfile.ci
 	$(DOCKER) build -t apisonator-ci-layered:$(APISONATOR_REL) -f Dockerfile.ci $(PROJECT_PATH)
 	$(DOCKER) tag apisonator-ci-layered:$(APISONATOR_REL) apisonator-ci-layered:latest
@@ -84,7 +84,7 @@ ci-build: $(PROJECT_PATH)/Dockerfile.ci
 
 .PHONY: ci-flatten
 ci-flatten: APISONATOR_REL?=v$(shell $(DOCKER) run --rm -w /tmp/apisonator -v $(PROJECT_PATH):/tmp/apisonator:z \
-	$(CI_IMAGE) ruby -r/tmp/apisonator/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
+	ruby:3 ruby -r/tmp/apisonator/lib/3scale/backend/version -e "puts ThreeScale::Backend::VERSION")
 ci-flatten: CI_USER?=$(shell $(DOCKER) run --rm apisonator-ci-layered:$(APISONATOR_REL) whoami)
 ci-flatten: CI_PATH?=$(shell $(DOCKER) run --rm apisonator-ci-layered:$(APISONATOR_REL) /bin/bash -c "echo \$${PATH}")
 ci-flatten:
@@ -93,8 +93,7 @@ ci-flatten:
 		apisonator-ci-layered:$(APISONATOR_REL) echo
 	($(DOCKER) export dummy-export-apisonator-ci-$(APISONATOR_REL) | \
 		$(DOCKER) import -c "USER $(CI_USER)" -c "ENV PATH $(CI_PATH)" - \
-		$(CI_IMAGE):$(APISONATOR_REL)) || \
+		$(CI_IMAGE)) || \
 		(echo Failed to flatten image && \
 		$(DOCKER) rm dummy-export-apisonator-ci-$(APISONATOR_REL) && false)
 	-$(DOCKER) rm dummy-export-apisonator-ci-$(APISONATOR_REL)
-	$(DOCKER) tag $(CI_IMAGE):$(APISONATOR_REL) $(CI_IMAGE):latest

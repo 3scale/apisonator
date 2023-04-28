@@ -14,7 +14,7 @@
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 
-ARG RUBY_VERSION="2.7"
+ARG RUBY_VERSION="3.0"
 ARG BUILD_DEPS="tar make file findutils git patch gcc automake autoconf libtool redhat-rpm-config openssl-devel ruby-devel"
 ARG PUMA_WORKERS=1
 

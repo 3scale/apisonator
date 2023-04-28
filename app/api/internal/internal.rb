@@ -66,6 +66,16 @@ module ThreeScale
         private
 
         def parse_json_params(params)
+          # Puma::NullIO (in v4.3.9) does not implement "closed?"
+          body_closed = if request.body.respond_to?(:closed?)
+                          request.body.closed?
+                        elsif request.body.respond_to?(:eof?)
+                          request.body.eof?
+                        else
+                          true
+                        end
+          return if body_closed
+
           body = request.body.read
           params.merge! JSON.parse(body, symbolize_names: true) unless body.empty?
         end

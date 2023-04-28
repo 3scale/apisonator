@@ -21,7 +21,7 @@ jobs:
 
     docker:
       # specify the version you desire here
-       - image: quay.io/3scale/apisonator-ci:20221222
+      - image: quay.io/3scale/apisonator-ci:20230418-02
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -36,8 +36,8 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v2-rbenv-dependencies-20221222-{{ checksum ".ruby-version" }}
-          - v2-dependencies-v2-{{ checksum "Gemfile.lock" }}
+          - v3-rbenv-dependencies-20230418-{{ checksum ".ruby-version" }}
+          - v3-dependencies-v3-{{ checksum "Gemfile.lock" }}
 
       - run:
           name: rbenv update
@@ -47,23 +47,27 @@ jobs:
       - save_cache:
           paths:
             - ~/.rbenv
-          key: v2-rbenv-dependencies-20221222-{{ checksum ".ruby-version" }}
+          key: v3-rbenv-dependencies-20230418-{{ checksum ".ruby-version" }}
 
       - run:
           name: bundle install
           command: |
+            # required for the license_finder
+            # The Gemfile.lock specifies nokogiri (1.14.3)
+            # but bundler would install native gem instead if not forced
+            bundle config set --local force_ruby_platform true
             bundle_install_rubies
 
       - save_cache:
           paths:
             - ~/.rbenv/versions
-          key: v2-dependencies-v2-{{ checksum "Gemfile.lock" }}
+          key: v3-dependencies-v3-{{ checksum "Gemfile.lock" }}
 
       #run tests!
       - run:
-          name: Run tests on Ruby 2.7
+          name: Run tests on Ruby 3.0.2
           command: |
-            TEST_RUBY_VERSION=2.7 script/ci
+            TEST_RUBY_VERSION=3.0.2 script/ci
 
       #- run:
       #    name: Run tests on all Rubies

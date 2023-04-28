@@ -31,7 +31,7 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal
 ENV HOME=/home
 WORKDIR "${HOME}/app"
 
-ARG RUBY_VERSION="2.7"
+ARG RUBY_VERSION="3.0"
 ARG RUNTIME_DEPS="ruby"
 
 RUN echo -e "[ruby]\nname=ruby\nstream=${RUBY_VERSION}\nprofiles=\nstate=enabled\n" > /etc/dnf/modules.d/ruby.module \
@@ -46,7 +46,7 @@ RUN microdnf install --nodocs ${BUILD_DEPS}
 # Bundler should be kept as-is for productisation
 ARG BUNDLE_VERSION_MATCH=true
 # If the above is false
-ARG BUNDLE_VERSION="2.2.9"
+ARG BUNDLE_VERSION="2.3.5"
 
 ARG BUNDLE_GEMFILE=Gemfile
 ARG BUNDLE_WITHOUT=development:test
