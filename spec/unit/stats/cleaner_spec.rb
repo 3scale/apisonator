@@ -76,10 +76,10 @@ module ThreeScale
             it 'deletes only the stats of services marked to be deleted' do
               Cleaner.delete!(non_proxied_instances)
 
-              expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists(key) })
+              expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
                 .to be true
 
-              expect(keys_to_be_deleted.keys.none? { |key| storage.exists(key) })
+              expect(keys_to_be_deleted.keys.none? { |key| storage.exists?(key) })
                 .to be true
             end
 
@@ -94,7 +94,7 @@ module ThreeScale
             before { storage.del(redis_set_marked_to_be_deleted) }
 
             it 'does not delete any keys' do
-              expect(all_keys.keys.all? {|key| storage.exists(key) })
+              expect(all_keys.keys.all? {|key| storage.exists?(key) })
             end
           end
 
@@ -120,10 +120,10 @@ module ThreeScale
             it 'deletes only the stats of services marked to be deleted' do
               Cleaner.delete!(non_proxied_instances, log_deleted_keys: log_to)
 
-              expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists(key) })
+              expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
                 .to be true
 
-              expect(keys_to_be_deleted.keys.none? { |key| storage.exists(key) })
+              expect(keys_to_be_deleted.keys.none? { |key| storage.exists?(key) })
                 .to be true
             end
 
@@ -180,17 +180,17 @@ module ThreeScale
 
           it 'deletes the stats with usage 0' do
             Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
-            expect(stats_with_usage_0.keys.none? { |k| storage.exists(k) }).to be true
+            expect(stats_with_usage_0.keys.none? { |k| storage.exists?(k) }).to be true
           end
 
           it 'does not delete the stats with usage != 0' do
             Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
-            expect(stats_with_non_zero_usage.keys.all? { |k| storage.exists(k) }). to be true
+            expect(stats_with_non_zero_usage.keys.all? { |k| storage.exists?(k) }). to be true
           end
 
           it 'does not delete non-stats keys' do
             Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
-            expect(non_stats_keys.keys.all? { |k| storage.exists(k) }).to be true
+            expect(non_stats_keys.keys.all? { |k| storage.exists?(k) }).to be true
           end
 
           context 'with the option to log deleted keys enabled' do

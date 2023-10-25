@@ -49,7 +49,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: config_obj[:url],
                                sentinels: [{ host: '127.0.0.1', port: 26_379 },
                                            { host: '127.0.0.1', port: 36_379 }])
@@ -62,7 +62,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: config_obj[:url],
                                sentinels: [{ host: '127.0.0.1', port: 26_379, password: 'passw,ord' },
                                            { host: '127.0.0.1', port: 36_379 }])
@@ -75,7 +75,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: config_obj[:url],
                                sentinels: [{ host: '127.0.0.1', port: 26_379 },
                                            { host: '127.0.0.1', port: 36_379 }])
@@ -91,7 +91,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: config_obj[:url],
                                sentinels: config_obj[:sentinels].compact.reject(&:empty?))
   end
@@ -113,7 +113,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: "redis://#{config_obj[:url]}",
                                sentinels: [{ host: '127.0.0.1', port: 26_379 }])
   end
@@ -128,7 +128,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: config_obj[:url],
                                sentinels: [{ host: '127.0.0.1', port: default_sentinel_port },
                                            { host: '192.168.1.1', port: default_sentinel_port },
@@ -146,7 +146,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: config_obj[:url],
                                sentinels: [{ host: '127.0.0.2', port: default_sentinel_port },
                                            { host: '127.0.0.1', port: default_sentinel_port },
@@ -164,7 +164,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: config_obj[:url],
                          sentinels: [{ host: '192.168.1.1', port: 3333, password: 'abc' },
                                      { host: '192.168.1.2', port: 4444 },
@@ -180,7 +180,7 @@ class StorageTest < Test::Unit::TestCase
     }
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_connector(conn)
+    assert_sentinel_config(conn)
     assert_client_config(conn, url: config_obj[:url],
                          sentinels: [{ host: '192.168.1.1', port: 3333, password: 'abc' },
                                      { host: '192.168.1.2', port: 4444 },
@@ -196,7 +196,7 @@ class StorageTest < Test::Unit::TestCase
       }
 
       conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-      assert_sentinel_connector(conn)
+      assert_sentinel_config(conn)
       assert_client_config(conn, url: config_obj[:url],
                                  sentinels: [{ host: '127.0.0.1', port: 26_379 }],
                                  role: role)
@@ -255,16 +255,19 @@ class StorageTest < Test::Unit::TestCase
     assert_equal 'bar', client.get('foo')
   end
 
-  def assert_sentinel_connector(client)
-    connector = client.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@connector)
-    assert_instance_of Redis::Client::Connector::Sentinel, connector
+  def assert_sentinel_config(client)
+    config = client.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@config)
+    assert config.sentinel?
   end
 
   def assert_client_config(conn, url:, **conf)
-    client = conn.instance_variable_get(:@inner).instance_variable_get(:@client)
-    assert_equal client.options[:url], url
-    conf.each do |k, v|
-      assert_equal v, client.options[k]
+    config = conn.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@config)
+    assert_equal URI(url).host, config.name
+    assert_equal conf[:role] || :master, config.instance_variable_get(:@role)
+    conf[:sentinels].each_with_index do |s, i|
+      assert_equal s[:host], config.sentinels[i].host
+      assert_equal s[:port], config.sentinels[i].port
+      assert_equal s[:password], config.sentinels[i].password
     end
   end
 

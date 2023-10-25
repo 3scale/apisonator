@@ -52,11 +52,11 @@ module ThreeScale
       private
 
       def is_sentinel?(connection)
-        connector = connection.instance_variable_get(:@inner)
+        config = connection.instance_variable_get(:@inner)
                               .instance_variable_get(:@client)
-                              .instance_variable_get(:@connector)
+                              .instance_variable_get(:@config)
 
-        connector.instance_of?(Redis::Client::Connector::Sentinel)
+        !!config&.sentinel?
       end
     end
   end

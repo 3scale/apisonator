@@ -286,7 +286,7 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 202, last_response.status
 
     # 'Hits' was 0, so there shouldn't be a stats key for it.
-    hits_key_created = @storage.exists(
+    hits_key_created = @storage.exists?(
       application_key(
         @service_id,
         @application.id,
@@ -331,7 +331,7 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 202, last_response.status
 
     stats_keys = app_keys_for_all_periods(@service_id, @application.id, hits_id, current_time)
-    stats_keys_created = stats_keys.any? { |key| @storage.exists(key) }
+    stats_keys_created = stats_keys.any? { |key| @storage.exists?(key) }
     assert_false stats_keys_created
   end
 
@@ -371,7 +371,7 @@ class ReportTest < Test::Unit::TestCase
     assert_equal 202, last_response.status
 
     stats_keys = app_keys_for_all_periods(@service_id, @application.id, hits_id, current_time)
-    stats_keys_created = stats_keys.any? { |key| @storage.exists(key) }
+    stats_keys_created = stats_keys.any? { |key| @storage.exists?(key) }
     assert_false stats_keys_created
   end
 

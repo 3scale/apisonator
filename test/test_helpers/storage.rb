@@ -88,12 +88,12 @@ module TestHelpers
                 end
               end
 
-              def method_missing(m, *args, &blk)
+              def method_missing(m, *args, **kwargs, &blk)
                 # define and delegate the missing method
-                self.class.send(:define_method, m) do |*a, &b|
-                  inner.send(m, *a, &b)
+                self.class.send(:define_method, m) do |*a, **kwa, &b|
+                  inner.send(m, *a, **kwa, &b)
                 end
-                inner.send(m, *args, &blk)
+                inner.send(m, *args, **kwargs, &blk)
               end
 
               def respond_to_missing?(m)
