@@ -91,7 +91,7 @@ module ThreeScale
         end
 
         def exists?(service_id, id)
-          storage.exists(storage_key(service_id, id, :state))
+          storage.exists?(storage_key(service_id, id, :state))
         end
         memoize :exists?
 
@@ -260,7 +260,7 @@ module ThreeScale
       def delete_key(value)
         db_key = storage_key(:keys)
         invalidate_cache([:smembers, :scard, :sismember], db_key)
-        storage.srem(db_key, value)
+        storage.srem?(db_key, value)
       end
 
       def has_keys?
@@ -279,7 +279,7 @@ module ThreeScale
         db_key = storage_key(:keys)
         key = Memoizer.build_key(self.class, :sismember, db_key, value)
         Memoizer.memoize_block(key) do
-          storage.sismember(db_key, value)
+          storage.sismember(db_key, value.to_s)
         end
       end
 

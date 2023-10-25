@@ -80,7 +80,7 @@ module ThreeScale
         end
 
         def exists?(service_id)
-          storage.exists(storage_key(service_id, 'provider_key'))
+          storage.exists?(storage_key(service_id, 'provider_key'))
         end
 
         def get_service(id)
@@ -277,7 +277,7 @@ module ThreeScale
       def persist_sets
         storage.sadd storage_key_by_provider(:ids), id
         storage.sadd encode_key("services_set"), id
-        storage.sadd encode_key("provider_keys_set"), provider_key
+        storage.sadd encode_key("provider_keys_set"), provider_key unless provider_key.nil?
       end
 
     end
