@@ -62,7 +62,7 @@ module ThreeScale
           # CONN_WHITELIST - Connection options that can be specified in config
           # Note: we don't expose reconnect_attempts until the bug above is fixed
           CONN_WHITELIST = [
-            :connect_timeout, :read_timeout, :write_timeout, :max_connections
+            :connect_timeout, :read_timeout, :write_timeout, :max_connections, :username, :password, :ssl_params
           ].freeze
           private_constant :CONN_WHITELIST
 
@@ -99,8 +99,7 @@ module ThreeScale
             end.merge(options)
 
             cfg_with_sentinels = cfg_sentinels_handler cfg
-
-            defaults.merge(ensure_url_param(cfg_with_sentinels))
+            cfg_defaults_handler cfg_with_sentinels, defaults
           end
 
           private
@@ -239,6 +238,38 @@ module ThreeScale
             # Handle role option when sentinels are validated
             options[:role] = role if role && !role.empty?
             options
+          end
+
+          # The new Redis client accepts either `:url` or `:path`, but not both.
+          # In the case of a path, Redis expects it to not include the `unix://` prefix.
+          # On the other hand, Apisonator accepts only `:url`, for both Sockets and TCP connections.
+          # For paths, Apisonator expects it to be given as a URL using the `unix://` scheme.
+          #
+          # This method handles the conversion.
+          def cfg_unix_path_handler(options)
+            if options.key? :path
+              options.delete(:url)
+              return options
+            end
+
+            if options[:url].start_with? "unix://"
+              options[:path] = options.delete(:url).delete_prefix("unix://")
+            end
+
+            options
+          end
+
+          # This ensures some default values are valid for the redis client.
+          # In particular:
+          #
+          # - The :url key is always present
+          #   - Except when connecting to a unix socket
+          # - :max_connections is only present for async mode
+          def cfg_defaults_handler(options, defaults)
+            cfg_with_defaults = defaults.merge(ensure_url_param(options))
+            cfg_with_defaults = cfg_unix_path_handler(cfg_with_defaults)
+            cfg_with_defaults.delete(:max_connections) unless options[:async]
+            cfg_with_defaults
           end
 
           # helper to convert a sentinel object to a Hash

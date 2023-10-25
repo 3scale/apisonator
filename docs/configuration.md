@@ -26,6 +26,41 @@ variables.
 - Applies to: listener, worker, cron.
 - Format: string.
 
+###  CONFIG_REDIS_USERNAME
+
+- Redis ACL user name
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: string.
+
+###  CONFIG_REDIS_PASSWORD
+
+- Redis ACL password
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: string.
+
+###  CONFIG_REDIS_CA_FILE
+
+- Certification authority to validate Redis server TLS connections with
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: path to file as string.
+
+###  CONFIG_REDIS_CERT
+
+- User certificate to connect to Redis through TLS
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: path to file as string.
+
+###  CONFIG_REDIS_PRIVATE_KEY
+
+- User key to connect to Redis through TLS
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: path to file as string.
+
 ###  CONFIG_REDIS_SENTINEL_HOSTS
 
 - URL of Redis sentinels.
@@ -79,6 +114,41 @@ sentinels.
 "redis://localhost:6379" in those 2 environments.
 - Applies to: listener, worker, cron.
 - Format: string.
+
+###  CONFIG_QUEUES_USERNAME
+
+- Redis ACL user name
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: string.
+
+###  CONFIG_QUEUES_PASSWORD
+
+- Redis ACL password
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: string.
+
+###  CONFIG_QUEUES_CA_FILE
+
+- Certification authority certificate Redis should trust to accept TLS connections
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: path to file as string.
+
+###  CONFIG_QUEUES_CERT
+
+- User certificate to connect to Redis through TLS
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: path to file as string.
+
+###  CONFIG_QUEUES_PRIVATE_KEY
+
+- User key to connect to Redis through TLS
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: path to file as string.
 
 ### CONFIG_QUEUES_SENTINEL_HOSTS
 
