@@ -2,7 +2,7 @@
 require_relative 'bundler_shim'
 
 require 'builder'
-require 'hiredis'
+require 'hiredis-client'
 
 require 'redis'
 

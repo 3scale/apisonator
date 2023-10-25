@@ -9,7 +9,7 @@ gemspec
 # implementations (ie. pure Ruby, java, etc).
 #
 platform :ruby do
-  gem 'hiredis', '~> 0.6.1'
+  gem 'hiredis-client'
   gem 'yajl-ruby', '~> 1.4.3', require: 'yajl'
   gem 'pry-byebug', '~> 3.5.1', groups: [:development]
 end
@@ -24,7 +24,7 @@ group :test do
   gem 'mocha',         '~> 1.3'
   gem 'nokogiri',      '~> 1.14.3'
   gem 'pkg-config',    '~> 1.1.7'
-  gem 'resque_unit',   '~> 0.4.4', source: 'https://rubygems.org'
+  gem 'resque_unit',   '~> 0.4.4'
   gem 'test-unit',     '~> 3.5'
   gem 'resque_spec',   '~> 0.17.0'
   gem 'timecop',       '~> 0.9.1'
@@ -55,8 +55,8 @@ gem 'daemons', '= 1.2.4'
 # Production gems
 gem 'rake', '~> 13.0'
 gem 'builder', '= 3.2.3'
-# Use a patched resque to allow reusing their Airbrake Failure class
-gem 'resque', git: 'https://github.com/3scale/resque', branch: '3scale'
+gem 'redis', '~> 5'
+gem 'resque', '~> 2.6.0'
 gem 'redis-namespace', '~>1.8'
 gem 'rack', '~> 2.2.6'
 gem 'sinatra', '~> 2.2.4'
@@ -64,12 +64,8 @@ gem 'sinatra-contrib', '~> 2.2.4'
 # Optional external error logging services
 gem 'bugsnag', '~> 6', require: nil
 gem 'yabeda-prometheus', '~> 0.5.0'
-gem 'async-redis', '~> 0.7.0'
-gem 'async-pool', '~> 0.3.12'
+gem 'async-redis', '~> 0.8'
+gem 'async-pool', '~> 0.4'
 gem 'falcon', '~> 0.35'
 gem 'webrick', '~> 1.8'
 
-# Use a patched redis-rb that fixes an issue when trying to connect with
-# sentinels and avoids retrying calls when there's a timeout to prevent
-# duplicated commands. It's based on version 4.1.3.
-gem 'redis', git: 'https://github.com/3scale/redis-rb', branch: 'apisonator'

@@ -7,25 +7,6 @@ GIT
       nio4r (~> 2.0)
 
 GIT
-  remote: https://github.com/3scale/redis-rb
-  revision: 7210a9d6cf733fe5a1ad0dd20f5f613167743810
-  branch: apisonator
-  specs:
-    redis (4.1.3)
-
-GIT
-  remote: https://github.com/3scale/resque
-  revision: db327e389cf2fc572a503c47b19871ed899356d1
-  branch: 3scale
-  specs:
-    resque (1.27.4)
-      mono_logger (~> 1.0)
-      multi_json (~> 1.0)
-      redis-namespace (~> 1.3)
-      sinatra (>= 0.9.2)
-      vegas (~> 0.1.2)
-
-GIT
   remote: https://github.com/3scale/source2swagger
   revision: 9a787007577fc58b5822b55720e977cc063057fd
   branch: backend
@@ -63,16 +44,16 @@ GEM
       traces (>= 0.8.0)
     async-http-cache (0.4.3)
       async-http (~> 0.56)
-    async-io (1.34.3)
+    async-io (1.36.0)
       async
-    async-pool (0.3.12)
+    async-pool (0.4.0)
       async (>= 1.25)
-    async-redis (0.7.0)
+    async-redis (0.8.0)
       async (>= 1.8, < 3.0)
       async-io (~> 1.10)
       async-pool (~> 0.2)
-      protocol-redis (~> 0.6.0)
-    async-rspec (1.13.0)
+      protocol-redis (~> 0.8.0)
+    async-rspec (1.17.0)
       rspec (~> 3.0)
       rspec-files (~> 1.0)
       rspec-memory (~> 1.0)
@@ -86,10 +67,12 @@ GEM
       simplecov (>= 0.7.1, < 1.0.0)
     coderay (1.1.3)
     concurrent-ruby (1.1.6)
-    console (1.16.2)
+    connection_pool (2.4.1)
+    console (1.23.2)
+      fiber-annotation
       fiber-local
     daemons (1.2.4)
-    diff-lcs (1.3)
+    diff-lcs (1.5.0)
     docile (1.1.5)
     dry-initializer (3.0.3)
     falcon (0.42.3)
@@ -105,12 +88,14 @@ GEM
       process-metrics (~> 0.2.0)
       protocol-rack (~> 0.1)
       samovar (~> 2.1)
+    fiber-annotation (0.2.0)
     fiber-local (1.0.0)
     gli (2.16.1)
-    hiredis (0.6.3)
+    hiredis-client (0.17.0)
+      redis-client (= 0.17.0)
     i18n (1.8.2)
       concurrent-ruby (~> 1.0)
-    json (2.3.1)
+    json (2.6.3)
     license_finder (7.1.0)
       bundler
       rubyzip (>= 1, < 3)
@@ -126,7 +111,7 @@ GEM
     minitest (5.18.0)
     mocha (1.3.0)
       metaclass (~> 0.0.1)
-    mono_logger (1.1.0)
+    mono_logger (1.1.2)
     multi_json (1.15.0)
     mustache (1.0.5)
     mustermann (2.0.2)
@@ -155,7 +140,7 @@ GEM
     protocol-rack (0.2.4)
       protocol-http (~> 0.23)
       rack (>= 1.0)
-    protocol-redis (0.6.1)
+    protocol-redis (0.8.0)
     pry (0.14.0)
       coderay (~> 1.1)
       method_source (~> 1.0)
@@ -166,14 +151,23 @@ GEM
       pry (~> 0.11)
       yard (~> 0.9.11)
     racc (1.6.2)
-    rack (2.2.6.4)
+    rack (2.2.8)
     rack-protection (2.2.4)
       rack
     rack-test (0.8.2)
       rack (>= 1.0, < 3)
     rake (13.0.1)
-    redis-namespace (1.10.0)
+    redis (5.0.7)
+      redis-client (>= 0.9.0)
+    redis-client (0.17.0)
+      connection_pool
+    redis-namespace (1.11.0)
       redis (>= 4)
+    resque (2.6.0)
+      mono_logger (~> 1.0)
+      multi_json (~> 1.0)
+      redis-namespace (~> 1.6)
+      sinatra (>= 0.9.2)
     resque_spec (0.17.0)
       resque (>= 1.19.0)
       rspec-core (>= 3.0.0)
@@ -186,19 +180,19 @@ GEM
       rspec-core (~> 3.7.0)
       rspec-expectations (~> 3.7.0)
       rspec-mocks (~> 3.7.0)
-    rspec-core (3.7.0)
+    rspec-core (3.7.1)
       rspec-support (~> 3.7.0)
     rspec-expectations (3.7.0)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.7.0)
-    rspec-files (1.0.1)
+    rspec-files (1.1.3)
       rspec (~> 3.0)
-    rspec-memory (1.0.1)
+    rspec-memory (1.0.4)
       rspec (~> 3.0)
     rspec-mocks (3.7.0)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.7.0)
-    rspec-support (3.7.0)
+    rspec-support (3.7.1)
     rspec_api_documentation (5.1.0)
       activesupport (>= 3.0.0)
       mustache (~> 1.0, >= 0.99.4)
@@ -231,15 +225,13 @@ GEM
       power_assert
     thor (1.2.1)
     thread_safe (0.3.6)
-    tilt (2.1.0)
+    tilt (2.3.0)
     timecop (0.9.1)
     timers (4.3.5)
     tomlrb (2.0.3)
     traces (0.9.1)
     tzinfo (1.2.7)
       thread_safe (~> 0.1)
-    vegas (0.1.11)
-      rack (>= 1.0.0)
     webrick (1.8.1)
     with_env (1.1.0)
     xml-simple (1.1.9)
@@ -258,8 +250,8 @@ PLATFORMS
 
 DEPENDENCIES
   apisonator!
-  async-pool (~> 0.3.12)
-  async-redis (~> 0.7.0)
+  async-pool (~> 0.4)
+  async-redis (~> 0.8)
   async-rspec
   benchmark-ips (~> 2.7.2)
   bugsnag (~> 6)
@@ -268,7 +260,7 @@ DEPENDENCIES
   daemons (= 1.2.4)
   falcon (~> 0.35)
   gli (~> 2.16.1)
-  hiredis (~> 0.6.1)
+  hiredis-client
   license_finder (~> 7.0)
   mocha (~> 1.3)
   nokogiri (~> 1.14.3)
@@ -280,11 +272,11 @@ DEPENDENCIES
   rack (~> 2.2.6)
   rack-test (= 0.8.2)
   rake (~> 13.0)
-  redis!
+  redis (~> 5)
   redis-namespace (~> 1.8)
-  resque!
+  resque (~> 2.6.0)
   resque_spec (~> 0.17.0)
-  resque_unit (~> 0.4.4)!
+  resque_unit (~> 0.4.4)
   rspec (~> 3.7.0)
   rspec_api_documentation (~> 5.0)
   sinatra (~> 2.2.4)
