@@ -11,7 +11,8 @@ module ThreeScale
           # @param [Time] timestamp
           # @param [Array] keys array of {(service|application|user) => "key"}
           # @param [Symbol] cmd
-          def aggregate_values(value, timestamp, keys, cmd)
+          # # @param [Redis] client
+          def aggregate_values(value, timestamp, keys, cmd, client = storage)
             keys_for_bucket = []
 
             keys.each do |metric_type, prefix_key|
@@ -23,9 +24,9 @@ module ThreeScale
                 # memory because for rate-limiting and stats, a key of set to 0
                 # is equivalent to a key that does not exist.
                 if cmd == :set && value == 0
-                  storage.del(key)
+                  client.del(key)
                 else
-                  store_key(cmd, key, value, expire_time)
+                  store_key(client, cmd, key, value, expire_time)
                 end
 
                 unless Stats::PeriodCommons::EXCLUDED_FOR_BUCKETS.include?(granularity)
@@ -55,9 +56,9 @@ module ThreeScale
             metric_type == :service ? Stats::PeriodCommons::SERVICE_GRANULARITIES : Stats::PeriodCommons::EXPANDED_GRANULARITIES
           end
 
-          def store_key(cmd, key, value, expire_time = nil)
-            storage.send(cmd, key, value)
-            storage.expire(key, expire_time) if expire_time
+          def store_key(client, cmd, key, value, expire_time = nil)
+            client.send(cmd, key, value)
+            client.expire(key, expire_time) if expire_time
           end
         end
       end

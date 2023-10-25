@@ -27,9 +27,9 @@ module ThreeScale
 
       def save
         old_name = self.class.load_name(service_id, id)
-        storage.pipelined do
-          save_attributes
-          save_to_list
+        storage.pipelined do |pipeline|
+          save_attributes(pipeline)
+          save_to_list(pipeline)
           remove_reverse_mapping(service_id, old_name) if old_name != name
         end
 
@@ -196,10 +196,10 @@ module ThreeScale
           return false unless name and not name.empty?
           clear_cache(service_id, id, name)
 
-          storage.pipelined do
-            storage.srem(id_set_key(service_id), id)
+          storage.pipelined do |pipeline|
+            pipeline.srem(id_set_key(service_id), id)
 
-            storage.del(key(service_id, id, :name),
+            pipeline.del(key(service_id, id, :name),
                         key(service_id, id, :parent_id),
                         id_key(service_id, name))
           end
@@ -223,9 +223,9 @@ module ThreeScale
           ids = load_all_ids(service_id)
           parent_ids_keys = ids.map { |id| key(service_id, id, :parent_id) }
 
-          parent_ids = storage.pipelined do
+          parent_ids = storage.pipelined do |pipeline|
             parent_ids_keys.each_slice(PIPELINED_SLICE_SIZE).map do |slice|
-              storage.mget(slice)
+              pipeline.mget(slice)
             end
           end.flatten
 
@@ -247,14 +247,14 @@ module ThreeScale
         storage.del id_key(service_id, name)
       end
 
-      def save_attributes
-        storage.set(id_key(service_id, name), id)
-        storage.set(key(service_id, id, :name), name)
-        storage.set(key(service_id, id, :parent_id), parent_id) if parent_id
+      def save_attributes(client)
+        client.set(id_key(service_id, name), id)
+        client.set(key(service_id, id, :name), name)
+        client.set(key(service_id, id, :parent_id), parent_id) if parent_id
       end
 
-      def save_to_list
-        storage.sadd(id_set_key(service_id), id)
+      def save_to_list(client)
+        client.sadd(id_set_key(service_id), id)
       end
 
       def save_children

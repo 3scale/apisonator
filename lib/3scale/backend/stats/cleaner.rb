@@ -199,9 +199,9 @@ module ThreeScale
           end
 
           def remove_services_from_delete_set(services)
-            storage.pipelined do
+            storage.pipelined do |pipeline|
               services.each do |service|
-                storage.srem(KEY_SERVICES_TO_DELETE, service)
+                pipeline.srem(KEY_SERVICES_TO_DELETE, service)
               end
             end
           end

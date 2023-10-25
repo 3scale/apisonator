@@ -102,9 +102,9 @@ module ThreeScale
         end
 
         def delete_data(service_id, id)
-          storage.pipelined do
-            delete_set(service_id, id)
-            delete_attributes(service_id, id)
+          storage.pipelined do |pipeline|
+            delete_set(pipeline, service_id, id)
+            delete_attributes(pipeline, service_id, id)
           end
         end
 
@@ -137,12 +137,12 @@ module ThreeScale
           encode_key("application/service_id:#{service_id}/key:#{key}/id")
         end
 
-        def delete_set(service_id, id)
-          storage.srem(applications_set_key(service_id), id)
+        def delete_set(client, service_id, id)
+          client.srem(applications_set_key(service_id), id)
         end
 
-        def delete_attributes(service_id, id)
-          storage.del(
+        def delete_attributes(client, service_id, id)
+          client.del(
             ATTRIBUTES.map do |f|
               storage_key(service_id, id, f)
             end
@@ -166,9 +166,9 @@ module ThreeScale
       def save
         raise ApplicationHasNoState.new(id) if !state
 
-        storage.pipelined do
-          persist_attributes
-          persist_set
+        storage.pipelined do |pipeline|
+          persist_attributes(pipeline)
+          persist_set(pipeline)
         end
 
         self.class.clear_cache(service_id, id)
@@ -319,15 +319,15 @@ module ThreeScale
 
       private
 
-      def persist_attributes
-        storage.set(storage_key(:state), state.to_s) if state
-        storage.set(storage_key(:plan_id), plan_id) if plan_id
-        storage.set(storage_key(:plan_name), plan_name) if plan_name
-        storage.set(storage_key(:redirect_url), redirect_url) if redirect_url
+      def persist_attributes(client)
+        client.set(storage_key(:state), state.to_s) if state
+        client.set(storage_key(:plan_id), plan_id) if plan_id
+        client.set(storage_key(:plan_name), plan_name) if plan_name
+        client.set(storage_key(:redirect_url), redirect_url) if redirect_url
       end
 
-      def persist_set
-        storage.sadd(applications_set_key(service_id), id)
+      def persist_set(client)
+        client.sadd(applications_set_key(service_id), id)
       end
     end
   end

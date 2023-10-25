@@ -16,9 +16,9 @@ module ThreeScale
 
           # We need to add the "resque" namespace in the keys for all the
           # commands.
-          async_client.pipelined do
-            async_client.sadd('resque:queues', queue.to_s)
-            async_client.rpush(
+          async_client.pipelined do |pipeline|
+            pipeline.sadd('resque:queues', queue.to_s)
+            pipeline.rpush(
               "resque:queue:#{queue}", Resque.encode(:class => klass.to_s, :args => args)
             )
           end

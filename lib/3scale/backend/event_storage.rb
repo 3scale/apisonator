@@ -38,8 +38,8 @@ module ThreeScale
           (id > 0) ? storage.zremrangebyscore(events_queue_key, id, id) : 0
         end
 
-        def size
-          storage.zcard(events_queue_key)
+        def size(strg = storage)
+          strg.zcard(events_queue_key)
         end
 
         def ping_if_not_empty
@@ -90,9 +90,9 @@ module ThreeScale
         def pending_ping?
           ## the queue is not empty and more than timeout has passed
           ## since the front-end was notified
-          events_set_size, can_ping = storage.pipelined do
-            size
-            storage.set(events_ping_key, '1'.freeze, ex: PING_TTL, nx: true)
+          events_set_size, can_ping = storage.pipelined do |pipeline|
+            size(pipeline)
+            pipeline.set(events_ping_key, '1'.freeze, ex: PING_TTL, nx: true)
           end
 
           can_ping && events_set_size > 0

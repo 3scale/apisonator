@@ -40,10 +40,10 @@ module ThreeScale
           service_id = attributes[:service_id]
           plan_id = attributes[:plan_id]
           prefix = key_prefix(service_id, plan_id, attributes[:metric_id])
-          storage.pipelined do
+          storage.pipelined do |pipeline|
             PERIODS.each do |period|
               p_val = attributes[period.to_sym]
-              p_val and storage.set(key_for_period(prefix, period), p_val)
+              p_val and pipeline.set(key_for_period(prefix, period), p_val)
             end
           end
           clear_cache(service_id, plan_id)
