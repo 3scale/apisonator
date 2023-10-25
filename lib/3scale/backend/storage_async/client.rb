@@ -73,6 +73,7 @@ module ThreeScale
 
         METHODS_TO_BE_CALLED_DIRECTLY = [
           :del,
+          :exists,
           :expire,
           :expireat,
           :flushdb,
@@ -90,9 +91,11 @@ module ThreeScale
           :mget,
           :ping,
           :rpush,
+          :sadd,
           :scard,
           :setex,
           :smembers,
+          :srem,
           :sunion,
           :ttl,
           :zcard,
@@ -109,17 +112,18 @@ module ThreeScale
         end
 
         METHODS_TO_BOOLIFY = [
-          :exists,
+          :exists?,
           :sismember,
-          :sadd,
-          :srem,
+          :sadd?,
+          :srem?,
           :zadd
         ].freeze
         private_constant :METHODS_TO_BOOLIFY
 
         METHODS_TO_BOOLIFY.each do |method|
+          command = method.to_s.delete('?')
           define_method(method) do |*args|
-            @redis_async.call(method, *args.flatten) > 0
+            @redis_async.call(command, *args.flatten) > 0
           end
         end
 
@@ -163,9 +167,9 @@ module ThreeScale
         end
 
         # This method allows us to send pipelines like this:
-        # storage.pipelined do
-        #   storage.get('a')
-        #   storage.get('b')
+        # storage.pipelined do |pipeline|
+        #   pipeline.get('a')
+        #   pipeline.get('b')
         # end
         def pipelined(&block)
           # This replaces the client with a Pipeline that accumulates the Redis
@@ -177,7 +181,7 @@ module ThreeScale
           # When running a nested pipeline, we just need to continue
           # accumulating commands.
           if @building_pipeline
-            block.call
+            block.call self
             return
           end
 
@@ -188,7 +192,7 @@ module ThreeScale
           @redis_async = pipeline
 
           begin
-            block.call
+            block.call self
           ensure
             @redis_async = original
             @building_pipeline = false

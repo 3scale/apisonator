@@ -59,7 +59,7 @@ module ThreeScale
         # Returns an array with the result for each command in the same order
         # that they added with .call().
         def run(redis_async_client)
-          responses = redis_async_client.call_pipeline(@commands)
+          responses = collect_responses(redis_async_client)
 
           responses.zip(@commands).map do |resp, cmd|
             command_name = cmd.first.to_s.upcase
@@ -72,6 +72,37 @@ module ThreeScale
               resp
             end
           end
+        end
+
+        private
+
+        def collect_responses(redis_async_client)
+          async_pipe = redis_async_client.pipeline
+          @commands.each do |command|
+            async_pipe.write_request(*command)
+          end
+
+          # Redis returns an answer for each of the commands sent in the
+          # pipeline. But in order to keep compatibility with redis-rb, here, if
+          # there is an error in any of the commands of the pipeline we will
+          # raise an error (the first one that occurred).
+
+          first_err = nil
+
+          res = @commands.size.times.map do
+            begin
+              async_pipe.read_response
+            rescue ::Protocol::Redis::ServerError => e
+              first_err ||= e
+              nil
+            end
+          end
+
+          raise first_err if first_err
+
+          res
+        ensure
+          async_pipe.close
         end
       end
     end
