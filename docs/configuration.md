@@ -49,14 +49,14 @@ variables.
 
 ###  CONFIG_REDIS_CERT
 
-- User certificate to connect to Redis through TLS
+- The path to the client SSL certificate
 - Optional. Defaults to empty.
 - Applies to: listener, worker, cron.
 - Format: path to file as string.
 
 ###  CONFIG_REDIS_PRIVATE_KEY
 
-- User key to connect to Redis through TLS
+- The path to the client SSL private key
 - Optional. Defaults to empty.
 - Applies to: listener, worker, cron.
 - Format: path to file as string.
