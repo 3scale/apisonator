@@ -5,6 +5,7 @@ module ThreeScale
       # This class accumulates commands and sends several of them in a single
       # request, instead of sending them one by one.
       class Pipeline
+        include Methods
 
         Error = Class.new StandardError
 
@@ -53,6 +54,12 @@ module ThreeScale
           # only care about adding the command to @commands.
 
           1
+        end
+
+        def pipelined(&block)
+          # When running a nested pipeline, we just need to continue
+          # accumulating commands.
+          block.call self
         end
 
         # Send to redis all the accumulated commands.
