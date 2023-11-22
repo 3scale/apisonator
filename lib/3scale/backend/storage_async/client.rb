@@ -1,3 +1,4 @@
+require 'concurrent'
 require 'async/io'
 require 'async/redis/client'
 
@@ -47,13 +48,13 @@ module ThreeScale
           port ||= DEFAULT_PORT
 
           endpoint = Async::IO::Endpoint.tcp(host, port)
-          @redis_async = Async::Redis::Client.new(
+          @redis_async = Concurrent::ThreadLocalVar.new{ Async::Redis::Client.new(
             endpoint, limit: opts[:max_connections]
-          )
+          )}
         end
 
         def call(*args)
-          @redis_async.call(*args)
+          @redis_async.value.call(*args)
         end
 
         # This method allows us to send pipelines like this:
@@ -70,11 +71,11 @@ module ThreeScale
 
           pipeline = Pipeline.new
           block.call pipeline
-          pipeline.run(@redis_async)
+          pipeline.run(@redis_async.value)
         end
 
         def close
-          @redis_async.close
+          @redis_async.value.close
         end
       end
 
