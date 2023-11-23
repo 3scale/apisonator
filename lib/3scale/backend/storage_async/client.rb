@@ -16,15 +16,6 @@ module ThreeScale
         include Configurable
         include Methods
 
-        DEFAULT_HOST = 'localhost'.freeze
-        private_constant :DEFAULT_HOST
-
-        DEFAULT_PORT = 22121
-        private_constant :DEFAULT_PORT
-
-        HOST_PORT_REGEX = /redis:\/\/(.*):(\d+)/
-        private_constant :HOST_PORT_REGEX
-
         class << self
           attr_writer :instance
 
@@ -43,14 +34,7 @@ module ThreeScale
         end
 
         def initialize(opts)
-          host, port = opts[:url].match(HOST_PORT_REGEX).captures if opts[:url]
-          host ||= DEFAULT_HOST
-          port ||= DEFAULT_PORT
-
-          endpoint = Async::IO::Endpoint.tcp(host, port)
-          @redis_async = Concurrent::ThreadLocalVar.new{ Async::Redis::Client.new(
-            endpoint, limit: opts[:max_connections]
-          )}
+          @redis_async = Concurrent::ThreadLocalVar.new{ initialize_client(opts) }
         end
 
         def call(*args)
@@ -77,8 +61,70 @@ module ThreeScale
         def close
           @redis_async.value.close
         end
-      end
 
+        private
+
+        DEFAULT_SCHEME = 'redis'
+        DEFAULT_HOST = 'localhost'.freeze
+        DEFAULT_PORT = 22121
+
+        # Custom Redis Protocol class which sends the AUTH command on every new connection
+        # to authenticate before sending any other command.
+        class AuthenticatedRESP2
+          def initialize(credentials)
+            @credentials = credentials
+          end
+
+          def client(stream)
+            client = Async::Redis::Protocol::RESP2.client(stream)
+
+            client.write_request(["AUTH", *@credentials])
+            client.read_response # Ignore response.
+
+            client
+          end
+        end
+
+        def initialize_client(opts)
+          endpoint = make_redis_endpoint(opts)
+          protocol = make_redis_protocol(opts)
+          Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
+        end
+
+        # Authenticated RESP2 if credentials are provided, RESP2 otherwise
+        def make_redis_protocol(opts)
+          uri = URI(opts[:url] || "")
+          credentials = [ uri.user || opts[:username], uri.password || opts[:password]]
+
+          if credentials.any?
+            AuthenticatedRESP2.new(credentials)
+          else
+            Async::Redis::Protocol::RESP2
+          end
+        end
+
+        # SSL endpoint if scheme is `rediss:`, TCP endpoint otherwise.
+        # Note: Unix socket endpoint is not supported in async mode
+        def make_redis_endpoint(opts)
+          uri = URI(opts[:url] || "")
+          scheme = uri.scheme || DEFAULT_SCHEME
+          host = uri.host || DEFAULT_HOST
+          port = uri.port || DEFAULT_PORT
+
+          tcp_endpoint = Async::IO::Endpoint.tcp(host, port)
+
+          case scheme
+          when 'redis'
+            tcp_endpoint
+          when 'rediss'
+            ssl_context = OpenSSL::SSL::SSLContext.new
+            ssl_context.set_params(opts[:ssl_params])
+            Async::IO::SSLEndpoint.new(tcp_endpoint, ssl_context: ssl_context)
+          else
+            raise ArgumentError
+          end
+        end
+      end
     end
   end
 end
