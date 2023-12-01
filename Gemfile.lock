@@ -44,15 +44,15 @@ GEM
       traces (>= 0.8.0)
     async-http-cache (0.4.3)
       async-http (~> 0.56)
-    async-io (1.36.0)
+    async-io (1.34.3)
       async
-    async-pool (0.4.0)
+    async-pool (0.3.12)
       async (>= 1.25)
-    async-redis (0.8.0)
+    async-redis (0.7.0)
       async (>= 1.8, < 3.0)
       async-io (~> 1.10)
       async-pool (~> 0.2)
-      protocol-redis (~> 0.8.0)
+      protocol-redis (~> 0.6.0)
     async-rspec (1.17.0)
       rspec (~> 3.0)
       rspec-files (~> 1.0)
@@ -140,7 +140,7 @@ GEM
     protocol-rack (0.2.4)
       protocol-http (~> 0.23)
       rack (>= 1.0)
-    protocol-redis (0.8.0)
+    protocol-redis (0.6.1)
     pry (0.14.0)
       coderay (~> 1.1)
       method_source (~> 1.0)
@@ -250,8 +250,8 @@ PLATFORMS
 
 DEPENDENCIES
   apisonator!
-  async-pool (~> 0.4)
-  async-redis (~> 0.8)
+  async-pool (~> 0.3.12)
+  async-redis (~> 0.7.0)
   async-rspec
   benchmark-ips (~> 2.7.2)
   bugsnag (~> 6)

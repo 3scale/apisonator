@@ -64,8 +64,8 @@ gem 'sinatra-contrib', '~> 2.2.4'
 # Optional external error logging services
 gem 'bugsnag', '~> 6', require: nil
 gem 'yabeda-prometheus', '~> 0.5.0'
-gem 'async-redis', '~> 0.8'
-gem 'async-pool', '~> 0.4'
+gem 'async-redis', '~> 0.7.0'
+gem 'async-pool', '~> 0.3.12'
 gem 'falcon', '~> 0.35'
 gem 'webrick', '~> 1.8'
 
