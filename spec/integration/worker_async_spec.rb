@@ -5,6 +5,9 @@ require '3scale/backend/worker_async'
 
 module ThreeScale
   module Backend
+
+    DEFAULT_SERVER = '127.0.0.1:22121'.freeze
+
     context 'when there are jobs enqueued' do
       let(:provider_key) { 'a_provider_key' }
       let(:service_id) { 'a_service_id' }
@@ -60,7 +63,10 @@ module ThreeScale
         # kind of error.
         t_start = Time.now
 
-        while Storage.instance.get(stats_key).to_i < n_reports
+        storage = Redis.new(Storage::Helpers.config_with(
+          ThreeScale::Backend.configuration.redis, options: { default_url: "#{DEFAULT_SERVER}" }
+        ))
+        while storage.get(stats_key).to_i < n_reports
           if Time.now - t_start > 10
             raise 'The worker is taking too much to process the jobs'
           end
@@ -72,7 +78,7 @@ module ThreeScale
 
         worker_thread.join
 
-        expect(Storage.instance.get(stats_key).to_i).to eq n_reports
+        expect(storage.get(stats_key).to_i).to eq n_reports
       end
     end
   end
