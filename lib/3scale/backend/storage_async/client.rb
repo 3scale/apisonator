@@ -1,4 +1,3 @@
-require 'concurrent'
 require 'async/io'
 require 'async/redis/client'
 
@@ -34,11 +33,11 @@ module ThreeScale
         end
 
         def initialize(opts)
-          @redis_async = Concurrent::ThreadLocalVar.new{ initialize_client(opts) }
+          @redis_async = initialize_client(opts)
         end
 
         def call(*args)
-          @redis_async.value.call(*args)
+          @redis_async.call(*args)
         end
 
         # This method allows us to send pipelines like this:
@@ -55,11 +54,11 @@ module ThreeScale
 
           pipeline = Pipeline.new
           block.call pipeline
-          pipeline.run(@redis_async.value)
+          pipeline.run(@redis_async)
         end
 
         def close
-          @redis_async.value.close
+          @redis_async.close
         end
 
         private
