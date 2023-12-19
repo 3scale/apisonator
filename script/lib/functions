@@ -1,4 +1,6 @@
 REDIS_PORTS=(7379 7380 6379)
+REDIS_TLS_PORT=46379
+ALL_PORTS=(${REDIS_PORTS[@]} $REDIS_TLS_PORT)
 REDIS_UNIX_SOCKET_PREFIX="/tmp/redis_unix"
 TWEMPROXY_PIDFILE="/tmp/twemproxy_backend_tests.pid"
 
@@ -19,6 +21,8 @@ function kill_pid {
 }
 
 function start_redis {
+    local basedir="${SCRIPT_DIR:-$(pwd -P)}"
+
     if [ -e /usr/local/bin/redis-server ]; then
 	cmd="/usr/local/bin/redis-server"
     elif [ -e /usr/bin/redis-server ]; then
@@ -28,13 +32,19 @@ function start_redis {
     fi
      for port in "${REDIS_PORTS[@]}"
     do
-        $cmd --port "$port" --unixsocket "${REDIS_UNIX_SOCKET_PREFIX}.$port.sock" --unixsocketperm 775 --logfile "/tmp/redis.$port.log" --daemonize yes
+        $cmd --port "$port" --unixsocket "${REDIS_UNIX_SOCKET_PREFIX}.$port.sock" --unixsocketperm 775 --logfile "/tmp/redis.$port.log" --daemonize yes --aclfile ${basedir}/config/redis-server-acl.conf
     done
+
+    $cmd --tls-port "$REDIS_TLS_PORT" --port 0 --unixsocket "${REDIS_UNIX_SOCKET_PREFIX}.$REDIS_TLS_PORT.sock" \
+        --unixsocketperm 775 --logfile "/tmp/redis.$REDIS_TLS_PORT.log" --daemonize yes \
+        --tls-cert-file ${basedir}/config/redis-server.crt --tls-key-file ${basedir}/config/redis-server.key \
+        --tls-ca-cert-file ${basedir}/config/ca-root-cert.pem --tls-auth-clients optional \
+        --aclfile ${basedir}/config/redis-server-acl.conf
 }
 
 function stop_redis {
     local pids
-    for port in "${REDIS_PORTS[@]}"; do
+    for port in "${ALL_PORTS[@]}"; do
 	kill_pid `ps aux | grep redis-server | grep "$port" | awk '{ print $2 }'` &
 	pids[${port}]=$!
     done
