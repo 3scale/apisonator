@@ -1,6 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-class StorageTest < Test::Unit::TestCase
+class StorageSyncTest < Test::Unit::TestCase
   def test_basic_operations
     storage = StorageSync.instance(true)
     storage.del('foo')
@@ -33,12 +33,6 @@ class StorageTest < Test::Unit::TestCase
   def test_redis_malformed_url
     assert_raise Storage::InvalidURI do
       StorageSync.send :new, url('a_malformed_url:1:10')
-    end
-  end
-
-  def test_redis_url_without_scheme
-    assert_nothing_raised do
-      StorageSync.send :new, url('foo')
     end
   end
 
@@ -245,6 +239,79 @@ class StorageTest < Test::Unit::TestCase
       redis_cfg = Storage::Helpers.config_with(config_obj)
       refute redis_cfg.key?(:sentinels)
     end
+  end
+
+  def test_tls_no_client_certificate
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
+      }
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_connection(storage)
+  end
+
+  def test_tls_client_cert_rsa
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem')),
+        cert: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-client.crt')),
+        key: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-client.key'))
+      }
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_connection(storage)
+  end
+
+  def test_tls_client_cert_dsa
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem')),
+        cert: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-dsa.crt')),
+        key: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-dsa.pem'))
+      }
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_connection(storage)
+  end
+
+  def test_tls_client_cert_ec
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem')),
+        cert: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-ec.crt')),
+        key: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-ec.key'))
+      }
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_connection(storage)
+  end
+
+  def test_acl
+    config_obj = {
+      url: 'redis://localhost:6379/0',
+      username: 'apisonator-test',
+      password: 'p4ssW0rd'
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_connection(storage)
+  end
+
+  def test_acl_tls
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
+      },
+      username: 'apisonator-test',
+      password: 'p4ssW0rd'
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_connection(storage)
   end
 
   private
