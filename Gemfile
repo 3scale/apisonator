@@ -39,6 +39,7 @@ group :development do
   gem 'pry',      '~> 0.14'
   gem 'pry-doc',  '~> 1.1'
   gem 'license_finder', '~> 7.0'
+  gem 'dotenv', '~> 2.8.1'
 end
 
 group :development, :test do

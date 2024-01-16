@@ -74,6 +74,7 @@ GEM
     daemons (1.2.4)
     diff-lcs (1.5.0)
     docile (1.1.5)
+    dotenv (2.8.1)
     dry-initializer (3.0.3)
     falcon (0.42.3)
       async
@@ -258,6 +259,7 @@ DEPENDENCIES
   builder (= 3.2.3)
   codeclimate-test-reporter (~> 0.6.0)
   daemons (= 1.2.4)
+  dotenv (~> 2.8.1)
   falcon (~> 0.35)
   gli (~> 2.16.1)
   hiredis-client

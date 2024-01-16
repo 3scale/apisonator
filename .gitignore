@@ -16,3 +16,5 @@ spec/reports/*
 bench.txt
 3scale_backend.state
 3scale_backend.sock
+
+.env
