@@ -2,7 +2,7 @@ require '3scale/backend/configuration/loader'
 require '3scale/backend/environment'
 require '3scale/backend/configurable'
 require '3scale/backend/errors'
-require 'dotenv'
+require 'dotenv/load' if ENV['RACK_ENV'] == 'development'
 
 module ThreeScale
   module Backend
@@ -65,9 +65,6 @@ module ThreeScale
       config.master.metrics = Struct.new(*master_metrics).new
 
       config.legacy_referrer_filters = false
-
-      # Load configuration from a file.
-      Dotenv.load if development?
 
       config.load!([
         '/etc/3scale_backend.conf',
