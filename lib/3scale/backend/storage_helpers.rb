@@ -99,7 +99,8 @@ module ThreeScale
             end.merge(options)
 
             cfg_with_sentinels = cfg_sentinels_handler cfg
-            cfg_defaults_handler cfg_with_sentinels, defaults
+            cfg_with_ssl = cfg_ssl_handler cfg_with_sentinels
+            cfg_defaults_handler cfg_with_ssl, defaults
           end
 
           private
@@ -237,6 +238,20 @@ module ThreeScale
 
             # Handle role option when sentinels are validated
             options[:role] = role if role && !role.empty?
+            options
+          end
+
+          def cfg_ssl_handler(options)
+            return options unless options.key? :ssl_params
+
+            ssl_params = options[:ssl_params]
+
+            ssl_params.delete(:ca_file) if ssl_params[:ca_file].to_s.strip.empty?
+            ssl_params.delete(:ca_path) if ssl_params[:ca_path].to_s.strip.empty?
+            ssl_params.delete(:cert) if ssl_params[:cert].to_s.strip.empty?
+            ssl_params.delete(:key) if ssl_params[:key].to_s.strip.empty?
+
+            options[:ssl_params] = ssl_params
             options
           end
 
