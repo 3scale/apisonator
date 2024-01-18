@@ -241,6 +241,8 @@ module ThreeScale
             options
           end
 
+          # Ensure only ssl_params with value are added to the config
+          # Also load a default CA cert if none is provided
           def cfg_ssl_handler(options)
             return options unless options.key? :ssl_params
 
@@ -252,6 +254,20 @@ module ThreeScale
             ssl_params.delete(:key) if ssl_params[:key].to_s.strip.empty?
 
             options[:ssl_params] = ssl_params
+            load_default_ca_cert(options)
+          end
+
+          # If no CA cert given, look for the default one at `config/ca_cert.pem`
+          def load_default_ca_cert(options)
+            return options if options[:ssl_params]&.key?(:ca_file) || options[:ssl_params]&.key?(:ca_path)
+
+            cert_path = "#{Backend::Util.root_dir}/config/ca_cert.pem"
+
+            return options unless File.exist?(cert_path)
+
+            options[:ssl_params] ||= {}
+            options[:ssl_params][:ca_file] = cert_path
+
             options
           end
 
