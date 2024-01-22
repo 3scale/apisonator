@@ -5,6 +5,7 @@ require 'builder'
 require 'hiredis-client'
 
 require 'redis'
+require 'redis_client/config/timeout' # Monkey patch redis-client
 
 require 'resque'
 require 'securerandom'
