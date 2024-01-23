@@ -56,7 +56,7 @@ module ThreeScale
                   config.timeout = 3
                   config.logger = Backend.logger
                   config.meta_data_filters = []
-                  config.notify_release_stages = ['production', 'preview']
+                  config.notify_release_stages = ['production', 'staging']
                   config.project_root = Backend::Util.root_dir
                 end
               end

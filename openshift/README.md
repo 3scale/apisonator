@@ -14,8 +14,8 @@ Some ENV vars are set as ENVs in the Makefile, others inside the env file `.env`
 
 **GLOBAL ENV**
 
-`ENV_RACK` allowed values: `preview`, `production`
-- `preview`: sets backend in preview mode
+`ENV_RACK` allowed values: `staging`, `production`
+- `staging`: sets backend in staging mode
 - `production`: sets backend in production
 
 **WORKER ENVS**

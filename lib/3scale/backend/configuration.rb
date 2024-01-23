@@ -2,7 +2,7 @@ require '3scale/backend/configuration/loader'
 require '3scale/backend/environment'
 require '3scale/backend/configurable'
 require '3scale/backend/errors'
-require 'dotenv/load' if ENV['RACK_ENV'] == 'development'
+require 'dotenv/load' if ENV['RACK_ENV'] != 'production'
 
 module ThreeScale
   module Backend
