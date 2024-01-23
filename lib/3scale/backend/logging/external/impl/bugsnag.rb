@@ -25,9 +25,7 @@ module ThreeScale
               end
 
               def setup_worker
-                require '3scale/backend/logging/external/resque'
-
-                External::Resque.setup klass
+                # Bugsnag should integrate automatically with Resque
               end
 
               def notify_proc
@@ -56,7 +54,7 @@ module ThreeScale
                   config.timeout = 3
                   config.logger = Backend.logger
                   config.meta_data_filters = []
-                  config.notify_release_stages = ['production', 'preview']
+                  config.notify_release_stages = ['production', 'staging', 'development']
                   config.project_root = Backend::Util.root_dir
                 end
               end
