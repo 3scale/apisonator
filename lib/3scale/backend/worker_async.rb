@@ -1,4 +1,6 @@
 require 'async'
+require 'async/barrier'
+require 'async/semaphore'
 require 'redis-namespace'
 require '3scale/backend/job_fetcher'
 
@@ -23,10 +25,11 @@ module ThreeScale
 
         @job_fetcher = options[:job_fetcher] || JobFetcher.new(redis_client: redis_client)
 
-        @max_concurrent_jobs = configuration.async_worker.max_concurrent_jobs ||
+        max_concurrent_jobs = configuration.async_worker.max_concurrent_jobs ||
             DEFAULT_MAX_CONCURRENT_JOBS
 
-        @reactor = Async::Reactor.new
+        @barrier = Async::Barrier.new
+        @semaphore = Async::Semaphore.new(max_concurrent_jobs, parent: @barrier)
       end
 
       def work
@@ -40,31 +43,6 @@ module ThreeScale
         fetch_jobs_thread = start_thread_to_fetch_jobs
 
         loop do
-          break if @shutdown
-          schedule_jobs
-          @reactor.run
-        end
-
-        fetch_jobs_thread.join
-
-        # Ensure that we do not leave any jobs in memory
-        @reactor.async { perform(@jobs.pop) } until @jobs.empty?
-        @reactor.run
-
-        Async { unregister_worker }
-      end
-
-      def shutdown
-        @job_fetcher.shutdown
-        @shutdown = true
-      end
-
-      private
-
-      def schedule_jobs
-        scheduled = 0
-
-        loop do
           # unblocks when there are new jobs or when .close() is called
           job = @jobs.pop
 
@@ -74,12 +52,26 @@ module ThreeScale
 
           break if @shutdown
 
-          @reactor.async { perform(job) }
-          scheduled += 1
-
-          break if @jobs.empty? or scheduled >= @max_concurrent_jobs
+          @semaphore.async { perform(job) }
         end
+
+        fetch_jobs_thread.join
+
+        # Ensure that we do not leave any jobs in memory
+        @semaphore.async { perform(@jobs.pop) } until @jobs.empty?
+        @barrier.wait
+
+        Async { unregister_worker }
+      ensure
+        @barrier.stop
       end
+
+      def shutdown
+        @job_fetcher.shutdown
+        @shutdown = true
+      end
+
+      private
 
       def process_one
         job = @job_fetcher.fetch
