@@ -25,11 +25,8 @@ module ThreeScale
 
         @job_fetcher = options[:job_fetcher] || JobFetcher.new(redis_client: redis_client)
 
-        max_concurrent_jobs = configuration.async_worker.max_concurrent_jobs ||
+        @max_concurrent_jobs = configuration.async_worker.max_concurrent_jobs ||
             DEFAULT_MAX_CONCURRENT_JOBS
-
-        @barrier = Async::Barrier.new
-        @semaphore = Async::Semaphore.new(max_concurrent_jobs, parent: @barrier)
       end
 
       def work
@@ -42,28 +39,14 @@ module ThreeScale
 
         fetch_jobs_thread = start_thread_to_fetch_jobs
 
-        loop do
-          # unblocks when there are new jobs or when .close() is called
-          job = @jobs.pop
-
-          # If job is nil, it means that the queue is closed. No more jobs are
-          # going to be pushed, so shutdown.
-          shutdown unless job
-
-          break if @shutdown
-
-          @semaphore.async { perform(job) }
-        end
+        Async { process_all }
 
         fetch_jobs_thread.join
 
         # Ensure that we do not leave any jobs in memory
-        @semaphore.async { perform(@jobs.pop) } until @jobs.empty?
-        @barrier.wait
+        Async { clear_queue }
 
         Async { unregister_worker }
-      ensure
-        @barrier.stop
       end
 
       def shutdown
@@ -76,6 +59,33 @@ module ThreeScale
       def process_one
         job = @job_fetcher.fetch
         perform(job) if job
+      end
+
+      def process_all
+        barrier = Async::Barrier.new
+        semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
+
+        loop do
+          # unblocks when there are new jobs or when .close() is called
+          job = @jobs.pop
+
+          # If job is nil, it means that the queue is closed. No more jobs are
+          # going to be pushed, so shutdown.
+          shutdown unless job
+
+          break if @shutdown
+
+          semaphore.async { perform(job) }
+        end
+
+        barrier.wait
+      end
+
+      def clear_queue
+        barrier = Async::Barrier.new
+        semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
+        semaphore.async { perform(@jobs.pop) } until @jobs.empty?
+        barrier.wait
       end
 
       def start_thread_to_fetch_jobs
