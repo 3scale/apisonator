@@ -209,8 +209,9 @@ module ThreeScale
         def init_sentinels_client(opts)
           uri = URI(opts[:url] || '')
           name = uri.host
+          role = opts[:role] || :master
 
-          Async::Redis::SentinelsClient.new(name, opts[:sentinels])
+          Async::Redis::SentinelsClient.new(name, opts[:sentinels], role)
         end
       end
     end
