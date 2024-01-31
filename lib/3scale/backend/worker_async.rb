@@ -32,22 +32,22 @@ module ThreeScale
       def work
         Sync do
           if one_off?
-            Async { process_one }
+            process_one
             return
           end
 
-          Async { register_worker }
+          register_worker
 
           fetch_jobs_thread = start_thread_to_fetch_jobs
 
-          Async { process_all }
+          process_all
 
           fetch_jobs_thread.join
 
           # Ensure that we do not leave any jobs in memory
-          Async { clear_queue }
+          clear_queue
 
-          Async { unregister_worker }
+          unregister_worker
         end
       end
 
