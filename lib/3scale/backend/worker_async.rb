@@ -30,23 +30,25 @@ module ThreeScale
       end
 
       def work
-        if one_off?
-          Async { process_one }
-          return
+        Sync do
+          if one_off?
+            Async { process_one }
+            return
+          end
+
+          Async { register_worker }
+
+          fetch_jobs_thread = start_thread_to_fetch_jobs
+
+          Async { process_all }
+
+          fetch_jobs_thread.join
+
+          # Ensure that we do not leave any jobs in memory
+          Async { clear_queue }
+
+          Async { unregister_worker }
         end
-
-        Async { register_worker }
-
-        fetch_jobs_thread = start_thread_to_fetch_jobs
-
-        Async { process_all }
-
-        fetch_jobs_thread.join
-
-        # Ensure that we do not leave any jobs in memory
-        Async { clear_queue }
-
-        Async { unregister_worker }
       end
 
       def shutdown
@@ -94,7 +96,7 @@ module ThreeScale
 
       def start_thread_to_fetch_jobs
         Thread.new do
-          Async { @job_fetcher.start(@jobs) }
+          Sync { @job_fetcher.start(@jobs) }
         end
       end
 
