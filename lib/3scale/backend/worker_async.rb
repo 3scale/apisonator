@@ -30,25 +30,20 @@ module ThreeScale
       end
 
       def work
-        Sync do
-          if one_off?
-            process_one
-            return
-          end
+        return Sync { process_one } if one_off?
 
-          register_worker
+        Sync { register_worker }
 
-          fetch_jobs_thread = start_thread_to_fetch_jobs
+        fetch_jobs_thread = start_thread_to_fetch_jobs
 
-          process_all
+        Sync { process_all }
 
-          fetch_jobs_thread.join
+        fetch_jobs_thread.join
 
-          # Ensure that we do not leave any jobs in memory
-          clear_queue
+        # Ensure that we do not leave any jobs in memory
+        Sync { clear_queue }
 
-          unregister_worker
-        end
+        Sync { unregister_worker }
       end
 
       def shutdown
@@ -64,8 +59,7 @@ module ThreeScale
       end
 
       def process_all
-        barrier = Async::Barrier.new
-        semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
+        semaphore = Async::Semaphore.new(@max_concurrent_jobs)
 
         loop do
           # unblocks when there are new jobs or when .close() is called
@@ -79,19 +73,11 @@ module ThreeScale
 
           semaphore.async { perform(job) }
         end
-
-        barrier.wait
-      ensure
-        barrier.stop
       end
 
       def clear_queue
-        barrier = Async::Barrier.new
-        semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
+        semaphore = Async::Semaphore.new(@max_concurrent_jobs)
         semaphore.async { perform(@jobs.pop) } until @jobs.empty?
-        barrier.wait
-      ensure
-        barrier.stop
       end
 
       def start_thread_to_fetch_jobs
