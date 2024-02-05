@@ -1,5 +1,4 @@
 require 'async'
-require 'async/barrier'
 require 'async/semaphore'
 require 'redis-namespace'
 require '3scale/backend/job_fetcher'
