@@ -1,5 +1,6 @@
 require 'async'
 require 'async/semaphore'
+require 'async/barrier'
 require 'redis-namespace'
 require '3scale/backend/job_fetcher'
 
@@ -58,7 +59,8 @@ module ThreeScale
       end
 
       def process_all
-        semaphore = Async::Semaphore.new(@max_concurrent_jobs)
+        barrier = Async::Barrier.new
+        semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
 
         loop do
           # unblocks when there are new jobs or when .close() is called
@@ -72,11 +74,16 @@ module ThreeScale
 
           semaphore.async { perform(job) }
         end
+      ensure
+        barrier.wait
       end
 
       def clear_queue
-        semaphore = Async::Semaphore.new(@max_concurrent_jobs)
+        barrier = Async::Barrier.new
+        semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
         semaphore.async { perform(@jobs.pop) } until @jobs.empty?
+      ensure
+        barrier.wait
       end
 
       def start_thread_to_fetch_jobs
