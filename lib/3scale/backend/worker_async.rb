@@ -81,7 +81,10 @@ module ThreeScale
       def clear_queue
         barrier = Async::Barrier.new
         semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
-        semaphore.async { perform(@jobs.pop) } until @jobs.empty?
+
+        while (job = @jobs.pop)
+          semaphore.async { perform(job) }
+        end
       ensure
         barrier.wait
       end
