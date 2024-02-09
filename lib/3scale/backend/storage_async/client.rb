@@ -48,9 +48,6 @@ module ThreeScale
         def pipelined(&block)
           # This replaces the client with a Pipeline that accumulates the Redis
           # commands run in a block and sends all of them in a single request.
-          #
-          # There's an important limitation: this assumes that the fiber will
-          # not yield in the block.
 
           pipeline = Pipeline.new
           block.call pipeline
