@@ -80,9 +80,9 @@ module ThreeScale
 
             # Interrupt the test if the thread is locked for more than 10 seconds
             # We assume something went wrong
-            t_start = Time.now
+            t_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             while thread.alive?
-              if Time.now - t_start > 10
+              if Process.clock_gettime(Process::CLOCK_MONOTONIC) - t_start > 10
                 raise 'The worker is taking too much to process the jobs'
               end
 
