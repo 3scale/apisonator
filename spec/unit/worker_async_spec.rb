@@ -65,6 +65,7 @@ module ThreeScale
             subject.send(:clear_queue)
           end
 
+          # this is not an expected real usage scenario but we test it anyway
           it 'clears the queue also when new jobs are added during the execution' do
             n_new_reports = 5
             expect(subject).to receive(:perform).exactly(n_reports + n_new_reports).times.with(test_job)
@@ -83,6 +84,7 @@ module ThreeScale
             t_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             while thread.alive?
               if Process.clock_gettime(Process::CLOCK_MONOTONIC) - t_start > 10
+                thread.kill
                 raise 'The worker is taking too much to process the jobs'
               end
 
