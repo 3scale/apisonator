@@ -52,7 +52,7 @@ module ThreeScale
 
           let(:test_job) { instance_double('BackgroundJob') }
           let(:n_reports) { 10 }
-          let(:queue) { Queue.new.tap { |q| n_reports.times.map { q.push test_job } } }
+          let(:queue) { Queue.new.tap { |q| n_reports.times { q.push test_job } } }
 
           before do
             subject.instance_variable_set(:@jobs, queue)
