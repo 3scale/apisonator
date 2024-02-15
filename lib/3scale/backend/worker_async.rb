@@ -1,4 +1,6 @@
 require 'async'
+require 'async/semaphore'
+require 'async/barrier'
 require 'redis-namespace'
 require '3scale/backend/job_fetcher'
 
@@ -25,33 +27,23 @@ module ThreeScale
 
         @max_concurrent_jobs = configuration.async_worker.max_concurrent_jobs ||
             DEFAULT_MAX_CONCURRENT_JOBS
-
-        @reactor = Async::Reactor.new
       end
 
       def work
-        if one_off?
-          Async { process_one }
-          return
-        end
+        return Sync { process_one } if one_off?
 
-        Async { register_worker }
+        Sync { register_worker }
 
         fetch_jobs_thread = start_thread_to_fetch_jobs
 
-        loop do
-          break if @shutdown
-          schedule_jobs
-          @reactor.run
-        end
+        Sync { process_all }
 
         fetch_jobs_thread.join
 
         # Ensure that we do not leave any jobs in memory
-        @reactor.async { perform(@jobs.pop) } until @jobs.empty?
-        @reactor.run
+        Sync { clear_queue }
 
-        Async { unregister_worker }
+        Sync { unregister_worker }
       end
 
       def shutdown
@@ -61,8 +53,14 @@ module ThreeScale
 
       private
 
-      def schedule_jobs
-        scheduled = 0
+      def process_one
+        job = @job_fetcher.fetch
+        perform(job) if job
+      end
+
+      def process_all
+        barrier = Async::Barrier.new
+        semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
 
         loop do
           # unblocks when there are new jobs or when .close() is called
@@ -74,21 +72,26 @@ module ThreeScale
 
           break if @shutdown
 
-          @reactor.async { perform(job) }
-          scheduled += 1
-
-          break if @jobs.empty? or scheduled >= @max_concurrent_jobs
+          semaphore.async { perform(job) }
         end
+      ensure
+        barrier.wait
       end
 
-      def process_one
-        job = @job_fetcher.fetch
-        perform(job) if job
+      def clear_queue
+        barrier = Async::Barrier.new
+        semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
+
+        while (job = @jobs.pop)
+          semaphore.async { perform(job) }
+        end
+      ensure
+        barrier.wait
       end
 
       def start_thread_to_fetch_jobs
         Thread.new do
-          Async { @job_fetcher.start(@jobs) }
+          Sync { @job_fetcher.start(@jobs) }
         end
       end
 
