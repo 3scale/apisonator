@@ -15,6 +15,7 @@ require 'rack/test'
 require 'resque_unit'
 require 'timecop'
 require 'async'
+require 'dotenv/load'
 
 # Require test helpers.
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }

@@ -1,5 +1,6 @@
 require 'async/io'
 require 'async/redis/client'
+require 'async/redis/sentinels'
 
 module ThreeScale
   module Backend
@@ -82,9 +83,23 @@ module ThreeScale
         end
 
         def initialize_client(opts)
+          return init_host_client(opts) unless opts.key? :sentinels
+
+          init_sentinels_client(opts)
+        end
+
+        def init_host_client(opts)
           endpoint = make_redis_endpoint(opts)
           protocol = make_redis_protocol(opts)
           Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
+        end
+
+        def init_sentinels_client(opts)
+          uri = URI(opts[:url] || '')
+          name = uri.host
+          role = opts[:role] || :master
+
+          Async::Redis::SentinelsClient.new(name, opts[:sentinels], role)
         end
 
         # Authenticated RESP2 if credentials are provided, RESP2 otherwise
