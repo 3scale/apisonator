@@ -185,8 +185,8 @@ module ThreeScale
 
           def cfg_compact(options)
             empty = ->(_k,v) { v.to_s.strip.empty? }
-            options[:ssl_params]&.reject!(&empty)
-            options.reject!(&empty)
+            options[:ssl_params]&.delete_if(&empty)
+            options.delete_if(&empty)
           end
 
           # Expected sentinel input cfg format:
