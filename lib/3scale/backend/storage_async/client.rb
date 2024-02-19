@@ -1,5 +1,6 @@
 require 'async/io'
 require 'async/redis/client'
+require 'async/redis/sentinels'
 
 module ThreeScale
   module Backend
@@ -13,15 +14,6 @@ module ThreeScale
       # the Storage instance behaves likes the redis-rb client.
       class Client
         include Configurable
-
-        DEFAULT_HOST = 'localhost'.freeze
-        private_constant :DEFAULT_HOST
-
-        DEFAULT_PORT = 22121
-        private_constant :DEFAULT_PORT
-
-        HOST_PORT_REGEX = /redis:\/\/(.*):(\d+)/
-        private_constant :HOST_PORT_REGEX
 
         class << self
           attr_writer :instance
@@ -41,14 +33,7 @@ module ThreeScale
         end
 
         def initialize(opts)
-          host, port = opts[:url].match(HOST_PORT_REGEX).captures if opts[:url]
-          host ||= DEFAULT_HOST
-          port ||= DEFAULT_PORT
-
-          endpoint = Async::IO::Endpoint.tcp(host, port)
-          @redis_async = Async::Redis::Client.new(
-            endpoint, limit: opts[:max_connections]
-          )
+          @redis_async = initialize_client(opts)
           @building_pipeline = false
         end
 
@@ -200,8 +185,35 @@ module ThreeScale
         def close
           @redis_async.close
         end
-      end
 
+        private
+
+        DEFAULT_HOST = 'localhost'.freeze
+        DEFAULT_PORT = 22121
+
+        def initialize_client(opts)
+          return init_host_client(opts) unless opts.key? :sentinels
+
+          init_sentinels_client(opts)
+        end
+
+        def init_host_client(opts)
+          uri = URI(opts[:url] || '')
+          host = uri.host || DEFAULT_HOST
+          port = uri.port || DEFAULT_PORT
+
+          endpoint = Async::IO::Endpoint.tcp(host, port)
+          Async::Redis::Client.new(endpoint, limit: opts[:max_connections])
+        end
+
+        def init_sentinels_client(opts)
+          uri = URI(opts[:url] || '')
+          name = uri.host
+          role = opts[:role] || :master
+
+          Async::Redis::SentinelsClient.new(name, opts[:sentinels], role)
+        end
+      end
     end
   end
 end
