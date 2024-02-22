@@ -11,7 +11,7 @@ module ThreeScale
           # @param [Time] timestamp
           # @param [Array] keys array of {(service|application|user) => "key"}
           # @param [Symbol] cmd
-          # # @param [Redis] client
+          # @param [Redis] client
           def aggregate_values(value, timestamp, keys, cmd, client = storage)
             keys_for_bucket = []
 
