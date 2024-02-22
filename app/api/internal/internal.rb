@@ -19,6 +19,8 @@ module ThreeScale
 
         register Sinatra::Namespace
 
+        set :protection, except: :path_traversal
+
         # using a class variable instead of settings because we want this to be
         # as fast as possible when responding, since we hit /status a lot.
         @@status = { status: :ok,
