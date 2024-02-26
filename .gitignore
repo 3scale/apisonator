@@ -18,3 +18,11 @@ bench.txt
 3scale_backend.sock
 
 .env
+/tmp
+
+# JetBrains IDE
+/.idea
+/.run
+
+# asdf
+.tool-versions
