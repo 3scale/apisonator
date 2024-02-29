@@ -192,7 +192,7 @@ module ThreeScale
         private
 
         DEFAULT_HOST = 'localhost'.freeze
-        DEFAULT_PORT = 22121
+        DEFAULT_PORT = 6379
 
         def initialize_client(opts)
           return init_host_client(opts) unless opts.key? :sentinels

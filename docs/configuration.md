@@ -22,7 +22,7 @@ variables.
 ###  CONFIG_REDIS_PROXY
 
 - Redis URL for the data DB.
-- Optional. Defaults to "redis://localhost:22121".
+- Optional. Defaults to "redis://localhost:6379".
 - Applies to: listener, worker, cron.
 - Format: string.
 
