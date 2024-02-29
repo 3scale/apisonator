@@ -1,7 +1,6 @@
 require 'rspec'
 require 'resque_spec'
 require 'async'
-require 'dotenv/load'
 
 if ENV['TEST_COVERAGE']
   require 'simplecov'

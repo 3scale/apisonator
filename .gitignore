@@ -18,6 +18,7 @@ bench.txt
 3scale_backend.sock
 
 .env
+.env.development
 
 /script/config/sentinel1/sentinel1.conf
 /script/config/sentinel2/sentinel2.conf
