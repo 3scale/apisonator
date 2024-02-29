@@ -18,6 +18,12 @@ bench.txt
 3scale_backend.sock
 
 .env
+
+/script/config/sentinel1/sentinel1.conf
+/script/config/sentinel2/sentinel2.conf
+/script/config/sentinel3/sentinel3.conf
+/script/config/twemproxy.yml
+
 /tmp
 
 # JetBrains IDE
