@@ -1,19 +1,9 @@
 #!/bin/bash
 
-SCRIPT_DIR=$(dirname "$(readlink -f $0)")
-. ${SCRIPT_DIR}/lib/functions
-
-function cleanup()
-{
-    if [ -z "$CI" ]; then
-        stop_services
-    fi
-}
-
 function do_license_check()
 {
     if [ -n "$CI" ]; then
-        bundle_exec rake license_finder
+        bundle exec rake license_finder
     fi
 }
 
@@ -21,12 +11,12 @@ function do_test()
 {
     case $1 in
     sync)
-        echo "Running tests using the sync Redis driver"
-        CONFIG_REDIS_ASYNC=false bundle_exec rake
+        echo "==================== Running tests using the SYNC Redis driver ===================="
+        CONFIG_REDIS_ASYNC=false bundle exec rake
         ;;
     async)
-        echo "Running tests using the async Redis driver"
-        CONFIG_REDIS_ASYNC=true bundle_exec rake
+        echo "==================== Running tests using the ASYNC Redis driver ===================="
+        CONFIG_REDIS_ASYNC=true bundle exec rake
         ;;
     *)
       echo "Invalid Redis driver option: $1"
@@ -36,43 +26,12 @@ function do_test()
 
 function run_tests()
 {
-    local ruby_version="${1}"
-    if test "x${ruby_version}" != "x"; then
-        set_ruby_version "${ruby_version}" || \
-            echo "Failed to set Ruby ${ruby_version}, falling back to default" >&2
-    fi
-
     export RACK_ENV=test
 
     do_license_check && do_test "sync" && do_test "async"
 }
 
-trap 'cleanup' INT
-
-if test -r ${SCRIPT_DIR}/lib/rbenv/ruby_versions; then
-    . ${SCRIPT_DIR}/lib/rbenv/ruby_versions
-elif test -r ~/.local/bin/ruby_versions; then
-    . ~/.local/bin/ruby_versions
-fi
-
-start_services
-
-if test "x${TEST_ALL_RUBIES}" != "x" && rbenv --version 2> /dev/null >&2; then
-    for v in $(rbenv whence ruby); do
-        echo "=== Running tests on ${v}"
-        if ! run_tests "${v}"; then
-            failures="${failures:+${failures} }${v}"
-        fi
-    done
-else
-    if ! run_tests "${TEST_RUBY_VERSION}"; then
-        failures="${TEST_RUBY_VERSION:-default version}"
-    fi
-fi
-
-cleanup
-
-if test "x${failures}" != "x"; then
-    echo "Failed tests in ${failures}" >&2
+if ! run_tests; then
+    echo "Tests failed" >&2
     exit 1
 fi
