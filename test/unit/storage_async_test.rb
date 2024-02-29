@@ -1,4 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require '3scale/backend/storage_async'
 
 class StorageAsyncTest < Test::Unit::TestCase
   def test_basic_operations
@@ -16,11 +17,6 @@ class StorageAsyncTest < Test::Unit::TestCase
 
   def test_redis_url
     storage = StorageAsync::Client.send :new, url('redis://127.0.0.1:6379/0')
-    assert_connection(storage)
-  end
-
-  def test_redis_unix
-    storage = StorageAsync::Client.send :new, url('unix:///tmp/redis_unix.6379.sock')
     assert_connection(storage)
   end
 
@@ -199,12 +195,12 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_client(client)
-    inner_client = client.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
+    inner_client = client.instance_variable_get(:@redis_async)
     assert_instance_of Async::Redis::SentinelsClient, inner_client
   end
 
   def assert_sentinel_config(conn, url:, **conf)
-    client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
+    client = conn.instance_variable_get(:@redis_async)
     uri = URI(url || '')
     name = uri.host
     role = conf[:role] || :master

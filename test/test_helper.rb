@@ -23,14 +23,6 @@ Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file
 ## without creating a worker first, only happens in test environment
 ThreeScale::Backend::Worker.new
 
-Test::Unit.at_start do
-  TestHelpers::Storage::Mock.mock_storage_clients
-end
-
-Test::Unit.at_exit do
-  TestHelpers::Storage::Mock.unmock_storage_clients
-end
-
 class Test::Unit::TestCase
   include ThreeScale
   include ThreeScale::Backend

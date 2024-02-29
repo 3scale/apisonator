@@ -35,17 +35,6 @@ require_relative '../lib/3scale/backend/job_fetcher'
 require_relative '../test/test_helpers/sequences.rb'
 
 RSpec.configure do |config|
-  config.before :suite do
-    require_relative '../test/test_helpers/configuration'
-    require_relative '../test/test_helpers/storage'
-
-    TestHelpers::Storage::Mock.mock_storage_clients
-  end
-
-  config.after :suite do
-    TestHelpers::Storage::Mock.unmock_storage_clients
-  end
-
   config.mock_with :rspec
 
   config.before :each do

@@ -36,14 +36,7 @@ module ThreeScale
             end
 
             it 'returns a sentinel connection' do
-              # This test only need to run when async.redis = false because the
-              # async-client does not support sentinels.
-              # I could not find a better place for the "if", because the
-              # config is not initialized outside here.
-
-              unless ThreeScale::Backend.configuration.redis.async
-                expect(is_sentinel?(conn)).to be true
-              end
+              expect(is_sentinel?(conn)).to be true
             end
           end
         end
@@ -52,11 +45,15 @@ module ThreeScale
       private
 
       def is_sentinel?(connection)
-        connector = connection.instance_variable_get(:@inner)
-                              .instance_variable_get(:@client)
+        if ThreeScale::Backend.configuration.redis.async
+          connector = connection.instance_variable_get(:@redis_async)
+          connector.instance_of?(Async::Redis::SentinelsClient)
+        else
+          connector = connection.instance_variable_get(:@client)
                               .instance_variable_get(:@connector)
 
-        connector.instance_of?(Redis::Client::Connector::Sentinel)
+          connector.instance_of?(Redis::Client::Connector::Sentinel)
+        end
       end
     end
   end

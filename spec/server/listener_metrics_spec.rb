@@ -170,12 +170,14 @@ module ThreeScale
           end
         end
 
-        context 'running Puma' do
-          it_behaves_like 'listener with metrics', :puma
-        end
-
-        context 'running Falcon' do
-          it_behaves_like 'listener with metrics', :falcon
+        if ThreeScale::Backend.configuration.redis.async
+          context 'running Falcon' do
+            it_behaves_like 'listener with metrics', :falcon
+          end
+        else
+          context 'running Puma' do
+            it_behaves_like 'listener with metrics', :puma
+          end
         end
       end
 
@@ -195,12 +197,14 @@ module ThreeScale
           end
         end
 
-        context 'running Puma' do
-          it_behaves_like 'listener without metrics', :puma
-        end
-
-        context 'running Falcon' do
-          it_behaves_like 'listener without metrics', :falcon
+        if ThreeScale::Backend.configuration.redis.async
+          context 'running Falcon' do
+            it_behaves_like 'listener without metrics', :falcon
+          end
+        else
+          context 'running Puma' do
+            it_behaves_like 'listener without metrics', :puma
+          end
         end
       end
 
