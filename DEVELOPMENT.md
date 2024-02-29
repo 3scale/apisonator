@@ -202,3 +202,41 @@ Additional information which is really important to how the application runs can
 be found in the manifest:
 
 > `$ bundle exec 3scale_backend manifest`
+
+## Running from your IDE
+
+Some IDEs like VSCode or RubyMine allow to add custom launchers for scripts. This is convenient to launch both Worker and Listener.
+
+For that, you'll need to create the following configurations: 
+
+### Worker
+
+| Field                 | Value                                                   |
+|-----------------------|---------------------------------------------------------|
+| Name                  | `worker`                                                |
+| Ruby script           | `/path/to/project/apisonator/bin/3scale_backend_worker` |
+| Script arguments      | `--debug`                                               |
+| Working directory     | `/path/to/project/apisonator`                           |
+| Environment variables | `RACK_ENV=development`                                  |
+
+In case you want to run the worker in async mode you can add `CONFIG_REDIS_ASYNC=true` to the environment variables here or directly add it to your `.env` file.
+
+### Puma Listener (sync mode)
+
+| Field                 | Value                                            |
+|-----------------------|--------------------------------------------------|
+| Name                  | `listener (puma)`                                |
+| Ruby script           | `/path/to/project/apisonator/bin/3scale_backend` |
+| Script arguments      | `-s puma -X start -p 3001`                       |
+| Working directory     | `/path/to/project/apisonator`                    |
+| Environment variables | `RACK_ENV=development`        |
+
+### Falcon Listener (async mode)
+
+| Field                 | Value                                                             |
+|-----------------------|-------------------------------------------------------------------|
+| Name                  | `listener (falcon)`                                               |
+| Ruby script           | `/path/to/project/apisonator/bin/3scale_backend`                  |
+| Script arguments      | `-s falcon start -p 3001`                                         |
+| Working directory     | `/path/to/project/apisonator`                                     |
+| Environment variables | `RACK_ENV=development;CONFIG_REDIS_ASYNC=true` |

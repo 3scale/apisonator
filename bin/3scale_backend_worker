@@ -1,26 +1,39 @@
 #!/usr/bin/env ruby
 require '3scale/backend'
+require '3scale/backend/job_fetcher'
 require 'daemons'
+
+def debug
+  ThreeScale::Backend::Worker.work(job_fetcher: ThreeScale::Backend::JobFetcher.new(fetch_timeout: 1))
+end
+
+def production
+  options = {
+    multiple: true,
+    dir_mode: :normal,
+    dir: "#{ENV['WORKER_PIDFILE_DIR'] || '/var/run/3scale'}"
+  }
+
+  # make --no-daemonize an alias of --ontop
+  options[:ontop] = true if ARGV.delete '--no-daemonize'
+
+  if !File.writable? options[:dir]
+    require 'fileutils'
+    FileUtils.mkdir_p options[:dir]
+  end
+
+  Daemons.run_proc('3scale_backend_worker', options) do
+    ThreeScale::Backend::Worker.work
+  end
+end
 
 if ARGV.delete '--version'
   STDOUT.puts "3scale_backend_worker version #{ThreeScale::Backend::VERSION}"
   exit 0
 end
 
-options = {
-  multiple: true,
-  dir_mode: :normal,
-  dir: '/var/run/3scale'
-}
-
-# make --no-daemonize an alias of --ontop
-options[:ontop] = true if ARGV.delete '--no-daemonize'
-
-if !File.writable? options[:dir]
-  require 'fileutils'
-  FileUtils.mkdir_p options[:dir]
-end
-
-Daemons.run_proc('3scale_backend_worker', options) do
-  ThreeScale::Backend::Worker.work
+if ARGV.delete '--debug'
+  debug
+else
+  production
 end
