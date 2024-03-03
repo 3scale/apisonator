@@ -14,6 +14,16 @@ The first thing you will need is cloning the project:
 
 Next cd into the directory, `cd apisonator`.
 
+### Ruby version management
+
+In order to manage Ruby versions for local development, we recommend using [asdf](https://asdf-vm.com/guide/getting-started.html).
+
+Once installed, use the provided `.tool-versions.sample` file to get the appropriate versions.
+
+```
+cp .tool-versions.sample .tool-versions
+```
+
 ### Containerized environment
 
 #### With Docker
