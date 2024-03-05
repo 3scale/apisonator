@@ -153,7 +153,7 @@ GEM
     protocol-http2 (0.15.1)
       protocol-hpack (~> 1.4)
       protocol-http (~> 0.18)
-    protocol-rack (0.2.4)
+    protocol-rack (0.4.1)
       protocol-http (~> 0.23)
       rack (>= 1.0)
     protocol-redis (0.6.1)
