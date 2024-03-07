@@ -346,7 +346,7 @@ distinguish between "production" and "staging" for example.
 - External error reporting service to use.
 - Optional. Does not report errors by default.
 - Applies to: listener, worker, cron.
-- Format: "bugsnag" or "airbrake".
+- Format: Only "bugsnag" supported.
 
 ### CONFIG_HOPTOAD_API_KEY
 
