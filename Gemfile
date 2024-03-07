@@ -56,8 +56,7 @@ gem 'daemons', '= 1.2.4'
 # Production gems
 gem 'rake', '~> 13.0'
 gem 'builder', '= 3.2.3'
-# Use a patched resque to allow reusing their Airbrake Failure class
-gem 'resque', git: 'https://github.com/3scale/resque', branch: '3scale'
+gem 'resque', '1.27.4'
 gem 'redis-namespace', '~>1.8'
 gem 'rack', '~> 2.2.8'
 gem 'sinatra', '~> 2.2.4'
