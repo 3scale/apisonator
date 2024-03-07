@@ -59,7 +59,7 @@ gem 'builder', '= 3.2.3'
 gem 'redis', '~> 5.0'
 gem 'resque', '~> 2.6.0'
 gem 'redis-namespace', '~>1.8'
-gem 'rack', '~> 2.2.6'
+gem 'rack', '~> 2.2.8'
 gem 'sinatra', '~> 2.2.4'
 gem 'sinatra-contrib', '~> 2.2.4'
 # Optional external error logging services
