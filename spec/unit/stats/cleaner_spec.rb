@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../../../lib/3scale/backend/stats/stats_parser'
 
 module ThreeScale
   module Backend
@@ -7,7 +8,7 @@ module ThreeScale
         include TestHelpers::Sequences
 
         let(:storage) { Backend::Storage.instance }
-        let(:non_proxied_instances) { storage.send(:non_proxied_instances) }
+        let(:storage_instances) { [storage] }
         let(:logger) { object_double(Backend.logger) }
 
         before do
@@ -74,7 +75,7 @@ module ThreeScale
             end
 
             it 'deletes only the stats of services marked to be deleted' do
-              Cleaner.delete!(non_proxied_instances)
+              Cleaner.delete!(storage_instances)
 
               expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
                 .to be true
@@ -84,7 +85,7 @@ module ThreeScale
             end
 
             it 'deletes the services from the set of marked to be deleted' do
-              Cleaner.delete!(non_proxied_instances)
+              Cleaner.delete!(storage_instances)
 
               expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
             end
@@ -110,7 +111,7 @@ module ThreeScale
             end
 
             it 'logs the deleted keys, one per line' do
-              Cleaner.delete!(non_proxied_instances, log_deleted_keys: log_to)
+              Cleaner.delete!(storage_instances, log_deleted_keys: log_to)
 
               keys_to_be_deleted.each do |k, v|
                 expect(log_to).to have_received(:puts).with("#{k} #{v}")
@@ -118,7 +119,7 @@ module ThreeScale
             end
 
             it 'deletes only the stats of services marked to be deleted' do
-              Cleaner.delete!(non_proxied_instances, log_deleted_keys: log_to)
+              Cleaner.delete!(storage_instances, log_deleted_keys: log_to)
 
               expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
                 .to be true
@@ -128,7 +129,7 @@ module ThreeScale
             end
 
             it 'deletes the services from the set of marked to be deleted' do
-              Cleaner.delete!(non_proxied_instances, log_deleted_keys: log_to)
+              Cleaner.delete!(storage_instances, log_deleted_keys: log_to)
 
               expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
             end
@@ -143,18 +144,18 @@ module ThreeScale
               allow(logger).to receive(:error)
 
               # Using scan just because it's the first command called.
-              allow(non_proxied_instances.first)
+              allow(storage_instances.first)
                 .to receive(:scan).and_raise(Errno::ECONNREFUSED)
             end
 
             it 'logs an error without raising' do
-              expect { Cleaner.delete!(non_proxied_instances) }.not_to raise_error
+              expect { Cleaner.delete!(storage_instances) }.not_to raise_error
               expect(logger).to have_received(:error)
             end
 
             it 'retries' do
-              Cleaner.delete!(non_proxied_instances)
-              expect(non_proxied_instances.first)
+              Cleaner.delete!(storage_instances)
+              expect(storage_instances.first)
                 .to have_received(:scan)
                 .exactly(Cleaner.const_get(:MAX_RETRIES_REDIS_ERRORS)).times
             end
@@ -179,17 +180,17 @@ module ThreeScale
           end
 
           it 'deletes the stats with usage 0' do
-            Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+            Cleaner.delete_stats_keys_set_to_0(storage_instances)
             expect(stats_with_usage_0.keys.none? { |k| storage.exists?(k) }).to be true
           end
 
           it 'does not delete the stats with usage != 0' do
-            Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+            Cleaner.delete_stats_keys_set_to_0(storage_instances)
             expect(stats_with_non_zero_usage.keys.all? { |k| storage.exists?(k) }). to be true
           end
 
           it 'does not delete non-stats keys' do
-            Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+            Cleaner.delete_stats_keys_set_to_0(storage_instances)
             expect(non_stats_keys.keys.all? { |k| storage.exists?(k) }).to be true
           end
 
@@ -202,7 +203,7 @@ module ThreeScale
 
             it 'logs the deleted keys, one per line' do
               Cleaner.delete_stats_keys_set_to_0(
-                non_proxied_instances, log_deleted_keys: log_to
+                storage_instances, log_deleted_keys: log_to
               )
 
               stats_with_usage_0.keys.each do |k|
@@ -216,21 +217,21 @@ module ThreeScale
               allow(logger).to receive(:error)
 
               # Using scan just because it's the first command called.
-              allow(non_proxied_instances.first)
+              allow(storage_instances.first)
                 .to receive(:scan).and_raise(Errno::ECONNREFUSED)
             end
 
             it 'logs an error without raising' do
               expect do
-                Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
+                Cleaner.delete_stats_keys_set_to_0(storage_instances)
               end.not_to raise_error
 
               expect(logger).to have_received(:error)
             end
 
             it 'retries' do
-              Cleaner.delete_stats_keys_set_to_0(non_proxied_instances)
-              expect(non_proxied_instances.first)
+              Cleaner.delete_stats_keys_set_to_0(storage_instances)
+              expect(storage_instances.first)
                 .to have_received(:scan)
                 .exactly(Cleaner.const_get(:MAX_RETRIES_REDIS_ERRORS)).times
             end

@@ -6,7 +6,7 @@ require '3scale/backend/worker_async'
 module ThreeScale
   module Backend
 
-    DEFAULT_SERVER = '127.0.0.1:22121'.freeze
+    DEFAULT_SERVER = '127.0.0.1:6379'.freeze
 
     context 'when there are jobs enqueued' do
       let(:provider_key) { 'a_provider_key' }

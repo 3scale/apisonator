@@ -58,8 +58,3 @@ Resque.redis = ThreeScale::Backend::QueueStorage.connection(
   ThreeScale::Backend.environment,
   ThreeScale::Backend.configuration,
 )
-
-# Need to monkey-patch Resque when using async
-if ThreeScale::Backend.configuration.redis.async
-  Resque.extend ThreeScale::Backend::StorageAsync::ResqueExtensions
-end

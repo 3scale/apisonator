@@ -22,7 +22,7 @@ variables.
 ###  CONFIG_REDIS_PROXY
 
 - Redis URL for the data DB.
-- Optional. Defaults to "redis://localhost:22121".
+- Optional. Defaults to "redis://localhost:6379".
 - Applies to: listener, worker, cron.
 - Format: string.
 
@@ -444,7 +444,7 @@ distinguish between "production" and "staging" for example.
 - External error reporting service to use.
 - Optional. Does not report errors by default.
 - Applies to: listener, worker, cron.
-- Format: "bugsnag" or "airbrake".
+- Format: Only "bugsnag" supported.
 
 ### CONFIG_HOPTOAD_API_KEY
 

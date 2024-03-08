@@ -1,0 +1,90 @@
+version: '3'
+services:
+  redis-master:
+    image: redis:6.2-alpine
+    container_name: redis-master
+    network_mode: "host"
+    ports:
+      - "6379:6379"
+    command: [ redis-server, --port, "6379" ]
+
+  redis-replica1:
+    image: redis:6.2-alpine
+    container_name: redis-replica1
+    network_mode: "host"
+    ports:
+      - "6380:6380"
+    command: [ redis-server, --slaveof, localhost, "6379", --port, "6380" ]
+
+  redis-replica2:
+    image: redis:6.2-alpine
+    container_name: redis-replica2
+    network_mode: "host"
+    ports:
+      - "6381:6381"
+    command: [ redis-server, --slaveof, localhost, "6379", --port, "6381" ]
+
+  redis-sentinel1:
+    image: redis:6.2-alpine
+    container_name: redis-sentinel1
+    network_mode: "host"
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./sentinel1:/data:Z
+    command: [ redis-server, /data/sentinel1.conf, --sentinel, --port, "26379" ]
+
+  redis-sentinel2:
+    image: redis:6.2-alpine
+    container_name: redis-sentinel2
+    network_mode: "host"
+    ports:
+      - "26380:26380"
+    volumes:
+      - ./sentinel2:/data:Z
+    command: [ redis-server, /data/sentinel2.conf, --sentinel, --port, "26380" ]
+
+  redis-sentinel3:
+    image: redis:6.2-alpine
+    container_name: redis-sentinel3
+    network_mode: "host"
+    ports:
+      - "26381:26381"
+    volumes:
+      - ./sentinel3:/data:Z
+    command: [ redis-server, /data/sentinel3.conf, --sentinel, --port, "26381" ]
+
+  redis-shard1:
+    image: redis:6.2-alpine
+    container_name: redis-shard1
+    network_mode: "host"
+    ports:
+      - "6382:6382"
+    command: [ redis-server, --port, "6382" ]
+
+  redis-shard2:
+    image: redis:6.2-alpine
+    container_name: redis-shard2
+    network_mode: "host"
+    ports:
+      - "6383:6383"
+    command: [ redis-server, --port, "6383" ]
+
+  redis-shard3:
+    image: redis:6.2-alpine
+    container_name: redis-shard3
+    network_mode: "host"
+    ports:
+      - "6384:6384"
+    command: [ redis-server, --port, "6384" ]
+
+  twemproxy:
+    image: quay.io/3scale/twemproxy:v0.5.0
+    container_name: twemproxy
+    network_mode: "host"
+    environment:
+      - TWEMPROXY_CONFIG_FILE=/etc/twemproxy/nutcracker.yml
+    ports:
+      - "22121:22121"
+    volumes:
+      - ./twemproxy.yml:/etc/twemproxy/nutcracker.yml:Z

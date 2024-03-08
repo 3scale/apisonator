@@ -1,4 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require '3scale/backend/storage_sync'
 
 class StorageSyncTest < Test::Unit::TestCase
   def test_basic_operations
@@ -20,8 +21,9 @@ class StorageSyncTest < Test::Unit::TestCase
   end
 
   def test_redis_unix
-    storage = StorageSync.send :new, url('unix:///tmp/redis_unix.6379.sock')
-    assert_connection(storage)
+    config_obj = url('unix:///tmp/redis_unix.6379.sock')
+    storage = StorageSync.send :new, config_obj
+    assert_client_config(storage, url: config_obj[:url])
   end
 
   def test_redis_protected_url
@@ -323,12 +325,12 @@ class StorageSyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_config(client)
-    config = client.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@config)
+    config = client.instance_variable_get(:@client).instance_variable_get(:@config)
     assert config.sentinel?
   end
 
   def assert_client_config(conn, url:, **conf)
-    config = conn.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@config)
+    config = conn.instance_variable_get(:@client).instance_variable_get(:@config)
     assert_equal URI(url).host, config.name
     assert_equal conf[:role] || :master, config.instance_variable_get(:@role)
     conf[:sentinels].each_with_index do |s, i|

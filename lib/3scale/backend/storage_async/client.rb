@@ -63,7 +63,7 @@ module ThreeScale
 
         DEFAULT_SCHEME = 'redis'
         DEFAULT_HOST = 'localhost'.freeze
-        DEFAULT_PORT = 22121
+        DEFAULT_PORT = 6379
 
         # Custom Redis Protocol class which sends the AUTH command on every new connection
         # to authenticate before sending any other command.

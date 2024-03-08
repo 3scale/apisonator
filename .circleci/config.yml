@@ -1,32 +1,11 @@
-# Ruby CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-ruby/ for more details
-#
-version: 2
+# Ruby CircleCI 2.1 configuration file
+version: 2.1
+
 jobs:
   build:
-    branches:
-      #only:
-      #  # This is where pull requests from "bors r+" are built.
-      #  - staging
-      #  # This is where pull requests from "bors try" are built.
-      #  - trying
-      #  # Uncomment this to enable building pull requests.
-      #  - master
-      ignore:
-        # never run CI on staging.tmp
-        - staging.tmp
-        # or any other tmp branch
-        - /.*\.tmp/
-
     docker:
-      # specify the version you desire here
-      - image: quay.io/3scale/apisonator-ci:20230418-02
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
+      - image: cimg/ruby:3.0.2
+      - image: redis:6.2-alpine
 
     working_directory: ~/app
 
@@ -36,40 +15,28 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v3-rbenv-dependencies-20230418-{{ checksum ".ruby-version" }}
-          - v3-dependencies-v3-{{ checksum "Gemfile.lock" }}
-
-      - run:
-          name: rbenv update
-          command: |
-            rbenv_update_env
-
-      - save_cache:
-          paths:
-            - ~/.rbenv
-          key: v3-rbenv-dependencies-20230418-{{ checksum ".ruby-version" }}
+          - bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
 
       - run:
           name: bundle install
           command: |
-            # required for the license_finder
-            # The Gemfile.lock specifies nokogiri (1.14.3)
-            # but bundler would install native gem instead if not forced
+            # Required for the license_finder
+            # The Gemfile.lock includes nokogiri but bundler
+            # would install native gem instead if not forced
             bundle config set --local force_ruby_platform true
-            bundle_install_rubies
+            bundle config set --local deployment 'true'
+            bundle install
 
       - save_cache:
           paths:
-            - ~/.rbenv/versions
-          key: v3-dependencies-v3-{{ checksum "Gemfile.lock" }}
+            - vendor/bundle
+          key: bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
 
-      #run tests!
       - run:
-          name: Run tests on Ruby 3.0.2
-          command: |
-            TEST_RUBY_VERSION=3.0.2 script/ci
-
-      #- run:
-      #    name: Run tests on all Rubies
-      #    command: |
-      #      TEST_ALL_RUBIES=1 script/ci
+          name: Run tests
+          command: bundle exec script/test
+workflows:
+  version: 2
+  workflow:
+    jobs:
+    - build
