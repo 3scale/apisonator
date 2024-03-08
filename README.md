@@ -124,7 +124,7 @@ Next cd into the directory, `cd apisonator`.
 ### Apisonator image generation
 
 Go to the `openshift` directory and execute `make build`. This will generate
-a local docker image named `amp:apisonator-<version_number>` based on CentOS 7.
+a local docker image named `amp:apisonator-<version_number>` based on CentOS Stream 8.
 
 ### Configuration
 

@@ -4,8 +4,6 @@
 
 ### Prerequisites
 
-* Docker (requires version 1.10.0 or later)
-
 To learn how to run the project once the environment has been set up, refer to
 the [Running](#running) section.
 
@@ -24,85 +22,47 @@ Once installed, use the provided `.tool-versions.sample` file to get the appropr
 cp .tool-versions.sample .tool-versions
 ```
 
-### Containerized environment
+### Services
 
-#### With Docker
+Apisonator requires a Redis server to run. By default, it will try to connect to:
 
-This requires GNU Make and has a single step:
+```
+redis://localhost:6379
+```
 
-1. Run: `make dev`
+A [podman-compose.yml](script/config/podman-compose.yml) file is provided in order
+to make it easier to launch some preconfigured setups, like sentinels or twemproxy.
 
-This command will take care of downloading and building all dependencies. Once
-that is done, the process will be way faster the next time.
+To launch a single redis instance listening in the default URL, just run:
 
-The project's source code will be available in `~/apisonator` and sync'ed with
-your local apisonator directory, so you can edit files in your preferred
-environment and still be able to run whatever you need inside the Docker
-container.
+```
+podman-compose -f script/config/podman-compose.yml start redis-master
+```
 
-The listener service port (3000 by default) is automatically forwarded to the
-host machine. The `make dev` command can be executed with the
-environment variable `PORT` set to a different desired listener port value to
-forward on the host machine.
+Keep in mind that the test suite can't be launched against a twemproxy.
 
-This Docker container is persistent, so your changes will be kept the next time
-you enter it.
+### Configuring tests environment
 
-Getting rid of the persistent container is done with `make dev-clean`, whereas
-removing its image is done using `make dev-clean-image`.
+The test suite will read the environment variables set in `/.env.test`.
 
-Alternatively you can start a container with the service running with
-`make dev-service`. This rule is intended for when you want to test
-the service endpoint.
-
-#### Maintain your dependencies up-to-date
-
-Changes in code sometimes translate into changes in dependencies. If that is the
-case, your container will lag behind in dependencies, and some things might just
-start breaking. You might want to make a habit of making sure dependencies are
-updated when you enter your container. Run this from the project directory:
-
-> $ `bundle install`
-
-The container image has additional tools to handle these dependencies for
-multiple Ruby versions. Check out the `scripts` directory if you are curious.
-
-#### Workflow
-
-Your project directory within the container is sync'ed with your local clone of
-the project so that changes in one reflect instantly in the other.
-
-We recommend editing code and committing locally, and executing tests within the
-container, since the container won't have your own tools and configurations.
+You can set any [documented](docs/configuration.md) variable, for example, to make
+the test suite point to another redis instance.
 
 ## Running tests
 
-You can either run them manually in the container-based development environment
-or have a container launched just for running the tests. For the latter you just
-need to run `make test`, and you can configure any additional environment
-variables for the test scripts like so:
+To execute all tests from within the development environment, run this command:
 
-> `$ make DOCKER_OPTS="-e TEST_ALL_RUBIES=1" test`
-
-Another alternative to execute all tests from within the development environment
-where you should not need to manually start/stop the services before is to execute
-them from inside the development environment via this script:
-
-> `$ script/test`
+> `$ bundle exec script/test`
 
 ### Running tests (advanced)
 
-In order to run the tests manually in the container-based development, the services
-needed to run them correctly must be started before with:
-
-> `$ script/services start`
-
-Then you can execute the following commands to execute all tests:
+You can execute the following command to run all tests:
 
 > `$ bundle exec rake`
 
-In case you need it/want it, it is possible to manually stop the services by executing:
-> `$ script/services stop`
+Or to run the tests in Asynchronous mode:
+
+> `$ CONFIG_REDIS_ASYNC=true bundle exec rake`
 
 You can also specify execution of individual tests or type of tests.
 
@@ -130,7 +90,7 @@ For more information on accepted commands for testing with Rake you can execute:
 You can test users of Apisonator API services by starting its dependencies and
 then apisonator itself:
 
-> `$ script/test_external`
+> `$ bundle exec 3scale_backend start -p 3000`
 
 This will launch the application and wait for requests. You could now ie. launch
 [Pisoni](https://github.com/3scale/pisoni)'s testing against this Apisonator instance.
@@ -138,7 +98,7 @@ This will launch the application and wait for requests. You could now ie. launch
 You can hit CTRL+C at any time to exit. If you wanted to pass extra parameters
 for the launcher, such as daemonizing, you could run this:
 
-> `$ script/test_external -- -d`
+> `$ bundle exec 3scale_backend start -p 3000 -d`
 
 ## Documentation
 
@@ -167,22 +127,18 @@ Currently we need to follow this process:
 
 1. Change the contents of version.rb with the new version.
 2. Run `bundle install` with all Gemfiles to update all lockfiles.
-3. Run `rake license_finder:report:xml > licenses.xml`.
-4. (maybe) If you will generate a new CI image with `make ci-build`, change the
-   configuration of `.circleci/config.yml` to point to the future image.
-5. Modify CHANGELOG.md filling up data about notable changes along with
+3. Run `bundle exec rake license_finder:report:xml > licenses.xml`.
+4. Modify CHANGELOG.md filling up data about notable changes along with
    associated issue or PR numbers where available.
-6. Run task release:changelog:link_prs to link the issue or PR numbers in the
+5. Run `bundle exec rake release:changelog:link_prs` to link the issue or PR numbers in the
    CHANGELOG.md file and check the diff makes sense.
-7. Review and commit "apisonator: release X.Y.Z".
-8. Verify the tests pass and fix any issue that crops up. If at all possible,
+6. Review and commit "apisonator: release X.Y.Z".
+7. Verify the tests pass and fix any issue that crops up. If at all possible,
    deploy the version as a pre-release in a staging environment for further
    testing and early detection of issues.
-9. If you did step 4, build the new CI image, rebuild the dev image based on it,
-   verify both work and tests pass using both, and push the CI image to quay.io.
-10. Post the PR on 3scale/apisonator.
-11. When merged, generate the tag with `rake release:tag` and push it. The tag
-    should be a signed, annotated tag, usually with the format `vX.Y.Z`.
+8. Post the PR on 3scale/apisonator.
+9. When merged, generate the tag with `bundle exec rake release:tag` and push it. The tag
+   should be a signed, annotated tag, usually with the format `vX.Y.Z`.
 
 ## Running
 

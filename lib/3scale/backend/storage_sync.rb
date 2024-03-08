@@ -30,7 +30,7 @@ module ThreeScale
             {}
           end
         else
-          DEFAULT_SERVER = '127.0.0.1:22121'.freeze
+          DEFAULT_SERVER = '127.0.0.1:6379'.freeze
           private_constant :DEFAULT_SERVER
 
           def get_options

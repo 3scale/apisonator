@@ -1,4 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require '3scale/backend/storage_async'
 
 class WorkerTest < Test::Unit::TestCase
   include TestHelpers::Fixtures

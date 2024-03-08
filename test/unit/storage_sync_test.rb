@@ -1,4 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require '3scale/backend/storage_sync'
 
 class StorageTest < Test::Unit::TestCase
   def test_basic_operations
@@ -20,8 +21,9 @@ class StorageTest < Test::Unit::TestCase
   end
 
   def test_redis_unix
-    storage = StorageSync.send :new, url('unix:///tmp/redis_unix.6379.sock')
-    assert_connection(storage)
+    config_obj = url('unix:///tmp/redis_unix.6379.sock')
+    storage = StorageSync.send :new, config_obj
+    assert_client_config(storage, url: config_obj[:url])
   end
 
   def test_redis_protected_url
@@ -256,12 +258,12 @@ class StorageTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_connector(client)
-    connector = client.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@connector)
+    connector = client.instance_variable_get(:@client).instance_variable_get(:@connector)
     assert_instance_of Redis::Client::Connector::Sentinel, connector
   end
 
   def assert_client_config(conn, url:, **conf)
-    client = conn.instance_variable_get(:@inner).instance_variable_get(:@client)
+    client = conn.instance_variable_get(:@client)
     assert_equal client.options[:url], url
     conf.each do |k, v|
       assert_equal v, client.options[k]

@@ -15,7 +15,6 @@ require 'rack/test'
 require 'resque_unit'
 require 'timecop'
 require 'async'
-require 'dotenv/load'
 
 # Require test helpers.
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
@@ -23,14 +22,6 @@ Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file
 ## to initilize the worker class variables for those cases that worker is called
 ## without creating a worker first, only happens in test environment
 ThreeScale::Backend::Worker.new
-
-Test::Unit.at_start do
-  TestHelpers::Storage::Mock.mock_storage_clients
-end
-
-Test::Unit.at_exit do
-  TestHelpers::Storage::Mock.unmock_storage_clients
-end
 
 class Test::Unit::TestCase
   include ThreeScale
