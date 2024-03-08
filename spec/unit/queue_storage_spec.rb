@@ -50,9 +50,9 @@ module ThreeScale
           connector.instance_of?(Async::Redis::SentinelsClient)
         else
           connector = connection.instance_variable_get(:@client)
-                              ..instance_variable_get(:@config)
+                                .instance_variable_get(:@config)
 
-          !!config&.sentinel?
+          !!connector&.sentinel?
         end
       end
     end
