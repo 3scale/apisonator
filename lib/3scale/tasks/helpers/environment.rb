@@ -7,7 +7,7 @@ module ThreeScale
         module_function
 
         def testable?
-          !%w(preview production).include?(ENV['RACK_ENV'])
+          !%w(staging production).include?(ENV['RACK_ENV'])
         end
 
         def using_async_redis?
