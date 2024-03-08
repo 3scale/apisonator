@@ -40,6 +40,13 @@ variables.
 - Applies to: listener, worker, cron.
 - Format: string.
 
+###  CONFIG_REDIS_SSL
+
+- Whether use SSL to connect to Redis
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: true or false.
+
 ###  CONFIG_REDIS_CA_FILE
 
 - Certification authority to validate Redis server TLS connections with
@@ -135,6 +142,13 @@ sentinels.
 - Optional. Defaults to empty.
 - Applies to: listener, worker, cron.
 - Format: string.
+
+###  CONFIG_QUEUES_SSL
+
+- Whether use SSL to connect to Redis
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: true or false.
 
 ###  CONFIG_QUEUES_CA_FILE
 

@@ -62,7 +62,7 @@ module ThreeScale
           # CONN_WHITELIST - Connection options that can be specified in config
           # Note: we don't expose reconnect_attempts until the bug above is fixed
           CONN_WHITELIST = [
-            :connect_timeout, :read_timeout, :write_timeout, :max_connections, :username, :password, :ssl_params
+            :connect_timeout, :read_timeout, :write_timeout, :max_connections, :username, :password, :ssl, :ssl_params
           ].freeze
           private_constant :CONN_WHITELIST
 
