@@ -3,12 +3,11 @@
 # Don't load any .env file for production or staging
 # First, try to load `.env.#{ENV['RACK_ENV']}`
 # If doesn't exist, try to load .env.test
-# If doesn't exist, try to load .env
 def env_file
   file = ".env.#{ENV['RACK_ENV']}"
   return file if File.exists?(file)
 
-  File.exists?('.env.test') ? '.env.test' : '.env'
+  '.env.test'
 end
 
 begin
