@@ -1,6 +1,6 @@
 # Ensure the proper .env file is loaded
 #
-# Don't load any .env file for production
+# Don't load any .env file for production or staging
 # First, try to load `.env.#{ENV['RACK_ENV']}`
 # If doesn't exist, try to load .env.test
 # If doesn't exist, try to load .env
@@ -12,7 +12,7 @@ def env_file
 end
 
 begin
-  return if ENV['RACK_ENV'] == 'production'
+  return if %w(staging production).include?(ENV['RACK_ENV'])
 
   require 'dotenv'
 
