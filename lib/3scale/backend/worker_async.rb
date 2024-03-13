@@ -79,7 +79,7 @@ module ThreeScale
           barrier.wait if barrier.size > semaphore.limit
         end
       ensure
-        barrier.stop
+        barrier.wait
       end
 
       def clear_queue
@@ -91,7 +91,6 @@ module ThreeScale
         end
       ensure
         barrier.wait
-        barrier.stop
       end
 
       def start_thread_to_fetch_jobs
