@@ -73,6 +73,9 @@ module ThreeScale
           break if @shutdown
 
           semaphore.async { perform(job) }
+
+          # Wait for the last `@max_concurrent_jobs` tasks to finish and clean the barrier.
+          # Otherwise it produces a memory leak. More info: https://github.com/3scale/apisonator/pull/376
           barrier.wait if barrier.size > semaphore.limit
         end
       ensure
