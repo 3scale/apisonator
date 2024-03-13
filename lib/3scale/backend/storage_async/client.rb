@@ -14,6 +14,7 @@ module ThreeScale
       # the Storage instance behaves likes the redis-rb client.
       class Client
         include Configurable
+        include Methods
 
         class << self
           attr_writer :instance
@@ -34,155 +35,24 @@ module ThreeScale
 
         def initialize(opts)
           @redis_async = initialize_client(opts)
-          @building_pipeline = false
         end
 
-        # Now we are going to define the methods to run redis commands
-        # following the interface of the redis-rb lib.
-        #
-        # These are the different cases:
-        #   1) Methods that can be called directly. For example SET:
-        #      @redis_async.call('SET', some_key)
-        #   2) Methods that need to be "boolified". These are methods for which
-        #      redis-rb returns a boolean, but redis just returns an integer.
-        #      For example, Redis returns 0 or 1 for the EXISTS command, but
-        #      redis-rb transforms that into a boolean.
-        #   3) There are a few methods that need to be treated differently and
-        #      do not fit in any of the previous categories. For example, SSCAN
-        #      which accepts a hash of options in redis-rb.
-        #
-        # All of this might be simplified a bit in the future using the
-        # "methods" in async-redis
-        # https://github.com/socketry/async-redis/tree/master/lib/async/redis/methods
-        # but there are some commands missing, so for now, that's not an option.
-
-        METHODS_TO_BE_CALLED_DIRECTLY = [
-          :del,
-          :expire,
-          :expireat,
-          :flushdb,
-          :get,
-          :hset,
-          :hmget,
-          :incr,
-          :incrby,
-          :keys,
-          :lindex,
-          :llen,
-          :lpop,
-          :lpush,
-          :lrange,
-          :lrem,
-          :lset,
-          :ltrim,
-          :mget,
-          :ping,
-          :rpush,
-          :scard,
-          :setex,
-          :smembers,
-          :sunion,
-          :ttl,
-          :zcard,
-          :zrangebyscore,
-          :zremrangebyscore,
-          :zrevrange
-        ].freeze
-        private_constant :METHODS_TO_BE_CALLED_DIRECTLY
-
-        METHODS_TO_BE_CALLED_DIRECTLY.each do |method|
-          define_method(method) do |*args|
-            @redis_async.call(method, *args.flatten)
-          end
-        end
-
-        METHODS_TO_BOOLIFY = [
-          :exists,
-          :sismember,
-          :sadd,
-          :srem,
-          :zadd
-        ].freeze
-        private_constant :METHODS_TO_BOOLIFY
-
-        METHODS_TO_BOOLIFY.each do |method|
-          define_method(method) do |*args|
-            @redis_async.call(method, *args.flatten) > 0
-          end
-        end
-
-        def blpop(*args)
-          call_args = ['BLPOP'] + args
-
-          # redis-rb accepts a Hash as last arg that can contain :timeout.
-          if call_args.last.is_a? Hash
-            timeout = call_args.pop[:timeout]
-            call_args << timeout
-          end
-
-          @redis_async.call(*call_args.flatten)
-        end
-
-        def set(key, val, opts = {})
-          args = ['SET', key, val]
-
-          args += ['EX', opts[:ex]] if opts[:ex]
-          args << 'NX' if opts[:nx]
-
-          @redis_async.call(*args)
-        end
-
-        def sscan(key, cursor, opts = {})
-          args = ['SSCAN', key, cursor]
-
-          args += ['MATCH', opts[:match]] if opts[:match]
-          args += ['COUNT', opts[:count]] if opts[:count]
-
-          @redis_async.call(*args)
-        end
-
-        def scan(cursor, opts = {})
-          args = ['SCAN', cursor]
-
-          args += ['MATCH', opts[:match]] if opts[:match]
-          args += ['COUNT', opts[:count]] if opts[:count]
-
+        def call(*args)
           @redis_async.call(*args)
         end
 
         # This method allows us to send pipelines like this:
-        # storage.pipelined do
-        #   storage.get('a')
-        #   storage.get('b')
+        # storage.pipelined do |pipeline|
+        #   pipeline.get('a')
+        #   pipeline.get('b')
         # end
         def pipelined(&block)
           # This replaces the client with a Pipeline that accumulates the Redis
           # commands run in a block and sends all of them in a single request.
-          #
-          # There's an important limitation: this assumes that the fiber will
-          # not yield in the block.
 
-          # When running a nested pipeline, we just need to continue
-          # accumulating commands.
-          if @building_pipeline
-            block.call
-            return
-          end
-
-          @building_pipeline = true
-
-          original = @redis_async
           pipeline = Pipeline.new
-          @redis_async = pipeline
-
-          begin
-            block.call
-          ensure
-            @redis_async = original
-            @building_pipeline = false
-          end
-
-          pipeline.run(original)
+          block.call pipeline
+          pipeline.run(@redis_async)
         end
 
         def close
@@ -191,8 +61,26 @@ module ThreeScale
 
         private
 
+        DEFAULT_SCHEME = 'redis'
         DEFAULT_HOST = 'localhost'.freeze
         DEFAULT_PORT = 6379
+
+        # Custom Redis Protocol class which sends the AUTH command on every new connection
+        # to authenticate before sending any other command.
+        class AuthenticatedRESP2
+          def initialize(credentials)
+            @credentials = credentials
+          end
+
+          def client(stream)
+            client = Async::Redis::Protocol::RESP2.client(stream)
+
+            client.write_request(["AUTH", *@credentials])
+            client.read_response # Ignore response.
+
+            client
+          end
+        end
 
         def initialize_client(opts)
           return init_host_client(opts) unless opts.key? :sentinels
@@ -201,12 +89,9 @@ module ThreeScale
         end
 
         def init_host_client(opts)
-          uri = URI(opts[:url] || '')
-          host = uri.host || DEFAULT_HOST
-          port = uri.port || DEFAULT_PORT
-
-          endpoint = Async::IO::Endpoint.tcp(host, port)
-          Async::Redis::Client.new(endpoint, limit: opts[:max_connections])
+          endpoint = make_redis_endpoint(opts)
+          protocol = make_redis_protocol(opts)
+          Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
         end
 
         def init_sentinels_client(opts)
@@ -215,6 +100,52 @@ module ThreeScale
           role = opts[:role] || :master
 
           Async::Redis::SentinelsClient.new(name, opts[:sentinels], role)
+        end
+
+        # Authenticated RESP2 if credentials are provided, RESP2 otherwise
+        def make_redis_protocol(opts)
+          uri = URI(opts[:url] || "")
+          credentials = [ uri.user || opts[:username], uri.password || opts[:password]]
+
+          if credentials.any?
+            AuthenticatedRESP2.new(credentials)
+          else
+            Async::Redis::Protocol::RESP2
+          end
+        end
+
+        # SSL endpoint if scheme is `rediss:`, TCP endpoint otherwise.
+        # Note: Unix socket endpoint is not supported in async mode
+        def make_redis_endpoint(opts)
+          uri = URI(opts[:url] || "")
+          scheme = uri.scheme || DEFAULT_SCHEME
+          host = uri.host || DEFAULT_HOST
+          port = uri.port || DEFAULT_PORT
+
+          tcp_endpoint = Async::IO::Endpoint.tcp(host, port)
+
+          case scheme
+          when 'redis'
+            tcp_endpoint
+          when 'rediss'
+            ssl_context = OpenSSL::SSL::SSLContext.new
+            ssl_context.set_params(format_ssl_params(opts[:ssl_params]))
+            Async::IO::SSLEndpoint.new(tcp_endpoint, ssl_context: ssl_context)
+          else
+            raise ArgumentError
+          end
+        end
+
+        def format_ssl_params(ssl_params)
+          cert = ssl_params[:cert].to_s.strip
+          key = ssl_params[:key].to_s.strip
+          return ssl_params if cert.empty? && key.empty?
+
+          updated_ssl_params = ssl_params.dup
+          updated_ssl_params[:cert] = OpenSSL::X509::Certificate.new(File.read(cert))
+          updated_ssl_params[:key] = OpenSSL::PKey.read(File.read(key))
+
+          updated_ssl_params
         end
       end
     end

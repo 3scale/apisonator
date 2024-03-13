@@ -1,0 +1,8 @@
+[allowlist]
+    description = "Global Allowlist"
+
+    # Ignore based on any subset of the file path
+    paths = [
+        # Ignore all fake private keys, they are for tests
+        '''script\/config\/.+\.(pem|key)$'''
+    ]

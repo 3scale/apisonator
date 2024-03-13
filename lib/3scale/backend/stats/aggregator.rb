@@ -46,9 +46,9 @@ module ThreeScale
             touched_apps = {}
 
             transactions.each_slice(PIPELINED_SLICE_SIZE) do |slice|
-              storage.pipelined do
+              storage.pipelined do |pipeline|
                 slice.each do |transaction|
-                  aggregate_all(transaction)
+                  aggregate_all(transaction, pipeline)
                   touched_apps.merge!(touched_relation(transaction))
                 end
               end
@@ -57,9 +57,9 @@ module ThreeScale
             touched_apps
           end
 
-          def aggregate_all(transaction)
+          def aggregate_all(transaction, client)
             [Aggregators::ResponseCode, Aggregators::Usage].each do |aggregator|
-              aggregator.aggregate(transaction)
+              aggregator.aggregate(transaction, client)
             end
           end
 

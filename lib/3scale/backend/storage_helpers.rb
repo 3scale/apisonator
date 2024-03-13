@@ -62,7 +62,7 @@ module ThreeScale
           # CONN_WHITELIST - Connection options that can be specified in config
           # Note: we don't expose reconnect_attempts until the bug above is fixed
           CONN_WHITELIST = [
-            :connect_timeout, :read_timeout, :write_timeout, :max_connections
+            :connect_timeout, :read_timeout, :write_timeout, :max_connections, :username, :password, :ssl, :ssl_params
           ].freeze
           private_constant :CONN_WHITELIST
 
@@ -98,9 +98,9 @@ module ThreeScale
               h[k] = val if val
             end.merge(options)
 
-            cfg_with_sentinels = cfg_sentinels_handler cfg
-
-            defaults.merge(ensure_url_param(cfg_with_sentinels))
+            cfg_compacted = cfg_compact cfg
+            cfg_with_sentinels = cfg_sentinels_handler cfg_compacted
+            cfg_defaults_handler cfg_with_sentinels, defaults
           end
 
           private
@@ -183,6 +183,12 @@ module ThreeScale
             options
           end
 
+          def cfg_compact(options)
+            empty = ->(_k,v) { v.to_s.strip.empty? }
+            options[:ssl_params]&.delete_if(&empty)
+            options.delete_if(&empty)
+          end
+
           # Expected sentinel input cfg format:
           #
           # Either a String with one or more URLs:
@@ -239,6 +245,53 @@ module ThreeScale
             # Handle role option when sentinels are validated
             options[:role] = role if role && !role.empty?
             options
+          end
+
+          # The new Redis client accepts either `:url` or `:path`, but not both.
+          # In the case of a path, Redis expects it to not include the `unix://` prefix.
+          # On the other hand, Apisonator accepts only `:url`, for both Sockets and TCP connections.
+          # For paths, Apisonator expects it to be given as a URL using the `unix://` scheme.
+          #
+          # This method handles the conversion.
+          def cfg_unix_path_handler(options)
+            if options.key? :path
+              options.delete(:url)
+              return options
+            end
+
+            if options[:url].start_with? "unix://"
+              options[:path] = options.delete(:url).delete_prefix("unix://")
+            end
+
+            options
+          end
+
+          # If no CA cert given, look for the default one at `config/ca_cert.pem`
+          def cfg_ca_cert_handler(options)
+            return options if options[:ssl_params]&.key?(:ca_file) || options[:ssl_params]&.key?(:ca_path)
+
+            cert_path = "#{Backend::Util.root_dir}/config/ca_cert.pem"
+
+            return options unless File.exist?(cert_path)
+
+            options[:ssl_params] ||= {}
+            options[:ssl_params][:ca_file] = cert_path
+
+            options
+          end
+
+          # This ensures some default values are valid for the redis client.
+          # In particular:
+          #
+          # - The :url key is always present
+          #   - Except when connecting to a unix socket
+          # - :max_connections is only present for async mode
+          def cfg_defaults_handler(options, defaults)
+            cfg_with_defaults = defaults.merge(ensure_url_param(options))
+            cfg_with_defaults = cfg_unix_path_handler(cfg_with_defaults)
+            cfg_with_defaults = cfg_ca_cert_handler(cfg_with_defaults)
+            cfg_with_defaults.delete(:max_connections) unless options[:async]
+            cfg_with_defaults
           end
 
           # helper to convert a sentinel object to a Hash

@@ -11,12 +11,12 @@ module ThreeScale
             include Keys
             include Base
 
-            def aggregate(transaction)
+            def aggregate(transaction, client = storage)
               keys_for_multiple_codes = keys_for_response_code(transaction)
               timestamp = transaction.timestamp
 
               keys_for_multiple_codes.each do |keys|
-                aggregate_values(1, timestamp, keys, :incrby)
+                aggregate_values(1, timestamp, keys, :incrby, client)
               end
             end
 

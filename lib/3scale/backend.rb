@@ -2,9 +2,10 @@
 require_relative 'bundler_shim'
 
 require 'builder'
-require 'hiredis'
+require 'hiredis-client'
 
 require 'redis'
+require 'redis_client/config/timeout' # Monkey patch redis-client
 
 require 'resque'
 require 'securerandom'

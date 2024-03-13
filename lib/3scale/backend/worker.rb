@@ -72,11 +72,11 @@ module ThreeScale
       end
 
       def register_worker
-        redis.sadd(:workers, self)
+        redis.sadd(:workers, self.class.name)
       end
 
       def unregister_worker
-        redis.srem(:workers, self)
+        redis.srem(:workers, self.class.name)
       end
 
       def hostname

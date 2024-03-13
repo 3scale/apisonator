@@ -85,15 +85,15 @@ module ThreeScale
 
         keys = alert_keys(service_id, app_id, discrete)
 
-        already_alerted, allowed = storage.pipelined do
-          storage.get(keys[:already_notified])
-          storage.sismember(keys[:allowed], discrete)
+        already_alerted, allowed = storage.pipelined do |pipeline|
+          pipeline.get(keys[:already_notified])
+          pipeline.sismember(keys[:allowed], discrete)
         end
 
         if already_alerted.nil? && allowed && discrete.to_i > 0
-          next_id, _ = storage.pipelined do
-            storage.incr(keys[:current_id])
-            storage.setex(keys[:already_notified], ALERT_TTL, "1")
+          next_id, _ = storage.pipelined do |pipeline|
+            pipeline.incr(keys[:current_id])
+            pipeline.setex(keys[:already_notified], ALERT_TTL, "1")
           end
 
           alert = { :id => next_id,

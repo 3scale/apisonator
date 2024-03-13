@@ -1003,7 +1003,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
     assert_equal 200, last_response.status
 
     # 'Hits' was 0, so there shouldn't be a stats key for it.
-    hits_key_created = @storage.exists(
+    hits_key_created = @storage.exists?(
       application_key(
         @service_id,
         @application.id,

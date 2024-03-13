@@ -60,9 +60,9 @@ module ThreeScale
         end
 
         def get_batch(num_elements)
-          storage.pipelined do
-            storage.lrange(key_for_notifications_batch, 0, num_elements - 1)
-            storage.ltrim(key_for_notifications_batch, num_elements, -1)
+          storage.pipelined do |pipeline|
+            pipeline.lrange(key_for_notifications_batch, 0, num_elements - 1)
+            pipeline.ltrim(key_for_notifications_batch, num_elements, -1)
           end.first
         end
 
@@ -122,9 +122,9 @@ module ThreeScale
         if ThreeScale::Backend.test?
           module Test
             def get_full_batch
-              storage.pipelined do
-                storage.lrange(key_for_notifications_batch, 0, -1)
-                storage.del(key_for_notifications_batch)
+              storage.pipelined do |pipeline|
+                pipeline.lrange(key_for_notifications_batch, 0, -1)
+                pipeline.del(key_for_notifications_batch)
               end.first
             end
 
