@@ -74,8 +74,9 @@ module ThreeScale
 
           semaphore.async { perform(job) }
 
-          # Wait for the last `@max_concurrent_jobs` tasks to finish and clean the barrier.
-          # Otherwise it produces a memory leak. More info: https://github.com/3scale/apisonator/pull/376
+          # Clean-up tasks inside barrier regularly, otherwise they accumulate throughout the worker lifetime
+          # and never GCed, eventually exhausting the whole available memory. Moreover the array keeping
+          # track of tasks in the barrier grows indefinitely too occupying memory and reducing performance.
           barrier.wait if barrier.size > semaphore.limit
         end
       ensure
