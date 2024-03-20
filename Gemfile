@@ -43,7 +43,6 @@ end
 
 group :development, :test do
   gem 'rspec_api_documentation', '~> 5.0'
-  gem 'dotenv', '~> 2.8.1'
 end
 
 # Default server by platform
@@ -73,3 +72,5 @@ gem 'webrick', '~> 1.8'
 # sentinels and avoids retrying calls when there's a timeout to prevent
 # duplicated commands. It's based on version 4.1.3.
 gem 'redis', git: 'https://github.com/3scale/redis-rb', branch: 'apisonator'
+
+gem 'dotenv', '~> 2.8.1'
