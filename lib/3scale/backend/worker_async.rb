@@ -73,6 +73,11 @@ module ThreeScale
           break if @shutdown
 
           semaphore.async { perform(job) }
+
+          # Clean-up tasks inside barrier regularly, otherwise they accumulate throughout the worker lifetime
+          # and never GCed, eventually exhausting the whole available memory. Moreover the array keeping
+          # track of tasks in the barrier grows indefinitely too occupying memory and reducing performance.
+          barrier.wait if barrier.size > semaphore.limit
         end
       ensure
         barrier.wait
