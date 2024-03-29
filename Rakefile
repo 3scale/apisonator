@@ -257,6 +257,33 @@ task :reschedule_failed_jobs do
        "Pending failed jobs: #{result[:failed_current]}."
 end
 
+desc 'open debug console'
+task :console do
+  require 'irb'
+  require_relative 'app/api/api.rb'
+
+  # Good idea from IRB.start
+  STDOUT.sync = true
+
+  warn <<~EOF
+    Examples:
+    Sync { Resque.redis.queue_names }
+    Sync { Resque.redis.peek_in_queue "priority" }
+  EOF
+
+  module ThreeScale
+    module Backend
+      extend Resque::Helpers
+
+      if Environment.using_async_redis?
+        Sync { binding.irb }
+      else
+        binding.irb
+      end
+    end
+  end
+end
+
 namespace :stats do
   desc 'Delete stats of services marked for deletion'
   task :cleanup, [:redis_urls, :log_deleted_keys] do |_, args|
