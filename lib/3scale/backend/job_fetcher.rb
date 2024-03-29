@@ -11,12 +11,6 @@ module ThreeScale
       REDIS_TIMEOUT = 60
       private_constant :REDIS_TIMEOUT
 
-      DEFAULT_MAX_PENDING_JOBS = 100
-      private_constant :DEFAULT_MAX_PENDING_JOBS
-
-      DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS = 1.0/100
-      private_constant :DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS
-
       RedisConnectionError = Class.new(RuntimeError)
 
       # The default redis_client is the one defined in Resque::Helpers
@@ -24,12 +18,6 @@ module ThreeScale
         @redis = redis_client
         @fetch_timeout = fetch_timeout
         @queues ||= QUEUES.map { |q| "queue:#{q}" }
-
-        @max_pending_jobs = configuration.async_worker.max_pending_jobs ||
-            DEFAULT_MAX_PENDING_JOBS
-
-        @wait_before_fetching_more = configuration.async_worker.seconds_before_fetching_more ||
-            DEFAULT_WAIT_BEFORE_FETCHING_MORE_JOBS
       end
 
       def fetch
@@ -64,35 +52,9 @@ module ThreeScale
       def start(job_queue)
         loop do
           break if @shutdown
-
-          if job_queue.size >= @max_pending_jobs
-            sleep @wait_before_fetching_more
-          else
-            begin
-              job = fetch
-            rescue RedisConnectionError => e
-              # If there has been a connection error or a timeout we wait a bit
-              # because normally, it will be a temporary problem.
-              # In the future, we might want to put a limit in the total number
-              # of attempts or implement exponential backoff retry times.
-              Worker.logger.notify(e)
-              sleep(1)
-
-              # Re-instantiate Redis instance. This is needed to recover from
-              # Errno::EPIPE, not sure if there are others.
-              @redis = Redis::Namespace.new(
-                WorkerAsync.const_get(:RESQUE_REDIS_NAMESPACE),
-                redis: QueueStorage.connection(Backend.environment, Backend.configuration)
-              )
-
-             # If there is a different kind of error, it's probably a
-             # programming error. Like sending an invalid blpop command to
-             # Redis. In that case, let the worker crash.
-            end
-            job_queue << job if job
-          end
+          job = fetch
+          job_queue << job if job
         end
-
       rescue Exception => e
         Worker.logger.notify(e)
       ensure

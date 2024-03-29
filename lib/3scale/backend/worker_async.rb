@@ -1,7 +1,6 @@
 require 'async'
 require 'async/semaphore'
 require 'async/barrier'
-require 'redis-namespace'
 require '3scale/backend/job_fetcher'
 
 module ThreeScale
@@ -13,17 +12,17 @@ module ThreeScale
       DEFAULT_MAX_CONCURRENT_JOBS = 20
       private_constant :DEFAULT_MAX_CONCURRENT_JOBS
 
-      RESQUE_REDIS_NAMESPACE = :resque
-      private_constant :RESQUE_REDIS_NAMESPACE
+      DEFAULT_MAX_PENDING_JOBS = 100
+      private_constant :DEFAULT_MAX_PENDING_JOBS
 
       def initialize(options = {})
         trap('TERM') { shutdown }
         trap('INT')  { shutdown }
 
         @one_off = options[:one_off]
-        @jobs = Queue.new # Thread-safe queue
+        @jobs = SizedQueue.new(max_pending_jobs)
 
-        @job_fetcher = options[:job_fetcher] || JobFetcher.new(redis_client: redis_client)
+        @job_fetcher = options[:job_fetcher] || JobFetcher.new
 
         @max_concurrent_jobs = configuration.async_worker.max_concurrent_jobs ||
             DEFAULT_MAX_CONCURRENT_JOBS
@@ -32,13 +31,11 @@ module ThreeScale
       def work
         return Sync { process_one } if one_off?
 
-        Sync { register_worker }
-
-        fetch_jobs_thread = start_thread_to_fetch_jobs
-
-        Sync { process_all }
-
-        fetch_jobs_thread.join
+        Sync do
+          register_worker
+          start_to_fetch_jobs
+          process_all
+        end
 
         # Ensure that we do not leave any jobs in memory
         Sync { clear_queue }
@@ -47,8 +44,8 @@ module ThreeScale
       end
 
       def shutdown
+        Worker.logger.info "Shutting down fetcher.."
         @job_fetcher.shutdown
-        @shutdown = true
       end
 
       private
@@ -62,22 +59,24 @@ module ThreeScale
         barrier = Async::Barrier.new
         semaphore = Async::Semaphore.new(@max_concurrent_jobs, parent: barrier)
 
+        Worker.logger.info "Start processing all.."
+
         loop do
           # unblocks when there are new jobs or when .close() is called
           job = @jobs.pop
 
           # If job is nil, it means that the queue is closed. No more jobs are
-          # going to be pushed, so shutdown.
-          shutdown unless job
-
-          break if @shutdown
+          # going to be pushed, so quit.
+          break unless job
 
           semaphore.async { perform(job) }
 
           # Clean-up tasks inside barrier regularly, otherwise they accumulate throughout the worker lifetime
           # and never GCed, eventually exhausting the whole available memory. Moreover the array keeping
           # track of tasks in the barrier grows indefinitely too occupying memory and reducing performance.
-          barrier.wait if barrier.size > semaphore.limit
+          if barrier.size > max_pending_jobs
+            barrier.wait
+          end
         end
       ensure
         barrier.wait
@@ -94,23 +93,14 @@ module ThreeScale
         barrier.wait
       end
 
-      def start_thread_to_fetch_jobs
-        Thread.new do
-          Sync { @job_fetcher.start(@jobs) }
-        end
+      def start_to_fetch_jobs
+        Async { @job_fetcher.start(@jobs) }
       end
 
-      # Returns a new Redis client with namespace "resque".
-      # In the async worker, the job fetcher runs in a separate thread, and we
-      # need to avoid sharing an already instantiated client like the one in
-      # Resque::Helpers initialized in lib/3scale/backend.rb (Resque.redis).
-      # Failing to do so, will raise errors because of fibers shared across
-      # threads.
-      def redis_client
-        Redis::Namespace.new(
-          RESQUE_REDIS_NAMESPACE,
-          redis: QueueStorage.connection(Backend.environment, Backend.configuration)
-        )
+      private
+
+      def max_pending_jobs
+        @max_pending_jobs ||= configuration.async_worker.max_pending_jobs || DEFAULT_MAX_PENDING_JOBS
       end
     end
   end
