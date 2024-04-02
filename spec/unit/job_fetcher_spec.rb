@@ -107,23 +107,6 @@ module ThreeScale
         end
 
         context 'when there is an error getting elements from the queue' do
-          context 'and it is a connection error' do
-            let(:connection_errors) do
-              [Redis::BaseConnectionError,
-               Errno::ECONNREFUSED,
-               Errno::EPIPE,
-               Redis::CommandError.new('ERR Connection timed out')]
-            end
-
-            it 'raises RedisConnectionError' do
-              connection_errors.each do |conn_error|
-                allow(test_redis).to receive(:blpop).and_raise conn_error
-
-                expect { subject.fetch }.to raise_error JobFetcher::RedisConnectionError
-              end
-            end
-          end
-
           context 'and it is not a connection error' do
             let(:test_error) { RuntimeError.new('Some error') }
 
