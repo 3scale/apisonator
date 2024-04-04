@@ -8,7 +8,7 @@ module ThreeScale
 
     DEFAULT_SERVER = '127.0.0.1:6379'.freeze
 
-    context 'when there are jobs enqueued' do
+    context 'when there are jobs enqueued', if: configuration.redis.async do
       let(:provider_key) { 'a_provider_key' }
       let(:service_id) { 'a_service_id' }
       let(:app_id) { 'an_app_id' }
@@ -52,7 +52,7 @@ module ThreeScale
         end
 
         worker = Worker.new(async: true, job_fetcher: JobFetcher.new(fetch_timeout: 1))
-        worker_thread = Thread.new { worker.work }
+        worker_async_task = Async { worker.work }
 
         stats_key = Stats::Keys.application_usage_value_key(
             service_id, app_id, metric_id, Period[:day].new(current_time)
@@ -61,13 +61,11 @@ module ThreeScale
         # We do not know when the worker thread will finish processing all the
         # jobs. If it takes too much, we will assume that there has been some
         # kind of error.
-        t_start = Time.now
+        t_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-        storage = Redis.new(Storage::Helpers.config_with(
-          ThreeScale::Backend.configuration.redis, options: { default_url: "#{DEFAULT_SERVER}" }
-        ))
+        storage = Service.storage
         while storage.get(stats_key).to_i < n_reports
-          if Time.now - t_start > 10
+          if Process.clock_gettime(Process::CLOCK_MONOTONIC) - t_start > 10
             raise 'The worker is taking too much to process the jobs'
           end
 
@@ -76,7 +74,7 @@ module ThreeScale
 
         worker.shutdown
 
-        worker_thread.join
+        worker_async_task.wait
 
         expect(storage.get(stats_key).to_i).to eq n_reports
       end

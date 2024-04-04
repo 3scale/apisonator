@@ -142,10 +142,12 @@ module ThreeScale
             # This returns the 2 jobs in the 2 first calls, and nil for any
             # call after that.
             allow(test_redis).to receive(:blpop).and_return(*jobs)
+            allow(test_redis).to receive(:lpop).with(any_args).and_return(nil) # async worker falls backs to blpop
           end
 
           it 'fetches jobs and puts them in a local queue' do
             queue = Queue.new
+
             t = Thread.new { subject.start(queue) }
 
             (jobs.size - 1).times do |i|
@@ -166,6 +168,7 @@ module ThreeScale
 
           before do
             allow(test_redis).to receive(:blpop).and_raise error
+            allow(test_redis).to receive(:lpop).with(any_args).and_raise error
             allow(Worker.logger).to receive(:notify)
           end
 
