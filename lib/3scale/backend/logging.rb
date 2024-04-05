@@ -39,7 +39,11 @@ module ThreeScale
       end
 
       def logger_notify_proc(logger)
-        Logging::External.notify_proc || logger.method(:error).to_proc
+        external_notify_proc = Logging::External.notify_proc
+        proc do |exception, *args, &block|
+          logger.error('Exception') { {exception: {class: exception.class, message: exception.message, backtrace: exception.backtrace[0..3]}} }
+          external_notify_proc&.call(exception, *args, &block)
+        end
       end
     end
 
