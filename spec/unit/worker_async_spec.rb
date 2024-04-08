@@ -3,7 +3,7 @@ require '3scale/backend/worker_async'
 
 module ThreeScale
   module Backend
-    describe WorkerAsync do
+    describe WorkerAsync, if: configuration.redis.async do
       describe '#work' do
         let(:job_fetcher) { instance_double('JobFetcher') }
 
@@ -42,6 +42,63 @@ module ThreeScale
           it 'sends fail() to the job' do
             subject.work
             expect(test_job).to have_received(:fail).with(error)
+          end
+        end
+
+        describe 'processes all' do
+          subject { WorkerAsync.new(job_fetcher: job_fetcher) }
+
+          # let(:test_job_1) { instance_double('BackgroundJob') }
+          # let(:test_job_2) { instance_double('BackgroundJob') }
+          let(:test_job_1) { "background job 1" }
+          let(:test_job_2) { "background job 2" }
+          let(:queue) { subject.instance_variable_get(:@jobs) }
+
+          before do
+            Logging::Worker.configure_logging(Worker, '/dev/null')
+          end
+
+          it "exits only after all jobs finished processing" do
+            expect(subject).to receive(:perform).once.ordered.with(test_job_1).and_wrap_original { sleep 0.5 }
+            queue << test_job_1
+            queue.close
+
+            start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            Sync do |task|
+              task.with_timeout(2) do
+                subject.send :process_all
+              end
+            end
+
+            # more than half a second passed before `#process_all` exited
+            expect(start).to be < Process.clock_gettime(Process::CLOCK_MONOTONIC) - 0.5
+          end
+
+          it "doesn't stop on nil when queue is closed but not empty" do
+            expect(subject).to receive(:perform).once.ordered.with(test_job_1)
+            expect(subject).to receive(:perform).once.ordered.with(test_job_2)
+            expect(Worker.logger).to receive(:error).with("Worker received a nil job from queue.")
+
+            queue << test_job_1 << nil << test_job_2
+            queue.close
+
+            Sync do |task|
+              task.with_timeout(2) do
+                subject.send :process_all
+              end
+            end
+          end
+
+          it "doesn't stop on nil when queue is empty but not closed" do
+            expect(subject).to receive(:perform).once.ordered.with(test_job_1)
+            expect(Worker.logger).to receive(:error).with("Worker received a nil job from queue.")
+
+            queue << test_job_1 << nil
+
+            expect { Sync { |task| task.with_timeout(0.5) { subject.send :process_all } } }.
+              to raise_error(Async::TimeoutError)
+
+            expect(queue).to be_empty
           end
         end
 
