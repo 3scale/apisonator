@@ -67,7 +67,7 @@ module ThreeScale
           # If job is nil, it means that the queue is closed. No more jobs are
           # going to be pushed, so quit.
           unless job
-            break if @jobs.closed?
+            break if @jobs.closed? && @jobs.empty?
 
             Worker.logger.error("Worker received a nil job from queue.")
 
