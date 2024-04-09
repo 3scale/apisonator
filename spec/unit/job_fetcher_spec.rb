@@ -1,8 +1,10 @@
-require '3scale/backend/job_fetcher'
-
 module ThreeScale
   module Backend
     describe JobFetcher do
+      before do
+        Logging::Worker.configure_logging(Worker, '/dev/null')
+      end
+
       describe '#fetch' do
         let(:resque_queue) { 'queue:priority' }
         let(:job_queue) { resque_queue.sub('queue:', '') }
@@ -106,24 +108,22 @@ module ThreeScale
           job_fetcher.fetch
         end
 
-        context 'when there is an error getting elements from the queue' do
-          context 'and it is a connection error' do
-            let(:connection_errors) do
-              [Redis::BaseConnectionError,
-               Errno::ECONNREFUSED,
-               Errno::EPIPE,
-               Redis::CommandError.new('ERR Connection timed out')]
-            end
+        it 'async fetches jobs from queues in the order defined (priority > main > stats)' do
+          fetch_timeout = 1
+          job_fetcher = JobFetcher.new(
+            redis_client: test_redis, fetch_timeout: fetch_timeout
+          )
 
-            it 'raises RedisConnectionError' do
-              connection_errors.each do |conn_error|
-                allow(test_redis).to receive(:blpop).and_raise conn_error
-
-                expect { subject.fetch }.to raise_error JobFetcher::RedisConnectionError
-              end
-            end
+          %w[queue:priority queue:main queue:stats].each do |queue|
+            expect(test_redis)
+              .to receive(:lpop).ordered
+              .with(queue, 5)
           end
 
+          job_fetcher.fetch(wait: false, max: 5)
+        end
+
+        context 'when there is an error getting elements from the queue' do
           context 'and it is not a connection error' do
             let(:test_error) { RuntimeError.new('Some error') }
 
@@ -138,7 +138,8 @@ module ThreeScale
         end
       end
 
-      describe '#start' do
+      # start is only used in async mode
+      describe '#start', if: Backend.configuration.redis.async do
         let(:resque_queue) { 'queue:priority' }
         let(:job_queue) { resque_queue.sub('queue:', '') }
 
@@ -146,7 +147,7 @@ module ThreeScale
 
         subject { JobFetcher.new(redis_client: test_redis) }
 
-        describe 'when the max num of jobs in the local queue is not reached' do
+        describe 'normal operation' do
           let(:jobs) do
             [
               [job_queue, subject.encode(BackgroundJob.new)],
@@ -159,100 +160,45 @@ module ThreeScale
             # This returns the 2 jobs in the 2 first calls, and nil for any
             # call after that.
             allow(test_redis).to receive(:blpop).and_return(*jobs)
+            # make async worker fall backs to blpop but also give opportunity for cooperative multitasking
+            allow(test_redis).to receive(:lpop).with(any_args) { sleep 0.001; nil }
           end
 
-          it 'fetches jobs and puts them in a local queue' do
+          it 'fetches jobs and puts them in a local queue, closes queue after, does not enqueue nils' do
             queue = Queue.new
-            t = Thread.new { subject.start(queue) }
 
-            (jobs.size - 1).times do |i|
-              job = queue.pop
-              expect(job.queue).to eq jobs[i].first
-              expect(job.payload).to eq JSON.parse(jobs[i].last)
+            fetching = Async do |task|
+              task.with_timeout(200) do
+                subject.start(queue)
+              end
+            end
+
+            Sync do |task|
+              task.with_timeout(200) do
+                (jobs.size - 1).times do |i|
+                  job = queue.pop
+                  expect(job.queue).to eq jobs[i].first
+                  expect(job.payload).to eq JSON.parse(jobs[i].last)
+                end
+              end
             end
 
             subject.shutdown
-            t.join
+            fetching.wait
+
+            expect(queue).to be_empty
+            expect(queue).to be_closed
           end
         end
 
-        describe 'when it reaches the maximum num of jobs in the local queue' do
-          let(:original_async_worker_config) do
-            ThreeScale::Backend.configuration.async_worker
-          end
-
-          let(:max_pending_jobs) { 10 }
-          let(:wait_before_trying_to_fetch_more) { 0.1/100 }
-
-          let(:job) do
-            [job_queue, subject.encode(BackgroundJob.new)]
-          end
-
-          let(:queue) { Queue.new }
-
-          before do
-            allow(test_redis).to receive(:blpop).and_return(job)
-
-            ThreeScale::Backend.configuration.async_worker.max_pending_jobs =
-                max_pending_jobs
-
-            ThreeScale::Backend.configuration.async_worker.seconds_before_fetching_more =
-                wait_before_trying_to_fetch_more
-          end
-
-          after do
-            ThreeScale::Backend.configuration.async_worker = original_async_worker_config
-          end
-
-          it 'does not store more jobs than the max defined' do
-            # In this test, there is no one popping jobs from the queue, so
-            # the max capacity will be reached
-
-            # Need to re-instantiate so it picks the modified config values
-            subject = JobFetcher.new(redis_client: test_redis)
-            allow(subject).to receive(:sleep)
-
-            t = Thread.new { subject.start(queue) }
-
-            sleep(0.1) while queue.size < max_pending_jobs
-            sleep(0.1) # Give it more time to try to add more jobs to the queue
-
-            subject.shutdown
-            t.join
-
-            expect(queue.size).to eq max_pending_jobs
-          end
-
-          it 'sleeps before trying to fetch more' do
-            # In this test, there is no one popping jobs from the queue, so
-            # the max capacity will be reached
-
-            # Need to re-instantiate so it picks the modified config values
-            subject = JobFetcher.new(redis_client: test_redis)
-            allow(subject).to receive(:sleep)
-
-            t = Thread.new { subject.start(queue) }
-
-            sleep(0.1) while queue.size < max_pending_jobs
-            sleep(0.1) # Give it more time to try to add more jobs to the queue
-
-            subject.shutdown
-            t.join
-
-            expect(subject)
-                .to have_received(:sleep)
-                .with(wait_before_trying_to_fetch_more)
-                .at_least(1).times
-          end
-        end
-
-        context 'when there is an error not related with Redis connectivity' do
-          let(:error) { Exception.new('Some error') }
+        context 'when there is a fetching error or something really weird' do
+          let(:error) { RuntimeError.new('Some error') }
           let(:queue) { Queue.new }
           let(:job_fetcher) { JobFetcher.new(redis_client: test_redis) }
 
           before do
             allow(test_redis).to receive(:blpop).and_raise error
+            allow(test_redis).to receive(:lpop).with(any_args).and_raise error
             allow(Worker.logger).to receive(:notify)
           end
 

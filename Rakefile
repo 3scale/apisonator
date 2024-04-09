@@ -260,6 +260,7 @@ end
 desc 'open debug console'
 task :console do
   require 'irb'
+  require '3scale/backend/job_fetcher'
   require_relative 'app/api/api.rb'
 
   # Good idea from IRB.start
