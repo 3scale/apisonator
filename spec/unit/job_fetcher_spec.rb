@@ -1,3 +1,5 @@
+require 'spec_helper'
+
 module ThreeScale
   module Backend
     describe JobFetcher do
