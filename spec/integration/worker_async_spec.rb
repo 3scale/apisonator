@@ -98,10 +98,13 @@ module ThreeScale
         report_waiter.call(stats_key, n_reports + 5)
 
         subject.shutdown
-
         work_task.wait
 
         expect(storage.get(stats_key).to_i).to eq(n_reports + 5)
+      rescue StandardError => e
+        subject.shutdown
+        work_task.wait
+        RSpec::Expectations.fail_with(e.message)
       end
     end
   end
