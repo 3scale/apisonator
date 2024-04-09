@@ -28,9 +28,12 @@ if Environment.testable?
 
   desc 'Benchmark'
   task :bench, [:file] do |_, args|
+    require 'benchmark'
     require 'benchmark/ips'
     require 'pathname'
-    require File.dirname(__FILE__) + '/test/test_helpers/configuration'
+    require_relative 'test/test_helpers/configuration'
+    require_relative 'test/test_helpers/fixtures'
+    require_relative 'test/test_helpers/sequences.rb'
 
     filelist = if args[:file]
                  "#{args[:file].sub(/\Abench\//, '')}"
@@ -41,7 +44,7 @@ if Environment.testable?
       bench = Pathname.new(f).cleanpath
       if bench.to_s.start_with?(File.dirname(__FILE__) + File::SEPARATOR)
         puts "Running benchmark #{bench}"
-        load f
+        Environment.using_async_redis? ? Sync { load(f) } : load(f)
       else
         STDERR.puts "Ignoring path #{f} as it points outside the project"
       end

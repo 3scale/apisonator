@@ -83,8 +83,9 @@ module ThreeScale
 
         class << self
           def configure_logging(worker_class, workers_log_file)
-            log_file = workers_log_file || configuration.workers_log_file || '/dev/null'
+            log_file = workers_log_file || configuration.workers_log_file || File::NULL
 
+            # TODO: this appears to be broken as `Logging.enable!` expects an array
             Logging.enable! on: worker_class.singleton_class, with: log_file do |logger|
               logger.formatter = logger_formatter
 
