@@ -48,8 +48,6 @@ module ThreeScale
         describe 'processes all' do
           subject { WorkerAsync.new(job_fetcher: job_fetcher) }
 
-          # let(:test_job_1) { instance_double('BackgroundJob') }
-          # let(:test_job_2) { instance_double('BackgroundJob') }
           let(:test_job_1) { "background job 1" }
           let(:test_job_2) { "background job 2" }
           let(:queue) { subject.instance_variable_get(:@jobs) }

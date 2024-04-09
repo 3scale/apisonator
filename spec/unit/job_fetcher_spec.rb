@@ -1,8 +1,10 @@
-require '3scale/backend/job_fetcher'
-
 module ThreeScale
   module Backend
     describe JobFetcher do
+      before do
+        Logging::Worker.configure_logging(Worker, '/dev/null')
+      end
+
       describe '#fetch' do
         let(:resque_queue) { 'queue:priority' }
         let(:job_queue) { resque_queue.sub('queue:', '') }
@@ -106,6 +108,21 @@ module ThreeScale
           job_fetcher.fetch
         end
 
+        it 'async fetches jobs from queues in the order defined (priority > main > stats)' do
+          fetch_timeout = 1
+          job_fetcher = JobFetcher.new(
+            redis_client: test_redis, fetch_timeout: fetch_timeout
+          )
+
+          %w[queue:priority queue:main queue:stats].each do |queue|
+            expect(test_redis)
+              .to receive(:lpop).ordered
+              .with(queue, 5)
+          end
+
+          job_fetcher.fetch(wait: false, max: 5)
+        end
+
         context 'when there is an error getting elements from the queue' do
           context 'and it is not a connection error' do
             let(:test_error) { RuntimeError.new('Some error') }
@@ -121,7 +138,8 @@ module ThreeScale
         end
       end
 
-      describe '#start' do
+      # start is only used in async mode
+      describe '#start', if: Backend.configuration.redis.async do
         let(:resque_queue) { 'queue:priority' }
         let(:job_queue) { resque_queue.sub('queue:', '') }
 
@@ -129,7 +147,7 @@ module ThreeScale
 
         subject { JobFetcher.new(redis_client: test_redis) }
 
-        describe 'when the max num of jobs in the local queue is not reached' do
+        describe 'normal operation' do
           let(:jobs) do
             [
               [job_queue, subject.encode(BackgroundJob.new)],
@@ -142,27 +160,39 @@ module ThreeScale
             # This returns the 2 jobs in the 2 first calls, and nil for any
             # call after that.
             allow(test_redis).to receive(:blpop).and_return(*jobs)
-            allow(test_redis).to receive(:lpop).with(any_args).and_return(nil) # async worker falls backs to blpop
+            # make async worker fall backs to blpop but also give opportunity for cooperative multitasking
+            allow(test_redis).to receive(:lpop).with(any_args) { sleep 0.001; nil }
           end
 
-          it 'fetches jobs and puts them in a local queue' do
+          it 'fetches jobs and puts them in a local queue, closes queue after, does not enqueue nils' do
             queue = Queue.new
 
-            t = Thread.new { subject.start(queue) }
+            fetching = Async do |task|
+              task.with_timeout(200) do
+                subject.start(queue)
+              end
+            end
 
-            (jobs.size - 1).times do |i|
-              job = queue.pop
-              expect(job.queue).to eq jobs[i].first
-              expect(job.payload).to eq JSON.parse(jobs[i].last)
+            Sync do |task|
+              task.with_timeout(200) do
+                (jobs.size - 1).times do |i|
+                  job = queue.pop
+                  expect(job.queue).to eq jobs[i].first
+                  expect(job.payload).to eq JSON.parse(jobs[i].last)
+                end
+              end
             end
 
             subject.shutdown
-            t.join
+            fetching.wait
+
+            expect(queue).to be_empty
+            expect(queue).to be_closed
           end
         end
 
-        context 'when there is an error not related with Redis connectivity' do
-          let(:error) { Exception.new('Some error') }
+        context 'when there is a fetching error or something really weird' do
+          let(:error) { RuntimeError.new('Some error') }
           let(:queue) { Queue.new }
           let(:job_fetcher) { JobFetcher.new(redis_client: test_redis) }
 
