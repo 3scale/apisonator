@@ -81,24 +81,21 @@ module ThreeScale
         # verify that the stats usage keys have been updated correctly.
 
         n_reports = 10
-        work_task, stats_key = nil
 
-        Timecop.freeze(current_time) do
-          without_resque_spec do
-            multi_job_adder.call(n_reports) # add jobs before worker started
-          end
-
-          work_task = Async { subject.work }
-
-          stats_key = Stats::Keys.application_usage_value_key(
-            service_id, app_id, metric_id, Period[:day].new(current_time)
-          )
-
-          report_waiter.call(stats_key, n_reports)
-
-          without_resque_spec { 5.times { job_adder.call } } # add jobs after worker started and finished previous
-          report_waiter.call(stats_key, n_reports + 5)
+        without_resque_spec do
+          multi_job_adder.call(n_reports) # add jobs before worker started
         end
+
+        work_task = Async { subject.work }
+
+        stats_key = Stats::Keys.application_usage_value_key(
+          service_id, app_id, metric_id, Period[:day].new(current_time)
+        )
+
+        report_waiter.call(stats_key, n_reports)
+
+        without_resque_spec { 5.times { job_adder.call } } # add jobs after worker started and finished previous
+        report_waiter.call(stats_key, n_reports + 5)
 
         subject.shutdown
 
