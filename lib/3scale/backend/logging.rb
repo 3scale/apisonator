@@ -11,11 +11,11 @@ module ThreeScale
         enable! on: base
       end
 
-      def self.enable!(on:, with: [], as: :logger)
-        logger = if with.empty?
+      def self.enable!(on:, as: :logger, with_args: [], with_opts: {})
+        logger = if with_args.empty? && with_opts.empty?
                    Backend.logger
                  else
-                   Backend::Logging::Logger.new(*with)
+                   Backend::Logging::Logger.new(*with_args, **with_opts)
                  end
 
         # define the method before yielding
@@ -33,7 +33,7 @@ module ThreeScale
 
       def enable_logging
         Logging.enable! on: self.singleton_class,
-          with: [configuration.log_file, 10] do |logger|
+          with_args: [configuration.log_file, 10] do |logger|
           logger.define_singleton_method(:notify, logger_notify_proc(logger))
         end
       end

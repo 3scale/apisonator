@@ -85,8 +85,8 @@ module ThreeScale
           def configure_logging(worker_class, workers_log_file)
             log_file = workers_log_file || configuration.workers_log_file || File::NULL
 
-            # TODO: this appears to be broken as `Logging.enable!` expects an array
-            Logging.enable! on: worker_class.singleton_class, with: log_file do |logger|
+            args = log_file.empty? ? [] : [log_file]
+            Logging.enable! on: worker_class.singleton_class, with_args: args do |logger|
               logger.formatter = logger_formatter
 
               # At this point, we've already configured the logger for Backend
