@@ -14,7 +14,7 @@ module ThreeScale
       subject { Worker.new(async: true, job_fetcher: job_fetcher) }
 
       let(:storage) { Service.storage }
-      let(:resque_redis ) { job_fetcher.instance_variable_get(:@redis) }
+      let(:redis_client ) { storage.instance_variable_get(:@redis_async) }
 
       let(:provider_key) { 'a_provider_key' }
       let(:service_id) { 'a_service_id' }
@@ -41,9 +41,9 @@ module ThreeScale
           num.times { job_adder.call }
 
           # add some jobs to all queues
-          %w[queue:main queue:stats].each do |queue|
+          %w[resque:queue:main resque:queue:stats].each do |queue|
             2.times do
-              moved = resque_redis.brpoplpush("queue:priority", queue, 5)
+              moved = redis_client.call('BLMOVE', 'resque:queue:priority', queue, 'RIGHT', 'LEFT', 5)
               expect(moved).to be_truthy
               expect(moved).not_to be_empty
             end
@@ -81,30 +81,30 @@ module ThreeScale
         # verify that the stats usage keys have been updated correctly.
 
         n_reports = 10
-        work_task, stats_key = nil
 
-        Timecop.freeze(current_time) do
-          without_resque_spec do
-            multi_job_adder.call(n_reports) # add jobs before worker started
-          end
-
-          work_task = Async { subject.work }
-
-          stats_key = Stats::Keys.application_usage_value_key(
-            service_id, app_id, metric_id, Period[:day].new(current_time)
-          )
-
-          report_waiter.call(stats_key, n_reports)
-
-          without_resque_spec { 5.times { job_adder.call } } # add jobs after worker started and finished previous
-          report_waiter.call(stats_key, n_reports + 5)
+        without_resque_spec do
+          multi_job_adder.call(n_reports) # add jobs before worker started
         end
 
-        subject.shutdown
+        work_task = Async { subject.work }
 
+        stats_key = Stats::Keys.application_usage_value_key(
+          service_id, app_id, metric_id, Period[:day].new(current_time)
+        )
+
+        report_waiter.call(stats_key, n_reports)
+
+        without_resque_spec { 5.times { job_adder.call } } # add jobs after worker started and finished previous
+        report_waiter.call(stats_key, n_reports + 5)
+
+        subject.shutdown
         work_task.wait
 
         expect(storage.get(stats_key).to_i).to eq(n_reports + 5)
+      rescue StandardError => e
+        subject.shutdown
+        work_task.wait
+        RSpec::Expectations.fail_with(e.message)
       end
     end
   end
