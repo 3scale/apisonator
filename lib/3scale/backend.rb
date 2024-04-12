@@ -53,7 +53,21 @@ require '3scale/backend/failed_jobs_scheduler'
 require '3scale/backend/transactor'
 require '3scale/backend/listener'
 
-Resque.redis = ThreeScale::Backend::QueueStorage.connection(
-  ThreeScale::Backend.environment,
-  ThreeScale::Backend.configuration,
-)
+module ThreeScale
+  module Backend
+    class << self
+      def new_rescue_redis
+        QueueStorage.connection(
+          environment,
+          configuration,
+        )
+      end
+
+      def set_rescue_redis
+        ::Resque.redis = new_rescue_redis
+      end
+    end
+  end
+end
+
+ThreeScale::Backend.set_rescue_redis
