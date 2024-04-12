@@ -1,4 +1,3 @@
-require_relative '../../../spec_helper'
 require_relative '../../../../test/test_helpers/fixtures'
 
 module ThreeScale

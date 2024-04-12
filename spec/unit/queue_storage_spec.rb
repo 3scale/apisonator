@@ -1,5 +1,3 @@
-require_relative '../spec_helper'
-
 module ThreeScale
   module Backend
     # Tests are run only when redis.async = false. These tests only check

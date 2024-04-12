@@ -1,5 +1,3 @@
-require_relative '../../../spec_helpers/acceptance_spec_helper'
-
 resource 'Stats (prefix: /services/:service_id/stats)' do
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'

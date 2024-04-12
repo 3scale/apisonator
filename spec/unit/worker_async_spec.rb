@@ -1,4 +1,3 @@
-require_relative '../spec_helper'
 require '3scale/backend/worker_async'
 
 module ThreeScale

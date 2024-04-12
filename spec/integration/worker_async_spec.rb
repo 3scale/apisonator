@@ -1,4 +1,3 @@
-require_relative '../spec_helper'
 require 'timecop'
 require 'daemons'
 require '3scale/backend/worker_async'

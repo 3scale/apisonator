@@ -1,5 +1,3 @@
-require_relative '../../../spec_helpers/acceptance_spec_helper'
-
 resource 'Service Tokens (prefix: /service_tokens)' do
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'
