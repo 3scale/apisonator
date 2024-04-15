@@ -1,75 +1,15 @@
-include ThreeScale::Backend
+class AggregatorBenchmark
+  include TestHelpers::Fixtures
 
-module AggregatorBenchmark
-  class Fixture
-    attr_reader :storage
+  def run
+    Memoizer.reset!
+    storage(true).flushdb
+    seed_data
 
-    def initialize
-      @storage = Storage.instance true
-      @storage.flushdb
-      Memoizer.reset!
-      seed_data
-    end
-
-    def transactions(n = 1)
-      Array.new n, default_transaction
-    end
-
-    private
-
-    def default_transaction_timestamp
-      Time.utc(2010, 5, 7, 13, 23, 33)
-    end
-
-    def default_transaction_attrs
-      {
-        service_id:     1001,
-        application_id: 2001,
-        timestamp:      default_transaction_timestamp,
-        usage:          { '3001' => 1 },
-      }
-    end
-
-    def default_transaction(attrs = {})
-      Transaction.new default_transaction_attrs.merge(attrs)
-    end
-
-    def seed_data
-      master_service_id = ThreeScale::Backend.configuration.master_service_id
-      Metric.save(
-        service_id: master_service_id,
-        id:         100,
-        name:       'hits',
-        children:   [
-          Metric.new(id: 102, name: 'transactions/authorize')
-        ])
-
-      Metric.save(
-        service_id: master_service_id,
-        id:         200,
-        name:       'transactions'
-      )
-
-      provider_key = "provider_key"
-      metrics      = []
-
-      2.times do |i|
-        i += 1
-        service_id = 1000 + i
-        Service.save!(provider_key: provider_key, id: service_id)
-        Application.save(service_id: service_id, id: 2000 + i, state: :live)
-        metrics << Metric.save(service_id: service_id, id: 3000 + i, name: 'hits')
-      end
-    end
-  end
-  private_constant :Fixture
-
-  def self.run
-    fixt = Fixture.new
-    xn1 = fixt.transactions 1
-    xn10 = fixt.transactions 10
-    xn100 = fixt.transactions 100
-    xn1000 = fixt.transactions 1000
+    xn1 = [transaction_with_response_code]
+    xn10 = Array.new 10, transaction_with_response_code
+    xn100 = Array.new 100, transaction_with_response_code
+    xn1000 = Array.new 1000, transaction_with_response_code
 
     Benchmark.ips do |x|
       x.report 'process    1 transactions' do
@@ -89,4 +29,4 @@ module AggregatorBenchmark
   end
 end
 
-AggregatorBenchmark.run
+AggregatorBenchmark.new.run
