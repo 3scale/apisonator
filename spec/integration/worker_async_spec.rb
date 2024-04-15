@@ -13,7 +13,8 @@ module ThreeScale
       subject { Worker.new(async: true, job_fetcher: job_fetcher) }
 
       let(:storage) { Service.storage }
-      let(:redis_client ) { storage.instance_variable_get(:@redis_async) }
+      let(:redis_client ) { job_fetcher.instance_variable_get(:@redis).instance_variable_get(:@redis)
+                                       .instance_variable_get(:@redis).instance_variable_get(:@redis_async) }
 
       let(:provider_key) { 'a_provider_key' }
       let(:service_id) { 'a_service_id' }
