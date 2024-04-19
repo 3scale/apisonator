@@ -13,8 +13,7 @@ module ThreeScale
       subject { Worker.new(async: true, job_fetcher: job_fetcher) }
 
       let(:storage) { Service.storage }
-      let(:redis_client ) { job_fetcher.instance_variable_get(:@redis).instance_variable_get(:@redis)
-                                       .instance_variable_get(:@redis).instance_variable_get(:@redis_async) }
+      let(:resque_redis ) { job_fetcher.instance_variable_get(:@redis) }
 
       let(:provider_key) { 'a_provider_key' }
       let(:service_id) { 'a_service_id' }
@@ -41,9 +40,9 @@ module ThreeScale
           num.times { job_adder.call }
 
           # add some jobs to all queues
-          %w[resque:queue:main resque:queue:stats].each do |queue|
+          %w[queue:main queue:stats].each do |queue|
             2.times do
-              moved = redis_client.call('BLMOVE', 'resque:queue:priority', queue, 'RIGHT', 'LEFT', 5)
+              moved = resque_redis.brpoplpush("queue:priority", queue, 5)
               expect(moved).to be_truthy
               expect(moved).not_to be_empty
             end

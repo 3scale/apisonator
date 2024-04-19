@@ -57,6 +57,7 @@ module ThreeScale
         # but there are some commands missing, so for now, that's not an option.
 
         METHODS_TO_BE_CALLED_DIRECTLY = [
+          :brpoplpush,
           :del,
           :expire,
           :expireat,
