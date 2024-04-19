@@ -175,11 +175,11 @@ module ThreeScale
           end
 
           context 'and `max` is nil' do
-            it 'returns all available jobs' do
-              expect(test_redis).to receive(:lpop).and_return(enqueued_jobs)
+            it 'returns one job' do
+              expect(test_redis).to receive(:lpop).and_return(enqueued_jobs.slice(0,1))
               result = subject.fetch(wait: false)
 
-              expect(result.size).to eq 3
+              expect(result.class).to eq Resque::Job
             end
           end
 
