@@ -1,5 +1,4 @@
 require 'timecop'
-require_relative '../../../spec_helpers/acceptance_spec_helper'
 
 resource 'Errors (prefix: /services/:service_id/errors)' do
   header 'Accept', 'application/json'

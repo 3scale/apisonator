@@ -1,5 +1,3 @@
-require_relative '../../spec_helper'
-
 # Test the extensions parsing as specified in RFC 0790
 module ThreeScale
   module Backend

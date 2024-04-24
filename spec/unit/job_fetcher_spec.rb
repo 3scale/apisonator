@@ -136,6 +136,62 @@ module ThreeScale
             end
           end
         end
+
+        context 'when `wait` is set to true' do
+          let(:enqueued_job) { [job_queue, subject.encode(BackgroundJob.new)] }
+
+          it 'calls a blocking redis command' do
+            expect(test_redis).to receive(:blpop)
+            subject.fetch
+          end
+
+          context 'and `max` is nil' do
+            it 'returns one job' do
+              expect(test_redis).to receive(:blpop).and_return(enqueued_job)
+              result = subject.fetch
+
+              expect(result.class).to eq Resque::Job
+            end
+          end
+
+          context 'and `max` is not nil' do
+            it 'returns one job' do
+              expect(test_redis).to receive(:blpop).and_return(enqueued_job)
+              result = subject.fetch(max: 5)
+
+              expect(result.size).to eq 1
+            end
+          end
+        end
+
+        context 'when `wait` is set to false' do
+          let(:enqueued_jobs) {
+            [subject.encode(BackgroundJob.new), subject.encode(BackgroundJob.new), subject.encode(BackgroundJob.new)]
+          }
+
+          it 'calls a non-blocking redis command' do
+            expect(test_redis).to receive(:lpop).at_least(:once)
+            subject.fetch(wait: false)
+          end
+
+          context 'and `max` is nil' do
+            it 'returns one job' do
+              expect(test_redis).to receive(:lpop).and_return(enqueued_jobs.slice(0,1))
+              result = subject.fetch(wait: false)
+
+              expect(result.class).to eq Resque::Job
+            end
+          end
+
+          context 'and `max` is not nil' do
+             it 'returns up to `max` jobs' do
+              expect(test_redis).to receive(:lpop).with(resque_queue, 2).and_return(enqueued_jobs.slice(0,2))
+              result = subject.fetch(wait: false, max: 2)
+
+              expect(result.size).to eq 2
+            end
+          end
+        end
       end
 
       # start is only used in async mode

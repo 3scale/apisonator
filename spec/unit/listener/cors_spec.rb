@@ -1,5 +1,3 @@
-require_relative '../../spec_helper'
-
 module ThreeScale
   module Backend
     describe CORS do

@@ -1,5 +1,3 @@
-require_relative '../../../spec_helpers/acceptance_spec_helper'
-
 resource 'Application Referrer Filters' do
   header 'Accept', 'application/json'
   header 'Content-Type', 'application/json'

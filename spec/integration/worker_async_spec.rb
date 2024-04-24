@@ -1,4 +1,3 @@
-require_relative '../spec_helper'
 require 'timecop'
 require 'daemons'
 require '3scale/backend/worker_async'
@@ -81,7 +80,10 @@ module ThreeScale
         # verify that the stats usage keys have been updated correctly.
 
         n_reports = 10
-        work_task, stats_key = nil
+        stats_key = Stats::Keys.application_usage_value_key(
+          service_id, app_id, metric_id, Period[:day].new(current_time)
+        )
+        work_task = nil
 
         Timecop.freeze(current_time) do
           without_resque_spec do
@@ -90,10 +92,6 @@ module ThreeScale
 
           work_task = Async { subject.work }
 
-          stats_key = Stats::Keys.application_usage_value_key(
-            service_id, app_id, metric_id, Period[:day].new(current_time)
-          )
-
           report_waiter.call(stats_key, n_reports)
 
           without_resque_spec { 5.times { job_adder.call } } # add jobs after worker started and finished previous
@@ -101,10 +99,13 @@ module ThreeScale
         end
 
         subject.shutdown
-
-        work_task.wait
+        work_task&.wait
 
         expect(storage.get(stats_key).to_i).to eq(n_reports + 5)
+      rescue StandardError => e
+        subject.shutdown
+        work_task&.wait
+        RSpec::Expectations.fail_with(e.message)
       end
     end
   end

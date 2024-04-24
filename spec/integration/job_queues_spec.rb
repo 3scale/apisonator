@@ -1,5 +1,3 @@
-require_relative '../spec_helper'
-
 module ThreeScale
   module Backend
     context 'when failed jobs are rescheduled' do
