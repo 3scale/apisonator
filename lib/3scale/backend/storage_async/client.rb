@@ -1,6 +1,7 @@
 require 'async/io'
 require 'async/redis/client'
 require 'async/redis/sentinels'
+require 'async/redis/protocol/authenticated_resp2'
 
 module ThreeScale
   module Backend
@@ -65,23 +66,6 @@ module ThreeScale
         DEFAULT_HOST = 'localhost'.freeze
         DEFAULT_PORT = 6379
 
-        # Custom Redis Protocol class which sends the AUTH command on every new connection
-        # to authenticate before sending any other command.
-        class AuthenticatedRESP2
-          def initialize(credentials)
-            @credentials = credentials
-          end
-
-          def client(stream)
-            client = Async::Redis::Protocol::RESP2.client(stream)
-
-            client.write_request(["AUTH", *@credentials])
-            client.read_response # Ignore response.
-
-            client
-          end
-        end
-
         def initialize_client(opts)
           return init_host_client(opts) unless opts.key? :sentinels
 
@@ -107,11 +91,7 @@ module ThreeScale
           uri = URI(opts[:url] || "")
           credentials = [ uri.user || opts[:username], uri.password || opts[:password]]
 
-          if credentials.any?
-            AuthenticatedRESP2.new(credentials)
-          else
-            Async::Redis::Protocol::RESP2
-          end
+          Async::Redis::Protocol::AuthenticatedRESP2.new(credentials)
         end
 
         # SSL endpoint if scheme is `rediss:`, TCP endpoint otherwise.
