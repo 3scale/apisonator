@@ -83,9 +83,10 @@ module ThreeScale
 
         class << self
           def configure_logging(worker_class, workers_log_file)
-            log_file = workers_log_file || configuration.workers_log_file || '/dev/null'
+            log_file = workers_log_file || configuration.workers_log_file || File::NULL
 
-            Logging.enable! on: worker_class.singleton_class, with: log_file do |logger|
+            args = log_file.empty? ? [] : [log_file]
+            Logging.enable! on: worker_class.singleton_class, with_args: args do |logger|
               logger.formatter = logger_formatter
 
               # At this point, we've already configured the logger for Backend

@@ -9,6 +9,10 @@ module TestHelpers
 
     private
 
+    def storage(reset = false)
+      Storage.instance reset
+    end
+
     def setup_master_fixtures
       @master_service_id = ThreeScale::Backend.configuration.master_service_id.to_s
 
@@ -125,15 +129,16 @@ module TestHelpers
       )
 
       ## for the provider
-      provider_key = "provider_key"
+      @provider_key = "provider_key"
       metrics      = []
 
       2.times do |i|
         i += 1
-        service_id = 1000 + i
-        Service.save!(provider_key: provider_key, id: service_id)
-        Application.save(service_id: service_id, id: 2000 + i, state: :live)
-        metrics << Metric.save(service_id: service_id, id: 3000 + i, name: 'hits')
+        @service_id = 1000 + i
+        @app_id = 2000 + i
+        Service.save!(provider_key: @provider_key, id: @service_id)
+        Application.save(service_id: @service_id, id: @app_id, state: :live)
+        metrics << Metric.save(service_id: @service_id, id: 3000 + i, name: 'hits')
       end
       @metric_hits = metrics.first
     end
@@ -161,6 +166,14 @@ module TestHelpers
 
     def transaction_with_response_code code = 200
       default_transaction response_code: code
+    end
+
+    def default_report
+      Transactor.report(
+        @provider_key,
+        @service_id.to_s,
+        0 => { app_id: @app_id.to_s, usage: { @metric_hits.name => 1 } }
+      )
     end
 
     def setup_provider_without_default_service

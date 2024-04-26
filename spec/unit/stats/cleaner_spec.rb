@@ -1,4 +1,3 @@
-require_relative '../../spec_helper'
 require_relative '../../../lib/3scale/backend/stats/stats_parser'
 
 module ThreeScale

@@ -17,6 +17,8 @@ module ThreeScale
       include Resque::Helpers
       include Configurable
 
+      DEFAULT_MAX_CONCURRENT_JOBS = 20
+
       def self.new(options = {})
         Logging::Worker.configure_logging(self, options[:log_file])
         Logging::External.setup_worker

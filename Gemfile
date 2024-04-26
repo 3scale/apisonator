@@ -43,7 +43,6 @@ end
 
 group :development, :test do
   gem 'rspec_api_documentation', '~> 5.0'
-  gem 'dotenv', '~> 2.8.1'
 end
 
 # Default server by platform
@@ -70,3 +69,5 @@ gem 'async-pool', '~> 0.3.12'
 gem 'falcon', '~> 0.35'
 gem 'webrick', '~> 1.8'
 
+
+gem 'dotenv', '~> 2.8.1'

@@ -1,4 +1,3 @@
-require_relative '../spec_helper'
 require 'net/http'
 require '3scale/backend'
 
