@@ -89,9 +89,10 @@ module ThreeScale
         # Authenticated RESP2 if credentials are provided, RESP2 otherwise
         def make_redis_protocol(opts)
           uri = URI(opts[:url] || "")
+          db = uri.path[1..-1].to_i if uri.path
           credentials = [ uri.user || opts[:username], uri.password || opts[:password]]
 
-          Async::Redis::Protocol::AuthenticatedRESP2.new(credentials)
+          Async::Redis::Protocol::AuthenticatedRESP2.new(db: db, credentials: credentials)
         end
 
         # SSL endpoint if scheme is `rediss:`, TCP endpoint otherwise.
