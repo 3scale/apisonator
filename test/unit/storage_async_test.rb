@@ -1,7 +1,10 @@
+require 'fakefs/safe'
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 require '3scale/backend/storage_async'
 
 class StorageAsyncTest < Test::Unit::TestCase
+  include TestHelpers::Certificates
+
   def test_basic_operations
     storage = StorageAsync::Client.instance(true)
     storage.del('foo')
@@ -198,43 +201,31 @@ class StorageAsyncTest < Test::Unit::TestCase
     assert_client_config(storage, **config_obj)
   end
 
-  def test_tls_client_cert_rsa
-    config_obj = {
-      url: 'rediss://localhost:46379/0',
-      ssl_params: {
-        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem')),
-        cert: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-client.crt')),
-        key: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-client.key'))
-      }
-    }
-    storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_client_config(storage, **config_obj, test_cert_type: :rsa)
-  end
-
-  def test_tls_client_cert_dsa
-    config_obj = {
-      url: 'rediss://localhost:46379/0',
-      ssl_params: {
-        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem')),
-        cert: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-dsa.crt')),
-        key: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-dsa.pem'))
-      }
-    }
-    storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_client_config(storage, **config_obj, test_cert_type: :dsa)
-  end
-
-  def test_tls_client_cert_ec
-    config_obj = {
-      url: 'rediss://localhost:46379/0',
-      ssl_params: {
-        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem')),
-        cert: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-ec.crt')),
-        key: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-ec.key'))
-      }
-    }
-    storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_client_config(storage, **config_obj, test_cert_type: :ec)
+  [:rsa, :dsa, :ec].each do |alg|
+    define_method "test_tls_client_cert_#{alg}" do
+      ca_file = create_cert
+      key = create_key alg
+      cert = create_cert key
+      FakeFS.with_fresh do
+        ca_file_path = File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
+        key_path = File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-dsa.pem'))
+        cert_path = File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-dsa.crt'))
+        FileUtils.mkdir_p(File.dirname(ca_file_path))
+        File.write(ca_file_path, ca_file.to_pem)
+        File.write(key_path, key.to_pem)
+        File.write(cert_path, cert.to_pem)
+        config_obj = {
+          url: 'rediss://localhost:46379/0',
+          ssl_params: {
+            ca_file: ca_file_path,
+            cert: cert_path,
+            key: key_path
+          }
+        }
+        storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+        assert_client_config(storage, **config_obj, test_cert_type: alg)
+      end
+    end
   end
 
   def test_acl
@@ -271,7 +262,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     assert_equal url.port, port
 
     unless conf[:username].to_s.strip.empty? && conf[:password].to_s.strip.empty?
-      assert_instance_of ThreeScale::Backend::StorageAsync::Client::AuthenticatedRESP2, client.protocol
+      assert_instance_of Async::Redis::Protocol::AuthenticatedRESP2, client.protocol
       username, password = client.protocol.instance_variable_get(:@credentials)
       assert_equal conf[:username], username
       assert_equal conf[:password], password

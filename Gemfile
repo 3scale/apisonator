@@ -31,6 +31,7 @@ group :test do
   gem 'rspec',         '~> 3.7.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
   gem 'async-rspec'
+  gem 'fakefs'
 end
 
 group :development do

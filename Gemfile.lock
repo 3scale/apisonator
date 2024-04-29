@@ -76,6 +76,7 @@ GEM
     docile (1.1.5)
     dotenv (2.8.1)
     dry-initializer (3.0.3)
+    fakefs (2.5.0)
     falcon (0.42.3)
       async
       async-container (~> 0.16.0)
@@ -260,6 +261,7 @@ DEPENDENCIES
   codeclimate-test-reporter (~> 0.6.0)
   daemons (= 1.2.4)
   dotenv (~> 2.8.1)
+  fakefs
   falcon (~> 0.35)
   gli (~> 2.16.1)
   hiredis-client
