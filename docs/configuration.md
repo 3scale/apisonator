@@ -82,6 +82,20 @@ variables.
 - Applies to: listener, worker, cron.
 - Format: list of URLs separated by ",".
 
+### CONFIG_REDIS_SENTINEL_USERNAME
+
+- Sentinels ACL user name
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: string.
+
+### CONFIG_REDIS_SENTINEL_PASSWORD
+
+- Sentinels ACL password
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: string.
+
 ###  CONFIG_REDIS_SENTINEL_ROLE
 
 - Asks the sentinel for the URL of the master or a slave.
@@ -184,6 +198,20 @@ sentinels.
 - Optional. Required only when using a Redis cluster with sentinels.
 - Applies to: listener, worker, cron.
 - Format: list of URLs separated by ",".
+
+### CONFIG_QUEUES_SENTINEL_USERNAME
+
+- Sentinels ACL user name
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: string.
+
+### CONFIG_QUEUES_SENTINEL_PASSWORD
+
+- Sentinels ACL password
+- Optional. Defaults to empty.
+- Applies to: listener, worker, cron.
+- Format: string.
 
 ### CONFIG_QUEUES_SENTINEL_ROLE
 
