@@ -293,7 +293,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     role = conf[:role] || :master
     password = client.instance_variable_get(:@protocol).instance_variable_get(:@password)
 
-    assert_instance_of Async::Redis::SentinelsClient, client
+    assert_instance_of Async::Redis::SentinelsClientACLTLS, client
 
     assert_equal name, client.instance_variable_get(:@master_name)
     assert_equal role, client.instance_variable_get(:@role)
