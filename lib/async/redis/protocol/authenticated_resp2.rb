@@ -9,7 +9,7 @@ module Async
       # Custom Redis Protocol class which sends the AUTH command on every new connection
       # to authenticate before sending any other command.
       class AuthenticatedRESP2
-        def initialize(db: 0, credentials: [])
+        def initialize(db: nil, credentials: [])
           @db = db
           @credentials = credentials
         end
