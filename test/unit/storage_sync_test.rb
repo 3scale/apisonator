@@ -293,7 +293,7 @@ class StorageSyncTest < Test::Unit::TestCase
     assert_equal conf[:password], config.password
 
     unless conf[:ssl_params].to_s.strip.empty?
-      %i[ca_file ca_path cert key].each do |key|
+      %i[ca_file cert key].each do |key|
         assert_equal conf[:ssl_params][key], config.ssl_params[key]
       end
     end

@@ -54,13 +54,6 @@ variables.
 - Applies to: listener, worker, cron.
 - Format: path to file as string.
 
-###  CONFIG_REDIS_CA_PATH
-
-- System certificates location path, `/etc/ssl/certs` for RHEL
-- Optional. Defaults to empty.
-- Applies to: listener, worker, cron.
-- Format: path to file as string.
-
 ###  CONFIG_REDIS_CERT
 
 - The path to the client SSL certificate
@@ -167,13 +160,6 @@ sentinels.
 ###  CONFIG_QUEUES_CA_FILE
 
 - Certification authority certificate Redis should trust to accept TLS connections
-- Optional. Defaults to empty.
-- Applies to: listener, worker, cron.
-- Format: path to file as string.
-
-###  CONFIG_QUEUES_CA_PATH
-
-- System certificates location path, `/etc/ssl/certs` for RHEL
 - Optional. Defaults to empty.
 - Applies to: listener, worker, cron.
 - Format: path to file as string.

@@ -267,20 +267,6 @@ module ThreeScale
             options
           end
 
-          # If no CA cert given, look for the default one at `config/ca_cert.pem`
-          def cfg_ca_cert_handler(options)
-            return options if options[:ssl_params]&.key?(:ca_file) || options[:ssl_params]&.key?(:ca_path)
-
-            cert_path = "#{Backend::Util.root_dir}/config/ca_cert.pem"
-
-            return options unless File.exist?(cert_path)
-
-            options[:ssl_params] ||= {}
-            options[:ssl_params][:ca_file] = cert_path
-
-            options
-          end
-
           # This ensures some default values are valid for the redis client.
           # In particular:
           #
@@ -290,7 +276,6 @@ module ThreeScale
           def cfg_defaults_handler(options, defaults)
             cfg_with_defaults = defaults.merge(ensure_url_param(options))
             cfg_with_defaults = cfg_unix_path_handler(cfg_with_defaults)
-            cfg_with_defaults = cfg_ca_cert_handler(cfg_with_defaults)
             cfg_with_defaults.delete(:max_connections) unless options[:async]
             cfg_with_defaults
           end

@@ -270,9 +270,7 @@ class StorageAsyncTest < Test::Unit::TestCase
 
     unless conf[:ssl_params].to_s.strip.empty?
       assert_instance_of Async::IO::SSLEndpoint, client.endpoint
-      %i[ca_file ca_path].each do |key|
-        assert_equal conf[:ssl_params][key], client.endpoint.options[:ssl_context].send(key)
-      end
+      assert_equal conf[:ssl_params][:ca_file], client.endpoint.options[:ssl_context].send(:ca_file)
       assert_instance_of(OpenSSL::X509::Certificate, client.endpoint.options[:ssl_context].cert) unless conf[:ssl_params][:cert].to_s.strip.empty?
 
       unless conf[:test_cert_type].to_s.strip.empty?
