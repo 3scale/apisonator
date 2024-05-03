@@ -20,9 +20,9 @@ module TestHelpers
     def create_key(alg)
       case alg
       when :rsa
-        OpenSSL::PKey::RSA.new(1024)
+        OpenSSL::PKey::RSA.new(2048)
       when :dsa
-        OpenSSL::PKey::DSA.new(1024)
+        OpenSSL::PKey::DSA.new(2048)
       when :ec
         OpenSSL::PKey::EC.generate("prime256v1")
       end
