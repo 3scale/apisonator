@@ -85,6 +85,8 @@ module ThreeScale
       def wait_pop_from_queue
         queue, encoded = @redis.blpop(*@queues, timeout: @fetch_timeout)
         [queue, [encoded]] if encoded
+      rescue RedisClient::ReadTimeoutError => _e
+        # Do nothing, we expect frequent timeouts from the sync client when the queue is empty
       end
 
       def decode_job(queue, encoded_job)
