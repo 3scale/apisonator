@@ -57,18 +57,18 @@ require '3scale/backend/listener'
 module ThreeScale
   module Backend
     class << self
-      def new_rescue_redis
+      def new_resque_redis
         QueueStorage.connection(
           environment,
           configuration,
         )
       end
 
-      def set_rescue_redis
-        ::Resque.redis = new_rescue_redis
+      def set_resque_redis
+        ::Resque.redis = new_resque_redis
       end
     end
   end
 end
 
-ThreeScale::Backend.set_rescue_redis
+ThreeScale::Backend.set_resque_redis
