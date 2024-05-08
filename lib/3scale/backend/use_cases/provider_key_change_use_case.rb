@@ -16,7 +16,7 @@ module ThreeScale
         # add all the services to the new provider
         service_ids.each do |service_id|
           storage.set Service.storage_key(service_id, :provider_key), @new_key
-          storage.sadd Service.storage_key_by_provider(@new_key, :ids), service_id
+          storage.sadd? Service.storage_key_by_provider(@new_key, :ids), service_id
         end
 
         # Set the default service id to the new provider

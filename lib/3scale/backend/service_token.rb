@@ -60,7 +60,7 @@ module ThreeScale
         end
 
         def exists?(service_token, service_id)
-          storage.exists(key(service_token, service_id))
+          storage.exists?(key(service_token, service_id))
         end
         memoize :exists?
 

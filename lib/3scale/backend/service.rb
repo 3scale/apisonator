@@ -80,7 +80,7 @@ module ThreeScale
         end
 
         def exists?(service_id)
-          storage.exists(storage_key(service_id, 'provider_key'))
+          storage.exists?(storage_key(service_id, 'provider_key'))
         end
 
         def get_service(id)
