@@ -45,13 +45,13 @@ module ThreeScale
               read_timeout: 3,
               write_timeout: 3,
               # Note that we can set reconnect_attempts to >= 0 because we use
-              # our redis-rb fork which implements a workaround for this issue
-              # that shows that when there might be duplicated transactions when
+              # a monkey patch which implements a workaround for this issue
+              # that shows that there might be duplicated transactions when
               # there's a timeout: https://github.com/redis/redis-rb/issues/668
               # We should investigate if there are edge cases that can lead to
               # duplicated commands because of this setting.
               reconnect_attempts: 1,
-              # use by default the C extension client
+              # applies only to async mode. Use the C extension client by default
               driver: :hiredis,
               # applies only to async mode. The sync library opens 1 connection
               # per process.
@@ -98,9 +98,9 @@ module ThreeScale
               h[k] = val if val
             end.merge(options)
 
-            cfg_with_sentinels = cfg_sentinels_handler cfg
-
-            defaults.merge(ensure_url_param(cfg_with_sentinels))
+            cfg_compacted = cfg_compact cfg
+            cfg_with_sentinels = cfg_sentinels_handler cfg_compacted
+            cfg_defaults_handler cfg_with_sentinels, defaults
           end
 
           private
@@ -183,6 +183,11 @@ module ThreeScale
             options
           end
 
+          def cfg_compact(options)
+            empty = ->(_k,v) { v.to_s.strip.empty? }
+            options.delete_if(&empty)
+          end
+
           # Expected sentinel input cfg format:
           #
           # Either a String with one or more URLs:
@@ -211,11 +216,11 @@ module ThreeScale
             role = options.delete :role
             sentinels = options.delete :sentinels
             # The Redis client can't accept empty string or array of :sentinels
-            return options if sentinels.nil? || sentinels.empty?
+            return options if sentinels.to_s.strip.empty? || sentinels.empty?
 
             sentinels = Splitter.split(sentinels) if sentinels.is_a? String
 
-            options[:sentinels] = sentinels.map do |sentinel|
+            sentinels = sentinels.map do |sentinel|
               if sentinel.is_a? Hash
                 next if sentinel.empty?
                 sentinel.fetch(:host) do
@@ -228,6 +233,10 @@ module ThreeScale
               end
             end.compact
 
+            return options if sentinels.empty?
+
+            options[:sentinels] = sentinels
+
             # For the sentinels that do not have the :port key or
             # the port key is nil we configure them with the default
             # sentinel port
@@ -239,6 +248,38 @@ module ThreeScale
             # Handle role option when sentinels are validated
             options[:role] = role if role && !role.empty?
             options
+          end
+
+          # The new Redis client accepts either `:url` or `:path`, but not both.
+          # In the case of a path, Redis expects it to not include the `unix://` prefix.
+          # On the other hand, Apisonator accepts only `:url`, for both Sockets and TCP connections.
+          # For paths, Apisonator expects it to be given as a URL using the `unix://` scheme.
+          #
+          # This method handles the conversion.
+          def cfg_unix_path_handler(options)
+            if options.key? :path
+              options.delete(:url)
+              return options
+            end
+
+            if options[:url].start_with? "unix://"
+              options[:path] = options.delete(:url).delete_prefix("unix://")
+            end
+
+            options
+          end
+
+          # This ensures some default values are valid for the redis client.
+          # In particular:
+          #
+          # - The :url key is always present
+          #   - Except when connecting to a unix socket
+          # - :max_connections is only present for async mode
+          def cfg_defaults_handler(options, defaults)
+            cfg_with_defaults = defaults.merge(ensure_url_param(options))
+            cfg_with_defaults = cfg_unix_path_handler(cfg_with_defaults)
+            cfg_with_defaults&.delete(:max_connections) unless options[:async]
+            cfg_with_defaults
           end
 
           # helper to convert a sentinel object to a Hash

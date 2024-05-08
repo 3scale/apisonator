@@ -2,9 +2,10 @@
 require_relative 'bundler_shim'
 
 require 'builder'
-require 'hiredis'
+require 'hiredis-client'
 
 require 'redis'
+require 'redis_client/config/timeout' # Monkey patch redis-client
 
 require 'resque'
 require 'securerandom'
@@ -56,18 +57,18 @@ require '3scale/backend/listener'
 module ThreeScale
   module Backend
     class << self
-      def new_rescue_redis
+      def new_resque_redis
         QueueStorage.connection(
           environment,
           configuration,
-        )
+          )
       end
 
-      def set_rescue_redis
-        ::Resque.redis = new_rescue_redis
+      def set_resque_redis
+        ::Resque.redis = new_resque_redis
       end
     end
   end
 end
 
-ThreeScale::Backend.set_rescue_redis
+ThreeScale::Backend.set_resque_redis
