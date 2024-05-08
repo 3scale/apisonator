@@ -9,7 +9,7 @@ module ThreeScale
         #
         # These are the different cases:
         #   1) Methods that can be called directly. For example SET:
-        #      @redis_async.call('SET', some_key)
+        #      call('SET', some_key)
         #   2) Methods that need to be "boolified". These are methods for which
         #      redis-rb returns a boolean, but redis just returns an integer.
         #      For example, Redis returns 0 or 1 for the EXISTS command, but
