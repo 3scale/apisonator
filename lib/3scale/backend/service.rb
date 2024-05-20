@@ -277,7 +277,7 @@ module ThreeScale
       def persist_sets
         storage.sadd storage_key_by_provider(:ids), id
         storage.sadd encode_key("services_set"), id
-        storage.sadd encode_key("provider_keys_set"), provider_key unless provider_key.nil?
+        storage.sadd encode_key("provider_keys_set"), provider_key
       end
 
     end

@@ -37,6 +37,17 @@ class StorageAsyncTest < Test::Unit::TestCase
     end
   end
 
+  def test_redis_no_scheme
+    storage = StorageAsync::Client.send :new, url('backend-redis')
+    assert_client_config({ url: URI('redis://backend-redis:6379') }, storage)
+  end
+
+  def test_redis_unknown_scheme
+    assert_raise ArgumentError do
+      StorageAsync::Client.send :new, url('myscheme://127.0.0.1:6379')
+    end
+  end
+
   def test_sentinels_connection_string
     config_obj = {
       url: 'redis://master-group-name',
@@ -182,17 +193,6 @@ class StorageAsyncTest < Test::Unit::TestCase
       }
       redis_cfg = Storage::Helpers.config_with(config_obj)
       refute redis_cfg.key?(:sentinels)
-    end
-  end
-
-  def test_redis_no_scheme
-    storage = StorageAsync::Client.send :new, url('backend-redis')
-    assert_client_config({ url: URI('redis://backend-redis:6379') }, storage)
-  end
-
-  def test_redis_unknown_scheme
-    assert_raise ArgumentError do
-      StorageAsync::Client.send :new, url('myscheme://127.0.0.1:6379')
     end
   end
 
