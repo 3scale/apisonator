@@ -1,6 +1,7 @@
 require 'async/io'
 require 'async/redis/client'
 require 'async/redis/sentinels'
+require 'async/redis/protocol/extended_resp2'
 
 module ThreeScale
   module Backend
@@ -71,20 +72,34 @@ module ThreeScale
         end
 
         def init_host_client(opts)
-          uri = URI(opts[:url] || '')
-          host = uri.host || DEFAULT_HOST
-          port = uri.port || DEFAULT_PORT
-
-          endpoint = Async::IO::Endpoint.tcp(host, port)
-          Async::Redis::Client.new(endpoint, limit: opts[:max_connections])
+          endpoint = make_redis_endpoint(opts)
+          protocol = make_redis_protocol(opts)
+          Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
         end
 
         def init_sentinels_client(opts)
           uri = URI(opts[:url] || '')
           name = uri.host
           role = opts[:role] || :master
+          protocol = make_redis_protocol(opts)
 
-          Async::Redis::SentinelsClient.new(name, opts[:sentinels], role)
+          Async::Redis::SentinelsClient.new(name, opts[:sentinels], role, protocol)
+        end
+
+        # RESP2 with support for logical DBs
+        def make_redis_protocol(opts)
+          uri = URI(opts[:url] || "")
+          db = uri.path[1..-1]
+
+          Async::Redis::Protocol::ExtendedRESP2.new(db: db)
+        end
+
+        def make_redis_endpoint(opts)
+          uri = URI(opts[:url] || "")
+          host = uri.host || DEFAULT_HOST
+          port = uri.port || DEFAULT_PORT
+
+          Async::IO::Endpoint.tcp(host, port)
         end
       end
     end
