@@ -18,10 +18,8 @@ module ThreeScale
         #      do not fit in any of the previous categories. For example, SSCAN
         #      which accepts a hash of options in redis-rb.
         #
-        # All of this might be simplified a bit in the future using the
-        # "methods" in async-redis
-        # https://github.com/socketry/async-redis/tree/master/lib/async/redis/methods
-        # but there are some commands missing, so for now, that's not an option.
+        # All of this might be simplified a bit in the future using
+        # https://github.com/socketry/protocol-redis
 
         METHODS_TO_BE_CALLED_DIRECTLY = [
           :brpoplpush,

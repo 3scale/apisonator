@@ -218,11 +218,11 @@ module ThreeScale
             role = options.delete :role
             sentinels = options.delete :sentinels
             # The Redis client can't accept empty string or array of :sentinels
-            return options if sentinels.nil? || sentinels.empty?
+            return options if sentinels.to_s.strip.empty? || sentinels.empty?
 
             sentinels = Splitter.split(sentinels) if sentinels.is_a? String
 
-            options[:sentinels] = sentinels.map do |sentinel|
+            sentinels = sentinels.map do |sentinel|
               if sentinel.is_a? Hash
                 next if sentinel.empty?
                 sentinel.fetch(:host) do
@@ -234,6 +234,10 @@ module ThreeScale
                 sentinel_to_hash sentinel
               end
             end.compact
+
+            return options if sentinels.empty?
+
+            options[:sentinels] = sentinels
 
             # For the sentinels that do not have the :port key or
             # the port key is nil we configure them with the default

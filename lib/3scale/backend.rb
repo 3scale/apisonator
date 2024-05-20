@@ -60,7 +60,7 @@ module ThreeScale
       def new_resque_redis
         QueueStorage.connection(
           environment,
-          configuration,
+          configuration
         )
       end
 

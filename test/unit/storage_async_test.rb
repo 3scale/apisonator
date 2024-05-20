@@ -16,13 +16,13 @@ class StorageAsyncTest < Test::Unit::TestCase
   def test_redis_host_and_port
     config_obj = url('127.0.0.1:6379')
     storage = StorageAsync::Client.send :new, config_obj
-    assert_client_config(storage, **config_obj)
+    assert_client_config(config_obj, storage)
   end
 
   def test_redis_url
     config_obj = url('redis://127.0.0.1:6379/0')
     storage = StorageAsync::Client.send :new, config_obj
-    assert_client_config(storage, **config_obj)
+    assert_client_config(config_obj, storage)
   end
 
   def test_redis_protected_url
@@ -44,9 +44,10 @@ class StorageAsyncTest < Test::Unit::TestCase
     }
 
     conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config(conn, url: config_obj[:url],
-                         sentinels: [{ host: '127.0.0.1', port: 26_379 },
-                                     { host: '127.0.0.1', port: 36_379 }])
+    assert_sentinel_config({ url: config_obj[:url],
+                           sentinels: [{ host: '127.0.0.1', port: 26_379 },
+                                       { host: '127.0.0.1', port: 36_379 }] },
+                           conn)
   end
 
   def test_sentinels_connection_array_strings
@@ -56,9 +57,10 @@ class StorageAsyncTest < Test::Unit::TestCase
     }
 
     conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config(conn, url: config_obj[:url],
-                         sentinels: [{ host: '127.0.0.1', port: 26_379 },
-                                     { host: '127.0.0.1', port: 36_379 }])
+    assert_sentinel_config({ url: config_obj[:url],
+                           sentinels: [{ host: '127.0.0.1', port: 26_379 },
+                                       { host: '127.0.0.1', port: 36_379 }] },
+                           conn)
   end
 
   def test_sentinels_connection_array_hashes
@@ -71,8 +73,9 @@ class StorageAsyncTest < Test::Unit::TestCase
     }
 
     conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config(conn, url: config_obj[:url],
-                         sentinels: config_obj[:sentinels].compact.reject(&:empty?))
+    assert_sentinel_config({ url: config_obj[:url],
+                           sentinels: config_obj[:sentinels].compact.reject(&:empty?) },
+                           conn)
   end
 
   def test_sentinels_malformed_url
@@ -87,13 +90,14 @@ class StorageAsyncTest < Test::Unit::TestCase
 
   def test_sentinels_simple_url
     config_obj = {
-      url: 'master-group-name', # url of the sentinel master name conf
+      url: 'redis://master-group-name', # url of the sentinel master name conf
       sentinels: 'redis://127.0.0.1:26379'
     }
 
     conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config(conn, url: "redis://#{config_obj[:url]}",
-                         sentinels: [{ host: '127.0.0.1', port: 26_379 }])
+    assert_sentinel_config({ url: config_obj[:url],
+                           sentinels: [{ host: '127.0.0.1', port: 26_379 }] },
+                           conn)
   end
 
   def test_sentinels_array_hashes_default_port
@@ -106,11 +110,12 @@ class StorageAsyncTest < Test::Unit::TestCase
     }
 
     conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config(conn, url: config_obj[:url],
-                         sentinels: [{ host: '127.0.0.1', port: default_sentinel_port },
-                                     { host: '192.168.1.1', port: default_sentinel_port },
-                                     { host: '192.168.1.2', port: default_sentinel_port },
-                                     { host: '127.0.0.1', port: 36379 }])
+    assert_sentinel_config({ url: config_obj[:url],
+                           sentinels: [{ host: '127.0.0.1', port: default_sentinel_port },
+                                       { host: '192.168.1.1', port: default_sentinel_port },
+                                       { host: '192.168.1.2', port: default_sentinel_port },
+                                       { host: '127.0.0.1', port: 36379 }] },
+                           conn)
   end
 
   def test_sentinels_array_strings_default_port
@@ -123,12 +128,13 @@ class StorageAsyncTest < Test::Unit::TestCase
     }
 
     conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config(conn, url: config_obj[:url],
-                         sentinels: [{ host: '127.0.0.2', port: default_sentinel_port },
-                                     { host: '127.0.0.1', port: default_sentinel_port },
-                                     { host: '192.168.1.1', port: default_sentinel_port },
-                                     { host: '127.0.0.1', port: 36379 },
-                                     { host: '127.0.0.1', port: 46379 }])
+    assert_sentinel_config({ url: config_obj[:url],
+                           sentinels: [{ host: '127.0.0.2', port: default_sentinel_port },
+                                       { host: '127.0.0.1', port: default_sentinel_port },
+                                       { host: '192.168.1.1', port: default_sentinel_port },
+                                       { host: '127.0.0.1', port: 36379 },
+                                       { host: '127.0.0.1', port: 46379 }] },
+                           conn)
   end
 
   def test_sentinels_correct_role
@@ -140,9 +146,10 @@ class StorageAsyncTest < Test::Unit::TestCase
       }
 
       conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-      assert_sentinel_config(conn, url: config_obj[:url],
-                           sentinels: [{ host: '127.0.0.1', port: 26_379 }],
-                           role: role)
+      assert_sentinel_config({ url: config_obj[:url],
+                             sentinels: [{ host: '127.0.0.1', port: 26_379 }],
+                             role: role },
+                             conn)
     end
   end
 
@@ -168,7 +175,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def test_sentinels_empty
-    ['', []].each do |sentinels_val|
+    [nil, '', ' ', [], [nil], [''], [' '], [{}]].each do |sentinels_val|
       config_obj = {
         url: 'redis://master-group-name',
         sentinels: sentinels_val
@@ -179,9 +186,8 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def test_redis_no_scheme
-    assert_nothing_raised do
-      StorageAsync::Client.send :new, url('backend-redis:6379')
-    end
+    storage = StorageAsync::Client.send :new, url('backend-redis')
+    assert_client_config({ url: URI('redis://backend-redis:6379') }, storage)
   end
 
   def test_redis_unknown_scheme
@@ -198,7 +204,7 @@ class StorageAsyncTest < Test::Unit::TestCase
       }
     }
     storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_client_config(storage, **config_obj)
+    assert_client_config(config_obj, storage)
   end
 
   [:rsa, :dsa, :ec].each do |alg|
@@ -223,7 +229,7 @@ class StorageAsyncTest < Test::Unit::TestCase
           }
         }
         storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-        assert_client_config(storage, **config_obj, test_cert_type: alg)
+        assert_client_config(config_obj, storage, alg)
       end
     end
   end
@@ -235,7 +241,7 @@ class StorageAsyncTest < Test::Unit::TestCase
       password: 'p4ssW0rd'
     }
     storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_client_config(storage, **config_obj)
+    assert_client_config(config_obj, storage)
   end
 
   def test_acl_tls
@@ -248,12 +254,12 @@ class StorageAsyncTest < Test::Unit::TestCase
       password: 'p4ssW0rd'
     }
     storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_client_config(storage, **config_obj)
+    assert_client_config(config_obj, storage)
   end
 
   private
 
-  def assert_client_config(conn, **conf)
+  def assert_client_config(conf, conn, test_cert_type = nil)
     client = conn.instance_variable_get(:@redis_async)
 
     url = URI(conf[:url])
@@ -273,20 +279,20 @@ class StorageAsyncTest < Test::Unit::TestCase
       assert_equal conf[:ssl_params][:ca_file], client.endpoint.options[:ssl_context].send(:ca_file)
       assert_instance_of(OpenSSL::X509::Certificate, client.endpoint.options[:ssl_context].cert) unless conf[:ssl_params][:cert].to_s.strip.empty?
 
-      unless conf[:test_cert_type].to_s.strip.empty?
+      unless test_cert_type.to_s.strip.empty?
         expected_classes = {
           rsa: OpenSSL::PKey::RSA,
           dsa: OpenSSL::PKey::DSA,
           ec: OpenSSL::PKey::EC,
         }
-        assert_instance_of(expected_classes[conf[:test_cert_type]], client.endpoint.options[:ssl_context].key) unless conf[:ssl_params][:key].to_s.strip.empty?
+        assert_instance_of(expected_classes[test_cert_type], client.endpoint.options[:ssl_context].key) unless conf[:ssl_params][:key].to_s.strip.empty?
       end
     end
   end
 
-  def assert_sentinel_config(conn, url:, **conf)
+  def assert_sentinel_config(conf, conn)
     client = conn.instance_variable_get(:@redis_async)
-    uri = URI(url || '')
+    uri = URI(conf[:url] || '')
     name = uri.host
     role = conf[:role] || :master
     password = client.instance_variable_get(:@protocol).instance_variable_get(:@password)

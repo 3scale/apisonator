@@ -86,7 +86,8 @@ module ThreeScale
         queue, encoded = @redis.blpop(*@queues, timeout: @fetch_timeout)
         [queue, [encoded]] if encoded
       rescue RedisClient::ReadTimeoutError => _e
-        # Do nothing, we expect frequent timeouts from the sync client when the queue is empty
+        # Ignore this exception, this happens because of a bug on redis-rb, when connecting to sentinels.
+        # Check: https://github.com/redis/redis-rb/issues/1279
       end
 
       def decode_job(queue, encoded_job)

@@ -200,8 +200,8 @@ module ThreeScale
             pipeline.srem(id_set_key(service_id), id)
 
             pipeline.del(key(service_id, id, :name),
-                        key(service_id, id, :parent_id),
-                        id_key(service_id, name))
+                         key(service_id, id, :parent_id),
+                         id_key(service_id, name))
           end
 
           true
