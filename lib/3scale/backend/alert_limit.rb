@@ -9,7 +9,7 @@ module ThreeScale
       attr_accessor :service_id, :value
 
       def save
-        storage.sadd(key_allowed_set(service_id), value.to_i) if valid?
+        storage.sadd?(key_allowed_set(service_id), value.to_i) if valid?
       end
 
       def to_hash
@@ -32,7 +32,7 @@ module ThreeScale
       end
 
       def self.delete(service_id, value)
-        storage.srem(key_allowed_set(service_id), value.to_i) if valid_value?(value)
+        storage.srem?(key_allowed_set(service_id), value.to_i) if valid_value?(value)
       end
 
       def self.valid_value?(value)

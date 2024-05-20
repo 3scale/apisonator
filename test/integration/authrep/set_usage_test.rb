@@ -276,7 +276,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
     end
 
     stats_keys = app_keys_for_all_periods(@service_id, @application.id, hits_id, current_time)
-    stats_keys_created = stats_keys.any? { |key| @storage.exists(key) }
+    stats_keys_created = stats_keys.any? { |key| @storage.exists?(key) }
     assert_false stats_keys_created
   end
 
@@ -304,7 +304,7 @@ class AuthrepSetUsageTest < Test::Unit::TestCase
     end
 
     stats_keys = app_keys_for_all_periods(@service_id, @application.id, hits_id, current_time)
-    stats_keys_created = stats_keys.any? { |key| @storage.exists(key) }
+    stats_keys_created = stats_keys.any? { |key| @storage.exists?(key) }
     assert_false stats_keys_created
   end
 end

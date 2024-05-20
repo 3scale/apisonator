@@ -14,13 +14,13 @@ module ThreeScale
             # Aggregates the usage of a transaction.
             #
             # @param [Transaction] transaction
-            def aggregate(transaction)
+            def aggregate(transaction, client = storage)
               transaction.usage.each do |metric_id, raw_value|
                 metric_keys = Keys.transaction_keys(transaction, :metric, metric_id)
                 cmd         = storage_cmd(raw_value)
                 value       = Backend::Usage.get_from raw_value
 
-                aggregate_values(value, transaction.timestamp, metric_keys, cmd)
+                aggregate_values(value, transaction.timestamp, metric_keys, cmd, client)
               end
             end
 
