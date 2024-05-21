@@ -1,7 +1,7 @@
 require 'async/io'
 require 'async/redis/client'
 require 'async/redis/sentinels'
-require 'async/redis/protocol/extended_resp2'
+require '3scale/backend/redis/protocol/extended_resp2'
 
 module ThreeScale
   module Backend
@@ -91,7 +91,7 @@ module ThreeScale
           uri = URI(opts[:url] || "")
           db = uri.path[1..-1]
 
-          Async::Redis::Protocol::ExtendedRESP2.new(db: db)
+          ThreeScale::Backend::Redis::Protocol::ExtendedRESP2.new(db: db)
         end
 
         def make_redis_endpoint(opts)
