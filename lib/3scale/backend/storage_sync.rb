@@ -20,7 +20,7 @@ module ThreeScale
         end
 
         def new(options)
-          ::Redis.new options
+          Redis.new options
         end
 
         private

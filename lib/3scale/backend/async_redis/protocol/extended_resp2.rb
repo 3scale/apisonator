@@ -4,7 +4,7 @@ require 'async/redis/protocol/resp2'
 
 module ThreeScale
   module Backend
-    module Redis
+    module AsyncRedis
       module Protocol
 
         # Custom Redis Protocol supporting Redis logical DBs

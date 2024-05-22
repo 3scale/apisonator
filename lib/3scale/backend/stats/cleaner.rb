@@ -45,7 +45,7 @@ module ThreeScale
         STATS_KEY_PREFIX = 'stats/'.freeze
         private_constant :STATS_KEY_PREFIX
 
-        REDIS_CONN_ERRORS = [::Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE].freeze
+        REDIS_CONN_ERRORS = [Redis::BaseConnectionError, Errno::ECONNREFUSED, Errno::EPIPE].freeze
         private_constant :REDIS_CONN_ERRORS
 
         MAX_RETRIES_REDIS_ERRORS = 3
