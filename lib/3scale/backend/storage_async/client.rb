@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require '3scale/backend/async_redis/endpoint_helpers'
 require '3scale/backend/async_redis/client'
 
 module ThreeScale
@@ -24,7 +25,7 @@ module ThreeScale
               @instance = new(
                   Storage::Helpers.config_with(
                       configuration.redis,
-                      options: { default_url: "#{DEFAULT_HOST}:#{DEFAULT_PORT}" }
+                      options: { default_url: "#{AsyncRedis::EndpointHelpers::DEFAULT_HOST}:#{AsyncRedis::EndpointHelpers::DEFAULT_PORT}" }
                   )
               )
             else

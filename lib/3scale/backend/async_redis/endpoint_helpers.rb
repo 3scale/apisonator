@@ -6,6 +6,10 @@ module ThreeScale
   module Backend
     module AsyncRedis
       module EndpointHelpers
+
+        DEFAULT_HOST = 'localhost'.freeze
+        DEFAULT_PORT = 6379
+
         class << self
           # @param uri [URI]
           # @param ssl_params [Hash]
