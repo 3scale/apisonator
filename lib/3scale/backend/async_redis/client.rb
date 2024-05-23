@@ -26,7 +26,9 @@ module ThreeScale
             if opts.key? :sentinels
               SentinelsClientACLTLS.new(uri, protocol, opts)
             else
-              endpoint = EndpointHelpers.prepare_endpoint(uri.host, uri.port, opts[:ssl], opts[:ssl_params])
+              host = uri.host || EndpointHelpers::DEFAULT_HOST
+              port = uri.port || EndpointHelpers::DEFAULT_PORT
+              endpoint = EndpointHelpers.prepare_endpoint(host, port, opts[:ssl], opts[:ssl_params])
               Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
             end
           end

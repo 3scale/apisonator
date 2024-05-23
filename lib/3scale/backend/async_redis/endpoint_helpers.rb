@@ -13,7 +13,7 @@ module ThreeScale
         class << self
 
           # @param host [String]
-          # @param port [String]
+          # @param port [Integer]
           # @param ssl_params [Hash]
           # @return [Async::IO::Endpoint::Generic]
           def prepare_endpoint(host, port, ssl = false, ssl_params = nil)

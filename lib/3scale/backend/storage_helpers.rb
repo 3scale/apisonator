@@ -281,6 +281,7 @@ module ThreeScale
             cfg_with_defaults = defaults.merge(ensure_url_param(options))
             cfg_with_defaults = cfg_unix_path_handler(cfg_with_defaults)
             cfg_with_defaults.delete(:max_connections) unless options[:async]
+            cfg_with_defaults[:ssl] ||= true if URI(options[:url].to_s).scheme == 'rediss'
             cfg_with_defaults
           end
 
