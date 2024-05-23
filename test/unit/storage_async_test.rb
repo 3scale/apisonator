@@ -268,7 +268,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     assert_equal url.port, port
 
     unless conf[:username].to_s.strip.empty? && conf[:password].to_s.strip.empty?
-      assert_instance_of Async::Redis::Protocol::AuthenticatedRESP2, client.protocol
+      assert_instance_of ThreeScale::Backend::AsyncRedis::Protocol::ExtendedRESP2, client.protocol
       username, password = client.protocol.instance_variable_get(:@credentials)
       assert_equal conf[:username], username
       assert_equal conf[:password], password
@@ -297,7 +297,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     role = conf[:role] || :master
     password = client.instance_variable_get(:@protocol).instance_variable_get(:@password)
 
-    assert_instance_of Async::Redis::SentinelsClientACLTLS, client
+    assert_instance_of ThreeScale::Backend::AsyncRedis::SentinelsClientACLTLS, client
 
     assert_equal name, client.instance_variable_get(:@master_name)
     assert_equal role, client.instance_variable_get(:@role)

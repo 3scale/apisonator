@@ -1,6 +1,6 @@
 require 'async/io'
 require 'async/redis/client'
-require 'async/redis/sentinels_client_acl_tls'
+require '3scale/backend/async_redis/sentinels_client_acl_tls'
 require '3scale/backend/async_redis/protocol/extended_resp2'
 
 module ThreeScale
@@ -84,15 +84,16 @@ module ThreeScale
           role = opts[:role] || :master
           protocol = make_redis_protocol(opts)
 
-          Async::Redis::SentinelsClientACLTLS.new(name, opts[:sentinels], role, protocol)
+          ThreeScale::Backend::AsyncRedis::SentinelsClientACLTLS.new(name, opts[:sentinels], role, protocol, opts)
         end
 
         # RESP2 with support for logical DBs
         def make_redis_protocol(opts)
           uri = URI(opts[:url] || "")
           db = uri.path[1..-1]
+          credentials = [ uri.user || opts[:username], uri.password || opts[:password]]
 
-          ThreeScale::Backend::AsyncRedis::Protocol::ExtendedRESP2.new(db: db)
+          ThreeScale::Backend::AsyncRedis::Protocol::ExtendedRESP2.new(db: db, credentials: credentials)
         end
 
         # SSL endpoint if scheme is `rediss:`, TCP endpoint otherwise.

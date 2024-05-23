@@ -8,13 +8,23 @@ module ThreeScale
       module Protocol
 
         # Custom Redis Protocol supporting Redis logical DBs
+        # and ACL credentials
         class ExtendedRESP2
-          def initialize(db: nil)
+
+          attr_reader :credentials, :db
+
+          def initialize(db: nil, credentials: [])
             @db = db
+            @credentials = credentials
           end
 
           def client(stream)
             client = Async::Redis::Protocol::RESP2.client(stream)
+
+            if @credentials.any?
+              client.write_request(["AUTH", *@credentials])
+              client.read_response # Ignore response.
+            end
 
             if @db
               client.write_request(["SELECT", @db])
