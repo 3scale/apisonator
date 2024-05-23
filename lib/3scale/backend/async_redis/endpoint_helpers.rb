@@ -11,11 +11,13 @@ module ThreeScale
         DEFAULT_PORT = 6379
 
         class << self
-          # @param uri [URI]
+
+          # @param host [String]
+          # @param port [String]
           # @param ssl_params [Hash]
           # @return [Async::IO::Endpoint::Generic]
-          def prepare_endpoint_uri(uri, ssl = false, ssl_params = nil)
-            tcp_endpoint = Async::IO::Endpoint.tcp(uri.hostname, uri.port)
+          def prepare_endpoint(host, port, ssl = false, ssl_params = nil)
+            tcp_endpoint = Async::IO::Endpoint.tcp(host, port)
 
             if ssl
               ssl_context = OpenSSL::SSL::SSLContext.new
@@ -24,15 +26,6 @@ module ThreeScale
             end
 
             tcp_endpoint
-          end
-
-          # @param host [String]
-          # @param port [String]
-          # @param ssl_params [Hash]
-          # @return [Async::IO::Endpoint::Generic]
-          def prepare_endpoint(host, port, ssl = false, ssl_params = nil)
-            uri = URI("redis://#{host}:#{port}")
-            prepare_endpoint_uri(uri, ssl, ssl_params)
           end
 
           def format_ssl_params(ssl_params)
