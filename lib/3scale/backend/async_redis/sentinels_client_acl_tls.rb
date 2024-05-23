@@ -7,12 +7,12 @@ module ThreeScale
   module Backend
     module AsyncRedis
       class SentinelsClientACLTLS < Async::Redis::SentinelsClient
-        def initialize(master_name, sentinels, role = :master, protocol = Protocol::RESP2, config = {}, **options)
-          @master_name = master_name
-          @sentinel_endpoints = sentinels.map do |sentinel|
-            make_endpoint(sentinel[:host], sentinel[:port], config[:ssl], config[:ssl_params])
+        def initialize(uri, protocol = Async::Redis::Protocol::RESP2, config, **options)
+          @master_name = uri.host
+          @sentinel_endpoints = config[:sentinels].map do |sentinel|
+            EndpointHelpers.prepare_endpoint(sentinel[:host], sentinel[:port], config[:ssl], config[:ssl_params])
           end
-          @role = role
+          @role = config[:role] || :master
 
           @protocol = protocol
           @config = config
@@ -23,7 +23,7 @@ module ThreeScale
 
         def resolve_master
           @sentinel_endpoints.each do |sentinel_endpoint|
-            client = Async::Redis::Client.new(sentinel_endpoint, protocol: ThreeScale::Backend::AsyncRedis::Protocol::ExtendedRESP2.new(credentials: @protocol.credentials))
+            client = Async::Redis::Client.new(sentinel_endpoint, protocol: Protocol::ExtendedRESP2.new(credentials: @protocol.credentials))
 
             begin
               address = client.call('sentinel', 'get-master-addr-by-name', @master_name)
@@ -31,7 +31,7 @@ module ThreeScale
               next
             end
 
-            return make_endpoint(address[0], address[1], @config[:ssl], @config[:ssl_params]) if address
+            return EndpointHelpers.prepare_endpoint(address[0], address[1], @config[:ssl], @config[:ssl_params]) if address
           end
 
           nil
@@ -39,7 +39,7 @@ module ThreeScale
 
         def resolve_slave
           @sentinel_endpoints.each do |sentinel_endpoint|
-            client = Async::Redis::Client.new(sentinel_endpoint, protocol: ThreeScale::Backend::AsyncRedis::Protocol::ExtendedRESP2.new(credentials: @protocol.credentials))
+            client = Async::Redis::Client.new(sentinel_endpoint, protocol: Protocol::ExtendedRESP2.new(credentials: @protocol.credentials))
 
             begin
               reply = client.call('sentinel', 'slaves', @master_name)
@@ -51,34 +51,10 @@ module ThreeScale
             next if slaves.empty?
 
             slave = select_slave(slaves)
-            return make_endpoint(slave['ip'], slave['port'], @config[:ssl], @config[:ssl_params])
+            return EndpointHelpers.prepare_endpoint(slave['ip'], slave['port'], @config[:ssl], @config[:ssl_params])
           end
 
           nil
-        end
-
-        def make_endpoint(host, port, ssl, ssl_params)
-          tcp_endpoint = Async::IO::Endpoint.tcp(host, port)
-
-          if ssl
-            ssl_context = OpenSSL::SSL::SSLContext.new
-            ssl_context.set_params(format_ssl_params(ssl_params))
-            return Async::IO::SSLEndpoint.new(tcp_endpoint, ssl_context: ssl_context)
-          end
-
-          tcp_endpoint
-        end
-
-        def format_ssl_params(ssl_params)
-          cert = ssl_params[:cert].to_s.strip
-          key = ssl_params[:key].to_s.strip
-          return ssl_params if cert.empty? && key.empty?
-
-          updated_ssl_params = ssl_params.dup
-          updated_ssl_params[:cert] = OpenSSL::X509::Certificate.new(File.read(cert))
-          updated_ssl_params[:key] = OpenSSL::PKey.read(File.read(key))
-
-          updated_ssl_params
         end
       end
     end
