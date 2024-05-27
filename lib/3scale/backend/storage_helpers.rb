@@ -62,7 +62,8 @@ module ThreeScale
           # CONN_WHITELIST - Connection options that can be specified in config
           # Note: we don't expose reconnect_attempts until the bug above is fixed
           CONN_WHITELIST = [
-            :connect_timeout, :read_timeout, :write_timeout, :max_connections
+            :connect_timeout, :read_timeout, :write_timeout, :max_connections, :username, :password, :sentinel_username,
+            :sentinel_password, :ssl, :ssl_params
           ].freeze
           private_constant :CONN_WHITELIST
 
@@ -185,6 +186,7 @@ module ThreeScale
 
           def cfg_compact(options)
             empty = ->(_k,v) { v.to_s.strip.empty? }
+            options[:ssl_params]&.delete_if(&empty)
             options.delete_if(&empty)
           end
 
@@ -278,7 +280,8 @@ module ThreeScale
           def cfg_defaults_handler(options, defaults)
             cfg_with_defaults = defaults.merge(ensure_url_param(options))
             cfg_with_defaults = cfg_unix_path_handler(cfg_with_defaults)
-            cfg_with_defaults&.delete(:max_connections) unless options[:async]
+            cfg_with_defaults.delete(:max_connections) unless options[:async]
+            cfg_with_defaults[:ssl] ||= true if URI(options[:url].to_s).scheme == 'rediss'
             cfg_with_defaults
           end
 

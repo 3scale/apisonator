@@ -39,11 +39,12 @@ module ThreeScale
       config.workers_logger_formatter = :text
 
       # Add configuration sections
-      config.add_section(:queues, :master_name, :sentinels, :role,
-                         :connect_timeout, :read_timeout, :write_timeout, :max_connections)
-      config.add_section(:redis, :url, :proxy, :sentinels, :role,
-                         :connect_timeout, :read_timeout, :write_timeout, :max_connections,
-                         :async)
+      config.add_section(:queues, :master_name, :username, :password, :ssl, :ssl_params, :sentinels,
+                         :sentinel_username, :sentinel_password, :role, :connect_timeout, :read_timeout, :write_timeout,
+                         :max_connections)
+      config.add_section(:redis, :url, :proxy, :username, :password, :ssl, :ssl_params, :sentinels,
+                         :sentinel_username, :sentinel_password, :role, :connect_timeout, :read_timeout, :write_timeout,
+                         :max_connections, :async)
       config.add_section(:hoptoad, :service, :api_key)
       config.add_section(:internal_api, :user, :password)
       config.add_section(:master, :metrics)
