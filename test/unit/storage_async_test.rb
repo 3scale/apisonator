@@ -24,7 +24,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def test_redis_url
-    config_obj = url('redis://127.0.0.1:6379/0')
+    config_obj = url('redis://127.0.0.1:6379')
     storage = StorageAsync::Client.send :new, config_obj
     assert_client_config(config_obj, storage)
   end
@@ -44,6 +44,18 @@ class StorageAsyncTest < Test::Unit::TestCase
   def test_redis_no_scheme
     storage = StorageAsync::Client.send :new, url('backend-redis')
     assert_client_config({ url: URI('redis://backend-redis:6379') }, storage)
+  end
+
+  def test_redis_db_nil
+    config_obj = url('redis://backend-redis:6379')
+    storage = StorageAsync::Client.send :new, config_obj
+    assert_client_config({ **config_obj, db: nil } , storage)
+  end
+
+  def test_redis_db_int
+    config_obj = url('redis://backend-redis:6379/6')
+    storage = StorageAsync::Client.send :new, config_obj
+    assert_client_config({ **config_obj, db: '6' }, storage)
   end
 
   def test_sentinels_connection_string
@@ -208,7 +220,7 @@ class StorageAsyncTest < Test::Unit::TestCase
 
   def test_tls_no_client_certificate
     config_obj = {
-      url: 'rediss://localhost:46379/0',
+      url: 'rediss://localhost:46379',
       ssl_params: {
         ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
       }
@@ -222,7 +234,7 @@ class StorageAsyncTest < Test::Unit::TestCase
       ca_file, cert, key = create_certs(alg).values_at(:ca_file, :cert, :key)
 
       config_obj = {
-        url: 'rediss://localhost:46379/0',
+        url: 'rediss://localhost:46379',
         ssl_params: {
           ca_file: ca_file.path,
           cert: cert.path,
@@ -238,7 +250,7 @@ class StorageAsyncTest < Test::Unit::TestCase
 
   def test_acl
     config_obj = {
-      url: 'redis://localhost:6379/0',
+      url: 'redis://localhost:6379',
       username: 'apisonator-test',
       password: 'p4ssW0rd'
     }
@@ -250,7 +262,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     ca_file, cert, key = create_certs(:rsa).values_at(:ca_file, :cert, :key)
 
     config_obj = {
-      url: 'rediss://localhost:46379/0',
+      url: 'rediss://localhost:46379',
       ssl_params: {
         ca_file: ca_file.path,
         cert: cert.path,
@@ -294,6 +306,9 @@ class StorageAsyncTest < Test::Unit::TestCase
     host, port = client.endpoint.address
     assert_equal url.host, host
     assert_equal url.port, port
+
+    db = client.protocol.instance_variable_get(:@db)
+    assert_equal conf[:db], db
 
     assert_acl_credentials(conf, client)
     assert_tls_certs(conf, client, test_cert_type)

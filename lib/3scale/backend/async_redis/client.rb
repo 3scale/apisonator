@@ -19,7 +19,7 @@ module ThreeScale
             uri = URI(opts[:url])
 
             credentials = [ uri.user || opts[:username], uri.password || opts[:password]]
-            db = uri.path[1..-1].to_i if uri.path
+            db = uri.path[1..-1]
 
             protocol = Protocol::ExtendedRESP2.new(db: db, credentials: credentials)
 
