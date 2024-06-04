@@ -263,7 +263,7 @@ class StorageSyncTest < Test::Unit::TestCase
   private
 
   def assert_client_config(conf, conn)
-    config = conn.instance_variable_get(:@client).instance_variable_get(:@config)
+    config = conn.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@config)
 
     if conf[:url].to_s.strip.empty?
       assert_equal conf[:path], config.path
@@ -284,7 +284,7 @@ class StorageSyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_config(conf, client)
-    config = client.instance_variable_get(:@client).instance_variable_get(:@config)
+    config = client.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@config)
     assert config.sentinel?
     assert_equal URI(conf[:url]).host, config.name
     assert_equal conf[:role] || :master, config.instance_variable_get(:@role)
