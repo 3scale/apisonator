@@ -7,7 +7,7 @@ module ThreeScale
         include TestHelpers::Sequences
 
         let(:storage) { Backend::Storage.instance }
-        let(:storage_instances) { [storage] }
+        let(:storage_instances) { storage.send(:non_proxied_instances) }
         let(:logger) { object_double(Backend.logger) }
 
         before do

@@ -190,7 +190,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   private
 
   def assert_client_config(conf, conn)
-    client = conn.instance_variable_get(:@redis_async)
+    client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
 
     url = URI(conf[:url])
     host, port = client.endpoint.address
@@ -199,7 +199,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_config(conf, conn)
-    client = conn.instance_variable_get(:@redis_async)
+    client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
     uri = URI(conf[:url] || '')
     name = uri.host
     role = conf[:role] || :master
