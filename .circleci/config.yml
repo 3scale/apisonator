@@ -114,6 +114,9 @@ workflows:
       - test_tls:
           requires:
             - install_dependencies
+      - test_tls_sentinels:
+          requires:
+            - install_dependencies
       - test_twemproxy:
             requires:
               - install_dependencies
