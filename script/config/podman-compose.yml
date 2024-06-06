@@ -42,6 +42,72 @@ services:
       - ./sentinel3:/data:Z
     command: [ redis-server, /data/sentinel3.conf, --sentinel, --port, "26381" ]
 
+  tls-redis-master:
+    image: redis:6.2-alpine
+    container_name: tls-redis-master
+    network_mode: host
+    volumes:
+      - ./master.conf:/etc/redis.conf:z
+      - ./circleci.crt:/etc/redis.crt:z
+      - ./circleci.key:/etc/redis.key:z
+      - ./ca-circleci-cert.pem:/etc/ca-root-cert.pem:z
+    command: [ redis-server, /etc/redis.conf ]
+
+  tls-redis-replica1:
+    image: redis:6.2-alpine
+    container_name: tls-redis-replica1
+    network_mode: host
+    volumes:
+      - ./replica1.conf:/etc/redis.conf:z
+      - ./circleci.crt:/etc/redis.crt:z
+      - ./circleci.key:/etc/redis.key:z
+      - ./ca-circleci-cert.pem:/etc/ca-root-cert.pem:z
+    command: [ redis-server, /etc/redis.conf, --slaveof, localhost, "46380" ]
+
+  tls-redis-replica2:
+    image: redis:6.2-alpine
+    container_name: tls-redis-replica2
+    network_mode: host
+    volumes:
+      - ./replica2.conf:/etc/redis.conf:z
+      - ./circleci.crt:/etc/redis.crt:z
+      - ./circleci.key:/etc/redis.key:z
+      - ./ca-circleci-cert.pem:/etc/ca-root-cert.pem:z
+    command: [ redis-server, /etc/redis.conf, --slaveof, localhost, "46380" ]
+
+  tls-redis-sentinel1:
+    image: redis:6.2-alpine
+    container_name: tls-redis-sentinel1
+    network_mode: host
+    volumes:
+      - ./sentinel1_tls:/data:Z
+      - ./circleci.crt:/etc/redis.crt:z
+      - ./circleci.key:/etc/redis.key:z
+      - ./ca-circleci-cert.pem:/etc/ca-root-cert.pem:z
+    command: [ redis-server, /data/sentinel.conf, --sentinel ]
+
+  tls-redis-sentinel2:
+    image: redis:6.2-alpine
+    container_name: tls-redis-sentinel2
+    network_mode: host
+    volumes:
+      - ./sentinel2_tls:/data:Z
+      - ./circleci.crt:/etc/redis.crt:z
+      - ./circleci.key:/etc/redis.key:z
+      - ./ca-circleci-cert.pem:/etc/ca-root-cert.pem:z
+    command: [ redis-server, /data/sentinel.conf, --sentinel ]
+
+  tls-redis-sentinel3:
+    image: redis:6.2-alpine
+    container_name: tls-redis-sentinel3
+    network_mode: host
+    volumes:
+      - ./sentinel3_tls:/data:Z
+      - ./circleci.crt:/etc/redis.crt:z
+      - ./circleci.key:/etc/redis.key:z
+      - ./ca-circleci-cert.pem:/etc/ca-root-cert.pem:z
+    command: [ redis-server, /data/sentinel.conf, --sentinel ]
+
   twemproxy:
     image: quay.io/3scale/twemproxy:v0.5.0
     container_name: twemproxy
