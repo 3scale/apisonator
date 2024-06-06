@@ -34,6 +34,15 @@ commands:
             cp -r script/config/sentinel2_template ./sentinel2
             cp -r script/config/sentinel3_template ./sentinel3
             cp -r script/config/twemproxy_template.yml ./twemproxy.yml
+            cp -r script/config/tls/master_template.conf ./master.conf
+            cp -r script/config/tls/replica1_template.conf ./replica1.conf
+            cp -r script/config/tls/replica2_template.conf ./replica2.conf
+            cp -r .circleci/ca-circleci-cert.pem ./ca-circleci-cert.pem
+            cp -r .circleci/circleci.crt ./circleci.crt
+            cp -r .circleci/circleci.key ./circleci.key
+            cp -r script/config/tls/sentinel1_template ./sentinel1
+            cp -r script/config/tls/sentinel2_template ./sentinel2
+            cp -r script/config/tls/sentinel3_template ./sentinel3
       - run:
           name: Start services
           command: |
@@ -102,6 +111,9 @@ workflows:
       - test_sentinels:
           requires:
             - install_dependencies
+      - test_tls:
+          requires:
+            - install_dependencies
       - test_twemproxy:
             requires:
               - install_dependencies
@@ -145,6 +157,21 @@ jobs:
       - *attach-to-workspace
       - start_services:
           services: redis-master redis-replica1 redis-replica2 redis-sentinel1 redis-sentinel2 redis-sentinel3
+      - run_tests
+  test_tls:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: rediss://localhost:46380/6
+      CONFIG_REDIS_PROXY: rediss://localhost:46380/6
+      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
+      CONFIG_QUEUES_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: tls-redis-master
       - run_tests
   test_twemproxy:
     executor:
