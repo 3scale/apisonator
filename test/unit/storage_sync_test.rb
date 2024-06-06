@@ -244,6 +244,68 @@ class StorageSyncTest < Test::Unit::TestCase
     end
   end
 
+  def test_ssl_from_url
+    cfg = Storage::Helpers.config_with({url: 'rediss://localhost:46379' })
+    assert cfg[:ssl]
+  end
+
+  def test_ssl_from_param
+    cfg = Storage::Helpers.config_with({url: 'redis://localhost:46379', ssl: true })
+    assert cfg[:ssl]
+  end
+
+  def test_ssl_url_precedence
+    cfg = Storage::Helpers.config_with({url: 'rediss://localhost:46379', ssl: false })
+    assert cfg[:ssl]
+  end
+
+  def test_tls_no_client_certificate
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
+      }
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_client_config(config_obj, storage)
+  end
+
+  def test_tls_client_cert
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem')),
+        cert: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-client.crt')),
+        key: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-client.key'))
+      }
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_client_config(config_obj, storage)
+  end
+
+  def test_acl
+    config_obj = {
+      url: 'redis://localhost:6379/0',
+      username: 'apisonator-test',
+      password: 'p4ssW0rd'
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_client_config(config_obj, storage)
+  end
+
+  def test_acl_tls
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
+      },
+      username: 'apisonator-test',
+      password: 'p4ssW0rd'
+    }
+    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    assert_client_config(config_obj, storage)
+  end
+
   private
 
   def assert_client_config(conf, conn)
@@ -255,6 +317,15 @@ class StorageSyncTest < Test::Unit::TestCase
       url = URI(conf[:url])
       assert_equal url.host, config.host
       assert_equal url.port, config.port
+    end
+
+    assert_equal conf[:username] || 'default', config.username
+    assert_equal conf[:password], config.password
+
+    unless conf[:ssl_params].to_s.strip.empty?
+      %i[ca_file cert key].each do |key|
+        assert_equal conf[:ssl_params][key], config.ssl_params[key]
+      end
     end
   end
 
