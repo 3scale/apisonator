@@ -13,6 +13,12 @@ attach-to-workspace: &attach-to-workspace
   attach_workspace:
     at: /home/circleci
 
+ruby-cache-key: &ruby-cache-key
+  asdf-ruby-3.0.2-v1
+
+bundle-cache-key: &bundle-cache-key
+  bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
+
 executors:
   ubuntu_vm:
     machine:
@@ -34,6 +40,15 @@ commands:
             cp -r script/config/sentinel2_template ./sentinel2
             cp -r script/config/sentinel3_template ./sentinel3
             cp -r script/config/twemproxy_template.yml ./twemproxy.yml
+            cp -r script/config/tls/master_template.conf ./master.conf
+            cp -r script/config/tls/replica1_template.conf ./replica1.conf
+            cp -r script/config/tls/replica2_template.conf ./replica2.conf
+            cp -r .circleci/ca-circleci-cert.pem ./ca-circleci-cert.pem
+            cp -r .circleci/circleci.crt ./circleci.crt
+            cp -r .circleci/circleci.key ./circleci.key
+            cp -r script/config/tls/sentinel1_template ./sentinel1_tls
+            cp -r script/config/tls/sentinel2_template ./sentinel2_tls
+            cp -r script/config/tls/sentinel3_template ./sentinel3_tls
       - run:
           name: Start services
           command: |
@@ -43,7 +58,7 @@ commands:
     steps:
       - restore_cache: # Download and cache dependencies
           keys:
-            - asdf-ruby-3.0.2-v1
+           - *ruby-cache-key
       - run:
           name: Install Ruby 3.0.2
           command: |
@@ -59,13 +74,13 @@ commands:
       - save_cache:
           paths:
             - ../.asdf
-          key: asdf-ruby-3.0.2-v1
+          key: *ruby-cache-key
       - *persist-to-workspace
   install_dependencies:
     steps:
       - restore_cache: # Download and cache dependencies
           keys:
-            - bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
+           - *bundle-cache-key
       - run:
           name: Install dependencies
           command: |
@@ -80,7 +95,7 @@ commands:
           name: Save Bundle cache
           paths:
             - vendor/bundle
-          key: bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
+          key: *bundle-cache-key
       - *persist-to-workspace
   run_tests:
     steps:
@@ -100,6 +115,12 @@ workflows:
           requires:
             - install_dependencies
       - test_sentinels:
+          requires:
+            - install_dependencies
+      - test_tls:
+          requires:
+            - install_dependencies
+      - test_tls_sentinels:
           requires:
             - install_dependencies
       - test_twemproxy:
@@ -145,6 +166,48 @@ jobs:
       - *attach-to-workspace
       - start_services:
           services: redis-master redis-replica1 redis-replica2 redis-sentinel1 redis-sentinel2 redis-sentinel3
+      - run_tests
+  test_tls:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: rediss://localhost:46380/6
+      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
+      CONFIG_QUEUES_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+      CONFIG_REDIS_PROXY: rediss://localhost:46380/6
+      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_PASSWORD: sup3rS3cre1!
+      CONFIG_REDIS_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: tls-redis-master
+      - run_tests
+  test_tls_sentinels:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: rediss://redis-master/6
+      CONFIG_QUEUES_SENTINEL_HOSTS: rediss://localhost:56380,rediss://localhost:56381,rediss://localhost:56382
+      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
+      CONFIG_QUEUES_SENTINEL_USERNAME: sentinel
+      CONFIG_QUEUES_SENTINEL_PASSWORD: 'secret#Passw0rd'
+      CONFIG_QUEUES_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+      CONFIG_REDIS_PROXY: rediss://redis-master/6
+      CONFIG_REDIS_SENTINEL_HOSTS: rediss://localhost:56380,rediss://localhost:56381,rediss://localhost:56382
+      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_PASSWORD: sup3rS3cre1!
+      CONFIG_REDIS_SENTINEL_USERNAME: sentinel
+      CONFIG_REDIS_SENTINEL_PASSWORD: 'secret#Passw0rd'
+      CONFIG_REDIS_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: tls-redis-master tls-redis-replica1 tls-redis-replica2 tls-redis-sentinel1 tls-redis-sentinel2 tls-redis-sentinel3
       - run_tests
   test_twemproxy:
     executor:
