@@ -40,9 +40,9 @@ commands:
             cp -r .circleci/ca-circleci-cert.pem ./ca-circleci-cert.pem
             cp -r .circleci/circleci.crt ./circleci.crt
             cp -r .circleci/circleci.key ./circleci.key
-            cp -r script/config/tls/sentinel1_template ./sentinel1
-            cp -r script/config/tls/sentinel2_template ./sentinel2
-            cp -r script/config/tls/sentinel3_template ./sentinel3
+            cp -r script/config/tls/sentinel1_template ./sentinel1_tls
+            cp -r script/config/tls/sentinel2_template ./sentinel2_tls
+            cp -r script/config/tls/sentinel3_template ./sentinel3_tls
       - run:
           name: Start services
           command: |
