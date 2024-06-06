@@ -176,6 +176,30 @@ jobs:
       - start_services:
           services: tls-redis-master
       - run_tests
+  test_tls_sentinels:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: rediss://redis-master/6
+      CONFIG_QUEUES_SENTINEL_HOSTS: rediss://localhost:56380,rediss://localhost:56381,rediss://localhost:56382
+      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
+      CONFIG_QUEUES_SENTINEL_USERNAME: sentinel
+      CONFIG_QUEUES_SENTINEL_PASSWORD: 'secret#Passw0rd'
+      CONFIG_QUEUES_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+      CONFIG_REDIS_PROXY: rediss://redis-master/6
+      CONFIG_REDIS_SENTINEL_HOSTS: rediss://localhost:56380,rediss://localhost:56381,rediss://localhost:56382
+      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_PASSWORD: sup3rS3cre1!
+      CONFIG_REDIS_SENTINEL_USERNAME: sentinel
+      CONFIG_REDIS_SENTINEL_PASSWORD: 'secret#Passw0rd'
+      CONFIG_REDIS_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: tls-redis-master tls-redis-replica1 tls-redis-replica2 tls-redis-sentinel1 tls-redis-sentinel2 tls-redis-sentinel3
+      - run_tests
   test_twemproxy:
     executor:
       name: ubuntu_vm
