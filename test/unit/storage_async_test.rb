@@ -1,7 +1,10 @@
+require 'tempfile'
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 require '3scale/backend/storage_async'
 
 class StorageAsyncTest < Test::Unit::TestCase
+  include TestHelpers::Certificates
+
   def test_basic_operations
     storage = StorageAsync::Client.instance(true)
     storage.del('foo')
@@ -32,6 +35,11 @@ class StorageAsyncTest < Test::Unit::TestCase
     assert_raise Storage::InvalidURI do
       StorageAsync::Client.send :new, url('a_malformed_url:1:10')
     end
+  end
+
+  def test_redis_no_scheme
+    storage = StorageAsync::Client.send :new, url('backend-redis')
+    assert_client_config({ url: URI('redis://backend-redis:6379') }, storage)
   end
 
   def test_sentinels_connection_string
@@ -182,30 +190,154 @@ class StorageAsyncTest < Test::Unit::TestCase
     end
   end
 
-  def test_redis_no_scheme
-    storage = StorageAsync::Client.send :new, url('backend-redis')
-    assert_client_config({ url: URI('redis://backend-redis:6379') }, storage)
+  def test_sentinels_acl
+    config_obj = {
+      url: 'redis://master-group-name',
+      sentinels: 'redis://127.0.0.1:26379, redis://127.0.0.1:36379, redis://127.0.0.1:46379',
+      username: 'apisonator-test',
+      password: 'p4ssW0rd',
+      sentinel_username: 'sentinel-test',
+      sentinel_password: 'p4ssW0rd#'
+    }
+
+    conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+    assert_sentinel_config({ **config_obj,
+                             sentinels: [{ host: '127.0.0.1', port: 26_379 },
+                                         { host: '127.0.0.1', port: 36_379 },
+                                         { host: '127.0.0.1', port: 46_379 }]},
+                           conn)
+  end
+
+  def test_sentinels_acl_tls
+    ca_file, cert, key = create_certs(:rsa).values_at(:ca_file, :cert, :key)
+
+    config_obj = {
+      url: 'rediss://master-group-name',
+      sentinels: 'rediss://127.0.0.1:26379, rediss://127.0.0.1:36379, rediss://127.0.0.1:46379',
+      username: 'apisonator-test',
+      password: 'p4ssW0rd',
+      sentinel_username: 'sentinel-test',
+      sentinel_password: 'p4ssW0rd#',
+      ssl_params: {
+        ca_file: ca_file.path,
+        cert: cert.path,
+        key: key.path
+      }
+    }
+
+    conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+    assert_sentinel_config({ **config_obj,
+                             sentinels: [{ host: '127.0.0.1', port: 26_379 },
+                                         { host: '127.0.0.1', port: 36_379 },
+                                         { host: '127.0.0.1', port: 46_379 }]},
+                           conn, :rsa)
+  ensure
+    [ca_file, cert, key].each(&:unlink)
+  end
+
+  def test_tls_no_client_certificate
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
+      }
+    }
+    storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+    assert_client_config(config_obj, storage)
+  end
+
+  [:rsa, :dsa, :ec].each do |alg|
+    define_method "test_tls_client_cert_#{alg}" do
+      ca_file, cert, key = create_certs(alg).values_at(:ca_file, :cert, :key)
+
+      config_obj = {
+        url: 'rediss://localhost:46379/0',
+        ssl_params: {
+          ca_file: ca_file.path,
+          cert: cert.path,
+          key: key.path
+        }
+      }
+      storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+      assert_client_config(config_obj, storage, alg)
+    ensure
+      [ca_file, cert, key].each(&:unlink)
+    end
+  end
+
+  def test_acl
+    config_obj = {
+      url: 'redis://localhost:6379/0',
+      username: 'apisonator-test',
+      password: 'p4ssW0rd'
+    }
+    storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+    assert_client_config(config_obj, storage)
+  end
+
+  def test_acl_tls
+    ca_file, cert, key = create_certs(:rsa).values_at(:ca_file, :cert, :key)
+
+    config_obj = {
+      url: 'rediss://localhost:46379/0',
+      ssl_params: {
+        ca_file: ca_file.path,
+        cert: cert.path,
+        key: key.path
+      },
+      username: 'apisonator-test',
+      password: 'p4ssW0rd'
+    }
+    storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+    assert_client_config(config_obj, storage)
+  ensure
+    [ca_file, cert, key].each(&:unlink)
   end
 
   private
 
-  def assert_client_config(conf, conn)
+  def create_certs(alg)
+    ca_cert_file = Tempfile.new('ca-root-cert.pem')
+    ca_cert_file.write(create_cert.to_pem)
+    ca_cert_file.flush
+    ca_cert_file.close
+
+    key = create_key alg
+    key_file = Tempfile.new("redis-#{alg}.pem")
+    key_file.write(key.to_pem)
+    key_file.flush
+    key_file.close
+
+    cert_file = Tempfile.new("redis-#{alg}.crt")
+    cert_file.write(create_cert(key).to_pem)
+    cert_file.flush
+    cert_file.close
+
+    { ca_file: ca_cert_file, cert: cert_file, key: key_file }
+  end
+
+  def assert_client_config(conf, conn, test_cert_type = nil)
     client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
 
     url = URI(conf[:url])
     host, port = client.endpoint.address
     assert_equal url.host, host
     assert_equal url.port, port
+
+    assert_acl_credentials(conf, client)
+    assert_tls_certs(conf, client, test_cert_type)
   end
 
-  def assert_sentinel_config(conf, conn)
+  def assert_sentinel_config(conf, conn, test_cert_type = nil)
     client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
     uri = URI(conf[:url] || '')
     name = uri.host
     role = conf[:role] || :master
-    password = client.instance_variable_get(:@protocol).instance_variable_get(:@password)
 
-    assert_instance_of Async::Redis::SentinelsClient, client
+    assert_instance_of ThreeScale::Backend::AsyncRedis::SentinelsClientACLTLS, client
+
+    assert_acl_credentials(conf, client)
+    assert_tls_certs(conf, client, test_cert_type)
 
     assert_equal name, client.instance_variable_get(:@master_name)
     assert_equal role, client.instance_variable_get(:@role)
@@ -215,8 +347,46 @@ class StorageAsyncTest < Test::Unit::TestCase
       host, port = endpoint.address
       assert_equal conf[:sentinels][i][:host], host
       assert_equal conf[:sentinels][i][:port], port
-      assert_equal(conf[:sentinels][i][:password], password) if conf[:sentinels][i].key? :password
     end unless conf[:sentinels].empty?
+  end
+
+  def assert_acl_credentials(conf, client)
+    if conf[:username].to_s.strip.empty? && conf[:password].to_s.strip.empty?
+      assert_nil conf[:username]
+      assert_nil conf[:password]
+    else
+      assert_instance_of ThreeScale::Backend::AsyncRedis::Protocol::ExtendedRESP2, client.protocol
+      username, password = client.protocol.instance_variable_get(:@credentials)
+      assert_equal conf[:username], username
+      assert_equal conf[:password], password
+    end
+
+    if conf[:sentinel_username].to_s.strip.empty? && conf[:sentinel_password].to_s.strip.empty?
+      assert_nil conf[:sentinel_username]
+      assert_nil conf[:sentinel_password]
+    else
+      sentinel_username, sentinel_password = client.instance_variable_get(:@sentinel_credentials)
+      assert_equal conf[:sentinel_username], sentinel_username
+      assert_equal conf[:sentinel_password], sentinel_password
+    end
+  end
+
+  def assert_tls_certs(conf, client, test_cert_type)
+    unless conf[:ssl_params].to_s.strip.empty?
+      endpoint = client.endpoint || client.instance_variable_get(:@sentinel_endpoints).first
+      assert_instance_of Async::IO::SSLEndpoint, endpoint
+      assert_equal conf[:ssl_params][:ca_file], endpoint.options[:ssl_context].send(:ca_file)
+      assert_instance_of(OpenSSL::X509::Certificate, endpoint.options[:ssl_context].cert) unless conf[:ssl_params][:cert].to_s.strip.empty?
+
+      unless test_cert_type.to_s.strip.empty?
+        expected_classes = {
+          rsa: OpenSSL::PKey::RSA,
+          dsa: OpenSSL::PKey::DSA,
+          ec: OpenSSL::PKey::EC,
+        }
+        assert_instance_of(expected_classes[test_cert_type], endpoint.options[:ssl_context].key) unless conf[:ssl_params][:key].to_s.strip.empty?
+      end
+    end
   end
 
   def url(url)
