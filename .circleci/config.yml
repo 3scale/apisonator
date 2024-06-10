@@ -36,19 +36,19 @@ commands:
           name: Copy config files
           command: |
             cp script/config/podman-compose.yml ./compose.yaml
-            cp -r script/config/sentinel1_template ./sentinel1
-            cp -r script/config/sentinel2_template ./sentinel2
-            cp -r script/config/sentinel3_template ./sentinel3
-            cp -r script/config/twemproxy_template.yml ./twemproxy.yml
-            cp -r script/config/tls/master_template.conf ./master.conf
-            cp -r script/config/tls/replica1_template.conf ./replica1.conf
-            cp -r script/config/tls/replica2_template.conf ./replica2.conf
+            cp -r script/config/examples/sentinel1 ./sentinel1
+            cp -r script/config/examples/sentinel2 ./sentinel2
+            cp -r script/config/examples/sentinel3 ./sentinel3
+            cp -r script/config/examples/twemproxy.yml ./twemproxy.yml
+            cp -r script/config/examples/tls/master.conf ./master.conf
+            cp -r script/config/examples/tls/replica1.conf ./replica1.conf
+            cp -r script/config/examples/tls/replica2.conf ./replica2.conf
             cp -r .circleci/ca-circleci-cert.pem ./ca-circleci-cert.pem
             cp -r .circleci/circleci.crt ./circleci.crt
             cp -r .circleci/circleci.key ./circleci.key
-            cp -r script/config/tls/sentinel1_template ./sentinel1_tls
-            cp -r script/config/tls/sentinel2_template ./sentinel2_tls
-            cp -r script/config/tls/sentinel3_template ./sentinel3_tls
+            cp -r script/config/examples/tls/sentinel1 ./sentinel1_tls
+            cp -r script/config/examples/tls/sentinel2 ./sentinel2_tls
+            cp -r script/config/examples/tls/sentinel3 ./sentinel3_tls
       - run:
           name: Start services
           command: |
