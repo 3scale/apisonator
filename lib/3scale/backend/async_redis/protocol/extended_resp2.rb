@@ -13,7 +13,7 @@ module ThreeScale
 
           def initialize(db: nil, credentials: [])
             @db = db
-            @credentials = credentials
+            @credentials = credentials.reject{_1.to_s.strip.empty?}
           end
 
           def client(stream)
