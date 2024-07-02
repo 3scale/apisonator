@@ -1,42 +1,223 @@
 # Ruby CircleCI 2.1 configuration file
 version: 2.1
 
-jobs:
-  build:
-    docker:
-      - image: cimg/ruby:3.0.2
-      - image: redis:6.2-alpine
+persist-to-workspace: &persist-to-workspace
+  persist_to_workspace:
+    root: /home/circleci
+    paths:
+      - .asdf
+      - .bashrc
+      - ./project
 
-    working_directory: ~/app
+attach-to-workspace: &attach-to-workspace
+  attach_workspace:
+    at: /home/circleci
 
+ruby-cache-key: &ruby-cache-key
+  asdf-ruby-3.0.2-v1
+
+bundle-cache-key: &bundle-cache-key
+  bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
+
+executors:
+  ubuntu_vm:
+    machine:
+      image: ubuntu-2204:2024.04.4
+      docker_layer_caching: true
+
+commands:
+  start_services:
+    parameters:
+      services:
+        description: List of services to run
+        type: string
     steps:
-      - checkout
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
-
       - run:
-          name: bundle install
+          name: Copy config files
+          command: |
+            cp script/config/podman-compose.yml ./compose.yaml
+            cp -r script/config/examples/sentinel1 ./sentinel1
+            cp -r script/config/examples/sentinel2 ./sentinel2
+            cp -r script/config/examples/sentinel3 ./sentinel3
+            cp -r script/config/examples/twemproxy.yml ./twemproxy.yml
+            cp -r script/config/examples/tls/master.conf ./master.conf
+            cp -r script/config/examples/tls/replica1.conf ./replica1.conf
+            cp -r script/config/examples/tls/replica2.conf ./replica2.conf
+            cp -r .circleci/ca-circleci-cert.pem ./ca-circleci-cert.pem
+            cp -r .circleci/circleci.crt ./circleci.crt
+            cp -r .circleci/circleci.key ./circleci.key
+            cp -r script/config/examples/tls/sentinel1 ./sentinel1_tls
+            cp -r script/config/examples/tls/sentinel2 ./sentinel2_tls
+            cp -r script/config/examples/tls/sentinel3 ./sentinel3_tls
+      - run:
+          name: Start services
+          command: |
+            docker-compose up << parameters.services >>
+          background: true
+  install_ruby:
+    steps:
+      - restore_cache: # Download and cache dependencies
+          keys:
+           - *ruby-cache-key
+      - run:
+          name: Install Ruby 3.0.2
+          command: |
+            cd $HOME
+            if [ ! -d ".asdf" ]; then
+              git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0
+            fi
+            echo '. "$HOME/.asdf/asdf.sh"' > ~/.bashrc
+            source .bashrc
+            asdf plugin add ruby https://github.com/asdf-vm/asdf-ruby.git
+            asdf install ruby 3.0.2
+            echo 'ruby 3.0.2' > $HOME/project/.tool-versions
+      - save_cache:
+          paths:
+            - ../.asdf
+          key: *ruby-cache-key
+      - *persist-to-workspace
+  install_dependencies:
+    steps:
+      - restore_cache: # Download and cache dependencies
+          keys:
+           - *bundle-cache-key
+      - run:
+          name: Install dependencies
           command: |
             # Required for the license_finder
             # The Gemfile.lock includes nokogiri but bundler
             # would install native gem instead if not forced
-            bundle config set --local force_ruby_platform true
+            source $HOME/.bashrc
+            bundle config set --local force_ruby_platform 'true'
             bundle config set --local deployment 'true'
             bundle install
-
       - save_cache:
+          name: Save Bundle cache
           paths:
             - vendor/bundle
-          key: bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
-
+          key: *bundle-cache-key
+      - *persist-to-workspace
+  run_tests:
+    steps:
       - run:
           name: Run tests
           command: bundle exec script/test
+
 workflows:
   version: 2
   workflow:
     jobs:
-    - build
+      - install_ruby
+      - install_dependencies:
+          requires:
+            - install_ruby
+      - test_single:
+          requires:
+            - install_dependencies
+      - test_sentinels:
+          requires:
+            - install_dependencies
+      - test_tls:
+          requires:
+            - install_dependencies
+      - test_tls_sentinels:
+          requires:
+            - install_dependencies
+      - test_twemproxy:
+            requires:
+              - install_dependencies
+
+jobs:
+  install_ruby:
+    executor:
+      name: ubuntu_vm
+    steps:
+      - checkout
+      - install_ruby
+  install_dependencies:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    steps:
+      - *attach-to-workspace
+      - install_dependencies
+  test_single:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: redis://localhost:6379
+      CONFIG_REDIS_PROXY: redis://localhost:6379
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: redis-master
+      - run_tests
+  test_sentinels:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: redis://redis-master
+      CONFIG_QUEUES_SENTINEL_HOSTS: redis://localhost:26379,redis://localhost:26380,redis://localhost:26381
+      CONFIG_REDIS_PROXY: redis://redis-master
+      CONFIG_REDIS_SENTINEL_HOSTS: redis://localhost:26379,redis://localhost:26380,redis://localhost:26381
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: redis-master redis-replica1 redis-replica2 redis-sentinel1 redis-sentinel2 redis-sentinel3
+      - run_tests
+  test_tls:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: rediss://localhost:46380/6
+      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
+      CONFIG_QUEUES_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+      CONFIG_REDIS_PROXY: rediss://localhost:46380/6
+      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_PASSWORD: sup3rS3cre1!
+      CONFIG_REDIS_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: tls-redis-master
+      - run_tests
+  test_tls_sentinels:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: rediss://redis-master/6
+      CONFIG_QUEUES_SENTINEL_HOSTS: rediss://localhost:56380,rediss://localhost:56381,rediss://localhost:56382
+      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
+      CONFIG_QUEUES_SENTINEL_USERNAME: sentinel
+      CONFIG_QUEUES_SENTINEL_PASSWORD: 'secret#Passw0rd'
+      CONFIG_QUEUES_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+      CONFIG_REDIS_PROXY: rediss://redis-master/6
+      CONFIG_REDIS_SENTINEL_HOSTS: rediss://localhost:56380,rediss://localhost:56381,rediss://localhost:56382
+      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_PASSWORD: sup3rS3cre1!
+      CONFIG_REDIS_SENTINEL_USERNAME: sentinel
+      CONFIG_REDIS_SENTINEL_PASSWORD: 'secret#Passw0rd'
+      CONFIG_REDIS_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: tls-redis-master tls-redis-replica1 tls-redis-replica2 tls-redis-sentinel1 tls-redis-sentinel2 tls-redis-sentinel3
+      - run_tests
+  test_twemproxy:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: redis://localhost:6379
+      CONFIG_REDIS_PROXY: redis://localhost:22121
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: redis-master twemproxy redis-shard1 redis-shard2 redis-shard3
+      - run_tests
