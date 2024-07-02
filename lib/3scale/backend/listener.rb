@@ -1,5 +1,6 @@
 require '3scale/backend/version'
 require '3scale/backend/cors'
+require '3scale/backend/csp'
 require 'json'
 
 module ThreeScale
@@ -130,6 +131,8 @@ module ThreeScale
         content_type 'application/vnd.3scale-v2.0+xml'.freeze
         # enable CORS for all our endpoints
         response.headers.merge!(CORS.headers)
+        # enable CSP for all our endpoints
+        response.headers.merge!(CSP.headers)
       end
 
       # Enable CORS pre-flight request for all our endpoints

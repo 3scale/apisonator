@@ -1,3 +1,5 @@
+require '3scale/backend/headers/stringify'
+
 # CORS support
 #
 # Please see references:
@@ -8,16 +10,7 @@
 module ThreeScale
   module Backend
     module CORS
-      def self.stringify_consts(*consts)
-        consts.each do |k|
-          val = const_get k
-          val = val.respond_to?(:join) ? val.join(', ') : val.to_s
-          k_s = "#{k}_S".to_sym
-          const_set(k_s, val.freeze)
-          private_constant k_s
-        end
-      end
-      private_class_method :stringify_consts
+      extend Headers::Stringify
 
       MAX_AGE = 86400
       private_constant :MAX_AGE
