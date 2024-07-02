@@ -5,15 +5,15 @@ module ThreeScale
     module StorageAsync
       describe Pipeline do
         describe '.run' do
-          let(:endpoint) { Async::IO::Endpoint.tcp('localhost', 6379) }
-          let(:async_client) { Async::Redis::Client.new(endpoint) }
+          let(:storage) {ThreeScale::Backend::StorageAsync::Client.instance(true)}
+          let(:async_client) { storage.instance_variable_get(:@inner).instance_variable_get(:@redis_async) }
 
           subject { Pipeline.new }
 
           # Spec helpers make sure to cleanup instances of Storage, but in this
           # case, we are using the client directly with a host/port so we need
           # this to call flushdb().
-          before { async_client.flushdb! }
+          before { storage.flushdb }
 
           context 'When the list of commands is empty' do
             it 'returns an empty array' do
