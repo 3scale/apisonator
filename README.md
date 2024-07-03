@@ -136,14 +136,14 @@ the `--env-file` flag.
 The most important variables to set are:
 
  * CONFIG_QUEUES_MASTER_NAME: Set this to the [`redis://` URL](http://www.iana.org/assignments/uri-schemes/prov/redis)
-   of where the Redis Storage has been installed
- * CONFIG_REDIS_PROXY: Set this to the [`redis://` URL](http://www.iana.org/assignments/uri-schemes/prov/redis)
    of where the Redis Resque has been installed
+ * CONFIG_REDIS_PROXY: Set this to the [`redis://` URL](http://www.iana.org/assignments/uri-schemes/prov/redis)
+   of where the Redis Storage has been installed
  * CONFIG_INTERNAL_API_USER: Set this to an arbitrary username <username>
-   that will be the one used to be able to use the Apisonator internal api
+   that will be the one used to be able to use the Apisonator internal API
  * CONFIG_INTERNAL_API_PASSWORD: Set this to an arbitrary
    password <password> that will be the one used to be able to use the
-   Apisonator internal api
+   Apisonator internal API
  * RACK_ENV: Set this to 'production'
 
 A complete list of configuration variables that can be set can be
