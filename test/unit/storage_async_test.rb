@@ -251,7 +251,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     config_obj = {
       url: 'rediss://localhost:46379',
       ssl_params: {
-        ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
+        ca_file: Tempfile.new('ca-root-cert.pem').tap { _1.write(create_cert.to_pem) && (_1.flush ; _1.close) }.to_path
       }
     }
     storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)

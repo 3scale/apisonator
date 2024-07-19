@@ -70,4 +70,4 @@ gem 'falcon', '~> 0.35'
 gem 'webrick', '~> 1.8'
 
 
-gem 'dotenv', '~> 2.8.1'
+gem 'dotenv'

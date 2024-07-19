@@ -5,7 +5,7 @@
 # If doesn't exist, try to load .env.test
 def env_file
   file = ".env.#{ENV['RACK_ENV']}"
-  File.exists?(file) ? file : '.env.test'
+  File.exist?(file) ? file : '.env.test'
 end
 
 begin

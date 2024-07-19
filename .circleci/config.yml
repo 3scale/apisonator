@@ -14,7 +14,7 @@ attach-to-workspace: &attach-to-workspace
     at: /home/circleci
 
 ruby-cache-key: &ruby-cache-key
-  asdf-ruby-3.0.2-v1
+  asdf-ruby-3.3.1-v1
 
 bundle-cache-key: &bundle-cache-key
   bundle-{{ .Environment.CACHE_VERSION }}-{{ checksum "Gemfile.lock" }}
@@ -60,7 +60,7 @@ commands:
           keys:
            - *ruby-cache-key
       - run:
-          name: Install Ruby 3.0.2
+          name: Install Ruby 3.3
           command: |
             cd $HOME
             if [ ! -d ".asdf" ]; then
@@ -69,8 +69,8 @@ commands:
             echo '. "$HOME/.asdf/asdf.sh"' > ~/.bashrc
             source .bashrc
             asdf plugin add ruby https://github.com/asdf-vm/asdf-ruby.git
-            asdf install ruby 3.0.2
-            echo 'ruby 3.0.2' > $HOME/project/.tool-versions
+            asdf install ruby 3.3.1
+            echo 'ruby 3.3.1' > $HOME/project/.tool-versions
       - save_cache:
           paths:
             - ../.asdf
