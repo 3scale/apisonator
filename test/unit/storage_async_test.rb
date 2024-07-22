@@ -251,7 +251,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     config_obj = {
       url: 'rediss://localhost:46379',
       ssl_params: {
-        ca_file: Tempfile.new('ca-root-cert.pem').tap { _1.write(create_cert.to_pem) && (_1.flush ; _1.close) }.to_path
+        ca_file: create_ca(:rsa).path
       }
     }
     storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
@@ -308,11 +308,16 @@ class StorageAsyncTest < Test::Unit::TestCase
 
   private
 
+  def create_ca(alg)
+    Tempfile.new('ca-root-cert.pem').tap do |ca_cert_file|
+      ca_cert_file.write(create_cert.to_pem)
+      ca_cert_file.flush
+      ca_cert_file.close
+    end
+  end
+
   def create_certs(alg)
-    ca_cert_file = Tempfile.new('ca-root-cert.pem')
-    ca_cert_file.write(create_cert.to_pem)
-    ca_cert_file.flush
-    ca_cert_file.close
+    ca_cert_file = create_ca(alg)
 
     key = create_key alg
     key_file = Tempfile.new("redis-#{alg}.pem")
