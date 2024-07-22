@@ -34,11 +34,12 @@ doc](./async.md).
 ### Redis databases
 
 The standard 3scale deployment uses a single Redis pod and sets both the resque
-DB and the data DB in the same Redis process under different DB indexes. This is
-not supported by the async redis library, so we need to either place both DBs in
-the same Redis process or use two separate ones. To configure this, change the
-`CONFIG_REDIS_PROXY` and `REDIS_QUEUES_URL` envs in the listener and worker
-deployment configs.
+DB and the data DB in the same Redis process under different DB indexes. If an
+external Redis is used the URLs set in `CONFIG_REDIS_PROXY` and 
+`CONFIG_QUEUES_MASTER_NAME` can be configured to either two separate Redis instances
+(e.g. `redis://backend-queues.example.com:6379` and `redis://backend-storage.example.com:6379`),
+or a single Redis instance with separate databases (e.g. `redis://backend.example.com:6379/0`
+and `redis://backend.example.com:6379/1`).
 
 ### Enable async
 
