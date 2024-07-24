@@ -81,7 +81,7 @@ GEM
     daemons (1.2.4)
     diff-lcs (1.5.1)
     docile (1.1.5)
-    dotenv (2.8.1)
+    dotenv (3.1.2)
     drb (2.2.1)
     dry-initializer (3.0.3)
     falcon (0.42.3)
@@ -133,7 +133,7 @@ GEM
     nokogiri (1.16.5)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    openssl (3.1.0)
+    openssl (3.2.0)
     pkg-config (1.1.9)
     power_assert (2.0.3)
     process-metrics (0.2.1)
@@ -269,7 +269,7 @@ DEPENDENCIES
   builder (= 3.2.3)
   codeclimate-test-reporter (~> 0.6.0)
   daemons (= 1.2.4)
-  dotenv (~> 2.8.1)
+  dotenv
   falcon (~> 0.35)
   gli (~> 2.16.1)
   hiredis-client
