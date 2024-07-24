@@ -185,8 +185,8 @@ GEM
       rspec-mocks (>= 3.0.0)
     resque_unit (0.4.8)
       json (>= 1.4.6)
-    rexml (3.2.8)
-      strscan (>= 3.0.9)
+    rexml (3.3.2)
+      strscan
     rspec (3.7.0)
       rspec-core (~> 3.7.0)
       rspec-expectations (~> 3.7.0)
