@@ -310,7 +310,7 @@ class StorageAsyncTest < Test::Unit::TestCase
 
   def create_ca(alg)
     Tempfile.new('ca-root-cert.pem').tap do |ca_cert_file|
-      ca_cert_file.write(create_cert.to_pem)
+      ca_cert_file.write(create_cert(create_key(alg)).to_pem)
       ca_cert_file.flush
       ca_cert_file.close
     end
