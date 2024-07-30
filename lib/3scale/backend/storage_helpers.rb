@@ -222,17 +222,24 @@ module ThreeScale
 
             sentinels = Splitter.split(sentinels) if sentinels.is_a? String
 
+            sentinel_user = nil
+            sentinel_password = nil
             sentinels = sentinels.map do |sentinel|
-              if sentinel.is_a? Hash
+              next if sentinel.nil?
+
+              if sentinel.respond_to? :strip!
+                sentinel.strip!
+                # invalid string if it's empty after stripping
                 next if sentinel.empty?
-                sentinel.fetch(:host) do
-                  raise InvalidURI.new("(sentinel #{sentinel.inspect})",
-                                       'no host given')
-                end
-                sentinel
-              else
-                sentinel_to_hash sentinel
               end
+
+              valid_uri_str = to_redis_uri(sentinel)
+              # it is safe to perform URI parsing now
+              uri = URI.parse valid_uri_str
+
+              sentinel_user ||= uri.user
+              sentinel_password ||= uri.password
+              { host: uri.host, port: uri.port }
             end.compact
 
             return options if sentinels.empty?
@@ -244,11 +251,15 @@ module ThreeScale
             # sentinel port
             options[:sentinels].each do |sentinel|
               sentinel[:port] ||= DEFAULT_SENTINEL_PORT
-              sentinel.delete(:password) if sentinel[:password].nil? || sentinel[:password].empty?
             end
 
             # Handle role option when sentinels are validated
             options[:role] = role if role && !role.empty?
+
+            # Sentinel credentials
+            options[:sentinel_username] = sentinel_user unless sentinel_user.to_s.strip.empty?
+            options[:sentinel_password] = sentinel_password unless sentinel_password.to_s.strip.empty?
+
             options
           end
 
@@ -283,23 +294,6 @@ module ThreeScale
             cfg_with_defaults.delete(:max_connections) unless options[:async]
             cfg_with_defaults[:ssl] ||= true if URI(options[:url].to_s).scheme == 'rediss'
             cfg_with_defaults
-          end
-
-          # helper to convert a sentinel object to a Hash
-          def sentinel_to_hash(sentinel)
-            return if sentinel.nil?
-
-            if sentinel.respond_to? :strip!
-              sentinel.strip!
-              # invalid string if it's empty after stripping
-              return if sentinel.empty?
-            end
-
-            valid_uri_str = to_redis_uri(sentinel)
-            # it is safe to perform URI parsing now
-            uri = URI.parse valid_uri_str
-
-            { host: uri.host, port: uri.port, password: uri.password }
           end
 
           # split a string by a delimiter character with escaping

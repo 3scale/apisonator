@@ -72,8 +72,10 @@ class StorageSyncTest < Test::Unit::TestCase
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: config_obj[:url],
-                           sentinels: [{ host: '127.0.0.1', port: 26_379, password: 'passw,ord' },
-                                       { host: '127.0.0.1', port: 36_379 }] },
+                           sentinels: [{ host: '127.0.0.1', port: 26_379},
+                                       { host: '127.0.0.1', port: 36_379 }],
+                           sentinel_username: 'user',
+                           sentinel_password: 'passw,ord'},
                            conn)
   end
 
@@ -87,21 +89,6 @@ class StorageSyncTest < Test::Unit::TestCase
     assert_sentinel_config({ url: config_obj[:url],
                            sentinels: [{ host: '127.0.0.1', port: 26_379 },
                                        { host: '127.0.0.1', port: 36_379 }] },
-                           conn)
-  end
-
-  def test_sentinels_connection_array_hashes
-    config_obj = {
-      url: 'redis://master-group-name',
-      sentinels: [{ host: '127.0.0.1', port: 26_379 },
-                  {},
-                  { host: '127.0.0.1', port: 36_379 },
-                  nil]
-    }
-
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config({ url: config_obj[:url],
-                           sentinels: config_obj[:sentinels].compact.reject(&:empty?) },
                            conn)
   end
 
@@ -127,24 +114,6 @@ class StorageSyncTest < Test::Unit::TestCase
                            conn)
   end
 
-  def test_sentinels_array_hashes_default_port
-    default_sentinel_port = Storage::Helpers.singleton_class.const_get(:DEFAULT_SENTINEL_PORT)
-    config_obj = {
-      url: 'redis://master-group-name',
-      sentinels: [{ host: '127.0.0.1' }, { host: '192.168.1.1' },
-                  { host: '192.168.1.2', port: nil },
-                  { host: '127.0.0.1', port: 36379 }]
-    }
-
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config({ url: config_obj[:url],
-                           sentinels: [{ host: '127.0.0.1', port: default_sentinel_port },
-                                       { host: '192.168.1.1', port: default_sentinel_port },
-                                       { host: '192.168.1.2', port: default_sentinel_port },
-                                       { host: '127.0.0.1', port: 36379 }] },
-                           conn)
-  end
-
   def test_sentinels_array_strings_default_port
     default_sentinel_port = Storage::Helpers.singleton_class.const_get(:DEFAULT_SENTINEL_PORT)
     config_obj = {
@@ -164,22 +133,6 @@ class StorageSyncTest < Test::Unit::TestCase
                            conn)
   end
 
-  def test_sentinels_array_hashes_password
-    config_obj = {
-      url: 'redis://master-group-name',
-      sentinels: [{ host: '192.168.1.1', port: 3333, password: 'abc' },
-                  { host: '192.168.1.2', port: 4444, password: '' },
-                  { host: '192.168.1.3', port: 5555, password: nil }]
-    }
-
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config({ url: config_obj[:url],
-                           sentinels: [{ host: '192.168.1.1', port: 3333, password: 'abc' },
-                                       { host: '192.168.1.2', port: 4444 },
-                                       { host: '192.168.1.3', port: 5555 }] },
-                           conn)
-  end
-
   def test_sentinels_array_strings_password
     config_obj = {
       url: 'redis://master-group-name',
@@ -190,9 +143,10 @@ class StorageSyncTest < Test::Unit::TestCase
 
     conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: config_obj[:url],
-                           sentinels: [{ host: '192.168.1.1', port: 3333, password: 'abc' },
+                           sentinels: [{ host: '192.168.1.1', port: 3333 },
                                        { host: '192.168.1.2', port: 4444 },
-                                       { host: '192.168.1.3', port: 5555 }] },
+                                       { host: '192.168.1.3', port: 5555 }],
+                           sentinel_password: 'abc'},
                            conn)
   end
 
@@ -234,7 +188,7 @@ class StorageSyncTest < Test::Unit::TestCase
   end
 
   def test_sentinels_empty
-    [nil, '', ' ', [], [nil], [''], [' '], [{}]].each do |sentinels_val|
+    [nil, '', ' ', [], [nil], [''], [' ']].each do |sentinels_val|
       config_obj = {
         url: 'redis://master-group-name',
         sentinels: sentinels_val
@@ -337,8 +291,10 @@ class StorageSyncTest < Test::Unit::TestCase
     conf[:sentinels].each_with_index do |s, i|
       assert_equal s[:host], config.sentinels[i].host
       assert_equal s[:port], config.sentinels[i].port
-      assert_equal s[:password], config.sentinels[i].password
     end
+    extra_conf = config.instance_variable_get(:@extra_config)
+    assert_equal conf[:sentinel_username], extra_conf[:username]
+    assert_equal conf[:sentinel_password], extra_conf[:password]
   end
 
   def url(url)
