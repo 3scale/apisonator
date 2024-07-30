@@ -196,22 +196,23 @@ module ThreeScale
           #   "redis_url0,redis_url1,redis_url2,....,redis_urlN"
           # Or an Array of Strings representing one URL each:
           #   ["redis_url0", "redis_url1", ..., "redis_urlN"]
-          # Or an Array of Hashes with ":host", ":port", and ":password" (optional) keys:
-          #   [{ host: "srv0", port: 7379 }, { host: "srv1", port: 7379, password: "abc" }, ...]
-          #
           # When using the String input, the comma "," character is the
           # delimiter between URLs and the "\" character is the escaper that
           # allows you to include commas "," and any other character verbatim in
           # a URL.
           #
           # Parse to expected format by redis client
-          # [
-          #   { host: "host0", port: "port0" },
-          #   { host: "host1", port: "port1" },
-          #   { host: "host2", port: "port2", password: "abc" },
-          #   ...
-          #   { host: "hostN", port: "portN" }
-          # ]
+          # {
+          #   [
+          #     { host: "host0", port: "port0" },
+          #     { host: "host1", port: "port1" },
+          #     { host: "host2", port: "port2" },
+          #     ...
+          #     { host: "hostN", port: "portN" }
+          #   ],
+          #   sentinel_username: "user",
+          #   sentinel_password: "password"
+          # }
           def cfg_sentinels_handler(options)
             # get role attr and remove from options
             # will only be validated and included when sentinels are valid
