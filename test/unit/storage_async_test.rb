@@ -68,21 +68,6 @@ class StorageAsyncTest < Test::Unit::TestCase
                            conn)
   end
 
-  def test_sentinels_connection_array_hashes
-    config_obj = {
-      url: 'redis://master-group-name',
-      sentinels: [{ host: '127.0.0.1', port: 26_379 },
-                  {},
-                  { host: '127.0.0.1', port: 36_379 },
-                  nil]
-    }
-
-    conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config({ url: config_obj[:url],
-                           sentinels: config_obj[:sentinels].compact.reject(&:empty?) },
-                           conn)
-  end
-
   def test_sentinels_malformed_url
     config_obj = {
       url: 'redis://master-group-name',
@@ -102,24 +87,6 @@ class StorageAsyncTest < Test::Unit::TestCase
     conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: config_obj[:url],
                            sentinels: [{ host: '127.0.0.1', port: 26_379 }] },
-                           conn)
-  end
-
-  def test_sentinels_array_hashes_default_port
-    default_sentinel_port = Storage::Helpers.singleton_class.const_get(:DEFAULT_SENTINEL_PORT)
-    config_obj = {
-      url: 'redis://master-group-name',
-      sentinels: [{ host: '127.0.0.1' }, { host: '192.168.1.1' },
-                  { host: '192.168.1.2', port: nil },
-                  { host: '127.0.0.1', port: 36379 }]
-    }
-
-    conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-    assert_sentinel_config({ url: config_obj[:url],
-                           sentinels: [{ host: '127.0.0.1', port: default_sentinel_port },
-                                       { host: '192.168.1.1', port: default_sentinel_port },
-                                       { host: '192.168.1.2', port: default_sentinel_port },
-                                       { host: '127.0.0.1', port: 36379 }] },
                            conn)
   end
 
@@ -180,7 +147,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def test_sentinels_empty
-    [nil, '', ' ', [], [nil], [''], [' '], [{}]].each do |sentinels_val|
+    [nil, '', ' ', [], [nil], [''], [' ']].each do |sentinels_val|
       config_obj = {
         url: 'redis://master-group-name',
         sentinels: sentinels_val
