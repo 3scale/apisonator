@@ -203,13 +203,14 @@ module ThreeScale
           #
           # Parse to expected format by redis client
           # {
-          #   [
+          #   sentinels: [
           #     { host: "host0", port: "port0" },
           #     { host: "host1", port: "port1" },
           #     { host: "host2", port: "port2" },
           #     ...
           #     { host: "hostN", port: "portN" }
           #   ],
+          #   role: :master,
           #   sentinel_username: "user",
           #   sentinel_password: "password"
           # }
