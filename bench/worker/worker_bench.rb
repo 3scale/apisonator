@@ -48,7 +48,7 @@ class WorkerBenchmark
   def dup_resque_redis
     client_orig = Resque.instance_variable_get :@data_store
     Resque.instance_variable_set(:@data_store, nil)
-    ThreeScale::Backend.set_rescue_redis
+    ThreeScale::Backend.set_resque_redis
     client_new = Resque.instance_variable_get :@data_store
     Resque.instance_variable_set(:@data_store, client_orig)
     client_new
