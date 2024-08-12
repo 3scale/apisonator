@@ -1,0 +1,38 @@
+#!/bin/bash
+
+function wait_redis()
+{
+  bundle exec rake connectivity:redis_storage_check
+  bundle exec rake connectivity:redis_storage_queue_check
+}
+
+function do_benchmark()
+{
+    case $1 in
+    sync)
+        echo "==================== Running tests using the SYNC Redis driver ===================="
+        CONFIG_REDIS_ASYNC=false bundle exec rake bench[worker/worker_bench.rb]
+        ;;
+    async)
+        echo "==================== Running tests using the ASYNC Redis driver ===================="
+        CONFIG_REDIS_ASYNC=true bundle exec rake bench[worker/worker_bench.rb]
+        ;;
+    *)
+      echo "Invalid Redis driver option: $1"
+      exit 1
+    esac
+}
+
+function run_benchmark()
+{
+    export RACK_ENV=test
+
+    wait_redis
+
+    do_benchmark "sync" && do_benchmark "async"
+}
+
+if ! run_benchmark; then
+    echo "Tests failed" >&2
+    exit 1
+fi

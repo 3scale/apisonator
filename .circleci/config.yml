@@ -102,6 +102,11 @@ commands:
       - run:
           name: Run tests
           command: bundle exec script/test
+  run_benchmark:
+    steps:
+      - run:
+          name: Run benchmark
+          command: bundle exec script/benchmark
 
 workflows:
   version: 2
@@ -124,8 +129,11 @@ workflows:
           requires:
             - install_dependencies
       - test_twemproxy:
-            requires:
-              - install_dependencies
+          requires:
+            - install_dependencies
+      - benchmark:
+          requires:
+            - install_dependencies
 
 jobs:
   install_ruby:
@@ -221,3 +229,15 @@ jobs:
       - start_services:
           services: redis-master twemproxy redis-shard1 redis-shard2 redis-shard3
       - run_tests
+  benchmark:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: redis://localhost:6379
+      CONFIG_REDIS_PROXY: redis://localhost:6379
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: redis-master
+      - run_benchmark
