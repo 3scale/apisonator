@@ -7,6 +7,7 @@ class WorkerBenchmark
   def initialize
     super
     @async = ThreeScale::Backend.configuration.redis.async
+    @nreports = ENV.fetch('NUM_REPORTS', "100000")
   end
 
   def async?
@@ -55,6 +56,28 @@ class WorkerBenchmark
   end
 
   def run
+    n_reports = @nreports.split(',').map(&:strip).map(&:to_i)
+
+    # Warming up...
+    run_benchark(10000)
+
+    reports = n_reports.map { run_benchark(_1) }
+
+    print_reports reports
+  end
+
+  def print_reports(reports)
+    warn "=" * 70
+    warn Benchmark::CAPTION
+
+    reports.each do |res, rss|
+      warn res.format(Benchmark::Tms::FORMAT).chop + " #{rss}KB" + " (#{res.label})"
+    end
+
+    warn "=" * 70
+  end
+
+  def run_benchark(n_reports)
     new_worker # initialize worker to configure logging, good to improve that one day
     orig_log_level = Worker.logger.level
     Worker.logger.warn!
@@ -63,26 +86,14 @@ class WorkerBenchmark
     storage(true).flushdb
     seed_data
 
-    create_reports(10_000)
-    Benchmark.measure('10k reports') do |x|
+    create_reports(n_reports)
+    res = Benchmark.measure( "#{n_reports} reports") do |x|
       clear_queue
     end
 
-    res = []
-    create_reports(100_000)
-    res << Benchmark.measure('100k reports') do |x|
-      clear_queue
-    end
+    rss = `ps -o rss #{Process.pid}`.lines.last.to_i
 
-    create_reports(1_000_000)
-    res << Benchmark.measure('1m reports') do |x|
-      clear_queue
-    end
-
-    warn "=" * 70
-    warn Benchmark::CAPTION
-    res.each { warn _1.format(Benchmark::Tms::FORMAT).chop + " (#{_1.label})" }
-    warn "=" * 70
+    [res, rss]
   ensure
     Worker.logger.level = orig_log_level if orig_log_level
   end
