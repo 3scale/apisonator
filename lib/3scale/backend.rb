@@ -53,7 +53,6 @@ require '3scale/backend/distributed_lock'
 require '3scale/backend/failed_jobs_scheduler'
 require '3scale/backend/transactor'
 require '3scale/backend/listener'
-require '3scale/backend/opentelemetry'
 
 module ThreeScale
   module Backend
