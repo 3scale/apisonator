@@ -10,6 +10,7 @@ variables.
 - [Integration with Porta](#integration-with-porta)
 - [Logging](#logging)
 - [Prometheus metrics](#prometheus-metrics)
+- [OpenTelemetry](#opentelemetry)
 - [Feature flags](#feature-flags)
 - [Async](#async)
 - [Performance](#performance)
@@ -356,6 +357,14 @@ print the logs in both formats.
 - Applies to: worker.
 - Format: integer.
 
+## OpenTelemetry
+
+### CONFIG_OPENTELEMETRY_ENABLED
+
+- Enables OpenTelemetry instrumentation
+- Optional. Defaults to `false`.
+- Applies to: listener.
+- Format: `true` or `false`.
 
 ## Feature flags
 

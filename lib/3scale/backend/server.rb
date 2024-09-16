@@ -1,4 +1,5 @@
 require '3scale/backend/util'
+require '3scale/backend/opentelemetry'
 
 module ThreeScale
   module Backend

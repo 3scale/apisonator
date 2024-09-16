@@ -61,6 +61,9 @@ gem 'redis-namespace', '~>1.8'
 gem 'rack', '~> 2.2.8'
 gem 'sinatra', '~> 2.2.4'
 gem 'sinatra-contrib', '~> 2.2.4'
+gem "opentelemetry-sdk", "~> 1.5"
+gem "opentelemetry-instrumentation-sinatra", "~> 0.24.1"
+gem "opentelemetry-exporter-otlp", "~> 0.29.0"
 # Optional external error logging services
 gem 'bugsnag', '~> 6', require: nil
 gem 'yabeda-prometheus', '~> 0.5.0'
