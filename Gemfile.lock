@@ -100,7 +100,7 @@ GEM
     fiber-annotation (0.2.0)
     fiber-local (1.0.0)
     gli (2.16.1)
-    google-protobuf (4.28.0)
+    google-protobuf (4.28.2)
       bigdecimal
       rake (>= 13)
     googleapis-common-protos-types (1.15.0)
