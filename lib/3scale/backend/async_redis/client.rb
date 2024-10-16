@@ -16,6 +16,19 @@ module ThreeScale
           # @param opts [Hash] Redis connection options
           # @return [Async::Redis::Client]
           def call(opts)
+            return connect_tcp(opts) if url_present?(opts[:url])
+
+            connect_unix(opts)
+          end
+          alias :connect :call
+
+          private
+
+          def url_present?(url)
+            !url.to_s.strip.empty?
+          end
+
+          def connect_tcp(opts)
             uri = URI(opts[:url])
 
             credentials = [ uri.user || opts[:username], uri.password || opts[:password]]
@@ -28,11 +41,24 @@ module ThreeScale
             else
               host = uri.host || EndpointHelpers::DEFAULT_HOST
               port = uri.port || EndpointHelpers::DEFAULT_PORT
-              endpoint = EndpointHelpers.prepare_endpoint(host, port, opts[:ssl], opts[:ssl_params])
+              endpoint = EndpointHelpers.prepare_endpoint(host: host, port: port, ssl: opts[:ssl], ssl_params: opts[:ssl_params])
               Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
             end
           end
-          alias :connect :call
+
+          def connect_unix(opts)
+            path = opts[:path]
+
+            credentials = [opts[:username], opts[:password]]
+            protocol = Protocol::ExtendedRESP2.new(credentials: credentials)
+
+            if opts.key? :sentinels
+              raise InvalidURI.new(path, 'unix paths are not supported for sentinels')
+            else
+              endpoint = EndpointHelpers.prepare_endpoint(path: path, ssl: opts[:ssl], ssl_params: opts[:ssl_params])
+              Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
+            end
+          end
         end
       end
     end
