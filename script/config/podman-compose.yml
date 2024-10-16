@@ -4,7 +4,9 @@ services:
     image: redis:6.2-alpine
     container_name: redis-master
     network_mode: host
-    command: [ redis-server, --port, "6379" ]
+    volumes:
+      - ./run:/var/run/redis:z
+    command: [ redis-server, --port, "6379", --unixsocket, "/var/run/redis/redis.sock", --unixsocketperm, "777" ]
 
   redis-replica1:
     image: redis:6.2-alpine
@@ -47,6 +49,7 @@ services:
     container_name: tls-redis-master
     network_mode: host
     volumes:
+      - ./run:/var/run/redis:z
       - ./master.conf:/etc/redis.conf:z
       - ./circleci.crt:/etc/redis.crt:z
       - ./circleci.key:/etc/redis.key:z

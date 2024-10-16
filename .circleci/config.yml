@@ -49,6 +49,7 @@ commands:
             cp -r script/config/examples/tls/sentinel1 ./sentinel1_tls
             cp -r script/config/examples/tls/sentinel2 ./sentinel2_tls
             cp -r script/config/examples/tls/sentinel3 ./sentinel3_tls
+            mkdir -m 1777 ./run
       - run:
           name: Start services
           command: |
@@ -119,7 +120,13 @@ workflows:
       - test_single:
           requires:
             - install_dependencies
+      - test_single_unix:
+          requires:
+            - install_dependencies
       - test_sentinels:
+          requires:
+            - install_dependencies
+      - test_acl_unix:
           requires:
             - install_dependencies
       - test_tls:
@@ -161,6 +168,18 @@ jobs:
       - start_services:
           services: redis-master
       - run_tests
+  test_single_unix:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: unix://run/redis.sock
+      CONFIG_REDIS_PROXY: unix://run/redis.sock
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: redis-master
+      - run_tests
   test_sentinels:
     executor:
       name: ubuntu_vm
@@ -174,6 +193,22 @@ jobs:
       - *attach-to-workspace
       - start_services:
           services: redis-master redis-replica1 redis-replica2 redis-sentinel1 redis-sentinel2 redis-sentinel3
+      - run_tests
+  test_acl_unix:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: unix://run/redis.sock
+      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
+      CONFIG_REDIS_PROXY: unix://run/redis.sock
+      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_PASSWORD: sup3rS3cre1!
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: tls-redis-master
       - run_tests
   test_tls:
     executor:
