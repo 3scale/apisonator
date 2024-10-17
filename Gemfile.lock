@@ -278,7 +278,7 @@ GEM
     traces (0.9.1)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
-    webrick (1.8.1)
+    webrick (1.8.2)
     with_env (1.1.0)
     xml-simple (1.1.9)
       rexml
