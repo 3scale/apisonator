@@ -25,6 +25,12 @@ class StorageAsyncTest < Test::Unit::TestCase
     assert_client_config(config_obj, storage)
   end
 
+  def test_redis_unix
+    config_obj = url('unix:///tmp/redis_unix.6379.sock')
+    storage = StorageAsync::Client.send :new, config_obj
+    assert_client_config(config_obj, storage)
+  end
+
   def test_redis_protected_url
     assert_nothing_raised do
       StorageAsync::Client.send :new, url('redis://user:passwd@127.0.0.1:6379/0')
@@ -303,13 +309,17 @@ class StorageAsyncTest < Test::Unit::TestCase
   def assert_client_config(conf, conn, test_cert_type = nil)
     client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
 
-    url = URI(conf[:url])
-    host, port = client.endpoint.address
-    assert_equal url.host, host
-    assert_equal url.port, port
-
-    db = client.protocol.instance_variable_get(:@db)
-    assert_equal conf[:db], db
+    if conf[:url].to_s.strip.empty?
+      path = conf[:path]
+      assert_equal path, client.endpoint.path
+    else
+      url = URI(conf[:url])
+      host, port = client.endpoint.address
+      assert_equal url.host, host
+      assert_equal url.port, port
+      db = client.protocol.instance_variable_get(:@db)
+      assert_equal conf[:db], db
+    end
 
     assert_acl_credentials(conf, client)
     assert_tls_certs(conf, client, test_cert_type)
