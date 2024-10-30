@@ -10,7 +10,7 @@ module ThreeScale
         def initialize(uri, protocol = Async::Redis::Protocol::RESP2, config, **options)
           @master_name = uri.host
           @sentinel_endpoints = config[:sentinels].map do |sentinel|
-            EndpointHelpers.prepare_endpoint(sentinel[:host], sentinel[:port], config[:ssl], config[:ssl_params])
+            EndpointHelpers.prepare_endpoint(host: sentinel[:host], port: sentinel[:port], ssl: config[:ssl], ssl_params: config[:ssl_params])
           end
           @role = config[:role] || :master
 
@@ -32,7 +32,7 @@ module ThreeScale
               next
             end
 
-            return EndpointHelpers.prepare_endpoint(address[0], address[1], @config[:ssl], @config[:ssl_params]) if address
+            return EndpointHelpers.prepare_endpoint(host: address[0], port: address[1], ssl:@config[:ssl], ssl_params: @config[:ssl_params]) if address
           end
 
           nil
@@ -52,7 +52,7 @@ module ThreeScale
             next if slaves.empty?
 
             slave = select_slave(slaves)
-            return EndpointHelpers.prepare_endpoint(slave['ip'], slave['port'], @config[:ssl], @config[:ssl_params])
+            return EndpointHelpers.prepare_endpoint(host: slave['ip'], port: slave['port'], ssl: @config[:ssl], ssl_params: @config[:ssl_params])
           end
 
           nil
