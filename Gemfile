@@ -18,7 +18,7 @@ group :test do
   # Newer versions of rack-test don't work well with rspec-api-documentation.
   # See https://github.com/rack/rack-test/pull/223 &
   # https://github.com/zipmark/rspec_api_documentation/issues/342
-  gem 'rack-test',     '= 0.8.2'
+  gem 'rack-test',     '2.1.0'
 
   gem 'benchmark-ips', '~> 2.7.2'
   gem 'mocha',         '~> 1.3'
@@ -58,9 +58,9 @@ gem 'builder', '= 3.2.3'
 gem 'redis', '~> 5.0'
 gem 'resque', '~> 2.6.0'
 gem 'redis-namespace', '~>1.8'
-gem 'rack', '~> 2.2.8'
-gem 'sinatra', '~> 2.2.4'
-gem 'sinatra-contrib', '~> 2.2.4'
+gem 'rack', '~> 3.1.8'
+gem 'sinatra', '~> 4.1.0'
+gem 'sinatra-contrib', '~> 4.1.0'
 gem "opentelemetry-sdk", "~> 1.5"
 gem "opentelemetry-instrumentation-sinatra", "~> 0.24.1"
 gem "opentelemetry-exporter-otlp", "~> 0.29.0"
@@ -69,7 +69,7 @@ gem 'bugsnag', '~> 6', require: nil
 gem 'yabeda-prometheus', '~> 0.5.0'
 gem 'async-redis', '~> 0.7.0'
 gem 'async-pool', '~> 0.3.12'
-gem 'falcon', '~> 0.35'
+gem 'falcon', '~> 0.46'
 gem 'webrick', '~> 1.8'
 
 
