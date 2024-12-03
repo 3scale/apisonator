@@ -56,6 +56,7 @@ gem 'redis', '~> 5.0'
 gem 'resque', '~> 2.6.0'
 gem 'redis-namespace', '~>1.8'
 gem 'rack', '~> 3.0'
+gem "rackup", "~> 2.2"
 gem 'sinatra', '~> 4.1.0'
 gem 'sinatra-contrib', '~> 4.1.0'
 gem "opentelemetry-sdk", "~> 1.5"
@@ -63,7 +64,7 @@ gem "opentelemetry-instrumentation-sinatra", "~> 0.24.1"
 gem "opentelemetry-exporter-otlp", "~> 0.29.0"
 # Optional external error logging services
 gem 'bugsnag', '~> 6', require: nil
-gem 'yabeda-prometheus', '~> 0.5.0'
+gem 'yabeda-prometheus', '~> 0.9.0'
 gem 'async-redis', '~> 0.7.0'
 gem 'async-pool', '~> 0.3.12'
 gem 'falcon', '~> 0.35'

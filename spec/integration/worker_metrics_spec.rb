@@ -130,7 +130,7 @@ apisonator_worker_job_runtime_seconds_count{type="ReportJob"} \d+\.\d+
 
       def shutdown_metrics_server
         # Yabeda does not expose this
-        ::Rack::Handler::WEBrick.shutdown
+        ::Rackup::Handler::WEBrick.shutdown
       end
     end
   end
