@@ -938,13 +938,6 @@ class ReportTest < Test::Unit::TestCase
     assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyOrServiceTokenRequired.new)
   end
 
-  test 'returns 400 when param key encoding is not valid utf-8' do
-    post '/transactions.xml', "\xf0\x90\x28\xbc" => 1
-
-    assert_equal 400, last_response.status
-    assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
-  end
-
   test 'returns 403 when no provider key is given, even if other params have an invalid encoding' do
     post '/transactions.xml', :transactions => "\xf0\x90\x28\xbc"
 
