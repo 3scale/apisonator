@@ -1,12 +1,4 @@
 GIT
-  remote: https://github.com/3scale/puma
-  revision: e7d3c53583db8d3e33a74f23f4afb59f3f29a330
-  branch: 3scale-4.3.9
-  specs:
-    puma (4.3.9)
-      nio4r (~> 2.0)
-
-GIT
   remote: https://github.com/3scale/rspec_api_documentation.git
   revision: 7f2190a9236c7827f8606245b92d1522df392d31
   ref: fix-nil-rewind
@@ -212,6 +204,8 @@ GEM
     pry-doc (1.1.0)
       pry (~> 0.11)
       yard (~> 0.9.11)
+    puma (6.5.0)
+      nio4r (~> 2.0)
     racc (1.8.0)
     rack (3.1.8)
     rack-protection (4.1.1)
@@ -341,7 +335,7 @@ DEPENDENCIES
   pry (~> 0.14)
   pry-byebug (~> 3)
   pry-doc (~> 1.1)
-  puma!
+  puma
   rack (~> 3.0)
   rack-test (~> 2.0)
   rackup (~> 2.2)
