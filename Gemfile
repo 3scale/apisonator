@@ -65,9 +65,10 @@ gem "opentelemetry-exporter-otlp", "~> 0.29.0"
 # Optional external error logging services
 gem 'bugsnag', '~> 6', require: nil
 gem 'yabeda-prometheus', '~> 0.9.0'
+gem 'async', '~> 1.31'
 gem 'async-redis', '~> 0.7.0'
 gem 'async-pool', '~> 0.3.12'
-gem 'falcon', '~> 0.35'
+gem 'falcon', '0.43'
 gem 'webrick', '~> 1.8'
 
 
