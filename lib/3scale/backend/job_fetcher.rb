@@ -35,6 +35,11 @@ module ThreeScale
         jobs = encoded_jobs.filter_map { decode_job queue, _1 }
 
         jobs.count > 1 || max ? jobs : jobs.first
+      rescue *CONNECTION_ERRORS
+        # We don't want to crash on connection errors, just wait a bit and retry
+        # The redis client will re-establish connection as soon as the server is available again
+        sleep 5
+        retry
       end
 
       # Note: this method calls #close on job_queue after receiving #shutdown.
