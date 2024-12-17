@@ -307,7 +307,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_client_config(conf, conn, test_cert_type = nil)
-    client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
+    client = conn.instance_variable_get(:@inner).ensure_connected
 
     if conf[:url].to_s.strip.empty?
       path = conf[:path]
@@ -326,7 +326,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_config(conf, conn, test_cert_type = nil)
-    client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
+    client = conn.instance_variable_get(:@inner).ensure_connected
     uri = URI(conf[:url] || '')
     name = uri.host
     role = conf[:role] || :master
