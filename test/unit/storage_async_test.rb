@@ -5,6 +5,10 @@ require '3scale/backend/storage_async'
 class StorageAsyncTest < Test::Unit::TestCase
   include TestHelpers::Certificates
 
+  def setup
+    omit_unless(configuration.redis.async, 'skipping an async test as sync mode is enabled')
+  end
+
   def test_basic_operations
     storage = StorageAsync::Client.instance(true)
     storage.del('foo')
@@ -284,7 +288,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_client_config(conf, conn, test_cert_type = nil)
-    client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
+    client = conn.instance_variable_get(:@inner).connect
 
     url = URI(conf[:url])
     host, port = client.endpoint.address
@@ -296,7 +300,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_config(conf, conn, test_cert_type = nil)
-    client = conn.instance_variable_get(:@inner).instance_variable_get(:@redis_async)
+    client = conn.instance_variable_get(:@inner).connect
     uri = URI(conf[:url] || '')
     name = uri.host
     role = conf[:role] || :master
