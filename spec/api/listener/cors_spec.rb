@@ -5,14 +5,8 @@ module ThreeScale
     describe CORS do
       include ::Rack::Test::Methods
 
-      REQUIRED_ENDPOINT_HEADERS = [
-        'Access-Control-Allow-Origin',
-        'Access-Control-Expose-Headers',
-      ]
-      REQUIRED_OPTIONS_HEADERS = REQUIRED_ENDPOINT_HEADERS + [
-        'Access-Control-Allow-Methods',
-        'Access-Control-Allow-Headers',
-      ]
+      REQUIRED_ENDPOINT_HEADERS = %w[access-control-allow-origin access-control-expose-headers]
+      REQUIRED_OPTIONS_HEADERS = REQUIRED_ENDPOINT_HEADERS + %w[access-control-allow-methods access-control-allow-headers]
 
       let(:app) { Listener.new }
 
@@ -28,11 +22,7 @@ module ThreeScale
         end
       end
 
-      ENDPOINTS = [
-        '/',
-        '/transactions/authorize.xml',
-        '/non/existent/endpoint',
-      ]
+      ENDPOINTS = %w[/ /transactions/authorize.xml /non/existent/endpoint]
 
       [
         :OPTIONS,
@@ -57,11 +47,11 @@ module ThreeScale
           end
 
           required_headers.each do |h|
-            include_examples 'contains header', h
+            include_examples 'contains header', h.downcase
           end
 
           described_class.const_get(headers).each do |h, v|
-            include_examples 'contains header', h, v
+            include_examples 'contains header', h.downcase, v
           end
         end
       end

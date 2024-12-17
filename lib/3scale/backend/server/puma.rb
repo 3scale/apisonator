@@ -34,7 +34,7 @@ module ThreeScale
           argv_add argv, true, '-C', CONFIG
           ss_dir = socket_state_dir(global_options[:environment], global_options[:directory] || EXPANDED_ROOT_PATH)
           argv_add argv, true, '-S', File.join(ss_dir, STATE)
-          argv_add argv, true, '--control', "unix://#{File.join(ss_dir, CONTROL_SOCKET)}"
+          argv_add argv, true, '--control-url', "unix://#{File.join(ss_dir, CONTROL_SOCKET)}"
           server_model = manifest[:server_model]
           argv_add argv, true, '-w', server_model[:workers].to_s
           argv_add argv, true, '-t', "#{server_model[:min_threads]}:#{server_model[:max_threads]}"

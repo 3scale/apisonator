@@ -145,7 +145,7 @@ end
 # is preserved across a phased-restart. (incompatible with preload_app)
 # (off by default)
 
-prune_bundler
+# prune_bundler
 
 # Preload the application before starting the workers; this conflicts with
 # phased restart feature. (off by default)

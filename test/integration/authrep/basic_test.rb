@@ -938,7 +938,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
       'HTTP_3SCALE_OPTIONS' => Extensions::REJECTION_REASON_HEADER
 
     assert_equal 409, last_response.status
-    assert_equal 'limits_exceeded', last_response.header['3scale-rejection-reason']
+    assert_equal 'limits_exceeded', last_response.headers['3scale-rejection-reason']
   end
 
   test_authrep 'resp headers do not have rejection reason when 409 and option is not in the params' do |e|
@@ -954,7 +954,7 @@ class AuthrepBasicTest < Test::Unit::TestCase
            :usage => { 'hits' => max_usage_day + 1 }
 
     assert_equal 409, last_response.status
-    assert_nil last_response.header['3scale-rejection-reason']
+    assert_nil last_response.headers['3scale-rejection-reason']
   end
 
   test_authrep 'returns error when the usage includes a metric that does not exist' do |e|

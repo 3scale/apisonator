@@ -115,12 +115,6 @@ module ThreeScale
                                     'user_key'.freeze, 'provider_key'.freeze].freeze
       private_constant :AUTH_AUTHREP_COMMON_PARAMS
 
-      REPORT_EXPECTED_PARAMS = ['provider_key'.freeze,
-                                'service_token'.freeze,
-                                'service_id'.freeze,
-                                'transactions'.freeze].freeze
-      private_constant :REPORT_EXPECTED_PARAMS
-
       configure :production do
         disable :dump_errors
       end
@@ -155,6 +149,7 @@ module ThreeScale
       def do_api_method(method_name)
         halt 403 if params.nil?
 
+        check_params_encoding!(params)
         normalize_non_empty_keys!
 
         provider_key = params[:provider_key] ||
@@ -411,8 +406,7 @@ module ThreeScale
 
         raise_provider_key_error(params) if blank?(provider_key)
 
-        # no need to check params key encoding. Sinatra framework does it for us.
-        check_params_value_encoding!(params, REPORT_EXPECTED_PARAMS)
+        check_params_encoding!(params)
 
         transactions = params[:transactions]
         check_transactions_validity(transactions)
@@ -457,11 +451,12 @@ module ThreeScale
         params[:usage].nil? || params[:usage].is_a?(Hash)
       end
 
-      def check_params_value_encoding!(input_params, params_to_validate)
-        params_to_validate.each do |p|
-          param_value = input_params[p]
-          if !param_value.nil? && !param_value.valid_encoding?
-            halt 400, ThreeScale::Backend::NotValidData.new.to_xml
+      def check_params_encoding!(input_params)
+        input_params.each do |key, value|
+          raise ArgumentError, Rack::ExceptionCatcher::INVALID_BYTE_SEQUENCE_ERR_MSG unless key.valid_encoding?
+
+          if !value.nil? && !value.valid_encoding?
+            raise ArgumentError, Rack::ExceptionCatcher::INVALID_BYTE_SEQUENCE_ERR_MSG
           end
         end
       end
@@ -474,7 +469,7 @@ module ThreeScale
               params[p] = nil
             else
               unless thisparam.valid_encoding?
-                halt 400, ThreeScale::Backend::NotValidData.new.to_xml
+                raise ArgumentError, Rack::ExceptionCatcher::INVALID_BYTE_SEQUENCE_ERR_MSG
               end
               contents = thisparam.strip
               # Unfortunately some users send empty app_keys that should have
