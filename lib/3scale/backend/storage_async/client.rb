@@ -59,7 +59,10 @@ module ThreeScale
             block.call pipeline
             pipeline.run(conn)
           end
+        end
 
+        def connect
+          @redis_async ||= AsyncRedis::Client.connect(@opts)
         end
 
         def close
@@ -70,13 +73,9 @@ module ThreeScale
         def ensure_connected
           attempt = 0
           begin
-            @redis_async ||= AsyncRedis::Client.connect(@opts)
+            connect
 
-            if block_given?
-              yield @redis_async
-            else
-              @redis_async
-            end
+            yield @redis_async
           rescue *CONNECTION_ERRORS => e
             close
 
