@@ -16,6 +16,7 @@ require 'yaml'
 require 'digest/md5'
 
 # Require here the classes needed for configuring Backend
+require '3scale/backend/component'
 require '3scale/backend/environment'
 require '3scale/backend/version'
 require '3scale/backend/constants'
