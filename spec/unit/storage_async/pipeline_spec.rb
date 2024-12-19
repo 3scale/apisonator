@@ -6,7 +6,7 @@ module ThreeScale
       describe Pipeline do
         describe '.run' do
           let(:storage) {ThreeScale::Backend::StorageAsync::Client.instance(true)}
-          let(:async_client) { storage.instance_variable_get(:@inner).ensure_connected }
+          let(:async_client) { storage.instance_variable_get(:@inner).connect }
 
           subject { Pipeline.new }
 
