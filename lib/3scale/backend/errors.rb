@@ -1,3 +1,6 @@
+require 'redis/errors'
+require 'redis_client'
+
 module ThreeScale
   module Backend
     class Error < RuntimeError
@@ -297,5 +300,22 @@ module ThreeScale
         super 'End-users are no longer supported, do not specify the user_id parameter'.freeze
       end
     end
+
+    class PipelineSharedBetweenFibers < Error
+      def initialize
+        super 'several fibers are modifying the same Pipeline'
+      end
+    end
+
+    class BrokenPipeline < Error
+      def initialize
+        super 'Redis pipeline is broken'
+      end
+    end
+
+    CONNECTION_ERRORS = [
+      Errno::EHOSTUNREACH, Errno::ENETUNREACH, Errno::ECONNRESET, Errno::ECONNREFUSED, Errno::ECONNABORTED,
+      Errno::EPIPE, Errno::EAGAIN, BrokenPipeline, EOFError, OpenSSL::SSL::SSLError
+    ]
   end
 end

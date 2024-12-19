@@ -6,7 +6,7 @@ module ThreeScale
       describe Pipeline do
         describe '.run' do
           let(:storage) {ThreeScale::Backend::StorageAsync::Client.instance(true)}
-          let(:async_client) { storage.instance_variable_get(:@inner).instance_variable_get(:@redis_async) }
+          let(:async_client) { storage.instance_variable_get(:@inner).connect }
 
           subject { Pipeline.new }
 
@@ -36,7 +36,7 @@ module ThreeScale
               pipeline = nil
               Fiber.new { pipeline = Pipeline.new }.resume
               expect { Fiber.new { pipeline.call('GET', 'some_key') }.resume }
-                  .to raise_error Pipeline::PipelineSharedBetweenFibers
+                  .to raise_error PipelineSharedBetweenFibers
             end
           end
         end

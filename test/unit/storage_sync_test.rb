@@ -2,6 +2,11 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 require '3scale/backend/storage_sync'
 
 class StorageSyncTest < Test::Unit::TestCase
+
+  def setup
+    omit_if(configuration.redis.async, 'skipping a sync test as async mode is enabled')
+  end
+
   def test_basic_operations
     storage = StorageSync.instance(true)
     storage.del('foo')
