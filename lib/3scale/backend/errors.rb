@@ -314,9 +314,8 @@ module ThreeScale
     end
 
     CONNECTION_ERRORS = [
-      Errno::ETIMEDOUT, Errno::EHOSTUNREACH, Errno::ENETUNREACH, Errno::ECONNRESET,
-      Errno::ECONNREFUSED, Errno::ECONNABORTED, Errno::EPIPE, Errno::EAGAIN, BrokenPipeline,
-      EOFError, Redis::BaseConnectionError, RedisClient::ConnectionError, OpenSSL::SSL::SSLError
+      Errno::EHOSTUNREACH, Errno::ENETUNREACH, Errno::ECONNRESET, Errno::ECONNREFUSED, Errno::ECONNABORTED,
+      Errno::EPIPE, Errno::EAGAIN, BrokenPipeline, EOFError, OpenSSL::SSL::SSLError
     ]
   end
 end
