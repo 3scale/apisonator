@@ -293,11 +293,11 @@ module ThreeScale
           #
           # - The :url key is always present
           #   - Except when connecting to a unix socket
-          # - :max_connections is only present for async mode
+          # - Some keys are ony valid for the async client
           def cfg_defaults_handler(options, defaults)
             cfg_with_defaults = defaults.merge(ensure_url_param(options))
             cfg_with_defaults = cfg_unix_path_handler(cfg_with_defaults)
-            CONN_ASYNC_ONLY_OPTIONS.each { |k| cfg_with_defaults.delete(k) } unless options[:async]
+            CONN_ASYNC_ONLY_OPTIONS.each { |k| cfg_with_defaults.delete(k) } unless ThreeScale::Backend.configuration.redis.async
             cfg_with_defaults[:ssl] ||= true if URI(options[:url].to_s).scheme == 'rediss'
             cfg_with_defaults
           end
