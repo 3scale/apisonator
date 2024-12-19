@@ -7,14 +7,6 @@ module ThreeScale
       class Pipeline
         include Methods
 
-        Error = Class.new StandardError
-
-        class PipelineSharedBetweenFibers < Error
-          def initialize
-            super 'several fibers are modifying the same Pipeline'
-          end
-        end
-
         # There are 2 groups of commands that need to be treated a bit
         # differently to follow the same interface as the redis-rb lib.
         # 1) The ones that need to return a bool when redis returns "1" or "0".
@@ -85,6 +77,9 @@ module ThreeScale
 
         def collect_responses(redis_async_client)
           async_pipe = redis_async_client.pipeline
+
+          raise BrokenPipeline unless async_pipe
+
           @commands.each do |command|
             async_pipe.write_request(*command)
           end
@@ -109,7 +104,7 @@ module ThreeScale
 
           res
         ensure
-          async_pipe.close
+          async_pipe&.close
         end
       end
     end
