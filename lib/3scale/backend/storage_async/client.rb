@@ -81,6 +81,7 @@ module ThreeScale
 
             if attempt < @opts[:reconnect_attempts]
               attempt += 1
+              sleep @opts[:reconnect_wait_seconds]
               retry
             else
               raise e
