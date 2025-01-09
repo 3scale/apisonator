@@ -43,7 +43,7 @@ group :development, :test do
 end
 
 # Default server by platform
-gem 'puma'
+gem 'puma', '~> 6.5.0'
 # gems required by the runner
 gem 'gli', '~> 2.16.1', require: nil
 # Workers
