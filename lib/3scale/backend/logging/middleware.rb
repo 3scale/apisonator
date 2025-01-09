@@ -35,7 +35,7 @@ module ThreeScale
             raise e
           end
 
-          header = ::Rack::Headers.new.merge(header)
+          header = ::Rack::Headers[header]
           body = ::Rack::BodyProxy.new(body) do
             @writers.each do |writer|
               writer.log(env, status, header, began_at)
