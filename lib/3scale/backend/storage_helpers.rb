@@ -44,13 +44,6 @@ module ThreeScale
               connect_timeout: 5,
               read_timeout: 3,
               write_timeout: 3,
-              # Note that we can set reconnect_attempts to >= 0 because we use
-              # a monkey patch which implements a workaround for this issue
-              # that shows that there might be duplicated transactions when
-              # there's a timeout: https://github.com/redis/redis-rb/issues/668
-              # We should investigate if there are edge cases that can lead to
-              # duplicated commands because of this setting.
-              reconnect_attempts: 1,
               # applies only to async mode. Use the C extension client by default
               driver: :hiredis,
               # applies only to async mode. The sync library opens 1 connection
@@ -66,6 +59,9 @@ module ThreeScale
             :sentinel_password, :ssl, :ssl_params
           ].freeze
           private_constant :CONN_WHITELIST
+
+          CONN_ASYNC_ONLY_OPTIONS = [:reconnect_wait_seconds, :max_connections]
+          private_constant :CONN_ASYNC_ONLY_OPTIONS
 
           # Parameters regarding target server we will take from a config object
           URL_WHITELIST = [:url, :proxy, :server, :sentinels, :role].freeze
@@ -284,16 +280,35 @@ module ThreeScale
             options
           end
 
+          # Note that we can set reconnect_attempts to >= 0 because we use
+          # a monkey patch which implements a workaround for this issue
+          # that shows that there might be duplicated transactions when
+          # there's a timeout: https://github.com/redis/redis-rb/issues/668
+          # We should investigate if there are edge cases that can lead to
+          # duplicated commands because of this setting.
+          def cfg_reconnect_handler(options)
+            options[:reconnect_wait_seconds] = ThreeScale::Backend.listener? ? 0 : 5
+            options[:reconnect_attempts] = if ThreeScale::Backend.listener?
+                                             1
+                                           else
+                                             ThreeScale::Backend.configuration.redis.async ? Float::INFINITY : Hash.new(5)
+                                           end
+
+            options
+          end
+
           # This ensures some default values are valid for the redis client.
           # In particular:
           #
           # - The :url key is always present
           #   - Except when connecting to a unix socket
-          # - :max_connections is only present for async mode
+          # - Some keys are ony valid for the async client
+          # - Reconnect options are correct according to component and mode
           def cfg_defaults_handler(options, defaults)
             cfg_with_defaults = defaults.merge(ensure_url_param(options))
             cfg_with_defaults = cfg_unix_path_handler(cfg_with_defaults)
-            cfg_with_defaults.delete(:max_connections) unless options[:async]
+            cfg_with_defaults = cfg_reconnect_handler(cfg_with_defaults)
+            CONN_ASYNC_ONLY_OPTIONS.each { |k| cfg_with_defaults.delete(k) } unless ThreeScale::Backend.configuration.redis.async
             cfg_with_defaults[:ssl] ||= true if URI(options[:url].to_s).scheme == 'rediss'
             cfg_with_defaults
           end
