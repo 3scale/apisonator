@@ -123,7 +123,7 @@ module ThreeScale
           if resp_body.start_with?(EXPECTED_HASH_ERR_MSG)
             delete_sinatra_error! env
             resp = respond_with 400, Backend::BadRequest.new.to_xml
-          else resp_body.start_with?(INVALID_PERCENT_ENCODING_ERR_MSG)
+          elsif resp_body.start_with?(INVALID_PERCENT_ENCODING_ERR_MSG)
             delete_sinatra_error! env
             resp = respond_with 400, Backend::BadRequest.new(INVALID_PERCENT_ENCODING_ERR_MSG).to_xml
           end
