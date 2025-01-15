@@ -80,17 +80,19 @@ class AuthRepResponseCodesTest < Test::Unit::TestCase
   end
 
   test_authrep "ignore invalid log param" do |e|
-    get e, {
-      provider_key: @provider_key,
-      app_id: @application.id,
-      usage: { 'hits' => 1 },
-      log: 'some-string'
-    }
-
-    enqueued_job = Resque.list_range(:priority)
-
-    # transactions is the second arg ([1]), we only sent one (['0'])
-    transaction = enqueued_job['args'][1]['0']
-    assert_nil transaction['log']
+    ["some-string", ["array-element"], "", nil].each do |log_value|
+      get e, {
+        provider_key: @provider_key,
+        app_id: @application.id,
+        usage: { 'hits' => 1 },
+        log: log_value
+      }
+  
+      enqueued_job = Resque.list_range(:priority)
+  
+      # transactions is the second arg ([1]), we only sent one (['0'])
+      transaction = enqueued_job['args'][1]['0']
+      assert_nil transaction['log']
+    end
   end
 end
