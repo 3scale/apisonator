@@ -85,9 +85,6 @@ module ThreeScale
       def wait_pop_from_queue
         queue, encoded = @redis.blpop(*@queues, timeout: @fetch_timeout)
         [queue, [encoded]] if encoded
-      rescue RedisClient::ReadTimeoutError => _e
-        # Ignore this exception, this happens because of a bug on redis-rb, when connecting to sentinels.
-        # Check: https://github.com/redis/redis-rb/issues/1279
       end
 
       def decode_job(queue, encoded_job)

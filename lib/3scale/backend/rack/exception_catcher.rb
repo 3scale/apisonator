@@ -17,9 +17,7 @@ module ThreeScale
         }.merge(Backend::CORS.const_get(:HEADERS)).freeze
         private_constant :ERROR_HEADERS
 
-        INVALID_BYTE_SEQUENCE_ERR_MSG = 'Invalid query parameters: '\
-          'invalid byte sequence in UTF-8'.freeze
-        private_constant :INVALID_BYTE_SEQUENCE_ERR_MSG
+        INVALID_BYTE_SEQUENCE_ERR_MSG = 'invalid byte sequence in UTF-8'.freeze
 
         INVALID_PERCENT_ENCODING_ERR_MSG = 'Invalid query parameters: '\
         'invalid %-encoding'.freeze
@@ -42,6 +40,11 @@ module ThreeScale
         rescue Backend::Error => e
           delete_sinatra_error! env
           respond_with e.http_code, prepare_body(e.to_xml, env)
+        rescue ArgumentError => e
+          return unhandled_exception(e) unless e.message.include?(INVALID_BYTE_SEQUENCE_ERR_MSG)
+
+          delete_sinatra_error! env
+          respond_with 400, Backend::NotValidData.new.to_xml
         rescue Exception => e
           unhandled_exception(e)
         end
@@ -117,10 +120,7 @@ module ThreeScale
           # The Body must respond to each and must only yield String values.
           resp_body = resp.last.inject('') { |acc, x| acc << x }
 
-          if resp_body == INVALID_BYTE_SEQUENCE_ERR_MSG
-            delete_sinatra_error! env
-            resp = respond_with 400, Backend::NotValidData.new.to_xml
-          elsif resp_body.start_with?(EXPECTED_HASH_ERR_MSG)
+          if resp_body.start_with?(EXPECTED_HASH_ERR_MSG)
             delete_sinatra_error! env
             resp = respond_with 400, Backend::BadRequest.new.to_xml
           elsif resp_body.start_with?(INVALID_PERCENT_ENCODING_ERR_MSG)

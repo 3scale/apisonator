@@ -63,12 +63,12 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
     end
 
-    assert_equal remaining_times, last_response.header['3scale-limit-remaining'].to_i
+    assert_equal remaining_times, last_response.headers['3scale-limit-remaining'].to_i
 
     remaining_secs_in_day = (Period::Day.new(current_time).finish - current_time).ceil
-    assert_equal remaining_secs_in_day, last_response.header['3scale-limit-reset'].to_i
+    assert_equal remaining_secs_in_day, last_response.headers['3scale-limit-reset'].to_i
 
-    assert_equal limit_metric1, last_response.header['3scale-limit-max-value'].to_i
+    assert_equal limit_metric1, last_response.headers['3scale-limit-max-value'].to_i
   end
 
   test 'response headers include correct information when rate-limited' do
@@ -96,9 +96,9 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
     end
 
     # Check that the remaining and reset refer to the hour limit
-    assert_equal 0, last_response.header['3scale-limit-remaining'].to_i
-    assert_equal 1, last_response.header['3scale-limit-reset'].to_i
-    assert_equal hour_limit[:hour], last_response.header['3scale-limit-max-value'].to_i
+    assert_equal 0, last_response.headers['3scale-limit-remaining'].to_i
+    assert_equal 1, last_response.headers['3scale-limit-reset'].to_i
+    assert_equal hour_limit[:hour], last_response.headers['3scale-limit-max-value'].to_i
   end
 
   test 'remaining in limit headers is 0 when over limits' do
@@ -122,13 +122,13 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
     end
 
-    assert_equal 0, last_response.header['3scale-limit-remaining'].to_i
+    assert_equal 0, last_response.headers['3scale-limit-remaining'].to_i
 
     remaining_secs_in_day = (Period::Day.new(current_time).finish - current_time).ceil
     assert_equal remaining_secs_in_day,
-                 last_response.header['3scale-limit-reset'].to_i
+                 last_response.headers['3scale-limit-reset'].to_i
 
-    assert_equal limit, last_response.header['3scale-limit-max-value'].to_i
+    assert_equal limit, last_response.headers['3scale-limit-max-value'].to_i
   end
 
   test 'when a usage is passed, only take into account the metrics in the usage' do
@@ -165,12 +165,12 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
     end
 
-    assert_equal remaining_times, last_response.header['3scale-limit-remaining'].to_i
+    assert_equal remaining_times, last_response.headers['3scale-limit-remaining'].to_i
 
     assert_equal (Period::Day.new(current_time).finish - current_time).ceil,
-                 last_response.header['3scale-limit-reset'].to_i
+                 last_response.headers['3scale-limit-reset'].to_i
 
-    assert_equal limit, last_response.header['3scale-limit-max-value'].to_i
+    assert_equal limit, last_response.headers['3scale-limit-max-value'].to_i
   end
 
   test 'when a usage is passed, remaining/reset can refer to a parent metric' do
@@ -205,12 +205,12 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
     end
 
-    assert_equal remaining_times, last_response.header['3scale-limit-remaining'].to_i
+    assert_equal remaining_times, last_response.headers['3scale-limit-remaining'].to_i
 
     assert_equal (Period::Day.new(current_time).finish - current_time).ceil,
-                 last_response.header['3scale-limit-reset'].to_i
+                 last_response.headers['3scale-limit-reset'].to_i
 
-    assert_equal parent_limit, last_response.header['3scale-limit-max-value'].to_i
+    assert_equal parent_limit, last_response.headers['3scale-limit-max-value'].to_i
   end
 
   test 'remaining and reset in headers are negative when there are no limits' do
@@ -219,9 +219,9 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           usage: { 'hits' => 10 } }, # We didn't set any limits for hits
         'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
 
-    assert last_response.header['3scale-limit-remaining'].to_i < 0
-    assert last_response.header['3scale-limit-reset'].to_i < 0
-    assert_nil last_response.header['3scale-limit-max-value']
+    assert last_response.headers['3scale-limit-remaining'].to_i < 0
+    assert last_response.headers['3scale-limit-reset'].to_i < 0
+    assert_nil last_response.headers['3scale-limit-max-value']
   end
 
   test 'reset in limit headers is negative when the period is eternity' do
@@ -240,11 +240,11 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           usage: { 'hits' => reported } },
         'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
 
-    assert_equal remaining_times, last_response.header['3scale-limit-remaining'].to_i
+    assert_equal remaining_times, last_response.headers['3scale-limit-remaining'].to_i
 
-    assert last_response.header['3scale-limit-reset'].to_i < 0
+    assert last_response.headers['3scale-limit-reset'].to_i < 0
 
-    assert_equal limit, last_response.header['3scale-limit-max-value'].to_i
+    assert_equal limit, last_response.headers['3scale-limit-max-value'].to_i
   end
 
   test 'limit headers are not returned when there is an error != limits exceeded' do
@@ -260,8 +260,8 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           usage: { 'invalid_metric' => 1 } },
         'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
 
-    assert_nil last_response.header['3scale-limit-reset']
-    assert_nil last_response.header['3scale-limit-remaining']
+    assert_nil last_response.headers['3scale-limit-reset']
+    assert_nil last_response.headers['3scale-limit-remaining']
 
     # application_key_invalid as an example of check performed in a validator.
     @application.create_key('foo')
@@ -271,9 +271,9 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           usage: { 'invalid_metric' => 1 } },
         'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
 
-    assert_nil last_response.header['3scale-limit-reset']
-    assert_nil last_response.header['3scale-limit-remaining']
-    assert_nil last_response.header['3scale-limit-max-value']
+    assert_nil last_response.headers['3scale-limit-reset']
+    assert_nil last_response.headers['3scale-limit-remaining']
+    assert_nil last_response.headers['3scale-limit-max-value']
   end
 
   test 'response headers do not include limit headers whe not asked via extensions' do
@@ -286,9 +286,9 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
     get '/transactions/authorize.xml',
         { provider_key: @provider_key, app_id: @application.id }
 
-    assert_nil last_response.header['3scale-limit-remaining']
-    assert_nil last_response.header['3scale-limit-reset']
-    assert_nil last_response.header['3scale-limit-max-value']
+    assert_nil last_response.headers['3scale-limit-remaining']
+    assert_nil last_response.headers['3scale-limit-reset']
+    assert_nil last_response.headers['3scale-limit-max-value']
   end
 
   test 'works with metric hierarchies of more than 2 levels' do
@@ -319,10 +319,10 @@ class AuthorizeLimitHeadersTest < Test::Unit::TestCase
           'HTTP_3SCALE_OPTIONS' => Extensions::LIMIT_HEADERS
     end
 
-    assert_equal daily_limit/usage_to_report, last_response.header['3scale-limit-remaining'].to_i
+    assert_equal daily_limit/usage_to_report, last_response.headers['3scale-limit-remaining'].to_i
 
-    assert_equal seconds_remaining_day, last_response.header['3scale-limit-reset'].to_i
+    assert_equal seconds_remaining_day, last_response.headers['3scale-limit-reset'].to_i
 
-    assert_equal daily_limit, last_response.header['3scale-limit-max-value'].to_i
+    assert_equal daily_limit, last_response.headers['3scale-limit-max-value'].to_i
   end
 end
