@@ -166,7 +166,7 @@ module ThreeScale
         # not null/empty.
         params[:provider_key] = provider_key
 
-        log_without_unused_attrs(params[:log]) if params[:log]
+        filter_log_param(params)
 
         auth_status = Transactor.send method_name, provider_key, params, request: request_info
         response_auth_call(auth_status)
@@ -412,7 +412,7 @@ module ThreeScale
         check_transactions_validity(transactions)
 
         transactions.values.each do |tr|
-          log_without_unused_attrs(tr['log']) if tr['log']
+          filter_log_param(tr, 'log')
         end
 
         Transactor.report(provider_key, params[:service_id], transactions, response_code: 202, request: request_info)
@@ -520,8 +520,15 @@ module ThreeScale
       # "response" and "request". Those fields are not used anymore, but some
       # callers are still sending them. We want to filter them to avoid storing
       # them in the job queues, decoding them, etc. unnecessarily.
-      def log_without_unused_attrs(log)
-        log.select! { |k| k == 'code' }
+      # Also, discard logs that don't have the 'code' attribute
+      def filter_log_param(params, key = :log)
+        log_param = params[key]
+
+        if log_param.is_a?(Hash) && log_param['code']
+          params[key] = log_param.slice('code')
+        else
+          params.delete(key)
+        end
       end
 
       # In previous versions it was possible to authorize by end-user.
