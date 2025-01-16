@@ -2,6 +2,11 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 require '3scale/backend/storage_sync'
 
 class StorageSyncTest < Test::Unit::TestCase
+
+  def setup
+    omit_if(configuration.redis.async, 'skipping a sync test as async mode is enabled')
+  end
+
   def test_basic_operations
     storage = StorageSync.instance(true)
     storage.del('foo')
@@ -263,7 +268,7 @@ class StorageSyncTest < Test::Unit::TestCase
   private
 
   def assert_client_config(conf, conn)
-    config = conn.instance_variable_get(:@client).instance_variable_get(:@config)
+    config = conn.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@config)
 
     if conf[:url].to_s.strip.empty?
       assert_equal conf[:path], config.path
@@ -284,7 +289,7 @@ class StorageSyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_config(conf, client)
-    config = client.instance_variable_get(:@client).instance_variable_get(:@config)
+    config = client.instance_variable_get(:@inner).instance_variable_get(:@client).instance_variable_get(:@config)
     assert config.sentinel?
     assert_equal URI(conf[:url]).host, config.name
     assert_equal conf[:role] || :master, config.instance_variable_get(:@role)

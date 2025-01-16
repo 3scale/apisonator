@@ -35,11 +35,14 @@ module ThreeScale
         end
 
         def initialize(opts)
-          @redis_async = AsyncRedis::Client.connect(opts)
+          @opts = opts
+          @redis_async = nil
         end
 
         def call(*args)
-          @redis_async.call(*args)
+          with_reconnect do |conn|
+            conn.call(*args)
+          end
         end
 
         # This method allows us to send pipelines like this:
@@ -51,13 +54,39 @@ module ThreeScale
           # This replaces the client with a Pipeline that accumulates the Redis
           # commands run in a block and sends all of them in a single request.
 
-          pipeline = Pipeline.new
-          block.call pipeline
-          pipeline.run(@redis_async)
+          with_reconnect do |conn|
+            pipeline = Pipeline.new
+            block.call pipeline
+            pipeline.run(conn)
+          end
+        end
+
+        def connect
+          @redis_async ||= AsyncRedis::Client.connect(@opts)
         end
 
         def close
-          @redis_async.close
+          @redis_async&.close
+          @redis_async = nil
+        end
+
+        private
+
+        def with_reconnect
+          attempt = 0
+          begin
+           yield connect
+          rescue *CONNECTION_ERRORS => e
+            close
+
+            if attempt < @opts[:reconnect_attempts]
+              attempt += 1
+              sleep @opts[:reconnect_wait_seconds]
+              retry
+            else
+              raise e
+            end
+          end
         end
       end
     end

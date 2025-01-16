@@ -1,3 +1,3 @@
-status = ["ci/circleci: build"]
-pr_status = ["ci/circleci: build", "workflow"]
+status = ["workflow"]
+pr_status = ["workflow"]
 delete_merged_branches = true
