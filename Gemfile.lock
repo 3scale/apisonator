@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/3scale/rspec_api_documentation.git
   revision: 7f2190a9236c7827f8606245b92d1522df392d31
-  ref: fix-nil-rewind
+  branch: fix-nil-rewind
   specs:
     rspec_api_documentation (6.1.0)
       activesupport (>= 3.0.0)
