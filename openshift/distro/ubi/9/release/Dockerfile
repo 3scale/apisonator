@@ -1,4 +1,4 @@
-# 3scale Backend image using the Red Hat 8 Universal Base Image (UBI) for
+# 3scale Backend image using the Red Hat 9 Universal Base Image (UBI) for
 # minimal space release.
 #
 # Everything is set up in a single RUN command.
@@ -12,9 +12,9 @@
 # - PUMA_WORKERS: (edit ENV) Default number of Puma workers to serve the app.
 #
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 
-ARG RUBY_VERSION="3.0"
+ARG RUBY_VERSION="3.3"
 ARG BUILD_DEPS="tar make file findutils git patch gcc automake autoconf libtool redhat-rpm-config openssl-devel ruby-devel"
 ARG PUMA_WORKERS=1
 

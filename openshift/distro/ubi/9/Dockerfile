@@ -1,4 +1,4 @@
-# 3scale Backend image using the Red Hat 8 Universal Base Image (UBI) as base
+# 3scale Backend image using the Red Hat 9 Universal Base Image (UBI) as base
 #
 # This image is meant for flexibility building different configurations.
 #
@@ -26,12 +26,12 @@
 #                   with number of cpus being a good heuristic.
 #
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 ENV HOME=/home
 WORKDIR "${HOME}/app"
 
-ARG RUBY_VERSION="3.0"
+ARG RUBY_VERSION="3.3"
 ARG RUNTIME_DEPS="ruby"
 
 RUN echo -e "[ruby]\nname=ruby\nstream=${RUBY_VERSION}\nprofiles=\nstate=enabled\n" > /etc/dnf/modules.d/ruby.module \
