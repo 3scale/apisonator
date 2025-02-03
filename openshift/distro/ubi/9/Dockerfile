@@ -1,4 +1,4 @@
-# 3scale Backend image using the Red Hat 8 Universal Base Image (UBI) as base
+# 3scale Backend image using the Red Hat 9 Universal Base Image (UBI) as base
 #
 # This image is meant for flexibility building different configurations.
 #
@@ -26,22 +26,19 @@
 #                   with number of cpus being a good heuristic.
 #
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 ENV HOME=/home
 WORKDIR "${HOME}/app"
 
-ARG RUBY_VERSION="3.0"
-ARG RUNTIME_DEPS="ruby"
+ARG RUBY_VERSION="3.3"
 
-RUN echo -e "[ruby]\nname=ruby\nstream=${RUBY_VERSION}\nprofiles=\nstate=enabled\n" > /etc/dnf/modules.d/ruby.module \
- && microdnf update --nodocs \
- && microdnf install --nodocs ${RUNTIME_DEPS} \
+RUN microdnf module enable -y "ruby:${RUBY_VERSION}" \
  && chown -R 1001:1001 "${HOME}"
 
 ARG BUILD_DEPS="tar make file findutils git patch gcc automake autoconf libtool redhat-rpm-config openssl-devel ruby-devel"
 
-RUN microdnf install --nodocs ${BUILD_DEPS}
+RUN microdnf install -y --nodocs ${BUILD_DEPS}
 
 # Bundler should be kept as-is for productisation
 ARG BUNDLE_VERSION_MATCH=true
@@ -54,7 +51,7 @@ ARG BUNDLE_WITHOUT=development:test
 COPY --chown=1001:1001 ${BUNDLE_GEMFILE}.lock "${HOME}/app/"
 
 RUN mkdir -p "${HOME}/.gem/bin" \
- && echo "gem: --bindir ~/.gem/bin" > "${HOME}/.gemrc"
+ && echo "gem: --bindir ~/.gem/bin --install-dir /usr/share/gems" > "${HOME}/.gemrc"
 
 RUN gem uninstall --executables bundler \
  && BUNDLED_WITH=$(cat ${BUNDLE_GEMFILE}.lock | \
@@ -82,6 +79,7 @@ RUN cp -n openshift/3scale_backend.conf /etc/ \
  && gem unpack "apisonator-${BACKEND_VERSION}.gem" --target=/opt/ruby \
  && cd "/opt/ruby/apisonator-${BACKEND_VERSION}" \
  && cp -a ${HOME}/app/.bundle "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
+ && bundle config --local path "/opt/ruby/apisonator-${BACKEND_VERSION}/" \
  && bundle install --jobs $(grep -c processor /proc/cpuinfo) \
  && ln -s ${PWD} /opt/app \
  && cp ${HOME}/app/openshift/config/puma.rb ./config/ \
