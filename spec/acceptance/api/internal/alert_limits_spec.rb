@@ -1,78 +1,90 @@
-resource 'Alert limits' do
-  header 'Accept', 'application/json'
-  header 'Content-Type', 'application/json'
+describe 'Alert limits' do
+  before do
+    header 'Accept', 'application/json'
+    header 'Content-Type', 'application/json'
+  end
 
-  get '/services/:service_id/alert_limits/' do
-    parameter :service_id, 'Service ID', required: true
+  context '/services/:service_id/alert_limits/' do
+    context 'GET' do
+      let(:service_id) { '7575' }
+
+      context 'when there are no alert limits' do
+        it 'Getting alert limits' do
+          get "/services/#{service_id}/alert_limits/"
+
+          expect(response_status).to eq(200)
+          expect(response_json['alert_limits']).to eq([])
+        end
+      end
+
+      context 'when there are alert limits' do
+        before do
+          ThreeScale::Backend::AlertLimit.save(service_id, 50)
+          ThreeScale::Backend::AlertLimit.save(service_id, 100)
+        end
+
+        it 'Getting alert limits' do
+          expected_values = [{ "service_id" => service_id, "value" => 50 },
+                             { "service_id" => service_id, "value" => 100 }]
+
+          get "/services/#{service_id}/alert_limits/"
+
+          expect(response_status).to eq(200)
+          expect(response_json['alert_limits']).to eq(expected_values)
+        end
+      end
+    end
+
+    context 'POST' do
+      let(:service_id)  { '7575' }
+
+      context 'with allowed limit value' do
+        let(:alert_limit) { { value: '50' } }
+
+        it 'Add an alert limit' do
+          post "/services/#{service_id}/alert_limits/", { alert_limit: }.to_json
+
+          expect(response_json['status']).to eq('created')
+        end
+      end
+
+      context 'with no value for limit value' do
+        let(:alert_limit) { { } }
+
+        it 'Add an alert limit' do
+          post "/services/#{service_id}/alert_limits/", { alert_limit: }.to_json
+
+          expect(response_status).to eq(400)
+          expect(response_json['error']).to eq('alert limit is invalid')
+        end
+      end
+
+      context 'with not allowed limit value' do
+        let(:alert_limit) { { value: '3941412410' } }
+
+        it 'Add an alert limit' do
+          post "/services/#{service_id}/alert_limits/", { alert_limit: }.to_json
+
+          expect(response_status).to eq(400)
+          expect(response_json['error']).to eq('alert limit is invalid')
+        end
+      end
+    end
+  end
+
+  context 'DELETE /services/:service_id/alert_limits/:value' do
     let(:service_id) { '7575' }
+    let(:value)      { '50' }
 
-    context 'when there are no alert limits' do
-      example 'Getting alert limits', document: false do
-        do_request
-
-        expect(response_status).to eq(200)
-        expect(response_json['alert_limits']).to eq([])
-      end
+    before do
+      ThreeScale::Backend::AlertLimit.save(service_id, value)
     end
 
-    context 'when there are alert limits' do
-      before do
-        ThreeScale::Backend::AlertLimit.save(service_id, 50)
-        ThreeScale::Backend::AlertLimit.save(service_id, 100)
-      end
+    context 'with an invalid alert limit' do
+      it 'Delete an alert limit' do
+        invalid_key = 'invalid'
 
-      example_request 'Getting alert limits' do
-        expected_values = [{ "service_id" => service_id, "value" => 50 },
-                           { "service_id" => service_id, "value" => 100 }]
-
-        expect(response_status).to eq(200)
-        expect(response_json['alert_limits']).to eq(expected_values)
-      end
-    end
-  end
-
-  post '/services/:service_id/alert_limits/' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :alert_limit, 'Limit value', required: true
-
-    let(:service_id)  { '7575' }
-    let(:raw_post) { params.to_json }
-
-    context 'with allowed limit value' do
-      let(:alert_limit) { { value: '50' } }
-
-      example_request 'Add an alert limit' do
-        expect(response_json['status']).to eq('created')
-      end
-    end
-
-    context 'with no value for limit value' do
-      let(:alert_limit) { { } }
-
-      example 'Add an alert limit', document: false do
-        do_request
-
-        expect(response_status).to eq(400)
-        expect(response_json['error']).to eq('alert limit is invalid')
-      end
-    end
-
-    context 'with not allowed limit value' do
-      let(:alert_limit) { { value: '3941412410' } }
-
-      example 'Add an alert limit', document: false do
-        do_request
-
-        expect(response_status).to eq(400)
-        expect(response_json['error']).to eq('alert limit is invalid')
-      end
-    end
-  end
-
-  delete '/services/:service_id/alert_limits/:value' do
-    context 'with a missing alert limit' do
-      example 'Delete an alert limit', document: false do
-        do_request
+        delete "/services/#{service_id}/alert_limits/#{invalid_key}"
 
         expect(response_status).to eq(404)
         expect(response_json['status']).to eq('not_found')
@@ -80,15 +92,9 @@ resource 'Alert limits' do
     end
 
     context 'with a valid alert limit' do
-      before { ThreeScale::Backend::AlertLimit.save(service_id, 50) }
+      it 'Delete an alert limit' do
+        delete "/services/#{service_id}/alert_limits/#{value}"
 
-      parameter :service_id, 'Service ID', required: true
-      parameter :value, 'Limit value', required: true
-
-      let(:service_id) { '7575' }
-      let(:value)      { '50' }
-
-      example_request 'Delete an alert limit' do
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
       end

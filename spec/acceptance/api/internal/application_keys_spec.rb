@@ -1,7 +1,4 @@
-resource 'Application keys' do
-  header 'Accept', 'application/json'
-  header 'Content-Type', 'application/json'
-
+describe 'Application keys' do
   let(:service_id)     { '7575' }
   let(:app_id)         { '100' }
   let(:invalid_app_id) { '400' }
@@ -15,90 +12,100 @@ resource 'Application keys' do
                                           redirect_url: 'https://3scale.net')
   end
 
-  get '/services/:service_id/applications/:app_id/keys/' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :app_id, 'Application ID', required: true
+  before do
+    header 'Accept', 'application/json'
+    header 'Content-Type', 'application/json'
+  end
 
-    context 'with an invalid application id' do
-      example 'Getting application keys', document: false do
-        do_request(app_id: invalid_app_id)
+  context '/services/:service_id/applications/:app_id/keys/' do
+    context 'GET' do
+      context 'with an invalid application id' do
+        it 'Getting application keys' do
+          get "/services/#{service_id}/applications/#{invalid_app_id}/keys/"
 
-        expect(response_status).to eq(404)
-        expect(response_json['error']).to eq("application not found")
+          expect(response_status).to eq(404)
+          expect(response_json['error']).to eq("application not found")
+        end
+      end
+
+      context 'when there are no application keys' do
+        it 'Getting application keys' do
+          get "/services/#{service_id}/applications/#{app_id}/keys/"
+
+          expect(response_status).to eq(200)
+          expect(response_json['application_keys']).to eq([])
+        end
+      end
+
+      context 'when there are application keys' do
+        before do
+          example_app.create_key("foo")
+          example_app.create_key("bar")
+        end
+
+        it 'Getting application keys' do
+          get "/services/#{service_id}/applications/#{app_id}/keys/"
+
+          expected_values = [
+            { "service_id" => service_id, "app_id" => app_id, "value" => "bar" },
+            { "service_id" => service_id, "app_id" => app_id, "value" => "foo" },
+          ]
+
+          expect(response_status).to eq(200)
+          expect(response_json['application_keys']).to match_array(expected_values)
+        end
       end
     end
 
-    context 'when there are no application keys' do
-      example 'Getting application keys', document: false do
-        do_request
+    context 'POST' do
+      context 'with an invalid application id' do
+        it 'Trying to create an application key' do
+          post "/services/#{service_id}/applications/#{invalid_app_id}/keys/"
 
-        expect(response_status).to eq(200)
-        expect(response_json['application_keys']).to eq([])
-      end
-    end
-
-    context 'when there are application keys' do
-      before do
-        example_app.create_key("foo")
-        example_app.create_key("bar")
+          expect(response_status).to eq(404)
+          expect(response_json['error']).to eq("application not found")
+        end
       end
 
-      example_request 'Getting application keys' do
-        expected_values = [
-          { "service_id" => service_id, "app_id" => app_id, "value" => "bar" },
-          { "service_id" => service_id, "app_id" => app_id, "value" => "foo" },
-        ]
+      context 'with application key value' do
+        let(:application_key) { { value: 'foo' } }
 
-        expect(response_status).to eq(200)
-        expect(response_json['application_keys']).to match_array(expected_values)
+        it 'Add an application key' do
+          post "/services/#{service_id}/applications/#{app_id}/keys/", { application_key: }.to_json
+
+          expect(response_status).to eq(201)
+          expect(response_json['status']).to eq('created')
+        end
+      end
+
+      context 'with no value for application key' do
+        before { expect(SecureRandom).to receive(:hex).and_return('random') }
+
+        let(:application_key) { { } }
+
+        it 'Add an application key' do
+          post "/services/#{service_id}/applications/#{app_id}/keys/", { application_key: }.to_json
+
+          expect(response_status).to eq(201)
+          expect(response_json['status']).to eq('created')
+          expect(example_app.has_key?('random')).to be true
+        end
       end
     end
   end
 
-  post '/services/:service_id/applications/:app_id/keys/' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :app_id, 'Application ID', required: true
-    parameter :application_key, 'Application key value', required: false
+  context 'DELETE /services/:service_id/applications/:app_id/keys/:value' do
+    let(:value)          { "foo" }
 
-    let(:raw_post)   { params.to_json }
-
-    context 'with an invalid application id' do
-      example 'Trying to create an application key', document: false do
-        do_request(app_id: invalid_app_id)
-
-        expect(response_status).to eq(404)
-        expect(response_json['error']).to eq("application not found")
-      end
+    before do
+      example_app.create_key(value)
     end
 
-    context 'with application key value' do
-      let(:application_key) { { value: 'foo' } }
+    context 'with an invalid application key' do
+      it 'Delete an application key' do
+        invalid_key = 'invalid'
 
-      example_request 'Add an application key' do
-        expect(response_status).to eq(201)
-        expect(response_json['status']).to eq('created')
-      end
-    end
-
-    context 'with no value for application key' do
-      before { expect(SecureRandom).to receive(:hex).and_return('random') }
-
-      let(:application_key) { { } }
-
-      example 'Add an application key', document: false do
-        do_request
-
-        expect(response_status).to eq(201)
-        expect(response_json['status']).to eq('created')
-        expect(example_app.has_key?('random')).to be true
-      end
-    end
-  end
-
-  delete '/services/:service_id/applications/:app_id/keys/:value' do
-    context 'with a missing application key' do
-      example 'Delete an application key', document: false do
-        do_request
+        delete "/services/#{service_id}/applications/#{app_id}/keys/#{invalid_key}"
 
         expect(response_status).to eq(404)
         expect(response_json['status']).to eq('not_found')
@@ -106,8 +113,8 @@ resource 'Application keys' do
     end
 
     context 'with an invalid application id' do
-      example 'Trying to delete an application key', document: false do
-        do_request(app_id: invalid_app_id)
+      it 'Trying to delete an application key' do
+        delete "/services/#{service_id}/applications/#{invalid_app_id}/keys/#{value}"
 
         expect(response_status).to eq(404)
         expect(response_json['error']).to eq("application not found")
@@ -115,15 +122,9 @@ resource 'Application keys' do
     end
 
     context 'with a valid application key' do
-      before { example_app.create_key("foo") }
+      it 'Delete an application key' do
+        delete "/services/#{service_id}/applications/#{app_id}/keys/#{value}"
 
-      parameter :service_id, 'Service ID', required: true
-      parameter :app_id, 'Application ID', required: true
-      parameter :value, 'Application key value', required: true
-
-      let(:value)          { 'foo' }
-
-      example_request 'Delete an application key' do
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
         expect(example_app.has_key?("foo")).to be false

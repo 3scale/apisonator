@@ -1,11 +1,12 @@
-resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)' do
-  header 'Accept', 'application/json'
-  header 'Content-Type', 'application/json'
+describe 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)' do
 
   let(:service_id) { '7575' }
   let(:plan_id) { '100' }
 
   before do
+    header 'Accept', 'application/json'
+    header 'Content-Type', 'application/json'
+
     ThreeScale::Backend::Metric.delete(service_id, '100')
     ThreeScale::Backend::Metric.delete(service_id, '101')
     metric = ThreeScale::Backend::Metric.save(service_id: service_id, id: '100',
@@ -19,16 +20,13 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
     end
   end
 
-  get '/services/:service_id/plans/:plan_id/usagelimits/:metric_id/:period' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :plan_id, 'Plan ID', required: true
-    parameter :metric_id, 'Metric ID', required: true
-    parameter :period, 'Period', required: true
+  context '/services/:service_id/plans/:plan_id/usagelimits/:metric_id/:period' do
 
-    example 'Get UsageLimits' do
+    it 'Get UsageLimits' do
       @metric_h.each do |m, periods|
         periods.each do |period, value|
-          do_request metric_id: m.id, period: period
+          get "/services/#{service_id}/plans/#{plan_id}/usagelimits/#{m.id}/#{period}"
+
           expect(response_json['usagelimit']['service_id']).to eq service_id
           expect(response_json['usagelimit']['plan_id']).to eq plan_id
           expect(response_json['usagelimit']['metric_id']).to eq m.id
@@ -37,24 +35,12 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
         end
       end
     end
-  end
 
-  put '/services/:service_id/plans/:plan_id/usagelimits/:metric_id/:period' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :plan_id, 'Plan ID', required: true
-    parameter :metric_id, 'Metric ID', required: true
-    parameter :period, 'Period', required: true
-    parameter :usagelimit, 'UsageLimit attributes', required: true
-
-    # need this to _not_ be memoized but eval'ed each time, see below
-    define_method :raw_post do
-      params.to_json
-    end
-
-    example 'Update UsageLimits' do
+    it 'Update UsageLimits' do
       @metric_h.each do |m, periods|
         periods.each do |p, value|
-          do_request(metric_id: m.id, period: p, usagelimit: { p.to_sym => value.succ.to_s })
+          put "/services/#{service_id}/plans/#{plan_id}/usagelimits/#{m.id}/#{p}", { usagelimit: { p.to_sym => value.succ.to_s } }.to_json
+
           expect(response_json['usagelimit']['service_id']).to eq service_id
           expect(response_json['usagelimit']['plan_id']).to eq plan_id
           expect(response_json['usagelimit']['metric_id']).to eq m.id
@@ -67,18 +53,12 @@ resource 'UsageLimits (prefix: /services/:service_id/plans/:plan_id/usagelimits)
         end
       end
     end
-  end
 
-  delete '/services/:service_id/plans/:plan_id/usagelimits/:metric_id/:period' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :plan_id, 'Plan ID', required: true
-    parameter :metric_id, 'Metric ID', required: true
-    parameter :period, 'Period', required: true
-
-    example 'Delete UsageLimits' do
+    it 'Delete UsageLimits' do
       @metric_h.each do |m, periods|
         periods.each do |period, value|
-          do_request metric_id: m.id, period: period
+          delete "/services/#{service_id}/plans/#{plan_id}/usagelimits/#{m.id}/#{period}"
+
           expect(response_json['status']).to eq 'deleted'
           expect(status).to eq 200
 

@@ -1,7 +1,4 @@
-resource 'Application Referrer Filters' do
-  header 'Accept', 'application/json'
-  header 'Content-Type', 'application/json'
-
+describe 'Application Referrer Filters' do
   let(:service_id) { '7575' }
   let(:app_id)     { '100' }
 
@@ -14,79 +11,89 @@ resource 'Application Referrer Filters' do
                                           redirect_url: 'https://3scale.net')
   end
 
-  get '/services/:service_id/applications/:app_id/referrer_filters' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :app_id, 'Application ID', required: true
+  before do
+    header 'Accept', 'application/json'
+    header 'Content-Type', 'application/json'
+  end
 
+  context '/services/:service_id/applications/:app_id/referrer_filters' do
+    context 'GET' do
+      context 'with an invalid application id' do
+        let(:app_id) { 400 }
 
-    context 'with an invalid application id' do
-      example 'Getting application keys' do
-        do_request(app_id: 400)
+        it 'Getting application keys' do
+          get "/services/#{service_id}/applications/#{app_id}/referrer_filters"
+
+          expect(response_status).to eq(404)
+          expect(response_json['error']).to eq("application not found")
+        end
+      end
+
+      context 'when there are no referrer filters' do
+        it 'Getting application keys' do
+          get "/services/#{service_id}/applications/#{app_id}/referrer_filters"
+
+          expect(response_status).to eq(200)
+          expect(response_json['referrer_filters']).to eq([])
+        end
+      end
+
+      context 'when there are referrer filters' do
+        before do
+          example_app.create_referrer_filter('foo')
+          example_app.create_referrer_filter('bar')
+        end
+
+        it 'Getting referrer filters' do
+          get "/services/#{service_id}/applications/#{app_id}/referrer_filters"
+
+          expected_values = ['bar', 'foo']
+
+          expect(response_status).to eq(200)
+          expect(response_json['referrer_filters']).to match_array(expected_values)
+        end
+      end
+    end
+
+    context 'POST' do
+      let(:referrer_filter) { 'baz' }
+
+      it 'Create a referrer filter' do
+        post "/services/#{service_id}/applications/#{app_id}/referrer_filters", { referrer_filter: }.to_json
+
+        expect(response_status).to eq(201)
+        expect(response_json['status']).to eq("created")
+
+        expect(example_app.referrer_filters).to eq ['baz']
+      end
+
+      it 'Try updating a referrer filter with invalid application id' do
+        app_id = 400
+
+        post "/services/#{service_id}/applications/#{app_id}/referrer_filters", { referrer_filter: }.to_json
 
         expect(response_status).to eq(404)
         expect(response_json['error']).to eq("application not found")
       end
-    end
 
-    context 'when there are no referrer filters' do
-      example_request 'Getting application keys' do
-        expect(response_status).to eq(200)
-        expect(response_json['referrer_filters']).to eq([])
-      end
-    end
+      it 'Try updating a referrer filter with invalid data' do
+        referrer_filter = ''
 
-    context 'when there are referrer filters' do
-      before do
-        example_app.create_referrer_filter('foo')
-        example_app.create_referrer_filter('bar')
-      end
+        post "/services/#{service_id}/applications/#{app_id}/referrer_filters", { referrer_filter: }.to_json
 
-      example_request 'Getting referrer filters' do
-        expected_values = ['bar', 'foo']
-
-        expect(response_status).to eq(200)
-        expect(response_json['referrer_filters']).to match_array(expected_values)
+        expect(response_status).to eq(400)
+        expect(response_json['error']).to eq("referrer filter can't be blank")
       end
     end
   end
 
-  post '/services/:service_id/applications/:app_id/referrer_filters' do
-    parameter :referrer_filter, 'Referrer filter to create', required: true
-
-    let(:referrer_filter) { 'baz' }
-    let(:raw_post) { params.to_json }
-
-    example_request 'Create a referrer filter' do
-      expect(response_status).to eq(201)
-      expect(response_json['status']).to eq("created")
-
-      expect(example_app.referrer_filters).to eq ['baz']
-    end
-
-    example 'Try updating a referrer filter with invalid application id' do
-      do_request app_id: '400'
-
-      expect(response_status).to eq(404)
-      expect(response_json['error']).to eq("application not found")
-    end
-
-
-    example 'Try updating a referrer filter with invalid data' do
-      do_request referrer_filter: ''
-
-      expect(response_status).to eq(400)
-      expect(response_json['error']).to eq("referrer filter can't be blank")
-    end
-  end
-
-  delete '/services/:service_id/applications/:app_id/referrer_filters/:filter' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :app_id, 'Application ID', required: true
-
+  describe 'DELETE /services/:service_id/applications/:app_id/referrer_filters/:filter' do
     let(:filter)     { 'doopah' }
 
     context 'when there are no referrer filters' do
-      example_request 'Trying to delete a filter' do
+      it 'Trying to delete a filter' do
+        delete "/services/#{service_id}/applications/#{app_id}/referrer_filters/#{filter}"
+
         expect(response_status).to eq(200)
       end
     end
@@ -97,8 +104,10 @@ resource 'Application Referrer Filters' do
         example_app.create_referrer_filter(value)
       end
 
-      example 'Deleting a filter with special chars' do
-        do_request filter: Base64.urlsafe_encode64(value)
+      it 'Deleting a filter with special chars' do
+        filter = Base64.urlsafe_encode64(value)
+
+        delete "/services/#{service_id}/applications/#{app_id}/referrer_filters/#{filter}"
 
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
@@ -110,7 +119,9 @@ resource 'Application Referrer Filters' do
         example_app.create_referrer_filter('doopah')
       end
 
-      example_request 'Deleting a filter' do
+      it 'Deleting a filter' do
+        delete "/services/#{service_id}/applications/#{app_id}/referrer_filters/#{filter}"
+
         expect(response_status).to eq(200)
         expect(response_json['status']).to eq('deleted')
       end
