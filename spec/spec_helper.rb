@@ -2,8 +2,8 @@ require 'rspec'
 require 'resque_spec'
 require 'async'
 
-# This fixes a `NoMethodError` error caused by `rspec_api_documentation`, which is fixed since 2022, but never released.
-# Ref: https://github.com/zipmark/rspec_api_documentation/commit/758c879893a21233c0eb977e79ef026f263fc37e
+require 'active_support'
+require 'active_support/core_ext/object/json'
 require 'active_support/core_ext/hash/keys'
 
 if ENV['TEST_COVERAGE']
