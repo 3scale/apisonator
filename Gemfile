@@ -25,7 +25,7 @@ group :test do
   gem 'test-unit',     '~> 3.5'
   gem 'resque_spec',   '~> 0.17.0'
   gem 'timecop',       '~> 0.9.1'
-  gem 'rspec',         '~> 3.7.0', require: nil
+  gem 'rspec',         '~> 3.13.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
   gem 'async-rspec'
 end
