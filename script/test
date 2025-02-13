@@ -12,11 +12,11 @@ function do_test()
     case $1 in
     sync)
         echo "==================== Running tests using the SYNC Redis driver ===================="
-        CONFIG_REDIS_ASYNC=false bundle exec rake
+        CONFIG_REDIS_ASYNC=false RACK_ENV="test" bundle exec rspec --require=spec_helper --format RspecApiDocumentation::ApiFormatter
         ;;
     async)
         echo "==================== Running tests using the ASYNC Redis driver ===================="
-        CONFIG_REDIS_ASYNC=true bundle exec rake
+        CONFIG_REDIS_ASYNC=true RACK_ENV="test" bundle exec rspec --require=spec_helper --format RspecApiDocumentation::ApiFormatter
         ;;
     *)
       echo "Invalid Redis driver option: $1"
