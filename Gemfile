@@ -39,7 +39,7 @@ group :development do
 end
 
 group :development, :test do
-  gem 'rspec_api_documentation', '~> 6.0', github: '3scale/rspec_api_documentation', branch: 'fix-nil-rewind'
+  gem 'rspec_api_documentation', '~> 6.0', github: 'akostadinov/rspec_api_documentation', branch: 'newrack'
 end
 
 # Default server by platform

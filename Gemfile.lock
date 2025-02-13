@@ -1,20 +1,20 @@
 GIT
-  remote: https://github.com/3scale/rspec_api_documentation.git
-  revision: 7f2190a9236c7827f8606245b92d1522df392d31
-  branch: fix-nil-rewind
-  specs:
-    rspec_api_documentation (6.1.0)
-      activesupport (>= 3.0.0)
-      mustache (~> 1.0, >= 0.99.4)
-      rspec (~> 3.0)
-
-GIT
   remote: https://github.com/3scale/source2swagger
   revision: 9a787007577fc58b5822b55720e977cc063057fd
   branch: backend
   specs:
     source2swagger (0.0.2)
       json
+
+GIT
+  remote: https://github.com/akostadinov/rspec_api_documentation.git
+  revision: 22ec48c6a899a82a1e1c1f667034c9abf17a204c
+  branch: newrack
+  specs:
+    rspec_api_documentation (6.1.0)
+      activesupport (>= 3.0.0)
+      mustache (~> 1.0, >= 0.99.4)
+      rspec (~> 3.0)
 
 PATH
   remote: .
@@ -24,16 +24,19 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (7.1.3.3)
+    activesupport (8.0.1)
       base64
+      benchmark (>= 0.3)
       bigdecimal
-      concurrent-ruby (~> 1.0, >= 1.0.2)
+      concurrent-ruby (~> 1.0, >= 1.3.1)
       connection_pool (>= 2.2.5)
       drb
       i18n (>= 1.6, < 2)
+      logger (>= 1.4.2)
       minitest (>= 5.1)
-      mutex_m
-      tzinfo (~> 2.0)
+      securerandom (>= 0.3)
+      tzinfo (~> 2.0, >= 2.0.5)
+      uri (>= 0.13.1)
     anyway_config (2.6.4)
       ruby-next-core (~> 1.0)
     async (1.32.1)
@@ -67,6 +70,7 @@ GEM
       rspec-files (~> 1.0)
       rspec-memory (~> 1.0)
     base64 (0.2.0)
+    benchmark (0.4.0)
     benchmark-ips (2.7.2)
     bigdecimal (3.1.8)
     bugsnag (6.26.2)
@@ -114,7 +118,7 @@ GEM
       google-protobuf (>= 3.18, < 5.a)
     hiredis-client (0.23.0)
       redis-client (= 0.23.0)
-    i18n (1.14.6)
+    i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     json (2.5.1)
     license_finder (7.1.0)
@@ -130,7 +134,7 @@ GEM
     metaclass (0.0.4)
     method_source (1.1.0)
     mini_portile2 (2.8.6)
-    minitest (5.25.2)
+    minitest (5.25.4)
     mocha (1.3.0)
       metaclass (~> 0.0.1)
     mono_logger (1.1.2)
@@ -138,7 +142,6 @@ GEM
     mustache (1.1.1)
     mustermann (3.0.3)
       ruby2_keywords (~> 0.0.1)
-    mutex_m (0.3.0)
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
     net-ssh (4.2.0)
@@ -261,6 +264,7 @@ GEM
     samovar (2.3.0)
       console (~> 1.0)
       mapping (~> 1.0)
+    securerandom (0.4.1)
     simplecov (0.15.1)
       docile (~> 1.1.0)
       json (>= 1.8, < 3)
@@ -292,6 +296,7 @@ GEM
     traces (0.14.1)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
+    uri (1.0.2)
     webrick (1.8.2)
     with_env (1.1.0)
     xml-simple (1.1.9)
