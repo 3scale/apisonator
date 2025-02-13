@@ -1,0 +1,939 @@
+openapi: 3.0.1
+info:
+  title: 3scale Backend Internal API
+  version: 1.0.0
+servers:
+- url: http://localhost:3001/internal
+paths:
+  /services/{service_id}/alert_limits/:
+    get:
+      tags:
+      - Alert limits
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Getting alert limits
+    post:
+      tags:
+      - Alert limits
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertLimit'
+        required: true
+      responses:
+        "201":
+          description: Add an alert limit
+  /services/{service_id}/alert_limits/{value}:
+    delete:
+      tags:
+      - Alert limits
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: value
+        in: path
+        description: Limit value
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Delete an alert limit
+  /services/{service_id}/applications/{app_id}/keys/:
+    get:
+      tags:
+      - Application keys
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: app_id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Getting application keys
+    post:
+      tags:
+      - Application keys
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: app_id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Application key value
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationKey'
+        required: true
+      responses:
+        "201":
+          description: Add an application key
+  /services/{service_id}/applications/{app_id}/keys/{value}:
+    delete:
+      tags:
+      - Application keys
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: app_id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      - name: value
+        in: path
+        description: Application key value
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Delete an application key
+  /services/{service_id}/applications/{app_id}/referrer_filters:
+    get:
+      tags:
+      - Application Referrer Filters
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: app_id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Getting referrer filters
+    post:
+      tags:
+      - Application Referrer Filters
+      parameters:
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: app_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferrerFilter'
+        required: true
+      responses:
+        "201":
+          description: Create a referrer filter
+        "400":
+          description: Try updating a referrer filter with invalid data
+        "404":
+          description: Try updating a referrer filter with invalid application id
+  /services/{service_id}/applications/{app_id}/referrer_filters/{filter}:
+    delete:
+      tags:
+      - Application Referrer Filters
+      parameters:
+      - name: filter
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: app_id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Trying to delete a filter
+  /services/{service_id}/applications/{id}:
+    get:
+      tags:
+      - Applications
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Get Application by ID
+        "404":
+          description: Try to get an Application by non-existent ID
+    put:
+      tags:
+      - Applications
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Application'
+        required: true
+      responses:
+        "200":
+          description: updating the application
+        "400":
+          description: trying to update the application
+    post:
+      tags:
+      - Applications
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Application'
+        required: true
+      responses:
+        "201":
+          description: Create an Application
+        "400":
+          description: Trying to create the application
+    delete:
+      tags:
+      - Applications
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Deleting an application
+  /services/{service_id}/applications/key/{user_key}:
+    get:
+      tags:
+      - Applications
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: user_key
+        in: path
+        description: User key for this Application
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Get existing ID of Application with service and key
+        "404":
+          description: Try to get an Application ID from a non-existing key
+    delete:
+      tags:
+      - Applications
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: user_key
+        in: path
+        description: User key for this Application
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Delete an Application's user key
+  /services/{service_id}/applications/{id}/key/{user_key}:
+    put:
+      tags:
+      - Applications
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      - name: user_key
+        in: path
+        description: User key for this Application
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Change the key for an Application
+  /services/{service_id}/errors/:
+    get:
+      tags:
+      - Errors
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Get errors by service ID
+        "400":
+          description: Try with negative per_page value
+        "404":
+          description: Try with invalid service ID
+    post:
+      tags:
+      - Errors
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Errors
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Errors'
+        required: false
+      responses:
+        "201":
+          description: Save errors
+        "400":
+          description: Try without specifying errors
+        "404":
+          description: Try to save errors
+    delete:
+      tags:
+      - Errors
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Delete all errors
+        "404":
+          description: Try with invalid service ID
+  /events/:
+    get:
+      tags:
+      - Events
+      responses:
+        "200":
+          description: Getting events
+    post:
+      tags:
+      - Events
+      requestBody:
+        description: Events
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Events'
+        required: false
+      responses:
+        "201":
+          description: Save events
+        "400":
+          description: Try to save events
+  /events/{id}:
+    delete:
+      tags:
+      - Events
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Delete Event by ID
+  /check.json:
+    get:
+      tags:
+      - Internal API
+      responses:
+        "200":
+          description: Check internal API live status
+  /status:
+    get:
+      tags:
+      - Internal API
+      responses:
+        "200":
+          description: Get Backend's version
+  /services/{service_id}/metrics/{id}:
+    get:
+      tags:
+      - Metrics
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Get Metric by ID
+        "404":
+          description: Try to get a Metric by non-existent ID
+    put:
+      tags:
+      - Metrics
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Metric attributes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertLimit'
+        required: true
+      responses:
+        "200":
+          description: Update Metric by ID
+    post:
+      tags:
+      - Metrics
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Metric attributes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Metric'
+        required: true
+      responses:
+        "201":
+          description: Create a Metric
+    delete:
+      tags:
+      - Metrics
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Deleting a Metric
+  /service_tokens/{token}/{service_id}/:
+    head:
+      tags:
+      - Service Tokens
+      parameters:
+      - name: token
+        in: path
+        description: token
+        required: true
+        schema:
+          type: string
+      - name: service_id
+        in: path
+        description: service ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Check if the pair exists
+        "404":
+          description: Check if the pair exists
+  /service_tokens/{token}/{service_id}/provider_key:
+    get:
+      tags:
+      - Service Tokens
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: service_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Get the provider key
+        "404":
+          description: Try to get the provider key
+  /service_tokens/:
+    post:
+      tags:
+      - Service Tokens
+      requestBody:
+        description: Service Tokens
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTokens'
+        required: true
+      responses:
+        "201":
+          description: "Create a (service_token, service_id) pair"
+        "400":
+          description: "Try to create a (service_token, service_id) without sending\
+            \ service_tokens"
+        "422":
+          description: "Try to create a (service_token, service_id) pair with null\
+            \ service_token"
+  /services/{id}:
+    get:
+      tags:
+      - Services
+      parameters:
+      - name: id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Get Service by ID
+        "404":
+          description: Try to get a Service by non-existent ID
+    put:
+      tags:
+      - Services
+      parameters:
+      - name: id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        description: Service attributes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertLimit'
+        required: true
+      responses:
+        "200":
+          description: Update Service by ID
+    delete:
+      tags:
+      - Services
+      parameters:
+      - name: id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Deleting a default service when it is the only one
+        "400":
+          description: Deleting a default service when there are more
+  /services/:
+    post:
+      tags:
+      - Services
+      requestBody:
+        description: Service attributes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Service'
+        required: true
+      responses:
+        "201":
+          description: Create a Service
+        "400":
+          description: Try creating a Service without specifying the service parameter
+            in the body
+  /services/change_provider_key/{key}:
+    put:
+      tags:
+      - Services
+      parameters:
+      - name: key
+        in: path
+        description: Existing provider key
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: New provider key
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewKey'
+        required: true
+      responses:
+        "200":
+          description: Changing a provider key
+        "400":
+          description: Trying to change a provider key to empty
+  /services/{service_id}/stats:
+    delete:
+      tags:
+      - Stats
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Deleting stats
+        "404":
+          description: Deleting stats
+  /services/{service_id}/plans/{plan_id}/usagelimits/{metric_id}/{period}:
+    get:
+      tags:
+      - UsageLimits
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: plan_id
+        in: path
+        description: Plan ID
+        required: true
+        schema:
+          type: string
+      - name: metric_id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
+      - name: period
+        in: path
+        description: Period
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Get UsageLimits
+    put:
+      tags:
+      - UsageLimits
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: plan_id
+        in: path
+        description: Plan ID
+        required: true
+        schema:
+          type: string
+      - name: metric_id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
+      - name: period
+        in: path
+        description: Period
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: UsageLimit attributes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsageLimit'
+        required: true
+      responses:
+        "200":
+          description: Update UsageLimits
+    delete:
+      tags:
+      - UsageLimits
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: plan_id
+        in: path
+        description: Plan ID
+        required: true
+        schema:
+          type: string
+      - name: metric_id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
+      - name: period
+        in: path
+        description: Period
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Delete UsageLimits
+  /services/{service_id}/applications/{app_id}/utilization/:
+    get:
+      tags:
+      - Utilization
+      parameters:
+      - name: service_id
+        in: path
+        description: Service ID
+        required: true
+        schema:
+          type: string
+      - name: app_id
+        in: path
+        description: Application ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Get utilization
+        "404":
+          description: Try to get utilization
+components:
+  schemas:
+    AlertLimit:
+      required:
+      - value
+      type: object
+      properties:
+        value:
+          type: string
+    ApplicationKey:
+      required:
+      - value
+      type: object
+      properties:
+        value:
+          type: string
+    ReferrerFilter:
+      required:
+      - referrer_filter
+      type: object
+      properties:
+        referrer_filter:
+          type: string
+    Application:
+      type: object
+      properties:
+        service_id:
+          type: string
+        id:
+          type: string
+        plan_id:
+          type: string
+        plan_name:
+          type: string
+        state:
+          type: string
+        redirect_url:
+          type: string
+    Errors:
+      type: array
+      items:
+        type: string
+    Events:
+      type: array
+      items:
+        type: object
+        properties:
+          type:
+            type: string
+          object:
+            type: object
+            properties: {}
+    Metric:
+      type: object
+      properties:
+        service_id:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+    ServiceTokens:
+      type: object
+    Service:
+      type: object
+    NewKey:
+      type: object
+      properties:
+        new_key:
+          type: string
+    UsageLimit:
+      type: object
+      example:
+        usagelimit:
+          year: "1001"
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+security:
+  - basicAuth: []
