@@ -168,6 +168,9 @@ jobs:
       - start_services:
           services: redis-master
       - run_tests
+      - store_artifacts:
+          path: docs/internal_api
+          destination: internal_api_docs
   test_single_unix:
     executor:
       name: ubuntu_vm

@@ -9,6 +9,7 @@ RSpec.configure do |config|
 end
 
 RspecApiDocumentation.configure do |config|
+  config.format = [:open_api, :html]
   config.docs_dir = Pathname.new(__FILE__).dirname.join('..', '..', 'docs', 'internal_api')
   config.app = ThreeScale::Backend::API::Internal.new(allow_insecure: true)
 end
