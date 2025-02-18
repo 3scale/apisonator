@@ -1,7 +1,4 @@
-resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utilization)' do
-  header 'Accept', 'application/json'
-  header 'Content-Type', 'application/json'
-
+describe 'Utilization (prefix: /services/:service_id/applications/:app_id/utilization)' do
   # Service IDs
   let(:service_id) { '1111' }
   let(:non_existing_service_id) { service_id.to_i.succ.to_s }
@@ -80,6 +77,9 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
   end
 
   before do
+    header 'Accept', 'application/json'
+    header 'Content-Type', 'application/json'
+
     ThreeScale::Backend::Service.save!(provider_key: provider_key,
                                        id: service_id)
 
@@ -99,10 +99,7 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
     expect(actual_report['current_value']).to eq(expected_report[:current_value])
   end
 
-  get '/services/:service_id/applications/:app_id/utilization/' do
-    parameter :service_id, 'Service ID', required: true
-    parameter :app_id, 'Application ID', required: true
-
+  context 'GET /services/:service_id/applications/:app_id/utilization/' do
     context 'with application with limited plan' do
       let(:hits_transaction_1) { 50 }
       let(:hits_transaction_2) { 30 }
@@ -128,7 +125,9 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
         end
       end
 
-      example_request 'Get utilization' do
+      it 'Get utilization' do
+        get "/services/#{service_id}/applications/#{app_id}/utilization/"
+
         utilization = response_json['utilization']
         expect(utilization.size).to eq(test_usage_limits.size)
 
@@ -155,16 +154,18 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
     end
 
     context 'with application with unlimited plan' do
-      example 'Get utilization' do
-        do_request(app_id: unlimited_app_id)
+      it 'Get utilization' do
+        get "/services/#{service_id}/applications/#{unlimited_app_id}/utilization/"
+
         expect(response_json['utilization']).to be_empty
         expect(response_status).to eq(200)
       end
     end
 
     context 'with application with zero limits plan' do
-      example 'Get utilization' do
-        do_request(app_id: zero_limits_app_id)
+      it 'Get utilization' do
+        get "/services/#{service_id}/applications/#{zero_limits_app_id}/utilization/"
+
         utilization = response_json['utilization']
 
         expect(utilization.size).to eq(usage_limits_with_zeros.size)
@@ -179,15 +180,17 @@ resource 'Utilization (prefix: /services/:service_id/applications/:app_id/utiliz
     end
 
     context 'with non-existing service ID' do
-      example 'Try to get utilization' do
-        do_request(service_id: non_existing_service_id)
+      it 'Try to get utilization' do
+        get "/services/#{non_existing_service_id}/applications/#{app_id}/utilization/"
+
         expect(response_status).to eq(404)
       end
     end
 
     context 'with non-existing app ID' do
-      example 'Try to get utilization' do
-        do_request(app_id: non_existing_app_id)
+      it 'Try to get utilization' do
+        get "/services/#{service_id}/applications/#{non_existing_app_id}/utilization/"
+
         expect(response_status).to eq(404)
       end
     end

@@ -1,24 +1,33 @@
-resource 'Internal API (prefix: /internal)' do
-  header 'Accept', 'application/json'
-  header 'Content-Type', 'application/json'
+describe 'Internal API (prefix: /internal)' do
 
-  get '/unknown/route/no/one/would/ever/try/to/use/in/a/real/app/omg' do
-    example_request 'Check that unknown routes return proper 404' do
+  before do
+    header 'Accept', 'application/json'
+    header 'Content-Type', 'application/json'
+  end
+
+  context 'GET /unknown/route/no/one/would/ever/try/to/use/in/a/real/app/omg' do
+    it 'Check that unknown routes return proper 404' do
+      get '/unknown/route/no/one/would/ever/try/to/use/in/a/real/app/omg'
+
       expect(status).to eq 404
       expect(response_json['status']).to eq 'not_found'
       expect(response_json['error']).to eq 'Not found'
     end
   end
 
-  get '/check.json' do
-    example_request 'Check internal API live status' do
+  context 'GET /check.json' do
+    it 'Check internal API live status' do
+      get '/check.json'
+
       expect(status).to eq 200
       expect(response_json['status']).to eq 'ok'
     end
   end
 
-  get '/status' do
-    example_request 'Get Backend\'s version' do
+  context 'GET /status' do
+    it 'Get Backend\'s version' do
+      get '/status'
+
       expect(status).to eq 200
       expect(response_json['status']).to eq 'ok'
       expect(response_json['version']['backend']).to eq ThreeScale::Backend::VERSION

@@ -127,12 +127,6 @@ if Environment.testable?
 
   end
 
-  desc 'Generate API request documentation from API specs'
-  RSpec::Core::RakeTask.new('docs:generate') do |t|
-    t.pattern = 'spec/acceptance/**/*_spec.rb'
-    t.rspec_opts = ['--format RspecApiDocumentation::ApiFormatter']
-  end
-
   desc 'Tag and push the current version'
   task :release => ['release:tag', 'release:push']
 
