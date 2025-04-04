@@ -32,7 +32,6 @@ end
 
 group :development do
   gem 'sshkit'
-  gem 'source2swagger', git: 'https://github.com/3scale/source2swagger', branch: 'backend'
   gem 'pry',      '~> 0.14'
   gem 'pry-doc',  '~> 1.1'
   gem 'license_finder', '~> 7.0'

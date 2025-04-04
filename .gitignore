@@ -9,7 +9,6 @@ coverage
 .*.swp
 *~
 vendor
-docs/internal_api
 .vagrant/
 test/reports/*
 spec/reports/*
