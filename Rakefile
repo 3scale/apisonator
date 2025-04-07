@@ -12,8 +12,6 @@ require '3scale/backend/logging/external'
 
 ThreeScale::Backend::Logging::External.setup_rake
 
-load 'lib/3scale/tasks/swagger.rake'
-
 if Environment.testable?
 
   ENV['RACK_ENV'] = "test"

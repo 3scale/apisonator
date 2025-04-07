@@ -31,8 +31,8 @@ Three main operations can be performed with this API:
      the specified limits
  * Authrep: Combination of both the above
 
-Make sure to read the corresponding Swagger-generated documentation of this
-operations, located in [docs/active_docs/Service Management API.json](docs%2Factive_docs%2FService%20Management%20API.json)
+Make sure to read the corresponding OpenAPI specification of these
+operations, located in [the "porta" repository](https://github.com/3scale/porta/blob/master/doc/active_docs/service_management_api.json).
 
 It attempts to respond with lowest possible latency, performing minimal work
 and offloading other work to Apisonator workers by enqueuing tasks into job queues.

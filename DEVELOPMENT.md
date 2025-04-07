@@ -102,10 +102,9 @@ for the launcher, such as daemonizing, you could run this:
 
 ## Documentation
 
-Make sure to read the corresponding Swagger-generated documentation,
-located in [docs/active_docs/Service Management API.json](docs%2Factive_docs%2FService%20Management%20API.json)
-for the external API.
-You can also generate the documentation of the Internal API with Rake tasks.
+Make sure to read the corresponding OpenAPI specification for the external API (Service Management API),
+located in [the "porta" repository](https://github.com/3scale/porta/blob/master/doc/active_docs/service_management_api.json).
+The OpenAPI specification for the Internal API can be found in [docs/specs/backend_internal.yaml](docs%2Fspecs%2Fbackend_internal.yaml).
 
 ## Contributing
 

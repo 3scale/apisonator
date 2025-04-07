@@ -3,7 +3,17 @@
   <dependencies>
           <dependency>
         <packageName>activesupport</packageName>
-        <version>5.2.4.3</version>
+        <version>7.1.3.4</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>anyway_config</packageName>
+        <version>2.6.4</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -23,7 +33,7 @@
       </dependency>
           <dependency>
         <packageName>async</packageName>
-        <version>1.31.0</version>
+        <version>1.32.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -33,7 +43,7 @@
       </dependency>
           <dependency>
         <packageName>async-container</packageName>
-        <version>0.16.12</version>
+        <version>0.16.13</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -43,7 +53,7 @@
       </dependency>
           <dependency>
         <packageName>async-http</packageName>
-        <version>0.60.1</version>
+        <version>0.64.2</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -53,7 +63,7 @@
       </dependency>
           <dependency>
         <packageName>async-http-cache</packageName>
-        <version>0.4.3</version>
+        <version>0.4.4</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -63,7 +73,7 @@
       </dependency>
           <dependency>
         <packageName>async-io</packageName>
-        <version>1.34.3</version>
+        <version>1.43.2</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -93,11 +103,25 @@
       </dependency>
           <dependency>
         <packageName>async-rspec</packageName>
-        <version>1.13.0</version>
+        <version>1.17.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
               <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>base64</packageName>
+        <version>0.2.0</version>
+        <licenses>
+                      <license>
+              <name>Simplified BSD</name>
+              <url>http://opensource.org/licenses/bsd-license</url>
+            </license>
+                      <license>
+              <name>ruby</name>
+              <url>http://www.ruby-lang.org/en/LICENSE.txt</url>
             </license>
                   </licenses>
       </dependency>
@@ -112,8 +136,22 @@
                   </licenses>
       </dependency>
           <dependency>
+        <packageName>bigdecimal</packageName>
+        <version>3.1.8</version>
+        <licenses>
+                      <license>
+              <name>Simplified BSD</name>
+              <url>http://opensource.org/licenses/bsd-license</url>
+            </license>
+                      <license>
+              <name>ruby</name>
+              <url>http://www.ruby-lang.org/en/LICENSE.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
         <packageName>bugsnag</packageName>
-        <version>6.6.4</version>
+        <version>6.26.2</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -153,7 +191,7 @@
       </dependency>
           <dependency>
         <packageName>byebug</packageName>
-        <version>9.1.0</version>
+        <version>11.1.3</version>
         <licenses>
                       <license>
               <name>Simplified BSD</name>
@@ -183,7 +221,17 @@
       </dependency>
           <dependency>
         <packageName>concurrent-ruby</packageName>
-        <version>1.1.6</version>
+        <version>1.3.4</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>connection_pool</packageName>
+        <version>2.4.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -193,7 +241,7 @@
       </dependency>
           <dependency>
         <packageName>console</packageName>
-        <version>1.16.2</version>
+        <version>1.29.2</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -213,14 +261,14 @@
       </dependency>
           <dependency>
         <packageName>diff-lcs</packageName>
-        <version>1.3</version>
+        <version>1.5.1</version>
         <licenses>
                       <license>
               <name>Artistic-2.0</name>
               <url></url>
             </license>
                       <license>
-              <name>GPL-2.0+</name>
+              <name>GPL-2.0-or-later</name>
               <url></url>
             </license>
                       <license>
@@ -240,8 +288,32 @@
                   </licenses>
       </dependency>
           <dependency>
+        <packageName>dotenv</packageName>
+        <version>3.1.2</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>drb</packageName>
+        <version>2.2.1</version>
+        <licenses>
+                      <license>
+              <name>Simplified BSD</name>
+              <url>http://opensource.org/licenses/bsd-license</url>
+            </license>
+                      <license>
+              <name>ruby</name>
+              <url>http://www.ruby-lang.org/en/LICENSE.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
         <packageName>dry-initializer</packageName>
-        <version>3.0.3</version>
+        <version>3.1.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -251,7 +323,17 @@
       </dependency>
           <dependency>
         <packageName>falcon</packageName>
-        <version>0.42.3</version>
+        <version>0.43.0</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>fiber-annotation</packageName>
+        <version>0.2.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -261,6 +343,16 @@
       </dependency>
           <dependency>
         <packageName>fiber-local</packageName>
+        <version>1.1.0</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>fiber-storage</packageName>
         <version>1.0.0</version>
         <licenses>
                       <license>
@@ -280,8 +372,8 @@
                   </licenses>
       </dependency>
           <dependency>
-        <packageName>hiredis</packageName>
-        <version>0.6.3</version>
+        <packageName>google-protobuf</packageName>
+        <version>4.28.2</version>
         <licenses>
                       <license>
               <name>New BSD</name>
@@ -290,8 +382,28 @@
                   </licenses>
       </dependency>
           <dependency>
+        <packageName>googleapis-common-protos-types</packageName>
+        <version>1.15.0</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>hiredis-client</packageName>
+        <version>0.23.0</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
         <packageName>i18n</packageName>
-        <version>1.8.2</version>
+        <version>1.14.7</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -301,7 +413,7 @@
       </dependency>
           <dependency>
         <packageName>json</packageName>
-        <version>2.3.1</version>
+        <version>2.5.1</version>
         <licenses>
                       <license>
               <name>ruby</name>
@@ -321,11 +433,25 @@
       </dependency>
           <dependency>
         <packageName>localhost</packageName>
-        <version>1.1.10</version>
+        <version>1.3.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
               <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>logger</packageName>
+        <version>1.6.2</version>
+        <licenses>
+                      <license>
+              <name>Simplified BSD</name>
+              <url>http://opensource.org/licenses/bsd-license</url>
+            </license>
+                      <license>
+              <name>ruby</name>
+              <url>http://www.ruby-lang.org/en/LICENSE.txt</url>
             </license>
                   </licenses>
       </dependency>
@@ -351,7 +477,7 @@
       </dependency>
           <dependency>
         <packageName>method_source</packageName>
-        <version>1.0.0</version>
+        <version>1.1.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -361,7 +487,7 @@
       </dependency>
           <dependency>
         <packageName>mini_portile2</packageName>
-        <version>2.8.1</version>
+        <version>2.8.6</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -371,7 +497,7 @@
       </dependency>
           <dependency>
         <packageName>minitest</packageName>
-        <version>5.18.0</version>
+        <version>5.25.4</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -395,7 +521,7 @@
       </dependency>
           <dependency>
         <packageName>mono_logger</packageName>
-        <version>1.1.0</version>
+        <version>1.1.2</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -414,8 +540,8 @@
                   </licenses>
       </dependency>
           <dependency>
-        <packageName>mustache</packageName>
-        <version>1.0.5</version>
+        <packageName>mustermann</packageName>
+        <version>3.0.3</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -424,12 +550,16 @@
                   </licenses>
       </dependency>
           <dependency>
-        <packageName>mustermann</packageName>
-        <version>2.0.2</version>
+        <packageName>mutex_m</packageName>
+        <version>0.3.0</version>
         <licenses>
                       <license>
-              <name>MIT</name>
-              <url>http://opensource.org/licenses/mit-license</url>
+              <name>Simplified BSD</name>
+              <url>http://opensource.org/licenses/bsd-license</url>
+            </license>
+                      <license>
+              <name>ruby</name>
+              <url>http://www.ruby-lang.org/en/LICENSE.txt</url>
             </license>
                   </licenses>
       </dependency>
@@ -455,17 +585,21 @@
       </dependency>
           <dependency>
         <packageName>nio4r</packageName>
-        <version>2.5.9</version>
+        <version>2.7.4</version>
         <licenses>
                       <license>
               <name>MIT</name>
               <url>http://opensource.org/licenses/mit-license</url>
             </license>
+                      <license>
+              <name>Simplified BSD</name>
+              <url>http://opensource.org/licenses/bsd-license</url>
+            </license>
                   </licenses>
       </dependency>
           <dependency>
         <packageName>nokogiri</packageName>
-        <version>1.14.3</version>
+        <version>1.16.5</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -475,11 +609,101 @@
       </dependency>
           <dependency>
         <packageName>openssl</packageName>
-        <version>3.1.0</version>
+        <version>3.2.0</version>
         <licenses>
                       <license>
               <name>ruby</name>
               <url>http://www.ruby-lang.org/en/LICENSE.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-api</packageName>
+        <version>1.4.0</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-common</packageName>
+        <version>0.21.0</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-exporter-otlp</packageName>
+        <version>0.29.0</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-instrumentation-base</packageName>
+        <version>0.22.6</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-instrumentation-rack</packageName>
+        <version>0.24.6</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-instrumentation-sinatra</packageName>
+        <version>0.24.1</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-registry</packageName>
+        <version>0.3.1</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-sdk</packageName>
+        <version>1.5.0</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>opentelemetry-semantic_conventions</packageName>
+        <version>1.10.1</version>
+        <licenses>
+                      <license>
+              <name>Apache 2.0</name>
+              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
             </license>
                   </licenses>
       </dependency>
@@ -519,7 +743,7 @@
       </dependency>
           <dependency>
         <packageName>prometheus-client</packageName>
-        <version>1.0.0</version>
+        <version>4.2.3</version>
         <licenses>
                       <license>
               <name>Apache 2.0</name>
@@ -529,7 +753,7 @@
       </dependency>
           <dependency>
         <packageName>protocol-hpack</packageName>
-        <version>1.4.2</version>
+        <version>1.5.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -539,7 +763,7 @@
       </dependency>
           <dependency>
         <packageName>protocol-http</packageName>
-        <version>0.24.1</version>
+        <version>0.26.8</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -549,7 +773,7 @@
       </dependency>
           <dependency>
         <packageName>protocol-http1</packageName>
-        <version>0.15.0</version>
+        <version>0.19.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -559,7 +783,7 @@
       </dependency>
           <dependency>
         <packageName>protocol-http2</packageName>
-        <version>0.15.1</version>
+        <version>0.16.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -569,7 +793,7 @@
       </dependency>
           <dependency>
         <packageName>protocol-rack</packageName>
-        <version>0.2.4</version>
+        <version>0.6.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -589,7 +813,7 @@
       </dependency>
           <dependency>
         <packageName>pry</packageName>
-        <version>0.14.0</version>
+        <version>0.14.2</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -599,7 +823,7 @@
       </dependency>
           <dependency>
         <packageName>pry-byebug</packageName>
-        <version>3.5.1</version>
+        <version>3.10.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -619,7 +843,7 @@
       </dependency>
           <dependency>
         <packageName>puma</packageName>
-        <version>4.3.9</version>
+        <version>6.5.0</version>
         <licenses>
                       <license>
               <name>New BSD</name>
@@ -629,7 +853,7 @@
       </dependency>
           <dependency>
         <packageName>racc</packageName>
-        <version>1.6.2</version>
+        <version>1.8.0</version>
         <licenses>
                       <license>
               <name>Simplified BSD</name>
@@ -643,7 +867,7 @@
       </dependency>
           <dependency>
         <packageName>rack</packageName>
-        <version>2.2.6.4</version>
+        <version>3.1.8</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -653,7 +877,17 @@
       </dependency>
           <dependency>
         <packageName>rack-protection</packageName>
-        <version>2.2.4</version>
+        <version>4.1.1</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>rack-session</packageName>
+        <version>2.0.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -663,7 +897,17 @@
       </dependency>
           <dependency>
         <packageName>rack-test</packageName>
-        <version>0.8.2</version>
+        <version>2.1.0</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>rackup</packageName>
+        <version>2.2.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -683,7 +927,17 @@
       </dependency>
           <dependency>
         <packageName>redis</packageName>
-        <version>4.1.3</version>
+        <version>5.2.0</version>
+        <licenses>
+                      <license>
+              <name>MIT</name>
+              <url>http://opensource.org/licenses/mit-license</url>
+            </license>
+                  </licenses>
+      </dependency>
+          <dependency>
+        <packageName>redis-client</packageName>
+        <version>0.23.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -693,7 +947,7 @@
       </dependency>
           <dependency>
         <packageName>redis-namespace</packageName>
-        <version>1.10.0</version>
+        <version>1.11.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -703,7 +957,7 @@
       </dependency>
           <dependency>
         <packageName>resque</packageName>
-        <version>1.27.4</version>
+        <version>2.6.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -733,7 +987,7 @@
       </dependency>
           <dependency>
         <packageName>rexml</packageName>
-        <version>3.2.5</version>
+        <version>3.3.9</version>
         <licenses>
                       <license>
               <name>Simplified BSD</name>
@@ -753,7 +1007,7 @@
       </dependency>
           <dependency>
         <packageName>rspec-core</packageName>
-        <version>3.7.0</version>
+        <version>3.7.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -773,7 +1027,7 @@
       </dependency>
           <dependency>
         <packageName>rspec-files</packageName>
-        <version>1.0.1</version>
+        <version>1.1.3</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -783,7 +1037,7 @@
       </dependency>
           <dependency>
         <packageName>rspec-memory</packageName>
-        <version>1.0.1</version>
+        <version>1.0.4</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -803,7 +1057,7 @@
       </dependency>
           <dependency>
         <packageName>rspec-support</packageName>
-        <version>3.7.0</version>
+        <version>3.7.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -812,8 +1066,8 @@
                   </licenses>
       </dependency>
           <dependency>
-        <packageName>rspec_api_documentation</packageName>
-        <version>5.1.0</version>
+        <packageName>ruby-next-core</packageName>
+        <version>1.0.3</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -847,7 +1101,7 @@
       </dependency>
           <dependency>
         <packageName>samovar</packageName>
-        <version>2.1.4</version>
+        <version>2.3.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -877,7 +1131,7 @@
       </dependency>
           <dependency>
         <packageName>sinatra</packageName>
-        <version>2.2.4</version>
+        <version>4.1.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -887,17 +1141,7 @@
       </dependency>
           <dependency>
         <packageName>sinatra-contrib</packageName>
-        <version>2.2.4</version>
-        <licenses>
-                      <license>
-              <name>MIT</name>
-              <url>http://opensource.org/licenses/mit-license</url>
-            </license>
-                  </licenses>
-      </dependency>
-          <dependency>
-        <packageName>source2swagger</packageName>
-        <version>0.0.2</version>
+        <version>4.1.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -944,18 +1188,8 @@
                   </licenses>
       </dependency>
           <dependency>
-        <packageName>thread_safe</packageName>
-        <version>0.3.6</version>
-        <licenses>
-                      <license>
-              <name>Apache 2.0</name>
-              <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            </license>
-                  </licenses>
-      </dependency>
-          <dependency>
         <packageName>tilt</packageName>
-        <version>2.1.0</version>
+        <version>2.4.0</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -995,7 +1229,7 @@
       </dependency>
           <dependency>
         <packageName>traces</packageName>
-        <version>0.9.1</version>
+        <version>0.14.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -1005,17 +1239,7 @@
       </dependency>
           <dependency>
         <packageName>tzinfo</packageName>
-        <version>1.2.7</version>
-        <licenses>
-                      <license>
-              <name>MIT</name>
-              <url>http://opensource.org/licenses/mit-license</url>
-            </license>
-                  </licenses>
-      </dependency>
-          <dependency>
-        <packageName>vegas</packageName>
-        <version>0.1.11</version>
+        <version>2.0.6</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -1025,7 +1249,7 @@
       </dependency>
           <dependency>
         <packageName>webrick</packageName>
-        <version>1.8.1</version>
+        <version>1.8.2</version>
         <licenses>
                       <license>
               <name>Simplified BSD</name>
@@ -1059,7 +1283,7 @@
       </dependency>
           <dependency>
         <packageName>yabeda</packageName>
-        <version>0.5.0</version>
+        <version>0.13.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -1069,7 +1293,7 @@
       </dependency>
           <dependency>
         <packageName>yabeda-prometheus</packageName>
-        <version>0.5.0</version>
+        <version>0.9.1</version>
         <licenses>
                       <license>
               <name>MIT</name>
@@ -1089,7 +1313,7 @@
       </dependency>
           <dependency>
         <packageName>yard</packageName>
-        <version>0.9.26</version>
+        <version>0.9.36</version>
         <licenses>
                       <license>
               <name>MIT</name>
