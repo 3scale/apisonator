@@ -88,7 +88,8 @@ GEM
     fiber-local (1.1.0)
       fiber-storage
     fiber-storage (1.0.0)
-    gli (2.16.1)
+    gli (2.22.2)
+      ostruct
     google-protobuf (4.28.2)
       bigdecimal
       rake (>= 13)
@@ -158,6 +159,7 @@ GEM
       opentelemetry-semantic_conventions
     opentelemetry-semantic_conventions (1.10.1)
       opentelemetry-api (~> 1.0)
+    ostruct (0.6.1)
     pkg-config (1.1.9)
     power_assert (2.0.3)
     process-metrics (0.2.1)
@@ -305,7 +307,7 @@ DEPENDENCIES
   daemons (= 1.2.4)
   dotenv
   falcon (= 0.43)
-  gli (~> 2.16.1)
+  gli (~> 2.22.2)
   hiredis-client
   license_finder (~> 7.0)
   mocha (~> 1.3)

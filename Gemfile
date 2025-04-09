@@ -44,7 +44,7 @@ end
 # Default server by platform
 gem 'puma', '~> 6.5.0'
 # gems required by the runner
-gem 'gli', '~> 2.16.1', require: nil
+gem 'gli', '~> 2.22.2', require: nil
 # Workers
 gem 'daemons', '= 1.2.4'
 
