@@ -1,4 +1,4 @@
-openapi: 3.0.1
+openapi: 3.1.0
 info:
   title: 3scale Backend Internal API
   version: 1.0.0
@@ -6,121 +6,228 @@ servers:
 - url: http://localhost:3001/internal
 paths:
   /services/{service_id}/alert_limits/:
+    parameters:
+      - $ref: '#/components/parameters/ServiceId'
     get:
       tags:
       - Alert limits
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Getting alert limits
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  alert_limits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        service_id:
+                          type: string
+                        value:
+                          $ref: "#/components/schemas/AlertLimitValue"
+              example:
+                status: found
+                alert_limits:
+                - service_id: "2"
+                  value: 50
+                - service_id: "2"
+                  value: 100
     post:
       tags:
       - Alert limits
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AlertLimit'
+              type: object
+              properties:
+                alert_limit:
+                  type: object
+                  properties:
+                    value:
+                      $ref: "#/components/schemas/AlertLimitValue"
+                  required:
+                  - value
+            example:
+              alert_limit:
+                value: 80
         required: true
       responses:
         "201":
-          description: Add an alert limit
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - created
+                  alert_limit:
+                    type: object
+                    properties:
+                      service_id:
+                        type: string
+                      value:
+                        $ref: "#/components/schemas/AlertLimitValue"
+              example:
+                status: created
+                alert_limit:
+                  service_id: "2"
+                  value: 80
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              example:
+                error: "alert limit is invalid"
   /services/{service_id}/alert_limits/{value}:
     delete:
       tags:
       - Alert limits
       parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
       - name: value
         in: path
         description: Limit value
         required: true
         schema:
-          type: string
+          $ref: "#/components/schemas/AlertLimitValue"
       responses:
         "200":
-          description: Delete an alert limit
+          description: Alert limit deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              example:
+                status: not_found
+                error: alert limit not found
+
   /services/{service_id}/applications/{app_id}/keys/:
+    parameters:
+    - $ref: '#/components/parameters/ServiceId'
+    - $ref: '#/components/parameters/AppId'
     get:
       tags:
       - Application keys
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: app_id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Getting application keys
+          description: Application keys list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  application_keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        service_id:
+                          type: string
+                        app_id:
+                          type: string
+                        value:
+                          type: string
+              example:
+                status: found
+                application_keys:
+                - service_id: "2"
+                  app_id: 593a8c1a
+                  value: 7f50bfa5ce58392c849b272886f29dac
+                - service_id: "2"
+                  app_id: 593a8c1a
+                  value: fd87061b7476e1d1b4015a71ee7acd6e
+        "404":
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
     post:
       tags:
       - Application keys
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: app_id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       requestBody:
         description: Application key value
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApplicationKey'
+              type: object
+              properties:
+                application_key:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+            example:
+              application_key:
+                value: fd87061b7476e1d1b4015a71ee7acd6e
+
         required: true
       responses:
         "201":
-          description: Add an application key
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - created
+                  application_key:
+                    type: object
+                    properties:
+                      app_id:
+                        type: string
+                      value:
+                        type: string
+              example:
+                status: created
+                application_key:
+                  app_id: 593a8c1a
+                  value: fd87061b7476e1d1b4015a71ee7acd6e
+        "404":
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
   /services/{service_id}/applications/{app_id}/keys/{value}:
     delete:
       tags:
       - Application keys
       parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: app_id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       - name: value
         in: path
         description: Application key value
@@ -129,54 +236,114 @@ paths:
           type: string
       responses:
         "200":
-          description: Delete an application key
+          description: Application Key deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
+        "404":
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
+                application-key-not-found-error:
+                  $ref: "#/components/examples/application-key-not-found-error"
+
   /services/{service_id}/applications/{app_id}/referrer_filters:
+    parameters:
+      - $ref: '#/components/parameters/ServiceId'
+      - $ref: '#/components/parameters/AppId'
     get:
       tags:
       - Application Referrer Filters
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: app_id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Getting referrer filters
+          description: Referrer filters list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  referrer_filters:
+                    type: array
+                    items:
+                      type: string
+              example:
+                status: found
+                referrer_filters:
+                - "*.example.com"
+                - "test.org"
+        "404":
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
     post:
       tags:
       - Application Referrer Filters
-      parameters:
-      - name: service_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: app_id
-        in: path
-        required: true
-        schema:
-          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReferrerFilter'
+              $ref: "#/components/schemas/ReferrerFilter"
+            examples:
+              new-referrer-filter:
+                value:
+                  referrer_filter: "*.example.com"
         required: true
       responses:
         "201":
-          description: Create a referrer filter
+          description: Ceated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - created
+                  referrer_filter:
+                    type: string
+              examples:
+                referrer-filter-created:
+                  value:
+                    status: created
+                    referrer_filter: "*.example.com"
         "400":
-          description: Try updating a referrer filter with invalid data
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                referrer-filter-invalid:
+                  value:
+                    error: referrer filter can't be blank
         "404":
-          description: Try updating a referrer filter with invalid application id
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
   /services/{service_id}/applications/{app_id}/referrer_filters/{filter}:
     delete:
       tags:
@@ -187,240 +354,365 @@ paths:
         required: true
         schema:
           type: string
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: app_id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Trying to delete a filter
-  /services/{service_id}/applications/{id}:
+          description: Referrer filter deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
+        "404":
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
+
+  /services/{service_id}/applications/{app_id}:
+    parameters:
+      - $ref: '#/components/parameters/ServiceId'
+      - $ref: '#/components/parameters/AppId'
     get:
       tags:
       - Applications
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Get Application by ID
+          description: Application found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  application:
+                    $ref: "#/components/schemas/Application"
         "404":
-          description: Try to get an Application by non-existent ID
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
     put:
       tags:
       - Applications
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Application'
+              type: object
+              properties:
+                application:
+                  $ref: "#/components/schemas/Application"
         required: true
       responses:
         "200":
-          description: updating the application
+          description: Application created or updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - modified
+                    - created
+                  application:
+                    $ref: "#/components/schemas/Application"
         "400":
-          description: trying to update the application
+          description: Bad Request error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - bad_request
+                    - error
+              examples:
+                bad-request-error:
+                  value:
+                    status: bad_request
+                    error: 'Application with id="593a8c1a" has no state '
+                missing-parameter-application-error:
+                  $ref: "#/components/examples/missing-parameter-application-error"
     post:
       tags:
       - Applications
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Application'
+              type: object
+              properties:
+                application:
+                  $ref: "#/components/schemas/Application"
         required: true
       responses:
         "201":
-          description: Create an Application
+          description: Application created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - created
+                  application:
+                    $ref: "#/components/schemas/Application"
         "400":
-          description: Trying to create the application
+          description: Bad Request error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusError"
+              examples:
+                bad-request-error:
+                  value:
+                    status: bad_request
+                    error: 'Application with id="593a8c1a" has no state '
+                missing-parameter-application-error:
+                  $ref: "#/components/examples/missing-parameter-application-error"
+        "405":
+          description: Application exists error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - exists
+              examples:
+                application-exists-error:
+                  value:
+                    status: exists
+                    error: "application cannot be created, exists already"
     delete:
       tags:
       - Applications
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Deleting an application
-  /services/{service_id}/applications/key/{user_key}:
-    get:
-      tags:
-      - Applications
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: user_key
-        in: path
-        description: User key for this Application
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: Get existing ID of Application with service and key
+          description: Application deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
         "404":
-          description: Try to get an Application ID from a non-existing key
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
+  /services/{service_id}/applications/key/{user_key}:
+    parameters:
+      - $ref: '#/components/parameters/ServiceId'
+      - $ref: '#/components/parameters/UserKey'
+    get:
+      description: Get application ID by service ID and user key
+      tags:
+      - Applications
+      responses:
+        "200":
+          description: Application found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  application:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+              example:
+                status: found
+                application:
+                  id: a461c5af
+        "404":
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-key-not-found-error:
+                  $ref: "#/components/examples/application-key-not-found-error"
     delete:
+      description: Delete App Id by user key
       tags:
       - Applications
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: user_key
-        in: path
-        description: User key for this Application
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Delete an Application's user key
-  /services/{service_id}/applications/{id}/key/{user_key}:
+          description: User key deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
+
+  /services/{service_id}/applications/{app_id}/key/{user_key}:
     put:
+      description: Change the key for an Application
       tags:
       - Applications
       parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
-      - name: user_key
-        in: path
-        description: User key for this Application
-        required: true
-        schema:
-          type: string
+        - $ref: '#/components/parameters/AppId'
       responses:
         "200":
-          description: Change the key for an Application
+          description: Application ID modified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - modified
+                  application:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+              example:
+                status: modified
+                application:
+                  id: a461c5af
+
   /services/{service_id}/errors/:
+    parameters:
+      - $ref: '#/components/parameters/ServiceId'
     get:
       tags:
       - Errors
       parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
+      - name: page
+        in: query
+        description: Page number
         schema:
-          type: string
+          type: integer
+      - name: per_page
+        in: query
+        description: Results per page
+        schema:
+          type: integer
       responses:
         "200":
           description: Get errors by service ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  errors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Error"
+                  count:
+                    type: integer
         "400":
-          description: Try with negative per_page value
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              example:
+                error: "per_page needs to be > 0"
         "404":
-          description: Try with invalid service ID
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                service-not-found-error:
+                  $ref: "#/components/examples/service-not-found-error"
     post:
       tags:
       - Errors
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
+      description: This endpoint is only used for development and test and is used for creating errors manually
       requestBody:
-        description: Errors
+        description: A list of error messages
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Errors'
+              type: object
+              properties:
+                errors:
+                  type: array
+                  items:
+                    type: string
+            example:
+              errors:
+              - Something went wrong
+              - Some exception message
         required: false
       responses:
         "201":
-          description: Save errors
+          description: Errors created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusCreated"
         "400":
           description: Try without specifying errors
         "404":
-          description: Try to save errors
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                service-not-found-error:
+                  $ref: "#/components/examples/service-not-found-error"
     delete:
       tags:
       - Errors
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Delete all errors
+          description: All errros deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
         "404":
-          description: Try with invalid service ID
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                service-not-found-error:
+                  $ref: "#/components/examples/service-not-found-error"
+
   /events/:
     get:
       tags:
@@ -428,6 +720,17 @@ paths:
       responses:
         "200":
           description: Getting events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  events:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Event"
     post:
       tags:
       - Events
@@ -436,17 +739,68 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Events'
+              type: object
+              properties:
+                events:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Event"
         required: false
       responses:
         "201":
-          description: Save events
+          description: Events created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusCreated"
         "400":
-          description: Try to save events
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - error
+                  error:
+                    type: string
+              example:
+                status: error
+                error: missing parameter 'events'
+    delete:
+      tags:
+      - Events
+      description: Delete all events (optionally, unil some ID)
+      parameters:
+      - name: upto_id
+        in: query
+        description: Maximum event ID to delete
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Events deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - deleted
+                  num_events:
+                    type: number
+              example:
+                status: deleted
+                num_events: 5
   /events/{id}:
     delete:
       tags:
       - Events
+      description: Delete an event by ID
       parameters:
       - name: id
         in: path
@@ -456,156 +810,252 @@ paths:
           type: integer
       responses:
         "200":
-          description: Delete Event by ID
+          description: Event deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
+        "404":
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              example:
+                status: not_found
+                error: event not found
+
   /check.json:
     get:
       tags:
-      - Internal API
+      - Status
+      description: Check internal API live status
       responses:
         "200":
-          description: Check internal API live status
+          description: Status OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusOK"
   /status:
     get:
       tags:
-      - Internal API
+      - Status
+      description: Get Backend's version
       responses:
         "200":
-          description: Get Backend's version
-  /services/{service_id}/metrics/{id}:
+          description: Status OK and backend version
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - ok
+                  version:
+                    type: object
+                    properties:
+                      backend:
+                        type: string
+              example:
+                status: ok
+                version:
+                  backend: "3.4.3"
+
+  /services/{service_id}/metrics/{metric_id}:
+    parameters:
+      - $ref: '#/components/parameters/ServiceId'
+      - name: metric_id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
     get:
       tags:
       - Metrics
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Get Metric by ID
+          description: Metric found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  metric:
+                    $ref: "#/components/schemas/Metric"
         "404":
-          description: Try to get a Metric by non-existent ID
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              example:
+                status: not_found
+                error: metric not found
     put:
       tags:
       - Metrics
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
+      description: Update Metric by ID
       requestBody:
         description: Metric attributes
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AlertLimit'
+              type: object
+              properties:
+                metric:
+                  $ref: "#/components/schemas/Metric"
         required: true
       responses:
         "200":
-          description: Update Metric by ID
+          description: Metric updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - modified
+                  metric:
+                    $ref: "#/components/schemas/Metric"
+        "400":
+          description: Bad Request error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - error
+                  error:
+                    type: string
+              example:
+                status: error
+                error: "missing parameter 'metric'"
     post:
       tags:
       - Metrics
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
+      description: Create a Metric
       requestBody:
         description: Metric attributes
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Metric'
+              type: object
+              properties:
+                metric:
+                  $ref: "#/components/schemas/Metric"
         required: true
       responses:
         "201":
-          description: Create a Metric
+          description: Metric created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - created
+                  metric:
+                    $ref: "#/components/schemas/Metric"
+        "400":
+          description: Bad Request error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - error
+                  error:
+                    type: string
+              example:
+                status: error
+                error: "missing parameter 'metric'"
     delete:
       tags:
       - Metrics
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Deleting a Metric
+          description: Metric deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              example:
+                status: not_found
+                error: metric not found
+
   /service_tokens/{token}/{service_id}/:
-    head:
-      tags:
-      - Service Tokens
-      parameters:
+    parameters:
+      - $ref: "#/components/parameters/ServiceId"
       - name: token
         in: path
         description: token
         required: true
         schema:
           type: string
-      - name: service_id
-        in: path
-        description: service ID
-        required: true
-        schema:
-          type: string
+    head:
+      tags:
+      - Service Tokens
+      description: Check if the service ID/service token pair exists
       responses:
         "200":
-          description: Check if the pair exists
+          description: OK
         "404":
-          description: Check if the pair exists
+          description: Not Found
   /service_tokens/{token}/{service_id}/provider_key:
     get:
       tags:
       - Service Tokens
-      parameters:
-      - name: token
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: service_id
-        in: path
-        required: true
-        schema:
-          type: string
+      description: Get the provider key by service ID and service token
       responses:
         "200":
-          description: Get the provider key
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  provider_key:
+                    type: string
+              example:
+                status: found
+                provider_key: a640cb1efe587e0b0e811d5200d77f3b
         "404":
-          description: Try to get the provider key
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              example:
+                status: not_found
+                error: "token/service combination not found"
   /service_tokens/:
     post:
       tags:
@@ -615,68 +1065,143 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceTokens'
+              $ref: "#/components/schemas/ServiceTokens"
         required: true
       responses:
         "201":
-          description: "Create a (service_token, service_id) pair"
+          description: Service token created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusCreated"
         "400":
-          description: "Try to create a (service_token, service_id) without sending\
-            \ service_tokens"
+          description: Missing service_tokens parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              example:
+                error: "missing parameter 'service_tokens'"
         "422":
-          description: "Try to create a (service_token, service_id) pair with null\
-            \ service_token"
-  /services/{id}:
+          description: Blank service ID error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusError"
+              example:
+                status: error
+                error: Service ID cannot be blank
+  /services/{service_id}:
+    parameters:
+      - $ref: "#/components/parameters/ServiceId"
     get:
       tags:
       - Services
-      parameters:
-      - name: id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
+      description: Get service details by ID
       responses:
         "200":
-          description: Get Service by ID
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  service:
+                    $ref: "#/components/schemas/Service"
         "404":
-          description: Try to get a Service by non-existent ID
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - not_found
     put:
       tags:
       - Services
-      parameters:
-      - name: id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: integer
       requestBody:
         description: Service attributes
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AlertLimit'
+              type: object
+              properties:
+                service:
+                  $ref: "#/components/schemas/Service"
+            example:
+              service:
+                id: "2"
+                provider_key: "a640cb1efe587e0b0e811d5200d77f3b"
+                backend_version: "1"
+                referrer_filters_required: false
+                default_service: false
         required: true
       responses:
         "200":
-          description: Update Service by ID
+          description: Service updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - ok
+                  service:
+                    $ref: "#/components/schemas/Service"
+        "400":
+          description: Missing service parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusError"
+              example:
+                status: "error"
+                error: "missing parameter 'service'"
     delete:
       tags:
       - Services
-      parameters:
-      - name: id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
+      description: Delete service by ID
+
       responses:
         "200":
-          description: Deleting a default service when it is the only one
+          description: Service deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
         "400":
-          description: Deleting a default service when there are more
+          description: Can't delete a default service
+          content:
+            application/json:
+              schema:
+                object: type
+                properties:
+                  error:
+                    type: string
+              example:
+                error: 'Service id="2" is the default service, cannot be removed'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              example:
+                status: not_found
+                error: 'service id "123" is invalid'
+
   /services/:
     post:
       tags:
@@ -686,14 +1211,41 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Service'
+              type: object
+              properties:
+                service:
+                  $ref: "#/components/schemas/Service"
+            example:
+              service:
+                id: "2"
+                provider_key: "a640cb1efe587e0b0e811d5200d77f3b"
+                backend_version: "1"
+                referrer_filters_required: false
+                default_service: false
         required: true
       responses:
         "201":
-          description: Create a Service
+          description: Service updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - created
+                  service:
+                    $ref: "#/components/schemas/Service"
         "400":
-          description: Try creating a Service without specifying the service parameter
-            in the body
+          description: Missing service parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusError"
+              example:
+                status: "error"
+                error: "missing parameter 'service'"
   /services/change_provider_key/{key}:
     put:
       tags:
@@ -710,161 +1262,272 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewKey'
+              type: object
+              properties:
+                new_key:
+                  type: string
+            example:
+              new_key: "a640cb1efe587e0b0e811d5200d77f3b"
         required: true
       responses:
         "200":
-          description: Changing a provider key
+          description: Provider key changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusOK"
         "400":
-          description: Trying to change a provider key to empty
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                provider-key-not-exists:
+                  value:
+                    error: 'Provider key="a640cb1efe587e0b0e811d5200d77f3b" does not exist'
+                provider-key-not-valid:
+                  value:
+                    error: "Provider keys are not valid, must be not nil and different"
+                provider-key-already-exists:
+                  value:
+                    error: 'Provider key="a640cb1efe587e0b0e811d5200d77f3b" already exists"'
   /services/{service_id}/stats:
+    parameters:
+    f- $ref: "#/components/parameters/ServiceId"
     delete:
       tags:
       - Stats
-      parameters:
-      - name: service_id
+      responses:
+        "200":
+          description: Stats marked for deletion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - to_be_deleted
+        "404":
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                service-not-found-error:
+                  $ref: "#/components/examples/service-not-found-error"
+
+  /services/{service_id}/plans/{plan_id}/usagelimits/{metric_id}/{period}:
+    parameters:
+      - $ref: "#/components/parameters/ServiceId"
+      - name: plan_id
         in: path
-        description: Service ID
+        description: Plan ID
         required: true
         schema:
           type: string
-      responses:
-        "200":
-          description: Deleting stats
-        "404":
-          description: Deleting stats
-  /services/{service_id}/plans/{plan_id}/usagelimits/{metric_id}/{period}:
+      - name: metric_id
+        in: path
+        description: Metric ID
+        required: true
+        schema:
+          type: string
+      - name: period
+        in: path
+        description: Period
+        required: true
+        schema:
+          $ref: "#/components/schemas/UsagePeriod"
     get:
       tags:
       - UsageLimits
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: plan_id
-        in: path
-        description: Plan ID
-        required: true
-        schema:
-          type: string
-      - name: metric_id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
-      - name: period
-        in: path
-        description: Period
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Get UsageLimits
+          description: Usage limit found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  usagelimit:
+                    $ref: "#/components/schemas/UsageLimit"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              example:
+                status: not_found
+                error: usage limit not found
     put:
       tags:
       - UsageLimits
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: plan_id
-        in: path
-        description: Plan ID
-        required: true
-        schema:
-          type: string
-      - name: metric_id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
-      - name: period
-        in: path
-        description: Period
-        required: true
-        schema:
-          type: string
       requestBody:
         description: UsageLimit attributes
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UsageLimit'
+              type: object
+              properties:
+                usagelimit:
+                  $ref: "#/components/schemas/UsageLimit"
+            example:
+              usagelimit:
+                day: 200
         required: true
       responses:
         "200":
-          description: Update UsageLimits
+          description: Usage limit modified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - modified
+                  usagelimit:
+                    $ref: "#/components/schemas/UsageLimit"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              example:
+                status: not_found
+                error: usage limit not found
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - error
+                  error:
+                    type: string
+              examples:
+                missing-parameter-usagelimit-error:
+                  value:
+                    status: "error"
+                    error: "missing parameter 'usagelimit'"
+                missing-parameter-period-error:
+                  value:
+                    status: "error"
+                    error: "missing parameter 'day'"
     delete:
       tags:
       - UsageLimits
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: plan_id
-        in: path
-        description: Plan ID
-        required: true
-        schema:
-          type: string
-      - name: metric_id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
-      - name: period
-        in: path
-        description: Period
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Delete UsageLimits
+          description: Usage limit deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusDeleted"
   /services/{service_id}/applications/{app_id}/utilization/:
+    parameters:
+    - $ref: "#/components/parameters/ServiceId"
+    - $ref: "#/components/parameters/AppId"
     get:
       tags:
       - Utilization
-      parameters:
-      - name: service_id
-        in: path
-        description: Service ID
-        required: true
-        schema:
-          type: string
-      - name: app_id
-        in: path
-        description: Application ID
-        required: true
-        schema:
-          type: string
       responses:
         "200":
-          description: Get utilization
+          description: Utilization found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - found
+                  utilization:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Utilization"
         "404":
-          description: Try to get utilization
+          description: Not Found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+              examples:
+                application-not-found-error:
+                  $ref: "#/components/examples/application-not-found-error"
+                service-not-found-error:
+                  $ref: "#/components/examples/service-not-found-error"
 components:
+  parameters:
+    ServiceId:
+      name: service_id
+      in: path
+      description: Service ID
+      required: true
+      schema:
+        type: string
+    AppId:
+      name: app_id
+      in: path
+      description: Application ID
+      required: true
+      schema:
+        type: string
+    UserKey:
+      name: user_key
+      in: path
+      description: User key for this Application
+      required: true
+      schema:
+        type: string>
   schemas:
+    NotFoundError:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - not_found
+        error:
+          type: string
     AlertLimit:
       required:
       - value
       type: object
       properties:
         value:
+          type: integer
+        service_id:
           type: string
+    AlertLimitValue:
+      type: integer
+      enum:
+      - 50
+      - 80
+      - 90
+      - 100
+      - 120
+      - 150
+      - 200
+      - 300
     ApplicationKey:
       required:
       - value
@@ -892,48 +1555,280 @@ components:
           type: string
         state:
           type: string
+          enum:
+          - active
+          - pending
+          - suspended
         redirect_url:
-          type: string
-    Errors:
-      type: array
-      items:
-        type: string
-    Events:
-      type: array
-      items:
-        type: object
-        properties:
           type:
-            type: string
-          object:
-            type: object
-            properties: {}
+          - "null"
+          - string
+      examples:
+      - service_id: "17"
+        id: 593a8c1a
+        state: active
+        plan_id: "44"
+        plan_name: Test plan
+        redirect_url: null
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+        context_info:
+          type: object
+          properties:
+            url:
+              type: string
+            method:
+              type: string
+              enum:
+              - GET
+              - POST
+            from_vars:
+              type:
+              - "null"
+              - string
+            user_agent:
+              type: string
+            ip:
+              type: string
+            content_type:
+              type:
+              - "null"
+              - string
+            content_length:
+              type:
+              - "null"
+              - string
+            extensions:
+              type: object
+      examples:
+      - code: user_key_invalid
+        message: 'user key "test" is invalid'
+        timestamp: "2025-01-28 10:27:08 UTC"
+        context_info:
+          url: "https://example.com/transactions/authrep.xml?service_token=whatever&service_id=2&user_key=test&usage%5Bhits%5D=1&log%5Bcode%5D=200"
+          method: GET
+          form_vars: null
+          user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+          ip: "127.0.0.1"
+          content_type: null
+          content_length: null
+          extensions: {}
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum:
+          - first_traffic
+          - first_daily_traffic
+          - alert
+        timestamp:
+          type: string
+        object:
+          type: object
+          properties:
+            service_id:
+              type: string
+            application_id:
+              type: string
+            timestamp:
+              type: string
+      examples:
+      - id: 8
+        type: first_traffic
+        timestamp: "2025-01-28 14:11:52 UTC"
+        object:
+          service_id: "2"
+          application_id: "182e0f2a"
+          timestamp: "2025-01-28 14:11:52 UTC"
+      - id: 9
+        type: alert
+        timestamp: "2025-01-28 15:08:57 UTC"
+        object:
+          id: 1
+          utilization: 50
+          max_utilization: 0.5
+          application_id: "182e0f2a"
+          service_id: "2"
+          timestamp: "2025-01-28 15:08:57 UTC"
+          limit: "hits per day: 25/50"
     Metric:
       type: object
       properties:
         service_id:
           type: string
         id:
-          type: string
+          type: integer
         name:
-          type: string
+          type:
+        parent_id:
+          type:
+          - "null"
+          - integer
+      examples:
+      - service_id: "2"
+        id: 6
+        name: "hits"
+        parent_id: null
+      - service_id: "2"
+        id: 7
+        name: "hits.2"
+        parent_id: 6
     ServiceTokens:
       type: object
+      properties:
+        service_tokens:
+          schema:
+            type: object
+            additionalProperties:
+              type: object
+              properties:
+                service_id:
+                  type: integer
+      examples:
+      - service_tokens:
+          3176fe188dc2b1051d4a1f70757c0eda9b314eb31f8df9b1a7a2d542288d2365:
+            service_id: 2
     Service:
       type: object
-    NewKey:
-      type: object
       properties:
-        new_key:
+        id:
           type: string
+        state:
+          type: string
+          enum:
+          - active
+        provider_key:
+          type: string
+        backend_version:
+          type: string
+        referrer_filters_required:
+          type: boolean
+        default_service:
+          type: boolean
+      required:
+      - id
+      - provider_key
+      - backend_version
+      - referrer_filters_required
+      - default_service
+      examples:
+      - id: "2"
+        state: "active"
+        provider_key: "a640cb1efe587e0b0e811d5200d77f3b"
+        backend_version: "1"
+        referrer_filters_required: false
+        default_service: false
     UsageLimit:
       type: object
-      example:
-        usagelimit:
-          year: "1001"
+      properties:
+        service_id:
+          type: string
+        plan_id:
+          type: integer
+        metric_id:
+          type: integer
+      propertyNames:
+        $ref: "#/components/schemas/UsagePeriod"
+      additionalProperties:
+        type: integer
+      examples:
+      - service_id: "2"
+        plan_id: 4
+        metric_id: 6
+        day: 100
+    StatusCreated:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - created
+      examples:
+      - status: created
+    StatusDeleted:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - deleted
+      examples:
+      - status: deleted
+    StatusError:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - error
+        error:
+          type: string
+    StatusOK:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+      examples:
+      - status: ok
+    UsagePeriod:
+      type: string
+      enum:
+      - eternity
+      - year
+      - month
+      - week
+      - day
+      - hour
+      - minute
+    Utilization:
+      type: object
+      properties:
+        period:
+          $ref: "#/components/schemas/UsagePeriod"
+        metric_name:
+          type: string
+        max_value:
+          type: integer
+        current_value:
+          type: integer
+      examples:
+      - period: "day"
+        metric_name: "hits"
+        max_value: 100
+        current_value: 10
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
+  examples:
+    application-not-found-error:
+      value:
+        status: not_found
+        error: application not found
+    application-key-not-found-error:
+      value:
+        status: not_found
+        error: application key not found
+    service-not-found-error:
+      value:
+        status: not_found
+        error: service not found
+    missing-parameter-application-error:
+      value:
+        status: error
+        error: "missing parameter 'application'"
+
 security:
-  - basicAuth: []
+- basicAuth: []
