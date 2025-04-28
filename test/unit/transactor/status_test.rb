@@ -310,7 +310,7 @@ module Transactor
       redirect_url = doc.at 'redirect_url'
 
       # If redirect_url is present and the document is still valid is because escaping worked
-      assert_not_nil redirect_url
+      assert_equal @application.redirect_url, redirect_url.text
       assert_empty doc.errors
     end
   end
