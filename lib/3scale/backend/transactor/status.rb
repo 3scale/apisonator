@@ -202,7 +202,7 @@ module ThreeScale
         end
 
         def add_application_section(xml)
-          redirect_uri = application.redirect_url
+          redirect_uri = application.redirect_url&.encode(xml: :text)
           xml << '<application>' \
                  "<id>#{application.id}</id>" \
                  "<key>#{application.keys.first}</key>" \
