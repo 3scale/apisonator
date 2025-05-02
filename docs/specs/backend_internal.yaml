@@ -7,7 +7,7 @@ servers:
 paths:
   /services/{service_id}/alert_limits/:
     parameters:
-      - $ref: '#/components/parameters/ServiceId'
+    - $ref: '#/components/parameters/ServiceId'
     get:
       tags:
       - Alert limits
@@ -99,6 +99,7 @@ paths:
       tags:
       - Alert limits
       parameters:
+      - $ref: '#/components/parameters/ServiceId'
       - name: value
         in: path
         description: Limit value
@@ -228,6 +229,8 @@ paths:
       tags:
       - Application keys
       parameters:
+      - $ref: '#/components/parameters/ServiceId'
+      - $ref: '#/components/parameters/AppId'
       - name: value
         in: path
         description: Application key value
@@ -255,8 +258,8 @@ paths:
 
   /services/{service_id}/applications/{app_id}/referrer_filters:
     parameters:
-      - $ref: '#/components/parameters/ServiceId'
-      - $ref: '#/components/parameters/AppId'
+    - $ref: '#/components/parameters/ServiceId'
+    - $ref: '#/components/parameters/AppId'
     get:
       tags:
       - Application Referrer Filters
@@ -349,6 +352,8 @@ paths:
       tags:
       - Application Referrer Filters
       parameters:
+      - $ref: '#/components/parameters/ServiceId'
+      - $ref: '#/components/parameters/AppId'
       - name: filter
         in: path
         required: true
@@ -373,8 +378,8 @@ paths:
 
   /services/{service_id}/applications/{app_id}:
     parameters:
-      - $ref: '#/components/parameters/ServiceId'
-      - $ref: '#/components/parameters/AppId'
+    - $ref: '#/components/parameters/ServiceId'
+    - $ref: '#/components/parameters/AppId'
     get:
       tags:
       - Applications
@@ -523,8 +528,8 @@ paths:
                   $ref: "#/components/examples/application-not-found-error"
   /services/{service_id}/applications/key/{user_key}:
     parameters:
-      - $ref: '#/components/parameters/ServiceId'
-      - $ref: '#/components/parameters/UserKey'
+    - $ref: '#/components/parameters/ServiceId'
+    - $ref: '#/components/parameters/UserKey'
     get:
       description: Get application ID by service ID and user key
       tags:
@@ -577,7 +582,7 @@ paths:
       tags:
       - Applications
       parameters:
-        - $ref: '#/components/parameters/AppId'
+      - $ref: '#/components/parameters/AppId'
       responses:
         "200":
           description: Application ID modified successfully
@@ -602,7 +607,7 @@ paths:
 
   /services/{service_id}/errors/:
     parameters:
-      - $ref: '#/components/parameters/ServiceId'
+    - $ref: '#/components/parameters/ServiceId'
     get:
       tags:
       - Errors
@@ -866,13 +871,13 @@ paths:
 
   /services/{service_id}/metrics/{metric_id}:
     parameters:
-      - $ref: '#/components/parameters/ServiceId'
-      - name: metric_id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
+    - $ref: '#/components/parameters/ServiceId'
+    - name: metric_id
+      in: path
+      description: Metric ID
+      required: true
+      schema:
+        type: string
     get:
       tags:
       - Metrics
@@ -1009,13 +1014,13 @@ paths:
 
   /service_tokens/{token}/{service_id}/:
     parameters:
-      - $ref: "#/components/parameters/ServiceId"
-      - name: token
-        in: path
-        description: token
-        required: true
-        schema:
-          type: string
+    - $ref: "#/components/parameters/ServiceId"
+    - name: token
+      in: path
+      description: token
+      required: true
+      schema:
+        type: string
     head:
       tags:
       - Service Tokens
@@ -1026,6 +1031,14 @@ paths:
         "404":
           description: Not Found
   /service_tokens/{token}/{service_id}/provider_key:
+    parameters:
+    - $ref: "#/components/parameters/ServiceId"
+    - name: token
+      in: path
+      description: token
+      required: true
+      schema:
+        type: string
     get:
       tags:
       - Service Tokens
@@ -1096,7 +1109,7 @@ paths:
                 error: Service ID cannot be blank
   /services/{service_id}:
     parameters:
-      - $ref: "#/components/parameters/ServiceId"
+    - $ref: "#/components/parameters/ServiceId"
     get:
       tags:
       - Services
@@ -1297,7 +1310,7 @@ paths:
                     error: 'Provider key="a640cb1efe587e0b0e811d5200d77f3b" already exists"'
   /services/{service_id}/stats:
     parameters:
-    f- $ref: "#/components/parameters/ServiceId"
+    - $ref: "#/components/parameters/ServiceId"
     delete:
       tags:
       - Stats
@@ -1325,25 +1338,25 @@ paths:
 
   /services/{service_id}/plans/{plan_id}/usagelimits/{metric_id}/{period}:
     parameters:
-      - $ref: "#/components/parameters/ServiceId"
-      - name: plan_id
-        in: path
-        description: Plan ID
-        required: true
-        schema:
-          type: string
-      - name: metric_id
-        in: path
-        description: Metric ID
-        required: true
-        schema:
-          type: string
-      - name: period
-        in: path
-        description: Period
-        required: true
-        schema:
-          $ref: "#/components/schemas/UsagePeriod"
+    - $ref: "#/components/parameters/ServiceId"
+    - name: plan_id
+      in: path
+      description: Plan ID
+      required: true
+      schema:
+        type: string
+    - name: metric_id
+      in: path
+      description: Metric ID
+      required: true
+      schema:
+        type: string
+    - name: period
+      in: path
+      description: Period
+      required: true
+      schema:
+        $ref: "#/components/schemas/UsagePeriod"
     get:
       tags:
       - UsageLimits
@@ -1497,7 +1510,7 @@ components:
       description: User key for this Application
       required: true
       schema:
-        type: string>
+        type: string
   schemas:
     NotFoundError:
       type: object
@@ -1687,13 +1700,12 @@ components:
       type: object
       properties:
         service_tokens:
-          schema:
+          type: object
+          additionalProperties:
             type: object
-            additionalProperties:
-              type: object
-              properties:
-                service_id:
-                  type: integer
+            properties:
+              service_id:
+                type: integer
       examples:
       - service_tokens:
           3176fe188dc2b1051d4a1f70757c0eda9b314eb31f8df9b1a7a2d542288d2365:
