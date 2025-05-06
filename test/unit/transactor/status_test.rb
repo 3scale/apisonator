@@ -297,5 +297,21 @@ module Transactor
       assert_not_empty keys
       assert_equal @keys.sort, keys.sort
     end
+
+    test '#to_xml escapes application.redirect_url when OAuth is used' do
+      @application.redirect_url = 'http://example.com?foor=bar&test=true'
+      usage  = {:month => {@metric_id.to_s => 429}}
+      status = Transactor::Status.new(service_id: @service_id,
+                                      application: @application,
+                                      values: usage,
+                                      oauth: true)
+
+      doc = Nokogiri::XML(status.to_xml)
+      redirect_url = doc.at 'redirect_url'
+
+      # If redirect_url is present and the document is still valid is because escaping worked
+      assert_equal @application.redirect_url, redirect_url.text
+      assert_empty doc.errors
+    end
   end
 end
