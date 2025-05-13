@@ -5,7 +5,7 @@ require 'falcon/environment/rack'
 require 'falcon/environment/supervisor'
 require '3scale/backend/manifest'
 
-HOSTNAME = 'apisonator_listener'
+HOSTNAME = 'listener'
 
 service HOSTNAME do
   include Falcon::Environment::Rack
