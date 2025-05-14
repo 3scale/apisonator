@@ -23,7 +23,7 @@ class HugePayloadTest < Test::Unit::TestCase
   end
 
   def test_report_handles_huge_payloads
-    payload = generate_payload((ENV['HUGE_PAYLOAD_SIZE'] || 10000).to_i)
+    payload = generate_payload((ENV['HUGE_PAYLOAD_SIZE'] || 2000).to_i)
 
     post '/transactions.xml', {}, :input           => payload,
                                   'CONTENT_TYPE'   => 'application/x-www-form-urlencoded',

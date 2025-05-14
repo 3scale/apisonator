@@ -64,7 +64,7 @@ RSpec.configure do |config|
   end
 
   config.around :each do |example|
-    Async.run do
+    Sync do
       # TODO: This is needed for the acceptance specs. Not sure why.
       RSpec.current_example = example
 
