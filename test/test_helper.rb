@@ -39,6 +39,6 @@ class Test::Unit::TestCase
   alias_method :original_run, :run
 
   def run(*args, &blk)
-    Async { original_run(*args, &blk) }
+    Sync { original_run(*args, &blk) }
   end
 end
