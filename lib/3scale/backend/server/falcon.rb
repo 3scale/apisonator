@@ -18,8 +18,7 @@ module ThreeScale
 
           ENV["PORT"] = options[:port] if options[:port]
 
-          argv = ['falcon']
-          argv_add argv, true, 'host'
+          argv = ['falcon', 'host']
           argv_add argv, true, CONFIG
         end
 
