@@ -16,7 +16,7 @@ module ThreeScale
           manifest = global_options[:manifest]
           return unless manifest
 
-          ENV["PORT"] = options[:port] if options[:port]
+          ENV["PORT"] ||= options[:port]
 
           argv = ['falcon', 'host']
           argv_add argv, true, CONFIG
