@@ -4,6 +4,8 @@ module ThreeScale
       class Falcon
         extend ThreeScale::Backend::Server::Utils
 
+        CONFIG = 'falcon.rb'
+
         def self.start(global_options, options, args)
           # Falcon does not support:
           # - options[:daemonize]
@@ -14,16 +16,10 @@ module ThreeScale
           manifest = global_options[:manifest]
           return unless manifest
 
-          argv = ['falcon']
-          argv_add argv, true, '--bind', 'http://0.0.0.0'
-          argv_add argv, options[:port], '--port', options[:port]
+          ENV["PORT"] ||= options[:port]
 
-          # Starts the prometheus server if needed. Just once even when spanning
-          # multiple workers.
-          argv_add argv, true, '--preload', 'lib/3scale/prometheus_server.rb'
-
-          server_model = manifest[:server_model]
-          argv_add argv, true, '--count', server_model[:workers].to_s
+          argv = ['falcon', 'host']
+          argv_add argv, true, CONFIG
         end
 
         def self.restart(global_options, options, args)
