@@ -46,10 +46,10 @@ module ThreeScale
         end
 
         # This method allows us to send pipelines like this:
-        # storage.pipelined do |pipeline|
-        #   pipeline.get('a')
-        #   pipeline.get('b')
-        # end
+        #   storage.pipelined do |pipeline|
+        #     pipeline.get('a')
+        #     pipeline.get('b')
+        #   end
         def pipelined(&block)
           # This replaces the client with a Pipeline that accumulates the Redis
           # commands run in a block and sends all of them in a single request.
