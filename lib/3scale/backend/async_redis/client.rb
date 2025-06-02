@@ -15,6 +15,7 @@ module ThreeScale
         class << self
           # @param opts [Hash] Redis connection options
           # @return [Async::Redis::Client]
+          # @return [ThreeScale::Backend::AsyncRedis::SentinelsClientACLTLS]
           def call(opts)
             return connect_tcp(opts) if url_present?(opts[:url])
 
