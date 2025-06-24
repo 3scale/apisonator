@@ -66,29 +66,25 @@ module ThreeScale
         # service_id cannot be taken from params since it might be missing there
         service_id = service.id
 
-        app_id = params[:app_id]
-        # TODO: make sure params are nil if they are empty up the call stack
+        # Make sure params are nil if they are empty up the call stack
         # Note: app_key is an exception, as it being empty is semantically
         # significant.
-        params[:app_id] = nil if app_id && app_id.empty?
+        app_id = params[:app_id]&.empty? ? nil : params[:app_id]
+        user_key = params[:user_key]&.empty? ? nil : params[:user_key]
 
         # While OIDC without an app_id makes little sense, we would break existing
         # behaviour when calling non oauth_auth*.xml endpoints if we returned an
         # error here, so only do this for oauth_auth*.xml endpoints.
         raise ApplicationNotFound.new nil if oauth && app_id.nil?
 
-        validators = if oidc_service
-                       Validators::OIDC_VALIDATORS
-                     elsif oauth
-                       Validators::OAUTH_VALIDATORS
-                     else
-                       Validators::VALIDATORS
-                     end
+        raise AuthenticationError if app_id && user_key
 
-        params[:user_key] = nil if params[:user_key] && params[:user_key].empty?
-        application = Application.load_by_id_or_user_key!(service_id,
-                                                          app_id,
-                                                          params[:user_key])
+        if service.backend_version.to_i == 1
+          app_id = Application.load_id_by_key(service_id, user_key)
+          raise UserKeyInvalid, user_key if app_id.nil?
+        end
+
+        application = Application.load!(service_id, app_id)
 
         extensions = request_info && request_info[:extensions] || {}
 
@@ -112,6 +108,14 @@ module ThreeScale
         }
 
         application.load_metric_names
+
+        validators = if oidc_service
+                       Validators::OIDC_VALIDATORS
+                     elsif oauth
+                       Validators::OAUTH_VALIDATORS
+                     else
+                       Validators::VALIDATORS
+                     end
 
         # returns a status object
         apply_validators(validators, status_attrs, params)
