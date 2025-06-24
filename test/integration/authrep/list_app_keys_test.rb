@@ -86,7 +86,7 @@ class AuthrepListAppKeysExtensionTest < Test::Unit::TestCase
     assert_nil xml_resp.at('app_keys')
   end
 
-  test_authrep 'with the list_app_keys extension outputs the application keys section even if no app keys exist' do |e|
+  test_authrep 'with the list_app_keys extension outputs the application keys section even if no app keys exist' do |e, method|
     get e, { provider_key: @provider_key, service_id: @service.id,
              app_id: @application_nokeys.id },
            'HTTP_3SCALE_OPTIONS' => Extensions::LIST_APP_KEYS
@@ -127,6 +127,8 @@ class AuthrepListAppKeysExtensionTest < Test::Unit::TestCase
 
     # user_key cannot be used with oauth_* endpoints, as they require an app_id
     if e !~ /oauth_auth/
+      Service.save! id: @service.id, provider_key: @provider_key, backend_version: method == :oauth_authrep ? 'oauth' : 1
+
       get e, { provider_key: @provider_key, service_id: @service.id,
                user_key: @user_key },
              'HTTP_3SCALE_OPTIONS' => Extensions::LIST_APP_KEYS

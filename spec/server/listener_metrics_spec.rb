@@ -12,6 +12,7 @@ module ThreeScale
       let(:metrics_port) { 9394 }
 
       context 'when listener metrics are enabled' do
+        let(:backend_version) { '1' }
         let(:provider_key) { 'pk' }
         let(:service_id) { '1' }
         let(:app_id) { '1' }
@@ -39,7 +40,7 @@ module ThreeScale
             start_listener(true, LISTENER_PORT, metrics_port, server)
 
             ThreeScale::Backend::Service.save!(
-              provider_key: provider_key, id: service_id
+              provider_key: provider_key, id: service_id, backend_version: backend_version
             )
 
             ThreeScale::Backend::Application.save(

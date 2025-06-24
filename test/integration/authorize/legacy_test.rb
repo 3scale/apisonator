@@ -11,6 +11,8 @@ class AuthorizeLegacyTest < Test::Unit::TestCase
 
     setup_provider_fixtures
 
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: '1'
+
     @application = Application.save(:service_id => @service.id,
                                     :id         => next_id,
                                     :state      => :active,
