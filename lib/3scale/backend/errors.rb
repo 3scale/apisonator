@@ -72,7 +72,11 @@ module ThreeScale
 
     class ApplicationNotFound < NotFound
       def initialize(id = nil)
-        super %(application with id="#{id}" was not found)
+        if id.blank?
+          super 'application id is missing'
+        else
+          super %(application with id="#{id}" was not found)
+        end
       end
     end
 
@@ -260,7 +264,11 @@ module ThreeScale
 
     class UserKeyInvalid < Error
       def initialize(key)
-        super %(user key "#{key}" is invalid)
+        if key.blank?
+          super 'user key is missing'
+        else
+          super %(user key "#{key}" is invalid)
+        end
       end
     end
 

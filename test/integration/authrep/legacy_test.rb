@@ -22,6 +22,8 @@ class AuthrepLegacyTest < Test::Unit::TestCase
   end
 
   test_authrep 'succeeds when valid legacy user key passed' do |e, method|
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: method == :oauth_authrep ? 'oauth' : 1
+
     user_key = 'foobar'
     Application.save_id_by_key(@service_id, user_key, @application.id)
 
@@ -37,6 +39,8 @@ class AuthrepLegacyTest < Test::Unit::TestCase
   end
 
   test_authrep 'fails on invalid legacy user key passed' do |e, method|
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: method == :oauth_authrep ? 'oauth' : 1
+
     Application.save_id_by_key(@service_id, 'foobar', @application.id)
 
     get e, :provider_key => @provider_key,

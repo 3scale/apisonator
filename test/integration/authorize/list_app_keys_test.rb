@@ -89,6 +89,8 @@ class AuthorizeListAppKeysExtensionTest < Test::Unit::TestCase
   end
 
   test 'calling authorize with the list_app_keys extension outputs the application keys section even if no app keys exist' do
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: '2'
+
     get '/transactions/authorize.xml',
         { provider_key: @provider_key, service_id: @service.id,
           app_id: @application_nokeys.id },
@@ -129,6 +131,8 @@ class AuthorizeListAppKeysExtensionTest < Test::Unit::TestCase
     keys = xml_resp.search("app_keys key").map { |k| k['id'] }
     assert_not_empty keys
     assert_equal [@application_oauth_app_key], keys
+
+    Service.save! id: @service.id, provider_key: @provider_key, backend_version: '1'
 
     get '/transactions/authorize.xml',
         { provider_key: @provider_key, service_id: @service.id,

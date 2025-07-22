@@ -31,7 +31,7 @@ class OauthLegacyTest < Test::Unit::TestCase
                                            user_key: user_key
       assert_error_response status: 404,
                             code: 'application_not_found',
-                            message: 'application with id="" was not found'
+                            message: 'application id is missing'
     end
   end
 end
