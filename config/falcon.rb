@@ -7,10 +7,16 @@ require '3scale/backend/manifest'
 
 HOSTNAME = 'listener'
 
+module Falcon::Environment::Rackup
+  def rackup_path
+    File.expand_path('../config.ru', root)
+  end
+end
+
 service HOSTNAME do
   include Falcon::Environment::Rack
 
-  preload 'lib/3scale/prometheus_server.rb'
+  preload '../lib/3scale/prometheus_server.rb'
 
   manifest = ThreeScale::Backend::Manifest.report
   count manifest[:server_model][:workers].to_i
