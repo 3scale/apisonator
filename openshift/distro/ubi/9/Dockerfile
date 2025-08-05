@@ -91,6 +91,11 @@ RUN cp -n openshift/3scale_backend.conf /etc/ \
  && touch /var/log/backend/3scale_backend{,_worker}.log \
  && chmod g+rw /var/log/backend/3scale_backend{,_worker}.log
 
+# Ensure safe defaults within the container for general case as well as to cover OpenShift specific case where the unprivileged user who runs the container is member of the root Linux group
+RUN chown -R 1001:0 /opt/ruby \
+    && chmod -R 750 /opt/ruby
+
+
 EXPOSE 3000
 
 USER 1001
