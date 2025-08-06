@@ -4,7 +4,7 @@ module ThreeScale
       class Falcon
         extend ThreeScale::Backend::Server::Utils
 
-        CONFIG = 'falcon.rb'
+        CONFIG = 'falcon_config.rb'
 
         def self.start(global_options, options, args)
           # Falcon does not support:
