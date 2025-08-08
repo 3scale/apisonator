@@ -27,7 +27,6 @@ Gem::Specification.new do |s|
   s.files << 'CHANGELOG.md'
   s.files << 'Rakefile'
   s.files << 'config.ru'
-  s.files << 'falcon_config.rb'
   # Gemfile* and gemspec are included here to support
   # running Bundler at gem install time.
   s.files << 'Gemfile'

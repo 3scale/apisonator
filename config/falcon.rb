@@ -10,7 +10,11 @@ HOSTNAME = 'listener'
 service HOSTNAME do
   include Falcon::Environment::Rack
 
-  preload 'lib/3scale/prometheus_server.rb'
+  rackup_path 'config.ru'
+
+  ipc_path '/tmp/apisonator.ipc'
+
+  preload '../lib/3scale/prometheus_server.rb'
 
   manifest = ThreeScale::Backend::Manifest.report
   count manifest[:server_model][:workers].to_i
@@ -23,4 +27,6 @@ end
 
 service 'supervisor' do
   include Falcon::Environment::Supervisor
+
+  ipc_path '/tmp/apisonator_supervisor.ipc'
 end
