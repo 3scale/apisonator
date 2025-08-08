@@ -10,6 +10,8 @@ HOSTNAME = 'listener'
 service HOSTNAME do
   include Falcon::Environment::Rack
 
+  rackup_path 'config.ru'
+
   ipc_path '/tmp/apisonator.ipc'
 
   preload '../lib/3scale/prometheus_server.rb'
