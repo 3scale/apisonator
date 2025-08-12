@@ -19,7 +19,7 @@ service HOSTNAME do
   manifest = ThreeScale::Backend::Manifest.report
   count manifest[:server_model][:workers].to_i
 
-  port = ENV.fetch("PORT", 3001).to_i
+  port = ENV.fetch("FALCON_PORT", 3001).to_i
   endpoint Async::HTTP::Endpoint
              .parse("http://0.0.0.0:#{port}")
              .with(protocol: Async::HTTP::Protocol::HTTP11)
