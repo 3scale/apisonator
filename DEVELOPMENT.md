@@ -205,3 +205,43 @@ In case you want to run the worker in async mode you can add `CONFIG_REDIS_ASYNC
 | Script arguments      | `-s falcon start -p 3001`                                         |
 | Working directory     | `/path/to/project/apisonator`                                     |
 | Environment variables | `RACK_ENV=development;CONFIG_REDIS_ASYNC=true` |
+
+## Interact directly with apisonator
+
+### use console
+
+```
+bundle exec rake console
+```
+
+## run a ruby expression
+
+```
+bundle exec ruby -Ilib/ -r3scale/backend.rb -e "my expression"
+```
+
+Something to keep in mind is that the future default Async mode requires that you wrap all your Redis interaction code within a `Sync` block. e.g.
+
+```
+bundle exec ruby -Ilib/ -r3scale/backend.rb <<EOF
+Sync do
+  ThreeScale::Backend::Service.save!(provider_key: 'pk', id: '1', backend_version: "1")
+  ThreeScale::Backend::Application.save(service_id: '1', id: '1', state: :active)
+  ThreeScale::Backend::Application.save_id_by_key('1', 'uk', '1')
+  ThreeScale::Backend::Metric.save(service_id: '1', id: '1', name: 'hits')
+end
+EOF
+```
+
+You can also try `export CONFIG_REDIS_ASYNC=false` but it might be gone in the future.
+
+## interacting with a running service through API
+
+```
+curl -X PUT -u system_app:<password> http://backend-listener-internal/internal/services/1 -d '{"service": { "id": "1", "provider_key": "pk", "backend_version": "1" }}'
+curl -X PUT -u system_app:<password> http://backend-listener-internal/internal/services/1/applications/1 -d '{"application": { "state": "active" }}'
+curl -X PUT -u system_app:<password> http://backend-listener-internal/internal/services/1/applications/1/key/uk
+curl -X PUT -u system_app:<password> http://backend-listener-internal/internal/services/1/metrics/1 -d '{"metric": { "name": "hits" }}'
+
+curl "http://backend-listener-internal/transactions/authrep.xml?provider_key=pk&service_id=1&user_key=uk&usage%5Bhits%5D=1"
+```
