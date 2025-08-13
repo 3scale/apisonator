@@ -233,15 +233,17 @@ end
 EOF
 ```
 
-You can also try `export CONFIG_REDIS_ASYNC=false` but it might be gone in the future.
+To disable async mode, you can try `export CONFIG_REDIS_ASYNC=false` but it might be gone in the future.
 
 ## interacting with a running service through API
 
 ```
-curl -X PUT -u system_app:<password> http://backend-listener-internal/internal/services/1 -d '{"service": { "id": "1", "provider_key": "pk", "backend_version": "1" }}'
-curl -X PUT -u system_app:<password> http://backend-listener-internal/internal/services/1/applications/1 -d '{"application": { "state": "active" }}'
-curl -X PUT -u system_app:<password> http://backend-listener-internal/internal/services/1/applications/1/key/uk
-curl -X PUT -u system_app:<password> http://backend-listener-internal/internal/services/1/metrics/1 -d '{"metric": { "name": "hits" }}'
+curl -X PUT -u system_app:<password> http://localhost:3000/internal/services/1 -d '{"service": { "id": "1", "provider_key": "pk", "backend_version": "1" }}'
+curl -X PUT -u system_app:<password> http://localhost:3000/internal/services/1/applications/1 -d '{"application": { "state": "active" }}'
+curl -X PUT -u system_app:<password> http://localhost:3000/internal/services/1/applications/1/key/uk
+curl -X PUT -u system_app:<password> http://localhost:3000/internal/services/1/metrics/1 -d '{"metric": { "name": "hits" }}'
 
-curl "http://backend-listener-internal/transactions/authrep.xml?provider_key=pk&service_id=1&user_key=uk&usage%5Bhits%5D=1"
+curl "http://localhost:3000/transactions/authrep.xml?provider_key=pk&service_id=1&user_key=uk&usage%5Bhits%5D=1"
 ```
+
+Note: the address inside OpenShift is http://backend-listener-internal/
