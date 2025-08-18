@@ -45,7 +45,7 @@ module ThreeScale
       def is_sentinel?(connection)
         if ThreeScale::Backend.configuration.redis.async
           connector = connection.instance_variable_get(:@inner).connect
-          connector.instance_of?(ThreeScale::Backend::AsyncRedis::SentinelsClientACLTLS)
+          connector.instance_of?(Async::Redis::SentinelClient)
         else
           connector = connection.instance_variable_get(:@inner)
                                 .instance_variable_get(:@client)
