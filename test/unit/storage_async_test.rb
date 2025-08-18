@@ -317,10 +317,11 @@ class StorageAsyncTest < Test::Unit::TestCase
       assert_equal path, client.endpoint.path
     else
       url = URI(conf[:url])
-      host, port = client.endpoint.address
+      host = client.endpoint.hostname
+      port = client.endpoint.port
       assert_equal url.host, host
       assert_equal url.port, port
-      db = client.protocol.instance_variable_get(:@db)
+      db = client.endpoint.database
       assert_equal conf[:db], db
     end
 
@@ -334,7 +335,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     name = uri.host
     role = conf[:role] || :master
 
-    assert_instance_of ThreeScale::Backend::AsyncRedis::SentinelsClientACLTLS, client
+    assert_instance_of Async::Redis::SentinelClient, client
 
     assert_acl_credentials(conf, client)
     assert_tls_certs(conf, client, test_cert_type)
@@ -342,9 +343,10 @@ class StorageAsyncTest < Test::Unit::TestCase
     assert_equal name, client.instance_variable_get(:@master_name)
     assert_equal role, client.instance_variable_get(:@role)
 
-    assert_equal conf[:sentinels].size, client.instance_variable_get(:@sentinel_endpoints).size
-    client.instance_variable_get(:@sentinel_endpoints).each_with_index do |endpoint, i|
-      host, port = endpoint.address
+    assert_equal conf[:sentinels].size, client.instance_variable_get(:@endpoints).size
+    client.instance_variable_get(:@endpoints).each_with_index do |endpoint, i|
+      host = endpoint.hostname
+      port = endpoint.port
       assert_equal conf[:sentinels][i][:host], host
       assert_equal conf[:sentinels][i][:port], port
     end unless conf[:sentinels].empty?
@@ -355,8 +357,10 @@ class StorageAsyncTest < Test::Unit::TestCase
       assert_nil conf[:username]
       assert_nil conf[:password]
     else
-      assert_instance_of ThreeScale::Backend::AsyncRedis::Protocol::ExtendedRESP2, client.protocol
-      username, password = client.protocol.instance_variable_get(:@credentials)
+      credentials = client.respond_to?(:endpoint) ?
+                      client.endpoint.credentials : # single instance client
+                      client.instance_variable_get(:@master_options)[:credentials] # sentinels client
+      username, password = credentials
       assert_equal conf[:username], username
       assert_equal conf[:password], password
     end
@@ -365,7 +369,7 @@ class StorageAsyncTest < Test::Unit::TestCase
       assert_nil conf[:sentinel_username]
       assert_nil conf[:sentinel_password]
     else
-      sentinel_username, sentinel_password = client.instance_variable_get(:@sentinel_credentials)
+      sentinel_username, sentinel_password = client.instance_variable_get(:@endpoints).first.credentials
       assert_equal conf[:sentinel_username], sentinel_username
       assert_equal conf[:sentinel_password], sentinel_password
     end
@@ -373,8 +377,8 @@ class StorageAsyncTest < Test::Unit::TestCase
 
   def assert_tls_certs(conf, client, test_cert_type)
     unless conf[:ssl_params].to_s.strip.empty?
-      endpoint = client.endpoint || client.instance_variable_get(:@sentinel_endpoints).first
-      assert_instance_of Async::IO::SSLEndpoint, endpoint
+      endpoint = client.respond_to?(:endpoint) ? client.endpoint : client.instance_variable_get(:@endpoints).first
+      assert_instance_of Async::Redis::Endpoint, endpoint
       assert_equal conf[:ssl_params][:ca_file], endpoint.options[:ssl_context].send(:ca_file)
       assert_instance_of(OpenSSL::X509::Certificate, endpoint.options[:ssl_context].cert) unless conf[:ssl_params][:cert].to_s.strip.empty?
 
