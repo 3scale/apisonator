@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-require 'async/io'
-require 'async/io/unix_endpoint'
+require 'async/redis/endpoint'
+require 'io/endpoint/ssl_endpoint'
+require 'io/endpoint/unix_endpoint'
 
 module ThreeScale
   module Backend
@@ -16,6 +17,8 @@ module ThreeScale
           # @param host [String]
           # @param port [Integer]
           # @param path [String]
+          # @param database [String]
+          # @param credentials [Array]
           # @param ssl [Boolean]
           # @param ssl_params [Hash]
           # @return [Async::IO::Endpoint::Generic]
@@ -23,27 +26,28 @@ module ThreeScale
             host_present?(kwargs[:host]) ? prepare_tcp_endpoint(**kwargs) : prepare_unix_endpoint(**kwargs)
           end
 
+          def create_ssl_context(ssl: false, ssl_params: nil)
+            if ssl
+              ssl_context = OpenSSL::SSL::SSLContext.new
+              ssl_context.set_params(format_ssl_params(ssl_params)) if ssl_params
+            end
+
+            ssl_context
+          end
+
           private
 
-          def prepare_tcp_endpoint(host: nil, port: nil, ssl: false, ssl_params: nil)
-            tcp_endpoint = Async::IO::Endpoint.tcp(host, port)
+          def prepare_tcp_endpoint(host: nil, port: nil, database: nil, credentials: nil, ssl: false, ssl_params: nil)
+            ssl_context = create_ssl_context(ssl:, ssl_params:)
 
-            return prepare_ssl_endpoint(endpoint: tcp_endpoint, ssl_params: ssl_params) if ssl
+            scheme = ssl_context ? 'rediss' : 'redis'
+            uri = URI::Generic.build(scheme:, host:, port:)
 
-            tcp_endpoint
+            Async::Redis::Endpoint.new(uri, nil, database:, credentials:, ssl_context:)
           end
 
-          def prepare_unix_endpoint(path: '', ssl: false, ssl_params: nil)
-            unix_endpoint = Async::IO::Endpoint.unix(path, Socket::PF_UNIX)
-            return unix_endpoint unless ssl
-
-            prepare_ssl_endpoint(endpoint: unix_endpoint, ssl_params: ssl_params)
-          end
-
-          def prepare_ssl_endpoint(endpoint: nil, ssl_params: nil)
-            ssl_context = OpenSSL::SSL::SSLContext.new
-            ssl_context.set_params(format_ssl_params(ssl_params)) if ssl_params
-            Async::IO::SSLEndpoint.new(endpoint, ssl_context: ssl_context)
+          def prepare_unix_endpoint(path: '', credentials: nil, ssl: false, ssl_params: nil)
+            IO::Endpoint.unix(path, Socket::PF_UNIX)
           end
 
           def format_ssl_params(ssl_params)
