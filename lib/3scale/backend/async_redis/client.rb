@@ -3,9 +3,8 @@
 # Based on https://github.com/socketry/async-redis/blob/v0.8.1/examples/auth/wrapper.rb
 
 require 'async/redis/client'
+require 'async/redis/sentinel_client'
 require '3scale/backend/async_redis/endpoint_helpers'
-require '3scale/backend/async_redis/sentinels_client_acl_tls'
-require '3scale/backend/async_redis/protocol/extended_resp2'
 
 module ThreeScale
   module Backend
@@ -15,6 +14,7 @@ module ThreeScale
         class << self
           # @param opts [Hash] Redis connection options
           # @return [Async::Redis::Client]
+          # @return [Async::Redis::SentinelClient]
           def call(opts)
             return connect_tcp(opts) if url_present?(opts[:url])
 
@@ -31,18 +31,33 @@ module ThreeScale
           def connect_tcp(opts)
             uri = URI(opts[:url])
 
-            credentials = [ uri.user || opts[:username], uri.password || opts[:password]]
-            db = uri.path[1..-1]
-
-            protocol = Protocol::ExtendedRESP2.new(db: db, credentials: credentials)
+            database = uri.path[1..-1]
+            credentials = [ uri.user || opts[:username], uri.password || opts[:password]].compact
+            credentials = nil unless credentials.any?
+            ssl = opts[:ssl]
+            ssl_params = opts[:ssl_params]
+            limit = opts[:max_connections]
 
             if opts.key? :sentinels
-              SentinelsClientACLTLS.new(uri, protocol, opts)
+              ssl_context = EndpointHelpers.create_ssl_context(ssl:, ssl_params:)
+
+              master_options = {database:, credentials:, ssl_context:}.compact
+              master_name = uri.host
+              role = opts[:role] || :master
+              endpoints = opts[:sentinels].map do |sentinel|
+                host = sentinel[:host]
+                port = sentinel[:port]
+                sentinel_credentials = [opts[:sentinel_username], opts[:sentinel_password]].compact
+                sentinel_credentials = nil unless sentinel_credentials.any?
+                EndpointHelpers.prepare_endpoint(host:, port:, credentials: sentinel_credentials, ssl:, ssl_params:)
+              end
+
+              Async::Redis::SentinelClient.new(endpoints, master_name:, master_options:, role:, limit:)
             else
               host = uri.host || EndpointHelpers::DEFAULT_HOST
               port = uri.port || EndpointHelpers::DEFAULT_PORT
-              endpoint = EndpointHelpers.prepare_endpoint(host: host, port: port, ssl: opts[:ssl], ssl_params: opts[:ssl_params])
-              Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
+              endpoint = EndpointHelpers.prepare_endpoint(host:, port:, database:, credentials:, ssl:, ssl_params:)
+              Async::Redis::Client.new(endpoint, limit:)
             end
           end
 
@@ -50,13 +65,15 @@ module ThreeScale
             path = opts[:path]
 
             credentials = [opts[:username], opts[:password]]
-            protocol = Protocol::ExtendedRESP2.new(credentials: credentials)
+            protocol = Async::Redis::Protocol::RESP2
+            protocol = Async::Redis::Protocol::Authenticated.new(credentials, protocol) if credentials.any?
+            limit = opts[:max_connections]
 
             if opts.key? :sentinels
               raise InvalidURI.new(path, 'unix paths are not supported for sentinels')
             else
               endpoint = EndpointHelpers.prepare_endpoint(path: path, ssl: opts[:ssl], ssl_params: opts[:ssl_params])
-              Async::Redis::Client.new(endpoint, protocol: protocol, limit: opts[:max_connections])
+              Async::Redis::Client.new(endpoint, protocol:, limit:)
             end
           end
         end
