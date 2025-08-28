@@ -32,7 +32,10 @@ module ThreeScale
             uri = URI(opts[:url])
 
             database = uri.path[1..-1]
-            credentials = [ uri.user || opts[:username], uri.password || opts[:password]].compact
+            credentials = [
+              uri.user.to_s.empty? ? opts[:username] : uri.user,
+              uri.password.to_s.empty? ? opts[:password] : uri.password
+            ].compact
             credentials = nil unless credentials.any?
             ssl = opts[:ssl]
             ssl_params = opts[:ssl_params]
