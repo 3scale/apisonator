@@ -123,6 +123,9 @@ workflows:
       - test_single_unix:
           requires:
             - install_dependencies
+      - test_single-password:
+          requires:
+            - install_dependencies
       - test_sentinels:
           requires:
             - install_dependencies
