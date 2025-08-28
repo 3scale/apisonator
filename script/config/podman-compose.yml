@@ -44,6 +44,14 @@ services:
       - ./sentinel3:/data:Z
     command: [ redis-server, /data/sentinel3.conf, --sentinel, --port, "26381" ]
 
+  redis-pass:
+    image: redis:6.2-alpine
+    container_name: redis-pass
+    network_mode: host
+    volumes:
+      - ./run:/var/run/redis:z
+    command: [ redis-server, --port, "6379", --requirepass, "sup3rS3cre1!"]
+
   tls-redis-master:
     image: redis:6.2-alpine
     container_name: tls-redis-master

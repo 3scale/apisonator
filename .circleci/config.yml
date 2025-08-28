@@ -123,6 +123,9 @@ workflows:
       - test_single_unix:
           requires:
             - install_dependencies
+      - test_single-password:
+          requires:
+            - install_dependencies
       - test_sentinels:
           requires:
             - install_dependencies
@@ -179,6 +182,18 @@ jobs:
       - *attach-to-workspace
       - start_services:
           services: redis-master
+      - run_tests
+  test_single-password:
+    executor:
+      name: ubuntu_vm
+    working_directory: ~/project
+    environment:
+      CONFIG_QUEUES_MASTER_NAME: redis://:sup3rS3cre1!@localhost:6379
+      CONFIG_REDIS_PROXY: redis://:sup3rS3cre1!@localhost:6379
+    steps:
+      - *attach-to-workspace
+      - start_services:
+          services: redis-pass
       - run_tests
   test_sentinels:
     executor:
