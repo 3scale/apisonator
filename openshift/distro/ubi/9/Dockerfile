@@ -38,41 +38,42 @@ RUN microdnf module enable -y "ruby:${RUBY_VERSION}" \
 WORKDIR /opt/source
 COPY ./ ./
 
-# Setup Bundler
+# setup system
+RUN cp -n openshift/3scale_backend.conf /etc/ \
+ && chmod 660 /etc/3scale_backend.conf \
+ && cp -n openshift/backend-cron /usr/local/sbin/backend-cron \
+ && mkdir -p -m 0770 /var/run/3scale/ \
+ && mkdir -p -m 0770 /var/log/backend/ \
+ && touch /var/log/backend/3scale_backend{,_worker}.log \
+ && chmod g+rw /var/log/backend/3scale_backend{,_worker}.log \
+ && chown -R 1001 . && chmod g+w /opt
+
+# Install bundler globally (as root)
 RUN BUNDLED_WITH=$(awk '/BUNDLED WITH/ { getline; print $1 }' Gemfile.lock) \
  && gem install --no-document bundler:$BUNDLED_WITH \
  && echo Using $(bundle --version), originally bundled with ${BUNDLED_WITH}
 
+USER 1001
+
 # Builds a clean source tree and deploys it with Bundler.
-RUN cp -n openshift/3scale_backend.conf /etc/ \
- && chmod 644 /etc/3scale_backend.conf \
- && BACKEND_VERSION=$(gem build apisonator.gemspec | \
+RUN BACKEND_VERSION=$(gem build apisonator.gemspec | \
       sed -n -e 's/^\s*Version\:\s*\([^[:space:]]*\)$/\1/p') \
- && gem unpack "apisonator-${BACKEND_VERSION}.gem" --target=/opt/ruby \
- && mv "/opt/ruby/apisonator-${BACKEND_VERSION}" /opt/app \
- && rm -rf /opt/ruby
+ && gem unpack "apisonator-${BACKEND_VERSION}.gem" --target=/tmp/ruby \
+ && mv "/tmp/ruby/apisonator-${BACKEND_VERSION}" /opt/app \
+ && rm -rf /tmp/ruby
 
 WORKDIR /opt/app
 
 # Install ruby dependencies and put things at the right places
 RUN bundle config set --local build.nokogiri --use-system-libraries \
- && bundle config --local without development:test \
+ && bundle config set --local without development:test \
  && bundle config set --local deployment true \
- && bundle config --local path /opt/app \
  && bundle install --jobs $(grep -c processor /proc/cpuinfo) \
  && cp /opt/source/openshift/config/puma.rb config/ \
- && cp -n /opt/source/openshift/backend-cron /usr/local/sbin/backend-cron \
  && cp -n /opt/source/openshift/entrypoint.sh ./ \
- && rm -rf /opt/source \
- && mkdir -p -m 0770 /var/run/3scale/ \
- && mkdir -p -m 0770 /var/log/backend/ \
- && touch /var/log/backend/3scale_backend{,_worker}.log \
- && chmod g+rw /var/log/backend/3scale_backend{,_worker}.log \
- && chmod -R g+w .
+ && rm -rf /opt/source
 
 EXPOSE 3000
-
-USER 1001
 
 ARG PUMA_WORKERS=1
 ARG RACK_ENV=production
