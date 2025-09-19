@@ -6,10 +6,6 @@
 #
 # - RUBY_VERSION: Ruby version used.
 # - BUILD_DEPS: Packages needed to build/install the project.
-# - BUNDLE_VERSION_MATCH: Install the Bundler version used by the lockfile
-#                         instead of using the SCL version.
-# - BUNDLE_GEMFILE: Gemfile name to pin Bundler to.
-# - BUNDLE_WITHOUT: List of Bundler groups to skip.
 # - PUMA_WORKERS: Default number of Puma workers to serve the app.
 #
 # Profiles you should use:
@@ -19,9 +15,6 @@
 #
 # - Development/Test: just use default values.
 # - Release:
-#   - GEM_UPDATE: false
-#   - BUNDLE_VERSION_MATCH: false
-#   - BUNDLE_WITHOUT: development:test
 #   - PUMA_WORKERS: number of Puma worker processes - depends on intended usage,
 #                   with number of cpus being a good heuristic.
 #
@@ -32,7 +25,8 @@ ARG RUBY_VERSION="3.3"
 ARG BUILD_DEPS="tar make file findutils git patch gcc automake autoconf libtool redhat-rpm-config openssl-devel ruby-devel"
 
 RUN microdnf module enable -y "ruby:${RUBY_VERSION}" \
- && microdnf install -y --nodocs ${BUILD_DEPS}
+ && microdnf install -y --nodocs ${BUILD_DEPS} \
+ && microdnf clean all
 
 # Copy sources
 WORKDIR /opt/source

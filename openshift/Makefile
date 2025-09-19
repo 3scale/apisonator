@@ -72,11 +72,7 @@ build: export DOCKERFILE?=$(DOCKERFILE_PATH)/Dockerfile ## Build dev image with 
 
 .PHONY: build-release
 build-release: export DOCKERFILE?=$(DOCKERFILE_PATH)/Dockerfile
-build-release: export BUILD_ARGS=--build-arg CACHE_FRIENDLY=false \
-	  --build-arg GEM_UPDATE=false \
-	  --build-arg BUNDLE_VERSION_MATCH=false \
-	  --build-arg BUNDLE_WITHOUT=development:test \
-	  --build-arg RACK_ENV=production
+build-release: export BUILD_ARGS=--build-arg RACK_ENV=production
 build-release: ## Build dev image with release-like settings.
 	$(MAKE) -f $(MKFILE_PATH) build
 
