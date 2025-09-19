@@ -17,6 +17,7 @@ module ThreeScale
           return unless manifest
 
           ENV["FALCON_PORT"] ||= options[:port]
+          ENV["FALCON_HOST"] ||= options[:host]
 
           argv = ['falcon', 'host']
           argv_add argv, true, CONFIG

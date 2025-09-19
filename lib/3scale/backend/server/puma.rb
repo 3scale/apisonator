@@ -24,7 +24,8 @@ module ThreeScale
           return unless manifest
           argv = ['puma']
           argv_add argv, options[:daemonize], '-d'
-          argv_add argv, options[:port], '-p', options[:port]
+          argv_add argv, options[:port] && !options[:host], '-p', options[:port]
+          argv_add argv, options[:host], '-b', "tcp://#{options[:host]}#{":" + options[:port] if options[:port]}"
           argv_add argv, options[:logfile], '--redirect-stdout', options[:logfile]
           argv_add argv, options[:errorfile], '--redirect-stderr', options[:errorfile]
           argv << '--redirect-append' if [options[:logfile], options[:errorfile]].any?
