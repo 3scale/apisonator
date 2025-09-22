@@ -37,7 +37,7 @@ module ThreeScale
             protocol = Protocol::ExtendedRESP2.new(db: db, credentials: credentials)
 
             if opts.key? :sentinels
-              SentinelsClientACLTLS.new(uri, protocol, opts)
+              SentinelsClientACLTLS.new(uri, protocol, opts, limit: opts[:max_connections])
             else
               host = uri.host || EndpointHelpers::DEFAULT_HOST
               port = uri.port || EndpointHelpers::DEFAULT_PORT
