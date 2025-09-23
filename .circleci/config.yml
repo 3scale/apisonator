@@ -272,7 +272,11 @@ jobs:
       name: ubuntu_vm
     working_directory: ~/project
     environment:
+      CONFIG_QUEUES_READ_TIMEOUT: 10
+      CONFIG_QUEUES_WRITE_TIMEOUT: 10
       CONFIG_QUEUES_MASTER_NAME: redis://localhost:6379
+      CONFIG_REDIS_READ_TIMEOUT: 10
+      CONFIG_REDIS_WRITE_TIMEOUT: 10
       CONFIG_REDIS_PROXY: redis://localhost:22121
     steps:
       - *attach-to-workspace
