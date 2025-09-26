@@ -112,7 +112,7 @@ commands:
     steps:
       - run:
           name: Test host binding functionality
-          command: script/test_host_binding
+          command: script/host_binding_test.sh
 
 workflows:
   version: 2
