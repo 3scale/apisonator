@@ -71,7 +71,7 @@ fi
 kill $LISTENER_PID 2>/dev/null || true
 
 echo "Testing IPv6 localhost binding..."
-bundle exec bin/3scale_backend start --bind ::1 -p 4003 > /dev/null 2>&1 &
+bundle exec bin/3scale_backend start --bind [::1] -p 4003 > /dev/null 2>&1 &
 LISTENER_PID=$!
 
 # Test connection to IPv6 localhost (should work)
