@@ -224,4 +224,4 @@ class Runner
   end
 end
 
-exit Runner.run(ARGV) if __FILE__ == $0
+exit Runner.run(ARGV) if File.basename(__FILE__) == File.basename($0)
