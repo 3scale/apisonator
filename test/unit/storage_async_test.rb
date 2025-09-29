@@ -314,7 +314,7 @@ class StorageAsyncTest < Test::Unit::TestCase
 
     if conf[:url].to_s.strip.empty?
       path = conf[:path]
-      assert_equal path, client.endpoint.path
+      assert_equal path, client.endpoint.url.path
     else
       url = URI(conf[:url])
       host = client.endpoint.hostname
