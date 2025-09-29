@@ -40,7 +40,7 @@ GEM
       async-http (~> 0.56)
     async-pool (0.10.3)
       async (>= 1.25)
-    async-redis (0.12.0)
+    async-redis (0.13.1)
       async (~> 2.10)
       async-pool (~> 0.2)
       io-endpoint (~> 0.10)
@@ -184,7 +184,7 @@ GEM
     protocol-rack (0.13.0)
       protocol-http (~> 0.43)
       rack (>= 1.0)
-    protocol-redis (0.12.0)
+    protocol-redis (0.13.0)
     pry (0.14.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
@@ -304,7 +304,7 @@ DEPENDENCIES
   apisonator!
   async (= 2.23)
   async-pool (~> 0.6)
-  async-redis (~> 0.12)
+  async-redis (~> 0.13.1)
   async-rspec
   benchmark-ips (~> 2.7.2)
   bugsnag (~> 6)

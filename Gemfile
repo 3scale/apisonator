@@ -65,7 +65,7 @@ gem "opentelemetry-exporter-otlp", "~> 0.29.0"
 gem 'bugsnag', '~> 6', require: nil
 gem 'yabeda-prometheus', '~> 0.9.0'
 gem 'async', '2.23'
-gem 'async-redis', '~> 0.12'
+gem 'async-redis', '~> 0.13.1'
 gem 'async-pool', '~> 0.6'
 gem 'falcon', '0.47.7'
 gem 'webrick', '~> 1.8'
