@@ -76,22 +76,24 @@ module ThreeScale
           def create_ssl_context(ssl: false, ssl_params: nil)
             if ssl
               ssl_context = OpenSSL::SSL::SSLContext.new
-              ssl_context.set_params(format_ssl_params(ssl_params)) if ssl_params
+              if ssl_params
+                cert_path = ssl_params[:cert].to_s.strip
+                key_path = ssl_params[:key].to_s.strip
+
+                if !cert_path.empty? && !key_path.empty?
+                  # Client certificate with key - use add_certificate
+                  cert = OpenSSL::X509::Certificate.new(File.read(cert_path))
+                  key = OpenSSL::PKey.read(File.read(key_path))
+                  ssl_context.add_certificate(cert, key)
+                end
+
+                # Set other SSL params, excluding cert and key
+                other_params = ssl_params.reject { |k, _| k == :cert || k == :key }
+                ssl_context.set_params(other_params) unless other_params.empty?
+              end
             end
 
             ssl_context
-          end
-
-          def format_ssl_params(ssl_params)
-            cert = ssl_params[:cert].to_s.strip
-            key = ssl_params[:key].to_s.strip
-            return ssl_params if cert.empty? && key.empty?
-
-            updated_ssl_params = ssl_params.dup
-            updated_ssl_params[:cert] = OpenSSL::X509::Certificate.new(File.read(cert))
-            updated_ssl_params[:key] = OpenSSL::PKey.read(File.read(key))
-
-            updated_ssl_params
           end
         end
       end
