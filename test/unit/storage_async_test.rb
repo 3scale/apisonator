@@ -214,7 +214,7 @@ class StorageAsyncTest < Test::Unit::TestCase
       }
     }
 
-    conn = assert_nothing_raised { StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj) }
+    conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ **config_obj,
                              sentinels: [{ host: '127.0.0.1', port: 26_379 },
                                          { host: '127.0.0.1', port: 36_379 },
@@ -250,7 +250,7 @@ class StorageAsyncTest < Test::Unit::TestCase
           key: key.path
         }
       }
-      storage = assert_nothing_raised { StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj) }
+      storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
       assert_client_config(config_obj, storage)
     ensure
       [ca_file, cert, key].each(&:unlink)
@@ -280,7 +280,7 @@ class StorageAsyncTest < Test::Unit::TestCase
       username: 'apisonator-test',
       password: 'p4ssW0rd'
     }
-    storage = assert_nothing_raised { StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj) }
+    storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
     assert_client_config(config_obj, storage)
   ensure
     [ca_file, cert, key].each(&:unlink)
@@ -313,7 +313,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_client_config(conf, conn)
-    client = conn.instance_variable_get(:@inner).connect
+    client = assert_nothing_raised { conn.instance_variable_get(:@inner).connect }
 
     if conf[:url].to_s.strip.empty?
       path = conf[:path]
@@ -333,7 +333,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_config(conf, conn)
-    client = conn.instance_variable_get(:@inner).connect
+    client = assert_nothing_raised { conn.instance_variable_get(:@inner).connect }
     uri = URI(conf[:url] || '')
     name = uri.host
     role = conf[:role] || :master
