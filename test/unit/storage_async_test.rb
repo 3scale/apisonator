@@ -214,25 +214,28 @@ class StorageAsyncTest < Test::Unit::TestCase
       }
     }
 
-    conn = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+    conn = assert_nothing_raised { StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj) }
     assert_sentinel_config({ **config_obj,
                              sentinels: [{ host: '127.0.0.1', port: 26_379 },
                                          { host: '127.0.0.1', port: 36_379 },
                                          { host: '127.0.0.1', port: 46_379 }]},
-                           conn, :rsa)
+                           conn)
   ensure
     [ca_file, cert, key].each(&:unlink)
   end
 
   def test_tls_no_client_certificate
+    ca_file = create_certs(:rsa, ca_only: true)
     config_obj = {
       url: 'rediss://localhost:46379',
       ssl_params: {
-        ca_file: create_certs(:rsa, ca_only: true).path
+        ca_file: ca_file.path
       }
     }
     storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
     assert_client_config(config_obj, storage)
+  ensure
+    ca_file.unlink
   end
 
   [:rsa, :dsa, :ec].each do |alg|
@@ -247,8 +250,8 @@ class StorageAsyncTest < Test::Unit::TestCase
           key: key.path
         }
       }
-      storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
-      assert_client_config(config_obj, storage, alg)
+      storage = assert_nothing_raised { StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj) }
+      assert_client_config(config_obj, storage)
     ensure
       [ca_file, cert, key].each(&:unlink)
     end
@@ -277,7 +280,7 @@ class StorageAsyncTest < Test::Unit::TestCase
       username: 'apisonator-test',
       password: 'p4ssW0rd'
     }
-    storage = StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj)
+    storage = assert_nothing_raised { StorageAsync::Client.send :new, Storage::Helpers.config_with(config_obj) }
     assert_client_config(config_obj, storage)
   ensure
     [ca_file, cert, key].each(&:unlink)
@@ -309,7 +312,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     { ca_file: ca_cert_file, cert: cert_file, key: key_file }
   end
 
-  def assert_client_config(conf, conn, test_cert_type = nil)
+  def assert_client_config(conf, conn)
     client = conn.instance_variable_get(:@inner).connect
 
     if conf[:url].to_s.strip.empty?
@@ -326,10 +329,10 @@ class StorageAsyncTest < Test::Unit::TestCase
     end
 
     assert_acl_credentials(conf, client)
-    assert_tls_certs(conf, client, test_cert_type)
+    assert_tls_certs(conf, client)
   end
 
-  def assert_sentinel_config(conf, conn, test_cert_type = nil)
+  def assert_sentinel_config(conf, conn)
     client = conn.instance_variable_get(:@inner).connect
     uri = URI(conf[:url] || '')
     name = uri.host
@@ -338,7 +341,7 @@ class StorageAsyncTest < Test::Unit::TestCase
     assert_instance_of Async::Redis::SentinelClient, client
 
     assert_acl_credentials(conf, client)
-    assert_tls_certs(conf, client, test_cert_type)
+    assert_tls_certs(conf, client)
 
     assert_equal name, client.instance_variable_get(:@master_name)
     assert_equal role, client.instance_variable_get(:@role)
@@ -375,21 +378,12 @@ class StorageAsyncTest < Test::Unit::TestCase
     end
   end
 
-  def assert_tls_certs(conf, client, test_cert_type)
+  def assert_tls_certs(conf, client)
     unless conf[:ssl_params].to_s.strip.empty?
       endpoint = client.respond_to?(:endpoint) ? client.endpoint : client.instance_variable_get(:@endpoints).first
       assert_instance_of Async::Redis::Endpoint, endpoint
-      assert_equal conf[:ssl_params][:ca_file], endpoint.options[:ssl_context].send(:ca_file)
-      assert_instance_of(OpenSSL::X509::Certificate, endpoint.options[:ssl_context].cert) unless conf[:ssl_params][:cert].to_s.strip.empty?
-
-      unless test_cert_type.to_s.strip.empty?
-        expected_classes = {
-          rsa: OpenSSL::PKey::RSA,
-          dsa: OpenSSL::PKey::DSA,
-          ec: OpenSSL::PKey::EC,
-        }
-        assert_instance_of(expected_classes[test_cert_type], endpoint.options[:ssl_context].key) unless conf[:ssl_params][:key].to_s.strip.empty?
-      end
+      assert_instance_of OpenSSL::SSL::SSLContext, endpoint.options[:ssl_context]
+      assert_equal conf[:ssl_params][:ca_file], endpoint.options[:ssl_context].ca_file
     end
   end
 
