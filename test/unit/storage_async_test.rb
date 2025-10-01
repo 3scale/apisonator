@@ -313,7 +313,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_client_config(conf, conn)
-    client = assert_nothing_raised { conn.instance_variable_get(:@inner).connect }
+    client = conn.instance_variable_get(:@inner).connect
 
     if conf[:url].to_s.strip.empty?
       path = conf[:path]
@@ -333,7 +333,7 @@ class StorageAsyncTest < Test::Unit::TestCase
   end
 
   def assert_sentinel_config(conf, conn)
-    client = assert_nothing_raised { conn.instance_variable_get(:@inner).connect }
+    client = conn.instance_variable_get(:@inner).connect
     uri = URI(conf[:url] || '')
     name = uri.host
     role = conf[:role] || :master
