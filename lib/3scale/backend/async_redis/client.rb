@@ -44,11 +44,10 @@ module ThreeScale
               master_name = uri.host
               role = opts[:role] || :master
               endpoints = opts[:sentinels].map do |sentinel|
-                scheme = ssl_context ? 'rediss' : 'redis'
-                uri = URI::Generic.build(scheme:, host: sentinel[:host], port: sentinel[:port])
                 sentinel_credentials = [opts[:sentinel_username], opts[:sentinel_password]].compact
                 sentinel_credentials = nil unless sentinel_credentials.any?
-                Async::Redis::Endpoint.new(uri, nil, credentials: sentinel_credentials, ssl_context:)
+                Async::Redis::Endpoint.for(nil, sentinel[:host], port: sentinel[:port],
+                                           credentials: sentinel_credentials, ssl_context:)
               end
 
               Async::Redis::SentinelClient.new(endpoints, master_name:, master_options:, role:, limit:)
