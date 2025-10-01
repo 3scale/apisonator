@@ -77,8 +77,8 @@ module ThreeScale
             if ssl
               ssl_context = OpenSSL::SSL::SSLContext.new
               if ssl_params
-                cert_path = ssl_params[:cert].to_s.strip
-                key_path = ssl_params[:key].to_s.strip
+                cert_path = ssl_params.delete(:cert).to_s.strip
+                key_path = ssl_params.delete(:key).to_s.strip
 
                 if !cert_path.empty? && !key_path.empty?
                   # Client certificate with key - use add_certificate
@@ -87,9 +87,7 @@ module ThreeScale
                   ssl_context.add_certificate(cert, key)
                 end
 
-                # Set other SSL params, excluding cert and key
-                other_params = ssl_params.reject { |k, _| k == :cert || k == :key }
-                ssl_context.set_params(other_params) unless other_params.empty?
+                ssl_context.set_params(ssl_params) if ssl_params
               end
             end
 
