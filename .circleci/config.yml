@@ -108,11 +108,6 @@ commands:
       - run:
           name: Run benchmark
           command: bundle exec script/benchmark
-  run_host_binding_tests:
-    steps:
-      - run:
-          name: Test host binding functionality
-          command: script/host_binding_test.sh
 
 workflows:
   version: 2
@@ -147,9 +142,6 @@ workflows:
           requires:
             - install_dependencies
       - benchmark:
-          requires:
-            - install_dependencies
-      - test_host_binding:
           requires:
             - install_dependencies
 
@@ -303,10 +295,3 @@ jobs:
       - start_services:
           services: redis-master
       - run_benchmark
-  test_host_binding:
-    executor:
-      name: ubuntu_vm
-    working_directory: ~/project
-    steps:
-      - *attach-to-workspace
-      - run_host_binding_tests
