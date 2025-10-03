@@ -8,9 +8,6 @@ module ThreeScale
     describe Listener do
       include ListenerServerHelper
 
-      let(:localhost_port) { 4001 }
-      let(:default_port) { 4002 }
-      let(:ipv6_port) { 4003 }
       let(:status_endpoint) { '/status' }
 
       context 'localhost binding' do
@@ -18,15 +15,16 @@ module ThreeScale
           let(:bind_address) { '127.0.0.1' }
 
           before do
-            start_listener_server(port: localhost_port, server: server, bind: bind_address)
+            @port = find_free_port
+            start_listener_server(port: @port, server: server, bind: bind_address)
           end
 
           after do
-            stop_listener_server(localhost_port, server, bind_address)
+            stop_listener_server(@port, server, bind_address)
           end
 
           it 'accepts connections on localhost interface' do
-            response = make_http_request('127.0.0.1', localhost_port, status_endpoint)
+            response = make_http_request('127.0.0.1', @port, status_endpoint)
             expect(response).to be_a(Net::HTTPSuccess)
           end
 
@@ -36,12 +34,12 @@ module ThreeScale
             # Skip test if we can't determine external IP (containerized environments)
             skip 'Cannot determine external IP' if external_ip.nil? || external_ip.empty?
 
-            expect { make_http_request(external_ip, localhost_port, status_endpoint, 5) }
+            expect { make_http_request(external_ip, @port, status_endpoint, 5) }
               .to raise_error(SystemCallError)
           end
 
           it 'rejects connections on IPv6 localhost' do
-            expect { make_http_request('::1', localhost_port, status_endpoint, 5) }
+            expect { make_http_request('::1', @port, status_endpoint, 5) }
               .to raise_error(SystemCallError)
           end
         end
@@ -62,15 +60,16 @@ module ThreeScale
           let(:bind_address) { nil }
 
           before do
-            start_listener_server(port: default_port, server: server, bind: bind_address)
+            @port = find_free_port
+            start_listener_server(port: @port, server: server, bind: bind_address)
           end
 
           after do
-            stop_listener_server(default_port, server, bind_address)
+            stop_listener_server(@port, server, bind_address)
           end
 
           it 'accepts connections on localhost interface' do
-            response = make_http_request('127.0.0.1', default_port, status_endpoint)
+            response = make_http_request('127.0.0.1', @port, status_endpoint)
             expect(response).to be_a(Net::HTTPSuccess)
           end
 
@@ -81,7 +80,7 @@ module ThreeScale
             if external_ip.nil? || external_ip.empty?
               skip 'Cannot determine external IP - may be expected in containerized environment'
             else
-              expect { make_http_request(external_ip, default_port, status_endpoint, 5) }
+              expect { make_http_request(external_ip, @port, status_endpoint, 5) }
                 .not_to raise_error
             end
           end
@@ -103,20 +102,21 @@ module ThreeScale
           let(:bind_address) { '[::1]' }
 
           before do
-            start_listener_server(port: ipv6_port, server: server, bind: bind_address)
+            @port = find_free_port
+            start_listener_server(port: @port, server: server, bind: bind_address)
           end
 
           after do
-            stop_listener_server(ipv6_port, server, bind_address)
+            stop_listener_server(@port, server, bind_address)
           end
 
           it 'accepts connections on IPv6 localhost interface' do
-            response = make_http_request('::1', ipv6_port, status_endpoint)
+            response = make_http_request('::1', @port, status_endpoint)
             expect(response).to be_a(Net::HTTPSuccess)
           end
 
           it 'rejects connections on IPv4 localhost' do
-            expect { make_http_request('127.0.0.1', ipv6_port, status_endpoint, 5) }
+            expect { make_http_request('127.0.0.1', @port, status_endpoint, 5) }
               .to raise_error(SystemCallError)
           end
         end
@@ -133,6 +133,15 @@ module ThreeScale
       end
 
       private
+
+      def find_free_port
+        socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+        socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
+        socket.bind(Socket.sockaddr_in(0, '127.0.0.1'))
+        port = socket.local_address.ip_port
+        socket.close
+        port
+      end
 
       def get_external_ip
         # Try to get the first non-loopback IP address
