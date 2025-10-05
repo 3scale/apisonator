@@ -20,7 +20,7 @@ service HOSTNAME do
   count manifest[:server_model][:workers].to_i
 
   port = ENV.fetch("FALCON_PORT", 3001).to_i
-  host = ENV.fetch("FALCON_IP", "0.0.0.0")
+  host = ENV.fetch("FALCON_HOST", "0.0.0.0")
   endpoint Async::HTTP::Endpoint
              .parse("http://#{host}:#{port}")
              .with(protocol: Async::HTTP::Protocol::HTTP11)
