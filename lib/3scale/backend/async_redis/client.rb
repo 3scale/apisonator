@@ -86,7 +86,7 @@ module ThreeScale
                   ssl_context.add_certificate(cert, key)
                 end
 
-                ssl_context.set_params(ssl_params) if ssl_params
+                ssl_context.set_params(ssl_params)
               end
             end
 
