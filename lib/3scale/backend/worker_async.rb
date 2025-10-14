@@ -99,7 +99,7 @@ module ThreeScale
       end
 
       def start_to_fetch_jobs
-        Async(transient: true) { @job_fetcher.start(@jobs) }
+        Async { @job_fetcher.start(@jobs) }
       end
 
       private
