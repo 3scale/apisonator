@@ -15,6 +15,8 @@ module ThreeScale
           # this to call flushdb().
           before { storage.flushdb }
 
+          before { skip 'skipping an async test as sync mode is enabled' unless ThreeScale::Backend.configuration.redis.async }
+
           context 'When the list of commands is empty' do
             it 'returns an empty array' do
               expect(subject.run(async_client)).to be_empty

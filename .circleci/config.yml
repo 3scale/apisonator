@@ -176,8 +176,8 @@ jobs:
       name: ubuntu_vm
     working_directory: ~/project
     environment:
-      CONFIG_QUEUES_MASTER_NAME: unix://run/redis.sock
-      CONFIG_REDIS_PROXY: unix://run/redis.sock
+      CONFIG_QUEUES_MASTER_NAME: unix:///home/circleci/project/run/redis.sock
+      CONFIG_REDIS_PROXY: unix:///home/circleci/project/run/redis.sock
     steps:
       - *attach-to-workspace
       - start_services:
@@ -214,10 +214,10 @@ jobs:
       name: ubuntu_vm
     working_directory: ~/project
     environment:
-      CONFIG_QUEUES_MASTER_NAME: unix://run/redis.sock
+      CONFIG_QUEUES_MASTER_NAME: unix:///home/circleci/project/run/redis.sock
       CONFIG_QUEUES_USERNAME: porta
       CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
-      CONFIG_REDIS_PROXY: unix://run/redis.sock
+      CONFIG_REDIS_PROXY: unix:///home/circleci/project/run/redis.sock
       CONFIG_REDIS_USERNAME: porta
       CONFIG_REDIS_PASSWORD: sup3rS3cre1!
     steps:
