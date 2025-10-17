@@ -1,7 +1,18 @@
 require 'net/http'
+require 'socket'
 require 'tempfile'
 
 module ListenerServerHelper
+
+  def find_free_port
+    socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+    socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
+    socket.bind(Socket.sockaddr_in(0, '127.0.0.1'))
+    port = socket.local_address.ip_port
+    socket.close
+    port
+  end
+
   def start_listener_server(options = {})
     port = options.fetch(:port)
     server = options.fetch(:server)
