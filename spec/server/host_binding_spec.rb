@@ -134,15 +134,6 @@ module ThreeScale
 
       private
 
-      def find_free_port
-        socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-        socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
-        socket.bind(Socket.sockaddr_in(0, '127.0.0.1'))
-        port = socket.local_address.ip_port
-        socket.close
-        port
-      end
-
       def get_external_ip
         # Try to get the first non-loopback IP address
         Socket.ip_address_list.find do |addr|
