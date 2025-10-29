@@ -1,5 +1,6 @@
 require 'net/http'
 require '3scale/backend'
+require_relative '../spec_helpers/listener_server_helper'
 
 module ThreeScale
   module Backend
@@ -8,6 +9,7 @@ module ThreeScale
     LISTENER_HOST = 'localhost'
 
     describe Listener do
+      include ListenerServerHelper
       let(:metrics_endpoint) { '/metrics' }
       let(:metrics_port) { 9394 }
 
@@ -63,7 +65,7 @@ module ThreeScale
           end
 
           after do
-            stop_listener(LISTENER_PORT, server)
+            stop_listener_server(LISTENER_PORT, server)
           end
 
           it 'shows Prometheus metrics for auths and reports' do
@@ -188,7 +190,7 @@ module ThreeScale
           end
 
           after do
-            stop_listener(LISTENER_PORT, server)
+            stop_listener_server(LISTENER_PORT, server)
           end
 
           it 'does not open the metrics port' do
@@ -211,50 +213,19 @@ module ThreeScale
       private
 
       def start_listener(metrics_enabled, listener_port, metrics_port, server)
-        envs = {
+        environment_vars = {
           LISTENER_WORKERS: 2, # To check that metrics are accurate with multiple workers
           CONFIG_LISTENER_PROMETHEUS_METRICS_ENABLED: metrics_enabled,
           CONFIG_LISTENER_PROMETHEUS_METRICS_PORT: metrics_port,
         }
-        envs_str = envs.map { |env, val| "#{env}=#{val}" }.join(' ')
 
-        # Send logs to /dev/null to avoid cluttering the output
-        start_ok = system("#{envs_str} bundle exec bin/3scale_backend " +
-                          "-s #{server} start -p #{listener_port} 2> /dev/null &")
-        raise 'Failed to start Listener' unless start_ok
-
-        if server == :puma
-          wait_for_puma_control_socket
-        else
-          # Give it some time to start
-          sleep 2
-        end
+        start_listener_server(
+          port: listener_port,
+          server: server,
+          environment: environment_vars
+        )
       end
 
-      def stop_listener(port, server)
-        if server == :puma
-          system("bundle exec bin/3scale_backend stop -p #{port}")
-          sleep(2) # Give it some time to stop
-        else # stop not implemented in Falcon
-          system("pkill -u #{Process.euid} -f \"ruby .*falcon\"")
-          sleep(2) # Give it some time to stop
-
-          # TODO: investigate why occasionally Falcon does not kill its children
-          # processes ("Falcon Server").
-          if system("pkill -u #{Process.euid} -f \"Falcon Server\"")
-            sleep(2)
-            system("pkill --signal SIGKILL -u #{Process.euid} -f \"Falcon Server\"")
-          end
-        end
-      end
-
-      def wait_for_puma_control_socket
-        Timeout::timeout(5) do
-          until system("bundle exec bin/3scale_backend status")
-            sleep 0.1
-          end
-        end
-      end
 
       def do_get_req(path)
         Net::HTTP.get(LISTENER_HOST, path, LISTENER_PORT)

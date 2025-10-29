@@ -20,9 +20,16 @@ service HOSTNAME do
   count manifest[:server_model][:workers].to_i
 
   port = ENV.fetch("FALCON_PORT", 3001).to_i
+  host = ENV.fetch("FALCON_HOST", "0.0.0.0")
+
+  protocol = Async::HTTP::Protocol::Configured.new(
+    Async::HTTP::Protocol::HTTP11,
+    maximum_line_length: 1024*12
+  )
+
   endpoint Async::HTTP::Endpoint
-             .parse("http://0.0.0.0:#{port}")
-             .with(protocol: Async::HTTP::Protocol::HTTP11)
+             .parse("http://#{host}:#{port}")
+             .with(protocol:)
 end
 
 service 'supervisor' do
