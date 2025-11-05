@@ -55,7 +55,7 @@ gem 'builder', '= 3.2.3'
 gem 'redis', '~> 5.0'
 gem 'resque', '~> 2.6.0'
 gem 'redis-namespace', '~>1.8'
-gem 'rack', '~> 3.0'
+gem 'rack', '~> 3.1.19'
 gem "rackup", "~> 2.2"
 gem 'sinatra', '~> 4.1.0'
 gem 'sinatra-contrib', '~> 4.1.0'
