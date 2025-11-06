@@ -13,7 +13,7 @@ Apisonator implements a multi-logger architecture with three specialized loggers
 **Location:** `lib/3scale/backend/logging.rb:50`
 
 **Configuration:**
-* Output: `CONFIG_LOG_PATH` (defaults to `backend_logger.log` or STDOUT)
+* Output: `CONFIG_LOG_PATH` (defaults to `/dev/stdout`)
 * Rotation: 10 log files
 * Format: Standard Ruby Logger format
 
