@@ -215,10 +215,10 @@ jobs:
     working_directory: ~/project
     environment:
       CONFIG_QUEUES_MASTER_NAME: unix:///home/circleci/project/run/redis.sock
-      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_USERNAME: apisonator
       CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
       CONFIG_REDIS_PROXY: unix:///home/circleci/project/run/redis.sock
-      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_USERNAME: apisonator
       CONFIG_REDIS_PASSWORD: sup3rS3cre1!
     steps:
       - *attach-to-workspace
@@ -231,11 +231,11 @@ jobs:
     working_directory: ~/project
     environment:
       CONFIG_QUEUES_MASTER_NAME: rediss://localhost:46380/6
-      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_USERNAME: apisonator
       CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
       CONFIG_QUEUES_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
       CONFIG_REDIS_PROXY: rediss://localhost:46380/6
-      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_USERNAME: apisonator
       CONFIG_REDIS_PASSWORD: sup3rS3cre1!
       CONFIG_REDIS_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
     steps:
@@ -250,14 +250,14 @@ jobs:
     environment:
       CONFIG_QUEUES_MASTER_NAME: rediss://redis-master/6
       CONFIG_QUEUES_SENTINEL_HOSTS: rediss://localhost:56380,rediss://localhost:56381,rediss://localhost:56382
-      CONFIG_QUEUES_USERNAME: porta
+      CONFIG_QUEUES_USERNAME: apisonator
       CONFIG_QUEUES_PASSWORD: sup3rS3cre1!
       CONFIG_QUEUES_SENTINEL_USERNAME: sentinel
       CONFIG_QUEUES_SENTINEL_PASSWORD: 'secret#Passw0rd'
       CONFIG_QUEUES_CA_FILE: /home/circleci/project/.circleci/ca-circleci-cert.pem
       CONFIG_REDIS_PROXY: rediss://redis-master/6
       CONFIG_REDIS_SENTINEL_HOSTS: rediss://localhost:56380,rediss://localhost:56381,rediss://localhost:56382
-      CONFIG_REDIS_USERNAME: porta
+      CONFIG_REDIS_USERNAME: apisonator
       CONFIG_REDIS_PASSWORD: sup3rS3cre1!
       CONFIG_REDIS_SENTINEL_USERNAME: sentinel
       CONFIG_REDIS_SENTINEL_PASSWORD: 'secret#Passw0rd'
