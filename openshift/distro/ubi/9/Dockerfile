@@ -76,7 +76,6 @@ ARG RACK_ENV=production
 ENV TZ=:/etc/localtime \
     # App-specific env
     RACK_ENV=${RACK_ENV} \
-    CONFIG_LOG_PATH=/tmp/ \
     CONFIG_WORKERS_LOG_FILE=/dev/stdout \
     PUMA_WORKERS=${PUMA_WORKERS}
 
