@@ -19,9 +19,9 @@ require 'async'
 # Require test helpers.
 Dir[File.dirname(__FILE__) + '/test_helpers/**/*.rb'].each { |file| require file }
 
-## to initilize the worker class variables for those cases that worker is called
-## without creating a worker first, only happens in test environment
-ThreeScale::Backend::Worker.new
+# Initialize the worker logger for those cases that worker is called without creating a worker first.
+# Only happens in test environment
+ThreeScale::Backend::Logging::Worker.configure_logging(ThreeScale::Backend::Worker, '/dev/null')
 
 Test::Unit.at_start do
   TestHelpers::Storage::Mock.mock_storage_clients

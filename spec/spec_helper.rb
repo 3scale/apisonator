@@ -41,7 +41,7 @@ require_relative '../test/test_helpers/sequences.rb'
 RSpec.configure do |config|
   config.before :suite do
     require_relative '../test/test_helpers/configuration'
-    require_relative '../test/test_helpers/twemproxy'
+    require_relative '../test/test_helpers/storage'
 
     TestHelpers::Storage::Mock.mock_storage_clients
   end

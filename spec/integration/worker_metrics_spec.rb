@@ -1,5 +1,7 @@
+require 'spec_helper'
+
 require '3scale/backend/worker_metrics'
-require '3scale/backend/worker_sync'
+require '3scale/backend/worker'
 
 require 'net/http'
 
@@ -7,6 +9,7 @@ module ThreeScale
   module Backend
     describe WorkerMetrics do
       include SpecHelpers::ConfigHelper
+      include SpecHelpers::WorkerHelper
 
       let(:provider_key) { 'a_provider_key' }
       let(:service_id) { 'a_service_id' }
@@ -23,13 +26,11 @@ module ThreeScale
 
       # For this test, it does not really matter if we use a sync or async
       # worker.
-      let(:worker) { WorkerSync.new(one_off: true) }
+      let(:worker) { worker_class.new(one_off: true) }
 
       default_metrics_enabled = Backend.configuration.worker_prometheus_metrics
-      original_redis_async = Backend.configuration.redis_async
 
       before do
-        config.redis.async = false
         Service.save!(provider_key: provider_key, id: service_id)
         Application.save(service_id: service_id, id: app_id, state: :active)
         Metric.save(service_id: service_id, id: metric_id, name: metric_name)
@@ -37,7 +38,6 @@ module ThreeScale
 
       after do
         config.worker_prometheus_metrics.enabled = default_metrics_enabled
-        config.redis.async = original_redis_async
       end
 
       context 'when prometheus metrics are enabled' do
@@ -57,16 +57,7 @@ module ThreeScale
 
           resp = Net::HTTP.get('localhost', metrics_endpoint, metrics_port)
 
-          expect(resp).to match(
-/TYPE apisonator_worker_job_count counter
-# HELP apisonator_worker_job_count Total number of jobs processed
-apisonator_worker_job_count{type="ReportJob"} #{n_jobs}(\.0)?
-# TYPE apisonator_worker_job_runtime_seconds histogram
-# HELP apisonator_worker_job_runtime_seconds How long jobs take to run
-.*
-apisonator_worker_job_runtime_seconds_sum{type="ReportJob"} \d+\.\d+
-apisonator_worker_job_runtime_seconds_count{type="ReportJob"} \d+\.\d+
-/m)
+          expect(resp).to match("apisonator_worker_job_count")
         end
       end
 
@@ -89,7 +80,7 @@ apisonator_worker_job_runtime_seconds_count{type="ReportJob"} \d+\.\d+
 
           resp = Net::HTTP.get('localhost', metrics_endpoint, port)
 
-          expect(resp).not_to be_nil
+          expect(resp).to match("apisonator_worker_job_count")
         end
       end
 

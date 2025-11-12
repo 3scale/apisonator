@@ -19,22 +19,29 @@ module ThreeScale
 
       DEFAULT_MAX_CONCURRENT_JOBS = 20
 
+      if configuration.worker_prometheus_metrics.enabled
+        require '3scale/backend/worker_metrics'
+      end
+
+      # Conditional require is done to require async-* libs only when
+      # needed and avoid possible side-effects.
+      if configuration.redis.async
+        require '3scale/backend/worker_async'
+      else
+        require '3scale/backend/worker_sync'
+      end
+
       def self.new(options = {})
         Logging::Worker.configure_logging(self, options[:log_file])
         Logging::External.setup_worker
 
         if configuration.worker_prometheus_metrics.enabled
-          require '3scale/backend/worker_metrics'
           WorkerMetrics.start_metrics_server
         end
 
-        if options[:async]
-          # Conditional require is done to require async-* libs only when
-          # needed and avoid possible side-effects.
-          require '3scale/backend/worker_async'
+        if configuration.redis.async
           WorkerAsync.new(options)
         else
-          require '3scale/backend/worker_sync'
           WorkerSync.new(options)
         end
       end
