@@ -57,7 +57,16 @@ module ThreeScale
 
           resp = Net::HTTP.get('localhost', metrics_endpoint, metrics_port)
 
-          expect(resp).to match("apisonator_worker_job_count")
+          expect(resp).to match(
+                            /TYPE apisonator_worker_job_count counter
+# HELP apisonator_worker_job_count Total number of jobs processed
+apisonator_worker_job_count{type="ReportJob"} #{n_jobs}(\.0)?
+# TYPE apisonator_worker_job_runtime_seconds histogram
+# HELP apisonator_worker_job_runtime_seconds How long jobs take to run
+.*
+apisonator_worker_job_runtime_seconds_sum{type="ReportJob"} \d+\.\d+
+apisonator_worker_job_runtime_seconds_count{type="ReportJob"} \d+\.\d+
+/m)
         end
       end
 

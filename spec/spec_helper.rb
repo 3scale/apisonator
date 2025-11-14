@@ -44,6 +44,10 @@ RSpec.configure do |config|
     require_relative '../test/test_helpers/storage'
 
     TestHelpers::Storage::Mock.mock_storage_clients
+
+    # Initialize the worker logger for those cases that worker is called without creating a worker first.
+    # Only happens in test environment
+    ThreeScale::Backend::Logging::Worker.configure_logging(ThreeScale::Backend::Worker, '/dev/null')
   end
 
   config.after :suite do
