@@ -60,7 +60,9 @@ module ThreeScale
           ss_dir = socket_state_dir(global_options[:environment], global_options[:directory] || EXPANDED_ROOT_PATH)
           argv_add argv, true, '-S', File.join(ss_dir, STATE)
           argv_add argv, true, '-C', "unix://#{File.join(ss_dir, CONTROL_SOCKET)}"
-          argv_add argv, true, '-F', CONFIG
+          # Pass '-F -' to explicitly disable config file auto-discovery
+          # (pumactl auto-discovers config/puma.rb if no -F flag is provided)
+          argv_add argv, true, '-F', '-'
           argv << cmd.to_s
           argv
         end

@@ -1,8 +1,16 @@
-require '3scale/backend/storage_async'
-require '3scale/backend/storage_sync'
+require '3scale/backend/storage'
 
 module TestHelpers
   module Storage
+
+    def self.client_class
+      if ThreeScale::Backend.configuration.redis.async
+        ThreeScale::Backend::StorageAsync::Client
+      else
+        ThreeScale::Backend::StorageSync
+      end
+    end
+
     # Test::Unit hooks, just include TestHelpers::Storage in a testcase if you
     # do not use the global mocking with at_start/at_exit hooks.
     def self.included(base)
@@ -30,12 +38,6 @@ module TestHelpers
       DEFAULT_NODES = %w[127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384].freeze
       private_constant :DEFAULT_NODES
 
-      STORAGE_CLASSES = [
-        ThreeScale::Backend::StorageAsync::Client,
-        ThreeScale::Backend::StorageSync
-      ].freeze
-      private_constant :STORAGE_CLASSES
-
       class << self
         def nodes
           # Return original URL unless we are testing on a twemproxy
@@ -47,11 +49,11 @@ module TestHelpers
         end
 
         def mock_storage_clients
-          STORAGE_CLASSES.each { |klass| mock_storage_client!(klass) }
+          mock_storage_client!(TestHelpers::Storage.client_class)
         end
 
         def unmock_storage_clients
-          STORAGE_CLASSES.each { |klass| unmock_storage_client!(klass) }
+          unmock_storage_client!(TestHelpers::Storage.client_class)
         end
 
         private
@@ -113,17 +115,7 @@ module TestHelpers
               attr_reader :inner
 
               def proxied_instances
-                klass = case inner
-                        when ThreeScale::Backend::StorageAsync::Client
-                          inner.class
-                        when Redis
-                          # inner is a Redis instance when using the sync storage
-                          ThreeScale::Backend::StorageSync
-                        else
-                          raise 'Unknown inner storage class'
-                        end
-
-                klass.proxied_instances
+                TestHelpers::Storage.client_class.proxied_instances
               end
             end
             private_constant :RedisClientTest

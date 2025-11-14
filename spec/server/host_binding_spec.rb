@@ -12,15 +12,14 @@ module ThreeScale
 
       context 'localhost binding' do
         shared_examples_for 'localhost binding listener' do |server|
-          let(:bind_address) { '127.0.0.1' }
-
-          before do
+          before :context do
+            @bind_address = '127.0.0.1'
             @port = find_free_port
-            start_listener_server(port: @port, server: server, bind: bind_address)
+            start_listener_server(port: @port, server: server, bind: @bind_address)
           end
 
-          after do
-            stop_listener_server(@port, server, bind_address)
+          after :context do
+            stop_listener_server(@port, server, @bind_address)
           end
 
           it 'accepts connections on localhost interface' do
@@ -57,15 +56,14 @@ module ThreeScale
 
       context 'default (all interfaces) binding' do
         shared_examples_for 'default binding listener' do |server|
-          let(:bind_address) { nil }
-
-          before do
+          before :context do
+            @bind_address = nil
             @port = find_free_port
-            start_listener_server(port: @port, server: server, bind: bind_address)
+            start_listener_server(port: @port, server: server, bind: @bind_address)
           end
 
-          after do
-            stop_listener_server(@port, server, bind_address)
+          after :context do
+            stop_listener_server(@port, server, @bind_address)
           end
 
           it 'accepts connections on localhost interface' do
@@ -99,15 +97,14 @@ module ThreeScale
 
       context 'IPv6 localhost binding' do
         shared_examples_for 'ipv6 localhost binding listener' do |server|
-          let(:bind_address) { '[::1]' }
-
-          before do
+          before :context do
+            @bind_address = '[::1]'
             @port = find_free_port
-            start_listener_server(port: @port, server: server, bind: bind_address)
+            start_listener_server(port: @port, server: server, bind: @bind_address)
           end
 
-          after do
-            stop_listener_server(@port, server, bind_address)
+          after :context do
+            stop_listener_server(@port, server, @bind_address)
           end
 
           it 'accepts connections on IPv6 localhost interface' do

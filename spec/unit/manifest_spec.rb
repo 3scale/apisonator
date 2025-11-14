@@ -11,6 +11,12 @@ module ThreeScale
       describe '.compute_workers' do
         let(:num_cpus) { ThreeScale::Backend::Util.number_of_cpus }
 
+        before do
+          env_copy = ENV.to_h
+          env_copy.delete('LISTENER_WORKERS')
+          stub_const('ENV', env_copy)
+        end
+
         it 'returns PUMA_WORKERS_CPUMULT * <number of CPUs> if no PUMA_WORKERS environment variable is set' do
           env_copy = ENV.to_h
           env_copy.delete('PUMA_WORKERS')

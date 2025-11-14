@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
-require '3scale/backend/storage_async'
 
 class WorkerTest < Test::Unit::TestCase
   include TestHelpers::Fixtures
@@ -36,7 +35,7 @@ class WorkerTest < Test::Unit::TestCase
   def test_no_jobs_in_the_queue
     # Stub blpop to avoid waiting until timeout.
     Redis.any_instance.stubs(:blpop).returns(nil)
-    StorageAsync::Client.any_instance.stubs(:blpop).returns(nil)
+    TestHelpers::Storage.client_class.any_instance.stubs(:blpop).returns(nil)
 
     Worker.work(:one_off => true)
   end
@@ -46,37 +45,31 @@ class WorkerTest < Test::Unit::TestCase
       log_file = "/tmp/temp_3scale_backend_worker.log"
       FileUtils.remove_file(log_file, :force => true)
 
-      Transactor.report(@provider_key, @service_id, '0' => {'app_id' => @application_one.id,
-                                             'usage'  => {'hits' => 1}},
-                                     '1' => {'app_id' => @application_two.id,
-                                             'usage'  => {'hits' => 1}})
-
-      assert_queued Transactor::ReportJob,
-                  [@service_id,
-                    {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
-                     '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
-                    Time.utc(2011, 12, 12, 11, 48).to_f,
-                    {}]
-
       ## creates the log file when on new
-      worker = Backend::Worker.new(:one_off => true, :log_file => log_file)
-
+      Backend::Worker.new(:one_off => true, :log_file => log_file)
       line = File.new(log_file,"r").read
       assert_equal "# Logfile created on 2011-12-12 11:48:00 UTC by logger.rb", line.split("/").first
 
       ## creates the log file when on work
       FileUtils.remove_file(log_file, :force => true)
-      worker = Backend::Worker.new(:one_off => true, :log_file => log_file)
+      job_fetcher = ThreeScale::Backend::JobFetcher.new(fetch_timeout: 1)
+      worker = Backend::Worker.new(:one_off => true, :log_file => log_file, job_fetcher:)
 
-      # Report something and then call shutdown so the worker does not wait for
-      # more jobs.
-      Transactor.report(@provider_key, @service_id, '0' => {})
-      worker.shutdown
+      # Create a mock job to be returned by the fetcher
+      job = ::Resque::Job.new(:priority,
+                               'class' => 'ThreeScale::Backend::Transactor::ReportJob',
+                               'args' => [@service_id,
+                                          {'0' => {'app_id' => @application_one.id, 'usage' => {'hits' => 1}},
+                                           '1' => {'app_id' => @application_two.id, 'usage' => {'hits' => 1}}},
+                                          Time.utc(2011, 12, 12, 11, 48).to_f,
+                                          {}])
+      job_fetcher.stubs(:fetch).returns(job)
 
       worker.work
 
-      line = File.new(log_file,"r").read
-      assert_equal "# Logfile created on 2011-12-12 11:48:00 UTC by logger.rb", line.split("/").first
+      log_contents = File.read(log_file)
+      assert_match /Logfile created on 2011-12-12 11:48:00 UTC by logger.rb/, log_contents # Header
+      assert_match /ReportJob/, log_contents  # Processed job
 
       FileUtils.remove_file(log_file, :force => true)
     end

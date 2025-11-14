@@ -38,7 +38,7 @@ module ListenerServerHelper
 
       # Wait for the server to be ready
       host = bind_address || "127.0.0.1"
-      wait_for_server_ready(host, port, 20)
+      wait_for_server_ready(host, port)
     rescue => e
       show_server_logs(log_file.path, "Server failed to become ready: #{server} on #{bind_address || 'default'}:#{port}")
       raise e
@@ -52,19 +52,19 @@ module ListenerServerHelper
     if server == :puma
       bind_option = bind_address ? "--bind #{bind_address}" : ""
       system("bundle exec bin/3scale_backend stop #{bind_option} -p #{port}")
-      sleep(2) # Give it some time to stop
+      wait_for_server_stopped(bind_address || '127.0.0.1', port)
 
       # Clean up Puma control socket
       puma_socket = '3scale_backend.sock'
       File.unlink(puma_socket) if File.exist?(puma_socket)
     else # stop not implemented in Falcon
       system("pkill -u #{Process.euid} -f \"ruby .*falcon\"")
-      sleep(2) # Give it some time to stop
+      wait_for_server_stopped(bind_address || '127.0.0.1', port)
 
       # TODO: investigate why occasionally Falcon does not kill its children
       # processes ("Falcon Server").
       if system("pkill -u #{Process.euid} -f \"Falcon Server\"")
-        sleep(2)
+        sleep(0.1) # Brief pause before force kill
         system("pkill --signal SIGKILL -u #{Process.euid} -f \"Falcon Server\"")
       end
 
@@ -74,18 +74,38 @@ module ListenerServerHelper
     end
   end
 
-  def wait_for_server_ready(host, port, max_attempts, endpoint = '/status')
-    attempt = 1
-    while attempt <= max_attempts
-      begin
-        make_http_request(host, port, endpoint)
-        return true
-      rescue SystemCallError
-        sleep 1
-        attempt += 1
-      end
+  def wait_for_server_ready(host, port, max_attempts = 10, endpoint = '/status')
+    max_attempts.times do |attempt|
+      make_http_request(host, port, endpoint)
+      return true
+    rescue SystemCallError
+      sleep 0.05 * (2 ** [attempt, 4].min)
     end
     raise "Server failed to start after #{max_attempts} attempts"
+  end
+
+  def wait_for_server_stopped(host, port, max_attempts = 10)
+    # Remove brackets from IPv6 addresses
+    clean_host = host.gsub(/^\[|\]$/, '')
+
+    max_attempts.times do |attempt|
+      # Check if port is available by trying to bind to it
+      # Determine socket family based on host
+      family = clean_host.include?(':') ? Socket::AF_INET6 : Socket::AF_INET
+      socket = Socket.new(family, Socket::SOCK_STREAM, 0)
+      socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1)
+      socket.bind(Socket.sockaddr_in(port, clean_host))
+      socket.close
+      # Successfully bound to port - server is stopped!
+      return true
+    rescue Errno::EADDRINUSE
+      # Port still in use - server still running
+      sleep 0.05 * (2 ** [attempt, 4].min) # Exponential backoff, capped
+    rescue => e
+      # Unexpected error, assume server stopped
+      return true
+    end
+    raise "Server failed to stop after #{max_attempts} attempts"
   end
 
   def make_http_request(host, port, path, timeout = 30)

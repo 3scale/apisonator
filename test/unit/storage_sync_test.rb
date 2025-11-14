@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
-require '3scale/backend/storage_sync'
 
 class StorageSyncTest < Test::Unit::TestCase
 
@@ -8,7 +7,7 @@ class StorageSyncTest < Test::Unit::TestCase
   end
 
   def test_basic_operations
-    storage = StorageSync.instance(true)
+    storage = Storage.instance(true)
     storage.del('foo')
     assert_nil storage.get('foo')
     storage.set('foo', 'bar')
@@ -17,42 +16,42 @@ class StorageSyncTest < Test::Unit::TestCase
 
   def test_redis_host_and_port
     config_obj = url('127.0.0.1:6379')
-    storage = StorageSync.send :new, config_obj
+    storage = Storage.send :new, config_obj
     assert_client_config(config_obj, storage)
   end
 
   def test_redis_url
     config_obj = url('redis://127.0.0.1:6379/0')
-    storage = StorageSync.send :new, config_obj
+    storage = Storage.send :new, config_obj
     assert_client_config(config_obj, storage)
   end
 
   def test_redis_unix
     config_obj = url('unix:///tmp/redis_unix.6379.sock')
-    storage = StorageSync.send :new, config_obj
+    storage = Storage.send :new, config_obj
     assert_client_config(config_obj, storage)
   end
 
   def test_redis_protected_url
     assert_nothing_raised do
-      StorageSync.send :new, url('redis://user:passwd@127.0.0.1:6379/0')
+      Storage.send :new, url('redis://user:passwd@127.0.0.1:6379/0')
     end
   end
 
   def test_redis_malformed_url
     assert_raise Storage::InvalidURI do
-      StorageSync.send :new, url('a_malformed_url:1:10')
+      Storage.send :new, url('a_malformed_url:1:10')
     end
   end
 
   def test_redis_unknown_scheme
     assert_raise ArgumentError do
-      StorageSync.send :new, url('myscheme://127.0.0.1:6379')
+      Storage.send :new, url('myscheme://127.0.0.1:6379')
     end
   end
 
   def test_redis_url_without_scheme
-    storage = StorageSync.send :new, url('backend-redis')
+    storage = Storage.send :new, url('backend-redis')
     assert_client_config({ url: URI('redis://backend-redis:6379') }, storage)
   end
 
@@ -62,7 +61,7 @@ class StorageSyncTest < Test::Unit::TestCase
       sentinels: ',redis://127.0.0.1:26379, ,    , 127.0.0.1:36379,'
     }
 
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    conn = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: config_obj[:url],
                            sentinels: [{ host: '127.0.0.1', port: 26_379 },
                                        { host: '127.0.0.1', port: 36_379 }] },
@@ -75,7 +74,7 @@ class StorageSyncTest < Test::Unit::TestCase
       sentinels: 'redis://user:passw\,ord@127.0.0.1:26379 ,127.0.0.1:36379, ,'
     }
 
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    conn = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: config_obj[:url],
                            sentinels: [{ host: '127.0.0.1', port: 26_379},
                                        { host: '127.0.0.1', port: 36_379 }],
@@ -90,7 +89,7 @@ class StorageSyncTest < Test::Unit::TestCase
       sentinels: ['redis://127.0.0.1:26379 ', ' 127.0.0.1:36379', nil]
     }
 
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    conn = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: config_obj[:url],
                            sentinels: [{ host: '127.0.0.1', port: 26_379 },
                                        { host: '127.0.0.1', port: 36_379 }] },
@@ -103,7 +102,7 @@ class StorageSyncTest < Test::Unit::TestCase
       sentinels: 'redis://127.0.0.1:26379,a_malformed_url:1:10'
     }
     assert_raise Storage::InvalidURI do
-      StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+      Storage.send :new, Storage::Helpers.config_with(config_obj)
     end
   end
 
@@ -113,7 +112,7 @@ class StorageSyncTest < Test::Unit::TestCase
       sentinels: 'redis://127.0.0.1:26379'
     }
 
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    conn = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: "redis://#{config_obj[:url]}",
                            sentinels: [{ host: '127.0.0.1', port: 26_379 }] },
                            conn)
@@ -128,7 +127,7 @@ class StorageSyncTest < Test::Unit::TestCase
                   'redis://127.0.0.1:46379']
     }
 
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    conn = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: config_obj[:url],
                            sentinels: [{ host: '127.0.0.2', port: default_sentinel_port },
                                        { host: '127.0.0.1', port: default_sentinel_port },
@@ -146,7 +145,7 @@ class StorageSyncTest < Test::Unit::TestCase
                   'redis://192.168.1.3:5555']
     }
 
-    conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    conn = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_sentinel_config({ url: config_obj[:url],
                            sentinels: [{ host: '192.168.1.1', port: 3333 },
                                        { host: '192.168.1.2', port: 4444 },
@@ -163,7 +162,7 @@ class StorageSyncTest < Test::Unit::TestCase
         role: role
       }
 
-      conn = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+      conn = Storage.send :new, Storage::Helpers.config_with(config_obj)
       assert_sentinel_config({ url: config_obj[:url],
                              sentinels: [{ host: '127.0.0.1', port: 26_379 }],
                              role: role },
@@ -225,7 +224,7 @@ class StorageSyncTest < Test::Unit::TestCase
         ca_file: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'ca-root-cert.pem'))
       }
     }
-    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    storage = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_client_config(config_obj, storage)
   end
 
@@ -238,7 +237,7 @@ class StorageSyncTest < Test::Unit::TestCase
         key: File.expand_path(File.join(__FILE__, '..', '..', '..', 'script', 'config', 'redis-client.key'))
       }
     }
-    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    storage = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_client_config(config_obj, storage)
   end
 
@@ -248,7 +247,7 @@ class StorageSyncTest < Test::Unit::TestCase
       username: 'apisonator-test',
       password: 'p4ssW0rd'
     }
-    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    storage = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_client_config(config_obj, storage)
   end
 
@@ -261,7 +260,7 @@ class StorageSyncTest < Test::Unit::TestCase
       username: 'apisonator-test',
       password: 'p4ssW0rd'
     }
-    storage = StorageSync.send :new, Storage::Helpers.config_with(config_obj)
+    storage = Storage.send :new, Storage::Helpers.config_with(config_obj)
     assert_client_config(config_obj, storage)
   end
 

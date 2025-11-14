@@ -8,22 +8,23 @@ module ThreeScale
       include ListenerServerHelper
 
       describe 'maximum_line_length for Falcon' do
+        BIND_ADDRESS = '127.0.0.1'
+
         if ThreeScale::Backend.configuration.redis.async
-          let(:bind_address) { '127.0.0.1' }
           let(:status_endpoint) { '/status' }
           let(:path) { ->(length) { status_endpoint + '?' + 'key=' + 'a' * (length - status_endpoint.length - 5) } }
 
-          before do
+          before :context do
             @port = find_free_port
-            start_listener_server(port: @port, server: :falcon, bind: bind_address)
+            start_listener_server(port: @port, server: :falcon, bind: BIND_ADDRESS)
           end
 
-          after do
-            stop_listener_server(@port, :falcon, bind_address)
+          after :context do
+            stop_listener_server(@port, :falcon, BIND_ADDRESS)
           end
 
           it 'accepts requests with path under the configured maximum line length (12KB)' do
-            response = make_http_request(bind_address, @port, path[10_000])
+            response = make_http_request(BIND_ADDRESS, @port, path[10_000])
 
             expect(response).to be_a(Net::HTTPSuccess)
             expect(response.code).to eq('200')
@@ -31,7 +32,7 @@ module ThreeScale
 
           it 'rejects requests with path exceeding the configured maximum line length (12KB)' do
             expect {
-              make_http_request(bind_address, @port, path[13_000], 5)
+              make_http_request(BIND_ADDRESS, @port, path[13_000], 5)
             }.to raise_error(EOFError)
           end
         else

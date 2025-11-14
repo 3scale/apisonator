@@ -7,11 +7,11 @@ module ThreeScale
     # The port is not the standard one to avoid clashes with other tests
     LISTENER_PORT = 4000
     LISTENER_HOST = 'localhost'
+    METRICS_ENDPOINT = '/metrics'
+    METRICS_PORT = 9394
 
     describe Listener do
       include ListenerServerHelper
-      let(:metrics_endpoint) { '/metrics' }
-      let(:metrics_port) { 9394 }
 
       context 'when listener metrics are enabled' do
         let(:backend_version) { '1' }
@@ -38,9 +38,15 @@ module ThreeScale
         end
 
         shared_examples_for 'listener with metrics' do |server|
-          before do
-            start_listener(true, LISTENER_PORT, metrics_port, server)
+          before :context do
+            start_listener(true, LISTENER_PORT, METRICS_PORT, server)
+          end
 
+          after :context do
+            stop_listener_server(LISTENER_PORT, server)
+          end
+
+          before :each do
             ThreeScale::Backend::Service.save!(
               provider_key: provider_key, id: service_id, backend_version: backend_version
             )
@@ -64,10 +70,6 @@ module ThreeScale
             )
           end
 
-          after do
-            stop_listener_server(LISTENER_PORT, server)
-          end
-
           it 'shows Prometheus metrics for auths and reports' do
             # Do requests to generate some metrics:
             # - 1 authorize (authorized)
@@ -79,7 +81,7 @@ module ThreeScale
             do_authrep(args.merge(user_key: 'invalid')) # 403
             do_authrep(args.merge(metric_name: 'invalid')) # 404
 
-            metrics_resp = Net::HTTP.get(LISTENER_HOST, metrics_endpoint, metrics_port)
+            metrics_resp = Net::HTTP.get(LISTENER_HOST, METRICS_ENDPOINT, METRICS_PORT)
 
             # These are some lines that we know that should be part of the output.
             auth_report_lines = [
@@ -166,7 +168,7 @@ module ThreeScale
                                     "{request_type=\"#{request_type}\"} #{n_calls}.0"
             end
 
-            metrics_resp = Net::HTTP.get(LISTENER_HOST, metrics_endpoint, metrics_port)
+            metrics_resp = Net::HTTP.get(LISTENER_HOST, METRICS_ENDPOINT, METRICS_PORT)
 
             expect(metrics_resp).to include(*internal_api_lines)
           end
@@ -185,16 +187,16 @@ module ThreeScale
 
       context 'when listener metrics are not enabled' do
         shared_examples_for 'listener without metrics' do |server|
-          before do
-            start_listener(false, LISTENER_PORT, metrics_port, server)
+          before :context do
+            start_listener(false, LISTENER_PORT, METRICS_PORT, server)
           end
 
-          after do
+          after :context do
             stop_listener_server(LISTENER_PORT, server)
           end
 
           it 'does not open the metrics port' do
-            expect { Net::HTTP.get(LISTENER_HOST, metrics_endpoint, metrics_port) }
+            expect { Net::HTTP.get(LISTENER_HOST, METRICS_ENDPOINT, METRICS_PORT) }
               .to raise_error(SystemCallError)
           end
         end

@@ -1,13 +1,13 @@
-require '3scale/backend/storage_sync'
-
 module ThreeScale
   module Backend
     class Storage
       include Configurable
 
-      # Require async code conditionally to avoid potential side-effects
+      # Require mode conditionally to avoid potential side-effects
       if configuration.redis.async
         require '3scale/backend/storage_async'
+      else
+        require '3scale/backend/storage_sync'
       end
 
       # Constant used for when batching of operations
