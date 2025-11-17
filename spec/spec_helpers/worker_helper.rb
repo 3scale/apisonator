@@ -6,5 +6,13 @@ module SpecHelpers
       # To ensure the job is processed, we wait until it finishes
       Sync { ThreeScale::Backend::Worker.work(one_off: true) }
     end
+
+    def worker_class
+      if ThreeScale::Backend.configuration.redis.async
+        ThreeScale::Backend::WorkerAsync
+      else
+        ThreeScale::Backend::WorkerSync
+      end
+    end
   end
 end
