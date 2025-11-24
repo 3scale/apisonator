@@ -137,7 +137,7 @@ module TestHelpers
         @service_id = 1000 + i
         @app_id = 2000 + i
         Service.save!(provider_key: @provider_key, id: @service_id)
-        Application.save(service_id: @service_id, id: @app_id, state: :live)
+        Application.save(service_id: @service_id, id: @app_id, state: :active)
         metrics << Metric.save(service_id: @service_id, id: 3000 + i, name: 'hits')
       end
       @metric_hits = metrics.first
