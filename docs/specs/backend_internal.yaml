@@ -619,6 +619,10 @@ paths:
                             - $ref: "#/components/schemas/Application"
                             - type: object
                               properties:
+                                user_key:
+                                  type:
+                                  - "null"
+                                  - string
                                 application_keys:
                                   type: array
                                   items:
@@ -660,6 +664,7 @@ paths:
                     plan_id: "123"
                     plan_name: "Gold"
                     redirect_url: "http://example.com"
+                    user_key: "user_key_123"
                     application_keys: ["key1", "key2"]
                     referrer_filters: ["example.com", "*.example.org"]
                 - status: "modified"
@@ -670,6 +675,7 @@ paths:
                     plan_id: "124"
                     plan_name: "Silver"
                     redirect_url: null
+                    user_key: null
                     application_keys: []
                     referrer_filters: []
                 - status: "error"
