@@ -337,6 +337,7 @@ describe 'Applications (prefix: /services/:service_id/applications)' do
         expect(app1_result['application']['plan_id']).to eq '123'
         expect(app1_result['application']['plan_name']).to eq 'Gold'
         expect(app1_result['application']['redirect_url']).to eq 'http://example.com'
+        expect(app1_result['application']['user_key']).to eq 'user_key_1'
         expect(app1_result['application']['application_keys']).to contain_exactly('key1', 'key2')
         expect(app1_result['application']['referrer_filters']).to contain_exactly('example.com', '*.example.org')
 
@@ -345,11 +346,13 @@ describe 'Applications (prefix: /services/:service_id/applications)' do
         expect(app2_result['status']).to eq 'created'
         expect(app2_result['application']['id']).to eq 'app_2'
         expect(app2_result['application']['state']).to eq 'suspended'
+        expect(app2_result['application']['user_key']).to be_nil
 
         # Verify app_3 result
         app3_result = response_json['applications'][2]
         expect(app3_result['status']).to eq 'created'
         expect(app3_result['application']['id']).to eq 'app_3'
+        expect(app3_result['application']['user_key']).to eq 'user_key_3'
 
         # Verify data in storage
         expect(ThreeScale::Backend::Application.load_id_by_key(service_id, 'user_key_1')).to eq 'app_1'
