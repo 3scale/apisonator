@@ -47,9 +47,14 @@ module ThreeScale
             begin
               app = save_application_with_data(service_id, app_data)
 
+              # This is the fastest way to know whether the user key is properly synced
+              user_key_persisted = Application.load_id_by_key(service_id, app_data[:user_key]) == app.id
+              user_key = user_key_persisted ? app_data[:user_key] : nil
+
               result = {
                 status: app_existed ? :modified : :created,
                 application: app.to_hash.merge(
+                  user_key: user_key,
                   application_keys: app.keys,
                   referrer_filters: app.referrer_filters
                 )
