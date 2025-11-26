@@ -1850,7 +1850,7 @@ components:
         id:
           type: integer
         name:
-          type:
+          type: string
         parent_id:
           type:
           - "null"
