@@ -526,6 +526,180 @@ paths:
               examples:
                 application-not-found-error:
                   $ref: "#/components/examples/application-not-found-error"
+  /services/{service_id}/applications/batch:
+    parameters:
+    - $ref: '#/components/parameters/ServiceId'
+    put:
+      tags:
+      - Applications
+      description: Batch create or update multiple applications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                applications:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      state:
+                        type: string
+                        enum:
+                        - active
+                        - pending
+                        - suspended
+                      plan_id:
+                        type: string
+                      plan_name:
+                        type: string
+                      redirect_url:
+                        type: string
+                      user_key:
+                        type: string
+                      application_keys:
+                        type: array
+                        items:
+                          type: string
+                      referrer_filters:
+                        type: array
+                        items:
+                          type: string
+                    required:
+                    - id
+            example:
+              applications:
+              - id: "app_1"
+                state: "active"
+                plan_id: "123"
+                plan_name: "Gold"
+                redirect_url: "http://example.com"
+                user_key: "user_key_123"
+                application_keys: ["key1", "key2"]
+                referrer_filters: ["example.com", "*.example.org"]
+              - id: "app_2"
+                state: "suspended"
+                plan_id: "124"
+                plan_name: "Silver"
+        required: true
+      responses:
+        "200":
+          description: Batch operation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - completed
+                  total:
+                    type: integer
+                  successful:
+                    type: integer
+                  failed:
+                    type: integer
+                  applications:
+                    type: array
+                    items:
+                      oneOf:
+                      - type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                            - created
+                            - modified
+                          application:
+                            allOf:
+                            - $ref: "#/components/schemas/Application"
+                            - type: object
+                              properties:
+                                user_key:
+                                  type:
+                                  - "null"
+                                  - string
+                                application_keys:
+                                  type: array
+                                  items:
+                                    type: string
+                                referrer_filters:
+                                  type: array
+                                  items:
+                                    type: string
+                      - type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                            - error
+                          id:
+                            type: string
+                          error:
+                            type: string
+                  failures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        error:
+                          type: string
+              example:
+                status: "completed"
+                total: 3
+                successful: 2
+                failed: 1
+                applications:
+                - status: "created"
+                  application:
+                    service_id: "7575"
+                    id: "app_1"
+                    state: "active"
+                    plan_id: "123"
+                    plan_name: "Gold"
+                    redirect_url: "http://example.com"
+                    user_key: "user_key_123"
+                    application_keys: ["key1", "key2"]
+                    referrer_filters: ["example.com", "*.example.org"]
+                - status: "modified"
+                  application:
+                    service_id: "7575"
+                    id: "app_2"
+                    state: "suspended"
+                    plan_id: "124"
+                    plan_name: "Silver"
+                    redirect_url: null
+                    user_key: null
+                    application_keys: []
+                    referrer_filters: []
+                - status: "error"
+                  id: "app_3"
+                  error: "Application with id=\"app_3\" has no state"
+                failures:
+                - id: "app_3"
+                  error: "Application with id=\"app_3\" has no state"
+        "400":
+          description: Bad Request error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - error
+                  error:
+                    type: string
+              example:
+                status: error
+                error: "missing parameter 'applications'"
   /services/{service_id}/applications/key/{user_key}:
     parameters:
     - $ref: '#/components/parameters/ServiceId'
@@ -1682,7 +1856,7 @@ components:
         id:
           type: integer
         name:
-          type:
+          type: string
         parent_id:
           type:
           - "null"
