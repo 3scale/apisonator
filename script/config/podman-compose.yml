@@ -1,7 +1,7 @@
 version: '3'
 services:
   redis-master:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-master
     network_mode: host
     volumes:
@@ -9,19 +9,19 @@ services:
     command: [ redis-server, --port, "6379", --unixsocket, "/var/run/redis/redis.sock", --unixsocketperm, "777" ]
 
   redis-replica1:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-replica1
     network_mode: host
     command: [ redis-server, --slaveof, localhost, "6379", --port, "6380" ]
 
   redis-replica2:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-replica2
     network_mode: host
     command: [ redis-server, --slaveof, localhost, "6379", --port, "6381" ]
 
   redis-sentinel1:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-sentinel1
     network_mode: host
     volumes:
@@ -29,7 +29,7 @@ services:
     command: [ redis-server, /data/sentinel1.conf, --sentinel, --port, "26379" ]
 
   redis-sentinel2:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-sentinel2
     network_mode: host
     volumes:
@@ -37,7 +37,7 @@ services:
     command: [ redis-server, /data/sentinel2.conf, --sentinel, --port, "26380" ]
 
   redis-sentinel3:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-sentinel3
     network_mode: host
     volumes:
@@ -45,7 +45,7 @@ services:
     command: [ redis-server, /data/sentinel3.conf, --sentinel, --port, "26381" ]
 
   redis-pass:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-pass
     network_mode: host
     volumes:
@@ -53,7 +53,7 @@ services:
     command: [ redis-server, --port, "6379", --requirepass, "sup3rS3cre1!"]
 
   tls-redis-master:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: tls-redis-master
     network_mode: host
     volumes:
@@ -65,7 +65,7 @@ services:
     command: [ redis-server, /etc/redis.conf ]
 
   tls-redis-replica1:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: tls-redis-replica1
     network_mode: host
     volumes:
@@ -76,7 +76,7 @@ services:
     command: [ redis-server, /etc/redis.conf, --slaveof, localhost, "46380" ]
 
   tls-redis-replica2:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: tls-redis-replica2
     network_mode: host
     volumes:
@@ -87,7 +87,7 @@ services:
     command: [ redis-server, /etc/redis.conf, --slaveof, localhost, "46380" ]
 
   tls-redis-sentinel1:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: tls-redis-sentinel1
     network_mode: host
     volumes:
@@ -98,7 +98,7 @@ services:
     command: [ redis-server, /data/sentinel.conf, --sentinel ]
 
   tls-redis-sentinel2:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: tls-redis-sentinel2
     network_mode: host
     volumes:
@@ -109,7 +109,7 @@ services:
     command: [ redis-server, /data/sentinel.conf, --sentinel ]
 
   tls-redis-sentinel3:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: tls-redis-sentinel3
     network_mode: host
     volumes:
@@ -129,19 +129,19 @@ services:
       - ./twemproxy.yml:/etc/twemproxy/nutcracker.yml:Z
 
   redis-shard1:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-shard1
     network_mode: host
     command: [ redis-server, --port, "6382" ]
 
   redis-shard2:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-shard2
     network_mode: host
     command: [ redis-server, --port, "6383" ]
 
   redis-shard3:
-    image: redis:6.2-alpine
+    image: valkey/valkey:7.2-alpine
     container_name: redis-shard3
     network_mode: host
     command: [ redis-server, --port, "6384" ]
