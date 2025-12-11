@@ -164,7 +164,7 @@ module ThreeScale
       end
 
       def save
-        raise ApplicationHasNoState.new(id) if !state
+        validate_attributes
 
         storage.pipelined do |pipeline|
           persist_attributes(pipeline)
@@ -318,6 +318,11 @@ module ThreeScale
       end
 
       private
+
+      def validate_attributes
+        raise ApplicationHasNoID.new unless id
+        raise ApplicationHasNoState.new(id) unless state
+      end
 
       def persist_attributes(client)
         client.set(storage_key(:state), state.to_s) if state

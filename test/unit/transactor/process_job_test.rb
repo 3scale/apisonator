@@ -15,11 +15,11 @@ module Transactor
 
       Application.save(service_id: @service_id,
                        id:         @application_id_one,
-                       state:      :live)
+                       state:      :active)
 
       Application.save(service_id: @service_id,
                        id:         @application_id_two,
-                       state:      :live)
+                       state:      :active)
 
       # Create metrics
       Metric.save(service_id: @service_id, id: @metric_id, name: @metric_id)
