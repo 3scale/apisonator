@@ -1,3 +1,5 @@
+require '3scale/backend/stats/stats_parser'
+
 module ThreeScale
   module Backend
     module Stats
