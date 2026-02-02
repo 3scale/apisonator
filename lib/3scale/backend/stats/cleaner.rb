@@ -80,25 +80,15 @@ module ThreeScale
           # @param [Array] redis_conns Instantiated Redis clients.
           # @param [IO] log_deleted_keys IO where to write the logs. Defaults to
           #             nil (logs nothing).
-          def delete!(redis_conns, log_deleted_keys: nil)
+          def delete!(redis_conns: [], log_deleted_keys: nil)
             services = services_to_delete
             logger.info("Going to delete the stats keys for these services: #{services.to_a}")
 
             unless services.empty?
-              _ok, failed = redis_conns.partition do |redis_conn|
-                begin
-                  delete_keys(redis_conn, services, log_deleted_keys)
-                  true
-                rescue => e
-                  handle_redis_exception(e, redis_conn)
-                  false
-                end
-              end
-
-              with_retries { remove_services_from_delete_set(services) } if failed.empty?
-
-              failed.each do |failed_conn|
-                logger.error("Error while deleting stats of server #{failed_conn}")
+              if redis_conns.empty?
+                delete_keys(Storage.instance, services, log_deleted_keys)
+              else
+                delete_from_server_list services, redis_conns, log_deleted_keys
               end
             end
 
@@ -136,6 +126,27 @@ module ThreeScale
           end
 
           private
+
+          # Legacy method that works for a list of individual servers, can be used with
+          # Twemproxy, but does not support such Redis connection options as username/password, TLS etc.
+          def delete_from_server_list(services, redis_conns, log_deleted_keys)
+            _ok, failed = redis_conns.partition do |redis_conn|
+              begin
+                delete_keys redis_conn, services, log_deleted_keys
+                true
+              rescue => e
+                handle_redis_exception(e, redis_conn)
+                false
+              end
+            end
+
+            with_retries { remove_services_from_delete_set(services) } if failed.empty?
+
+            failed.each do |failed_conn|
+              logger.error("Error while deleting stats of server #{failed_conn}")
+            end
+          end
+
 
           def handle_redis_exception(exception, redis_conn)
             # If it's a connection error, do nothing so we can continue with
