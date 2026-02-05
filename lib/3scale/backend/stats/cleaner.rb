@@ -86,7 +86,7 @@ module ThreeScale
 
             unless services.empty?
               if redis_conns.empty?
-                delete_keys(Storage.instance, services, log_deleted_keys)
+                delete_from_storage services, log_deleted_keys
               else
                 delete_from_server_list services, redis_conns, log_deleted_keys
               end
@@ -126,6 +126,19 @@ module ThreeScale
           end
 
           private
+
+          # Delete the stags keys from the default storage Redis instance
+          def delete_from_storage(services, log_deleted_keys)
+            redis = Storage.instance
+
+            begin
+              delete_keys(redis, services, log_deleted_keys)
+              with_retries { remove_services_from_delete_set(services) }
+            rescue => e
+              handle_redis_exception(e, redis)
+              logger.error("Error while deleting stats from storage: #{redis}")
+            end
+          end
 
           # Legacy method that works for a list of individual servers, can be used with
           # Twemproxy, but does not support such Redis connection options as username/password, TLS etc.
