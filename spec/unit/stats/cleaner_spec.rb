@@ -64,98 +64,114 @@ module ThreeScale
             all_keys.each { |k, v| storage.set(k, v) }
           end
 
-          context 'when there are services marked to be deleted' do
-            before do
-              services_to_be_deleted.each do |service|
-                Cleaner.mark_service_to_be_deleted(service)
+          shared_examples 'delete behavior' do
+            context 'when there are services marked to be deleted' do
+              before do
+                services_to_be_deleted.each do |service|
+                  Cleaner.mark_service_to_be_deleted(service)
+                end
+              end
+
+              it 'deletes only the stats of services marked to be deleted' do
+                Cleaner.delete!(**delete_options)
+
+                expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
+                  .to be true
+
+                expect(keys_to_be_deleted.keys.none? { |key| storage.exists?(key) })
+                  .to be true
+              end
+
+              it 'deletes the services from the set of marked to be deleted' do
+                Cleaner.delete!(**delete_options)
+
+                expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
               end
             end
 
-            it 'deletes only the stats of services marked to be deleted' do
-              Cleaner.delete!(storage_instances)
+            context 'when there are no services marked to be deleted' do
+              before { storage.del(redis_set_marked_to_be_deleted) }
 
-              expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
-                .to be true
-
-              expect(keys_to_be_deleted.keys.none? { |key| storage.exists?(key) })
-                .to be true
+              it 'does not delete any keys' do
+                expect(all_keys.keys.all? {|key| storage.exists?(key) })
+              end
             end
 
-            it 'deletes the services from the set of marked to be deleted' do
-              Cleaner.delete!(storage_instances)
+            context 'with the option to log deleted keys enabled' do
+              let(:log_to) { double(STDOUT) }
 
-              expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
+              before do
+                allow(log_to).to receive(:puts)
+
+                services_to_be_deleted.each do |service|
+                  Cleaner.mark_service_to_be_deleted(service)
+                end
+              end
+
+              it 'logs the deleted keys, one per line' do
+                Cleaner.delete!(**delete_options.merge(log_deleted_keys: log_to))
+
+                keys_to_be_deleted.each do |k, v|
+                  expect(log_to).to have_received(:puts).with("#{k} #{v}")
+                end
+              end
+
+              it 'deletes only the stats of services marked to be deleted' do
+                Cleaner.delete!(**delete_options.merge(log_deleted_keys: log_to))
+
+                expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
+                  .to be true
+
+                expect(keys_to_be_deleted.keys.none? { |key| storage.exists?(key) })
+                  .to be true
+              end
+
+              it 'deletes the services from the set of marked to be deleted' do
+                Cleaner.delete!(**delete_options.merge(log_deleted_keys: log_to))
+
+                expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
+              end
+            end
+
+            context 'when there are redis connection errors' do
+              let(:redis) { delete_options[:redis_conns]&.first || storage }
+
+              before do
+                services_to_be_deleted.each do |service|
+                  Cleaner.mark_service_to_be_deleted(service)
+                end
+
+                allow(logger).to receive(:error)
+
+                # Using scan just because it's the first command called.
+                allow(redis)
+                  .to receive(:scan).and_raise(Errno::ECONNREFUSED)
+              end
+
+              it 'logs an error without raising' do
+                expect { Cleaner.delete!(**delete_options) }.not_to raise_error
+                expect(logger).to have_received(:error)
+              end
+
+              it 'retries' do
+                Cleaner.delete!(**delete_options)
+                expect(redis)
+                  .to have_received(:scan)
+                  .exactly(Cleaner.const_get(:MAX_RETRIES_REDIS_ERRORS)).times
+              end
             end
           end
 
-          context 'when there are no services marked to be deleted' do
-            before { storage.del(redis_set_marked_to_be_deleted) }
+          context 'when redis_conns is provided' do
+            let(:delete_options) { { redis_conns: storage_instances } }
 
-            it 'does not delete any keys' do
-              expect(all_keys.keys.all? {|key| storage.exists?(key) })
-            end
+            include_examples 'delete behavior'
           end
 
-          context 'with the option to log deleted keys enabled' do
-            let(:log_to) { double(STDOUT) }
+          context 'when redis_conns is not provided' do
+            let(:delete_options) { {} }
 
-            before do
-              allow(log_to).to receive(:puts)
-
-              services_to_be_deleted.each do |service|
-                Cleaner.mark_service_to_be_deleted(service)
-              end
-            end
-
-            it 'logs the deleted keys, one per line' do
-              Cleaner.delete!(storage_instances, log_deleted_keys: log_to)
-
-              keys_to_be_deleted.each do |k, v|
-                expect(log_to).to have_received(:puts).with("#{k} #{v}")
-              end
-            end
-
-            it 'deletes only the stats of services marked to be deleted' do
-              Cleaner.delete!(storage_instances, log_deleted_keys: log_to)
-
-              expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
-                .to be true
-
-              expect(keys_to_be_deleted.keys.none? { |key| storage.exists?(key) })
-                .to be true
-            end
-
-            it 'deletes the services from the set of marked to be deleted' do
-              Cleaner.delete!(storage_instances, log_deleted_keys: log_to)
-
-              expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
-            end
-          end
-
-          context 'when there are redis connection errors' do
-            before do
-              services_to_be_deleted.each do |service|
-                Cleaner.mark_service_to_be_deleted(service)
-              end
-
-              allow(logger).to receive(:error)
-
-              # Using scan just because it's the first command called.
-              allow(storage_instances.first)
-                .to receive(:scan).and_raise(Errno::ECONNREFUSED)
-            end
-
-            it 'logs an error without raising' do
-              expect { Cleaner.delete!(storage_instances) }.not_to raise_error
-              expect(logger).to have_received(:error)
-            end
-
-            it 'retries' do
-              Cleaner.delete!(storage_instances)
-              expect(storage_instances.first)
-                .to have_received(:scan)
-                .exactly(Cleaner.const_get(:MAX_RETRIES_REDIS_ERRORS)).times
-            end
+            include_examples 'delete behavior'
           end
         end
 

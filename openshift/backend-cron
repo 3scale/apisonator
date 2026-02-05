@@ -31,7 +31,7 @@ reschedule_failed_jobs_thread = run_rake_task_in_thread(
 )
 
 delete_stats_thread = run_rake_task_in_thread(
-  "stats:cleanup[#{ENV['CONFIG_REDIS_PROXY']}]",
+  "stats:cleanup",
   (ENV['DELETE_STATS_FREQ'] || DEFAULT_DELETE_STATS_FREQ).to_i,
 )
 
