@@ -285,13 +285,9 @@ namespace :stats do
   task :cleanup, [:redis_urls, :log_deleted_keys] do |_, args|
     redis_conns = redis_conns(args[:redis_urls])
 
-    if redis_conns.empty?
-      puts 'No Redis URLs specified'
-      exit(false)
-    end
-
     ThreeScale::Backend::Stats::Cleaner.delete!(
-      redis_conns, log_deleted_keys: logger_for_deleted_keys(args[:log_deleted_keys])
+      redis_conns: redis_conns,
+      log_deleted_keys: logger_for_deleted_keys(args[:log_deleted_keys])
     )
   end
 
