@@ -101,13 +101,13 @@ module TestHelpers
                 inner.send(m, *args, **kwargs, &blk)
               end
 
-              def respond_to_missing?(m)
-                inner.respond_to_missing? m
+              def respond_to_missing?(m, include_all=false)
+                inner.respond_to?(m, include_all)
               end
 
               # Needed to call Redis::Namespace.new(). Used in WorkerAsync.
-              def respond_to?(m)
-                inner.respond_to?(m)
+              def respond_to?(m, include_all=false)
+                inner.respond_to?(m, include_all)
               end
 
               private

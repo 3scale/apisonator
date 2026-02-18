@@ -1,4 +1,5 @@
 require '3scale/backend/stats/stats_parser'
+require 'timeout'
 
 module ThreeScale
   module Backend
@@ -123,9 +124,31 @@ module ThreeScale
 
           private
 
-          # Delete the stags keys from the default storage Redis instance
+          # Check if a Redis connection supports SCAN command
+          # Returns true if supported, false otherwise
+          def supports_scan?(redis_conn)
+            begin
+              Timeout.timeout(3) do
+                redis_conn.scan(0, count: 1)
+                true
+              end
+            rescue Timeout::Error
+              logger.error("Timeout when calling SCAN command.")
+              false
+            rescue => e
+              logger.error("Error #{e} occurred when calling SCAN command.")
+              false
+            end
+          end
+
+          # Delete the stats keys from the default storage Redis instance
           def delete_from_storage(services, log_deleted_keys)
             redis = Storage.instance
+
+            unless supports_scan?(redis)
+              logger.error("Storage instance doesn't support SCAN command (e.g. Twemproxy is used). Cannot proceed with stats deletion.")
+              return
+            end
 
             begin
               delete_keys(redis, services, log_deleted_keys)

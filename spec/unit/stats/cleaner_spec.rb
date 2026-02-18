@@ -6,7 +6,17 @@ module ThreeScale
 
         let(:storage) { Backend::Storage.instance }
         let(:storage_instances) { storage.send(:proxied_instances) }
-        let(:logger) { object_double(Backend.logger) }
+        let(:logger) { Backend.logger }
+
+        # Helper to detect if we're using Twemproxy (which doesn't support SCAN)
+        def self.using_twemproxy?
+          # Parse the URL and check if it's using Twemproxy's default port (22121)
+          proxy_url = ENV['CONFIG_REDIS_PROXY']
+          return false unless proxy_url
+
+          parsed_uri = URI.parse(ThreeScale::Backend::Storage::Helpers.send(:to_redis_uri, proxy_url))
+          parsed_uri.port == 22121
+        end
 
         before do
           allow(logger).to receive(:info)
@@ -132,9 +142,38 @@ module ThreeScale
                 expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
               end
             end
+          end
+
+          shared_examples 'delete is not supported with twemproxy' do
+            it "detects that SCAN is not supported and returns early" do
+              services_to_be_deleted.each do |service|
+                Cleaner.mark_service_to_be_deleted(service)
+              end
+
+              # Mock the storage to verify SCAN is not called on it
+              allow(storage).to receive(:scan).and_call_original
+              allow(logger).to receive(:error)
+
+              Cleaner.delete!(**delete_options)
+
+              # Verify SCAN was called just one time - in supports_scan? to verify it's supported
+              expect(storage).to have_received(:scan).exactly(1).times
+
+              # Verify error was logged
+              expect(logger).to have_received(:error).with(/doesn't support SCAN/)
+
+              # Verify keys were NOT deleted (since operation was skipped)
+              expect(keys_to_be_deleted.keys.all? { |key| storage.exists?(key) }).to be true
+            end
+          end
+
+          context 'when redis_conns is provided' do
+            let(:delete_options) { { redis_conns: storage_instances } }
+
+            include_examples 'delete behavior'
 
             context 'when there are redis connection errors' do
-              let(:redis) { delete_options[:redis_conns]&.first || storage }
+              let(:redis) { storage_instances.first }
 
               before do
                 services_to_be_deleted.each do |service|
@@ -162,16 +201,14 @@ module ThreeScale
             end
           end
 
-          context 'when redis_conns is provided' do
-            let(:delete_options) { { redis_conns: storage_instances } }
-
-            include_examples 'delete behavior'
-          end
-
           context 'when redis_conns is not provided' do
             let(:delete_options) { {} }
 
-            include_examples 'delete behavior'
+            if using_twemproxy?
+              include_examples 'delete is not supported with twemproxy'
+            else
+              include_examples 'delete behavior'
+            end
           end
         end
 
