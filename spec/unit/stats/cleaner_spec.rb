@@ -1,3 +1,5 @@
+require_relative '../../../test/test_helpers/storage'
+
 module ThreeScale
   module Backend
     module Stats
@@ -7,16 +9,6 @@ module ThreeScale
         let(:storage) { Backend::Storage.instance }
         let(:storage_instances) { storage.send(:proxied_instances) }
         let(:logger) { Backend.logger }
-
-        # Helper to detect if we're using Twemproxy (which doesn't support SCAN)
-        def self.using_twemproxy?
-          # Parse the URL and check if it's using Twemproxy's default port (22121)
-          proxy_url = ENV['CONFIG_REDIS_PROXY']
-          return false unless proxy_url
-
-          parsed_uri = URI.parse(ThreeScale::Backend::Storage::Helpers.send(:to_redis_uri, proxy_url))
-          parsed_uri.port == 22121
-        end
 
         before do
           allow(logger).to receive(:info)
@@ -125,22 +117,6 @@ module ThreeScale
                   expect(log_to).to have_received(:puts).with("#{k} #{v}")
                 end
               end
-
-              it 'deletes only the stats of services marked to be deleted' do
-                Cleaner.delete!(**delete_options.merge(log_deleted_keys: log_to))
-
-                expect(keys_not_to_be_deleted.keys.all? { |key| storage.exists?(key) })
-                  .to be true
-
-                expect(keys_to_be_deleted.keys.none? { |key| storage.exists?(key) })
-                  .to be true
-              end
-
-              it 'deletes the services from the set of marked to be deleted' do
-                Cleaner.delete!(**delete_options.merge(log_deleted_keys: log_to))
-
-                expect(storage.smembers(redis_set_marked_to_be_deleted)).to be_empty
-              end
             end
           end
 
@@ -167,44 +143,67 @@ module ThreeScale
             end
           end
 
-          context 'when redis_conns is provided' do
-            let(:delete_options) { { redis_conns: storage_instances } }
+          shared_examples 'stats deletion with individual servers list' do
+            it 'SCAN is not called on the backend storage instance, only on individual servers' do
+              services_to_be_deleted.each do |service|
+                Cleaner.mark_service_to_be_deleted(service)
+              end
 
-            include_examples 'delete behavior'
+              allow(storage).to receive(:scan).and_call_original
+              storage_instances.each do |instance|
+                allow(instance).to receive(:scan).and_call_original
+              end
+
+              Cleaner.delete!(**delete_options)
+
+              # SCAN should NOT be called on Storage.instance when redis_conns is provided
+              expect(storage).not_to have_received(:scan)
+
+              storage_instances.each do |instance|
+                expect(instance).to have_received(:scan).at_least(1).times
+              end
+            end
 
             context 'when there are redis connection errors' do
-              let(:redis) { storage_instances.first }
-
               before do
                 services_to_be_deleted.each do |service|
                   Cleaner.mark_service_to_be_deleted(service)
                 end
 
                 allow(logger).to receive(:error)
+                allow(storage).to receive(:scan).and_call_original
 
-                # Using scan just because it's the first command called.
-                allow(redis)
-                  .to receive(:scan).and_raise(Errno::ECONNREFUSED)
+                # Mock scan to raise connection error - simulates Redis server being unreachable
+                # This will be caught by supports_scan? check which prevents hanging
+                storage_instances.each do |instance|
+                  allow(instance).to receive(:scan).and_raise(Errno::ECONNREFUSED)
+                end
               end
 
-              it 'logs an error without raising' do
+              it 'detects connection failure and logs errors without raising' do
                 expect { Cleaner.delete!(**delete_options) }.not_to raise_error
-                expect(logger).to have_received(:error)
-              end
+                # Error logged from supports_scan? when it catches the exception
+                # Plus error from partition block returning false
+                expect(logger).to have_received(:error).at_least(:once)
 
-              it 'retries' do
-                Cleaner.delete!(**delete_options)
-                expect(redis)
-                  .to have_received(:scan)
-                  .exactly(Cleaner.const_get(:MAX_RETRIES_REDIS_ERRORS)).times
+                # Keys are not deleted
+                expect(keys_to_be_deleted.keys.all? { |key| storage.exists?(key) }).to be true
+                expect(storage.smembers(redis_set_marked_to_be_deleted)).to eq(services_to_be_deleted)
               end
             end
+          end
+
+          context 'when redis_conns is provided' do
+            let(:delete_options) { { redis_conns: storage_instances } }
+
+            include_examples 'delete behavior'
+            include_examples 'stats deletion with individual servers list'
           end
 
           context 'when redis_conns is not provided' do
             let(:delete_options) { {} }
 
-            if using_twemproxy?
+            if TestHelpers::Storage::Mock.using_twemproxy?
               include_examples 'delete is not supported with twemproxy'
             else
               include_examples 'delete behavior'

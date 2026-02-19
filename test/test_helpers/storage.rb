@@ -39,13 +39,16 @@ module TestHelpers
       private_constant :DEFAULT_NODES
 
       class << self
-        def nodes
-          # Return original URL unless we are testing on a twemproxy
-          uri = URI(ThreeScale::Backend.configuration.redis.proxy)
-          return [uri.to_s] if uri.port != DEFAULT_TWEMPROXY_PORT
+        def proxy_uri
+          @proxy_uri ||= URI(ThreeScale::Backend.configuration.redis.proxy)
+        end
 
-          # Return proxied shards if testing on a twemproxy
-          @nodes || DEFAULT_NODES
+        def using_twemproxy?
+          @using_twemproxy ||= proxy_uri.port == DEFAULT_TWEMPROXY_PORT
+        end
+
+        def nodes
+          @nodes ||= using_twemproxy? ? DEFAULT_NODES : [proxy_uri.to_s]
         end
 
         def mock_storage_clients

@@ -88,11 +88,8 @@ module ThreeScale
             logger.info("Going to delete the stats keys for these services: #{services.to_a}")
 
             unless services.empty?
-              if redis_conns.empty?
-                delete_from_storage services, log_deleted_keys
-              else
-                delete_from_server_list services, redis_conns, log_deleted_keys
-              end
+              redis_conns = [Storage.instance] if redis_conns.empty?
+              delete_from_server_list services, redis_conns, log_deleted_keys
             end
 
             logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
@@ -141,30 +138,22 @@ module ThreeScale
             end
           end
 
-          # Delete the stats keys from the default storage Redis instance
-          def delete_from_storage(services, log_deleted_keys)
-            redis = Storage.instance
-
-            unless supports_scan?(redis)
-              logger.error("Storage instance doesn't support SCAN command (e.g. Twemproxy is used). Cannot proceed with stats deletion.")
-              return
-            end
-
-            begin
-              delete_keys(redis, services, log_deleted_keys)
-              with_retries { remove_services_from_delete_set(services) }
-            rescue => e
-              handle_redis_exception(e, redis)
-            end
-          end
-
-          # Legacy method that works for a list of individual servers, can be used with
-          # Twemproxy, but does not support such Redis connection options as username/password, TLS etc.
+          # Delete stats keys from Redis
+          # Legacy method that works with a list of individual Redis server connections.
+          # These should be direct connections to Redis servers (not through a proxy like Twemproxy).
+          # However, we check for SCAN support to protect against misconfigurations.
+          # Note: This method does not support Redis connection options like username/password, TLS etc.
+          # For those features, use the default storage instance (redis_conns not provided).
           def delete_from_server_list(services, redis_conns, log_deleted_keys)
             _ok, failed = redis_conns.partition do |redis_conn|
               begin
-                delete_keys redis_conn, services, log_deleted_keys
-                true
+                if supports_scan?(redis_conn)
+                  delete_keys redis_conn, services, log_deleted_keys
+                  true
+                else
+                  logger.error("Redis instance #{redis_conn} doesn't support SCAN command (e.g. Twemproxy is used). Cannot proceed with stats deletion.")
+                  false
+                end
               rescue => e
                 handle_redis_exception(e, redis_conn)
                 false
