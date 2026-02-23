@@ -39,13 +39,16 @@ module TestHelpers
       private_constant :DEFAULT_NODES
 
       class << self
-        def nodes
-          # Return original URL unless we are testing on a twemproxy
-          uri = URI(ThreeScale::Backend.configuration.redis.proxy)
-          return [uri.to_s] if uri.port != DEFAULT_TWEMPROXY_PORT
+        def proxy_uri
+          @proxy_uri ||= URI(ThreeScale::Backend.configuration.redis.proxy)
+        end
 
-          # Return proxied shards if testing on a twemproxy
-          @nodes || DEFAULT_NODES
+        def using_twemproxy?
+          @using_twemproxy ||= proxy_uri.port == DEFAULT_TWEMPROXY_PORT
+        end
+
+        def nodes
+          @nodes ||= using_twemproxy? ? DEFAULT_NODES : [proxy_uri.to_s]
         end
 
         def mock_storage_clients
@@ -101,13 +104,13 @@ module TestHelpers
                 inner.send(m, *args, **kwargs, &blk)
               end
 
-              def respond_to_missing?(m)
-                inner.respond_to_missing? m
+              def respond_to_missing?(m, include_all=false)
+                inner.respond_to?(m, include_all)
               end
 
               # Needed to call Redis::Namespace.new(). Used in WorkerAsync.
-              def respond_to?(m)
-                inner.respond_to?(m)
+              def respond_to?(m, include_all=false)
+                inner.respond_to?(m, include_all)
               end
 
               private

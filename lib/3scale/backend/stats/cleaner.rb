@@ -1,4 +1,5 @@
 require '3scale/backend/stats/stats_parser'
+require 'timeout'
 
 module ThreeScale
   module Backend
@@ -62,11 +63,13 @@ module ThreeScale
           # Deletes all the stats for the services that have been marked for
           # deletion.
           #
-          # This method receives a collection of instantiated Redis clients.
+          # This method optionally receives a collection of instantiated Redis clients.
           # Those clients need to connect to Redis servers directly. They cannot
           # connect to a proxy like Twemproxy. The reason is that this function
           # needs to scan the database using the "SCAN" command, which is not
           # supported by Twemproxy.
+          #
+          # If the list of servers is not provided, the standard Storage instance is used
           #
           # The services marked as deletion will be marked as done only when
           # this function finishes deleting the keys from all the Redis servers.
@@ -80,26 +83,13 @@ module ThreeScale
           # @param [Array] redis_conns Instantiated Redis clients.
           # @param [IO] log_deleted_keys IO where to write the logs. Defaults to
           #             nil (logs nothing).
-          def delete!(redis_conns, log_deleted_keys: nil)
+          def delete!(redis_conns: [], log_deleted_keys: nil)
             services = services_to_delete
             logger.info("Going to delete the stats keys for these services: #{services.to_a}")
 
             unless services.empty?
-              _ok, failed = redis_conns.partition do |redis_conn|
-                begin
-                  delete_keys(redis_conn, services, log_deleted_keys)
-                  true
-                rescue => e
-                  handle_redis_exception(e, redis_conn)
-                  false
-                end
-              end
-
-              with_retries { remove_services_from_delete_set(services) } if failed.empty?
-
-              failed.each do |failed_conn|
-                logger.error("Error while deleting stats of server #{failed_conn}")
-              end
+              redis_conns = [Storage.instance] if redis_conns.empty?
+              delete_from_server_list services, redis_conns, log_deleted_keys
             end
 
             logger.info("Finished deleting the stats keys for these services: #{services.to_a}")
@@ -120,27 +110,64 @@ module ThreeScale
           # @param [IO] log_deleted_keys IO where to write the logs. Defaults to
           #             nil (logs nothing).
           def delete_stats_keys_set_to_0(redis_conns, log_deleted_keys: nil)
-            _ok, failed = redis_conns.partition do |redis_conn|
+            redis_conns.each do |redis_conn|
               begin
                 delete_stats_keys_with_val_0(redis_conn, log_deleted_keys)
+              rescue => e
+                handle_redis_exception(e, redis_conn)
+              end
+            end
+          end
+
+          private
+
+          # Check if a Redis connection supports SCAN command
+          # Returns true if supported, false otherwise
+          def supports_scan?(redis_conn)
+            begin
+              Timeout.timeout(3) do
+                redis_conn.scan(0, count: 1)
                 true
+              end
+            rescue Timeout::Error
+              logger.error("Timeout when calling SCAN command.")
+              false
+            rescue => e
+              logger.error("Error #{e} occurred when calling SCAN command.")
+              false
+            end
+          end
+
+          # Delete stats keys from Redis
+          # Legacy method that works with a list of individual Redis server connections.
+          # These should be direct connections to Redis servers (not through a proxy like Twemproxy).
+          # However, we check for SCAN support to protect against misconfigurations.
+          # Note: This method does not support Redis connection options like username/password, TLS etc.
+          # For those features, use the default storage instance (redis_conns not provided).
+          def delete_from_server_list(services, redis_conns, log_deleted_keys)
+            _ok, failed = redis_conns.partition do |redis_conn|
+              begin
+                if supports_scan?(redis_conn)
+                  delete_keys redis_conn, services, log_deleted_keys
+                  true
+                else
+                  logger.error("Redis instance #{redis_conn} doesn't support SCAN command (e.g. Twemproxy is used). Cannot proceed with stats deletion.")
+                  false
+                end
               rescue => e
                 handle_redis_exception(e, redis_conn)
                 false
               end
             end
 
-            failed.each do |failed_conn|
-              logger.error("Error while deleting stats of server #{failed_conn}")
-            end
+            with_retries { remove_services_from_delete_set(services) } if failed.empty?
           end
-
-          private
 
           def handle_redis_exception(exception, redis_conn)
             # If it's a connection error, do nothing so we can continue with
             # other shards. If it's another kind of error, it could be caused by
             # a bug, so better re-raise.
+            logger.error("Error while deleting stats from server: #{redis_conn}, #{exception}")
 
             case exception
             when *REDIS_CONN_ERRORS
