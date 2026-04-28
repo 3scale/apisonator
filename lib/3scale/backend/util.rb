@@ -1,6 +1,5 @@
 require 'pathname'
 require 'etc'
-require '3scale/backend/logging'
 
 module ThreeScale
   module Backend
