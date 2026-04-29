@@ -80,6 +80,7 @@ module ThreeScale
             close
 
             if attempt < @opts[:reconnect_attempts]
+              Backend.logger.warn "Failed Redis connect (attempt #{attempt+1}/#{@opts[:reconnect_attempts]}): #{e.message}"
               attempt += 1
               sleep @opts[:reconnect_wait_seconds]
               retry

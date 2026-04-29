@@ -315,7 +315,7 @@ module ThreeScale
 
     CONNECTION_ERRORS = [
       Errno::EHOSTUNREACH, Errno::ENETUNREACH, Errno::ECONNRESET, Errno::ECONNREFUSED, Errno::ECONNABORTED,
-      Errno::EPIPE, Errno::EAGAIN, BrokenPipeline, EOFError, OpenSSL::SSL::SSLError
+      Errno::EPIPE, Errno::EAGAIN, BrokenPipeline, EOFError, OpenSSL::SSL::SSLError, Errno::ENOENT
     ]
   end
 end
