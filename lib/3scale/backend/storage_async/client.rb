@@ -72,16 +72,20 @@ module ThreeScale
 
         private
 
+        # Retries the block on connection errors without destroying the
+        # client. The underlying pool already handles individual dead
+        # connections by retiring them and creating new ones via its
+        # constructor block (which re-resolves the master through
+        # sentinels). We just need to wait before retrying so we don't
+        # spin during a master failover.
         def with_reconnect
           attempt = 0
           begin
-           yield connect
+            yield connect
           rescue *CONNECTION_ERRORS => e
-            close
-
             if attempt < @opts[:reconnect_attempts]
-              Backend.logger.warn "Failed Redis connect (attempt #{attempt+1}/#{@opts[:reconnect_attempts]}): #{e.message}"
               attempt += 1
+              Backend.logger.warn "Redis connection lost, reconnecting (attempt #{attempt}/#{@opts[:reconnect_attempts]}): #{e.message}"
               sleep @opts[:reconnect_wait_seconds]
               retry
             else
