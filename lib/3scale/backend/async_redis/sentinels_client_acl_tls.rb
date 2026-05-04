@@ -22,7 +22,11 @@ module ThreeScale
         end
 
         def close
-          @sentinel_clients.each_value(&:close)
+          @sentinel_clients.each_value do |client|
+            client.close
+          rescue StandardError => error
+            Backend.logger.warn "Failed to close sentinel connection: #{error.message}"
+          end
           @sentinel_clients.clear
           super
         end
