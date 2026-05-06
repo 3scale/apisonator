@@ -58,6 +58,8 @@ module ThreeScale
           if e.class == RangeError &&
               e.message == 'exceeded available parameter key space'.freeze
             respond_with 400, Backend::NotValidData.new.to_xml
+          elsif e.is_a?(::Rack::QueryParser::QueryLimitError)
+            respond_with 400, Backend::BadRequest.new(e.message).to_xml
           else
             raise e
           end

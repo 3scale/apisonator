@@ -22,6 +22,18 @@ class LoggerTest < Test::Unit::TestCase
     end
   end
 
+  test 'log does not raise when query parameter limit is exceeded' do
+    params = (0..2050).map { |i|
+      "transactions[#{i}][user_key]=uk&transactions[#{i}][usage][hits]=1"
+    }.join('&')
+
+    default_log_writer.any_instance.expects(:log).once
+
+    assert_nothing_raised do
+      post '/transactions.xml', params
+    end
+  end
+
   test 'log failed requests with request info and error info' do
     redis = Backend::Storage.instance
     redis.expects(:get).raises(Timeout::Error)

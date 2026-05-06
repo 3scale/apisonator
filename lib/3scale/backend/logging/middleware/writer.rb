@@ -109,7 +109,7 @@ module ThreeScale
             if env[REQUEST_METHOD].to_s.upcase == STR_POST
               provider_key = begin
                 ::Rack::Request.new(env).params[STR_PROVIDER_KEY]
-              rescue IOError
+              rescue IOError, ::Rack::QueryParser::QueryLimitError
                 # happens when body does not parse
                 nil
               end

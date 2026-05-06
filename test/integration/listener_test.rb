@@ -65,6 +65,20 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 'bad_request', node['code']
   end
 
+  def test_query_parameter_limit_exceeded
+    params = (0..2050).map { |i|
+      "transactions[#{i}][user_key]=uk&transactions[#{i}][usage][hits]=1"
+    }.join('&')
+
+    post '/transactions.xml', params
+
+    assert_equal 400, last_response.status
+
+    node = xml.at('error')
+    assert_match(/exceeds limit/, node.content)
+    assert_equal 'bad_request', node['code']
+  end
+
   def test_unsupported_end_users_auth
     get '/transactions/authorize.xml', provider_key: 'pk', user_id: '123'
     check_end_users_not_supported_error(last_response)
