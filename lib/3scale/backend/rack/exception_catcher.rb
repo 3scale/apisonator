@@ -41,29 +41,16 @@ module ThreeScale
           delete_sinatra_error! env
           respond_with e.http_code, prepare_body(e.to_xml, env)
         rescue ArgumentError => e
-          return unhandled_exception(e) unless e.message.include?(INVALID_BYTE_SEQUENCE_ERR_MSG)
+          raise e unless e.message.include?(INVALID_BYTE_SEQUENCE_ERR_MSG)
 
           delete_sinatra_error! env
           respond_with 400, Backend::NotValidData.new.to_xml
-        rescue Exception => e
-          unhandled_exception(e)
+        rescue ::Rack::QueryParser::QueryLimitError => e
+          delete_sinatra_error! env
+          respond_with 400, Backend::BadRequest.new(e.message).to_xml
         end
 
         private
-
-        # raise up the chain an unhandled exception - but test first for an edge
-        # case with Rack key space limit for parsing requests.
-        # See https://github.com/rack/rack/blob/2.0.4/lib/rack/query_parser.rb#L166
-        def unhandled_exception(e)
-          if e.class == RangeError &&
-              e.message == 'exceeded available parameter key space'.freeze
-            respond_with 400, Backend::NotValidData.new.to_xml
-          elsif e.is_a?(::Rack::QueryParser::QueryLimitError)
-            respond_with 400, Backend::BadRequest.new(e.message).to_xml
-          else
-            raise e
-          end
-        end
 
         # Private: Deletes 'sinatra.error' key in Rack's env hash.
         # Some external services report 'sinatra.error' and we don't want it when
@@ -76,7 +63,7 @@ module ThreeScale
           env['sinatra.error'.freeze] = nil
         end
 
-        # Private: Prepares the body to include in the reponse.
+        # Private: Prepares the body to include in the response.
         #
         # body - Proposed body String.
         # env - The environment Hash.

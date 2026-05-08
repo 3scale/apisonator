@@ -79,6 +79,27 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 'bad_request', node['code']
   end
 
+  def test_query_bytesize_limit_exceeded
+    big_value = 'x' * (4 * 1024 * 1024 + 1)
+
+    post '/transactions.xml', "big=#{big_value}"
+
+    assert_equal 400, last_response.status
+
+    node = xml.at('error')
+    assert_match(/exceeds limit/, node.content)
+    assert_equal 'bad_request', node['code']
+  end
+
+  def test_invalid_utf8_byte_sequence
+    get '/transactions/authorize.xml?service_token=foo&user_key=%ff%fe'
+
+    assert_equal 400, last_response.status
+
+    node = xml.at('error')
+    assert_equal 'not_valid_data', node['code']
+  end
+
   def test_unsupported_end_users_auth
     get '/transactions/authorize.xml', provider_key: 'pk', user_id: '123'
     check_end_users_not_supported_error(last_response)
