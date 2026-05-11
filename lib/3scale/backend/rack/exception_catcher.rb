@@ -42,12 +42,15 @@ module ThreeScale
           respond_with e.http_code, prepare_body(e.to_xml, env)
         rescue ArgumentError => e
           raise e unless e.message.include?(INVALID_BYTE_SEQUENCE_ERR_MSG)
+          error = Backend::NotValidData.new
 
           delete_sinatra_error! env
-          respond_with 400, Backend::NotValidData.new.to_xml
+          respond_with error.http_code, error.to_xml
         rescue ::Rack::QueryParser::QueryLimitError => e
           delete_sinatra_error! env
-          respond_with 400, Backend::BadRequest.new(e.message).to_xml
+
+          error = Backend::BadRequest.new(e.message)
+          respond_with error.http_code, error.to_xml
         end
 
         private
