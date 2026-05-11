@@ -75,7 +75,7 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 400, last_response.status
 
     node = xml.at('error')
-    assert_match(/exceeds limit/, node.content)
+    assert_match(/total number of query parameters \(\d+\) exceeds limit/, node.content)
     assert_equal 'bad_request', node['code']
   end
 
@@ -87,7 +87,8 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 400, last_response.status
 
     node = xml.at('error')
-    assert_match(/exceeds limit/, node.content)
+    assert_match(/total query size exceeds limit/, node.content)
+
     assert_equal 'bad_request', node['code']
   end
 
@@ -97,6 +98,7 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 400, last_response.status
 
     node = xml.at('error')
+    assert_match(/all data must be valid UTF8/, node.content)
     assert_equal 'not_valid_data', node['code']
   end
 
