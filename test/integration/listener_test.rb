@@ -95,7 +95,7 @@ class ListenerTest < Test::Unit::TestCase
   def test_invalid_utf8_byte_sequence
     get '/transactions/authorize.xml?service_token=foo&user_key=%ff%fe'
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
 
     node = xml.at('error')
     assert_match(/all data must be valid UTF8/, node.content)
