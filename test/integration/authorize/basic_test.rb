@@ -441,16 +441,16 @@ class AuthorizeBasicTest < Test::Unit::TestCase
   test 'regression test for utf8 issues and super malformed request' do
     get '/transactions/authorize.xml', :provider_key => "\xf0\x90\x28\xbc"
 
-    assert_equal 400, last_response.status
-    assert_error_response :status  => 400,
+    assert_equal 422, last_response.status
+    assert_error_response :status  => 422,
                           :code    => 'not_valid_data',
                           :message => 'all data must be valid UTF8'
 
     get '/transactions/authorize.xml', :provider_key => @provider_key,
                                         :app_id => "\xf0\x90\x28\xbc"
 
-    assert_equal 400, last_response.status
-    assert_error_response :status  => 400,
+    assert_equal 422, last_response.status
+    assert_error_response :status  => 422,
                           :code    => 'not_valid_data',
                           :message => 'all data must be valid UTF8'
 
@@ -458,8 +458,8 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                                         :app_id => @application.id,
                                         :app_key => "\xf0\x90\x28\xbc"
 
-    assert_equal 400, last_response.status
-    assert_error_response :status  => 400,
+    assert_equal 422, last_response.status
+    assert_error_response :status  => 422,
                           :code    => 'not_valid_data',
                           :message => 'all data must be valid UTF8'
 
@@ -467,7 +467,7 @@ class AuthorizeBasicTest < Test::Unit::TestCase
                                         :app_id => @application.id,
                                         :usage => {"\xf0\x90\x28\xbc" => 1}
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
 
   end
 

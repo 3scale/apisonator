@@ -65,6 +65,43 @@ class ListenerTest < Test::Unit::TestCase
     assert_equal 'bad_request', node['code']
   end
 
+  def test_query_parameter_limit_exceeded
+    params = (0..2050).map { |i|
+      "transactions[#{i}][user_key]=uk&transactions[#{i}][usage][hits]=1"
+    }.join('&')
+
+    post '/transactions.xml', params
+
+    assert_equal 400, last_response.status
+
+    node = xml.at('error')
+    assert_match(/total number of query parameters \(\d+\) exceeds limit/, node.content)
+    assert_equal 'bad_request', node['code']
+  end
+
+  def test_query_bytesize_limit_exceeded
+    big_value = 'x' * (4 * 1024 * 1024 + 1)
+
+    post '/transactions.xml', "big=#{big_value}"
+
+    assert_equal 400, last_response.status
+
+    node = xml.at('error')
+    assert_match(/total query size exceeds limit/, node.content)
+
+    assert_equal 'bad_request', node['code']
+  end
+
+  def test_invalid_utf8_byte_sequence
+    get '/transactions/authorize.xml?service_token=foo&user_key=%ff%fe'
+
+    assert_equal 422, last_response.status
+
+    node = xml.at('error')
+    assert_match(/all data must be valid UTF8/, node.content)
+    assert_equal 'not_valid_data', node['code']
+  end
+
   def test_unsupported_end_users_auth
     get '/transactions/authorize.xml', provider_key: 'pk', user_id: '123'
     check_end_users_not_supported_error(last_response)
