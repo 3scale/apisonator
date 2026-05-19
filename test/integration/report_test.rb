@@ -944,21 +944,21 @@ class ReportTest < Test::Unit::TestCase
     assert_error_resp_with_exc(ThreeScale::Backend::ProviderKeyOrServiceTokenRequired.new)
   end
 
-  test 'returns 400 when param key encoding is not valid utf-8' do
+  test 'returns 422 when param key encoding is not valid utf-8' do
     post '/transactions.xml',
          :provider_key => @provider_key,
          "\xf0\x90\x28\xbc" => 1
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
   end
 
-  test 'returns 400 when transactions do not have valid utf-8 encoding and is not a hash' do
+  test 'returns 422 when transactions do not have valid utf-8 encoding and is not a hash' do
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => "\xf0\x90\x28\xbc"
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
   end
 
@@ -973,19 +973,19 @@ class ReportTest < Test::Unit::TestCase
     assert_error_resp_with_exc(ThreeScale::Backend::TransactionsFormatInvalid.new)
   end
 
-  test 'returns 400 and not valid data msg when params have an invalid encoding' do
+  test 'returns 422 and not valid data msg when params have an invalid encoding' do
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {"\xf0\x90\x28\xbc" => {:app_id => @application.id}}
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {'0' => {:app_id => @application.id, :usage => {"\xf0\x90\x28\xbc" => 1}}}
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
@@ -993,21 +993,21 @@ class ReportTest < Test::Unit::TestCase
       :service_id => "\xf0\x90\x28\xbc",
       :transactions => {'0' => {:app_id => @application.id, :usage => {'hits' => 1}}}
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {0 => {:app_id => "\xf0\x90\x28\xbc"}}
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
 
     post '/transactions.xml',
       :provider_key => @provider_key,
       :transactions => {'0' => {:app_id => @application.id, :usage => {'hits' => "\xf0\x90\x28\xbc"}}}
 
-    assert_equal 400, last_response.status
+    assert_equal 422, last_response.status
     assert_equal ThreeScale::Backend::NotValidData.new.to_xml, last_response.body
   end
 
