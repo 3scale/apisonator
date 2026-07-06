@@ -110,7 +110,6 @@ commands:
           command: bundle exec script/benchmark
 
 workflows:
-  version: 2
   workflow:
     jobs:
       - install_ruby
