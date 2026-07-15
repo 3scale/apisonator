@@ -21,6 +21,14 @@ if Environment.testable?
 
   test_task_dependencies = ['test:unit', 'test:integration']
 
+  if ENV['CI']
+    driver = ENV['CONFIG_REDIS_ASYNC'] == 'true' ? 'async' : 'sync'
+    report_dir = "test/reports/#{driver}"
+    FileUtils.mkdir_p(report_dir)
+    ENV['CI_REPORT_DIR'] = report_dir
+    ENV['SPEC_OPTS'] = "#{ENV['SPEC_OPTS']} --format RspecJunitFormatter --out #{report_dir}/rspec.xml --format progress"
+  end
+
   desc 'Run unit and integration tests'
   task :test => test_task_dependencies
 
