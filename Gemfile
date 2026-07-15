@@ -26,7 +26,7 @@ group :test do
   gem 'resque_spec',   '~> 0.17.0'
   gem 'timecop',       '~> 0.9.1'
   gem 'rspec',         '~> 3.7.0', require: nil
-  gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
+  gem 'simplecov', require: false
   gem 'async-rspec'
   gem 'test-unit-runner-junitxml', '~> 1.0', require: nil
   gem 'rspec_junit_formatter', '~> 0.6', require: nil
