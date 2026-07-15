@@ -9,6 +9,15 @@ $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + '/../lib'))
 require '3scale/backend'
 
 require 'test/unit'
+
+if ENV['CI_REPORT_DIR']
+  require 'test/unit/runner/junitxml'
+  Test::Unit::AutoRunner.default_runner = :junitxml
+  Test::Unit::AutoRunner.prepare do |auto_runner|
+    auto_runner.runner_options[:junitxml_output_file] =
+      File.join(ENV['CI_REPORT_DIR'], "test-unit-#{Process.pid}.xml")
+  end
+end
 require 'mocha/setup'
 require 'nokogiri'
 require 'rack/test'

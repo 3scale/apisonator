@@ -28,6 +28,8 @@ group :test do
   gem 'rspec',         '~> 3.7.0', require: nil
   gem 'codeclimate-test-reporter', '~> 0.6.0', require: nil
   gem 'async-rspec'
+  gem 'test-unit-runner-junitxml', '~> 1.0', require: nil
+  gem 'rspec_junit_formatter', '~> 0.6', require: nil
 end
 
 group :development do
