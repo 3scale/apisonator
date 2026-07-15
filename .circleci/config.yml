@@ -102,7 +102,7 @@ commands:
     steps:
       - run:
           name: Run tests
-          command: bundle exec script/test
+          command: TEST_COVERAGE=true bundle exec script/test
       - store_test_results:
           path: test/reports
           when: always
@@ -111,6 +111,15 @@ commands:
           when: always
       - store_artifacts:
           path: test/reports
+          when: always
+      - run:
+          name: Upload coverage to Qlty
+          command: |
+            curl -sL https://qlty.sh | bash
+            ~/.qlty/bin/qlty coverage publish --incomplete coverage/.resultset.json
+          when: always
+      - store_artifacts:
+          path: coverage
           when: always
   run_benchmark:
     steps:
@@ -159,6 +168,16 @@ workflows:
       - benchmark:
           requires:
             - install_dependencies
+      - complete_coverage:
+          requires:
+            - test_single
+            - test_single_unix
+            - test_single-password
+            - test_sentinels
+            - test_acl_unix
+            - test_tls
+            - test_tls_sentinels
+            - test_twemproxy
   build_and_test:
     when:
       equal: [ master, << pipeline.git.branch >> ]
@@ -194,6 +213,16 @@ workflows:
       - benchmark:
           requires:
             - install_dependencies
+      - complete_coverage:
+          requires:
+            - test_single
+            - test_single_unix
+            - test_single-password
+            - test_sentinels
+            - test_acl_unix
+            - test_tls
+            - test_tls_sentinels
+            - test_twemproxy
 
 jobs:
   install_ruby:
@@ -345,3 +374,12 @@ jobs:
       - start_services:
           services: redis-master
       - run_benchmark
+  complete_coverage:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Complete coverage on Qlty
+          command: |
+            curl -sL https://qlty.sh | bash
+            ~/.qlty/bin/qlty coverage complete
