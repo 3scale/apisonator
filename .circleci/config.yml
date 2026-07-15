@@ -102,10 +102,49 @@ commands:
       - run:
           name: Run tests
           command: bundle exec script/test
+      - store_test_results:
+          path: test/reports
+          when: always
+      - store_artifacts:
+          path: log
+          when: always
+      - store_artifacts:
+          path: test/reports
+          when: always
 
 workflows:
   version: 2
-  workflow:
+  pr:
+    when:
+      not:
+        equal: [ 3scale-2.15-stable, << pipeline.git.branch >> ]
+    jobs:
+      - approve:
+          type: approval
+      - install_ruby:
+          requires:
+            - approve
+      - install_dependencies:
+          requires:
+            - install_ruby
+      - test_single:
+          requires:
+            - install_dependencies
+      - test_sentinels:
+          requires:
+            - install_dependencies
+      - test_tls:
+          requires:
+            - install_dependencies
+      - test_tls_sentinels:
+          requires:
+            - install_dependencies
+      - test_twemproxy:
+          requires:
+            - install_dependencies
+  build_and_test:
+    when:
+      equal: [ 3scale-2.15-stable, << pipeline.git.branch >> ]
     jobs:
       - install_ruby
       - install_dependencies:
@@ -124,8 +163,8 @@ workflows:
           requires:
             - install_dependencies
       - test_twemproxy:
-            requires:
-              - install_dependencies
+          requires:
+            - install_dependencies
 
 jobs:
   install_ruby:
@@ -214,7 +253,11 @@ jobs:
       name: ubuntu_vm
     working_directory: ~/project
     environment:
+      CONFIG_QUEUES_READ_TIMEOUT: 10
+      CONFIG_QUEUES_WRITE_TIMEOUT: 10
       CONFIG_QUEUES_MASTER_NAME: redis://localhost:6379
+      CONFIG_REDIS_READ_TIMEOUT: 10
+      CONFIG_REDIS_WRITE_TIMEOUT: 10
       CONFIG_REDIS_PROXY: redis://localhost:22121
     steps:
       - *attach-to-workspace
