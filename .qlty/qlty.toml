@@ -39,7 +39,7 @@ exclude_patterns = [
   "**/target/**",
   "**/templates/**",
   "**/testdata/**",
-  "**/vendor/**",
+  "**/vendor/**", "script/",
 ]
 
 test_patterns = [
@@ -55,6 +55,24 @@ test_patterns = [
 
 [smells]
 mode = "comment"
+
+[smells.boolean_logic]
+threshold = 4
+
+[smells.file_complexity]
+threshold = 55
+
+[smells.return_statements]
+threshold = 4
+
+[smells.nested_control_flow]
+threshold = 4
+
+[smells.function_parameters]
+threshold = 7
+
+[smells.function_complexity]
+threshold = 7
 
 [[source]]
 name = "default"
@@ -83,9 +101,8 @@ mode = "comment"
 
 [[plugin]]
 name = "rubocop"
-drivers = [
-  "lint",
-]
+package_file = "Gemfile"
+package_filters = ["rubocop"]
 
 [[plugin]]
 name = "shellcheck"
