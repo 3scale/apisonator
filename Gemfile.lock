@@ -161,7 +161,7 @@ GEM
       pry (~> 0.11)
       yard (~> 0.9.11)
     racc (1.8.0)
-    rack (2.2.8.1)
+    rack (2.2.23)
     rack-protection (2.2.4)
       rack
     rack-test (0.8.2)
