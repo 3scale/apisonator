@@ -1,6 +1,9 @@
 # Ruby CircleCI 2.1 configuration file
 version: 2.1
 
+orbs:
+  qlty: qltysh/qlty-orb@0.1.2
+
 persist-to-workspace: &persist-to-workspace
   persist_to_workspace:
     root: /home/circleci
@@ -112,12 +115,9 @@ commands:
       - store_artifacts:
           path: test/reports
           when: always
-      - run:
-          name: Upload coverage to Qlty
-          command: |
-            curl -sL https://qlty.sh | bash
-            ~/.qlty/bin/qlty coverage publish --incomplete coverage/.resultset.json
-          when: always
+      - qlty/coverage_publish:
+          files: coverage/.resultset.json
+          incomplete: true
       - store_artifacts:
           path: coverage
           when: always
@@ -378,8 +378,4 @@ jobs:
     docker:
       - image: cimg/base:stable
     steps:
-      - run:
-          name: Complete coverage on Qlty
-          command: |
-            curl -sL https://qlty.sh | bash
-            ~/.qlty/bin/qlty coverage complete
+      - qlty/coverage_complete
