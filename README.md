@@ -2,7 +2,8 @@
 
 [![Docker Repository on Quay](https://quay.io/repository/3scale/apisonator/status "Docker Repository on Quay")](https://quay.io/repository/3scale/apisonator)
 [![CircleCI](https://circleci.com/gh/3scale/apisonator.svg?style=shield)](https://circleci.com/gh/3scale/apisonator)
-[![Maintainability](https://api.codeclimate.com/v1/badges/d2cea8016f0089cb2fd6/maintainability)](https://codeclimate.com/github/3scale/apisonator/maintainability)
+[![Maintainability](https://qlty.sh/gh/3scale/projects/apisonator/maintainability.svg)](https://qlty.sh/gh/3scale/projects/apisonator)
+[![Code Coverage](https://qlty.sh/gh/3scale/projects/apisonator/test_coverage.svg)](https://qlty.sh/gh/3scale/projects/apisonator)
 
 This software is licensed under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0).
 
